@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -23,5 +24,17 @@ public interface EmbedWithColumnOptions<C> extends EmbedOptions<C> {
 	 * @return a mapping configurer, specialized for embedded elements
 	 */
 	<IN> EmbedWithColumnOptions<C> override(SerializableFunction<C, IN> function, Column<? extends Table, IN> targetColumn);
+	
+	@Override
+	<IN> EmbedWithColumnOptions<C> overrideName(SerializableFunction<C, IN> getter, String columnName);
+	
+	@Override
+	<IN> EmbedWithColumnOptions<C> overrideName(SerializableBiConsumer<C, IN> setter, String columnName);
+	
+	@Override
+	<IN> EmbedWithColumnOptions<C> exclude(SerializableFunction<C, IN> getter);
+	
+	@Override
+	<IN> EmbedWithColumnOptions<C> exclude(SerializableBiConsumer<C, IN> setter);
 	
 }

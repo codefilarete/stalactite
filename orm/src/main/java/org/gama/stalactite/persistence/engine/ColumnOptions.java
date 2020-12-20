@@ -20,7 +20,11 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	ColumnOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
 	
 	/** Marks the property as mandatory. Note that using this method on an identifier one as no purpose because identifiers are already madatory. */
+	@Override
 	ColumnOptions<C, I> mandatory();
+	
+	@Override
+	ColumnOptions setByConstructor();
 	
 	/**
 	 * Available identifier policies for entities.

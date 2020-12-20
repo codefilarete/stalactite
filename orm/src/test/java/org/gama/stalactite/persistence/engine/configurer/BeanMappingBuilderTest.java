@@ -10,6 +10,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
+import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
@@ -23,7 +24,9 @@ class BeanMappingBuilderTest {
 		Column colorTable = expectedResult.addColumn("myOverridingColumn", Integer.class);
 		FluentEntityMappingConfigurationSupport<Vehicle, Object> vehicleObjectFluentEntityMappingConfigurationSupport =
 				new FluentEntityMappingConfigurationSupport<>(Vehicle.class);
-		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getColor).override(Color::getRgb, colorTable);
+		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getColor, embeddableBuilder(Color.class)
+				.add(Color::getRgb))
+				.override(Color::getRgb, colorTable);
 		Table result = BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
 		assertSame(expectedResult, result);
 	}
@@ -36,7 +39,9 @@ class BeanMappingBuilderTest {
 		Column<?, Integer> versionColumn = secondTable.addColumn("myOverridingColumn", Integer.class);
 		FluentEntityMappingConfigurationSupport<Vehicle, Object> vehicleObjectFluentEntityMappingConfigurationSupport =
 				new FluentEntityMappingConfigurationSupport<>(Vehicle.class);
-		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getOwner)
+		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getOwner, embeddableBuilder(Person.class)
+						.add(Person::getName)
+						.add(Person::getVersion))
 				.override(Person::getName, nameColumn)
 				.override(Person::getVersion, versionColumn);
 		Assertions.assertThrows(() -> BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()),

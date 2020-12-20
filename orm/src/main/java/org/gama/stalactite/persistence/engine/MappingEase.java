@@ -5,7 +5,6 @@ import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConf
 import org.gama.stalactite.persistence.engine.configurer.FluentSubEntityMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 
 /**
  * Declares a simple entry point to start configuring a persistence mapping.
@@ -41,7 +40,6 @@ public final class MappingEase {
 	 * Starts a {@link IFluentEmbeddableMappingBuilder} for a given class.
 	 *
 	 * @param persistedClass the class to be persisted by the {@link EmbeddedBeanMappingStrategy}
-	 * 						 that will be created by {@link FluentEmbeddableMappingConfigurationSupport#build(Dialect)}}
 	 * @param <T> any type to be persisted
 	 * @return a new {@link IFluentEmbeddableMappingBuilder}
 	 */

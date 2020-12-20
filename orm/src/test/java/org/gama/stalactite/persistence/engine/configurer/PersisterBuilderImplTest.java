@@ -67,7 +67,6 @@ import static org.gama.lang.test.Assertions.assertAllEquals;
 import static org.gama.lang.test.Assertions.assertEquals;
 import static org.gama.lang.test.Assertions.hasExceptionInCauses;
 import static org.gama.lang.test.Assertions.hasMessage;
-import static org.gama.reflection.Accessors.accessorByMethod;
 import static org.gama.reflection.Accessors.accessorByMethodReference;
 import static org.gama.reflection.Accessors.mutatorByField;
 import static org.gama.reflection.Accessors.mutatorByMethodReference;
@@ -138,9 +137,12 @@ public class PersisterBuilderImplTest {
 						.add(Car::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Car::getModel)
 						.mapSuperClass(embeddableBuilder(AbstractVehicle.class)
-								.embed(AbstractVehicle::getTimestamp)
+								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+										.add(Timestamp::getCreationDate)
+										.add(Timestamp::getModificationDate)
 								)
-						);
+						)
+		);
 		
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
@@ -159,10 +161,10 @@ public class PersisterBuilderImplTest {
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								accessorByMethod(Timestamp.class, "creationDate")),
+						new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("creationDate"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								accessorByMethod(Timestamp.class, "modificationDate")),
+						new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -179,7 +181,9 @@ public class PersisterBuilderImplTest {
 						.add(Car::getModel)
 						.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 								.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-								.embed(AbstractVehicle::getTimestamp)
+								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+										.add(Timestamp::getCreationDate)
+										.add(Timestamp::getModificationDate))
 						)
 		);
 		
@@ -200,10 +204,10 @@ public class PersisterBuilderImplTest {
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								accessorByMethod(Timestamp.class, "creationDate")),
+								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("creationDate"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								accessorByMethod(Timestamp.class, "modificationDate")),
+								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -223,10 +227,13 @@ public class PersisterBuilderImplTest {
 				entityBuilder(Car.class, Identifier.class)
 						.add(Car::getModel)
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
-								.embed(Vehicle::getColor)
+								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
+										.add(Color::getRgb))
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-										.embed(AbstractVehicle::getTimestamp))
+										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+												.add(Timestamp::getCreationDate)
+												.add(Timestamp::getModificationDate)))
 								// AbstractVehicle class doesn't get a Table, for testing purpose
 								.withJoinedTable())
 						// Vehicle class does get a Table, for testing purpose
@@ -260,7 +267,7 @@ public class PersisterBuilderImplTest {
 		List<Entry<IReversibleAccessor, Column>> expectedVehicleMapping = new ArrayList<>(Maps
 				.forHashMap(IReversibleAccessor.class, Column.class)
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Vehicle::getColor), mutatorByMethodReference(Vehicle::setColor)),
-								accessorByMethod(Color.class, "rgb")),
+								new PropertyAccessor<>(accessorByMethodReference(Color::getRgb), mutatorByField(Color.class, "rgb"))),
 						vehicleTable.getColumn("rgb"))
 				.entrySet());
 		expectedVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -278,10 +285,10 @@ public class PersisterBuilderImplTest {
 				.add(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getId), mutatorByField(Car.class, "id")),
 						abstractVehicleTable.getColumn("id"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
-								accessorByMethod(Timestamp.class, "creationDate")),
+						new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						abstractVehicleTable.getColumn("creationDate"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
-								accessorByMethod(Timestamp.class, "modificationDate")),
+						new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setModificationDate))),
 						abstractVehicleTable.getColumn("modificationDate"))
 				.entrySet());
 		expectedAbstractVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -298,7 +305,9 @@ public class PersisterBuilderImplTest {
 				entityBuilder(Car.class, Identifier.class)
 						.add(Car::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Car::getModel)
-						.embed(AbstractVehicle::getTimestamp)
+						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 						);
 		
 		Table dummyTable = new Table("Car");
@@ -318,10 +327,10 @@ public class PersisterBuilderImplTest {
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								accessorByMethod(Timestamp.class, "creationDate")),
+								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("creationDate"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
-								accessorByMethod(Timestamp.class, "modificationDate")),
+								new PropertyAccessor<>(accessorByMethodReference(Timestamp::getModificationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
@@ -461,7 +470,9 @@ public class PersisterBuilderImplTest {
 						.add(Car::getModel)
 						.add(Vehicle::getColor)
 						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp)
+						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 		);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -476,7 +487,9 @@ public class PersisterBuilderImplTest {
 						.add(Car::getModel)
 						.add(Vehicle::getColor)
 						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp)
+						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 		);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -504,7 +517,9 @@ public class PersisterBuilderImplTest {
 								.add(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-										.embed(AbstractVehicle::getTimestamp)
+										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+												.add(Timestamp::getCreationDate)
+												.add(Timestamp::getModificationDate))
 								)
 						)
 		);
@@ -534,7 +549,9 @@ public class PersisterBuilderImplTest {
 								.add(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 										.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-										.embed(AbstractVehicle::getTimestamp)
+										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+												.add(Timestamp::getCreationDate)
+												.add(Timestamp::getModificationDate))
 								).withJoinedTable()
 						).withJoinedTable()
 		);
@@ -575,8 +592,8 @@ public class PersisterBuilderImplTest {
 				"select" 
 						+ " Car.model as Car_model," 
 						+ " Car.id as Car_id,"
-						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
 						+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
+						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
 						+ " AbstractVehicle.id as AbstractVehicle_id," 
 						+ " Vehicle.color as Vehicle_color," 
 						+ " Vehicle.id as Vehicle_id" 
@@ -631,7 +648,9 @@ public class PersisterBuilderImplTest {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.class)
 						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp)
+						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
@@ -660,7 +679,9 @@ public class PersisterBuilderImplTest {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.class)
 						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp)
+						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 							.addSubClass(subentityBuilder(Vehicle.class, Identifier.class)))
 		);
@@ -691,7 +712,9 @@ public class PersisterBuilderImplTest {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.class)
 						.add(AbstractVehicle::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp)
+						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 								.addSubClass(subentityBuilder(Vehicle.class, Identifier.class), "Vehicle"))
 		);

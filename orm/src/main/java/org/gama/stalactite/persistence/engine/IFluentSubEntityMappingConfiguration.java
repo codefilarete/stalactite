@@ -7,7 +7,6 @@ import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.reflection.AccessorChain;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -19,46 +18,33 @@ import org.gama.stalactite.persistence.structure.Table;
  * @author Guillaume Mary
  * @see MappingEase#entityBuilder(Class, Class)
  */
-public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbeddableMappingConfiguration<C>, SubEntityMappingConfiguration<C> {
-	
-	/**
-	 * Always throws an exception since mapped super class is not supported in polymorphism definition.
-	 * The method comes from {@link IFluentEmbeddableMappingConfiguration}, extending it is a pure short-term design to quickly proof-of-concept the
-	 * idea : this design should be enhanced.
-	 * 
-	 * @param superMappingConfiguration
-	 * @return nothing since it always throws an exception
-	 */
-	@Override
-	default IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration) {
-		throw new UnsupportedOperationException();
-	}
+public interface IFluentSubEntityMappingConfiguration<C, I> extends SubEntityMappingConfiguration<C> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
-	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter);
+	<O> IFluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter);
 	
-	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter);
+	<O> IFluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter);
 	
-	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> IFluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
+	<O> IFluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
 	
-	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
+	<O> IFluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
 	
-	<O> IFluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
+	<O> IFluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
 	
-	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> IFluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> IFluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter);
 	
-	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	<E extends Enum<E>> IFluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
 	
-	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName);
+	<E extends Enum<E>> IFluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName);
 	
-	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
+	<E extends Enum<E>> IFluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
 	
-	<E extends Enum<E>> IFluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
+	<E extends Enum<E>> IFluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
 	<O, S extends Collection<O>> IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
@@ -168,27 +154,39 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
 	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
-	@Override
-	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter);
+	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
+																							   EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
 	
-	@Override
-	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter);
-	
-	@Override
-	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
-	
-	@Override
-	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
+																							   EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
 	
 	IFluentSubEntityMappingConfiguration<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
-	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentSubEntityMappingConfiguration<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, PropertyOptions {
+	interface IFluentSubEntityMappingBuilderPropertyOptions<C, I> extends IFluentSubEntityMappingConfiguration<C, I>, ColumnOptions<C, I> {
 		
 		@Override
-		IFluentMappingBuilderPropertyOptions<C, I> mandatory();
+		IFluentSubEntityMappingBuilderPropertyOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
 		
 		@Override
-		IFluentMappingBuilderPropertyOptions<C, I> setByConstructor();
+		IFluentSubEntityMappingBuilderPropertyOptions<C, I> mandatory();
+		
+		@Override
+		IFluentSubEntityMappingBuilderPropertyOptions<C, I> setByConstructor();
+	}
+	
+	interface IFluentSubEntityMappingConfigurationEnumOptions<C, I> extends IFluentSubEntityMappingConfiguration<C, I>, EnumOptions {
+		
+		@Override
+		IFluentSubEntityMappingConfigurationEnumOptions<C, I> byName();
+		
+		@Override
+		IFluentSubEntityMappingConfigurationEnumOptions<C, I> byOrdinal();
+		
+		@Override
+		IFluentSubEntityMappingConfigurationEnumOptions<C, I> mandatory();
+		
+		@Override
+		IFluentSubEntityMappingConfigurationEnumOptions<C, I> setByConstructor();
 	}
 	
 	interface IFluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends IFluentSubEntityMappingConfiguration<C, I>,
@@ -325,47 +323,6 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
 	}
 	
-	interface IFluentMappingBuilderEmbedOptions<C, I, O>
-			extends IFluentSubEntityMappingConfiguration<C, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<C, O>, EmbedWithColumnOptions<O> {
-		
-		/**
-		 * Overrides embedding with an existing column
-		 *
-		 * @param getter the getter as a method reference
-		 * @param columnName a column name that's the target of the getter (will be added to the {@link Table} if not exists)
-		 * @param <IN> input of the function (type of the embedded element)
-		 * @return a mapping configurer, specialized for embedded elements
-		 */
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> overrideName(SerializableFunction<O, IN> getter, String columnName);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
-		
-		/**
-		 * Overrides embedding with an existing target column
-		 *
-		 * @param function the getter as a method reference
-		 * @param targetColumn a column that's the target of the getter
-		 * @param <IN> input of the function (type of the embedded element)
-		 * @return a mapping configurer, specialized for embedded elements
-		 */
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<? extends Table, IN> targetColumn);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
-	}
-	
 	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping" 
 	 * @param <C>
@@ -373,8 +330,7 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 	 * @param <O>
 	 */
 	interface IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O>
-			extends IFluentSubEntityMappingConfiguration<C, I>,
-			IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> {
+			extends IFluentSubEntityMappingConfiguration<C, I>, ImportedEmbedWithColumnOptions<O> {
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
@@ -382,28 +338,31 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends IFluentEmbed
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
 		
-		@Override
-		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		/**
+		 * Overrides embedding with an existing target column
+		 *
+		 * @param getter the getter as a method reference
+		 * @param targetColumn a column that's the target of the getter
+		 * @param <IN> input of the function (type of the embedded element)
+		 * @return a mapping configurer, specialized for embedded elements
+		 */
+		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> getter, Column<? extends Table, IN> targetColumn);
+		
+		/**
+		 * Overrides embedding with an existing target column
+		 *
+		 * @param setter the setter as a method reference
+		 * @param targetColumn a column that's the target of the getter
+		 * @param <IN> input of the function (type of the embedded element)
+		 * @return a mapping configurer, specialized for embedded elements
+		 */
+		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableBiConsumer<O, IN> setter, Column<? extends Table, IN> targetColumn);
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
-	}
-	
-	interface IFluentMappingBuilderEnumOptions<C, I>
-			extends IFluentSubEntityMappingConfiguration<C, I>,
-			IFluentEmbeddableMappingConfigurationEnumOptions<C> {
-		
-		@Override
-		IFluentMappingBuilderEnumOptions<C, I> byName();
-		
-		@Override
-		IFluentMappingBuilderEnumOptions<C, I> byOrdinal();
-		
-		@Override
-		IFluentMappingBuilderEnumOptions<C, I> mandatory();
 	}
 	
 	interface IFluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S extends Collection<O>>

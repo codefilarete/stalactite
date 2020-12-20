@@ -11,7 +11,6 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.function.Serie;
 import org.gama.lang.function.TriFunction;
-import org.gama.reflection.AccessorChain;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -24,7 +23,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * @see MappingEase#entityBuilder(Class, Class)
  * @see #build(PersistenceContext)
  */
-public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMappingConfiguration<C>, PersisterBuilder<C, I>, EntityMappingConfigurationProvider<C, I> {
+public interface IFluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>, EntityMappingConfigurationProvider<C, I> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
@@ -253,17 +252,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
 	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
-	@Override
-	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter);
+	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
 	
-	@Override
-	<O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter);
-	
-	@Override
-	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
-	
-	@Override
-	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
 	
 	IFluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
@@ -284,7 +275,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	
 	IFluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
-	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationPropertyOptions<C>, ColumnOptions<C, I> {
+	interface IFluentMappingBuilderPropertyOptions<C, I> extends IFluentEntityMappingBuilder<C, I>, ColumnOptions<C, I> {
 		
 		@Override
 		IFluentMappingBuilderPropertyOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
@@ -433,47 +424,6 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		IFluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
 	}
 	
-	interface IFluentMappingBuilderEmbedOptions<C, I, O>
-			extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationEmbedOptions<C, O>, EmbedWithColumnOptions<O> {
-		
-		/**
-		 * Overrides embedding with an existing column
-		 *
-		 * @param getter the getter as a method reference
-		 * @param columnName a column name that's the target of the getter (will be added to the {@link Table} if not exists)
-		 * @param <IN> input of the function (type of the embedded element)
-		 * @return a mapping configurer, specialized for embedded elements
-		 */
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> overrideName(SerializableFunction<O, IN> getter, String columnName);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
-		
-		/**
-		 * Overrides embedding with an existing target column
-		 *
-		 * @param function the getter as a method reference
-		 * @param targetColumn a column that's the target of the getter
-		 * @param <IN> input of the function (type of the embedded element)
-		 * @return a mapping configurer, specialized for embedded elements
-		 */
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<? extends Table, IN> targetColumn);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableFunction<O, IN> getter);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> exclude(SerializableFunction<O, IN> getter);
-		
-		@Override
-		<IN> IFluentMappingBuilderEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
-	}
-	
 	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping" 
 	 * @param <C>
@@ -481,7 +431,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	 * @param <O>
 	 */
 	interface IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O>
-			extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O>, ImportedEmbedWithColumnOptions<O> {
+			extends IFluentEntityMappingBuilder<C, I>, ImportedEmbedWithColumnOptions<O> {
 
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
@@ -489,11 +439,25 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
 		
-		@Override
-		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(AccessorChain<O, IN> chain, String columnName);
+		/**
+		 * Overrides embedding with an existing target column
+		 *
+		 * @param getter the getter as a method reference
+		 * @param targetColumn a column that's the target of the getter
+		 * @param <IN> input of the function (type of the embedded element)
+		 * @return a mapping configurer, specialized for embedded elements
+		 */
+		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> getter, Column<? extends Table, IN> targetColumn);
 		
-		@Override
-		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableFunction<O, IN> function, Column<? extends Table, IN> targetColumn);
+		/**
+		 * Overrides embedding with an existing target column
+		 *
+		 * @param setter the setter as a method reference
+		 * @param targetColumn a column that's the target of the getter
+		 * @param <IN> input of the function (type of the embedded element)
+		 * @return a mapping configurer, specialized for embedded elements
+		 */
+		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> override(SerializableBiConsumer<O, IN> setter, Column<? extends Table, IN> targetColumn);
 		
 		@Override
 		<IN> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> exclude(SerializableBiConsumer<O, IN> setter);
@@ -503,7 +467,7 @@ public interface IFluentEntityMappingBuilder<C, I> extends IFluentEmbeddableMapp
 	}
 	
 	interface IFluentMappingBuilderEnumOptions<C, I>
-			extends IFluentEntityMappingBuilder<C, I>, IFluentEmbeddableMappingConfigurationEnumOptions<C> {
+			extends IFluentEntityMappingBuilder<C, I>, EnumOptions {
 		
 		@Override
 		IFluentMappingBuilderEnumOptions<C, I> byName();

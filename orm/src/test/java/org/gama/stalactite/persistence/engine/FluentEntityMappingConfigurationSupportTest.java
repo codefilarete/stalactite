@@ -28,13 +28,10 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.model.AbstractCountry;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -42,6 +39,9 @@ import org.gama.stalactite.persistence.engine.model.Gender;
 import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.engine.model.PersonWithGender;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -375,7 +375,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.embed(Toto::getTimestamp)
+				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
 				.build(new PersistenceContext((ConnectionProvider) null, dialect), toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
@@ -388,7 +390,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.embed(Toto::setTimestamp)
+				.embed(Toto::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
 				.build(new PersistenceContext((ConnectionProvider) null, dialect), toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
@@ -401,7 +405,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.embed(Toto::getTimestamp)
+				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "createdAt")
 					.overrideName(Timestamp::getModificationDate, "modifiedAt")
 				.build(new PersistenceContext((ConnectionProvider) null, dialect), toto);
@@ -433,12 +439,12 @@ public class FluentEntityMappingConfigurationSupportTest {
 				() -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName)
-						.embed(Toto::getTimestamp)
+						.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 						.overrideName(Timestamp::getCreationDate, "modificationDate")
 						.build(persistenceContext));
-		assertEquals("Error while mapping Toto::getTimestamp :"
-						+ " o.g.s.p.e.m.Timestamp.creationDate conflicts with Toto::getTimestamp > o.g.s.p.e.m.Timestamp.getModificationDate()"
-						+ " because they use same column, override one of their name to avoid the conflict, see EmbedOptions::overrideName",
+		assertEquals("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'",
 				thrownException.getMessage());
 	}
 	
@@ -452,7 +458,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		IEntityConfiguredPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.embed(Toto::getTimestamp)
+				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
 					.override(Timestamp::getCreationDate, createdAt)
 					.override(Timestamp::getModificationDate, modifiedAt)
 				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), targetTable);
@@ -478,7 +486,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		IEntityConfiguredPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.embed(Toto::getTimestamp)
+				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
 					.exclude(Timestamp::getCreationDate)
 					.override(Timestamp::getModificationDate, modifiedAt)
 				.build(new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), targetTable);
@@ -496,24 +506,28 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void innerEmbed_withSomeExcludedProperty() throws SQLException {
+	public void innerEmbed_withConflictingEmbeddable() throws SQLException {
 		Table<?> countryTable = new Table<>("countryTable");
 		
-		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = MappingEase
-				.entityBuilder(Country.class, StatefullIdentifier.class)
+		IFluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = MappingEase
+				.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
-				.embed(Country::getPresident)
-					.exclude(Person::getId)
-					.exclude(Person::getVersion)
-					.exclude(Person::getCountry)
-					.exclude(Person::getNicknames)
-					.overrideName(Person::getName, "presidentName")
-					.innerEmbed(Person::getTimestamp)
+				.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
+						.add(Person::getName)
+						.add(Person::getVersion)
+						.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
 						.exclude(Timestamp::getCreationDate)
-						.overrideName(Timestamp::getModificationDate, "presidentElectedAt")
+						.overrideName(Timestamp::getModificationDate, "presidentElectedAt"))
+					.exclude(Person::getVersion)
+					.overrideName(Person::getName, "presidentName")
+					
 				// this embed will conflict with Person one because its type is already mapped with no override
-				.embed(Country::getTimestamp)
+				.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
 					.exclude(Timestamp::getModificationDate)
 					.overrideName(Timestamp::getCreationDate, "countryCreatedAt");
 		
@@ -523,7 +537,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				// from Country
 				"id", "name",
 				// from Person
-				"presidentName", "presidentElectedAt", "vehicle",
+				"presidentName", "presidentElectedAt",
 				// from Country.timestamp
 				"countryCreatedAt"),
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));
@@ -531,7 +545,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		Connection connectionMock = mock(Connection.class);
 		
 		
-		IEntityConfiguredPersister<Country, StatefullIdentifier> persister = mappingBuilder.build(
+		IEntityConfiguredPersister<Country, Identifier<Long>> persister = mappingBuilder.build(
 				new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), countryTable);
 		
 		Map<String, ? extends Column> columnsByName = countryTable.mapColumnsOnName();
@@ -586,7 +600,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		// Testing ...
 		persister.insert(country);
 		
-		assertEquals("insert into countryTable(countryCreatedAt, id, name, presidentElectedAt, presidentName, vehicle) values (?, ?, ?, ?, ?, ?)",
+		assertEquals("insert into countryTable(countryCreatedAt, id, name, presidentElectedAt, presidentName) values (?, ?, ?, ?, ?)",
 				capturedSQL.toString());
 		assertEquals(Maps.forHashMap(Column.class, Object.class)
 				.add(columnsByName.get("presidentName"), country.getPresident().getName())
@@ -594,37 +608,136 @@ public class FluentEntityMappingConfigurationSupportTest {
 				.add(columnsByName.get("name"), country.getName())
 				.add(columnsByName.get("countryCreatedAt"), country.getTimestamp().getCreationDate())
 				.add(columnsByName.get("id"), country.getId())
-				.add(columnsByName.get("vehicle"), null)
+				, capturedValues);
+	}
+	
+	@Test
+	public void innerEmbed_withSomeExcludedProperties() throws SQLException {
+		Table<?> countryTable = new Table<>("countryTable");
+		
+		IFluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = MappingEase
+				.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
+						.add(Person::getName)
+						.add(Person::getVersion)
+						.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate))
+						.exclude(Timestamp::getCreationDate)
+						.overrideName(Timestamp::getModificationDate, "presidentElectedAt"))
+					.exclude(Person::getVersion)
+					.overrideName(Person::getName, "presidentName");
+		
+		mappingBuilder.build(persistenceContext, countryTable);
+		
+		assertEquals(Arrays.asHashSet(
+				// from Country
+				"id", "name",
+				// from Person
+				"presidentName", "presidentElectedAt"),
+				collect(countryTable.getColumns(), Column::getName, HashSet::new));
+		
+		Connection connectionMock = mock(Connection.class);
+		
+		IEntityConfiguredPersister<Country, Identifier<Long>> persister = mappingBuilder.build(
+				new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), countryTable);
+		
+		Map<String, ? extends Column> columnsByName = countryTable.mapColumnsOnName();
+		
+		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
+		assertNull(columnsByName.get("creationDate"));
+		assertNull(columnsByName.get("modificationDate"));
+		
+		// checking that overriden column are in DML statements
+		assertEquals(countryTable.getColumns(), persister.getMappingStrategy().getInsertableColumns());
+		assertEquals(countryTable.getColumnsNoPrimaryKey(), persister.getMappingStrategy().getUpdatableColumns());
+		assertEquals(countryTable.getColumns(), persister.getMappingStrategy().getSelectableColumns());
+		
+		Country country = new Country(new PersistableIdentifier<>(1L));
+		country.setName("France");
+		
+//		Timestamp countryTimestamp = new Timestamp();
+//		LocalDateTime localDateTime = LocalDate.of(2018, 01, 01).atStartOfDay();
+//		Date countryCreationDate = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+//		countryTimestamp.setCreationDate(countryCreationDate);
+//		country.setTimestamp(countryTimestamp);
+//		
+		Person president = new Person();
+		president.setName("François");
+		
+		Timestamp presidentTimestamp = new Timestamp();
+		Date presidentElection = Date.from(LocalDate.of(2019, 01, 01).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
+		presidentTimestamp.setModificationDate(presidentElection);
+		president.setTimestamp(presidentTimestamp);
+		
+		country.setPresident(president);
+		
+		// preparing JDBC mocks and values capture
+		PreparedStatement statementMock = mock(PreparedStatement.class);
+		when(statementMock.executeBatch()).thenReturn(new int[] { 1 });
+		Map<Column<Table, Object>, Object> capturedValues = new HashMap<>();
+		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
+		
+		StringBuilder capturedSQL = new StringBuilder();
+		((JoinedTablesPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			@Override
+			public void onValuesSet(Map<Column<Table, Object>, ?> values) {
+				capturedValues.putAll(values);
+			}
+			
+			@Override
+			public void onExecute(SQLStatement<Column<Table, Object>> sqlStatement) {
+				capturedSQL.append(sqlStatement.getSQL());
+			}
+		});
+		
+		// Testing ...
+		persister.insert(country);
+		
+		assertEquals("insert into countryTable(id, name, presidentElectedAt, presidentName) values (?, ?, ?, ?)",
+				capturedSQL.toString());
+		assertEquals(Maps.forHashMap(Column.class, Object.class)
+				.add(columnsByName.get("presidentName"), country.getPresident().getName())
+				.add(columnsByName.get("presidentElectedAt"), country.getPresident().getTimestamp().getModificationDate())
+				.add(columnsByName.get("name"), country.getName())
+				.add(columnsByName.get("id"), country.getId())
 				, capturedValues);
 	}
 	
 	@Test
 	public void innerEmbed_withTwiceSameInnerEmbeddableName() {
 		Table<?> countryTable = new Table<>("countryTable");
-		IFluentMappingBuilderEmbedOptions<Country, StatefullIdentifier, Timestamp> mappingBuilder = MappingEase.entityBuilder(Country.class,
-				StatefullIdentifier.class)
+		IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Identifier<Long>, Timestamp> mappingBuilder = MappingEase.entityBuilder(Country.class,
+				Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
-				.embed(Country::getPresident)
-					.exclude(Person::getCountry)
-					.exclude(Person::getNicknames)
+				.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
+						.add(Person::getId)
+						.add(Person::getName)
+						.add(Person::getVersion)
+						.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+								.add(Timestamp::getCreationDate)
+								.add(Timestamp::getModificationDate)))
 					.overrideName(Person::getId, "presidentId")
 					.overrideName(Person::getName, "presidentName")
-					.innerEmbed(Person::getTimestamp)
 				// this embed will conflict with Country one because its type is already mapped with no override
-				.embed(Country::getTimestamp);
+				.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate));
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(persistenceContext, countryTable));
-		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate(), o.g.s.p.e.m.Timestamp.getModificationDate()", thrownException.getMessage());
+		assertEquals("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				", column names should be overriden : Timestamp::getCreationDate, Timestamp::getModificationDate", thrownException.getMessage());
 		
 		// we add an override, exception must still be thrown, with different message
 		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
 		
 		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
 				.build(persistenceContext));
-		assertEquals("Country::getTimestamp conflicts with Person::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : o.g.s.p.e.m.Timestamp.getCreationDate()", thrownException.getMessage());
+		assertEquals("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				", column names should be overriden : Timestamp::getCreationDate", thrownException.getMessage());
 		
 		// we override the last field, no exception is thrown
 		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
@@ -634,7 +747,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 				// from Country
 				"id", "name",
 				// from Person
-				"presidentId", "version", "presidentName", "creationDate", "modificationDate", "vehicle",
+				"presidentId", "version", "presidentName", "creationDate", "modificationDate",
 				// from Country.timestamp
 				"createdAt", "modifiedAt"),
 				collect(countryTable.getColumns(), Column::getName, HashSet::new));
@@ -653,7 +766,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
-			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate)
 					.add(Timestamp::getModificationDate);
 			
@@ -690,7 +803,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
-			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate)
 					.add(Timestamp::getModificationDate);
 			
@@ -732,7 +845,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
-			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate)
 					.add(Timestamp::getModificationDate);
 			
@@ -757,7 +870,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
-			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate, "creation")
 					.add(Timestamp::getModificationDate);
 			
@@ -794,7 +907,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
-			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate)
 					.add(Timestamp::getModificationDate)
 					.add(Timestamp::setModificationDate);
@@ -817,7 +930,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
-			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate, "creation")
 					.add(Timestamp::getModificationDate);
 			
@@ -856,7 +969,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
-			EmbeddedBeanMappingStrategyBuilder<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate, "creation")
 					.add(Timestamp::getModificationDate);
 			
@@ -1498,11 +1611,13 @@ public class FluentEntityMappingConfigurationSupportTest {
 		try {
 			MappingEase.entityBuilder(Country.class, long.class)
 					.add(Country::getName).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.embed(Country::getPresident)
+					.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
+							.add(Person::getName))
 					.overrideName(Person::getId, "personId")
 					.overrideName(Person::getName, "personName")
-					.innerEmbed(Person::getTimestamp)
-					.embed(Country::getTimestamp)
+					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.add(Timestamp::getCreationDate)
+							.add(Timestamp::getModificationDate))
 					.add(Country::getId)
 					.add(Country::setDescription, "zxx")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class).getConfiguration())
@@ -1514,9 +1629,11 @@ public class FluentEntityMappingConfigurationSupportTest {
 		try {
 			MappingEase.entityBuilder(Country.class, long.class)
 					.add(Country::getName).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.embed(Country::getPresident)
-					.innerEmbed(Person::getTimestamp)
-					.embed(Country::getTimestamp)
+					.embed(Country::getPresident, MappingEase.embeddableBuilder(Person.class)
+							.add(Person::getName))
+					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.add(Timestamp::getCreationDate)
+							.add(Timestamp::getModificationDate))
 					.add(Country::getId, "zz")
 					.addOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, long.class))
 					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
@@ -1532,11 +1649,12 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Country::getId, "zz")
 					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					// embed with setter
-					.embed(Country::setPresident)
-					// inner embed with setter
-					.innerEmbed(Person::setTimestamp)
+					.embed(Country::setPresident, MappingEase.embeddableBuilder(Person.class)
+							.add(Person::getName))
 					// embed with setter
-					.embed(Country::setTimestamp)
+					.embed(Country::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.add(Timestamp::getCreationDate)
+							.add(Timestamp::getModificationDate))
 					.addOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, long.class))
 						// testing mappedBy with inheritance
 						.mappedBy((SerializableFunction<City, AbstractCountry>) City::getAbstractCountry)
@@ -1548,7 +1666,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		try {
-			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
+			EmbeddableMappingConfigurationProvider<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 					.add(Person::getName);
 			
 			MappingEase.entityBuilder(Country.class, long.class)
@@ -1564,7 +1682,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		try {
-			EmbeddedBeanMappingStrategyBuilder<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
+			EmbeddableMappingConfigurationProvider<Person> personMappingBuilder = MappingEase.embeddableBuilder(Person.class)
 					.add(Person::getName);
 			
 			MappingEase.entityBuilder(Country.class, long.class)
@@ -1599,13 +1717,17 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Person::getName)
 					.add(Person::getName, personTable.name)
 					.addEnum(PersonWithGender::getGender).byOrdinal()
-					.embed(Person::setTimestamp)
+					.embed(Person::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.add(Timestamp::getCreationDate)
+							.add(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "myDate")
 					.addEnum(PersonWithGender::getGender, "MM").byOrdinal()
 					.addEnum(PersonWithGender::getGender, personTable.gender).byOrdinal()
 					.add(PersonWithGender::getId, "zz")
 					.addEnum(PersonWithGender::setGender).byName()
-					.embed(Person::getTimestamp)
+					.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.add(Timestamp::getCreationDate)
+							.add(Timestamp::getModificationDate))
 					.addEnum(PersonWithGender::setGender, "MM").byName()
 					.build(persistenceContext, new Table<>("person"));
 		} catch (RuntimeException e) {

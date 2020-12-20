@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
@@ -283,7 +284,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
-							.embed(Vehicle::getColor).getConfiguration())
+							.embed(Vehicle::getColor, embeddableBuilder(Color.class)
+									.add(Color::getRgb)).getConfiguration())
 					.build(persistenceContext);
 			
 			// DML tests
@@ -526,7 +528,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void withEmbeddable() {
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
-					.embed(Vehicle::getColor)
+					.embed(Vehicle::getColor, embeddableBuilder(Color.class)
+							.add(Color::getRgb))
 					.getConfiguration();
 			
 			IEntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)

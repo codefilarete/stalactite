@@ -5,14 +5,12 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.function.SerializableTriFunction;
-import org.gama.lang.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
@@ -27,17 +25,13 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
-import org.gama.stalactite.persistence.engine.EmbedOptions;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.EmbeddedBeanMappingStrategyBuilder;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.EnumOptions;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder;
 import org.gama.stalactite.persistence.engine.ImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.PropertyOptions;
-import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
 
@@ -52,16 +46,17 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	/** Owning class of mapped properties */
 	private final Class<C> classToPersist;
 	
+	@Nullable
 	private ColumnNamingStrategy columnNamingStrategy;
 	
-	/** Mapiing definitions */
-	final List<Linkage> mapping = new ArrayList<>();
+	/** Mapping definitions */
+	protected final List<Linkage> mapping = new ArrayList<>();
 	
 	/** Collection of embedded elements, even inner ones to help final build process */
-	private final Collection<AbstractInset<C, ?>> insets = new ArrayList<>();
+	private final Collection<Inset<C, ?>> insets = new ArrayList<>();
 	
 	/** Last embedded element, introduced to help inner embedding registration (kind of algorithm help). Has no purpose in whole mapping configuration. */
-	protected AbstractInset<C, ?> currentInset;
+	private Inset<C, ?> currentInset;
 	
 	/** Helper to unshell method references */
 	private final MethodReferenceCapturer methodSpy;
@@ -84,8 +79,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public <I extends AbstractInset<C, ?>> Collection<I> getInsets() {
-		return (Collection<I>) insets;
+	public Collection<Inset<C, ?>> getInsets() {
+		return insets;
 	}
 	
 	@Override
@@ -94,6 +89,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
+	@Nullable
 	public ColumnNamingStrategy getColumnNamingStrategy() {
 		return columnNamingStrategy;
 	}
@@ -125,31 +121,24 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	/**
-	 *
-	 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction)} or {@link #newInset(SerializableBiConsumer)}
+	 * Gives access to currently configured {@link Inset}. Made so one can access features of {@link Inset} which are wider than
+	 * the one available through {@link IFluentEmbeddableMappingBuilder}.
+	 * 
+	 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction, EmbeddableMappingConfigurationProvider)}
+	 * or {@link #newInset(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
 	 */
-	protected AbstractInset<C, ?> currentInset() {
+	protected Inset<C, ?> currentInset() {
 		return currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter) {
-		currentInset = new Inset<>(getter, this);
+	protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+		currentInset = new Inset<>(getter, embeddableMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter) {
-		currentInset = new Inset<>(setter, this);
+	protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+		currentInset = new Inset<>(setter, embeddableMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
-	}
-	
-	protected <O> ImportedInset<C, O> newInset(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
-		currentInset = new ImportedInset<>(getter, this, embeddableMappingBuilder);
-		return (ImportedInset<C, O>) currentInset;
-	}
-	
-	protected <O> ImportedInset<C, O> newInset(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
-		currentInset = new ImportedInset<>(setter, this, embeddableMappingBuilder);
-		return (ImportedInset<C, O>) currentInset;
 	}
 	
 	@Override
@@ -278,148 +267,55 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter) {
-		return addInset(newInset(setter));
-	}
-	
-	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embed(SerializableFunction<C, O> getter) {
-		return addInset(newInset(getter));
-	}
-	
-	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
+																											 EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
 		return addImportedInset(newInset(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter, EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
+																											 EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
 		return addImportedInset(newInset(setter, embeddableMappingBuilder));
 	}
 	
-	private <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(ImportedInset<C, O> importedInset) {
-		insets.add(importedInset);
+	private <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
+		insets.add(inset);
 		return new MethodReferenceDispatcher()
 				// Why capturing overrideName(AccessorChain, String) this way ? (I mean with the "one method" capture instead of the usual "interface methods capture")
-				// Because of ... lazyness ;) : "interface method capture" (such as done with EmbedingEmbeddableOptions) would have required a dedicated
-				// interface (inheriting from EmbedingEmbeddableOptions) to define overrideName(AccessorChain, String)
+				// Because of ... lazyness ;) : "interface method capture" (such as done with ImportedEmbedOptions) would have required a dedicated
+				// interface (inheriting from ImportedEmbedOptions) to define overrideName(AccessorChain, String)
 				.redirect((SerializableTriFunction<IFluentEmbeddableMappingConfigurationImportedEmbedOptions, AccessorChain, String, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
 						IFluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
-						(BiConsumer<AccessorChain, String>) importedInset::overrideName)
+						(BiConsumer<AccessorChain, String>) inset::overrideName)
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideName(SerializableFunction<C, IN> function, String columnName) {
-						importedInset.overrideName(function, columnName);
+					public <IN> ImportedEmbedOptions<C> overrideName(SerializableFunction<C, IN> getter, String columnName) {
+						inset.overrideName(getter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 
 					@Override
-					public <IN> ImportedEmbedOptions<C> overrideName(SerializableBiConsumer<C, IN> function, String columnName) {
-						importedInset.overrideName(function, columnName);
+					public <IN> ImportedEmbedOptions<C> overrideName(SerializableBiConsumer<C, IN> setter, String columnName) {
+						inset.overrideName(setter, columnName);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public ImportedEmbedOptions exclude(SerializableBiConsumer setter) {
-						importedInset.exclude(setter);
+						inset.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public ImportedEmbedOptions exclude(SerializableFunction getter) {
-						importedInset.exclude(getter);
+						inset.exclude(getter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 				}, true)
 				.fallbackOn(this)
 				.build((Class<IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>>) (Class) IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions.class);
-	}
-	
-	private <O> IFluentEmbeddableMappingBuilderEmbedOptions<C, O> addInset(Inset<C, O> inset) {
-		insets.add(inset);
-		return new MethodDispatcher()
-				.redirect(EmbedOptions.class, new EmbedOptions() {
-					@Override
-					public EmbedOptions overrideName(SerializableFunction getter, String columnName) {
-						// we affect the last inset definition, not the embed(..) argument because one can use innerEmbed(..) before
-						// overrideName(..), making embed(..) argument an old/previous value
-						currentInset().overrideName(getter, columnName);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedOptions overrideName(SerializableBiConsumer setter, String columnName) {
-						// we affect the last inset definition, not the embed(..) argument because one can use innerEmbed(..) before
-						// overrideName(..), making embed(..) argument an old/previous value
-						currentInset().overrideName(setter, columnName);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedOptions innerEmbed(SerializableFunction getter) {
-						// this can hardly be reused in other innerEmbed method due to currentInset() & newInset(..) invokation side effect :
-						// they must be call in order else it results in an endless loop
-						Inset parent = (Inset) currentInset();
-						Inset<C, O> inset = newInset(getter);
-						inset.setParent(parent);
-						insets.add(inset);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedOptions innerEmbed(SerializableBiConsumer setter) {
-						// this can hardly be reused in other innerEmbed method due to currentInset() & newInset(..) invokation side effect :
-						// they must be call in order else it results in an endless loop
-						Inset parent = (Inset) currentInset();
-						Inset<C, O> inset = newInset(setter);
-						inset.setParent(parent);
-						insets.add(inset);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedOptions exclude(SerializableBiConsumer setter) {
-						// we affect the last inset definition, not the embed(..) argument because one can use innerEmbed(..) before
-						// exclude(..), making embed(..) argument an old/previous value
-						currentInset().exclude(setter);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedOptions exclude(SerializableFunction getter) {
-						// we affect the last inset definition, not the embed(..) argument because one can use innerEmbed(..) before
-						// exclude(..), making embed(..) argument an old/previous value
-						currentInset().exclude(getter);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-				}, true)
-				.fallbackOn(this)
-				.build((Class<IFluentEmbeddableMappingBuilderEmbedOptions<C, O>>) (Class) IFluentEmbeddableMappingBuilderEmbedOptions.class);
-	}
-		
-	/**
-	 * Gives the mapping between configured accessors and table columns.
-	 * Necessary columns are added to the table
-	 * 
-	 * @param dialect necessary for some checking
-	 * @param targetTable table that will own the columns
-	 * @return the mapping between "property" to column
-	 */
-	private Map<IReversibleAccessor, Column> buildMapping(Dialect dialect, Table targetTable) {
-		return new EmbeddableMappingBuilder<>(this).build(dialect, targetTable);
-	}
-	
-	@Override
-	public EmbeddedBeanMappingStrategy<C, Table> build(Dialect dialect) {
-		return build(dialect, new Table<>(classToPersist.getSimpleName()));
-	}
-	
-	@Override
-	public <T extends Table> EmbeddedBeanMappingStrategy<C, T> build(Dialect dialect, T targetTable) {
-		return new EmbeddedBeanMappingStrategy<>(classToPersist, targetTable, (Map) buildMapping(dialect, targetTable));
 	}
 	
 	/**
@@ -507,30 +403,48 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		}
 	}
 	
-	public abstract static class AbstractInset<SRC, TRGT> {
+	/**
+	 * Information storage of embedded mapping defined externally by an {@link EmbeddableMappingConfigurationProvider},
+	 * see {@link #embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
+	 *
+	 * @param <SRC>
+	 * @param <TRGT>
+	 * @see #embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
+	 * @see #embed(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
+	 */
+	public static class Inset<SRC, TRGT> {
 		private final Class<TRGT> embeddedClass;
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
+		private final EmbeddableMappingConfigurationProvider<TRGT> beanMappingBuilder;
+		private final ValueAccessPointMap<Column> overridenColumns = new ValueAccessPointMap<>();
 		
-		protected AbstractInset(SerializableBiConsumer<SRC, TRGT> targetSetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
+		
+		Inset(SerializableBiConsumer<SRC, TRGT> targetSetter,
+			  EmbeddableMappingConfigurationProvider<TRGT> beanMappingBuilder,
+			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
 			this.accessor = new PropertyAccessor<>(
 					new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
 					new MutatorByMethodReference<>(targetSetter));
 			// looking for the target type because its necessary to find its persister (and other objects)
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
+			this.beanMappingBuilder = beanMappingBuilder;
 		}
 		
-		protected AbstractInset(SerializableFunction<SRC, TRGT> targetGetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
+		Inset(SerializableFunction<SRC, TRGT> targetGetter,
+			  EmbeddableMappingConfigurationProvider<TRGT> beanMappingBuilder,
+			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
 			this.accessor = new PropertyAccessor<>(
 					new AccessorByMethodReference<>(targetGetter),
 					new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator());
 			// looking for the target type because its necessary to find its persister (and other objects)
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
+			this.beanMappingBuilder = beanMappingBuilder;
 		}
 		
 		/**
@@ -559,6 +473,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			return this.overridenColumnNames;
 		}
 		
+		public ValueAccessPointMap<Column> getOverridenColumns() {
+			return overridenColumns;
+		}
+		
+		public EmbeddableMappingConfigurationProvider<TRGT> getBeanMappingBuilder() {
+			return beanMappingBuilder;
+		}
+		
 		public void overrideName(SerializableFunction methodRef, String columnName) {
 			this.overridenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 		}
@@ -571,6 +493,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			this.overridenColumnNames.put(accessorChain, columnName);
 		}
 		
+		public void override(SerializableFunction methodRef, Column column) {
+			this.overridenColumns.put(new AccessorByMethodReference(methodRef), column);
+		}
+		
+		public void override(SerializableBiConsumer methodRef, Column column) {
+			this.overridenColumns.put(new MutatorByMethodReference(methodRef), column);
+		}
+		
 		public void exclude(SerializableBiConsumer methodRef) {
 			this.excludedProperties.add(new MutatorByMethodReference(methodRef));
 		}
@@ -579,99 +509,4 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 			this.excludedProperties.add(new AccessorByMethodReference(methodRef));
 		}
 	}
-	
-	/**
-	 * Information storage of embedded mapping defined externally by an {@link EmbeddedBeanMappingStrategyBuilder},
-	 * see {@link #embed(SerializableFunction, EmbeddedBeanMappingStrategyBuilder)}
-	 * 
-	 * @param <SRC>
-	 * @param <TRGT>
-	 * @see #embed(SerializableFunction, EmbeddedBeanMappingStrategyBuilder)}
-	 * @see #embed(SerializableBiConsumer, EmbeddedBeanMappingStrategyBuilder)}
-	 */
-	public static class ImportedInset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
-		
-		private final EmbeddedBeanMappingStrategyBuilder<TRGT> beanMappingBuilder;
-		private final LambdaMethodUnsheller lambdaMethodUnsheller;
-		private final ValueAccessPointMap<Column> overridenColumns = new ValueAccessPointMap<>();
-		
-		ImportedInset(SerializableBiConsumer<SRC, TRGT> targetSetter, LambdaMethodUnsheller lambdaMethodUnsheller,
-								EmbeddedBeanMappingStrategyBuilder<TRGT> beanMappingBuilder) {
-			super(targetSetter, lambdaMethodUnsheller);
-			this.beanMappingBuilder = beanMappingBuilder;
-			this.lambdaMethodUnsheller = lambdaMethodUnsheller;
-		}
-		
-		ImportedInset(SerializableFunction<SRC, TRGT> targetGetter, LambdaMethodUnsheller lambdaMethodUnsheller,
-								EmbeddedBeanMappingStrategyBuilder<TRGT> beanMappingBuilder) {
-			super(targetGetter, lambdaMethodUnsheller);
-			this.beanMappingBuilder = beanMappingBuilder;
-			this.lambdaMethodUnsheller = lambdaMethodUnsheller;
-		}
-		
-		public EmbeddedBeanMappingStrategyBuilder<TRGT> getBeanMappingBuilder() {
-			return beanMappingBuilder;
-		}
-		
-		@Override
-		public Method captureLambdaMethod(SerializableFunction getter) {
-			return this.lambdaMethodUnsheller.captureLambdaMethod(getter);
-		}
-		
-		@Override
-		public Method captureLambdaMethod(SerializableBiConsumer setter) {
-			return this.lambdaMethodUnsheller.captureLambdaMethod(setter);
-		}
-		
-		public void override(SerializableFunction methodRef, Column column) {
-			this.overridenColumns.put(new AccessorByMethodReference(methodRef), column);
-		}
-		
-		public ValueAccessPointMap<Column> getOverridenColumns() {
-			return overridenColumns;
-		}
-	}
-	
-	/**
-	 * Represents a property that embeds a complex type
-	 *
-	 * @param <SRC> the owner type
-	 * @param <TRGT> the target type
-	 */
-	public static class Inset<SRC, TRGT> extends AbstractInset<SRC, TRGT> implements LambdaMethodUnsheller {
-		private final LambdaMethodUnsheller lambdaMethodUnsheller;
-		/** For inner embedded inset : indicates parent embeddable */
-		private Inset parent;
-		
-		Inset(SerializableBiConsumer<SRC, TRGT> targetSetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
-			super(targetSetter, lambdaMethodUnsheller);
-			this.lambdaMethodUnsheller = lambdaMethodUnsheller;
-		}
-		
-		Inset(SerializableFunction<SRC, TRGT> targetGetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
-			super(targetGetter, lambdaMethodUnsheller);
-			this.lambdaMethodUnsheller = lambdaMethodUnsheller;
-		}
-		
-		@Override
-		public Method captureLambdaMethod(SerializableFunction getter) {
-			return this.lambdaMethodUnsheller.captureLambdaMethod(getter);
-		}
-		
-		@Override
-		public Method captureLambdaMethod(SerializableBiConsumer setter) {
-			return this.lambdaMethodUnsheller.captureLambdaMethod(setter);
-		}
-		
-		public Inset getParent() {
-			return parent;
-		}
-		
-		public void setParent(Inset parent) {
-			this.parent = parent;
-		}
-	}
-	
-	
-	
 }

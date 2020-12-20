@@ -11,5 +11,6 @@ public interface EnumOptions extends PropertyOptions {
 	
 	EnumOptions byOrdinal();
 	
+	@Override
 	EnumOptions mandatory();
 }

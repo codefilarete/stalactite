@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.AccessorChain;
-import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class as an embedded bean.
@@ -69,15 +68,11 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 */
 	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
 	
-	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter);
-
-	<O> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> embed(SerializableFunction<C, O> getter);
-	
 	<O> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
-																			  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+																			  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
 	
 	<O> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
-																			  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder);
+																			  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.
@@ -89,81 +84,29 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	IFluentEmbeddableMappingConfiguration<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
-	 * A mashup that allows to come back to the "main" options as well as continue configuration of an embedded bean.
-	 * 
-	 * @param <C> main bean type
-	 * @param <O> embedded bean type
-	 */
-	interface IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> extends IFluentEmbeddableMappingConfiguration<C>, EmbedOptions<O> {
-		
-		/**
-		 * Overrides embedding with an existing column
-		 *
-		 * @param getter the getter as a method reference
-		 * @param columnName a column name that's the target of the getter (will be added to the {@link Table} if not exists)
-		 * @param <IN> input of the function (type of the embedded element)
-		 * @return a mapping configurer, specialized for embedded elements
-		 */
-		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> overrideName(SerializableFunction<O, IN> getter, String columnName);
-		
-		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
-		
-		/**
-		 * Adds a complex-typed property as embedded into this embedded
-		 * Getter must have a matching field (Java bean naming convention) in its declaring class.
-		 *
-		 * @param getter the complex-typed property getter as a method reference
-		 * @param <IN> input of the function (type of the embedded element)
-		 * @return a mapping configurer, specialized for embedded elements
-		 */
-		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, IN> innerEmbed(SerializableFunction<O, IN> getter);
-		
-		/**
-		 * Adds a complex-typed property as embedded into this embedded
-		 * Setter must have a matching field (Java bean naming convention) in its declaring class.
-		 *
-		 * @param setter the complex-typed property setter as a method reference
-		 * @param <IN> input of the function (type of the embedded element)
-		 * @return a mapping configurer, specialized for embedded elements
-		 */
-		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, IN> innerEmbed(SerializableBiConsumer<O, IN> setter);
-		
-		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> exclude(SerializableFunction<O, IN> getter);
-		
-		@Override
-		<IN> IFluentEmbeddableMappingConfigurationEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
-		
-	}
-	
-	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping"
 	 * 
 	 * @param <C> main bean type
 	 * @param <O> embedded bean type
-	 * @see #embed(SerializableFunction, EmbeddedBeanMappingStrategyBuilder)  
-	 * @see #embed(SerializableBiConsumer, EmbeddedBeanMappingStrategyBuilder)   
+	 * @see #embed(SerializableFunction, EmbeddableMappingConfigurationProvider)  
+	 * @see #embed(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)   
 	 */
 	interface IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O>
 			extends IFluentEmbeddableMappingConfiguration<C>, ImportedEmbedOptions<O> {
 		
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableFunction<O, IN> function, String columnName);
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableFunction<O, IN> getter, String columnName);
 		
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableBiConsumer<O, IN> function, String columnName);
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(SerializableBiConsumer<O, IN> setter, String columnName);
 		
 		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> overrideName(AccessorChain<O, IN> chain, String columnName);
 		
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableFunction<O, IN> getter);
 		
 		@Override
-		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableFunction<O, IN> getter);
+		<IN> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
 	interface IFluentEmbeddableMappingConfigurationEnumOptions<C> extends IFluentEmbeddableMappingConfiguration<C>, EnumOptions {
@@ -181,6 +124,9 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	interface IFluentEmbeddableMappingConfigurationPropertyOptions<C> extends IFluentEmbeddableMappingConfiguration<C>, PropertyOptions {
 		
 		@Override
-		IFluentEmbeddableMappingConfigurationPropertyOptions mandatory();
+		IFluentEmbeddableMappingConfigurationPropertyOptions<C> mandatory();
+		
+		@Override
+		IFluentEmbeddableMappingConfigurationPropertyOptions<C> setByConstructor();
 	}
 }

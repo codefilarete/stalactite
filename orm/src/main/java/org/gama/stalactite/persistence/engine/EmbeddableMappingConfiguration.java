@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
+import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 
 /**
@@ -23,8 +23,9 @@ public interface EmbeddableMappingConfiguration<C> {
 	
 	List<Linkage> getPropertiesMapping();
 	
-	<I extends AbstractInset<C, ?>> Collection<I> getInsets();
+	Collection<Inset<C, ?>> getInsets();
 	
+	@Nullable
 	ColumnNamingStrategy getColumnNamingStrategy();
 	
 	/**

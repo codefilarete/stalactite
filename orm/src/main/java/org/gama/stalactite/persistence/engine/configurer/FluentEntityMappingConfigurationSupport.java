@@ -32,20 +32,20 @@ import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
-import org.gama.reflection.ValueAccessPointMap;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.ElementCollectionOptions;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.EmbedWithColumnOptions;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
-import org.gama.stalactite.persistence.engine.EmbeddedBeanMappingStrategyBuilder;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.EnumOptions;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.ImportedEmbedWithColumnOptions;
 import org.gama.stalactite.persistence.engine.IndexableCollectionOptions;
@@ -54,17 +54,10 @@ import org.gama.stalactite.persistence.engine.OneToManyOptions;
 import org.gama.stalactite.persistence.engine.OneToOneOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
-import org.gama.stalactite.persistence.engine.PropertyOptions;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
-import org.gama.stalactite.persistence.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbedOptions;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder.IFluentEmbeddableMappingBuilderEnumOptions;
+import org.gama.stalactite.persistence.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -598,24 +591,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter) {
-		return embed(propertiesMappingConfigurationSurrogate.embed(setter));
-	}
-	
-	@Override
-	public <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter) {
-		return embed(propertiesMappingConfigurationSurrogate.embed(getter));
-	}
-	
-	@Override
 	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																									  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationSurrogate.embed(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
-																									  EmbeddedBeanMappingStrategyBuilder<O> embeddableMappingBuilder) {
+																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationSurrogate.embed(setter, embeddableMappingBuilder));
 	}
 	
@@ -635,6 +618,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 					}
 					
 					@Override
+					public ImportedEmbedWithColumnOptions override(SerializableBiConsumer setter, Column targetColumn) {
+						propertiesMappingConfigurationSurrogate.currentInset().override(setter, targetColumn);
+						return null;
+					}
+					
+					@Override
+					public ImportedEmbedWithColumnOptions override(SerializableFunction getter, Column targetColumn) {
+						propertiesMappingConfigurationSurrogate.currentInset().override(getter, targetColumn);
+						return null;
+					}
+					
+					@Override
 					public ImportedEmbedWithColumnOptions exclude(SerializableBiConsumer setter) {
 						support.exclude(setter);
 						return null;	// we can return null because dispatcher will return proxy
@@ -645,65 +640,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 						support.exclude(getter);
 						return null;	// we can return null because dispatcher will return proxy
 					}
-					
-					@Override
-					public ImportedEmbedWithColumnOptions override(SerializableFunction function, Column targetColumn) {
-						((ImportedInset) propertiesMappingConfigurationSurrogate.currentInset()).override(function, targetColumn);
-						return null;	// we can return null because dispatcher will return proxy
-					}
 				}, true)
 				.fallbackOn(this)
 				.build((Class<IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O>>) (Class) IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions.class);
-	}
-	
-	private <O> IFluentMappingBuilderEmbedOptions<C, I, O> embed(IFluentEmbeddableMappingBuilderEmbedOptions<C, O> embedSupport) {
-		return new MethodDispatcher()
-				.redirect(EmbedWithColumnOptions.class, new EmbedWithColumnOptions() {
-					
-					@Override
-					public EmbedWithColumnOptions innerEmbed(SerializableBiConsumer setter) {
-						embedSupport.innerEmbed(setter);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedWithColumnOptions innerEmbed(SerializableFunction getter) {
-						embedSupport.innerEmbed(getter);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedWithColumnOptions overrideName(SerializableFunction getter, String columnName) {
-						embedSupport.overrideName(getter, columnName);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedWithColumnOptions overrideName(SerializableBiConsumer setter, String columnName) {
-						embedSupport.overrideName(setter, columnName);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedWithColumnOptions exclude(SerializableBiConsumer setter) {
-						embedSupport.exclude(setter);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedWithColumnOptions exclude(SerializableFunction getter) {
-						embedSupport.exclude(getter);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public EmbedWithColumnOptions override(SerializableFunction function, Column targetColumn) {
-						((OverridableColumnInset) propertiesMappingConfigurationSurrogate.currentInset()).override(function, targetColumn);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-				}, true)
-				.fallbackOn(this)
-				.build((Class<IFluentMappingBuilderEmbedOptions<C, I, O>>) (Class) IFluentMappingBuilderEmbedOptions.class);
 	}
 	
 	@Override
@@ -848,18 +787,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 		}
 		
 		@Override
-		protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter) {
-			this.currentInset = new OverridableColumnInset<>(setter, this);
-			return (Inset<C, O>) currentInset;
-		}
-		
-		@Override
-		protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter) {
-			this.currentInset = new OverridableColumnInset<>(getter, this);
-			return (Inset<C, O>) currentInset;
-		}
-		
-		@Override
 		protected <O> EntityLinkageByColumnName<C> newLinkage(IReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
 			return new EntityLinkageByColumnName<>(accessor, returnType, linkName);
 		}
@@ -917,40 +844,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 						}
 						
 						@Override
-						public PropertyOptions setByConstructor() {
+						public ColumnOptions setByConstructor() {
 							newMapping.setByConstructor();
 							return null;
 						}
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
 					.build((Class<IFluentMappingBuilderPropertyOptions<C, I>>) (Class) IFluentMappingBuilderPropertyOptions.class);
-		}
-	}
-	
-	/**
-	 * {@link Inset} with override capability for mapping definition by {@link Column}
-	 *
-	 * @param <SRC> the owner type
-	 * @param <TRGT> the target type
-	 */
-	public static class OverridableColumnInset<SRC, TRGT> extends Inset<SRC, TRGT> {
-		
-		private final ValueAccessPointMap<Column> overridenColumns = new ValueAccessPointMap<>();
-		
-		OverridableColumnInset(SerializableBiConsumer<SRC, TRGT> targetSetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
-			super(targetSetter, lambdaMethodUnsheller);
-		}
-		
-		OverridableColumnInset(SerializableFunction<SRC, TRGT> targetGetter, LambdaMethodUnsheller lambdaMethodUnsheller) {
-			super(targetGetter, lambdaMethodUnsheller);
-		}
-		
-		public void override(SerializableFunction methodRef, Column column) {
-			this.overridenColumns.put(new AccessorByMethodReference(methodRef), column);
-		}
-		
-		public ValueAccessPointMap<Column> getOverridenColumns() {
-			return overridenColumns;
 		}
 	}
 	

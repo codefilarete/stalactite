@@ -23,7 +23,6 @@ import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
-import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
@@ -45,6 +44,7 @@ import static org.gama.lang.function.Functions.chain;
 import static org.gama.lang.function.Functions.link;
 import static org.gama.lang.test.Assertions.assertAllEquals;
 import static org.gama.lang.test.Assertions.assertEquals;
+import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.query.model.Operators.eq;
 import static org.mockito.ArgumentMatchers.any;
@@ -122,7 +122,9 @@ class EntitySelectExecutorTest {
 		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
-				.embed(Country::getTimestamp)
+				.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+						.add(Timestamp::getCreationDate)
+						.add(Timestamp::getModificationDate))
 				.build(new PersistenceContext(connectionProviderMock, dialect));
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();

@@ -5,67 +5,49 @@ import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Stack;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
-import org.gama.lang.bean.InstanceMethodIterator;
-import org.gama.lang.bean.MethodIterator;
-import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.lang.function.SerializableTriFunction;
-import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IAccessor;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.IReversibleMutator;
-import org.gama.reflection.MethodReferences;
-import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.ValueAccessPoint;
-import org.gama.reflection.ValueAccessPointByMethod;
 import org.gama.reflection.ValueAccessPointComparator;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
-import org.gama.stalactite.persistence.engine.EmbedOptions;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationEmbedOptions;
+import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractInset;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ImportedInset;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageByColumnName;
-import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport.OverridableColumnInset;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
 import static org.gama.lang.Nullable.nullable;
-import static org.gama.lang.bean.Objects.not;
-import static org.gama.lang.collection.Iterables.collectToList;
-import static org.gama.lang.collection.Iterables.minus;
 import static org.gama.lang.collection.Iterables.stream;
 import static org.gama.reflection.MethodReferences.toMethodReferenceString;
 
@@ -95,25 +77,15 @@ class BeanMappingBuilder {
 	static Table giveTargetTable(EmbeddableMappingConfiguration<?> mappingConfiguration) {
 		Holder<Table> result = new Holder<>();
 		
-		Set<ValueAccessPoint> innerEmbeddedBeanRegistry = new ValueAccessPointSet();
-		mappingConfiguration.getInsets().stream().filter(Inset.class::isInstance).map(Inset.class::cast)
-				.forEach(i -> innerEmbeddedBeanRegistry.add(i.getAccessor()));
-		
 		// algorithm close to the one of includeEmbeddedMapping(..)
-		Queue<AbstractInset> stack = new ArrayDeque<>(mappingConfiguration.getInsets());
+		Queue<Inset> stack = new ArrayDeque<>(mappingConfiguration.getInsets());
 		while (!stack.isEmpty()) {
-			AbstractInset<?, ?> inset = stack.poll();
-			if (inset instanceof OverridableColumnInset) {
-				((OverridableColumnInset<?, ?>) inset).getOverridenColumns().forEach((valueAccessPoint, targetColumn) ->
-					assertHolderIsFilledWithTargetTable(result, valueAccessPoint, targetColumn)
-				);
-			} else if (inset instanceof FluentEmbeddableMappingConfigurationSupport.ImportedInset) {
-				((ImportedInset<?, ?>) inset).getOverridenColumns().forEach((valueAccessPoint, targetColumn) ->
-					assertHolderIsFilledWithTargetTable(result, valueAccessPoint, targetColumn)
-				);
-				EmbeddableMappingConfiguration<?> configuration = ((ImportedInset) inset).getBeanMappingBuilder().getConfiguration();
-				stack.addAll(configuration.getInsets());
-			}
+			Inset<?, ?> inset = stack.poll();
+			inset.getOverridenColumns().forEach((valueAccessPoint, targetColumn) ->
+				assertHolderIsFilledWithTargetTable(result, valueAccessPoint, targetColumn)
+			);
+			EmbeddableMappingConfiguration<?> configuration = inset.getBeanMappingBuilder().getConfiguration();
+			stack.addAll(configuration.getInsets());
 		}
 		return result.get();
 	}
@@ -212,7 +184,7 @@ class BeanMappingBuilder {
 				throw new MappingConfigurationException(column.getAbsoluteName() + " has no matching binder,"
 						+ " please consider adding one to dialect binder registry or use one of the "
 						+ toMethodReferenceString(
-						(SerializableBiFunction<IFluentEmbeddableMappingConfiguration, SerializableFunction, IFluentEmbeddableMappingConfigurationEmbedOptions>)
+						(SerializableTriFunction<IFluentEmbeddableMappingConfiguration, SerializableFunction, EmbeddableMappingConfigurationProvider, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
 								IFluentEmbeddableMappingConfiguration::embed) + " methods"
 				);
 			}
@@ -245,65 +217,32 @@ class BeanMappingBuilder {
 	 * Adds embedded beans mapping to result
 	 */
 	private void includeEmbeddedMapping() {
-		Set<AbstractInset<?, ?>> treatedInsets = new HashSet<>();
+		Set<Inset<?, ?>> treatedInsets = new HashSet<>();
 		
-		Set<ValueAccessPoint> innerEmbeddedBeanRegistry = new ValueAccessPointSet();
-		mappingConfiguration.getInsets().stream().filter(Inset.class::isInstance).map(Inset.class::cast)
-				.forEach(i -> innerEmbeddedBeanRegistry.add(i.getAccessor()));
-		
-		Queue<AbstractInset> stack = new ArrayDeque<>(mappingConfiguration.getInsets());
+		Stack<Inset> stack = new Stack<>();
+		stack.addAll(mappingConfiguration.getInsets());
+		Queue<IAccessor> accessorPath = new ArrayDeque<>();
 		while (!stack.isEmpty()) {
-			AbstractInset<?, ?> inset = stack.poll();
+			Inset<?, ?> inset = stack.pop();
 			
 			assertNotAlreadyDeclared(inset, treatedInsets);
 			
-			if (inset instanceof Inset) {
-				Inset refinedInset = (Inset) inset;
-				
-				List<ValueAccessPoint> rootAccessors = collectToList(() -> new InsetChainIterator(refinedInset), Inset::getAccessor);
-				Collections.reverse(rootAccessors);
-				
-				// we add properties of the embedded bean
-				ValueAccessPointSet excludedProperties = inset.getExcludedProperties();
-				Set<ValueAccessPointByMethod> getterAndSetters = giveMappableMethods(refinedInset, innerEmbeddedBeanRegistry);
-				getterAndSetters.stream()
-						.filter(not(excludedProperties::contains))
-						.forEach(valueAccessPoint -> {
-							AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
-							LinkageByColumnName<?> linkage = new LinkageByColumnName<>(new AccessorByMethod<>(valueAccessPoint.getMethod()),
-									accessorDefinition.getMemberType(), null);
-							Column targetColumn = null;
-							if (inset instanceof OverridableColumnInset) {
-								targetColumn = ((OverridableColumnInset<?, ?>) inset).getOverridenColumns().get(valueAccessPoint);
-							}
-							if (targetColumn == null) {
-								String columnName = determineColumnName(linkage, inset.getOverridenColumnNames().get(valueAccessPoint));
-								targetColumn = addColumnToTable(linkage, columnName);
-								ensureColumnBindingInRegistry(linkage, targetColumn);
-							}
-							// checking that column is not already mapped by a previous definition
-							Column finalTargetColumn = targetColumn;
-							Entry<IReversibleAccessor, Column> existingMapping = Iterables.find(result.entrySet(),
-									entry -> entry.getValue().equals(finalTargetColumn));
-							if (existingMapping != null) {
-								Method currentMethod = inset.getInsetAccessor();
-								String currentMethodReference = toMethodReferenceString(currentMethod);
-								throw new MappingConfigurationException("Error while mapping "
-										+ currentMethodReference + " : " + accessorDefinition.toString()
-										+ " conflicts with " + AccessorDefinition.toString(existingMapping.getKey()) + " because they use same " 
-										+ "column" +
-										", override one of their name to avoid the conflict" +
-										", see " + MethodReferences.toMethodReferenceString(
-										(SerializableTriFunction<EmbedOptions, SerializableFunction, String, EmbedOptions>) EmbedOptions::overrideName));
-							}
-							
-							AccessorChain chain = newAccessorChain(rootAccessors, valueAccessPoint);
-							result.put(chain, targetColumn);
-						});
-			} else if (inset instanceof FluentEmbeddableMappingConfigurationSupport.ImportedInset) {
-				EmbeddableMappingConfiguration<?> configuration = ((ImportedInset) inset).getBeanMappingBuilder().getConfiguration();
-				includeDirectMapping(configuration, inset.getAccessor(), inset.getOverridenColumnNames(), ((ImportedInset<?, ?>) inset).getOverridenColumns(),
-						inset.getExcludedProperties());
+			EmbeddableMappingConfiguration<?> configuration = inset.getBeanMappingBuilder().getConfiguration();
+			ValueAccessPoint mappingPrefix = null;
+			if (inset.getAccessor() != null) {
+				accessorPath.add(inset.getAccessor());
+				// small optimization to avoid creation of an Accessor chain of 1 element
+				if (accessorPath.size() == 1) {
+					mappingPrefix = accessorPath.peek();
+				} else {
+					mappingPrefix = AccessorChain.forModel(new ArrayList<>(accessorPath));
+				}
+			}
+			includeDirectMapping(configuration, mappingPrefix, inset.getOverridenColumnNames(), inset.getOverridenColumns(),
+					inset.getExcludedProperties());
+			if (configuration.getInsets().isEmpty()) {
+				accessorPath.remove();
+			} else {
 				stack.addAll(configuration.getInsets());
 			}
 			treatedInsets.add(inset);
@@ -329,40 +268,16 @@ class BeanMappingBuilder {
 		return AccessorChain.forModel(finalAccessors);
 	}
 	
-	private Set<ValueAccessPointByMethod> giveMappableMethods(Inset<?, ?> inset, Set<ValueAccessPoint> innerEmbeddableRegistry) {
-		InstanceMethodIterator methodIterator = new InstanceMethodIterator(inset.getEmbeddedClass(), Object.class);
-		ValueAccessPointSet excludedProperties = inset.getExcludedProperties();
-		// NB: we skip fields that are registered as inset (inner embeddable) because they'll be treated by their own, skipping them avoids conflicts
-		Predicate<ValueAccessPoint> innerEmbeddableExcluder = not(innerEmbeddableRegistry::contains);
-		// we also skip excluded fields by user
-		Predicate<ValueAccessPoint> excludedFieldsExcluder = not(excludedProperties::contains);
-		
-		// we use a ValueAccessPointSet to keep only one of a getter or a setter found for the same property (because MethodIterator iterates both)
-		ValueAccessPointSet result = new ValueAccessPointSet();
-		methodIterator.forEachRemaining(m -> {
-			ValueAccessPointByMethod valueAccessPoint = Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
-					AccessorByMethod::new,
-					MutatorByMethod::new,
-					AccessorByMethod::new,
-					method -> null /* non Java Bean naming convention compliant method */);
-			if (valueAccessPoint != null && innerEmbeddableExcluder.and(excludedFieldsExcluder).test(valueAccessPoint)) {
-				result.add(valueAccessPoint);
-			}
-		});
-
-		return (Set) result; 
-	}
-	
 	/**
-	 * Ensures that a type is not already embedded, because its columns would conflict with already defined ones, or checks that every property
+	 * Ensures that a bean is not already embedded with same accessor, because its columns would conflict with already defined ones, or checks that every property
 	 * is overriden.
 	 * Throws an exception if that's not the case.
 	 * 
 	 * @param inset current inset to be checked for duplicate
 	 * @param treatedInsets already mapped insets : if one of them matches given inset on mapped type, then a fine-graned check is done to look for conflict
 	 */
-	private void assertNotAlreadyDeclared(AbstractInset<?, ?> inset, Set<AbstractInset<?, ?>> treatedInsets) {
-		Optional<AbstractInset<?, ?>> alreadyMappedType = treatedInsets.stream().filter(i -> i.getEmbeddedClass() == inset.getEmbeddedClass()).findFirst();
+	private void assertNotAlreadyDeclared(Inset<?, ?> inset, Set<Inset<?, ?>> treatedInsets) {
+		Optional<Inset<?, ?>> alreadyMappedType = treatedInsets.stream().filter(i -> i.getEmbeddedClass() == inset.getEmbeddedClass()).findFirst();
 		if (alreadyMappedType.isPresent()) {
 			// accessors are exactly the same ?
 			if (alreadyMappedType.get().getInsetAccessor().equals(inset.getInsetAccessor())) {
@@ -370,65 +285,33 @@ class BeanMappingBuilder {
 				String currentMethodReference = toMethodReferenceString(currentMethod);
 				throw new MappingConfigurationException(currentMethodReference + " is already mapped");
 			}
-			if (inset instanceof Inset<?, ?>) {
-				// else : type is already mapped throught a different property
-				// we're going to check if all subproperties override their column name, else an exception will be thrown
-				// to prevent 2 properties from being mapped on same column
-				MethodIterator methodIterator = new MethodIterator(inset.getEmbeddedClass());
-				Set<ValueAccessPoint> expectedOverridenFields = new ValueAccessPointSet();
-				// NB: stream is sorted to get a consistent result over executions because MethodIterator doesn't always return methods in same
-				// order, probably because JVM doesn't provide methods in a steady order over executions too. Mainly done for unit test checking.
-				stream(() -> methodIterator).sorted(Comparator.comparing(Reflections::toString)).forEach(m ->
-					nullable((ValueAccessPoint) Reflections.onJavaBeanPropertyWrapperNameGeneric(m.getName(), m,
-							AccessorByMethod::new,
-							MutatorByMethod::new,
-							AccessorByMethod::new,
-							method -> null)).invoke(expectedOverridenFields::add)
-				);
-				expectedOverridenFields.removeAll(inset.getExcludedProperties());
-				Set<ValueAccessPoint> overridenFields = inset.getOverridenColumnNames().keySet();
-				boolean allFieldsAreOverriden = overridenFields.equals(expectedOverridenFields);
-				if (!allFieldsAreOverriden) {
-					Method currentMethod = inset.getInsetAccessor();
-					String currentMethodReference = toMethodReferenceString(currentMethod);
-					Method conflictingMethod = alreadyMappedType.get().getInsetAccessor();
-					String conflictingDeclaration = toMethodReferenceString(conflictingMethod);
-					expectedOverridenFields.removeAll(overridenFields);
-					throw new MappingConfigurationException(
-							currentMethodReference + " conflicts with " + conflictingDeclaration + " while embedding a " + Reflections.toString(inset.getEmbeddedClass())
-									+ ", column names should be overriden : "
-									+ minus(expectedOverridenFields, overridenFields, new ValueAccessPointComparator())
-									.stream().map(AccessorDefinition::toString).collect(Collectors.joining(", ")));
+			
+			Map<String, ValueAccessPoint> columNamePerAccessPoint1 = new HashMap<>();
+			inset.getBeanMappingBuilder().getConfiguration().getPropertiesMapping().forEach(linkage -> {
+				if (!inset.getExcludedProperties().contains(linkage.getAccessor())) {
+					String columnName = determineColumnName(linkage, inset.getOverridenColumnNames().get(linkage.getAccessor()));
+					columNamePerAccessPoint1.put(columnName, linkage.getAccessor());
 				}
+			});
+			Inset<?, ?> abstractInset = alreadyMappedType.get();
+			Map<String, ValueAccessPoint> columNamePerAccessPoint2 = new HashMap<>();
+			inset.getBeanMappingBuilder().getConfiguration().getPropertiesMapping().forEach(linkage -> {
+				if (!abstractInset.getExcludedProperties().contains(linkage.getAccessor())) {
+					String columnName = determineColumnName(linkage, abstractInset.getOverridenColumnNames().get(linkage.getAccessor()));
+					columNamePerAccessPoint2.put(columnName, linkage.getAccessor());
+				}
+			});
+			Map<ValueAccessPoint, ValueAccessPoint> join = Maps.innerJoin(columNamePerAccessPoint1,
+					columNamePerAccessPoint2);
+			if (!join.isEmpty()) {
+				String currentMethodReference = toMethodReferenceString(inset.getInsetAccessor());
+				String conflictingDeclaration = toMethodReferenceString(abstractInset.getInsetAccessor());
+				throw new MappingConfigurationException(
+						currentMethodReference + " conflicts with " + conflictingDeclaration + " while embedding a " + Reflections.toString(inset.getEmbeddedClass())
+								+ ", column names should be overriden : "
+								+ join.keySet()
+								.stream().map(AccessorDefinition::toString).collect(Collectors.joining(", ")));
 			}
-		}
-	}
-	
-	/**
-	 * {@link Iterator} dedicated to {@link Inset} in ascending order : if "Toto::getTata::getTiti::getTutu" is defined then Titi::getTutu,
-	 * Tata::getTiti, Toto::getTata is returned
-	 */
-	private static class InsetChainIterator implements Iterator<Inset> {
-		
-		private Inset current;
-		
-		private InsetChainIterator(Inset starter) {
-			this.current = starter;
-		}
-		
-		@Override
-		public boolean hasNext() {
-			return current != null;
-		}
-		
-		@Override
-		public Inset next() {
-			if (!hasNext()) {
-				throw new NoSuchElementException();
-			}
-			Inset result = this.current;
-			current = current.getParent();
-			return result;
 		}
 	}
 	

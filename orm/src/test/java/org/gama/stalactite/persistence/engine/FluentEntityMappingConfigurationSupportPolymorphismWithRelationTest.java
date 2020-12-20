@@ -1598,7 +1598,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
-							.embed(Person::getTimestamp);
+							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
@@ -1669,7 +1671,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
-							.embed(Person::getTimestamp);
+							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
@@ -1740,7 +1744,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
-							.embed(Person::getTimestamp);
+							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
@@ -1834,7 +1840,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
-							.embed(Person::getTimestamp);
+							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
@@ -1937,7 +1945,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
-							.embed(Country::getTimestamp);
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
@@ -2014,7 +2024,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
-							.embed(Country::getTimestamp);
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
@@ -2112,7 +2124,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
-							.embed(Country::getTimestamp);
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
@@ -2189,7 +2203,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
-							.embed(Country::getTimestamp);
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
@@ -2287,7 +2303,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
-							.embed(Country::getTimestamp);
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
@@ -2364,7 +2382,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
-							.embed(Country::getTimestamp);
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
@@ -2426,7 +2446,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
-							.embed(Country::getTimestamp);
+							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+									.add(Timestamp::getCreationDate)
+									.add(Timestamp::getModificationDate));
 			
 			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)

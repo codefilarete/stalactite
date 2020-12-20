@@ -17,6 +17,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
@@ -44,7 +45,9 @@ class JoinedTablesPolymorphismBuilderTest {
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getModel)
-								.embed(Vehicle::getColor).override(Color::getRgb, colorTable), new Table("TargetTable")));
+								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
+										.add(Color::getRgb))
+								.override(Color::getRgb, colorTable), new Table("TargetTable")));
 		
 		
 		Assertions.assertThrows(() -> configuration.build(persistenceContext), 
