@@ -77,9 +77,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.add(Car::getModel)
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase
-							.embeddableBuilder(Vehicle.class)
-							.add(Vehicle::getColor).getConfiguration())
+					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+							.add(Vehicle::getColor))
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
@@ -116,9 +115,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.add(Car::getModel)
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase
-							.embeddableBuilder(Vehicle.class)
-							.add(Vehicle::getColor).getConfiguration())
+					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+							.add(Vehicle::getColor))
 					.build(persistenceContext);
 			
 			// as a mapped super class, the table shouldn't be in the context, nor its persister exists
@@ -154,9 +152,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
-					.mapSuperClass(MappingEase
-							.embeddableBuilder(Vehicle.class)
-							.add(Vehicle::getColor).getConfiguration())
+					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+							.add(Vehicle::getColor))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -191,8 +188,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
 							.add(Vehicle::getColor)
-							.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_supercol")
-							.getConfiguration())
+							.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_supercol"))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -234,7 +230,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.add(Car::getId).identifier(ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
-							.add(Vehicle::getColor).getConfiguration())
+							.add(Vehicle::getColor))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -268,7 +264,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.add(Car::getColor)
 							.mapSuperClass(MappingEase
 									.embeddableBuilder(Vehicle.class)
-									.add(Vehicle::getColor).getConfiguration())
+									.add(Vehicle::getColor))
 							.build(persistenceContext));
 			
 			assertEquals("Identifier is not defined for o.g.s.p.e.m.Car,"
@@ -285,7 +281,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
 							.embed(Vehicle::getColor, embeddableBuilder(Color.class)
-									.add(Color::getRgb)).getConfiguration())
+									.add(Color::getRgb)))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -471,9 +467,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			IFluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = entityBuilder(Car.class, LONG_TYPE)
 					.add(Car::getModel)
 					.add(Car::getColor)
-					.mapSuperClass(MappingEase
-							.embeddableBuilder(Vehicle.class)
-							.add(Vehicle::getColor).getConfiguration())
+					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
+							.add(Vehicle::getColor))
 					.mapInheritance(inheritanceConfiguration);
 			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
 					() -> mappingBuilder.build(persistenceContext));

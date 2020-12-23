@@ -155,10 +155,10 @@ public interface IFluentSubEntityMappingConfiguration<C, I> extends SubEntityMap
 	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																							   EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+																							   EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
-																							   EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+																							   EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	IFluentSubEntityMappingConfiguration<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	

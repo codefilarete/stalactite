@@ -399,7 +399,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	}
 	
 	@Override
-	public IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration) {
+	public IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration) {
 		this.propertiesMappingConfigurationSurrogate.mapSuperClass(superMappingConfiguration);
 		return this;
 	}
@@ -592,13 +592,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+																									  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationSurrogate.embed(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
-																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+																									  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationSurrogate.embed(setter, embeddableMappingBuilder));
 	}
 	

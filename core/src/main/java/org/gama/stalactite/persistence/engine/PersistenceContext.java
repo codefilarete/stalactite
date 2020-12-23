@@ -240,7 +240,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param column1 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
 	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
 	 * @param <C> bean type
-	 * @param <I> constructor arg and column types
+	 * @param <I> constructor first-arg type and first column type
+	 * @param <J> constructor second-arg type and second column type
 	 * @param <T> table type
 	 * @return a list of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
@@ -250,6 +251,33 @@ public class PersistenceContext implements PersisterRegistry {
 		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), ((Class<C>) constructor.getDeclaringClass()))
 				.mapKey(factory, column1, column2)
+				.execute();
+	}
+	
+	/**
+	 * Queries the database for the given columns and fills some beans from it with the given constructor.
+	 *
+	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
+	 * Moreover only columns table is queried : no join nor assembly are processed.
+	 * Prefer {@link #select(SerializableBiFunction, Column, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
+	 *
+	 * @param factory a two-arguments bean constructor
+	 * @param column1 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param column3 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
+	 * @param <C> bean type
+	 * @param <I> constructor first-arg type and first column type
+	 * @param <J> constructor second-arg type and second column type
+	 * @param <K> constructor third-arg type and third column type
+	 * @param <T> table type
+	 * @return a list of all table records mapped to the given bean
+	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
+	 * @see #newQuery(SQLBuilder, Class)
+	 */
+	public <C, I, J, K, T extends Table> List<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
+		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), ((Class<C>) constructor.getDeclaringClass()))
+				.mapKey(factory, column1, column2, column3)
 				.execute();
 	}
 	
@@ -337,7 +365,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
 	 * @param selectMapping allow to add some mapping beyond instanciation time
 	 * @param <C> bean type
-	 * @param <I> constructor arg and column types
+	 * @param <I> constructor first-arg type and first column type
+	 * @param <J> constructor second-arg type and second column type
 	 * @param <T> table type
 	 * @return a list of all table records mapped to the given bean
 	 * @see #newQuery(SQLBuilder, Class)

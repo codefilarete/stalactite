@@ -483,13 +483,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
-																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+																									  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationSurrogate.embed(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
 	public <O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
-																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+																									  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return embed(propertiesMappingConfigurationSurrogate.embed(setter, embeddableMappingBuilder));
 	}
 	

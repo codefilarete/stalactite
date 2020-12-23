@@ -30,13 +30,13 @@ public interface IFluentEmbeddableMappingBuilder<C> extends IFluentEmbeddableMap
 	
 	<E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName);
 	
-	IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
+	IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
 	
 	<O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
-																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+																									  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	<O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
-																									  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+																									  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	IFluentEmbeddableMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	

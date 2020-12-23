@@ -41,7 +41,7 @@ import org.gama.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
 public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller,
 		EmbeddableMappingConfiguration<C> {
 	
-	private EmbeddableMappingConfiguration<? super C> superMappingBuilder;
+	private EmbeddableMappingConfigurationProvider<? super C> superMappingBuilder;
 	
 	/** Owning class of mapped properties */
 	private final Class<C> classToPersist;
@@ -85,7 +85,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	@Override
 	public EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration() {
-		return superMappingBuilder;
+		return superMappingBuilder == null ? null : superMappingBuilder.getConfiguration();
 	}
 	
 	@Override
@@ -131,12 +131,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		return currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+	protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		currentInset = new Inset<>(getter, embeddableMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+	protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		currentInset = new Inset<>(setter, embeddableMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
 	}
@@ -261,20 +261,20 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration) {
+	public IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration) {
 		this.superMappingBuilder = superMappingConfiguration;
 		return this;
 	}
 	
 	@Override
 	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
-																											 EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+																											 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return addImportedInset(newInset(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
 	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
-																											 EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder) {
+																											 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return addImportedInset(newInset(setter, embeddableMappingBuilder));
 	}
 	
@@ -284,9 +284,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 				// Why capturing overrideName(AccessorChain, String) this way ? (I mean with the "one method" capture instead of the usual "interface methods capture")
 				// Because of ... lazyness ;) : "interface method capture" (such as done with ImportedEmbedOptions) would have required a dedicated
 				// interface (inheriting from ImportedEmbedOptions) to define overrideName(AccessorChain, String)
-				.redirect((SerializableTriFunction<IFluentEmbeddableMappingConfigurationImportedEmbedOptions, AccessorChain, String, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
+				.redirect((SerializableTriFunction<IFluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableFunction, String, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
 						IFluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
-						(BiConsumer<AccessorChain, String>) inset::overrideName)
+						(BiConsumer<SerializableFunction, String>) inset::overrideName)
+				.redirect((SerializableTriFunction<IFluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
+						IFluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
+						(BiConsumer<SerializableBiConsumer, String>) inset::overrideName)
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
 					@Override
@@ -419,12 +422,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
-		private final EmbeddableMappingConfigurationProvider<TRGT> beanMappingBuilder;
+		private final EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder;
 		private final ValueAccessPointMap<Column> overridenColumns = new ValueAccessPointMap<>();
 		
 		
 		Inset(SerializableBiConsumer<SRC, TRGT> targetSetter,
-			  EmbeddableMappingConfigurationProvider<TRGT> beanMappingBuilder,
+			  EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
 			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
 			this.accessor = new PropertyAccessor<>(
@@ -436,7 +439,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		}
 		
 		Inset(SerializableFunction<SRC, TRGT> targetGetter,
-			  EmbeddableMappingConfigurationProvider<TRGT> beanMappingBuilder,
+			  EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
 			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
 			this.accessor = new PropertyAccessor<>(
@@ -478,7 +481,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		}
 		
 		public EmbeddableMappingConfigurationProvider<TRGT> getBeanMappingBuilder() {
-			return beanMappingBuilder;
+			return (EmbeddableMappingConfigurationProvider<TRGT>) beanMappingBuilder;
 		}
 		
 		public void overrideName(SerializableFunction methodRef, String columnName) {

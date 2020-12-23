@@ -66,13 +66,13 @@ public interface IFluentEmbeddableMappingConfiguration<C> {
 	 * because it is not syntaxically valid (in Java 8). So it can't be mutualized between the 2 arguments {@code superType} and
 	 * {@code mappingStrategy}. So user must be carefful to ensure by himself that both types are equal.
 	 */
-	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
+	IFluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
 	
 	<O> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
-																			  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+																			  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	<O> IFluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
-																			  EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+																			  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	/**
 	 * Change default column naming strategy, which is {@link ColumnNamingStrategy#DEFAULT}, by the given one.

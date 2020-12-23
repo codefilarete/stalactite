@@ -58,7 +58,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 							.add(Timestamp::getCreationDate)
 							.add(Timestamp::getModificationDate))
 					.add(Country::getId, "zz")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Object.class))
+					.mapSuperClass(MappingEase.embeddableBuilder(Object.class))
 					.add(Country::getDescription, "xx");
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not

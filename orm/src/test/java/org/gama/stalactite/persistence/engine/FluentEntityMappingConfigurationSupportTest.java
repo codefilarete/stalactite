@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -48,7 +49,6 @@ import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
@@ -56,6 +56,8 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.binder.LambdaParameterBinder;
+import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
@@ -82,7 +84,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class FluentEntityMappingConfigurationSupportTest {
+class FluentEntityMappingConfigurationSupportTest {
 	
 	// NB: dialect is made non static because we register binder for the same column several times in these tests
 	// and this is not supported : the very first one takes priority  
@@ -91,7 +93,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
-	public void initTest() {
+	void initTest() {
 		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
@@ -101,8 +103,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void build_identifierIsNotDefined_throwsException() {
-		IFluentMappingBuilderPropertyOptions<Toto, StatefullIdentifier> mappingStrategy = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+	void build_identifierIsNotDefined_throwsException() {
+		IFluentMappingBuilderPropertyOptions<Toto, Identifier> mappingStrategy = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId)
 				.add(Toto::getName);
 		
@@ -114,10 +116,10 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Nested
-	public class UseConstructor {
+	class UseConstructor {
 		
 		@Test
-		public void byDefault_constructorIsNotInvoked_setterIsCalled() {
+		void byDefault_constructorIsNotInvoked_setterIsCalled() {
 			Table totoTable = new Table("Toto");
 			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
 			
@@ -141,7 +143,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void withConstructorSpecified_constructorIsInvoked() {
+		void withConstructorSpecified_constructorIsInvoked() {
 			Table totoTable = new Table("Toto");
 			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
 			
@@ -166,7 +168,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void withConstructorSpecified_constructorIsInvoked_setterIsCalled() {
+		void withConstructorSpecified_constructorIsInvoked_setterIsCalled() {
 			Table totoTable = new Table("Toto");
 			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
 			
@@ -191,7 +193,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void withConstructorSpecified_withSeveralArguments() {
+		void withConstructorSpecified_withSeveralArguments() {
 			Table totoTable = new Table("Toto");
 			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
 			Column<Table<?>, String> nameColumn = totoTable.addColumn("name", String.class);
@@ -218,8 +220,8 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_withoutName_targetedPropertyNameIsTaken() {
-		IEntityConfiguredPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+	void add_withoutName_targetedPropertyNameIsTaken() {
+		IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName)
 				.build(persistenceContext);
@@ -232,13 +234,13 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_mandatory_onMissingValue_throwsException() {
+	void add_mandatory_onMissingValue_throwsException() {
 		Table totoTable = new Table("Toto");
-		Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+		Column idColumn = totoTable.addColumn("id", Identifier.class);
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 		
-		IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName).mandatory()
 				.add(Toto::getFirstName).mandatory()
@@ -256,9 +258,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_mandatory_columnConstraintIsAdded() throws SQLException {
-		IEntityConfiguredJoinedTablesPersister<Toto, StatefullIdentifier> totoPersister = (IEntityConfiguredJoinedTablesPersister<Toto, StatefullIdentifier>)
-				MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+	void add_mandatory_columnConstraintIsAdded() {
+		IEntityConfiguredJoinedTablesPersister<Toto, Identifier> totoPersister = (IEntityConfiguredJoinedTablesPersister<Toto, Identifier>)
+				MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName).mandatory()
 				.build(persistenceContext);
@@ -267,10 +269,10 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_withColumn_columnIsTaken() {
+	void add_withColumn_columnIsTaken() {
 		Table toto = new Table("Toto");
 		Column<Table, String> titleColumn = toto.addColumn("title", String.class);
-		IEntityConfiguredPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getName, titleColumn)
 				.build(persistenceContext);
@@ -285,7 +287,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_definedAsIdentifier_identifierIsStoredAsString() {
+	void add_definedAsIdentifier_identifierIsStoredAsString() {
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
 		
@@ -296,7 +298,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(id, "varchar(255)");
 		
-		IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.build(persistenceContext, totoTable);
 		// column should be correctly created
@@ -315,18 +317,18 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_identifierDefinedTwice_throwsException() {
+	void add_identifierDefinedTwice_throwsException() {
 		assertEquals("Identifier is already defined by Toto::getId",
-				assertThrows(IllegalArgumentException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+				assertThrows(IllegalArgumentException.class, () -> MappingEase.entityBuilder(Toto.class, Identifier.class)
 						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getIdentifier).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 						.getMessage());
 	}
 	
 	@Test
-	public void add_mappingDefinedTwiceByMethod_throwsException() {
+	void add_mappingDefinedTwiceByMethod_throwsException() {
 		assertEquals("Mapping is already defined by method Toto::getName",
-				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, Identifier.class)
 						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName)
 						.add(Toto::setName)
@@ -335,9 +337,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_mappingDefinedTwiceByColumn_throwsException() {
+	void add_mappingDefinedTwiceByColumn_throwsException() {
 		assertEquals("Column 'xyz' of mapping 'Toto::getName' is already targetted by 'Toto::getFirstName'",
-				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, Identifier.class)
 						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName, "xyz")
 						.add(Toto::getFirstName, "xyz")
@@ -346,9 +348,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_methodHasNoMatchingField_configurationIsStillValid() {
+	void add_methodHasNoMatchingField_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Toto::getNoMatchingField)
 				.build(persistenceContext, toto);
@@ -359,9 +361,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void add_methodIsASetter_configurationIsStillValid() {
+	void add_methodIsASetter_configurationIsStillValid() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::setId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.build(persistenceContext, toto);
 		
@@ -371,9 +373,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void embed_definedByGetter() {
+	void embed_definedByGetter() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.add(Timestamp::getCreationDate)
@@ -386,9 +388,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void embed_definedBySetter() {
+	void embed_definedBySetter() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.add(Timestamp::getCreationDate)
@@ -401,9 +403,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void embed_withOverridenColumnName() {
+	void embed_withOverridenColumnName() {
 		Table toto = new Table("Toto");
-		MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.add(Timestamp::getCreationDate)
@@ -429,14 +431,14 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void embed_withOverridenColumnName_nameAlreadyExists_throwsException() {
+	void embed_withOverridenColumnName_nameAlreadyExists_throwsException() {
 		Table totoTable = new Table("Toto");
-		Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+		Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 		
 		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
-				() -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+				() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
 						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Toto::getName)
 						.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
@@ -449,14 +451,14 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void embed_withOverridenColumn() {
+	void embed_withOverridenColumn() {
 		Table targetTable = new Table("Toto");
 		Column<Table, Date> createdAt = targetTable.addColumn("createdAt", Date.class);
 		Column<Table, Date> modifiedAt = targetTable.addColumn("modifiedAt", Date.class);
 		
 		Connection connectionMock = InvocationHandlerSupport.mock(Connection.class);
 		
-		IEntityConfiguredPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.add(Timestamp::getCreationDate)
@@ -478,13 +480,13 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void embed_withSomeExcludedProperty() {
+	void embed_withSomeExcludedProperty() {
 		Table targetTable = new Table("Toto");
 		Column<Table, Date> modifiedAt = targetTable.addColumn("modifiedAt", Date.class);
 		
 		Connection connectionMock = InvocationHandlerSupport.mock(Connection.class);
 		
-		IEntityConfiguredPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+		IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.add(Timestamp::getCreationDate)
@@ -506,7 +508,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void innerEmbed_withConflictingEmbeddable() throws SQLException {
+	void innerEmbed_withConflictingEmbeddable() throws SQLException {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		IFluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = MappingEase
@@ -612,7 +614,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void innerEmbed_withSomeExcludedProperties() throws SQLException {
+	void innerEmbed_withSomeExcludedProperties() throws SQLException {
 		Table<?> countryTable = new Table<>("countryTable");
 		
 		IFluentEntityMappingBuilder<Country, Identifier<Long>> mappingBuilder = MappingEase
@@ -658,12 +660,6 @@ public class FluentEntityMappingConfigurationSupportTest {
 		Country country = new Country(new PersistableIdentifier<>(1L));
 		country.setName("France");
 		
-//		Timestamp countryTimestamp = new Timestamp();
-//		LocalDateTime localDateTime = LocalDate.of(2018, 01, 01).atStartOfDay();
-//		Date countryCreationDate = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
-//		countryTimestamp.setCreationDate(countryCreationDate);
-//		country.setTimestamp(countryTimestamp);
-//		
 		Person president = new Person();
 		president.setName("François");
 		
@@ -707,7 +703,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void innerEmbed_withTwiceSameInnerEmbeddableName() {
+	void innerEmbed_withTwiceSameInnerEmbeddableName() {
 		Table<?> countryTable = new Table<>("countryTable");
 		IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<Country, Identifier<Long>, Timestamp> mappingBuilder = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
@@ -757,9 +753,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 	class EmbedWithExternalEmbbededBean {
 		
 		@Test
-		public void simpleCase() {
+		void simpleCase() {
 			Table totoTable = new Table("Toto");
-			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			Column<Table, Date> creationDate = totoTable.addColumn("creationDate", Date.class);
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
@@ -770,7 +766,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getCreationDate)
 					.add(Timestamp::getModificationDate);
 			
-			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -795,9 +791,104 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void overrideName() {
+		void embed_withMappedSuperClass() {
 			Table totoTable = new Table("Toto");
-			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
+			Column<Table, Date> creationDate = totoTable.addColumn("creationDate", Date.class);
+			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
+			Column<Table, Locale> localeColumn = totoTable.addColumn("locale", Locale.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getColumnBinderRegistry().register(Locale.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
+					(resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)),
+					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
+			dialect.getJavaTypeToSqlTypeMapping().put(Locale.class, "VARCHAR(20)");
+			
+			// embeddeable mapping to be reused
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate)
+					.add(Timestamp::getModificationDate);
+			
+			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = MappingEase.embeddableBuilder(TimestampWithLocale.class)
+					.add(TimestampWithLocale::getLocale)
+					.mapSuperClass(timestampMapping);
+			
+			IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampWithLocaleMapping)
+					.build(persistenceContext);
+			
+			// column should be correctly created
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			// this partial instanciation of Timestamp let us test its partial load too
+			toto.setTimestamp(new TimestampWithLocale(Dates.nowAsDate(), null, Locale.US));
+			persister.insert(toto);
+			
+			// Is everything fine in database ?
+			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
+			assertEquals(toto.getTimestamp(), select.get(0));
+			
+			// Is loading is fine too ?
+			Toto loadedToto = persister.select(toto.getId());
+			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+		}
+		
+		@Test
+		void embed_withMappedSuperClassAndOverride() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
+			Column<Table, Date> creationDate = totoTable.addColumn("creationDate", Date.class);
+			Column<Table, Date> modificationDate = totoTable.addColumn("modificationTime", Date.class);
+			Column<Table, Locale> localeColumn = totoTable.addColumn("locale", Locale.class);
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
+			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getColumnBinderRegistry().register(Locale.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
+					(resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)),
+					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
+			dialect.getJavaTypeToSqlTypeMapping().put(Locale.class, "VARCHAR(20)");
+			
+			// embeddeable mapping to be reused
+			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
+					.add(Timestamp::getCreationDate)
+					.add(Timestamp::getModificationDate);
+			
+			EmbeddableMappingConfigurationProvider<TimestampWithLocale> timestampWithLocaleMapping = MappingEase.embeddableBuilder(TimestampWithLocale.class)
+					.add(TimestampWithLocale::getLocale)
+					.mapSuperClass(timestampMapping);
+			
+			IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampWithLocaleMapping)
+						.override(Timestamp::getModificationDate, modificationDate)
+					.build(persistenceContext, totoTable);
+			
+			// column should be correctly created
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			// this partial instanciation of Timestamp let us test its partial load too
+			toto.setTimestamp(new TimestampWithLocale(Dates.nowAsDate(), null, Locale.US));
+			persister.insert(toto);
+			
+			// Is everything fine in database ?
+			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
+			assertEquals(toto.getTimestamp(), select.get(0));
+			
+			// Is loading is fine too ?
+			Toto loadedToto = persister.select(toto.getId());
+			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+		}
+		
+		@Test
+		void overrideName() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
@@ -807,7 +898,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getCreationDate)
 					.add(Timestamp::getModificationDate);
 			
-			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -838,9 +929,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void overrideName_nameAlreadyExists_throwsException() {
+		void overrideName_nameAlreadyExists_throwsException() {
 			Table totoTable = new Table("Toto");
-			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
@@ -850,7 +941,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getModificationDate);
 			
 			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
-					() -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
 							.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Toto::getName)
 							.embed(Toto::getTimestamp, timestampMapping)
@@ -861,9 +952,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void overrideName_nameIsAlreadyOverriden_nameIsOverwritten() {
+		void overrideName_nameIsAlreadyOverriden_nameIsOverwritten() {
 			Table totoTable = new Table("Toto");
-			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
@@ -874,7 +965,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getCreationDate, "creation")
 					.add(Timestamp::getModificationDate);
 			
-			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -900,9 +991,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void build_withMappingDefinedTwice_throwsException() {
+		void mappingDefinedTwice_throwsException() {
 			Table totoTable = new Table("Toto");
-			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
@@ -913,7 +1004,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::setModificationDate);
 			
 			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
-					() -> MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+					() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -923,9 +1014,9 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void exclude() {
+		void exclude() {
 			Table totoTable = new Table("Toto");
-			Column<Table, Identifier> idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
@@ -934,7 +1025,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getCreationDate, "creation")
 					.add(Timestamp::getModificationDate);
 			
-			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -960,7 +1051,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void overrideColumn() {
+		void overrideColumn() {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
@@ -973,7 +1064,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getCreationDate, "creation")
 					.add(Timestamp::getModificationDate);
 			
-			IEntityPersister<Toto, StatefullIdentifier> persister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
@@ -1003,7 +1094,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void withEnum_byDefault_ordinalIsUsed() {
+	void withEnum_byDefault_ordinalIsUsed() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -1030,7 +1121,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void addEnum_mandatory_onMissingValue_throwsException() {
+	void addEnum_mandatory_onMissingValue_throwsException() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -1055,7 +1146,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void addEnum_mandatory_columnConstraintIsAdded() throws SQLException {
+	void addEnum_mandatory_columnConstraintIsAdded() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -1067,7 +1158,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void withEnum_mappedWithOrdinal() {
+	void withEnum_mappedWithOrdinal() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -1093,7 +1184,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void withEnum_columnMappedWithOrdinal() {
+	void withEnum_columnMappedWithOrdinal() {
 		Table personTable = new Table<>("PersonWithGender");
 		Column<Table, Gender> genderColumn = personTable.addColumn("gender", Gender.class);
 		
@@ -1121,7 +1212,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void insert() {
+	void insert() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -1146,7 +1237,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void insert_nullValues() {
+	void insert_nullValues() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -1171,7 +1262,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	public void update_nullValues() {
+	void update_nullValues() {
 		IEntityConfiguredPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName)
@@ -1202,7 +1293,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 	class CollectionOfElements {
 		
 		@Test
-		public void insert() {
+		void insert() {
 			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1224,7 +1315,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void update_withNewObject() {
+		void update_withNewObject() {
 			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1253,7 +1344,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void update_objectRemoval() {
+		void update_objectRemoval() {
 			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1280,7 +1371,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void delete() {
+		void delete() {
 			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1307,7 +1398,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void withCollectionFactory() {
+		void withCollectionFactory() {
 			IEntityConfiguredPersister<Person, Identifier<Long>> personPersister = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1337,7 +1428,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void foreignKeyIsPresent() {
+		void foreignKeyIsPresent() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1365,7 +1456,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		
 		@Test
-		public void mappedBy() {
+		void mappedBy() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1394,7 +1485,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void withTableNaming() {
+		void withTableNaming() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1423,7 +1514,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void withTable() {
+		void withTable() {
 			Table nickNamesTable = new Table("Toto");
 			
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
@@ -1452,7 +1543,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void withTableName() {
+		void withTableName() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1481,7 +1572,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void overrideColumnName() {
+		void overrideColumnName() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -1499,13 +1590,13 @@ public class FluentEntityMappingConfigurationSupportTest {
 		
 		
 		@Test
-		public void crudEnum() {
+		void crudEnum() {
 			Table totoTable = new Table("Toto");
-			Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
-			IEntityConfiguredPersister<Toto, StatefullIdentifier> personPersister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityConfiguredPersister<Toto, Identifier> personPersister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.addCollection(Toto::getPossibleStates, State.class)
@@ -1526,13 +1617,13 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void crudComplexType() {
+		void crudComplexType() {
 			Table totoTable = new Table("Toto");
-			Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
-			IEntityConfiguredPersister<Toto, StatefullIdentifier> personPersister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityConfiguredPersister<Toto, Identifier> personPersister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.addCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
@@ -1557,13 +1648,13 @@ public class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		public void crudComplexType_overrideColumnName() {
+		void crudComplexType_overrideColumnName() {
 			Table totoTable = new Table("toto");
-			Column idColumn = totoTable.addColumn("id", StatefullIdentifier.class);
+			Column idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 			
-			IEntityConfiguredPersister<Toto, StatefullIdentifier> personPersister = MappingEase.entityBuilder(Toto.class, StatefullIdentifier.class)
+			IEntityConfiguredPersister<Toto, Identifier> personPersister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.addCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
@@ -1620,7 +1711,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 							.add(Timestamp::getModificationDate))
 					.add(Country::getId)
 					.add(Country::setDescription, "zxx")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class).getConfiguration())
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
@@ -1636,7 +1727,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 							.add(Timestamp::getModificationDate))
 					.add(Country::getId, "zz")
 					.addOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, long.class))
-					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.add(Country::getDescription, "xx")
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
@@ -1689,7 +1780,7 @@ public class FluentEntityMappingConfigurationSupportTest {
 					.add(Country::getName)
 					.add(Country::getId, "zz")
 					.embed(Country::getPresident, personMappingBuilder)
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class).getConfiguration())
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.addOneToOne(Country::setPresident, MappingEase.entityBuilder(Person.class, long.class))
 					// reusing embeddable ...
 					.embed(Country::getPresident, personMappingBuilder)
@@ -1849,6 +1940,29 @@ public class FluentEntityMappingConfigurationSupportTest {
 		TODO,
 		IN_PROGRESS,
 		DONE
+	}
+	
+	static class TimestampWithLocale extends Timestamp {
+		
+		private Locale locale;
+		
+		TimestampWithLocale() {
+			this(null, null, null);
+		}
+		
+		public TimestampWithLocale(Date creationDate, Date modificationDate, Locale locale) {
+			super(creationDate, modificationDate);
+			this.locale = locale;
+		}
+		
+		public Locale getLocale() {
+			return locale;
+		}
+		
+		public TimestampWithLocale setLocale(Locale locale) {
+			this.locale = locale;
+			return this;
+		}
 	}
 	
 }

@@ -147,14 +147,10 @@ public interface IFluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I
 	/**
 	 * Declares the mapping of a super class.
 	 * 
-	 * @param superMappingConfiguration a mapping configuration of a super type of the current mapped type
+	 * @param superMappingConfigurationProvider a mapping configuration of a super type of the current mapped type
 	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> superMappingConfiguration);
-	
-	default IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfigurationProvider) {
-		return this.mapSuperClass(superMappingConfigurationProvider.getConfiguration());
-	}
+	IFluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfigurationProvider);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -252,9 +248,9 @@ public interface IFluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I
 	IFluentMappingBuilderOneToManyListOptions<C, I, O, S>
 	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
-	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
-	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<O> embeddableMappingBuilder);
+	<O> IFluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	IFluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
