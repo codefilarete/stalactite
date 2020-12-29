@@ -180,28 +180,13 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public FluentFrom from(Column leftColumn, String leftColumnAlias, Column rightColumn, String rightColumnAlias) {
-		return this.from.innerJoin(leftColumn, leftColumnAlias, rightColumn, rightColumnAlias);
-	}
-	
-	@Override
 	public FluentFrom fromLeftOuter(Column leftColumn, Column rightColumn) {
 		return this.from.leftOuterJoin(leftColumn, rightColumn);
 	}
 	
 	@Override
-	public FluentFrom fromLeftOuter(Column leftColumn, String leftColumnAlias, Column rightColumn, String rightColumnAlias) {
-		return this.from.leftOuterJoin(leftColumn, leftColumnAlias, rightColumn, rightColumnAlias);
-	}
-	
-	@Override
 	public FluentFrom fromRightOuter(Column leftColumn, Column rightColumn) {
 		return this.from.rightOuterJoin(leftColumn, rightColumn);
-	}
-	
-	@Override
-	public FluentFrom fromRightOuter(Column leftColumn, String leftColumnAlias, Column rightColumn, String rightColumnAlias) {
-		return this.from.rightOuterJoin(leftColumn, leftColumnAlias, rightColumn, rightColumnAlias);
 	}
 	
 	@Override

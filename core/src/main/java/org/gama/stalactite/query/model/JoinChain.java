@@ -12,15 +12,9 @@ public interface JoinChain<T extends JoinChain<T>> {
 	
 	T innerJoin(Column leftColumn, Column rightColumn);
 	
-	T innerJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias);
-	
 	T leftOuterJoin(Column leftColumn, Column rightColumn);
 	
-	T leftOuterJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias);
-	
 	T rightOuterJoin(Column leftColumn, Column rightColumn);
-	
-	T rightOuterJoin(Column leftColumn, String leftTableAlias, Column rightColumn, String rightTableAlias);
 	
 	T innerJoin(Table leftTable, Table rightTable, String joinClause);
 	
@@ -37,4 +31,6 @@ public interface JoinChain<T extends JoinChain<T>> {
 	T crossJoin(Table table);
 	
 	T crossJoin(Table table, String tableAlias);
+	
+	T setAlias(Table table, String alias);
 }

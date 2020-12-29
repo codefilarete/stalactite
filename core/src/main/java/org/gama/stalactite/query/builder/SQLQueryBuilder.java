@@ -46,7 +46,7 @@ public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	 * @param query a {@link Query}
 	 */
 	public SQLQueryBuilder(Query query) {
-		this.dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases());
+		this.dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases()::get);
 		this.query = query;
 		this.selectBuilder = new SelectBuilder(query.getSelectSurrogate(), dmlNameProvider);
 		this.fromBuilder = new FromBuilder(query.getFromSurrogate());

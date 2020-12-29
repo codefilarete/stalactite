@@ -21,13 +21,7 @@ public interface FromAware {
 	
 	FluentFrom from(Column leftColumn, Column rightColumn);
 	
-	FluentFrom from(Column leftColumn, String leftColumnAlias, Column rightColumn, String rightColumnAlias);
-	
 	FluentFrom fromLeftOuter(Column leftColumn, Column rightColumn);
 	
-	FluentFrom fromLeftOuter(Column leftColumn, String leftColumnAlias, Column rightColumn, String rightColumnAlias);
-	
 	FluentFrom fromRightOuter(Column leftColumn, Column rightColumn);
-	
-	FluentFrom fromRightOuter(Column leftColumn, String leftColumnAlias, Column rightColumn, String rightColumnAlias);
 }

@@ -45,7 +45,9 @@ public class SQLQueryBuilderTest {
 					"select to.a, to.b, ta.a, ta.b from Toto as to cross join Tata as ta" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y"),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y" },
-				{ select(colTotoA, colTataB).from(colTotoA, "toto", colTataB, "tata"),
+				{ select(colTotoA, colTataB).from(colTotoA, colTataB)
+						.setAlias(colTotoA.getTable(), "toto")
+						.setAlias(colTataB.getTable(), "tata"),
 						"select toto.a, tata.b from Toto as toto inner join Tata as tata on toto.a = tata.b" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1"),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y where Toto.b = 1" },

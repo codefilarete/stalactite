@@ -3,6 +3,7 @@ package org.gama.stalactite.query.builder;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -48,23 +49,38 @@ public class FromBuilderTest {
 				// testing syntax with Column API
 				// 1 join, with or without alias
 				{ new From().innerJoin(colTotoA, colTataA), "Toto inner join Tata on Toto.a = Tata.a" },
-				{ new From().innerJoin(colTotoA, "to", colTataA, "ta"), "Toto as to inner join Tata as ta on to.a = ta.a" },
+				{ new From().innerJoin(colTotoA, colTataA)
+						.setAlias(colTotoA.getTable(), "to")
+						.setAlias(colTataA.getTable(), "ta"), "Toto as to inner join Tata as ta on to.a = ta.a" },
 				{ new From().leftOuterJoin(colTotoA, colTataA), "Toto left outer join Tata on Toto.a = Tata.a" },
-				{ new From().leftOuterJoin(colTotoA, "to", colTataA, "ta"), "Toto as to left outer join Tata as ta on to.a = ta.a" },
+				{ new From().leftOuterJoin(colTotoA, colTataA)
+						.setAlias(colTotoA.getTable(), "to")
+						.setAlias(colTataA.getTable(), "ta"), "Toto as to left outer join Tata as ta on to.a = ta.a" },
 				{ new From().rightOuterJoin(colTotoA, colTataA), "Toto right outer join Tata on Toto.a = Tata.a" },
-				{ new From().rightOuterJoin(colTotoA, "to", colTataA, "ta"), "Toto as to right outer join Tata as ta on to.a = ta.a" },
+				{ new From().rightOuterJoin(colTotoA, colTataA)
+						.setAlias(colTotoA.getTable(), "to")
+						.setAlias(colTataA.getTable(), "ta"), "Toto as to right outer join Tata as ta on to.a = ta.a" },
 				
 				// 2 joins, with or without alias
 				{ new From().innerJoin(colTotoA, colTataA).innerJoin(colTotoB, colTutuB),
 						"Toto inner join Tata on Toto.a = Tata.a inner join Tutu on Toto.b = Tutu.b" },
-				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").innerJoin(colTotoB, "to", colTutuB, null),
+				{ new From().innerJoin(colTotoA, colTataA).innerJoin(colTotoB, colTutuB)
+						.setAlias(colTotoA.getTable(), "to")
+						.setAlias(colTataA.getTable(), "ta"),
 						"Toto as to inner join Tata as ta on to.a = ta.a inner join Tutu on to.b = Tutu.b" },
-				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").crossJoin(tableToto2).innerJoin(colToto2B, colTutuB),
+				{ new From().innerJoin(colTotoA, colTataA).crossJoin(tableToto2).innerJoin(colToto2B, colTutuB)
+						.setAlias(colTotoA.getTable(), "to")
+						.setAlias(colTataA.getTable(), "ta"),
 						"Toto as to inner join Tata as ta on to.a = ta.a cross join Toto2 inner join Tutu on Toto2.b = Tutu.b" },
-				{ new From().innerJoin(colTotoA, "to", colTataA, null).innerJoin(colTotoB, "to", colTutuB, "tu"),
+				{ new From().innerJoin(colTotoA, colTataA).innerJoin(colTotoB, colTutuB)
+						.setAlias(colTotoA.getTable(), "to")
+						.setAlias(colTutuB.getTable(), "tu"),
 						"Toto as to inner join Tata on to.a = Tata.a inner join Tutu as tu on to.b = tu.b" },
-				{ new From().innerJoin(colTotoA, "to", colTataA, "ta").innerJoin(colTotoB, "to", colTutuB, "tu").innerJoin(colTutuB, "tu", colTataA, "ta"),
-						"Toto as to inner join Tata as ta on to.a = ta.a inner join Tutu as tu on to.b = tu.b inner join Tata as ta on tu.b = ta.a" },
+				{ new From().innerJoin(colTotoA, colTataA).innerJoin(colTotoB, colTutuB).innerJoin(colTutuB, colToto2B)
+						.setAlias(colTotoA.getTable(), "to")
+						.setAlias(colTataA.getTable(), "ta")
+						.setAlias(colTutuB.getTable(), "tu"),
+						"Toto as to inner join Tata as ta on to.a = ta.a inner join Tutu as tu on to.b = tu.b inner join Toto2 on tu.b = Toto2.b" },
 
 				// mix with Table and Column
 				{ new From().innerJoin(tableToto, tableTata, "Toto.a = Tata.a").innerJoin(colTotoB, colTutuB),
@@ -79,7 +95,8 @@ public class FromBuilderTest {
 						"Toto inner join Tata on id = id" },
 				{ new From().add(tableToto, "to").crossJoin(tableTata).innerJoin(tableToto, "to", tableTutu, "", "id = id"),
 						"Toto as to cross join Tata inner join Tutu on id = id" },
-				{ new From().add(tableToto, "to").crossJoin(tableTata).innerJoin(colTotoA, "to", colTutuA, ""),
+				{ new From().add(tableToto, "to").crossJoin(tableTata).innerJoin(colTotoA, colTutuA)
+						.setAlias(colTutuA.getTable(), ""),
 						"Toto as to cross join Tata inner join Tutu on to.a = Tutu.a" },
 				{ new From().add(tableToto).leftOuterJoin(tableToto, tableTata, "id = id"),
 						"Toto left outer join Tata on id = id" },
@@ -97,5 +114,39 @@ public class FromBuilderTest {
 	public void testToSQL(From from, String expected) {
 		FromBuilder testInstance = new FromBuilder(from);
 		assertEquals(expected, testInstance.toSQL());
+	}
+	
+	@Test
+	void toSQL_supportsSeveralSameTable() {
+		Table tableToto1 = new Table(null, "Toto");
+		Column colToto1A = tableToto1.addColumn("a", String.class);
+		Column colToto1B = tableToto1.addColumn("b", String.class);
+		// making a clone to test table of same name several time in From (goal of the test) 
+		Table tableToto2 = new Table(null, tableToto1.getName());
+		Column colToto2A = tableToto2.addColumn(colToto1A.getName(), colToto1A.getJavaType());
+		Column colToto2B = tableToto2.addColumn(colToto1B.getName(), colToto1B.getJavaType());
+		
+		Table tableTata = new Table(null, "Tata");
+		Column colTataA = tableTata.addColumn("a", String.class);
+		Column colTataB = tableTata.addColumn("b", String.class);
+		Table tableTutu = new Table(null, "Tutu");
+		Column colTutuA = tableTutu.addColumn("a", String.class);
+		Column colTutuB = tableTutu.addColumn("b", String.class);
+		
+		From from = new From()
+				.innerJoin(colToto1A, colTataA)
+				.innerJoin(colToto1B, colTutuB)
+				.innerJoin(colTutuB, colToto2B)
+				.setAlias(tableToto1, "to")
+				.setAlias(tableTata, "ta")
+				.setAlias(tableTutu, "tu");
+		FromBuilder testInstance = new FromBuilder(from);
+		from.getTableAliases().put(tableToto2, "toChanged");
+		from.getTableAliases().put(tableTutu, "tuChanged");
+		assertEquals("Toto as to inner join Tata as ta on to.a = ta.a"
+						+ " inner join Tutu as tuChanged on to.b = tuChanged.b"
+						+ " inner join Toto as toChanged on tuChanged.b = toChanged.b",
+				testInstance.toSQL());
+		
 	}
 }

@@ -1,7 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -354,12 +353,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 																			String joinName,
 																			boolean optional) {
 		
-		sourcePersister.getEntityJoinTree().addPassiveJoin(joinName,
-				(Column<T1, I>) leftColumn,
-				(Column<T1, I>) rightColumn,
-				JoinType.OUTER,
-				(Set) Collections.emptySet());
-		
+		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
 				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),

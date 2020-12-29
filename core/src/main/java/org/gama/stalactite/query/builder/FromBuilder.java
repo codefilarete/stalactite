@@ -1,21 +1,21 @@
 package org.gama.stalactite.query.builder;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.ValueFactoryMap;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.From.AbstractJoin;
 import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
-import org.gama.stalactite.query.model.From.AliasedTable;
 import org.gama.stalactite.query.model.From.ColumnJoin;
 import org.gama.stalactite.query.model.From.CrossJoin;
 import org.gama.stalactite.query.model.From.IJoin;
@@ -32,65 +32,91 @@ public class FromBuilder implements SQLBuilder {
 
 	public FromBuilder(From from) {
 		this.from = from;
-		this.dmlNameProvider = new DMLNameProvider(from.getTableAliases());
+		this.dmlNameProvider = new DMLNameProvider(from.getTableAliases()::get);
 	}
 
 	@Override
 	public String toSQL() {
 		StringAppender sql = new FromGenerator();
 		
-		if (from.getJoins().isEmpty()) {
+		Iterator<IJoin> joinIterator = from.getJoins().iterator();
+		if (!joinIterator.hasNext()) {
 			// invalid SQL
 			throw new IllegalArgumentException("Empty from");
-		} else {
-			Map<Table, Set<String>> addedTables = new HashMap<>();
-			for (IJoin iJoin : from) {
-				if (iJoin instanceof AbstractJoin) {
-					AbstractJoin join = (AbstractJoin) iJoin;
-					AliasedTable leftTable = join.getLeftTable();
-					if (addedTables.isEmpty()) {
-						Set<String> aliases = addedTables.computeIfAbsent(leftTable.getTable(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER));
-						if (!Strings.isEmpty(leftTable.getAlias())) {
-							aliases.add(leftTable.getAlias());
-						}
-					}
-					
-					Collection<AliasedTable> nonAddedTable = new ArrayList<>();
-					AliasedTable rightTable = join.getRightTable();
-					if (!addedTables.containsKey(leftTable.getTable())
-							|| (!Strings.isEmpty(leftTable.getAlias()) && addedTables.get(leftTable.getTable()).contains(leftTable.getAlias()))) {
-						nonAddedTable.add(rightTable);
-					} else {
-						if (!addedTables.containsKey(rightTable.getTable())
-								|| (!Strings.isEmpty(rightTable.getAlias()) && addedTables.get(rightTable.getTable()).contains(rightTable.getAlias()))) {
-							nonAddedTable.add(leftTable);
-						}
-					}
-					if (nonAddedTable.isEmpty()) {
-						throw new UnsupportedOperationException("Join is declared on non-added tables : "
-								+ toString(leftTable) + " / " + toString(rightTable));
-					} else if (nonAddedTable.size() == 2) {
-						throw new UnsupportedOperationException("Join is declared on already-added tables : "
-								+ toString(leftTable) + " / " + toString(rightTable));
-					}
-					
-					sql.cat(join);
-					AliasedTable aliasedTable = Iterables.first(nonAddedTable);
-					addedTables.computeIfAbsent(aliasedTable.getTable(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))
-							.add(Objects.preventNull(aliasedTable.getAlias()));
-					
-				} else if (iJoin instanceof CrossJoin) {
-					sql.cat(iJoin);
-					addedTables.computeIfAbsent(iJoin.getLeftTable().getTable(), k -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))
-							.add(Objects.preventNull(iJoin.getLeftTable().getAlias()));
-				}
-			}
 		}
+		
+		ValueFactoryMap<Table, Set<String>> tablesInJoins = new ValueFactoryMap<>(
+				// we use an IdentityHashMap to support presence of table clone : same name but not same instance. Needed in particular for cycling.
+				new IdentityHashMap<>(),
+				k -> new TreeSet<>(Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
+		IJoin firstJoin = joinIterator.next();
+		
+		if (firstJoin instanceof AbstractJoin) {
+			AbstractJoin join = (AbstractJoin) firstJoin;
+			
+			Table leftTable = firstJoin.getLeftTable();
+			String tableAlias = dmlNameProvider.getAlias(leftTable);
+			tablesInJoins.get(leftTable).add(tableAlias);
+			
+			Table rightTable = join.getRightTable();
+			String rightTableAlias = dmlNameProvider.getAlias(rightTable);
+			if (tablesInJoins.get(rightTable).contains(rightTableAlias)) {
+				throw new UnsupportedOperationException("Join is declared on and already-added table : " + toString(rightTable, rightTableAlias));
+			}
+			
+			tablesInJoins.get(rightTable).add(rightTableAlias);
+		} else if (firstJoin instanceof CrossJoin) {
+			Table tableToBeAdded = firstJoin.getLeftTable();
+			String tableAlias = dmlNameProvider.getAlias(tableToBeAdded);
+			tablesInJoins.get(tableToBeAdded).add(tableAlias);
+		}
+		sql.cat(firstJoin);
+		
+		joinIterator.forEachRemaining(iJoin -> {
+			
+			Table tableToBeAdded = null;
+			if (iJoin instanceof AbstractJoin) {
+				AbstractJoin join = (AbstractJoin) iJoin;
+				
+				Collection<Table> tablesToBeAdded = new HashSet<>();
+				Table leftTable = join.getLeftTable();
+				String leftTableAlias = dmlNameProvider.getAlias(leftTable);
+				if (!tablesInJoins.get(leftTable).contains(leftTableAlias)) {
+					tablesToBeAdded.add(leftTable);
+				}
+				
+				Table rightTable = join.getRightTable();
+				String rightTableAlias = dmlNameProvider.getAlias(rightTable);
+				if (!tablesInJoins.get(rightTable).contains(rightTableAlias)) {
+					tablesToBeAdded.add(rightTable);
+				}
+				
+				if (tablesToBeAdded.isEmpty()) {
+					throw new UnsupportedOperationException("Join is declared on already-added tables : "
+							+ toString(leftTable, leftTableAlias) + " and " + toString(rightTable, rightTableAlias));
+				} else if (tablesToBeAdded.size() == 2) {
+					throw new UnsupportedOperationException("Join is declared on non-added tables : "
+							+ toString(leftTable, leftTableAlias) + " and " + toString(rightTable, rightTableAlias));
+				}
+				
+				tableToBeAdded = Iterables.first(tablesToBeAdded);
+			} else if (iJoin instanceof CrossJoin) {
+				Table joinTable = iJoin.getLeftTable();
+				String joinTableAlias = dmlNameProvider.getAlias(joinTable);
+				if (tablesInJoins.get(joinTable).contains(joinTableAlias)) {
+					throw new UnsupportedOperationException("Join is declared on an already-added table : " + toString(joinTable, joinTableAlias));
+				}
+				tableToBeAdded = iJoin.getLeftTable();
+			}
+			sql.cat(iJoin);
+			String tableAlias = dmlNameProvider.getAlias(tableToBeAdded);
+			tablesInJoins.get(tableToBeAdded).add(tableAlias);
+		});
 		return sql.toString();
 	}
 	
-	private static String toString(AliasedTable table) {
-		return table.getTable().getAbsoluteName() + " (alias = " + table.getAlias() + ")";
+	private static String toString(Table table, String tableAlias) {
+		return table.getAbsoluteName() + " (alias = " + tableAlias + ")";
 	}
 	
 	/**
@@ -111,8 +137,8 @@ public class FromBuilder implements SQLBuilder {
 		/** Overriden to dispatch to dedicated cat methods */
 		@Override
 		public StringAppender cat(Object o) {
-			if (o instanceof AliasedTable) {
-				return cat((AliasedTable) o);
+			if (o instanceof Table) {
+				return cat((Table) o);
 			} else if (o instanceof CrossJoin) {
 				return cat((CrossJoin) o);
 			} else if (o instanceof AbstractJoin) {
@@ -122,9 +148,8 @@ public class FromBuilder implements SQLBuilder {
 			}
 		}
 		
-		private StringAppender cat(AliasedTable aliasedTable) {
-			Table table = aliasedTable.getTable();
-			String tableAlias = Objects.preventNull(aliasedTable.getAlias(), dmlNameProvider.getAlias(table));
+		private StringAppender cat(Table table) {
+			String tableAlias = dmlNameProvider.getAlias(table);
 			return cat(table.getName()).catIf(!Strings.isEmpty(tableAlias), " as " + tableAlias);
 		}
 		
@@ -140,8 +165,10 @@ public class FromBuilder implements SQLBuilder {
 				cat(((RawTableJoin) join).getJoinClause());
 			} else if (join instanceof ColumnJoin) {
 				ColumnJoin columnJoin = (ColumnJoin) join;
-				CharSequence leftPrefix = Strings.preventEmpty(columnJoin.getLeftTable().getAlias(), columnJoin.getLeftTable().getTable().getName());
-				CharSequence rightPrefix = Strings.preventEmpty(columnJoin.getRightTable().getAlias(), columnJoin.getRightTable().getTable().getName());
+				String leftTableAlias = dmlNameProvider.getAlias(columnJoin.getLeftTable());
+				String rightTableAlias = dmlNameProvider.getAlias(columnJoin.getRightTable());
+				CharSequence leftPrefix = Strings.preventEmpty(leftTableAlias, columnJoin.getLeftTable().getName());
+				CharSequence rightPrefix = Strings.preventEmpty(rightTableAlias, columnJoin.getRightTable().getName());
 				cat(leftPrefix, ".", columnJoin.getLeftColumn().getName(), " = ", rightPrefix, ".", columnJoin.getRightColumn().getName());
 			} else {
 				// did I miss something ?
@@ -150,7 +177,7 @@ public class FromBuilder implements SQLBuilder {
 			return this;
 		}
 		
-		protected void cat(JoinDirection joinDirection, AliasedTable joinTable) {
+		protected void cat(JoinDirection joinDirection, Table table) {
 			String joinType;
 			switch (joinDirection) {
 				case INNER_JOIN:
@@ -165,7 +192,7 @@ public class FromBuilder implements SQLBuilder {
 				default:
 					throw new IllegalArgumentException("Join type not implemented");
 			}
-			cat(joinType, joinTable, ON);
+			cat(joinType, table, ON);
 		}
 	}
 }
