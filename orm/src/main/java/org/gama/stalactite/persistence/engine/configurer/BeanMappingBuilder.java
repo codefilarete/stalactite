@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
-import java.util.Stack;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -229,11 +228,11 @@ class BeanMappingBuilder {
 	private void includeEmbeddedMapping() {
 		Set<Inset<?, ?>> treatedInsets = new HashSet<>();
 		
-		Stack<Inset> stack = new Stack<>();
+		Queue<Inset> stack = Collections.asLifoQueue(new ArrayDeque<>());
 		stack.addAll(mappingConfiguration.getInsets());
 		Queue<IAccessor> accessorPath = new ArrayDeque<>();
 		while (!stack.isEmpty()) {
-			Inset<?, ?> inset = stack.pop();
+			Inset<?, ?> inset = stack.poll();
 			
 			assertNotAlreadyDeclared(inset, treatedInsets);
 			

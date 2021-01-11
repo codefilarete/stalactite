@@ -38,16 +38,14 @@ public class EntityTreeInflater<C> {
 	 */
 	private final ConsumerNode consumerRoot;
 	
-	private final EntityJoinTree<C, ?> entityJoinTree;
 	
 	public EntityTreeInflater(EntityJoinTree<C, ?> entityJoinTree, ColumnedRow columnedRow) {
-		this.entityJoinTree = entityJoinTree;
-		this.consumerRoot = new ConsumerNode(this.entityJoinTree.getRoot().toConsumer(columnedRow));
-		buildConsumerTree(columnedRow);
+		this.consumerRoot = new ConsumerNode(entityJoinTree.getRoot().toConsumer(columnedRow));
+		buildConsumerTree(entityJoinTree, columnedRow);
 	}
 	
-	private void buildConsumerTree(ColumnedRow columnedRow) {
-		this.entityJoinTree.foreachJoinWithDepth(this.consumerRoot, (targetOwner, currentNode) -> {
+	private void buildConsumerTree(EntityJoinTree<C, ?> entityJoinTree, ColumnedRow columnedRow) {
+		entityJoinTree.foreachJoinWithDepth(this.consumerRoot, (targetOwner, currentNode) -> {
 			ConsumerNode consumerNode = new ConsumerNode(currentNode.toConsumer(columnedRow));
 			targetOwner.addConsumer(consumerNode);
 			return consumerNode;

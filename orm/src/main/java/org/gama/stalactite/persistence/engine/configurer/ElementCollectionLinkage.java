@@ -40,10 +40,11 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	/** Element column name override, used in simple case : {@link EmbeddableMappingConfigurationProvider} null, aka not when element is a complex type */
 	private String elementColumnName;
 	
-	/** Complext type mapping, optional */
+	/** Complex type mapping, optional */
+	@Nullable
 	private final EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider;
 	
-	/** Complext type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
+	/** Complex type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
 	private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
 	
 	/**

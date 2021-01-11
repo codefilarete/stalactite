@@ -425,7 +425,6 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 	}
 	
-	// for one-to-many cases
 	@Override
 	public <E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName) {
 		// nothing to do here, called by one-to-many engines, which actually call joinWithMany()

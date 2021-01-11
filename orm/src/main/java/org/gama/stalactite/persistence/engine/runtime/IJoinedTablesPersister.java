@@ -46,7 +46,6 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param <SRC> source entity type
 	 * @param <T1> left table type
 	 * @param <T2> right table type
-	 * @param <J> source persister identifier type, therefore also join columns type
 	 * @param sourcePersister source that needs this instance joins
 	 * @param leftColumn left part of the join, expected to be one of source table 
 	 * @param rightColumn right part of the join, expected to be one of current instance table

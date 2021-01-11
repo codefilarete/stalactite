@@ -60,30 +60,36 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	}
 	
 	JoinRootRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
-		return new JoinRootRowConsumer<>(entityInflater, entityInflater.copyTransformerWithAliases(columnedRow), columnedRow);
+		return new JoinRootRowConsumer<>(entityInflater, columnedRow);
 	}
 	
 	static class JoinRootRowConsumer<C, I> implements JoinRowConsumer {
 		
-		/** Root entity inflater */
-		private final EntityInflater<C, I, Table> entityInflater;
+		private final Class<C> entityType;
+		
+		/** Root entity identifier decoder */
+		private final BiFunction<Row, ColumnedRow, I> identifierDecoder;
 		
 		private final IRowTransformer<C> entityBuilder;
 		
 		private final ColumnedRow columnedRow;
 		
-		JoinRootRowConsumer(EntityInflater<C, I, ?> entityInflater, IRowTransformer<C> entityBuilder, ColumnedRow columnedRow) {
-			this.entityInflater = (EntityInflater<C, I, Table>) entityInflater;
+		JoinRootRowConsumer(EntityInflater<C, I, ? extends Table> entityInflater, ColumnedRow columnedRow) {
+			this(entityInflater.getEntityType(), entityInflater::giveIdentifier, entityInflater.copyTransformerWithAliases(columnedRow), columnedRow);
+		}
+		JoinRootRowConsumer(Class<C> entityType, BiFunction<Row, ColumnedRow, I> identifierDecoder, IRowTransformer<C> entityBuilder, ColumnedRow columnedRow) {
+			this.entityType = entityType;
+			this.identifierDecoder = identifierDecoder;
 			this.entityBuilder = entityBuilder;
 			this.columnedRow = columnedRow;
 		}
 		
 		C createRootInstance(Row row, EntityCache entityCache) {
-			Object identifier = entityInflater.giveIdentifier(row, columnedRow);
+			Object identifier = identifierDecoder.apply(row, columnedRow);
 			if (identifier == null) {
 				return null;
 			} else {
-				return entityCache.computeIfAbsent(entityInflater.getEntityType(), identifier, () -> entityBuilder.transform(row));
+				return entityCache.computeIfAbsent(entityType, identifier, () -> entityBuilder.transform(row));
 			}
 		}
 	} 

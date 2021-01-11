@@ -230,8 +230,8 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * Goes down this tree by depth first.
 	 * Consumer is invoked foreach node <strong>except root</strong> because it usually has a special treatment. 
-	 * Used to create an equivalent tree of this instance with another type of node. This generally requires to know current parent so a child can
-	 * be added to it : consumer gets current parent as a first argument
+	 * Used to create an equivalent tree of this instance with another type of node. This generally requires to know current parent to allow child
+	 * addition : consumer gets current parent as a first argument
 	 * 
 	 * @param initialNode very first parent given as first argument to consumer
 	 * @param consumer producer of target tree node, gets node of this tree and parent node of target tree to add created node to it

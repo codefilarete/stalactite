@@ -398,9 +398,6 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		// but shouldn't be kept, bad design but couldn't find another solution
 		private BeanRelationFixer<SRC, TRGT> beanRelationFixer = null;
 		
-		// Gets source from target to update relation at update time, stored as an instance field to pass it from creating method to consuming method
-		// but shouldn't be kept, bad design but couldn't find another solution
-		private Function<TRGT, SRC> reverseGetter;
 		@SuppressWarnings("squid:S2259")
 		private Column<Table, SRCID> rightColumn;
 		
@@ -442,7 +439,6 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					// fixing target on source
 					sourceIntoTargetFixer.set(src, target);
 				};
-				this.reverseGetter = cascadeOne.getReverseGetter();
 			} else if (cascadeOne.getReverseSetter() != null) {
 				ValueAccessPoint reverseSetter = Accessors.mutatorByMethodReference(cascadeOne.getReverseSetter());
 				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(reverseSetter);
@@ -450,7 +446,6 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, accessorDefinition,
 						joinColumnNamingStrategy);
 				
-				IAccessor<TRGT, SRC> accessor = Accessors.accessor(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
 				// we take advantage of forign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				beanRelationFixer = (target, input) -> {
 					// fixing target on source side
@@ -458,11 +453,10 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					// fixing source on target side
 					sourceIntoTargetFixer.set(target, input);
 				};
-				this.reverseGetter = accessor::get;
-			} // else : non bidirectional relation (both getter and setter are null), nothing to do
+			}
 			else {
-				// relation is owned by target without defining any way to fix relation in memory : it's not bidirectional
-				// we reverse the target provider to fix target on source side
+				// non bidirectional relation : relation is owned by target without defining any way to fix it in memory
+				// we can only fix target on source side
 				beanRelationFixer = sourceIntoTargetFixer::set;
 			}
 			

@@ -433,7 +433,7 @@ public class JoinedTablesPersisterTest {
 		
 		/**
 		 * Method to merge another bean with this one on a part of their attributes.
-		 * It has no real purpose, it on exists to fullfill the relational mapping between tables Toto and Toto2 and avoid a NullPointerException
+		 * It has no real purpose, it only exists to fullfill the relational mapping between tables Toto and Toto2 and avoid a NullPointerException
 		 * when associating 2 results of RowTransformer
 		 * 
 		 * @param another a bean coming from the persister2
