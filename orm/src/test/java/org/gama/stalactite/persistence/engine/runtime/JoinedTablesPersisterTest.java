@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -394,12 +395,13 @@ public class JoinedTablesPersisterTest {
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 		assertCapturedPairsEqual(expectedPairs);
 		
-		assertEquals(Arrays.asList(
+		Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+		assertEquals(Arrays.asTreeSet(totoComparator,
 				new Toto(7, 1, 2, 4, 5, 6),
 				new Toto(13, 1, 2, 4, 5, 6),
 				new Toto(17, 1, 2, 4, 5, 6),
 				new Toto(23, 1, 2, 4, 5, 6)
-				).toString(), select.toString());
+				).toString(), Arrays.asTreeSet(totoComparator, select).toString());
 	}
 	
 	private static class Toto implements Identified<Integer> {

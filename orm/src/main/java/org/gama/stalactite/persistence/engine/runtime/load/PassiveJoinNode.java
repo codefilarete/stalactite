@@ -16,7 +16,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-class PassiveJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
+public class PassiveJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
 	
 	@Nullable
 	private TransformerListener<C> transformerListener;

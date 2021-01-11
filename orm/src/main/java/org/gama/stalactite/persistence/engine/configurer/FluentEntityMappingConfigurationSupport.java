@@ -445,7 +445,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 				accessorByMethodReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
-		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
+		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
 		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
 		return wrapForAdditionalOptions(cascadeOne);
 	}
@@ -529,7 +529,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements IFluentEnt
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
-		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(propertyAccessor, methodReference, mappingConfiguration.getConfiguration(), table);
+		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(propertyAccessor, methodReference, mappingConfiguration, table);
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods

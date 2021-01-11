@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -13,9 +14,12 @@ import java.util.stream.Stream;
 import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
 import org.gama.lang.bean.Objects;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
@@ -25,17 +29,18 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssocia
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.gama.stalactite.query.builder.IdentityMap;
 import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
 import static org.gama.lang.collection.Iterables.collect;
 import static org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER;
+import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
  * @author Guillaume Mary
@@ -47,13 +52,13 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected final PersisterListener<SRC, SRCID> persisterListener;
 	
-	protected final IConfiguredPersister<SRC, SRCID> sourcePersister;
+	protected final IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
 	
 	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, SRCID> sourcePersister,
+	public AbstractOneToManyWithAssociationTableEngine(IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 													   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister) {
@@ -67,7 +72,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		
 		// we join on the association table and add bean association in memory
-		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
 				associationPersister.getMainTable().getOneSidePrimaryKey(),
 				associationPersister.getMainTable().getOneSideKeyColumn(),
 				JoinType.OUTER, (Set) Collections.emptySet());
@@ -255,4 +260,83 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 																						IEntityMappingStrategy<TRGT, TRGTID, ?> strategy);
 	
 	protected abstract R newRecord(SRC e, TRGT target, int index);
+	
+	private final ThreadLocal<IdentityMap<SRC, Set<TRGTID>>> currentSelectedTargetEntitiesIds = new ThreadLocal<>();
+	
+	public void add2PhasesSelectCascade(IConfiguredPersister<TRGT, TRGTID> targetPersister, PersisterRegistry persisterRegistry) {
+		// Algorithm :
+		// 1- add the association table to entity load graph
+		// 2- read its right column when entity is loaded
+		// 3- after selection, run a select to read target entities
+		// .. but this is full of pitfall:
+		// - because right column reading is made in TransformerListener and selection is made by SelectListener, data (target entities ids) must be
+		//  shared : this is done through a ThreadLocal
+		// - to avoid stack overflow we have to clean the TrehadLocal before selecting target (happens in direct cycle : Person.children -> Person)
+		
+		
+		// we join on the association table and add bean association in memory
+		sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+				associationPersister.getMainTable().getOneSidePrimaryKey(),
+				associationPersister.getMainTable().getOneSideKeyColumn(),
+				JoinType.OUTER, (Set) Arrays.asSet(associationPersister.getMainTable().getManySideKeyColumn()),
+				(src, rowValueProvider) -> {
+					IdentityMap<SRC, Set<TRGTID>> trgtIntegerIdentityMap = currentSelectedTargetEntitiesIds.get();
+					Set<TRGTID> targetIds = trgtIntegerIdentityMap.get(src);
+					if (targetIds == null) {
+						targetIds = new HashSet<>();
+						trgtIntegerIdentityMap.put(src, targetIds);
+					}
+					TRGTID targetId = (TRGTID) rowValueProvider.apply(associationPersister.getMainTable().getManySideKeyColumn());
+					if (targetId != null) {
+						targetIds.add(targetId);
+					}
+				});
+		
+		BeanRelationFixer<SRC, TRGT> beanRelationFixer = BeanRelationFixer.of(
+				manyRelationDescriptor.getCollectionSetter(),
+				manyRelationDescriptor.getCollectionGetter(),
+				manyRelationDescriptor.getCollectionFactory(),
+				Objects.preventNull(manyRelationDescriptor.getReverseSetter(), NOOP_REVERSE_SETTER));
+		
+		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
+		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+			@Override
+			public void beforeSelect(Iterable<SRCID> ids) {
+				currentSelectedTargetEntitiesIds.set(new IdentityMap<>());
+			}
+			
+			@Override
+			public void afterSelect(Iterable<? extends SRC> result) {
+				try {
+					// Finding the right loader must be done dynamically because targetPersister is only a light version of the definitive one 
+					// since its mapping is polymorphic
+					IEntityPersister<TRGT, TRGTID> persister = persisterRegistry.getPersister(targetPersister.getClassToPersist());
+					// We do one request to load every target instances for better performance 
+					IdentityMap<SRC, Set<TRGTID>> srcSetIdentityMap = currentSelectedTargetEntitiesIds.get();
+					Set<TRGTID> targetIds = srcSetIdentityMap.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+					// We clear context before next selection to avoid stackoverflow when cycle is direct (Person.children -> Person)
+					// This has no impact on other use cases
+					cleanContext();
+					List<TRGT> targets = persister.select(targetIds);
+					// Associating target instances to source ones
+					Map<TRGTID, TRGT> targetPerId = Iterables.map(targets, targetPersister::getId);
+					result.forEach(src -> {
+						srcSetIdentityMap.get(src).forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)));
+					});
+				} finally {
+					cleanContext();
+				}
+			}
+			
+			@Override
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+				cleanContext();
+			}
+			
+			private void cleanContext() {
+				currentSelectedTargetEntitiesIds.remove();
+			}
+		});
+	}
 }

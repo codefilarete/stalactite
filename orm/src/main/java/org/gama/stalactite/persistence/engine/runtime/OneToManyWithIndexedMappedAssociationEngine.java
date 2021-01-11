@@ -3,7 +3,6 @@ package org.gama.stalactite.persistence.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +21,7 @@ import org.gama.stalactite.persistence.id.diff.IndexedDiff;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.IdentityMap;
 
 /**
  * @author Guillaume Mary
@@ -74,7 +74,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
-						List<TRGT> apply = manyRelationDefinition.getCollectionGetter().apply(src);
+						List<TRGT> apply = manyRelationDescriptor.getCollectionGetter().apply(src);
 						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(target)));
 					});
 				} finally {
@@ -118,8 +118,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	private void addIndexInsertion() {
 		// we declare the indexing column as a silent one, then AfterInsertCollectionCascader will insert it
 		IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition =
-				(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDefinition;
-		Function<SRC, C> collectionGetter = this.manyRelationDefinition.getCollectionGetter();
+				(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDescriptor;
+		Function<SRC, C> collectionGetter = this.manyRelationDescriptor.getCollectionGetter();
 		targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn, target -> {
 			SRC source = manyRelationDefinition.getReverseGetter().apply(target);
 			if (source == null) {
@@ -153,9 +153,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	@Override
 	public void addUpdateCascade(boolean shouldDeleteRemoved) {
 		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new ListCollectionUpdater<>(
-				this.manyRelationDefinition.getCollectionGetter(),
+				this.manyRelationDescriptor.getCollectionGetter(),
 				this.targetPersister,
-				this.manyRelationDefinition.getReverseSetter(),
+				this.manyRelationDescriptor.getReverseSetter(),
 				shouldDeleteRemoved,
 				this.targetPersister.getMappingStrategy()::getId,
 				this.indexingColumn);
@@ -278,23 +278,4 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		}
 	}
 	
-	/**
-	 * Map based on identity hashCode as key to avoid loss of bean in classical Map due to change in their hashCode when its computation is based
-	 * on not yet totally filled attributes, such as collection.
-	 * 
-	 * @param <K> key type
-	 * @param <V> value type
-	 */
-	private static class IdentityMap<K, V> {
-		
-		private final Map<Integer, V> delegate = new HashMap<>();
-		
-		private void put(K key, V value) {
-			this.delegate.put(System.identityHashCode(key), value);
-		}
-		
-		private V get(K key) {
-			return this.delegate.get(System.identityHashCode(key));
-		}
-	}
 }

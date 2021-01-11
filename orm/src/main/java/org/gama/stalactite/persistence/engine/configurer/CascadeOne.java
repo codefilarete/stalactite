@@ -7,6 +7,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -19,7 +20,7 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	private final IReversibleAccessor<SRC, TRGT> targetProvider;
 	
 	/** Configuration used for target beans persistence */
-	private final EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration;
+	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
 	private final Table targetTable;
 	
@@ -37,6 +38,10 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	private RelationMode relationMode = RelationMode.ALL;
 	
 	<T extends Table> CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
+		this(targetProvider, () -> targetMappingConfiguration, table);
+	}
+	
+	<T extends Table> CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this.targetMappingConfiguration = targetMappingConfiguration;
 		this.targetProvider = targetProvider;
 		this.targetTable = table;
@@ -49,7 +54,7 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	/** @return the configuration used for target beans persistence */
 	public EntityMappingConfiguration<TRGT, TRGTID> getTargetMappingConfiguration() {
-		return targetMappingConfiguration;
+		return targetMappingConfiguration.getConfiguration();
 	}
 	
 	@Nullable

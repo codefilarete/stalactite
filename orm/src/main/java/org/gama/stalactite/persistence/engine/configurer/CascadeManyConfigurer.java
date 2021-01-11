@@ -77,17 +77,14 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	private final Dialect dialect;
 	private final IConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
-	private final PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder;
 	private Column<?, SRCID> sourcePrimaryKey;
 	
 	public CascadeManyConfigurer(Dialect dialect,
 								 IConnectionConfiguration connectionConfiguration,
-								 PersisterRegistry persisterRegistry,
-								 PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
+								 PersisterRegistry persisterRegistry) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.persisterRegistry = persisterRegistry;
-		this.targetPersisterBuilder = targetPersisterBuilder;
 	}
 	
 	/**
@@ -109,11 +106,24 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 												   ColumnNamingStrategy joinColumnNamingStrategy,
 												   ColumnNamingStrategy indexColumnNamingStrategy,
-												   AssociationTableNamingStrategy associationTableNamingStrategy) {
+												   AssociationTableNamingStrategy associationTableNamingStrategy,
+												   PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 		Table targetTable = determineTargetTable(cascadeMany);
-		IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = this.targetPersisterBuilder
+		IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				.build(dialect, connectionConfiguration, persisterRegistry, targetTable);
 		
+		appendCascade(cascadeMany, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy,
+				associationTableNamingStrategy, false, targetPersister);
+	}
+	
+	public void appendCascade(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
+							  IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+							  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+							  ColumnNamingStrategy joinColumnNamingStrategy,
+							  ColumnNamingStrategy indexColumnNamingStrategy,
+							  AssociationTableNamingStrategy associationTableNamingStrategy,
+							  boolean with2PhasesLoad,
+							  IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 		Column leftPrimaryKey = nullable(sourcePrimaryKey).getOr(() -> lookupSourcePrimaryKey(sourcePersister));
 		
 		RelationMode maintenanceMode = cascadeMany.getRelationMode();
@@ -130,14 +140,15 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			if (maintenanceMode == ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table");
 			}
-			new CascadeManyWithMappedAssociationConfigurer<>(manyAssociationConfiguration, orphanRemoval).configure();
+			new CascadeManyWithMappedAssociationConfigurer<>(manyAssociationConfiguration, orphanRemoval)
+					.configure(with2PhasesLoad, persisterRegistry);
 		} else {
 			new CascadeManyWithAssociationTableConfigurer<>(manyAssociationConfiguration,
 					associationTableNamingStrategy,
 					dialect,
 					maintenanceMode == ASSOCIATION_ONLY,
 					connectionConfiguration)
-					.configure();
+					.configure(with2PhasesLoad, persisterRegistry);
 		}
 	}
 	
@@ -263,7 +274,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			this.connectionConfiguration = connectionConfiguration;
 		}
 		
-		private void configure() {
+		private void configure(boolean with2PhasesLoad, PersisterRegistry persisterRegistry) {
 			// case : Collection mapping without reverse property : an association table is needed
 			Table<?> rightTable = manyAssociationConfiguration.targetPersister.getMappingStrategy().getTargetTable();
 			Column rightPrimaryKey = first(rightTable.getPrimaryKey().getColumns());
@@ -281,7 +292,11 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 				oneToManyWithAssociationTableEngine = configureNonIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor);
 			}
 			
-			oneToManyWithAssociationTableEngine.addSelectCascade(manyAssociationConfiguration.srcPersister);
+			if (with2PhasesLoad) {
+				oneToManyWithAssociationTableEngine.add2PhasesSelectCascade(manyAssociationConfiguration.targetPersister, persisterRegistry);
+			} else {
+				oneToManyWithAssociationTableEngine.addSelectCascade(manyAssociationConfiguration.srcPersister);
+			}
 			if (manyAssociationConfiguration.writeAuthorized) {
 				oneToManyWithAssociationTableEngine.addInsertCascade(maintainAssociationOnly);
 				oneToManyWithAssociationTableEngine.addUpdateCascade(manyAssociationConfiguration.orphanRemoval, maintainAssociationOnly);
@@ -370,7 +385,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			this.allowOrphanRemoval = allowOrphanRemoval;
 		}
 		
-		private void configure() {
+		private void configure(boolean with2PhasesLoad, PersisterRegistry persisterRegistry) {
 			// We're looking for the foreign key (for necessary join) and for getter/setter required to manage the relation 
 			Column<Table, SRCID> reverseColumn = manyAssociationConfiguration.cascadeMany.getReverseColumn();
 			Method reverseMethod = null;
@@ -482,7 +497,15 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			} else {
 				mappedAssociationEngine = configureNonIndexedAssociation(reverseSetterAsConsumer, reverseColumn);
 			}
-			mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, reverseColumn);
+			if (with2PhasesLoad) {
+				mappedAssociationEngine.add2PhasesSelectCascade(manyAssociationConfiguration.leftPrimaryKey,
+						reverseColumn,
+						manyAssociationConfiguration.targetPersister,
+						manyAssociationConfiguration.collectionGetter,
+						persisterRegistry);
+			} else {
+				mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, reverseColumn);
+			}
 			if (manyAssociationConfiguration.writeAuthorized) {
 				mappedAssociationEngine.addInsertCascade();
 				mappedAssociationEngine.addUpdateCascade(manyAssociationConfiguration.orphanRemoval);

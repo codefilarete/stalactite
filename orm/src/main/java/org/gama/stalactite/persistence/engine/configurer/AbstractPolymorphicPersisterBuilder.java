@@ -18,6 +18,7 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
+import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -182,15 +183,39 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 			cascadeOneConfigurer.appendCascade(cascadeOne, sourcePersister, this.foreignKeyNamingStrategy, this.joinColumnNamingStrategy);
 		}
 		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(dialect, connectionConfiguration, persisterRegistry,
-					new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()))
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(
+					dialect,
+					connectionConfiguration,
+					persisterRegistry)
 					// we must give primary key else reverse foreign key will target subclass table, which creates 2 fk in case of reuse of target persister
 					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns()));
-			cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
-					this.foreignKeyNamingStrategy,
-					this.joinColumnNamingStrategy,
-					this.indexColumnNamingStrategy,
-					this.associationTableNamingStrategy);
+			if (PersisterBuilderImpl.isCycling(cascadeMany.getTargetMappingConfiguration())) {
+				// cycle detected
+				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
+				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be inhanced), and
+				// overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
+				PostInitializer postInitializer = new PostInitializer(cascadeMany.getTargetMappingConfiguration().getEntityType()) {
+					@Override
+					void consume(IEntityConfiguredJoinedTablesPersister targetPersister) {
+						cascadeManyConfigurer.appendCascade(cascadeMany,
+								sourcePersister,
+								foreignKeyNamingStrategy,
+								joinColumnNamingStrategy,
+								indexColumnNamingStrategy,
+								associationTableNamingStrategy,
+								true,
+								targetPersister);
+					}
+				};
+				PersisterBuilderImpl.POST_INITIALIZERS.get().add(postInitializer);
+			} else {
+				cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
+						this.foreignKeyNamingStrategy,
+						this.joinColumnNamingStrategy,
+						this.indexColumnNamingStrategy,
+						this.associationTableNamingStrategy,
+						new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()));
+			}
 		}
 		// Please note that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
 		// is made in two phases, see JoinedTablesPolymorphismEntitySelectExecutor (instanciated in JoinedTablesPolymorphicPersister)

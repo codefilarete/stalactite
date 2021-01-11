@@ -22,7 +22,7 @@ import static org.gama.lang.collection.Iterables.minus;
 public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, IndexedAssociationTable> {
 	
-	public OneToManyWithIndexedAssociationTableEngine(IConfiguredPersister<SRC, SRCID> joinedTablesPersister,
+	public OneToManyWithIndexedAssociationTableEngine(IConfiguredJoinedTablesPersister<SRC, SRCID> joinedTablesPersister,
 													  IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {

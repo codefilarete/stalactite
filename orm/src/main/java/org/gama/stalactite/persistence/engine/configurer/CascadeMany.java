@@ -10,6 +10,7 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -28,8 +29,9 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	private final ValueAccessPointByMethodReference methodReference;
 	/** Configuration used for "many" side beans persistence */
-	private final EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration;
+	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
+	@Nullable
 	private final Table targetTable;
 	
 	private final MappedByConfiguration mappedByConfiguration = new MappedByConfiguration();
@@ -45,12 +47,39 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	/** Optional provider of collection instance to be used if collection value is null */
 	private Supplier<C> collectionFactory;
 	
+	/**
+	 * Default, simple constructor.
+	 * 
+	 * @param collectionProvider provider of the property to be persisted
+	 * @param methodReference equivalent to collectionProvider
+	 * @param targetMappingConfiguration persistence configuration of entities stored in the target collection
+	 * @param targetTable optional table to be used to store target entities
+	 * @param <T>
+	 */
 	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider,
 										 ValueAccessPointByMethodReference methodReference,
-										 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
+										 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
+										 @Nullable T targetTable) {
+		this(collectionProvider, methodReference, () -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration, targetTable);
+	}
+	
+	/**
+	 * Constructor with lazy configuration provider. To be used when target configuration is not defined while source configuration is defined, for
+	 * instance on cycling configuration.
+	 * 
+	 * @param collectionProvider
+	 * @param methodReference
+	 * @param targetMappingConfiguration
+	 * @param targetTable
+	 * @param <T>
+	 */
+	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider,
+										 ValueAccessPointByMethodReference methodReference,
+										 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+										 @Nullable T targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;
-		this.targetMappingConfiguration = (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration;
+		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetTable = targetTable;
 	}
 	
@@ -64,7 +93,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	/** @return the configuration used for "many" side beans persistence */
 	public EntityMappingConfiguration<TRGT, TRGTID> getTargetMappingConfiguration() {
-		return targetMappingConfiguration;
+		return targetMappingConfiguration.getConfiguration();
 	}
 	
 	public boolean isTargetTablePerClassPolymorphic() {

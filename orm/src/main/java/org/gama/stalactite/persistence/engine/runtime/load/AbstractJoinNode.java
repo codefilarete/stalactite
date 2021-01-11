@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * 
  * @author Guillaume Mary
  */
-abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I> implements JoinNode<T2> {
+public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I> implements JoinNode<T2> {
 	
 	/** Join column with previous strategy table */
 	private final Column<T1, I> leftJoinColumn;

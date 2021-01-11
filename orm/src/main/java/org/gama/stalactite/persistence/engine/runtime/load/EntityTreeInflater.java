@@ -2,10 +2,16 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.function.Function;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
@@ -17,9 +23,6 @@ import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.Enti
 import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.sql.result.Row;
-
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeIterationPursue.CONTINUE;
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeIterationPursue.DONT_GO_DEEPER;
 
 /**
  * Bean graph creator from database rows. Based on a tree of {@link ConsumerNode}s which wraps some {@link JoinRowConsumer}.
@@ -38,6 +41,10 @@ public class EntityTreeInflater<C> {
 	 */
 	private final ConsumerNode consumerRoot;
 	
+	
+	EntityTreeInflater(ConsumerNode consumerRoot) {
+		this.consumerRoot = consumerRoot;
+	}
 	
 	public EntityTreeInflater(EntityJoinTree<C, ?> entityJoinTree, ColumnedRow columnedRow) {
 		this.consumerRoot = new ConsumerNode(entityJoinTree.getRoot().toConsumer(columnedRow));
@@ -60,12 +67,15 @@ public class EntityTreeInflater<C> {
 	 */
 	public List<C> transform(Iterable<Row> rows, int resultSize) {
 		return ThreadLocals.doWithThreadLocal(CURRENT_ENTITY_CACHE, BasicEntityCache::new, (Function<EntityCache, List<C>>) entityCache ->
-				transform(rows, resultSize, entityCache)
+				new ArrayList<>(transform(rows, resultSize, entityCache))
 		);
 	}
 	
-	private List<C> transform(Iterable<Row> rows, int resultSize, EntityCache entityCache) {
-		List<C> result = new ArrayList<>(resultSize);
+	private Set<C> transform(Iterable<Row> rows, int resultSize, EntityCache entityCache) {
+		// we use an "IdentitySet" (doesn't exist directly, but can be done through IdentityHashMap) to avoid duplicate entity : with a HashSet
+		// duplicate can happen if equals/hashCode depends on relation, in particular Collection ones, because they are filled from row to row
+		// making hashCode value change
+		Set<C> result = Collections.newSetFromMap(new IdentityHashMap<>(resultSize));
 		for (Row row : rows) {
 			Nullable<C> newInstance = transform(row, entityCache);
 			newInstance.invoke(result::add);
@@ -80,62 +90,84 @@ public class EntityTreeInflater<C> {
 		Nullable<C> result = Nullable.nullable(((JoinRootRowConsumer<C, ?>) this.consumerRoot.consumer).createRootInstance(row, entityCache));
 		
 		if (result.isPresent()) {
-			foreachNode(join -> {
-				Object rowInstance = result.get();
-				// processing current depth
-				if (join instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
-					((PassiveJoinRowConsumer) join).consume(rowInstance, row);
-					return CONTINUE;
-				} else if (join instanceof MergeJoinNode.MergeJoinRowConsumer) {
-					((MergeJoinRowConsumer) join).mergeProperties(rowInstance, row);
-					return CONTINUE;
-				} else if (join instanceof RelationJoinNode.RelationJoinRowConsumer) {
-					boolean relationApplied = ((RelationJoinRowConsumer) join).applyRelatedEntity(rowInstance, row, entityCache);
-					return relationApplied ? CONTINUE : DONT_GO_DEEPER;
-				} else {
-					// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
-					throw new IllegalArgumentException("Unexpected join type, only "
-							+ Reflections.toString(PassiveJoinRowConsumer.class)
-							+ ", " + Reflections.toString(MergeJoinRowConsumer.class)
-							+ " and " + Reflections.toString(RelationJoinRowConsumer.class) + " are handled"
-							+ ", not " + Reflections.toString(join.getClass()));
+			foreachNode(new NodeVisitor(result.get()) {
+				
+				@Override
+				public Object apply(JoinRowConsumer join, Object entity) {
+					// processing current depth
+					if (join instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
+						((PassiveJoinRowConsumer) join).consume(entity, row);
+						return entity;
+					} else if (join instanceof MergeJoinNode.MergeJoinRowConsumer) {
+						((MergeJoinRowConsumer) join).mergeProperties(entity, row);
+						return entity;
+					} else if (join instanceof RelationJoinNode.RelationJoinRowConsumer) {
+						return ((RelationJoinRowConsumer) join).applyRelatedEntity(entity, row, entityCache);
+					} else {
+						// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
+						throw new IllegalArgumentException("Unexpected join type, only "
+								+ Reflections.toString(PassiveJoinRowConsumer.class)
+								+ ", " + Reflections.toString(MergeJoinRowConsumer.class)
+								+ " and " + Reflections.toString(RelationJoinRowConsumer.class) + " are handled"
+								+ ", not " + Reflections.toString(join.getClass()));
+					}
 				}
 			});
 		}
 		return result;
 	}
 	
-	private void foreachNode(Function<JoinRowConsumer, TreeIterationPursue> consumer) {
-		Queue<ConsumerNode> stack = new ArrayDeque<>(this.consumerRoot.consumers);
-		while (!stack.isEmpty()) {
-			ConsumerNode joinNode = stack.poll();
-			TreeIterationPursue pursue = consumer.apply(joinNode.consumer);
-			if (pursue == CONTINUE) {
-				stack.addAll(joinNode.consumers);
-			} // else DONT_GO_DEEPER => nothing to do
+	@VisibleForTesting
+	void foreachNode(NodeVisitor consumer) {
+		Queue<ConsumerNode> joinNodeStack = Collections.asLifoQueue(new ArrayDeque<>());
+		joinNodeStack.addAll(this.consumerRoot.consumers);
+		// Maintaining entities that will be given to each node : they are entities produced by parent node
+		Map<ConsumerNode, Object> entityPerNode = new HashMap<>(10);
+		joinNodeStack.forEach(node -> entityPerNode.put(node, consumer.entityRoot));
+		
+		while (!joinNodeStack.isEmpty()) {
+			ConsumerNode joinNode = joinNodeStack.poll();
+			Object entity = consumer.apply(joinNode.consumer, entityPerNode.get(joinNode));
+			if (entity != null) {
+				joinNodeStack.addAll(joinNode.consumers);
+				joinNode.consumers.forEach(node -> entityPerNode.put(node, entity));
+			}
 		}
 	}
 	
 	/**
 	 * Small structure to store {@link JoinRootRowConsumer} as a tree that reflects {@link EntityJoinTree} input.
 	 */
-	private static class ConsumerNode {
+	static class ConsumerNode {
 		
 		private final JoinRowConsumer consumer;
 		
 		private final List<ConsumerNode> consumers = new ArrayList<>();
 		
-		private ConsumerNode(JoinRowConsumer consumer) {
+		ConsumerNode(JoinRowConsumer consumer) {
 			this.consumer = consumer;
 		}
 		
-		private void addConsumer(ConsumerNode consumer) {
+		void addConsumer(ConsumerNode consumer) {
 			this.consumers.add(consumer);
 		}
 	}
 	
-	enum TreeIterationPursue {
-		CONTINUE,
-		DONT_GO_DEEPER;
+	@VisibleForTesting
+	static abstract class NodeVisitor {
+		
+		private final Object entityRoot;
+		
+		NodeVisitor(Object entityRoot) {
+			this.entityRoot = entityRoot;
+		}
+		
+		/**
+		 * Asks for parentEntity consumption by {@link JoinRootRowConsumer}
+		 * @param joinRowConsumer consumer expected to use given entity to constructs, fills, does whatever, with given entity
+		 * @param parentEntity entity on which consumer mecanism may apply
+		 * @return the optional entity created by consumer (as in one-to-one or one-to-many relation), else given parentEntity (not null)
+		 */
+		abstract Object apply(JoinRowConsumer joinRowConsumer, Object parentEntity);
 	}
 }

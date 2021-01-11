@@ -21,7 +21,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
+public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
 	
 	/** The right part of the join */
 	private final EntityInflater<C, ?, T2> entityInflater;
@@ -36,17 +36,17 @@ class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends Abstrac
 							Set<Column<T2, Object>> columnsToSelect,
 							@Nullable String tableAlias,
 							EntityInflater<C, ?, T2> entityInflater,
-							BeanRelationFixer<?, C> beanRelationFixer) {
+							BeanRelationFixer<Object, C> beanRelationFixer) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
-		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
+		this.beanRelationFixer = beanRelationFixer;
 	}
 	
-	EntityInflater<C, ?, T2> getEntityInflater() {
+	public EntityInflater<C, ?, T2> getEntityInflater() {
 		return entityInflater;
 	}
 	
-	BeanRelationFixer getBeanRelationFixer() {
+	BeanRelationFixer<Object, C> getBeanRelationFixer() {
 		return beanRelationFixer;
 	}
 	
@@ -74,18 +74,18 @@ class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends Abstrac
 			this.rowTransformer = entityInflater.copyTransformerWithAliases(columnedRow);
 		}
 		
-		boolean applyRelatedEntity(Object parentJoinEntity,
-								   Row row,
-								   EntityCache entityCache) {
+		C applyRelatedEntity(Object parentJoinEntity,
+										   Row row,
+										   EntityCache entityCache) {
 			I rightIdentifier = entityInflater.giveIdentifier(row, columnedRow);
 			// primary key null means no entity => nothing to do
 			if (rightIdentifier != null) {
 				C rightEntity = entityCache.computeIfAbsent(entityInflater.getEntityType(), rightIdentifier,
 						() -> rowTransformer.transform(row));
 				beanRelationFixer.apply(parentJoinEntity, rightEntity);
-				return true;
+				return rightEntity;
 			}
-			return false;
+			return null;
 		}
 	}
 	

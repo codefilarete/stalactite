@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, AssociationTable> {
 	
-	public OneToManyWithAssociationTableEngine(IConfiguredPersister<SRC, SRCID> sourcePersister,
+	public OneToManyWithAssociationTableEngine(IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 											   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {

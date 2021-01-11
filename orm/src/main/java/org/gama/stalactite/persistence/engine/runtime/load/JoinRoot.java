@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;

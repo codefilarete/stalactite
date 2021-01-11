@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -303,7 +304,8 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		assertEquals(Arrays.asList(entity1).toString(), select.toString());
 		
 		select = testInstance.select(Arrays.asList(new Toto(100, 1), new Toto(200, 2)));
-		assertEquals(Arrays.asList(entity1, entity2).toString(), select.toString());
+		Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> 31 * toto.getId1() + toto.getId2());
+		assertEquals(Arrays.asTreeSet(totoComparator, entity1, entity2).toString(), Arrays.asTreeSet(totoComparator, select).toString());
 	}
 	
 	private static class Toto {

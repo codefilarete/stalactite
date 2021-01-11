@@ -1,11 +1,12 @@
 package org.gama.stalactite.persistence.engine.runtime.load;
 
-import org.gama.lang.collection.Maps;
+import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.IdentityMap;
 import org.gama.stalactite.query.builder.SQLQueryBuilder;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,7 @@ class EntityJoinTreeTest {
 	}
 	
 	@Test
-	public void projectTo() {
+	void projectTo() {
 		ClassMappingStrategy totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
 		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
@@ -72,7 +73,7 @@ class EntityJoinTreeTest {
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery(c -> mock(ParameterBinder.class));
 		
-		SQLQueryBuilder SQLQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
+		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -82,8 +83,9 @@ class EntityJoinTreeTest {
 						+ " inner join Tata on Toto.id = Tata.id"
 						+ " inner join Tutu on Tata.id = Tutu.id"
 						+ " inner join Titi on Tata.id = Titi.id"
-				, SQLQueryBuilder.toSQL());
-		assertEquals(Maps.asMap(totoPrimaryKey, "Toto_id")
+				, sqlQueryBuilder.toSQL());
+		Assertions.assertEquals(EntityTreeQueryBuilderTest.forIdentityMap(Column.class, String.class)
+						.add(totoPrimaryKey, "Toto_id")
 						.add(totoNameColumn, "Toto_name")
 						.add(tataPrimaryKey, "Tata_id")
 						.add(tataNameColumn, "Tata_name")
@@ -91,7 +93,9 @@ class EntityJoinTreeTest {
 						.add(tutuNameColumn, "Tutu_name")
 						.add(titiPrimaryKey, "Titi_id")
 						.add(titiNameColumn, "Titi_name"),
-				entityTreeQuery.getColumnAliases());
+				entityTreeQuery.getColumnAliases(),
+				// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
+				IdentityMap::getDelegate);
 	}
 	
 }

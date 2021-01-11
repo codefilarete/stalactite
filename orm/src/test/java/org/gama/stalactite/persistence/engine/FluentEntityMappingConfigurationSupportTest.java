@@ -145,7 +145,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		@Test
 		void withConstructorSpecified_constructorIsInvoked() {
 			Table totoTable = new Table("Toto");
-			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
+			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
@@ -154,7 +154,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
 					.useConstructor(Toto::new, idColumn)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -170,7 +170,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		@Test
 		void withConstructorSpecified_constructorIsInvoked_setterIsCalled() {
 			Table totoTable = new Table("Toto");
-			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
+			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
@@ -179,7 +179,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).setByConstructor()
 					.add(Toto::getName)
 					.useConstructor(Toto::new, idColumn)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -195,7 +195,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		@Test
 		void withConstructorSpecified_withSeveralArguments() {
 			Table totoTable = new Table("Toto");
-			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
+			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			Column<Table<?>, String> nameColumn = totoTable.addColumn("name", String.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
@@ -205,7 +205,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).setByConstructor()
 					.add(Toto::getName).setByConstructor()
 					.useConstructor(Toto::new, idColumn, nameColumn)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();

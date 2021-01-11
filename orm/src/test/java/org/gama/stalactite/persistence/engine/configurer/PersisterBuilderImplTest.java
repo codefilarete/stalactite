@@ -6,18 +6,22 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
+import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.function.Hanger.Holder;
 import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.lang.test.Assertions;
 import org.gama.reflection.AccessorChain;
@@ -26,10 +30,13 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportCycleTest;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
@@ -78,6 +85,7 @@ import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRI
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -106,11 +114,15 @@ public class PersisterBuilderImplTest {
 	@BeforeEach
 	void initEntityCandidates() {
 		PersisterBuilderImpl.ENTITY_CANDIDATES.set(new HashSet<>());
+		PersisterBuilderImpl.TREATED_CONFIGURATIONS.set(new HashSet<>());
+		PersisterBuilderImpl.POST_INITIALIZERS.set(new ArrayList<>());
 	}
 	
 	@AfterEach
 	void removeEntityCandidates() {
 		PersisterBuilderImpl.ENTITY_CANDIDATES.remove();
+		PersisterBuilderImpl.TREATED_CONFIGURATIONS.set(new HashSet<>());
+		PersisterBuilderImpl.POST_INITIALIZERS.set(new ArrayList<>());
 	}
 	
 	@Test
@@ -738,6 +750,42 @@ public class PersisterBuilderImplTest {
 		Assertions.assertThrows(() -> result.deleteById(new Car(42L)),
 				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
 						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+	}
+	
+	@Test
+	void isCycling() {
+		
+		class DummyPersisterRegistry implements PersisterRegistry {
+			
+			private final Map<Class, IEntityPersister> registry = new HashMap<>();
+			
+			@Override
+			public <C, I> IEntityPersister<C, I> getPersister(Class<C> clazz) {
+				return registry.get(clazz);
+			}
+			
+			@Override
+			public <C> void addPersister(IEntityPersister<C, ?> persister) {
+				this.registry.put(persister.getClassToPersist(), persister);
+			}
+		}
+		
+		final Holder<IFluentEntityMappingBuilder<FluentEntityMappingConfigurationSupportCycleTest.Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+		personMappingConfiguration.set(
+				entityBuilder(FluentEntityMappingConfigurationSupportCycleTest.Person.class, Identifier.LONG_TYPE)
+					.add(FluentEntityMappingConfigurationSupportCycleTest.Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(FluentEntityMappingConfigurationSupportCycleTest.Person::getName)
+					.addOneToManySet(FluentEntityMappingConfigurationSupportCycleTest.Person::getChildren,
+							() -> personMappingConfiguration.get().getConfiguration()));
+		
+		PersisterBuilderImpl testInstance = new PersisterBuilderImpl<>(personMappingConfiguration.get().getConfiguration());
+		ThreadLocals.doWithThreadLocal(PersisterBuilderImpl.ENTITY_CANDIDATES, HashSet::new, (Runnable) () -> {
+			ThreadLocals.doWithThreadLocal(PersisterBuilderImpl.TREATED_CONFIGURATIONS, HashSet::new, (Runnable) () -> {
+				// we don't call build() because it cleans ThreadLocal contexts so isCycling would always return false
+				testInstance.doBuild(null, DIALECT::buildGeneratedKeysReader, DIALECT, new ConnectionConfigurationSupport(new JdbcConnectionProvider(dataSource), 10), new DummyPersisterRegistry());
+				assertTrue(PersisterBuilderImpl.isCycling(personMappingConfiguration.get().getConfiguration()));
+			});
+		});
 	}
 	
 	public static class ToStringBuilder<E> {

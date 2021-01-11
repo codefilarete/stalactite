@@ -5,17 +5,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.gama.lang.Strings;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.IdentityMap;
 import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderProvider;
-
-import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.INNER_JOIN;
-import static org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection.LEFT_OUTER_JOIN;
 
 /**
  * Builder of a {@link Query} from an {@link EntityJoinTree}
@@ -40,7 +37,8 @@ public class EntityTreeQueryBuilder<C> {
 		
 		Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
 		
-		Map<Column, String> columnAliases = new HashMap<>();
+		// Made IdentityMap to support presence of same table multiple times in query, in particular for cycling bean graph (tables are cloned)
+		IdentityMap<Column, String> columnAliases = new IdentityMap<>();
 		
 		// Simple class that helps to add columns to select, made as internal method class else it would take more parameters
 		class ResultHelper {
@@ -68,7 +66,15 @@ public class EntityTreeQueryBuilder<C> {
 			resultHelper.addColumnsToSelect(join.getTableAlias(), join.getColumnsToSelect());
 			Column leftJoinColumn = join.getLeftJoinColumn();
 			Column rightJoinColumn = join.getRightJoinColumn();
-			from.add(from.new ColumnJoin(leftJoinColumn, rightJoinColumn, join.getJoinType() == JoinType.OUTER ? LEFT_OUTER_JOIN : INNER_JOIN));
+			switch (join.getJoinType()) {
+				case INNER:
+					from.innerJoin(leftJoinColumn, rightJoinColumn);
+					break;
+				case OUTER:
+					from.leftOuterJoin(leftJoinColumn, rightJoinColumn);
+					break;
+			}
+			from.setAlias(rightJoinColumn.getTable(), join.getTableAlias());
 		});
 		
 		return new EntityTreeQuery<>(query, this.tree, selectParameterBinders, columnAliases);
@@ -88,12 +94,12 @@ public class EntityTreeQueryBuilder<C> {
 		/** Mappig between column name in select and their {@link ParameterBinder} for reading */
 		private final Map<String, ParameterBinder> selectParameterBinders;
 		
-		private final Map<Column, String> columnAliases;
+		private final IdentityMap<Column, String> columnAliases;
 		
 		private EntityTreeQuery(Query query,
 								EntityJoinTree<C, ?> tree,
 								Map<String, ParameterBinder> selectParameterBinders,
-								Map<Column, String> columnAliases) {
+								IdentityMap<Column, String> columnAliases) {
 			this.tree = (EntityJoinTree<C, Object>) tree;
 			this.selectParameterBinders = selectParameterBinders;
 			this.query = query;
@@ -108,7 +114,7 @@ public class EntityTreeQueryBuilder<C> {
 			return selectParameterBinders;
 		}
 		
-		public Map<Column, String> getColumnAliases() {
+		public IdentityMap<Column, String> getColumnAliases() {
 			return columnAliases;
 		}
 		

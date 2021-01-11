@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,11 +24,11 @@ import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IAccessor;
 import org.gama.reflection.IMutator;
-import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
@@ -45,10 +46,13 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.IConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.IJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.load.PassiveJoinNode;
+import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
@@ -57,6 +61,7 @@ import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.builder.IdentityMap;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
 import static org.gama.lang.Nullable.nullable;
@@ -64,6 +69,7 @@ import static org.gama.lang.function.Predicates.not;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
+import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -88,43 +94,62 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		this.targetPersisterBuilder = targetPersisterBuilder;
 	}
 	
-	public <T extends Table<T>> void appendCascade(
+	public void appendCascade(
 			CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
 			IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 			ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 			ColumnNamingStrategy joinColumnNamingStrategy) {
 		
+		IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
+				// please note that even if no table is found in configuration, build(..) will create one
+				.build(dialect, connectionConfiguration, persisterRegistry,
+						nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
+		appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy, targetPersister, false);
+	}
+	
+	public void add2PhasesSelectCascade(
+			CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+			IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+			IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+			ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+			ColumnNamingStrategy joinColumnNamingStrategy) {
+		appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy, targetPersister, true);
+	}
+	
+	private void appendCascade(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+							   IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+							   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+							   ColumnNamingStrategy joinColumnNamingStrategy,
+							   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+							   boolean with2PhasesSelect) {
 		ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID> configurer;
 		if (cascadeOne.isRelationOwnedByTarget()) {
-			configurer = new RelationOwnedByTargetConfigurer<>(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
+			configurer = new RelationOwnedByTargetConfigurer<>(dialect, connectionConfiguration, persisterRegistry);
 		} else {
-			configurer = new RelationOwnedBySourceConfigurer<>(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
+			configurer = new RelationOwnedBySourceConfigurer<>(dialect, connectionConfiguration, persisterRegistry);
 		}
-		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy);
+		configurer.appendCascade(cascadeOne, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy, targetPersister, with2PhasesSelect);
 	}
 	
 	private abstract static class ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID> {
 		protected IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
 		protected final Dialect dialect;
 		protected final IConnectionConfiguration connectionConfiguration;
-		private final PersisterRegistry persisterRegistry;
-		private final PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder;
+		protected final PersisterRegistry persisterRegistry;
 		
-		protected ConfigurerTemplate(Dialect dialect,
-									 IConnectionConfiguration connectionConfiguration,
-									 PersisterRegistry persisterRegistry,
-									 PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
+		protected ConfigurerTemplate(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
 			this.dialect = dialect;
 			this.connectionConfiguration = connectionConfiguration;
 			this.persisterRegistry = persisterRegistry;
-			this.targetPersisterBuilder = targetPersisterBuilder;
 		}
 		
-		protected IConfiguredPersister<TRGT, TRGTID> appendCascade(
+		protected void appendCascade(
 				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
 				IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 				ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-				ColumnNamingStrategy joinColumnNamingStrategy) {
+				ColumnNamingStrategy joinColumnNamingStrategy,
+				IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+				boolean with2PhasesSelect) {
 			
 			RelationMode maintenanceMode = cascadeOne.getRelationMode();
 			if (maintenanceMode == ASSOCIATION_ONLY) {
@@ -135,15 +160,9 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 			}
 			this.sourcePersister = sourcePersister;
-			IReversibleAccessor<SRC, TRGT> targetAccessor = cascadeOne.getTargetProvider();
-			
-			IEntityConfiguredPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
-					// please note that even if no table is found in configuration, build(..) will create one
-					.build(dialect, connectionConfiguration, persisterRegistry, 
-							nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
-			IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy = targetPersister.getMappingStrategy();
 			
 			// Finding joined columns
+			IEntityMappingStrategy<TRGT, TRGTID, ?> targetMappingStrategy = targetPersister.getMappingStrategy();
 			Duo<Column, Column> foreignKeyColumns = determineForeignKeyColumns(cascadeOne, mappingStrategy,
 					targetMappingStrategy, foreignKeyNamingStrategy, joinColumnNamingStrategy);
 			
@@ -151,11 +170,14 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			Column rightColumn = foreignKeyColumns.getRight();
 			
 			// selection is always present (else configuration is nonsense !)
-			BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(targetAccessor);
-			addSelectCascade(cascadeOne, sourcePersister, (IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID>) targetPersister, leftColumn, rightColumn, beanRelationFixer);
+			BeanRelationFixer<SRC, TRGT> beanRelationFixer = determineRelationFixer(cascadeOne);
+			if (with2PhasesSelect) {
+				add2PhasesSelectCascade(cascadeOne, sourcePersister, targetPersister, leftColumn, rightColumn, beanRelationFixer);
+			} else {
+				addSelectCascade(cascadeOne, sourcePersister, targetPersister,
+						leftColumn, rightColumn, beanRelationFixer);
+			}
 			addWriteCascades(cascadeOne, sourcePersister, targetPersister, maintenanceMode);
-			
-			return targetPersister;
 		}
 		
 		protected void addWriteCascades(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
@@ -172,10 +194,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			}
 		}
 		
-		protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(IReversibleAccessor<SRC, TRGT> targetAccessor) {
-			IMutator<SRC, TRGT> targetSetter = targetAccessor.toMutator();
-			return BeanRelationFixer.of(targetSetter::set);
-		}
+		protected abstract BeanRelationFixer<SRC, TRGT> determineRelationFixer(CascadeOne<SRC, TRGT, TRGTID> cascadeOne);
 		
 		protected abstract Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
 																		  IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
@@ -206,12 +225,11 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				J>
 		void addSelectCascade(
 				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
-				P sourcePersister,
+				IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				Column<T1, J> leftColumn,
 				Column<T2, J> rightColumn,
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
-			
 			// we add target subgraph joins to the one that was created
 			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, cascadeOne.isNullable());
 			
@@ -229,7 +247,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				public void afterSelect(Iterable<? extends SRC> result) {
 					List collect = Iterables.collectToList(result, cascadeOne.getTargetProvider()::get);
 					// NB: entity can be null when loading relation, we skip nulls to prevent a NPE
-					collect.removeIf(java.util.Objects::isNull);
+					collect.removeIf(Objects::isNull);
 					targetSelectListener.afterSelect(collect);
 				}
 
@@ -241,6 +259,83 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			});
 		}
 		
+		protected final ThreadLocal<IdentityMap<SRC, Set<TRGTID>>> currentSelectedTargetEntitiesIds = new ThreadLocal<>();
+		
+		protected <
+				T1 extends Table<T1>,
+				T2 extends Table<T2>,
+				P extends IJoinedTablesPersister<SRC, SRCID> & IPersisterListener<SRC, SRCID>,
+				J>
+		void add2PhasesSelectCascade(
+				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+				IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+				Column<T1, J> leftColumn,
+				Column<T2, J> rightColumn,
+				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
+			
+			// we add target subgraph joins to the one that was created
+			add2PhasesGraphJoin(cascadeOne, sourcePersister, targetPersister, leftColumn, rightColumn);
+			
+			// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
+			// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
+			sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+				@Override
+				public void beforeSelect(Iterable<SRCID> ids) {
+					if (currentSelectedTargetEntitiesIds.get() == null) {
+						currentSelectedTargetEntitiesIds.set(new IdentityMap<>());
+					}
+				}
+				
+				@Override
+				public void afterSelect(Iterable<? extends SRC> result) {
+					try {
+						// Finding the right loader must be done dynamically because targetPersister is only a light version of the definitive one 
+						// since its mapping is polymorphic
+						IEntityPersister<TRGT, TRGTID> persister = persisterRegistry.getPersister(targetPersister.getClassToPersist());
+						// We do one request to load every target instances for better performance 
+						IdentityMap<SRC, Set<TRGTID>> srcToTargetId = currentSelectedTargetEntitiesIds.get();
+						Set<TRGTID> targetIds = srcToTargetId.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+						// We clear context before next selection to avoid stackoverflow when cycle is direct (Person.children -> Person)
+						// This has no impact on other use cases
+						cleanContext();
+						List<TRGT> targets = persister.select(targetIds);
+						// Associating target instances to source ones
+						Map<TRGTID, TRGT> targetPerId = Iterables.map(targets, targetPersister::getId);
+						result.forEach(src -> {
+							Set<TRGTID> trgtids = srcToTargetId.get(src);
+							if (trgtids != null) {
+								trgtids.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)));
+							}
+						});
+					} finally {
+						cleanContext();
+					}
+				}
+				
+				@Override
+				public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+					cleanContext();
+				}
+				
+				private void cleanContext() {
+					currentSelectedTargetEntitiesIds.remove();
+				}
+			});
+		}
+		
+		abstract protected <
+				T1 extends Table<T1>,
+				T2 extends Table<T2>,
+				P extends IJoinedTablesPersister<SRC, SRCID> & IPersisterListener<SRC, SRCID>,
+				J>
+		void add2PhasesGraphJoin(
+				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+				IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+				Column<T1, J> leftColumn,
+				Column<T2, J> rightColumn);
+		
 	}
 	
 	private static class RelationOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID> extends ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID> {
@@ -249,11 +344,16 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		private RelationOwnedBySourceConfigurer(Dialect dialect,
 												IConnectionConfiguration connectionConfiguration,
-												PersisterRegistry persisterRegistry,
-												PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
-			super(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
+												PersisterRegistry persisterRegistry) {
+			super(dialect, connectionConfiguration, persisterRegistry);
 		}
-				
+		
+		@Override
+		protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(CascadeOne<SRC, TRGT, TRGTID> cascadeOne) {
+			IMutator<SRC, TRGT> targetSetter = cascadeOne.getTargetProvider().toMutator();
+			return BeanRelationFixer.of(targetSetter::set);
+		}
+		
 		@Override
 		protected Duo<Column, Column> determineForeignKeyColumns(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
 																 IEntityMappingStrategy<SRC, SRCID, ?> srcMappingStrategy,
@@ -273,6 +373,56 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(leftColumn, rightColumn);
 			leftColumn.getTable().addForeignKey(foreignKeyName, leftColumn, rightColumn);
 			return new Duo<>(leftColumn, rightColumn);
+		}
+		
+		@Override
+		protected <
+				T1 extends Table<T1>,
+				T2 extends Table<T2>,
+				P extends IJoinedTablesPersister<SRC, SRCID> & IPersisterListener<SRC, SRCID>,
+				J>
+		void add2PhasesGraphJoin(
+				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+				IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+				Column<T1, J> leftColumn,
+				Column<T2, J> rightColumn) {
+			
+			Table relationOwnerTableClone = new Table(targetPersister.getMappingStrategy().getTargetTable().getName());
+			Column relationOwnerPrimaryKey = relationOwnerTableClone.addColumn(rightColumn.getName(), rightColumn.getJavaType());
+			String tableCloneAlias = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
+			// This can't be done directly on root persister (took via persisterRegistry and targetPersister.getClassToPersist()) because
+			// TransfomerListener would get root instance as source (aggregate root), not current source
+			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+					leftColumn,
+					relationOwnerPrimaryKey,
+					tableCloneAlias,
+					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
+					(src, rowValueProvider) -> {
+						IdentityMap<SRC, Set<TRGTID>> srcToTargetId = currentSelectedTargetEntitiesIds.get();
+						Set<TRGTID> targetIds = srcToTargetId.get(src);
+						if (targetIds == null) {
+							targetIds = new HashSet<>();
+							srcToTargetId.put(src, targetIds);
+						}
+						TRGTID targetId = (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey);
+						if (targetId != null) {
+							targetIds.add(targetId);
+						}
+					}, false);
+			
+			// TODO: try to do better than this, kind of messy. Made to add passive join created above to all join that uses same entity type, but does not add it to indexes. Create a method for all of this ?
+			PassiveJoinNode passiveJoin = (PassiveJoinNode) sourcePersister.getEntityJoinTree().getJoin(joinName);
+			EntityJoinTree<TRGT, TRGTID> originalTargetPersisterTree =
+					((IJoinedTablesPersister) persisterRegistry.getPersister(targetPersister.getClassToPersist())).getEntityJoinTree();
+			originalTargetPersisterTree.foreachJoin(abstractJoinNode -> {
+				if (abstractJoinNode instanceof RelationJoinNode) {
+					if (((RelationJoinNode<?, ?, ?, ?>) abstractJoinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
+						Column localLeftColumn = abstractJoinNode.getTable().getColumn(leftColumn.getName());
+						originalTargetPersisterTree.copyNode(abstractJoinNode, passiveJoin, localLeftColumn);
+					}
+				}
+			});
 		}
 		
 		@Override
@@ -403,9 +553,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		private RelationOwnedByTargetConfigurer(Dialect dialect,
 												IConnectionConfiguration connectionConfiguration,
-												PersisterRegistry persisterRegistry,
-												PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
-			super(dialect, connectionConfiguration, persisterRegistry, targetPersisterBuilder);
+												PersisterRegistry persisterRegistry) {
+			super(dialect, connectionConfiguration, persisterRegistry);
 		}
 		
 		@Override
@@ -582,8 +731,92 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 		
 		@Override
-		protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(IReversibleAccessor<SRC, TRGT> targetAccessor) {
-			return this.beanRelationFixer;
+		protected BeanRelationFixer<SRC, TRGT> determineRelationFixer(CascadeOne<SRC, TRGT, TRGTID> cascadeOne) {
+			BeanRelationFixer<SRC, TRGT> result;
+			IMutator<SRC, TRGT> sourceIntoTargetFixer = cascadeOne.getTargetProvider().toMutator();
+			if (cascadeOne.getReverseGetter() != null) {
+				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(cascadeOne.getReverseGetter());
+				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
+				
+				// we take advantage of foreign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
+				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
+				result = (src, target) -> {
+					// fixing source on target
+					if (target != null) {	// prevent NullPointerException, actually means no linked entity (null relation), so nothing to do
+						targetIntoSourceFixer.set(target, src);
+					}
+					// fixing target on source
+					sourceIntoTargetFixer.set(src, target);
+				};
+			} else if (cascadeOne.getReverseSetter() != null) {
+				ValueAccessPoint reverseSetter = Accessors.mutatorByMethodReference(cascadeOne.getReverseSetter());
+				
+				// we take advantage of forign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
+				result = (target, input) -> {
+					// fixing target on source side
+					cascadeOne.getReverseSetter().accept(input, target);
+					// fixing source on target side
+					sourceIntoTargetFixer.set(target, input);
+				};
+			}
+			else {
+				// non bidirectional relation : relation is owned by target without defining any way to fix it in memory
+				// we can only fix target on source side
+				result = sourceIntoTargetFixer::set;
+			}
+			return result;
+		}
+		
+		@Override
+		protected <
+				T1 extends Table<T1>,
+				T2 extends Table<T2>,
+				P extends IJoinedTablesPersister<SRC, SRCID> & IPersisterListener<SRC, SRCID>,
+				J>
+		void add2PhasesGraphJoin(
+				CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
+				IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+				Column<T1, J> leftColumn,
+				Column<T2, J> rightColumn) {
+			
+			Table targetTable = targetPersister.getMappingStrategy().getTargetTable();
+			Column targetPrimaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
+			Table relationOwnerTableClone = new Table(targetTable.getName());
+			Column relationOwnerForeignKey = relationOwnerTableClone.addColumn(rightColumn.getName(), rightColumn.getJavaType());
+			Column relationOwnerPrimaryKey = relationOwnerTableClone.addColumn(targetPrimaryKey.getName(), targetPrimaryKey.getJavaType());
+			String tableCloneAlias = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
+			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+					leftColumn,
+					relationOwnerForeignKey,
+					tableCloneAlias,
+					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
+					(src, rowValueProvider) -> {
+						IdentityMap<SRC, Set<TRGTID>> trgtIntegerIdentityMap = currentSelectedTargetEntitiesIds.get();
+						Set<TRGTID> targetIds = trgtIntegerIdentityMap.get(src);
+						if (targetIds == null) {
+							targetIds = new HashSet<>();
+							trgtIntegerIdentityMap.put(src, targetIds);
+						}
+						TRGTID targetId = (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey);
+						if (targetId != null) {
+							targetIds.add(targetId);
+						}
+					}, false);
+			
+			// TODO: try to do better than this, kind of messy. Made to add passive join created above to all join that uses same entity type, but does not add it to indexes. Create a method for all of this ?
+			PassiveJoinNode passiveJoin = (PassiveJoinNode) sourcePersister.getEntityJoinTree().getJoin(joinName);
+			EntityJoinTree<TRGT, TRGTID> originalTargetPersisterTree =
+					((IJoinedTablesPersister) persisterRegistry.getPersister(targetPersister.getClassToPersist())).getEntityJoinTree();
+			originalTargetPersisterTree.foreachJoin(abstractJoinNode -> {
+				if (abstractJoinNode instanceof RelationJoinNode) {
+					if (((RelationJoinNode<?, ?, ?, ?>) abstractJoinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
+						Column localLeftColumn = abstractJoinNode.getTable().getColumn(leftColumn.getName());
+						originalTargetPersisterTree.copyNode(abstractJoinNode, passiveJoin, localLeftColumn);
+					}
+				}
+			});
+			
 		}
 		
 		@Override
@@ -615,7 +848,16 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				}
 			});
 			targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<>(rightColumn,
-					trgt -> currentForeignKeyValueProvider.get().giveSourceId(trgt)));
+					// in many cases currentForeignKeyValueProvider is already present through source persister listener (insert or update)
+					// but in the corner case of source and target persist same type (in a parent -> child case) then at very first insert of root
+					// instance, currentForeignKeyValueProvider is not present, so we prevent this by initializing it 
+					trgt -> {
+						if (currentForeignKeyValueProvider.get() == null) {
+							currentForeignKeyValueProvider.set(new ForeignKeyValueProvider());
+						}
+						return currentForeignKeyValueProvider.get().giveSourceId(trgt);
+					}
+			));
 		}
 		
 		@Override

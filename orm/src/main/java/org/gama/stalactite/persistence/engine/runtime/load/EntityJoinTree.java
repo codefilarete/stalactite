@@ -2,8 +2,10 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -17,6 +19,7 @@ import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IRowTransformer;
+import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -45,6 +48,8 @@ public class EntityJoinTree<C, I> {
 	 * The objet that will help to give names of strategies into the index (no impact on the generated SQL)
 	 */
 	private final StrategyIndexNamer indexNamer = new StrategyIndexNamer();
+	
+	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newSetFromMap(new IdentityHashMap<>());
 	
 	public EntityJoinTree(JoinRoot<C, I, ?> root) {
 		this.root = root;
@@ -80,7 +85,7 @@ public class EntityJoinTree<C, I> {
 		return this.<T1>addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
 				parent,
 				leftJoinColumn, rightJoinColumn, joinType,
-				inflater.getSelectableColumns(), null, inflater, beanRelationFixer));
+				inflater.getSelectableColumns(), null, inflater, (BeanRelationFixer<Object, U>) beanRelationFixer));
 	}
 	
 	/**
@@ -155,6 +160,33 @@ public class EntityJoinTree<C, I> {
 				columnsToSelect, null));
 	}
 	
+	public <T1 extends Table<T1>, T2 extends Table<T2>, ID> String addPassiveJoin(String leftStrategyName,
+																				  Column<T1, ID> leftJoinColumn,
+																				  Column<T2, ID> rightJoinColumn,
+																				  JoinType joinType,
+																				  Set<Column<T2, Object>> columnsToSelect,
+																				  TransformerListener<C> transformerListener) {
+		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
+				leftJoinColumn, rightJoinColumn, joinType,
+				columnsToSelect, null).setTransformerListener((TransformerListener<Object>) transformerListener));
+	}
+	
+	public <T1 extends Table<T1>, T2 extends Table<T2>, ID> String addPassiveJoin(String leftStrategyName,
+																				  Column<T1, ID> leftJoinColumn,
+																				  Column<T2, ID> rightJoinColumn,
+																				  String tableAlias,
+																				  JoinType joinType,
+																				  Set<Column<T2, Object>> columnsToSelect,
+																				  TransformerListener<C> transformerListener,
+																				  boolean rightTableParticipatesToDDL) {
+		if (!rightTableParticipatesToDDL) {
+			tablesToBeExcludedFromDDL.add(rightJoinColumn.getTable());
+		}
+		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
+				leftJoinColumn, rightJoinColumn, joinType,
+				columnsToSelect, tableAlias).setTransformerListener((TransformerListener<Object>) transformerListener));
+	}
+	
 	private <T extends Table> String addJoin(String leftStrategyName, Function<JoinNode<T> /* parent node */, AbstractJoinNode> joinNodeSupplier) {
 		JoinNode<T> owningJoin = getJoin(leftStrategyName);
 		if (owningJoin == null) {
@@ -190,7 +222,11 @@ public class EntityJoinTree<C, I> {
 		// because Table implements an hashCode on their name, we can use an HashSet to avoid duplicates
 		Set<Table> result = new HashSet<>();
 		result.add(root.getTable());
-		foreachJoin(node -> result.add(node.getTable()));
+		foreachJoin(node -> {
+			if (!tablesToBeExcludedFromDDL.contains(node.getTable())) {
+				result.add(node.getTable());
+			}
+		});
 		return result;
 	}
 	
@@ -271,35 +307,35 @@ public class EntityJoinTree<C, I> {
 	 * @param leftColumn column to be used as the left one of the new node
 	 * @return a copy of given node, put as child of parent, using leftColumn
 	 */
-	private AbstractJoinNode copyNode(JoinNode parent, AbstractJoinNode node, Column leftColumn) {
+	public AbstractJoinNode copyNode(JoinNode parent, AbstractJoinNode node, Column leftColumn) {
 		AbstractJoinNode nodeCopy;
 		if (node instanceof RelationJoinNode) {
-			nodeCopy = new RelationJoinNode<>(
+			nodeCopy = new RelationJoinNode(
 					parent,
 					leftColumn,
 					node.getRightJoinColumn(),
 					node.getJoinType(),
 					node.getColumnsToSelect(),
 					node.getTableAlias(),
-					((RelationJoinNode<?, ?, ?, ?>) node).getEntityInflater(),
-					((RelationJoinNode<?, ?, ?, ?>) node).getBeanRelationFixer());
+					((RelationJoinNode) node).getEntityInflater(),
+					((RelationJoinNode) node).getBeanRelationFixer());
 		} else if (node instanceof MergeJoinNode) {
-			nodeCopy = new MergeJoinNode<>(
+			nodeCopy = new MergeJoinNode(
 					parent,
 					leftColumn,
 					node.getRightJoinColumn(),
 					node.getJoinType(),
 					node.getTableAlias(),
-					((MergeJoinNode<?, ?, ?, ?>) node).getMerger());
+					((MergeJoinNode) node).getMerger());
 		} else if (node instanceof PassiveJoinNode) {
-			nodeCopy = new PassiveJoinNode<>(
+			nodeCopy = new PassiveJoinNode(
 					parent,
 					leftColumn,
 					node.getRightJoinColumn(),
 					node.getJoinType(),
 					node.getColumnsToSelect(),
 					node.getTableAlias())
-					.setTransformerListener(((PassiveJoinNode<?, ?, ?, ?>) node).getTransformerListener());
+					.setTransformerListener(((PassiveJoinNode) node).getTransformerListener());
 		} else {
 			throw new UnsupportedOperationException("Unexpected type of join : some algorithm as change, please implement it here or fix it : "
 					+ Reflections.toString(node.getClass()));
