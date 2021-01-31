@@ -156,12 +156,12 @@ public class PersisterWrapper<C, I> implements IEntityConfiguredJoinedTablesPers
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																				Column<T1, JID> leftColumn,
-																				Column<T2, JID> rightColumn,
-																				BeanRelationFixer<SRC, C> beanRelationFixer,
-																				boolean optional) {
-		surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, optional);
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, JID> leftColumn,
+																				  Column<T2, JID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  boolean optional) {
+		return surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, optional);
 	}
 	
 	@Override

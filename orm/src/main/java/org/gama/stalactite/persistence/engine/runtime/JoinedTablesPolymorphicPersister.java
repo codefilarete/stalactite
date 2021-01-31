@@ -359,20 +359,21 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	
 	/**
 	 * Implementation made for one-to-one use case
-	 * 
+	 *
+	 * @param <SRC>
 	 * @param sourcePersister source that needs this instance joins
 	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
-	 * @param <SRC>
+	 * @return created join name
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																				Column<T1, JID> leftColumn,
-																				Column<T2, JID> rightColumn,
-																				BeanRelationFixer<SRC, C> beanRelationFixer,
-																				boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, JID> leftColumn,
+																				  Column<T2, JID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  boolean optional) {
 		
 		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
 		// (we don't need to create bean nor fulfill properties in first phase) 
@@ -393,6 +394,8 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		
 		// adding second phase loader
 		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		
+		return mainTableJoinName;
 	}
 	
 	@Override

@@ -22,8 +22,7 @@ public interface IJoinedTablesPersister<C, I> {
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
 	 * Made as such because polymorphic cases (which are instance of this interface) are the only one who knows how to join themselves with another persister.
-	 * 
-	 * @param <SRC> source entity type
+	 *  @param <SRC> source entity type
 	 * @param <T1> left table type
 	 * @param <T2> right table type
 	 * @param <JID> join columns type, which can either be source persister identifier type (SRCID), or current instance identifier type (I)
@@ -32,12 +31,13 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
-	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																		 Column<T1, JID> leftColumn,
-																		 Column<T2, JID> rightColumn,
-																		 BeanRelationFixer<SRC, C> beanRelationFixer,
-																		 boolean optional);
+	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																		   Column<T1, JID> leftColumn,
+																		   Column<T2, JID> rightColumn,
+																		   BeanRelationFixer<SRC, C> beanRelationFixer,
+																		   boolean optional);
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.

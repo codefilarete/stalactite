@@ -316,11 +316,11 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																				Column<T1, JID> leftColumn,
-																				Column<T2, JID> rightColumn,
-																				BeanRelationFixer<SRC, C> beanRelationFixer,
-																				boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, JID> leftColumn,
+																				  Column<T2, JID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  boolean optional) {
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
 				new EntityMappingStrategyAdapter<>((IEntityMappingStrategy) this.getMappingStrategy()),
 				leftColumn,
@@ -329,6 +329,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				beanRelationFixer);
 		
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
+		
+		return createdJoinNodeName;
 	}
 	
 	@Override

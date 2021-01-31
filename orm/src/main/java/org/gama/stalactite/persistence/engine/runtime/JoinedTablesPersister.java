@@ -238,13 +238,14 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	
 	/**
 	 * Implementation for simple one-to-one cases : we add our joins to given persister
+	 * @return created join name
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																				Column<T1, JID> leftColumn,
-																				Column<T2, JID> rightColumn,
-																				BeanRelationFixer<SRC, C> beanRelationFixer,
-																				boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, JID> leftColumn,
+																				  Column<T2, JID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  boolean optional) {
 		
 		// We use our own select system since SelectListener is not aimed at joining table
 		EntityMappingStrategyAdapter<C, I, T> strategy = new EntityMappingStrategyAdapter<>(getMappingStrategy());
@@ -259,6 +260,8 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 				beanRelationFixer);
 		
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
+		
+		return createdJoinNodeName;
 	}
 	
 	/**

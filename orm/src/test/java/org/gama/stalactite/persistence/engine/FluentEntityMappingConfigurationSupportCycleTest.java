@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author Guillaume Mary
@@ -111,7 +113,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		@Test
 		void crud_cycleWithIntermediary_ownedByTarget() {
 			Table personTable = new Table("Person");
-			Column reverseGardenerId = personTable.addColumn("reverseGardenerId", Identifier.LONG_TYPE);
+			Column<Table, Identifier<Long>> reverseGardenerId = personTable.addColumn("reverseGardenerId", Identifier.LONG_TYPE);
 			
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
@@ -190,7 +192,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		@Test
 		void insertSelect_cycleIsDirect_ownedByTarget() {
 			Table personTable = new Table("Person");
-			Column reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
+			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
 			// we need a holder to skip final variable problem
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
@@ -213,6 +215,214 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			assertEquals(johnDo, loadedPerson);
 			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+		}
+		
+		@Test
+		void crud_2cycles_ownedBySource() {
+			// we need a holder to skip final variable problem 
+			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration())
+					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
+							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getLocation))
+							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+			);
+			
+			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person partner = new Person(666);
+			partner.setName("Saca Do");
+			johnDo.setPartner(partner);
+			House house = new House(123);
+			house.setAddress(new Address(456).setLocation("Somewhere in the world"));
+			johnDo.setHouse(house);
+			Person myGardener = new Person(888);
+			myGardener.setName("Poppy");
+			house.setGardener(myGardener);
+			
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			
+			Person newGardener = new Person(999);
+			newGardener.setName("Dandelion");
+			johnDo.getHouse().setGardener(newGardener);
+			personPersister.update(johnDo, loadedPerson, true);
+			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(999, loadedPerson.getHouse().getGardener().getId().getSurrogate());
+			assertEquals("Dandelion", loadedPerson.getHouse().getGardener().getName());
+			
+			personPersister.delete(johnDo);
+			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+					.mapKey(Long::new, "id", long.class)
+					.execute();
+			// previous partner is the only Person remainig because we asked for orphan removal
+			assertEquals(Arrays.asList(666L), allPersons);
+		}
+		
+		@Test
+		void crud_2cycles_ownedBySource_entityCycle() {
+			// we need a holder to skip final variable problem 
+			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration())
+					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
+							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getLocation))
+							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+			);
+			
+			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person partner = new Person(666);
+			partner.setName("Saca Do");
+			johnDo.setPartner(partner);
+			House house = new House(123);
+			house.setAddress(new Address(456).setLocation("Somewhere in the world"));
+			johnDo.setHouse(house);
+			// partner is also the gardener
+			house.setGardener(partner);
+			
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			// partner and gardeneer must be exactly same instance since its a cycle
+			assertSame(loadedPerson.getPartner(), loadedPerson.getHouse().getGardener());
+		}
+		
+		@Test
+		void crud_2cycles_ownedByTarget() {
+			Table personTable = new Table("Person");
+			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
+			
+			// we need a holder to skip final variable problem 
+			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
+					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
+							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getLocation))
+							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+			);
+			
+			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person partner = new Person(666);
+			partner.setName("Saca Do");
+			johnDo.setPartner(partner);
+			House house = new House(123);
+			house.setAddress(new Address(456).setLocation("Somewhere in the world"));
+			johnDo.setHouse(house);
+			Person myGardener = new Person(888);
+			myGardener.setName("Poppy");
+			house.setGardener(myGardener);
+			
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			
+			Person newGardener = new Person(999);
+			newGardener.setName("Dandelion");
+			johnDo.getHouse().setGardener(newGardener);
+			personPersister.update(johnDo, loadedPerson, true);
+			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(999, loadedPerson.getHouse().getGardener().getId().getSurrogate());
+			assertEquals("Dandelion", loadedPerson.getHouse().getGardener().getName());
+			
+			personPersister.delete(johnDo);
+			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+					.mapKey(Long::new, "id", long.class)
+					.execute();
+			// previous partner is the only Person remainig because we asked for orphan removal
+			assertEquals(Arrays.asList(666L), allPersons);
+		}
+		
+		@Test
+		void crud_2cycles_ownedByTarget_entityCycle() {
+			Table personTable = new Table("Person");
+			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
+			
+			// we need a holder to skip final variable problem 
+			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
+					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
+							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getLocation))
+							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
+							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+			);
+			
+			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person partner = new Person(666);
+			partner.setName("Saca Do");
+			johnDo.setPartner(partner);
+			House house = new House(123);
+			house.setAddress(new Address(456).setLocation("Somewhere in the world"));
+			johnDo.setHouse(house);
+			// partner is also the gardener
+			house.setGardener(partner);
+			
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			// partner and gardeneer must be exactly same instance since its a cycle
+			assertSame(loadedPerson.getPartner(), loadedPerson.getHouse().getGardener());
 		}
 	}
 	
@@ -315,6 +525,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		private final Set<Person> children = new HashSet<>();
 		
 		private House house;
+		
+		private House house1;
 		
 		public Person() {
 		}

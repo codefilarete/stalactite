@@ -258,7 +258,7 @@ public class EntityJoinTree<C, I> {
 				throw new IllegalArgumentException("Expected column "
 						+ currentNode.getLeftJoinColumn().getAbsoluteName() + " to exist in target table " + targetOwner.getTable().getName());
 			}
-			return copyNode(targetOwner, currentNode, projectedLeftColumn);
+			return copyNodeToParent(currentNode, targetOwner, projectedLeftColumn);
 			
 		});
 	}
@@ -298,16 +298,16 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	/**
-	 * Clones given node.
+	 * Copies given node and set it as a child of given parent.
 	 * Could have been implemented by each node class itself but since this behavior is required only by the tree and a particular algorithm, decision
 	 * mas made to do it outside of them.
 	 * 
-	 * @param parent parent node target of the clone
 	 * @param node node to be cloned
+	 * @param parent parent node target of the clone
 	 * @param leftColumn column to be used as the left one of the new node
 	 * @return a copy of given node, put as child of parent, using leftColumn
 	 */
-	public AbstractJoinNode copyNode(JoinNode parent, AbstractJoinNode node, Column leftColumn) {
+	public static AbstractJoinNode copyNodeToParent(AbstractJoinNode node, JoinNode parent, Column leftColumn) {
 		AbstractJoinNode nodeCopy;
 		if (node instanceof RelationJoinNode) {
 			nodeCopy = new RelationJoinNode(

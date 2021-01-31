@@ -24,9 +24,9 @@ public interface SubEntityMappingConfiguration<C> {
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
-	List<CascadeOne<C, ?, ?>> getOneToOnes();
+	<TRGT, TRGTID> List<CascadeOne<C, TRGT, TRGTID>> getOneToOnes();
 	
-	List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys();
+	<TRGT, TRGTID> List<CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys();
 	
 	List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
 	

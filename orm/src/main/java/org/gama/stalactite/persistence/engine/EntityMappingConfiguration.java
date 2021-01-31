@@ -34,9 +34,9 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
-	List<CascadeOne<C, Object, Object>> getOneToOnes();
+	<TRGT, TRGTID> List<CascadeOne<C, TRGT, TRGTID>> getOneToOnes();
 	
-	List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys();
+	<TRGT, TRGTID> List<CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys();
 	
 	List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
 		

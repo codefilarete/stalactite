@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 /**
  * @author Guillaume Mary
  */
-class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID> {
+public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID> {
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
 	private final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
@@ -72,7 +72,7 @@ class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID
 				.invoke(targetIds -> targetIds.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)))));
 	}
 	
-	static boolean isDefaultValue(Object value) {
+	public static boolean isDefaultValue(Object value) {
 		return value == null || Reflections.PRIMITIVE_DEFAULT_VALUES.get(value.getClass()) == value;
 	}
 	

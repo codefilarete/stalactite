@@ -127,12 +127,15 @@ class CascadeOneConfigurerTest {
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		
 		// When
-		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(dialect, 
-				mock(IConnectionConfiguration.class), mock(PersisterRegistry.class),
-				new PersisterBuilderImpl<>(cityMappingConfiguration));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
-		testInstance.appendCascade(countryCapitalRelation, countryPersister, ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
+		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
+				countryPersister,
+				dialect,
+				mock(IConnectionConfiguration.class),
+				mock(PersisterRegistry.class),
+				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
+		testInstance.appendCascades(new PersisterBuilderImpl<>(cityMappingConfiguration));
 		
 		// Then
 		assertEquals(Arrays.asSet("id", "capitalId", "name"), countryTable.mapColumnsOnName().keySet());
@@ -226,12 +229,15 @@ class CascadeOneConfigurerTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
 		
-		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(dialect,
-				mock(IConnectionConfiguration.class), mock(PersisterRegistry.class),
-				new PersisterBuilderImpl<>(cityMappingConfiguration));
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
-		testInstance.appendCascade(countryCapitalRelation, countryPersister, ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
+		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
+				countryPersister,
+				dialect,
+				mock(IConnectionConfiguration.class),
+				mock(PersisterRegistry.class),
+				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
+		testInstance.appendCascades(new PersisterBuilderImpl<>(cityMappingConfiguration));
 		
 		assertEquals(Arrays.asSet("id", "countryId", "name"), cityTable.mapColumnsOnName().keySet());
 		assertEquals(Arrays.asSet("FK_city_countryId_country_id"), Iterables.collect(cityTable.getForeignKeys(), ForeignKey::getName, HashSet::new));

@@ -109,13 +109,13 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements IFluent
 	}
 	
 	@Override
-	public List<CascadeOne<C, ?, ?>> getOneToOnes() {
-		return cascadeOnes;
+	public <TRGT, TRGTID> List<CascadeOne<C, TRGT, TRGTID>> getOneToOnes() {
+		return (List) cascadeOnes;
 	}
 	
 	@Override
-	public List<CascadeMany<C, ?, ?, ? extends Collection>> getOneToManys() {
-		return cascadeManys;
+	public <TRGT, TRGTID> List<CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
+		return (List) cascadeManys;
 	}
 	
 	@Override

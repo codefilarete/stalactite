@@ -326,14 +326,14 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> void joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																				Column<T1, JID> leftColumn,
-																				Column<T2, JID> rightColumn,
-																				BeanRelationFixer<SRC, C> beanRelationFixer,
-																				boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, JID> leftColumn,
+																				  Column<T2, JID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  boolean optional) {
 		
 		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
-		sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
 				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
 						subclassPrimaryKey, selectExecutor,
 						DIFFERED_ENTITY_LOADER,
@@ -343,6 +343,8 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		// adding second phase loader
 		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		
+		return createdJoinNodeName;
 	}
 	
 	@Override
