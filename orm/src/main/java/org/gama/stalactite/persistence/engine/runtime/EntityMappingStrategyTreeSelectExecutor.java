@@ -165,7 +165,8 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<C> result = new ArrayList<>(parcels.size() * blockSize);
 		if (!parcels.isEmpty()) {
-			Query query = new EntityTreeQueryBuilder<>(entityJoinTree).buildSelectQuery(this.parameterBinderProvider).getQuery();
+			EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree).buildSelectQuery(this.parameterBinderProvider);
+			Query query = entityTreeQuery.getQuery();
 			
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), whereClauseDMLNameProvider);
@@ -181,7 +182,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 			
 			SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
 			// Be aware that this executor is made to use same Connection to execute next SQL orders in same transaction
-			InternalExecutor executor = newInternalExecutor();
+			InternalExecutor executor = newInternalExecutor(entityTreeQuery);
 			if (!parcels.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
 				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
@@ -198,8 +199,8 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	}
 	
 	@VisibleForTesting
-	InternalExecutor newInternalExecutor() {
-		return new InternalExecutor(new EntityTreeQueryBuilder<>(this.entityJoinTree).buildSelectQuery(this.parameterBinderProvider),
+	InternalExecutor newInternalExecutor(EntityTreeQuery<C> entityTreeQuery) {
+		return new InternalExecutor(entityTreeQuery,
 				// NB : this instance is reused so we must ensure that the same Connection is used for all operations
 				new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection()));
 	}

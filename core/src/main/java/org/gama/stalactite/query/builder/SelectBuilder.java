@@ -64,16 +64,16 @@ public class SelectBuilder implements SQLBuilder {
 		}
 	}
 	
-	protected void cat(String o, StringAppender sql) {
-		sql.cat(o);
+	protected void cat(String s, StringAppender sql) {
+		sql.cat(s);
 	}
 	
-	protected void cat(Column o, StringAppender sql) {
-		sql.cat(dmlNameProvider.getName(o));
+	protected void cat(Column column, StringAppender sql) {
+		sql.cat(dmlNameProvider.getName(column));
 	}
 	
-	protected void cat(AliasedColumn o, StringAppender sql) {
-		sql.cat(dmlNameProvider.getName(o.getColumn())).catIf(!Strings.isEmpty(o.getAlias()), " as ", o.getAlias());
+	protected void cat(AliasedColumn column, StringAppender sql) {
+		sql.cat(dmlNameProvider.getName(column.getColumn())).catIf(!Strings.isEmpty(column.getAlias()), " as ", column.getAlias());
 	}
 	
 	private void cat(AbstractRelationalOperator operator, SQLAppender appenderWrapper) {

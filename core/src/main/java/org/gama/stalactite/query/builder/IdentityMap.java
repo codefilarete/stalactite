@@ -9,11 +9,11 @@ import java.util.Map;
  * instance hashCode, beans can't be retrieved due some hashCode change when computation is based on incompletly filled attributes, such as collection.
  * <p>
  * It does not implement {@link Map} because it is mainly used as a marking name instead of the anonymous Map class which only instanciation brings
- * the implementation : by this name the developper clearly says its intention (and should add a comment why such a Map is required in its
+ * the implementation : by this name the developer clearly says its intention (and should add a comment why such a Map is required in its
  * algorithm ;) ).
  * It could also have been replaced by {@link java.util.IdentityHashMap} (or use it internally) but, first it would have broken previous principle,
  * and overall one have to know that {@link java.util.IdentityHashMap} compares keys on their {@link System#identityHashCode} but also its values
- * which, beyond being not really intuitive, is not required in production code, and bring some difficulties in tests (because even same Strings are
+ * which, beyond being not really intuitive, is not required in production code, and brings some difficulties in tests (because even same Strings are
  * different with '=='). 
  * 
  * @param <K> key type

@@ -293,7 +293,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		
 		@Override
 		public void applyRowToBean(Row values, C targetRowBean) {
-			// Algorithm is a little but complex due to embedded beans into this embedded one and the fact that we may not instanciate them
+			// Algorithm is a little bit complex due to embedded beans into this embedded one and the fact that we may not instanciate them
 			// if all of their attributes has default values in current row : because instanciation is done silently by AccessorChainMutator
 			// (the object that let us set embedded bean attributes) we have to check the need of their invokation before ... their invokation.
 			// Therefore we keep a boolean indicating if their values are default ones (if true its means that bean shouldn't be instanciated)
@@ -329,7 +329,7 @@ public class EmbeddedBeanMappingStrategy<C, T extends Table> implements IEmbedde
 		
 		@Override
 		protected void applyValueToBean(C targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
-			// we skip properties set as defined by constructor
+			// we skip properties set by constructor
 			if (!propertiesSetByConstructor.contains(columnFieldEntry.getValue())) {
 				super.applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
 			}

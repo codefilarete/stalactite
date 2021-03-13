@@ -27,7 +27,7 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	/**
 	 * A constructor that maps all fields of a class by name
 	 *
-	 * @param clazz the instances class to be build
+	 * @param clazz instance type to be built
 	 * @param table the mapped table
 	 * @param warnOnMissingColumn indicates if an Exception must be thrown when no {@link Column} in the {@link Table} can be found for a field
 	 * (matching name)

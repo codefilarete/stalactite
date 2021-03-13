@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -57,8 +58,9 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 	
 	static class RelationJoinRowConsumer<C, I> implements JoinRowConsumer {
 		
-		/** The right part of the join */
-		private final EntityInflater<C, I, ?> entityInflater;
+		private final Class<C> entityType;
+		
+		private final BiFunction<Row, ColumnedRow, I> identifierProvider;
 		
 		/** Relation fixer for instances of this strategy on owning strategy entities */
 		private final BeanRelationFixer<Object, C> beanRelationFixer;
@@ -68,20 +70,18 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		private final ColumnedRow columnedRow;
 		
 		RelationJoinRowConsumer(EntityInflater<C, I, ?> entityInflater, BeanRelationFixer<Object, C> beanRelationFixer, ColumnedRow columnedRow) {
-			this.entityInflater = entityInflater;
+			this.entityType = entityInflater.getEntityType();
+			this.identifierProvider = entityInflater::giveIdentifier;
 			this.beanRelationFixer = beanRelationFixer;
 			this.columnedRow = columnedRow;
 			this.rowTransformer = entityInflater.copyTransformerWithAliases(columnedRow);
 		}
 		
-		C applyRelatedEntity(Object parentJoinEntity,
-										   Row row,
-										   EntityCache entityCache) {
-			I rightIdentifier = entityInflater.giveIdentifier(row, columnedRow);
+		C applyRelatedEntity(Object parentJoinEntity, Row row, EntityCache entityCache) {
+			I rightIdentifier = identifierProvider.apply(row, columnedRow);
 			// primary key null means no entity => nothing to do
 			if (rightIdentifier != null) {
-				C rightEntity = entityCache.computeIfAbsent(entityInflater.getEntityType(), rightIdentifier,
-						() -> rowTransformer.transform(row));
+				C rightEntity = entityCache.computeIfAbsent(entityType, rightIdentifier, () -> rowTransformer.transform(row));
 				beanRelationFixer.apply(parentJoinEntity, rightEntity);
 				return rightEntity;
 			}

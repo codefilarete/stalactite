@@ -26,7 +26,7 @@ import org.gama.lang.exception.NotImplementedException;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
@@ -219,10 +219,8 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 				classMappingStrategy, dialect, mock(ConnectionProvider.class)) {
 			
 			@Override
-			InternalExecutor newInternalExecutor() {
-				return new InternalExecutor(
-						new EntityTreeQueryBuilder<>(this.getEntityJoinTree()).buildSelectQuery(this.getParameterBinderProvider()),
-						this.getConnectionProvider()) {
+			InternalExecutor newInternalExecutor(EntityTreeQuery<Object> entityTreeQuery) {
+				return new InternalExecutor(entityTreeQuery, this.getConnectionProvider()) {
 					@Override
 					List<Object> execute(String sql, Collection<? extends List<Object>> idsParcels,
 										 Map<Column<Table, Object>, int[]> inOperatorValueIndexes) {
