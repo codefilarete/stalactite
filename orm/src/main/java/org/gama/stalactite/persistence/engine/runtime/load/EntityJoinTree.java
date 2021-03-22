@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -13,7 +14,9 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
@@ -214,6 +217,21 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	/**
+	 * Returns node that joins given columns. Comparison between columns and node ones is made using reference checking, not equality, because
+	 * there's no limitation on multiple presence of same join in the tree, overall with identical column name, so to enforce finding the matching
+	 * join we use reference check.
+	 * Mainly done for testing purpose.
+	 * 
+	 * @param leftColumn a column to be compared to left columns of this tree
+	 * @param rightColumn a column to be compared to right columns of this tree
+	 * @return the join that as same left and right column as given ones, null if none exists
+	 */
+	@VisibleForTesting
+	<T1 extends Table, T2 extends Table, E, ID, O> AbstractJoinNode<E, T1, T2, ID> giveJoin(Column<T1, O> leftColumn, Column<T2, O> rightColumn) {
+		return Iterables.find(joinIterator(), node -> node.getLeftJoinColumn() == leftColumn && node.getRightJoinColumn() == rightColumn);
+	}
+	
+	/**
 	 * Gives all tables used by this tree
 	 *
 	 * @return all joins tables of this tree
@@ -222,7 +240,7 @@ public class EntityJoinTree<C, I> {
 		// because Table implements an hashCode on their name, we can use an HashSet to avoid duplicates
 		Set<Table> result = new HashSet<>();
 		result.add(root.getTable());
-		foreachJoin(node -> {
+		joinIterator().forEachRemaining(node -> {
 			if (!tablesToBeExcludedFromDDL.contains(node.getTable())) {
 				result.add(node.getTable());
 			}
@@ -231,23 +249,27 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	/**
-	 * Goes down this tree by depth first. Made to avoid everyone implements node iteration.
+	 * Goes down this tree by breadth first. Made to avoid everyone implements node iteration.
 	 * Consumer is invoked foreach node <strong>except root</strong> because it usually has a special treatment. 
 	 * Traversal is made in pre-order : node is consumed first then its children.
 	 * 
 	 * @param consumer a {@link AbstractJoinNode} consumer
+	 * @deprecated replaced by {@link #joinIterator()}
 	 */
+	@Deprecated
 	public void foreachJoin(Consumer<AbstractJoinNode> consumer) {
-		Queue<AbstractJoinNode> stack = new ArrayDeque<>(this.root.getJoins());
-		while (!stack.isEmpty()) {
-			AbstractJoinNode joinNode = stack.poll();
-			consumer.accept(joinNode);
-			stack.addAll(joinNode.getJoins());
-		}
+		joinIterator().forEachRemaining(consumer);
 	}
 	
-	public <E, ID> void projectTo(EntityJoinTree<E, ID> target, String rootStrategyName) {
-		projectTo(target.getJoin(rootStrategyName));
+	/**
+	 * Copies this tree onto given one under given join node name
+	 * @param target tree receiving copies of this tree nodes
+	 * @param joinNodeName node name under which this tree must be copied, 
+	 * @param <E> main entity type of target tree
+	 * @param <ID> main entity identifier type of target tree
+	 */
+	public <E, ID> void projectTo(EntityJoinTree<E, ID> target, String joinNodeName) {
+		projectTo(target.getJoin(joinNodeName));
 	}
 	
 	public void projectTo(JoinNode joinNode) {
@@ -258,13 +280,26 @@ public class EntityJoinTree<C, I> {
 				throw new IllegalArgumentException("Expected column "
 						+ currentNode.getLeftJoinColumn().getAbsoluteName() + " to exist in target table " + targetOwner.getTable().getName());
 			}
-			return copyNodeToParent(currentNode, targetOwner, projectedLeftColumn);
+			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, projectedLeftColumn);
+			// this is only for cleanness : nothing is really expected from this algorithm 
+			String joinName = this.indexNamer.generateName(nodeClone);
+			this.joinIndex.put(joinName, nodeClone);
 			
+			return nodeClone;
 		});
 	}
 	
 	/**
-	 * Goes down this tree by depth first.
+	 * Creates an {@link Iterator} that goes down this tree by breadth first. Made to avoid everyone implements node iteration.
+	 * Consumer is invoked foreach node <strong>except root</strong> because it usually has a special treatment. 
+	 * Traversal is made in pre-order : node is consumed first then its children.
+	 */
+	public Iterator<AbstractJoinNode> joinIterator() {
+		return new NodeIterator();
+	}
+	
+	/**
+	 * Goes down this tree by breadth first.
 	 * Consumer is invoked foreach node <strong>except root</strong> because it usually has a special treatment. 
 	 * Used to create an equivalent tree of this instance with another type of node. This generally requires to know current parent to allow child
 	 * addition : consumer gets current parent as a first argument
@@ -276,25 +311,79 @@ public class EntityJoinTree<C, I> {
 	<S> void foreachJoinWithDepth(S initialNode, BiFunction<S, AbstractJoinNode, S> consumer) {
 		Queue<S> targetPath = new ArrayDeque<>();
 		targetPath.add(initialNode);
-		Queue<AbstractJoinNode> joinStack = new ArrayDeque<>(this.root.getJoins());
-		while (!joinStack.isEmpty()) {
-			AbstractJoinNode currentNode = joinStack.poll();
-			
+		NodeIteratorWithDepth<S> nodeIterator = new NodeIteratorWithDepth<>(targetPath, consumer);
+		// We simply iterate all over the iterator to consume all elements
+		// Please note that forEachRemaining can't be used because it is unsupported by NodeIteratorWithDepth 
+		while (nodeIterator.hasNext()) {
+			nodeIterator.next();
+		}
+		
+	}
+	
+	/**
+	 * Internal class that focuses on nodes. Iteration node is made breadth-first.
+	 */
+	private class NodeIterator implements Iterator<AbstractJoinNode> {
+		
+		protected final Queue<AbstractJoinNode> joinStack;
+		protected AbstractJoinNode currentNode;
+		protected boolean nextDepth = false;
+		
+		public NodeIterator() {
+			joinStack = new ArrayDeque<>(root.getJoins());
+		}
+		
+		@Override
+		public boolean hasNext() {
+			return !joinStack.isEmpty();
+		}
+		
+		@Override
+		@SuppressWarnings("java:S2272")	// NoSuchElementException is manged by Queue#remove()
+		public AbstractJoinNode next() {
+			// we prefer remove() to poll() because it manages NoSuchElementException which is also in next() contract
+			currentNode = joinStack.remove();
+			ReadOnlyList<AbstractJoinNode> nextJoins = currentNode.getJoins();
+			joinStack.addAll(nextJoins);
+			nextDepth = !nextJoins.isEmpty();
+			return currentNode;
+		}
+	}
+	
+	private class NodeIteratorWithDepth<S> extends NodeIterator {
+		
+		private final Queue<S> targetPath;
+		private final BiFunction<S, AbstractJoinNode, S> consumer;
+		
+		public NodeIteratorWithDepth(Queue<S> targetPath, BiFunction<S, AbstractJoinNode, S> consumer) {
+			this.targetPath = targetPath;
+			this.consumer = consumer;
+		}
+		
+		@Override
+		public AbstractJoinNode next() {
+			super.next();
 			S targetOwner = targetPath.peek();
 			S nodeClone = consumer.apply(targetOwner, currentNode);
-			
-			ReadOnlyList<AbstractJoinNode> nextJoins = currentNode.getJoins();
-			if (!nextJoins.isEmpty()) {
-				joinStack.addAll(nextJoins);
+			if (nextDepth)  {
 				targetPath.add(nodeClone);
 			}
+			
+			
 			// if depth changes, we must remove target depth
 			AbstractJoinNode nextIterationNode = joinStack.peek();
 			if (nextIterationNode != null && nextIterationNode.getParent() != currentNode.getParent()) {
 				targetPath.remove();
 			}
+			
+			return currentNode;
 		}
 		
+		@Override
+		public void forEachRemaining(Consumer<? super AbstractJoinNode> action) {
+			// this is not supported since a consumer is already given to constructor
+			throw new UnsupportedOperationException();
+		}
 	}
 	
 	/**
