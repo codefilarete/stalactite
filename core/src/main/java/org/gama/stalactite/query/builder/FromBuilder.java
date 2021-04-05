@@ -1,17 +1,9 @@
 package org.gama.stalactite.query.builder;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.ValueFactoryMap;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.From.AbstractJoin;
@@ -44,79 +36,8 @@ public class FromBuilder implements SQLBuilder {
 			// invalid SQL
 			throw new IllegalArgumentException("Empty from");
 		}
-		
-		ValueFactoryMap<Table, Set<String>> tablesInJoins = new ValueFactoryMap<>(
-				// we use an IdentityHashMap to support presence of table clone : same name but not same instance. Needed in particular for cycling.
-				new IdentityHashMap<>(),
-				k -> new TreeSet<>(Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)));
-		IJoin firstJoin = joinIterator.next();
-		
-		if (firstJoin instanceof AbstractJoin) {
-			AbstractJoin join = (AbstractJoin) firstJoin;
-			
-			Table leftTable = firstJoin.getLeftTable();
-			String tableAlias = dmlNameProvider.getAlias(leftTable);
-			tablesInJoins.get(leftTable).add(tableAlias);
-			
-			Table rightTable = join.getRightTable();
-			String rightTableAlias = dmlNameProvider.getAlias(rightTable);
-			if (tablesInJoins.get(rightTable).contains(rightTableAlias)) {
-				throw new UnsupportedOperationException("Join is declared on and already-added table : " + toString(rightTable, rightTableAlias));
-			}
-			
-			tablesInJoins.get(rightTable).add(rightTableAlias);
-		} else if (firstJoin instanceof CrossJoin) {
-			Table tableToBeAdded = firstJoin.getLeftTable();
-			String tableAlias = dmlNameProvider.getAlias(tableToBeAdded);
-			tablesInJoins.get(tableToBeAdded).add(tableAlias);
-		}
-		sql.cat(firstJoin);
-		
-		joinIterator.forEachRemaining(iJoin -> {
-			
-			Table tableToBeAdded = null;
-			if (iJoin instanceof AbstractJoin) {
-				AbstractJoin join = (AbstractJoin) iJoin;
-				
-				Collection<Table> tablesToBeAdded = new HashSet<>();
-				Table leftTable = join.getLeftTable();
-				String leftTableAlias = dmlNameProvider.getAlias(leftTable);
-				if (!tablesInJoins.get(leftTable).contains(leftTableAlias)) {
-					tablesToBeAdded.add(leftTable);
-				}
-				
-				Table rightTable = join.getRightTable();
-				String rightTableAlias = dmlNameProvider.getAlias(rightTable);
-				if (!tablesInJoins.get(rightTable).contains(rightTableAlias)) {
-					tablesToBeAdded.add(rightTable);
-				}
-				
-				if (tablesToBeAdded.isEmpty()) {
-					throw new UnsupportedOperationException("Join is declared on already-added tables : "
-							+ toString(leftTable, leftTableAlias) + " and " + toString(rightTable, rightTableAlias));
-				} else if (tablesToBeAdded.size() == 2) {
-					throw new UnsupportedOperationException("Join is declared on non-added tables : "
-							+ toString(leftTable, leftTableAlias) + " and " + toString(rightTable, rightTableAlias));
-				}
-				
-				tableToBeAdded = Iterables.first(tablesToBeAdded);
-			} else if (iJoin instanceof CrossJoin) {
-				Table joinTable = iJoin.getLeftTable();
-				String joinTableAlias = dmlNameProvider.getAlias(joinTable);
-				if (tablesInJoins.get(joinTable).contains(joinTableAlias)) {
-					throw new UnsupportedOperationException("Join is declared on an already-added table : " + toString(joinTable, joinTableAlias));
-				}
-				tableToBeAdded = iJoin.getLeftTable();
-			}
-			sql.cat(iJoin);
-			String tableAlias = dmlNameProvider.getAlias(tableToBeAdded);
-			tablesInJoins.get(tableToBeAdded).add(tableAlias);
-		});
+		joinIterator.forEachRemaining(sql::cat);
 		return sql.toString();
-	}
-	
-	private static String toString(Table table, String tableAlias) {
-		return table.getAbsoluteName() + " (alias = " + tableAlias + ")";
 	}
 	
 	/**
