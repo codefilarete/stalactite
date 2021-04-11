@@ -191,7 +191,8 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					persisterRegistry,
 					this.foreignKeyNamingStrategy,
 					this.joinColumnNamingStrategy);
-			cascadeOneConfigurer.appendCascades(new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+			// FIXME : null shouldn't be passed here, path of relations is expected
+			cascadeOneConfigurer.appendCascades(null, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
 		}
 		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {
 			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(

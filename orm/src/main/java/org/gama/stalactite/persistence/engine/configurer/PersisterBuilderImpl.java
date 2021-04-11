@@ -3,15 +3,18 @@ package org.gama.stalactite.persistence.engine.configurer;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -19,6 +22,7 @@ import java.util.function.Function;
 import com.google.common.annotations.VisibleForTesting;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.gama.lang.Reflections;
+import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.Functions;
@@ -26,6 +30,7 @@ import org.gama.lang.function.Hanger.Holder;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -58,12 +63,11 @@ import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleSolver;
 import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
+import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleSolver;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -73,7 +77,6 @@ import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierMan
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.query.EntityCriteriaSupport.EntityGraphNode;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -100,10 +103,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	static final ThreadLocal<Set<Class>> ENTITY_CANDIDATES = new ThreadLocal<>();
 	
 	/**
-	 * Current treated configurations. Made to detect cycle in graph. 
+	 * Currently treated configurations. Made to detect cycle in graph. 
 	 */
 	@VisibleForTesting
-	static final ThreadLocal<Set<EntityMappingConfiguration>> TREATED_CONFIGURATIONS = new ThreadLocal<>();
+	static final ThreadLocal<Queue<EntityMappingConfiguration>> TREATED_CONFIGURATIONS = new ThreadLocal<>();
+	
+	/**
+	 * Currently treated path of relations. Made to compute a unique identifier to deal with of same table in graph. 
+	 */
+	@VisibleForTesting
+	static final ThreadLocal<Deque<ValueAccessPoint>> CURRENT_PATH = new ThreadLocal<>();
 	
 	/**
 	 * List of post initializers to be invoked after persister instanciation and main configuration
@@ -216,7 +225,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		if (isInitiator) {
 			ENTITY_CANDIDATES.set(new HashSet<>());
-			TREATED_CONFIGURATIONS.set(new HashSet<>());
+			TREATED_CONFIGURATIONS.set(Collections.asLifoQueue(new ArrayDeque<>()));
+			CURRENT_PATH.set(new ArrayDeque<>());
 			POST_INITIALIZERS.set(new ArrayList<>());
 		}
 		
@@ -250,6 +260,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			if (isInitiator) {
 				ENTITY_CANDIDATES.remove();
 				TREATED_CONFIGURATIONS.remove();
+				CURRENT_PATH.remove();
 				POST_INITIALIZERS.remove();
 			}
 		}
@@ -257,10 +268,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	@VisibleForTesting
 	IEntityConfiguredJoinedTablesPersister<C, I> doBuild(@Nullable Table table,
-																 GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
-																 Dialect dialect,
-																 IConnectionConfiguration connectionConfiguration,
-																 PersisterRegistry persisterRegistry) {
+														 GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
+														 Dialect dialect,
+														 IConnectionConfiguration connectionConfiguration,
+														 PersisterRegistry persisterRegistry) {
 		init(dialect.getColumnBinderRegistry(), table);
 		
 		mapEntityConfigurationPerTable();
@@ -363,6 +374,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			return entityType;
 		}
 		
+		/**
+		 * Invoked after main entity graph creation
+		 * 
+		 * @param persister entity type persister
+		 */
 		public abstract void consume(IEntityConfiguredJoinedTablesPersister<P, Object> persister);
 	}
 	
@@ -371,7 +387,26 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 																		  IConnectionConfiguration connectionConfiguration,
 																		  PersisterRegistry persisterRegistry,
 																		  JoinedTablesPersister<C, I, T> sourcePersister) {
+		
+		// Small container aimed at lazily registering a relation into persister so it can be targeted by EntityCriteria
+		class GraphLoadingRelationRegisterer extends PostInitializer<TRGT> {
+			
+			private final IReversibleAccessor reversibleAccessor;
+			
+			GraphLoadingRelationRegisterer(Class<TRGT> entityType, IReversibleAccessor reversibleAccessor) {
+				super(entityType);
+				this.reversibleAccessor = reversibleAccessor;
+			}
+			
+			@Override
+			public void consume(IEntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
+				sourcePersister.getCriteriaSupport().getRootConfiguration().registerRelation(reversibleAccessor, targetPersister.getMappingStrategy());
+			}
+		}
+		
+		
 		for (CascadeOne<C, TRGT, TRGTID> cascadeOne : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
+			CURRENT_PATH.get().addLast(cascadeOne.getTargetProvider());
 			CascadeOneConfigurer<C, TRGT, I, TRGTID> cascadeOneConfigurer = new CascadeOneConfigurer<>(cascadeOne,
 					sourcePersister,
 					dialect,
@@ -379,22 +414,39 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					persisterRegistry,
 					this.foreignKeyNamingStrategy,
 					this.joinColumnNamingStrategy);
+			
+			StringAppender relationIdentifierBuilder = new StringAppender() {
+				@Override
+				public StringAppender cat(Object s) {
+					if (s instanceof ValueAccessPoint) {
+						return super.cat(AccessorDefinition.giveDefinition((ValueAccessPoint) s).getName());
+					} else {
+						return super.cat(s);
+					}
+				}
+			};
+			String relationIdentifier = relationIdentifierBuilder.ccat(CURRENT_PATH.get(), "_").toString();
+			
 			if (isCycling(cascadeOne.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we had a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
 				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be inhanced), and
 				// overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
 				Class<TRGT> targetEntityType = cascadeOne.getTargetMappingConfiguration().getEntityType();
-				OneToOneCycleSolver<C, TRGT> cycleSolver = (OneToOneCycleSolver<C, TRGT>)
+				OneToOneCycleSolver<TRGT> cycleSolver = (OneToOneCycleSolver<TRGT>)
 						Iterables.find(POST_INITIALIZERS.get(), p -> p instanceof OneToOneCycleSolver && p.getEntityType() == targetEntityType);
 				if (cycleSolver == null) {
 					cycleSolver = new OneToOneCycleSolver<>(targetEntityType);
 					POST_INITIALIZERS.get().add(cycleSolver);
 				}
-				cycleSolver.addCycleSolver(cascadeOne.getTargetProvider(), cascadeOneConfigurer);
+				cycleSolver.addCycleSolver(relationIdentifier, cascadeOneConfigurer);
 			} else {
-				cascadeOneConfigurer.appendCascades(new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+				cascadeOneConfigurer.appendCascades(relationIdentifier, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
 			}
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			POST_INITIALIZERS.get().add(new GraphLoadingRelationRegisterer(cascadeOne.getTargetMappingConfiguration().getEntityType(),
+					cascadeOne.getTargetProvider()));
+			CURRENT_PATH.get().removeLast();
 		}
 		for (CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>> cascadeMany : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
 			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(
@@ -410,7 +462,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					OneToManyCycleSolver(Class<TRGT> entityType) {
 						super(entityType);
 					}
-					
+
 					@Override
 					public void consume(IEntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
 						cascadeManyConfigurer.appendCascade(cascadeMany,
@@ -433,8 +485,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 						this.associationTableNamingStrategy,
 						new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()));
 			}
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			POST_INITIALIZERS.get().add(new GraphLoadingRelationRegisterer(cascadeMany.getTargetMappingConfiguration().getEntityType(),
+					cascadeMany.getCollectionProvider()));
+			
 		}
-		registerTreeRelationsInGraphLoading(entityMappingConfiguration, sourcePersister.getCriteriaSupport().getRootConfiguration(), persisterRegistry);
 		
 		// taking element collections into account
 		for (ElementCollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
@@ -454,63 +509,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			result.getUpdateExecutor().setVersioningStrategy(versioningStrategy);
 			result.getInsertExecutor().setVersioningStrategy(versioningStrategy);
 		}
-	}
-	
-	/**
-	 * Declares one-to-one and one-to-many graph properties as criteria of {@link org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria}.
-	 * Made by registering these relations to given node. Necessary operation without which entity graph could not be loaded.
-	 * <strong>Requires that one-to-one and one-to-many target persisters to be already present in given {@link PersisterRegistry}</strong>
-	 *
-	 * @param configurationSupport entity mapping configuration which relations must be registered onto target
-	 * @param target the node on which to add sub graph elements
-	 * @param persisterRegistry a per-entity {@link org.gama.stalactite.persistence.mapping.IEntityMappingStrategy} registry 
-	 */
-	private static <SRC, SRCID, TRGT, TRGTID> void registerTreeRelationsInGraphLoading(EntityMappingConfiguration<SRC, SRCID> configurationSupport,
-																					   EntityGraphNode target,
-																					   PersisterRegistry persisterRegistry) {
-		// Small container aimed at lazily registering a relation into persister, used only if cycling persister is detected
-		class GraphLoadingRelationRegisterer extends PostInitializer<TRGT> {
-			
-			private final IReversibleAccessor reversibleAccessor;
-			
-			GraphLoadingRelationRegisterer(Class<TRGT> entityType, IReversibleAccessor reversibleAccessor) {
-				super(entityType);
-				this.reversibleAccessor = reversibleAccessor;
-			}
-			
-			@Override
-			public void consume(IEntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
-				target.registerRelation(reversibleAccessor, targetPersister.getMappingStrategy());
-			}
-		}
-		
-		// registering one-to-one relations
-		List<CascadeOne<SRC, TRGT, TRGTID>> oneToOnes = configurationSupport.getOneToOnes();
-		oneToOnes.forEach(cascadeOne -> {
-			if (isCycling(cascadeOne.getTargetMappingConfiguration())) {
-				PostInitializer postInitializer = new GraphLoadingRelationRegisterer(cascadeOne.getTargetMappingConfiguration().getEntityType(), cascadeOne.getTargetProvider());
-				POST_INITIALIZERS.get().add(postInitializer);
-			} else {
-				EntityGraphNode entityGraphNode = target.registerRelation(cascadeOne.getTargetProvider(),
-						((IConfiguredPersister) persisterRegistry.getPersister(cascadeOne.getTargetMappingConfiguration().getEntityType())).getMappingStrategy());
-				// going deeper
-				registerTreeRelationsInGraphLoading(cascadeOne.getTargetMappingConfiguration(), entityGraphNode, persisterRegistry);
-			}
-		});
-		
-		// registering one-to-many relations
-		List<CascadeMany<SRC, TRGT, TRGTID, ? extends Collection<TRGT>>> oneToManys = configurationSupport.getOneToManys();
-		oneToManys.forEach(cascadeMany -> {
-			if (isCycling(cascadeMany.getTargetMappingConfiguration())) {
-				PostInitializer postInitializer = new GraphLoadingRelationRegisterer(cascadeMany.getTargetMappingConfiguration().getEntityType(), cascadeMany.getCollectionProvider());
-				POST_INITIALIZERS.get().add(postInitializer);
-			} else {
-				EntityGraphNode entityGraphNode = target.registerRelation(cascadeMany.getCollectionProvider(),
-						((IConfiguredPersister) persisterRegistry.getPersister(cascadeMany.getTargetMappingConfiguration().getEntityType())).getMappingStrategy());
-				// going deeper
-				registerTreeRelationsInGraphLoading(cascadeMany.getTargetMappingConfiguration(), entityGraphNode, persisterRegistry);
-			}
-		});
 	}
 	
 	private <T extends Table> KeepOrderSet<JoinedTablesPersister<C, I, Table>> buildParentPersisters(Iterable<Mapping> mappings,

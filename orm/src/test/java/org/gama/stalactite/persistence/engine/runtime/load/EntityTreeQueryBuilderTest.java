@@ -188,7 +188,7 @@ class EntityTreeQueryBuilderTest {
 		
 		return new Object[] { // kind of inheritance "table per class" mapping
 				totoMappingMock, tataMappingMock, totoPrimaryKey, tataPrimaryKey,
-				"select Toto.id as Toto_id, Toto.name as Toto_name, Tata.id as Tata_id from Toto inner join Tata on Toto.id = Tata.id"
+				"select Toto.id as Toto_id, Toto.name as Toto_name, Tata.id as Tata_id from Toto inner join Tata as Tata on Toto.id = Tata.id"
 		};
 	}
 	
@@ -213,7 +213,7 @@ class EntityTreeQueryBuilderTest {
 				new Object[] {
 						totoMappingMock, tataMappingMock, totoOtherTableId, tataPrimaryKey,
 						"select Toto.id as Toto_id, Toto.name as Toto_name, Toto.otherTable_id as Toto_otherTable_id,"
-								+ " Tata.id as Tata_id from Toto inner join Tata on Toto.otherTable_id = Tata.id" }
+								+ " Tata.id as Tata_id from Toto inner join Tata as Tata on Toto.otherTable_id = Tata.id" }
 		};
 	}
 	
@@ -268,10 +268,10 @@ class EntityTreeQueryBuilderTest {
 		assertEquals("select"
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
+						+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
 						+ " from Toto"
-						+ " inner join Tata on Toto.id = Tata.id"
-						+ " inner join Tutu on Tata.id = Tutu.id"
+						+ " inner join Tata as Tata on Toto.id = Tata.id"
+						+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id"
 				, sqlQueryBuilder.toSQL());
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
@@ -337,8 +337,8 @@ class EntityTreeQueryBuilderTest {
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
 						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
 						+ " from Toto"
-						+ " inner join Tata on Toto.tataId = Tata.id"
-						+ " left outer join Tutu on Toto.tutuId = Tutu.id"
+						+ " inner join Tata as Tata on Toto.tataId = Tata.id"
+						+ " left outer join Tutu as Tutu on Toto.tutuId = Tutu.id"
 				, sqlQueryBuilder.toSQL());
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
@@ -411,11 +411,11 @@ class EntityTreeQueryBuilderTest {
 						+ " Toto.id as Toto_id, Toto.name as Toto_name"
 						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
 						+ ", Titi.id as Titi_id, Titi.name as Titi_name"
-						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
+						+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
 						+ " from Toto"
-						+ " inner join Tata on Toto.id = Tata.id"
-						+ " inner join Titi on Toto.id = Titi.id"
-						+ " inner join Tutu on Tata.id = Tutu.id"
+						+ " inner join Tata as Tata on Toto.id = Tata.id"
+						+ " inner join Titi as Titi on Toto.id = Titi.id"
+						+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id"
 				, sqlQueryBuilder.toSQL());
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)

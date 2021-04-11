@@ -382,7 +382,7 @@ public class JoinedTablesPersisterTest {
 						+ ", Toto2.x as " + toto2XAlias
 						+ ", Toto2.y as " + toto2YAlias
 						+ ", Toto2.z as " + toto2ZAlias
-						+ " from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
+						+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
 				"select Toto1.id as " + totoIdAlias
 						+ ", Toto1.a as " + totoAAlias
 						+ ", Toto1.b as " + totoBAlias
@@ -390,7 +390,7 @@ public class JoinedTablesPersisterTest {
 						+ ", Toto2.x as " + toto2XAlias
 						+ ", Toto2.y as " + toto2YAlias
 						+ ", Toto2.z as " + toto2ZAlias
-						+ " from Toto1 inner join Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
+						+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
 				statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 		assertCapturedPairsEqual(expectedPairs);

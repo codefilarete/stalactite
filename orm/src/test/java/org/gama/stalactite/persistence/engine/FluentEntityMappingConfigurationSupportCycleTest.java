@@ -17,10 +17,10 @@ import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
@@ -63,12 +64,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		void crud_cycleWithIntermediary_ownedBySource() {
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.add(House::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getId).identifier(ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -117,12 +118,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.add(House::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getId).identifier(ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reverseGardenerId)
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -169,7 +170,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()));
 			
@@ -196,7 +197,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId));
 			
@@ -222,13 +223,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration())
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.add(House::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getId).identifier(ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -280,13 +281,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration())
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.add(House::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getId).identifier(ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -326,13 +327,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.add(House::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getId).identifier(ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -387,13 +388,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.add(House::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.add(Address::getId).identifier(ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -424,6 +425,123 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// partner and gardeneer must be exactly same instance since its a cycle
 			assertSame(loadedPerson.getPartner(), loadedPerson.getHouse().getGardener());
 		}
+		
+		@Test
+		void crud_2cycles_sibling() {
+			new Query();
+			Table personTable = new Table("Person");
+			
+			// we need a holder to skip final variable problem 
+			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			IFluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class,
+					Identifier.LONG_TYPE)
+					.add(House::getId).identifier(ALREADY_ASSIGNED)
+					.add(House::getName);
+			EntityMappingConfiguration<House, Identifier<Long>> houseMappingConfiguration = houseMapping.getConfiguration();
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addOneToOne(Person::getHouse, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.addOneToOne(Person::getHouse1, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+			);
+			
+			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			House house = new House(123);
+			house.setName("main house");
+			johnDo.setHouse(house);
+			
+			// adding a secondary house
+			House house1 = new House(456);
+			house1.setName("secondary house");
+			johnDo.setHouse1(house1);
+			
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(johnDo.getHouse1(), loadedPerson.getHouse1());
+			
+			johnDo.getHouse().setName("new main house name");
+			personPersister.update(johnDo, loadedPerson, true);
+			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+		}
+		
+		@Test
+		void crud_2cycles_sibling_ownedByTarget() {
+			Table personTable = new Table("Person");
+			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
+			
+			// we need a holder to skip final variable problem 
+			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			IFluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
+					.add(House::getId).identifier(ALREADY_ASSIGNED)
+					.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
+							.add(Address::getId).identifier(ALREADY_ASSIGNED)
+							.add(Address::getLocation))
+					.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
+					.cascading(RelationMode.ALL_ORPHAN_REMOVAL);
+			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.add(Person::getName)
+					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
+					.addOneToOne(Person::getHouse, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.addOneToOne(Person::getHouse1, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+			);
+			
+			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person partner = new Person(666);
+			partner.setName("Saca Do");
+			johnDo.setPartner(partner);
+			House house = new House(123);
+			house.setAddress(new Address(321).setLocation("Somewhere in the world"));
+			johnDo.setHouse(house);
+			Person myGardener = new Person(888);
+			myGardener.setName("Poppy");
+			house.setGardener(myGardener);
+			
+			// adding a secondary house
+			House house1 = new House(456);
+			house1.setAddress(new Address(654).setLocation("Somewhere else in the world"));
+			johnDo.setHouse1(house1);
+			Person myGardener1 = new Person(999);
+			myGardener1.setName("Daffodil");
+			house1.setGardener(myGardener1);
+			
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(johnDo.getHouse1(), loadedPerson.getHouse1());
+			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			
+			Person newGardener = new Person(new PersistedIdentifier<>(999L));
+			newGardener.setName("Dandelion");
+			johnDo.getHouse1().setGardener(newGardener);
+			personPersister.update(johnDo, loadedPerson, true);
+			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertEquals(999, loadedPerson.getHouse1().getGardener().getId().getSurrogate());
+			assertEquals("Dandelion", loadedPerson.getHouse1().getGardener().getName());
+			
+			personPersister.delete(johnDo);
+			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+					.mapKey(Long::new, "id", long.class)
+					.execute();
+			// previous partner is the only Person remainig because we asked for orphan removal
+			assertEquals(Arrays.asList(666L), allPersons);
+		}
 	}
 	
 	@Nested
@@ -438,7 +556,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
 			
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration());
 		}
@@ -485,7 +603,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		@Test
 		void select_ownedByReverseSide_1Parent_2Children() {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::getFather);
@@ -587,6 +705,15 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			return this;
 		}
 		
+		public House getHouse1() {
+			return this.house1;
+		}
+		
+		public Person setHouse1(House house) {
+			this.house1 = house;
+			return this;
+		}
+		
 		@Override
 		public boolean equals(Object o) {
 			if (this == o) return true;
@@ -630,6 +757,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		
 		private Address address;
 		
+		private String name;
+		
 		private Set<Person> inhabitants = new HashSet<>(); 
 		
 		public House() {
@@ -671,6 +800,15 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			return this;
 		}
 		
+		public String getName() {
+			return name;
+		}
+		
+		public House setName(String name) {
+			this.name = name;
+			return this;
+		}
+		
 		@Override
 		public boolean equals(Object o) {
 			if (this == o) return true;
@@ -681,6 +819,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			if (!id.equals(house.id)) return false;
 			if (!Objects.equals(gardener, house.gardener)) return false;
 			if (!Objects.equals(address, house.address)) return false;
+			if (!Objects.equals(name, house.name)) return false;
 			return inhabitants.equals(house.inhabitants);
 		}
 		
@@ -689,6 +828,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			int result = id.hashCode();
 			result = 31 * result + (gardener != null ? gardener.hashCode() : 0);
 			result = 31 * result + (address != null ? address.hashCode() : 0);
+			result = 31 * result + (name != null ? name.hashCode() : 0);
 			result = 31 * result + inhabitants.hashCode();
 			return result;
 		}
@@ -704,6 +844,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					"id=" + id +
 					", gardener=" + gardener +
 					", address=" + address +
+					", name=" + name +
 					", inhabitants=" + inhabitants +
 					'}';
 		}

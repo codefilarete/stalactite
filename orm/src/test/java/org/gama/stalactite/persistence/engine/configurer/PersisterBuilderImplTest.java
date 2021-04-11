@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -114,14 +115,14 @@ public class PersisterBuilderImplTest {
 	@BeforeEach
 	void initEntityCandidates() {
 		PersisterBuilderImpl.ENTITY_CANDIDATES.set(new HashSet<>());
-		PersisterBuilderImpl.TREATED_CONFIGURATIONS.set(new HashSet<>());
+		PersisterBuilderImpl.TREATED_CONFIGURATIONS.set(Collections.asLifoQueue(new ArrayDeque<>()));
 		PersisterBuilderImpl.POST_INITIALIZERS.set(new ArrayList<>());
 	}
 	
 	@AfterEach
 	void removeEntityCandidates() {
 		PersisterBuilderImpl.ENTITY_CANDIDATES.remove();
-		PersisterBuilderImpl.TREATED_CONFIGURATIONS.set(new HashSet<>());
+		PersisterBuilderImpl.TREATED_CONFIGURATIONS.set(Collections.asLifoQueue(new ArrayDeque<>()));
 		PersisterBuilderImpl.POST_INITIALIZERS.set(new ArrayList<>());
 	}
 	
@@ -609,8 +610,8 @@ public class PersisterBuilderImplTest {
 						+ " AbstractVehicle.id as AbstractVehicle_id," 
 						+ " Vehicle.color as Vehicle_color," 
 						+ " Vehicle.id as Vehicle_id" 
-						+ " from Car inner join AbstractVehicle on Car.id = AbstractVehicle.id" 
-						+ " inner join Vehicle on Car.id = Vehicle.id" 
+						+ " from Car inner join AbstractVehicle as AbstractVehicle on Car.id = AbstractVehicle.id" 
+						+ " inner join Vehicle as Vehicle on Car.id = Vehicle.id" 
 						+ " where Car.id in (?)"), selectCaptor.getAllValues());
 	}
 	
@@ -780,7 +781,7 @@ public class PersisterBuilderImplTest {
 		
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl<>(personMappingConfiguration.get().getConfiguration());
 		ThreadLocals.doWithThreadLocal(PersisterBuilderImpl.ENTITY_CANDIDATES, HashSet::new, (Runnable) () -> {
-			ThreadLocals.doWithThreadLocal(PersisterBuilderImpl.TREATED_CONFIGURATIONS, HashSet::new, (Runnable) () -> {
+			ThreadLocals.doWithThreadLocal(PersisterBuilderImpl.TREATED_CONFIGURATIONS, () -> Collections.asLifoQueue(new ArrayDeque<>()), (Runnable) () -> {
 				// we don't call build() because it cleans ThreadLocal contexts so isCycling would always return false
 				testInstance.doBuild(null, DIALECT::buildGeneratedKeysReader, DIALECT, new ConnectionConfigurationSupport(new JdbcConnectionProvider(dataSource), 10), new DummyPersisterRegistry());
 				assertTrue(PersisterBuilderImpl.isCycling(personMappingConfiguration.get().getConfiguration()));

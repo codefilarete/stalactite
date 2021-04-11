@@ -155,8 +155,11 @@ class EntitySelectExecutorTest {
 	@Test
 	void loadSelection_oneToOneCase() throws SQLException {
 		createConnectionProvider(Arrays.asList(
-				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L).add("Country_capitalId", 42L)
-						.add("City_id", 42L).add("City_name", "Paris")
+				Maps.forHashMap(String.class, Object.class)
+						.add("Country_name", "France")
+						.add("Country_id", 12L)
+						.add("capital_id", 42L)
+						.add("capital_name", "Paris")
 		));
 		
 		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
@@ -197,15 +200,24 @@ class EntitySelectExecutorTest {
 	@Test
 	void loadSelection_oneToManyCase() throws SQLException {
 		createConnectionProvider(Arrays.asList(
-				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
-						.add("Country_cities_Country_id", 12L).add("Country_cities_City_id", 42L)
-						.add("City_id", 42L).add("City_name", "Paris"),
-				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
-						.add("Country_cities_Country_id", 12L).add("Country_cities_City_id", 43L)
-						.add("City_id", 43L).add("City_name", "Lyon"),
-				Maps.asMap("Country_name", (Object) "France").add("Country_id", 12L)
-						.add("Country_cities_Country_id", 12L).add("Country_cities_City_id", 44L)
-						.add("City_id", 44L).add("City_name", "Grenoble")
+				Maps.forHashMap(String.class, Object.class)
+						.add("Country_name", "France")
+						.add("Country_id", 12L)
+						.add("Country_cities_Country_id", 12L)
+						.add("Country_cities_City_id", 42L)
+						.add("Country_cities_City_name", "Paris"),
+				Maps.forHashMap(String.class, Object.class)
+						.add("Country_name", "France")
+						.add("Country_id", 12L)
+						.add("Country_cities_Country_id", 12L)
+						.add("Country_cities_City_id", 43L)
+						.add("Country_cities_City_name", "Lyon"),
+				Maps.forHashMap(String.class, Object.class)
+						.add("Country_name", "France")
+						.add("Country_id", 12L)
+						.add("Country_cities_Country_id", 12L)
+						.add("Country_cities_City_id", 44L)
+						.add("Country_cities_City_name", "Grenoble")
 		));
 		
 		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister =

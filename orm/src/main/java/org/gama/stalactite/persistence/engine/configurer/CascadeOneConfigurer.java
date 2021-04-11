@@ -103,18 +103,20 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 	}
 	
-	public void appendCascades(PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
+	public void appendCascades(String tableAlias,
+							   PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 		IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				// please note that even if no table is found in configuration, build(..) will create one
 				.build(dialect, connectionConfiguration, persisterRegistry,
 						nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
-		this.configurer.appendCascades(targetPersister);
+		this.configurer.appendCascades(tableAlias, targetPersister);
 	}
 	
 	public ConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(
+			String tableAlias,
 			IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		return this.configurer.appendCascadesWith2PhasesSelect(targetPersister, firstPhaseCycleLoadListener);
+		return this.configurer.appendCascadesWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 	}
 	
 	private abstract class ConfigurerTemplate {
@@ -147,16 +149,18 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			determineRelationFixer();
 		}
 		
-		public void appendCascades(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+		public void appendCascades(String tableAlias,
+								   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 			prepare(targetPersister);
-			addSelectCascade(targetPersister, beanRelationFixer);
+			addSelectCascade(tableAlias, targetPersister, beanRelationFixer);
 			addWriteCascades(targetPersister);
 		}
 		
-		public ConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+		public ConfigurationResult<SRC, TRGT> appendCascadesWithSelectIn2Phases(String tableAlias,
+																				IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			prepare(targetPersister);
-			add2PhasesSelectCascade(targetPersister, firstPhaseCycleLoadListener);
+			addSelectCascadeIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 			addWriteCascades(targetPersister);
 			return new ConfigurationResult<>(beanRelationFixer, sourcePersister);
 		}
@@ -190,10 +194,11 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		protected abstract void addDeleteCascade(IEntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval);
 		
 		protected void addSelectCascade(
+				String tableAlias,
 				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
 			// we add target subgraph joins to the one that was created
-			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, beanRelationFixer, cascadeOne.isNullable());
+			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, tableAlias, beanRelationFixer, cascadeOne.isNullable());
 			
 			// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 			// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
@@ -221,7 +226,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			});
 		}
 		
-		abstract protected void add2PhasesSelectCascade(
+		abstract protected void addSelectCascadeIn2Phases(
+				String tableAlias,
 				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
 		
@@ -257,7 +263,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 		
 		@Override
-		protected void add2PhasesSelectCascade(
+		protected void addSelectCascadeIn2Phases(
+				String tableAlias,
 				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			
@@ -269,7 +276,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
 					leftColumn,
 					targetTableClonePK,
-					tableCloneAlias,
+					tableAlias,
 					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(targetTableClonePK),
 					(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(targetTableClonePK)),
 					false);
@@ -567,7 +574,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 		
 		@Override
-		protected void add2PhasesSelectCascade(
+		protected void addSelectCascadeIn2Phases(
+				String tableAlias,
 				IConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			
@@ -576,11 +584,10 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			Table targetTableClone = new Table(targetTable.getName());
 			Column relationOwnerForeignKey = targetTableClone.addColumn(rightColumn.getName(), rightColumn.getJavaType());
 			Column relationOwnerPrimaryKey = targetTableClone.addColumn(targetPrimaryKey.getName(), targetPrimaryKey.getJavaType());
-			String tableCloneAlias = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
 			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
 					leftColumn,
 					relationOwnerForeignKey,
-					tableCloneAlias,
+					tableAlias,
 					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
 					(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey)), false);
 			
