@@ -38,7 +38,7 @@ class JoinRootTest {
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(mappingStrategyMock), table));
 		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> {
 			// we don't care about other arguments (null passed) because existing strategy name is checked first
-			entityJoinTree.addRelationJoin("XX", null, null, null, OUTER, null);
+			entityJoinTree.addRelationJoin("XX", null, null, null, null, OUTER, null);
 		});
 		assertEquals("No strategy with name XX exists to add a new strategy on", thrownException.getMessage());
 	}
@@ -62,9 +62,9 @@ class JoinRootTest {
 		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, INNER, null);
-		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, INNER, null);
-		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), totoPrimaryKey, titiPrimaryKey, INNER, null);
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
+		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
+		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), totoPrimaryKey, titiPrimaryKey, null, INNER, null);
 		
 		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), entityJoinTree.giveTables());
 	}

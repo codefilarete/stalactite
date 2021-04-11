@@ -110,7 +110,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
 			String joinName = persister.getEntityJoinTree().addRelationJoin(leftStrategyName, new EntityMappingStrategyAdapter<>(strategy),
-					leftJoinColumn, rightJoinColumn, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
+					leftJoinColumn, rightJoinColumn, null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
 			joinNames.add(joinName);
 		});
 		if (joinNames.size() == 1) {

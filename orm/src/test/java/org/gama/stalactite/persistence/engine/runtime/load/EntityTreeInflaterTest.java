@@ -55,7 +55,7 @@ class EntityTreeInflaterTest {
 		when(leftEntityInflater.getEntityType()).thenReturn(Object.class);
 		IRowTransformer rightEntityBuilder = mock(IRowTransformer.class);
 		when(rightEntityBuilder.transform(any())).thenReturn(new Object());
-		when(leftEntityInflater.copyTransformerWithAliases(any())).thenReturn(rightEntityBuilder);
+		when(leftEntityInflater.copyTransformerWithAliases(any(ColumnedRow.class))).thenReturn(rightEntityBuilder);
 		
 		// we create a second inflater to be related with first one, but we'll expect its transform() method not to be invoked
 		EntityInflater rightEntityInflater = Mockito.mock(EntityInflater.class);
@@ -68,7 +68,7 @@ class EntityTreeInflaterTest {
 		// but we'll expect none of its method to be invoked
 		EntityInflater rightMostEntityInflater = Mockito.mock(EntityInflater.class);
 		IRowTransformer rightMostRowTransformerMock = mock(IRowTransformer.class);
-		when(rightMostEntityInflater.copyTransformerWithAliases(any())).thenReturn(rightMostRowTransformerMock);
+		when(rightMostEntityInflater.copyTransformerWithAliases(any(ColumnedRow.class))).thenReturn(rightMostRowTransformerMock);
 		
 		// composing entity tree : leftInflater gets a relation on rightInflater
 		EntityJoinTree entityJoinTree = new EntityJoinTree<>(new JoinRoot<>(leftEntityInflater, leftTable));
@@ -77,6 +77,7 @@ class EntityTreeInflaterTest {
 				rightEntityInflater,
 				leftTablePk,
 				rightTableFkToLeftTable,
+				null,
 				JoinType.OUTER,
 				relationFixer);
 		entityJoinTree.addRelationJoin(
@@ -84,11 +85,12 @@ class EntityTreeInflaterTest {
 				rightMostEntityInflater,
 				rightTablePk,
 				rightMostTableFkToRightTable,
+				null,
 				JoinType.OUTER,
 				Mockito.mock(BeanRelationFixer.class));
 		
-		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree).buildSelectQuery(new Dialect().getColumnBinderRegistry());
-		EntityTreeInflater testInstance = new EntityTreeInflater<>(entityJoinTree, new ColumnedRow(entityTreeQuery.getColumnAliases()::get));
+		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, new Dialect().getColumnBinderRegistry()).buildSelectQuery();
+		EntityTreeInflater testInstance = entityTreeQuery.getInflater();
 		
 		
 		Row databaseData = new Row()

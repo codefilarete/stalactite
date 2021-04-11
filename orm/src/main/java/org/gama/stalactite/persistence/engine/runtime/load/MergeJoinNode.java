@@ -35,7 +35,7 @@ class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJo
 	}
 	
 	@Override
-	MergeJoinRowConsumer<C> toConsumer(ColumnedRow columnedRow) {
+	public JoinRowConsumer toConsumer(ColumnedRow columnedRow) {
 		return new MergeJoinRowConsumer<>(merger.copyTransformerWithAliases(columnedRow));
 	}
 	

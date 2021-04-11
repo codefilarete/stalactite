@@ -52,7 +52,7 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 	}
 	
 	@Override
-	RelationJoinRowConsumer<C, ?> toConsumer(ColumnedRow columnedRow) {
+	public RelationJoinRowConsumer<C, ?> toConsumer(ColumnedRow columnedRow) {
 		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow);
 	}
 	

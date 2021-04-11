@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.gama.lang.collection.ReadOnlyList;
@@ -10,6 +11,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.Entity
 import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IRowTransformer;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
@@ -46,6 +48,11 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	}
 	
 	@Override
+	public Set<Column<T, Object>> getColumnsToSelect() {
+		return getEntityInflater().getSelectableColumns();
+	}
+	
+	@Override
 	public ReadOnlyList<AbstractJoinNode> getJoins() {
 		return new ReadOnlyList<>(joins);
 	}
@@ -56,11 +63,13 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	}
 	
 	@Nullable
+	@Override
 	public String getTableAlias() {
 		return tableAlias;
 	}
 	
-	JoinRootRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
+	@Override
+	public JoinRootRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
 		return new JoinRootRowConsumer<>(entityInflater, columnedRow);
 	}
 	
@@ -76,12 +85,9 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 		private final ColumnedRow columnedRow;
 		
 		JoinRootRowConsumer(EntityInflater<C, I, ? extends Table> entityInflater, ColumnedRow columnedRow) {
-			this(entityInflater.getEntityType(), entityInflater::giveIdentifier, entityInflater.copyTransformerWithAliases(columnedRow), columnedRow);
-		}
-		JoinRootRowConsumer(Class<C> entityType, BiFunction<Row, ColumnedRow, I> identifierDecoder, IRowTransformer<C> entityBuilder, ColumnedRow columnedRow) {
-			this.entityType = entityType;
-			this.identifierDecoder = identifierDecoder;
-			this.entityBuilder = entityBuilder;
+			this.entityType = entityInflater.getEntityType();
+			this.identifierDecoder = entityInflater::giveIdentifier;
+			this.entityBuilder = entityInflater.copyTransformerWithAliases(columnedRow);
 			this.columnedRow = columnedRow;
 		}
 		

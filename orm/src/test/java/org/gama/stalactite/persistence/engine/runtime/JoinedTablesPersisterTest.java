@@ -175,7 +175,7 @@ public class JoinedTablesPersisterTest {
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
 				new EntityMappingStrategyAdapter<>(persister2.getMappingStrategy()),
-				leftJoinColumn, rightJoinColumn, JoinType.INNER, Toto::merge);
+				leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge);
 		testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 			@Override
 			public void afterInsert(Iterable<? extends Toto> entities) {

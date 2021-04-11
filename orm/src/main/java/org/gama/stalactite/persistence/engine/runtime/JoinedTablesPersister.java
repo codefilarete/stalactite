@@ -43,7 +43,7 @@ import static java.util.Collections.emptyList;
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by the
  * {@link ClassMappingStrategy} passed to constructor and then it can be added to some other {@link IJoinedTablesPersister} thanks to
  * {@link IJoinedTablesPersister#joinAsMany(IJoinedTablesPersister, Column, Column, BeanRelationFixer, String, boolean)} and
- * {@link IJoinedTablesPersister#joinAsOne(IJoinedTablesPersister, Column, Column, BeanRelationFixer, boolean)}.
+ * {@link IJoinedTablesPersister#joinAsOne(IJoinedTablesPersister, Column, Column, String, BeanRelationFixer, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
@@ -244,6 +244,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
 																				  Column<T1, JID> leftColumn,
 																				  Column<T2, JID> rightColumn,
+																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
 		
@@ -256,6 +257,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 				(EntityInflater) strategy,
 				leftColumn,
 				rightColumn,
+				rightTableAlias,
 				optional ? JoinType.OUTER : JoinType.INNER,
 				beanRelationFixer);
 		
@@ -281,6 +283,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 				(EntityInflater) strategy,
 				(Column) leftColumn,
 				(Column) rightColumn,
+				null,
 				optional ? JoinType.OUTER : JoinType.INNER,
 				beanRelationFixer);
 		

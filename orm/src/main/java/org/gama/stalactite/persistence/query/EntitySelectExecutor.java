@@ -63,7 +63,7 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	 * @return beans loaded from rows selected by given criteria
 	 */
 	public List<C> loadSelection(CriteriaChain where) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree).buildSelectQuery(parameterBinderProvider);
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
 		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, entityTreeQuery.getQuery());
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
@@ -81,7 +81,7 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 	 * @return root beans of aggregates that match criteria
 	 */
 	public List<C> loadGraph(CriteriaChain where) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree).buildSelectQuery(parameterBinderProvider);
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
 		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
@@ -151,7 +151,7 @@ public class EntitySelectExecutor<C, I, T extends Table> implements IEntitySelec
 		}
 		
 		protected List<C> transform(Iterator<Row> rowIterator) {
-			return this.entityTreeQuery.toInflater().transform(() -> rowIterator, 50);
+			return this.entityTreeQuery.getInflater().transform(() -> rowIterator, 50);
 		}
 	}
 }

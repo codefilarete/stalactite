@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -73,6 +72,7 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 		return joinType;
 	}
 	
+	@Override
 	public Set<Column<T2, Object>> getColumnsToSelect() {
 		return columnsToSelect;
 	}
@@ -92,6 +92,7 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	}
 	
 	@Nullable
+	@Override
 	public String getTableAlias() {
 		return tableAlias;
 	}
@@ -99,7 +100,5 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	public T2 getRightTable() {
 		return this.rightJoinColumn.getTable();
 	}
-	
-	abstract JoinRowConsumer toConsumer(ColumnedRow columnedRow);
 	
 }

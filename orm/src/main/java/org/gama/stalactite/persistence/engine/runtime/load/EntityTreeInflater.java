@@ -21,7 +21,6 @@ import org.gama.stalactite.persistence.engine.runtime.load.PassiveJoinNode.Passi
 import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.BasicEntityCache;
 import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.sql.result.Row;
 
 /**
@@ -44,19 +43,6 @@ public class EntityTreeInflater<C> {
 	
 	EntityTreeInflater(ConsumerNode consumerRoot) {
 		this.consumerRoot = consumerRoot;
-	}
-	
-	public EntityTreeInflater(EntityJoinTree<C, ?> entityJoinTree, ColumnedRow columnedRow) {
-		this.consumerRoot = new ConsumerNode(entityJoinTree.getRoot().toConsumer(columnedRow));
-		buildConsumerTree(entityJoinTree, columnedRow);
-	}
-	
-	private void buildConsumerTree(EntityJoinTree<C, ?> entityJoinTree, ColumnedRow columnedRow) {
-		entityJoinTree.foreachJoinWithDepth(this.consumerRoot, (targetOwner, currentNode) -> {
-			ConsumerNode consumerNode = new ConsumerNode(currentNode.toConsumer(columnedRow));
-			targetOwner.addConsumer(consumerNode);
-			return consumerNode;
-		});
 	}
 	
 	/**

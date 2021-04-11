@@ -43,7 +43,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * A mapping between a name and a join to help finding them when we want to join one with another new one
-	 * @see #addRelationJoin(String, EntityInflater, Column, Column, JoinType, BeanRelationFixer) 
+	 * @see #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer) 
 	 */
 	private final Map<String, JoinNode> joinIndex = new HashMap<>();
 	
@@ -73,22 +73,24 @@ public class EntityJoinTree<C, I> {
 	 * @param <ID> type of joined values
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link IRowTransformer}
-	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
-	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
+	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
+	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
+	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param joinType says wether or not the join must be open
-	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
+	 * @param beanRelationFixer a function to fullfill relation between beans
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
 																					  EntityInflater<U, ID, T2> inflater,
 																					  Column<T1, ID> leftJoinColumn,
 																					  Column<T2, ID> rightJoinColumn,
+																					  String rightTableAlias,
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
 				parent,
 				leftJoinColumn, rightJoinColumn, joinType,
-				inflater.getSelectableColumns(), null, inflater, (BeanRelationFixer<Object, U>) beanRelationFixer));
+				inflater.getSelectableColumns(), rightTableAlias, inflater, (BeanRelationFixer<Object, U>) beanRelationFixer));
 	}
 	
 	/**
@@ -203,7 +205,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
-	 * {@link #addRelationJoin(String, EntityInflater, Column, Column, JoinType, BeanRelationFixer)}.
+	 * {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer)}.
 	 * When {@link #ROOT_STRATEGY_NAME} is given, {@link #getRoot()} will be used, meanwhile, be aware that using this method to retreive root node
 	 * is not the recommanded way : prefer usage of {@link #getRoot()} to prevent exposure of {@link #ROOT_STRATEGY_NAME}
 	 *

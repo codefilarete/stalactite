@@ -329,6 +329,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
 																				  Column<T1, JID> leftColumn,
 																				  Column<T2, JID> rightColumn,
+																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
 		
@@ -357,7 +358,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
-		sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+		sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
 				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
 						subclassPrimaryKey, selectExecutor,
 						DIFFERED_ENTITY_LOADER,

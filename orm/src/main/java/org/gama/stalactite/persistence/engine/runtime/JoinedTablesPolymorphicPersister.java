@@ -364,6 +364,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	 * @param sourcePersister source that needs this instance joins
 	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
+	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @return created join name
@@ -372,6 +373,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
 																				  Column<T1, JID> leftColumn,
 																				  Column<T2, JID> rightColumn,
+																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
 		

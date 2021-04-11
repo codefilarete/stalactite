@@ -62,7 +62,7 @@ public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table>
 	
 	@Override
 	public List<C> loadGraph(CriteriaChain where) {
-		Query query = new EntityTreeQueryBuilder<>(entityJoinTree).buildSelectQuery(dialect.getColumnBinderRegistry()).getQuery();
+		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
 		
 		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
 		persisterPerSubclass.values().forEach(subclassPersister -> {

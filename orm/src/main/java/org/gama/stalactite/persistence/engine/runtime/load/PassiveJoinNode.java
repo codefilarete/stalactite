@@ -41,7 +41,7 @@ public class PassiveJoinNode<C, T1 extends Table, T2 extends Table, I> extends A
 	}
 	
 	@Override
-	PassiveJoinRowConsumer<C> toConsumer(ColumnedRow columnedRow) {
+	public JoinRowConsumer toConsumer(ColumnedRow columnedRow) {
 		return new PassiveJoinRowConsumer<>(transformerListener, columnedRow);
 	}
 	
