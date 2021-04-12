@@ -19,12 +19,12 @@ import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTab
  * 
  * @param <TRGT> type of all registered {@link CascadeOneConfigurer}
  */
-public class OneToOneCycleSolver<TRGT> extends PostInitializer<TRGT> {
+public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	
 	// instanciated as a LinkedHashSet only for steady debugging purpose, could be replaced by a HashSet
 	private final Set<RelationConfigurer<?, ?, ?>> relations = new LinkedHashSet<>();
 	
-	public OneToOneCycleSolver(Class<TRGT> entityType) {
+	public OneToOneCycleConfigurer(Class<TRGT> entityType) {
 		super(entityType);
 	}
 	
@@ -42,21 +42,21 @@ public class OneToOneCycleSolver<TRGT> extends PostInitializer<TRGT> {
 		OneToOneCycleLoader<SRC, TRGT, TRGTID> oneToOneCycleLoader = new OneToOneCycleLoader<>(targetPersister);
 		targetPersister.addSelectListener(oneToOneCycleLoader);
 		relations.forEach((RelationConfigurer c) -> {
-			String tableAlias = c.relationIdentifier.replaceAll("\\W", "_");
+			String tableAlias = c.relationName.replaceAll("\\W", "_");
 			ConfigurationResult<SRC, TRGT> configurationResult = c.cascadeOneConfigurer.appendCascadesWith2PhasesSelect(
 					tableAlias, targetPersister, oneToOneCycleLoader);
-			oneToOneCycleLoader.addRelation(c.relationIdentifier, configurationResult);
+			oneToOneCycleLoader.addRelation(c.relationName, configurationResult);
 		});
 	}
 	
 	private class RelationConfigurer<SRC, SRCID, TRGTID> {
 		
-		private final String relationIdentifier;
+		private final String relationName;
 		private final CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> cascadeOneConfigurer;
 		
-		public RelationConfigurer(String relationIdentifier,
+		public RelationConfigurer(String relationName,
 								  CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> cascadeOneConfigurer) {
-			this.relationIdentifier = relationIdentifier;
+			this.relationName = relationName;
 			this.cascadeOneConfigurer = cascadeOneConfigurer;
 		}
 	}

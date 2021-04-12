@@ -201,7 +201,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					persisterRegistry)
 					// we must give primary key else reverse foreign key will target subclass table, which creates 2 fk in case of reuse of target persister
 					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns()));
-			if (PersisterBuilderImpl.isCycling(cascadeMany.getTargetMappingConfiguration())) {
+			if (PersisterBuilderContext.CURRENT.get().isCycling(cascadeMany.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
 				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be inhanced), and
@@ -219,7 +219,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 								targetPersister);
 					}
 				};
-				PersisterBuilderImpl.POST_INITIALIZERS.get().add(postInitializer);
+				PersisterBuilderContext.CURRENT.get().addPostInitializers(postInitializer);
 			} else {
 				cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
 						this.foreignKeyNamingStrategy,
