@@ -1,10 +1,11 @@
 package org.gama.stalactite.persistence.engine.cascade;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -46,10 +47,12 @@ public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements 
 	 */
 	@Override
 	public void afterInsert(Iterable<? extends TRIGGER> entities) {
-		Stream<? extends TRIGGER> stream = Iterables.stream(entities);
-		Stream<? extends TARGET> targetStream = stream.flatMap(c -> getTargets(c).stream());
-		List<? extends TARGET> collect = targetStream.collect(Collectors.toList());
-		this.persister.insert(collect);
+		Stream<TRIGGER> stream = Iterables.stream(entities);
+		Stream<TARGET> targetStream = stream.flatMap(c -> getTargets(c).stream());
+		// We collect things in a Set to avoid persisting duplicates twice which may produce constraint exception : the Set is an identity Set to
+		// avoid basing our comparison on implemented equals/hashCode although this could be sufficent, identity seems safer and match our logic.
+		Set<TARGET> collect = targetStream.collect(Collectors.toCollection(Collections::newIdentitySet));
+		this.persister.persist(collect);
 	}
 	
 	/**

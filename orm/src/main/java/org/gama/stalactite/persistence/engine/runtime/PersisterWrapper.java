@@ -1,7 +1,9 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -15,10 +17,12 @@ import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * {@link IEntityConfiguredJoinedTablesPersister} that wraps another {@link IEntityConfiguredJoinedTablesPersister}.
@@ -170,9 +174,10 @@ public class PersisterWrapper<C, I> implements IEntityConfiguredJoinedTablesPers
 																			Column<T1, ?> leftColumn,
 																			Column<T2, ?> rightColumn,
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
+																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																			String joinName,
 																			boolean optional) {
-		surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, joinName, optional);
+		surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider, joinName, optional);
 	}
 	
 	@Override

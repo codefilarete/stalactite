@@ -168,7 +168,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	
 	@Test
-	public void testCascade_multipleOneToMany_update() {
+	public void testCascade_SetSetMix_update() {
 		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
 				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -224,13 +224,89 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
 		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
-		// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content of the memory one
+		// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content as the memory one
 		// but we didn't for regions, so all of them must be there
 		// (comparison are done on equals/hashCode => id)
 		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
 		assertEquals(Arrays.asHashSet(ardeche, isere), persistedCountry2.getStates());
 		// Checking update is done too
 		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
+		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
+		
+		// Ain should'nt have been deleted because we didn't asked for orphan removal
+		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+				.mapKey(Long::new, "id", long.class)
+				.execute();
+		assertNotNull(Iterables.first(loadedAin));
+	}
+	
+	@Test
+	public void testCascade_ListSetMix_listContainsDuplicate_CRUD() {
+		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
+				Identifier.LONG_TYPE)
+				.add(State::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.add(State::getName);
+		
+		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.add(Country::getName)
+				.add(Country::getDescription)
+				.addOneToManyList(Country::getAncientCities, cityMappingConfiguration).reverselySetBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+				.addOneToManySet(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		LongProvider countryIdProvider = new LongProvider();
+		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+		dummyCountry.setName("France");
+		dummyCountry.setDescription("Smelly cheese !");
+		LongProvider cityIdProvider = new LongProvider();
+		City paris = new City(cityIdProvider.giveNewIdentifier());
+		paris.setName("Paris");
+		dummyCountry.addAncientCity(paris);
+		City lyon = new City(cityIdProvider.giveNewIdentifier());
+		lyon.setName("Lyon");
+		dummyCountry.addAncientCity(lyon);
+		// we add a duplicate
+		dummyCountry.addAncientCity(lyon);
+		
+		LongProvider stateIdProvider = new LongProvider();
+		State isere = new State(new PersistableIdentifier<>(stateIdProvider.giveNewIdentifier()));
+		isere.setName("Isere");
+		dummyCountry.addState(isere);
+		State ain = new State(new PersistableIdentifier<>(stateIdProvider.giveNewIdentifier()));
+		ain.setName("ain");
+		dummyCountry.addState(ain);
+		
+		countryPersister.insert(dummyCountry);
+		
+		// Changing country cities to see what happens when we save it to the database
+		Country persistedCountry = countryPersister.select(dummyCountry.getId());
+		assertEquals(dummyCountry, persistedCountry);
+		persistedCountry.getAncientCities().remove(paris);
+		City grenoble = new City(cityIdProvider.giveNewIdentifier());
+		grenoble.setName("Grenoble");
+		persistedCountry.addAncientCity(grenoble);
+		Iterables.first(persistedCountry.getAncientCities()).setName("changed");
+		
+		persistedCountry.getStates().remove(ain);
+		State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
+		ardeche.setName("ardeche");
+		persistedCountry.addState(ardeche);
+		Iterables.first(persistedCountry.getStates()).setName("changed");
+		
+		countryPersister.update(persistedCountry, dummyCountry, true);
+		
+		Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
+		// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content as the memory one
+		// but we didn't for regions, so all of them must be there
+		// (comparison are done on equals/hashCode => id)
+		assertEquals(Arrays.asList(lyon, lyon, grenoble), persistedCountry2.getAncientCities());
+		assertEquals(Arrays.asHashSet(ardeche, isere), persistedCountry2.getStates());
+		// Checking update is done too
+		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getAncientCities().stream().map(City::getName).collect(toSet()));
 		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
 		
 		// Ain should'nt have been deleted because we didn't asked for orphan removal

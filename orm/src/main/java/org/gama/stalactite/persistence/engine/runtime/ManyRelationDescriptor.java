@@ -6,6 +6,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.gama.lang.bean.Objects;
+
 /**
  * Container to store information of a one-to-many relation
  * 
@@ -21,6 +23,8 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	
 	private final BiConsumer<O, I> reverseSetter;
 	
+	private final BeanRelationFixer<I, O> relationFixer;
+	
 	/**
 	 * @param collectionGetter collection accessor
 	 * @param collectionSetter collection setter
@@ -35,6 +39,13 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 		this.collectionSetter = collectionSetter;
 		this.collectionFactory = collectionFactory;
 		this.reverseSetter = reverseSetter;
+		
+		// configuring select for fetching relation
+		relationFixer = BeanRelationFixer.of(
+				this.collectionSetter,
+				this.collectionGetter,
+				this.collectionFactory,
+				Objects.preventNull(reverseSetter, (BiConsumer<O, I>) OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER));
 	}
 	
 	public Function<I, C> getCollectionGetter() {
@@ -57,5 +68,9 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	@Nullable
 	public BiConsumer<O, I> getReverseSetter() {
 		return reverseSetter;
+	}
+	
+	public BeanRelationFixer<I, O> getRelationFixer() {
+		return relationFixer;
 	}
 }

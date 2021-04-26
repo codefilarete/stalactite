@@ -2,13 +2,17 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
@@ -16,12 +20,15 @@ import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.IdentityMap;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * @author Guillaume Mary
@@ -49,8 +56,46 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	@Override
-	public void addSelectCascade(Column sourcePrimaryKey, Column relationOwner) {
-		super.addSelectCascade(sourcePrimaryKey, relationOwner);
+	public void addSelectCascade(Column sourcePrimaryKey,
+								 Column relationOwner    // foreign key on target table
+	) {
+		// we add target subgraph joins to main persister
+		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, manyRelationDescriptor.getRelationFixer(),
+				new BiFunction<Row, ColumnedRow, Object>() {
+					@Override
+					public Object apply(Row row, ColumnedRow columnedRow) {
+						TRGTID identifier = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+						Number targetEntityIndex = (Number) columnedRow.getValue(indexingColumn, row);
+						return identifier + "-" + targetEntityIndex;
+						
+					}
+				}, EntityJoinTree.ROOT_STRATEGY_NAME, relationOwner.isNullable());
+		
+		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
+		// are not those of their entity
+		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+			@Override
+			public void beforeSelect(Iterable<SRCID> ids) {
+				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
+				targetSelectListener.beforeSelect(Collections.emptyList());
+			}
+			
+			@Override
+			public void afterSelect(Iterable<? extends SRC> result) {
+				Iterable collect = Iterables.stream(result).flatMap(src -> org.gama.lang.Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+						.map(Collection::stream)
+						.getOr(Stream.empty()))
+						.collect(Collectors.toSet());
+				targetSelectListener.afterSelect(collect);
+			}
+			
+			@Override
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+				// since ids are not those of its entities, we should not pass them as argument
+				targetSelectListener.onError(Collections.emptyList(), exception);
+			}
+		});
 		addIndexSelection();
 	}
 	

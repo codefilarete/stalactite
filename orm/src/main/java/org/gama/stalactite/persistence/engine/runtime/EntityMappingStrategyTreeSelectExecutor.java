@@ -23,7 +23,6 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinTy
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.gama.stalactite.persistence.engine.runtime.load.JoinRoot;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -68,7 +67,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 												   ConnectionProvider connectionProvider) {
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
-		this.entityJoinTree = new EntityJoinTree<>(new JoinRoot<>(new EntityMappingStrategyAdapter<>(classMappingStrategy), classMappingStrategy.getTargetTable()));
+		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingStrategyAdapter<>(classMappingStrategy), classMappingStrategy.getTargetTable());
 		this.blockSize = dialect.getInOperatorMaxSize();
 		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
 		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases

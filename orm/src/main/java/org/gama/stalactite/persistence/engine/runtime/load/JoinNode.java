@@ -29,5 +29,15 @@ public interface JoinNode<T extends Table> {
 	
 	void add(AbstractJoinNode node);
 	
+	/**
+	 * Gives {@link EntityJoinTree} that owns this node
+	 * May needs some computation if this node is a high depth one.
+	 * 
+	 * @param <ROOT> tree entity type 
+	 * @param <ID> tree entity identifier type
+	 * @return {@link EntityJoinTree} that owns this node, never null
+	 */
+	<ROOT, ID> EntityJoinTree<ROOT, ID> getTree();
+	
 	JoinRowConsumer toConsumer(ColumnedRow columnedRow);
 }

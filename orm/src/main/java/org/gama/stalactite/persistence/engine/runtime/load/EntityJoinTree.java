@@ -2,12 +2,11 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -16,9 +15,12 @@ import java.util.function.Function;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Reflections;
+import org.gama.lang.bean.Randomizer;
+import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IRowTransformer;
@@ -52,15 +54,23 @@ public class EntityJoinTree<C, I> {
 	 */
 	private final StrategyIndexNamer indexNamer = new StrategyIndexNamer();
 	
-	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newSetFromMap(new IdentityHashMap<>());
+	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newIdentitySet();
 	
-	public EntityJoinTree(JoinRoot<C, I, ?> root) {
-		this.root = root;
+	public <T extends Table> EntityJoinTree(EntityInflater<C, I, T> entityInflater, T table) {
+		this.root = new JoinRoot<>(this, entityInflater, table);
 		this.joinIndex.put(ROOT_STRATEGY_NAME, root);
 	}
 	
 	public JoinRoot<C, I, ?> getRoot() {
 		return root;
+	}
+	
+	/**
+	 * Returns mapping between {@link JoinNode} and their internal name.
+	 * @return an unmodifiable version of the internal mapping (because its maintenance responsability falls to current class)
+	 */
+	Map<String, JoinNode> getJoinIndex() {
+		return java.util.Collections.unmodifiableMap(joinIndex);
 	}
 	
 	/**
@@ -87,10 +97,47 @@ public class EntityJoinTree<C, I> {
 																					  String rightTableAlias,
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer) {
+		return addRelationJoin(leftStrategyName, inflater, leftJoinColumn, rightJoinColumn, rightTableAlias, joinType, beanRelationFixer, null);
+	}
+	
+	/**
+	 * Adds a join to this select.
+	 * Use for one-to-one or one-to-many cases when join is used to describe a related bean.
+	 * Difference with {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer)} is last
+	 * parameter : an optional function which computes an identifier of a relation between 2 entities, this is required to prevent from fulfilling
+	 * twice the relation when SQL returns several times same identifier (when at least 2 collections are implied). By default this function is
+	 * made of parentEntityId + childEntityId and can be overwritten here (in particular when relation is a List, entity index is added to computation).
+	 * See {@link org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)} for usage.
+	 *
+	 * @param <U> type of bean mapped by the given strategy
+	 * @param <T1> joined left table
+	 * @param <T2> joined right table
+	 * @param <ID> type of joined values
+	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
+	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link IRowTransformer}
+	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
+	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
+	 * @param rightTableAlias optional alias for right table, if null table name will be used
+	 * @param joinType says wether or not the join must be open
+	 * @param beanRelationFixer a function to fullfill relation between beans
+	 * @param duplicateIdentifierProvider a function that computes the relation identifier
+	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
+	 * 
+	 * @see org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)
+	 */
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
+																					  EntityInflater<U, ID, T2> inflater,
+																					  Column<T1, ID> leftJoinColumn,
+																					  Column<T2, ID> rightJoinColumn,
+																					  String rightTableAlias,
+																					  JoinType joinType,
+																					  BeanRelationFixer<C, U> beanRelationFixer,
+																					  @Nullable BiFunction<Row, ColumnedRow, ID> duplicateIdentifierProvider) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
 				parent,
 				leftJoinColumn, rightJoinColumn, joinType,
-				inflater.getSelectableColumns(), rightTableAlias, inflater, (BeanRelationFixer<Object, U>) beanRelationFixer));
+				inflater.getSelectableColumns(), rightTableAlias, inflater, (BeanRelationFixer<Object, U>) beanRelationFixer,
+				duplicateIdentifierProvider));
 	}
 	
 	/**
@@ -275,6 +322,7 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	public void projectTo(JoinNode joinNode) {
+		EntityJoinTree<?, ?> tree = joinNode.getTree();
 		foreachJoinWithDepth(joinNode, (targetOwner, currentNode) -> {
 			// cloning each node, the only difference lays on left column : target gets its matching column 
 			Column projectedLeftColumn = targetOwner.getTable().getColumn(currentNode.getLeftJoinColumn().getName());
@@ -283,9 +331,10 @@ public class EntityJoinTree<C, I> {
 						+ currentNode.getLeftJoinColumn().getAbsoluteName() + " to exist in target table " + targetOwner.getTable().getName());
 			}
 			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, projectedLeftColumn);
-			// this is only for cleanness : nothing is really expected from this algorithm 
-			String joinName = this.indexNamer.generateName(nodeClone);
-			this.joinIndex.put(joinName, nodeClone);
+			// maintaining join names through trees : we add current node name to target one. Then nodes can be found across trees
+			Set<Map.Entry<String, JoinNode>> set = tree.joinIndex.entrySet();
+			Entry<String, JoinNode> nodeName = Iterables.find(set, entry -> entry.getValue() == targetOwner);
+			this.joinIndex.put(nodeName.getKey(), nodeClone);
 			
 			return nodeClone;
 		});
@@ -409,7 +458,8 @@ public class EntityJoinTree<C, I> {
 					node.getColumnsToSelect(),
 					node.getTableAlias(),
 					((RelationJoinNode) node).getEntityInflater(),
-					((RelationJoinNode) node).getBeanRelationFixer());
+					((RelationJoinNode) node).getBeanRelationFixer(),
+					((RelationJoinNode) node).getDuplicateIdentifierProvider());
 		} else if (node instanceof MergeJoinNode) {
 			nodeCopy = new MergeJoinNode(
 					parent,
@@ -434,14 +484,20 @@ public class EntityJoinTree<C, I> {
 		return nodeCopy;
 	}
 	
-	private static class StrategyIndexNamer {
+	private class StrategyIndexNamer {
 		
-		private int aliasCount = 0;
-		
-		private String generateName(JoinNode classMappingStrategy) {
-			// Note that this naming strategy could be more chaotic (random) since names are only here to give a unique identifier to joins then
-			// joins can be referenced outside of this class. It could also be smarter (depending on concrete node class for instance) to ease debugging
-			return classMappingStrategy.getTable().getAbsoluteName() + aliasCount++;
+		private String generateName(JoinNode node) {
+			// We generate a name which is unique across trees so node clones can be found outside of this class by their name on different trees.
+			// This is necessary for particular case of reading indexing column of indexed collection with an association table : the node that needs
+			// to use indexing column is not the owner of the association table clone hence it can't use it (see table clone mecanism at EntityTreeQueryBuilder).
+			// Said differently the "needer" is the official owner whereas the indexing column is on another node dedicated to the relation table maintenance.
+			// The found way for the official node to access data through the indexing column is to use the identifier of the relation table node,
+			// because it has it when it is created (see OneToManyWithIndexedAssociationTableEngine), and because the node is cloned through tree
+			// the identifier should be "universal".
+			// Note that this naming strategy could be more chaotic (random) since names are only here to give a unique identifier to joins but
+			// the hereafter algorithm can help for debug 
+			return node.getTable().getAbsoluteName()
+					+ "-" + Integer.toHexString(System.identityHashCode(EntityJoinTree.this)) + "-" + Randomizer.INSTANCE.randomHexString(6);
 		}
 	}
 	

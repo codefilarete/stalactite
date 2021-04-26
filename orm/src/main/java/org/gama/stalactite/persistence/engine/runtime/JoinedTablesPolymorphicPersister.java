@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -7,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -34,6 +36,7 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
@@ -44,6 +47,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * Class that wraps some other persisters and transfers its invokations to them.
@@ -405,7 +409,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 																			Column<T1, ?> leftColumn,
 																			Column<T2, ?> rightColumn,
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			String joinName,
+																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
 																			boolean optional) {
 		
 		String createdJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(joinName,

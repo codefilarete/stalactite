@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Duo;
@@ -605,10 +606,14 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		@Override
 		protected void addInsertCascade(IEntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
 			super.addInsertCascade(targetPersister);
-			// adding cascade treatment: after source insert, target is inserted
-			Consumer<Iterable<? extends SRC>> persistTargetCascader = entities -> targetPersister.persist(
-					Iterables.stream(entities).map(cascadeOne.getTargetProvider()::get).filter(Objects::nonNull).collect(Collectors.toList())
-			);
+			// adding cascade treatment: after source insert, target is persisted
+			// Please note that we collect entities in a Set to avoid persisting duplicates twice which may produce constraint exception if some source
+			// entities points to same target entity. In details the Set is an identity Set to avoid basing our comparison on implemented
+			// equals/hashCode although this could be sufficent, identity seems safer and match our logic.
+			Collector<TRGT, ?, Set<TRGT>> identitySetProvider = Collectors.toCollection(org.gama.lang.collection.Collections::newIdentitySet);
+			Consumer<Iterable<? extends SRC>> persistTargetCascader = entities -> {
+				targetPersister.persist(Iterables.stream(entities).map(cascadeOne.getTargetProvider()::get).filter(Objects::nonNull).collect(identitySetProvider));
+			};
 			// Please note that 1st implementation was to simply add persistTargetCascader, but it invokes persist() which may invoke update()
 			// and because we are in the relation-owned-by-target case targetPersister.update() needs foreign key value provider to be
 			// fullfilled (see addUpdateCascade for addShadowColumnUpdate), so we wrap persistTargetCascader with a foreign key value provider.

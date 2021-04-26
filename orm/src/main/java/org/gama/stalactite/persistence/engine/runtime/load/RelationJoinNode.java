@@ -7,10 +7,12 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.gama.lang.bean.Objects;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IRowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
@@ -25,22 +27,26 @@ import org.gama.stalactite.sql.result.Row;
 public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
 	
 	/** The right part of the join */
-	private final EntityInflater<C, ?, T2> entityInflater;
+	private final EntityInflater<C, I, T2> entityInflater;
 	
 	/** Relation fixer for instances of this strategy on owning strategy entities */
 	private final BeanRelationFixer<Object, C> beanRelationFixer;
 	
+	private final BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider;
+	
 	RelationJoinNode(JoinNode<T1> parent,
-							Column<T1, I> leftJoinColumn,
-							Column<T2, I> rightJoinColumn,
-							JoinType joinType,
-							Set<Column<T2, Object>> columnsToSelect,
-							@Nullable String tableAlias,
-							EntityInflater<C, ?, T2> entityInflater,
-							BeanRelationFixer<Object, C> beanRelationFixer) {
+					 Column<T1, I> leftJoinColumn,
+					 Column<T2, I> rightJoinColumn,
+					 JoinType joinType,
+					 Set<Column<T2, Object>> columnsToSelect,
+					 @Nullable String tableAlias,
+					 EntityInflater<C, I, T2> entityInflater,
+					 BeanRelationFixer<Object, C> beanRelationFixer,
+					 @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
 		this.beanRelationFixer = beanRelationFixer;
+		this.duplicateIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) duplicateIdentifierProvider;
 	}
 	
 	public EntityInflater<C, ?, T2> getEntityInflater() {
@@ -51,9 +57,13 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		return beanRelationFixer;
 	}
 	
+	public BiFunction<Row, ColumnedRow, Object> getDuplicateIdentifierProvider() {
+		return duplicateIdentifierProvider;
+	}
+	
 	@Override
-	public RelationJoinRowConsumer<C, ?> toConsumer(ColumnedRow columnedRow) {
-		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow);
+	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
+		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, duplicateIdentifierProvider);
 	}
 	
 	static class RelationJoinRowConsumer<C, I> implements JoinRowConsumer {
@@ -65,23 +75,34 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		/** Relation fixer for instances of this strategy on owning strategy entities */
 		private final BeanRelationFixer<Object, C> beanRelationFixer;
 		
-		private final IRowTransformer<C> rowTransformer;
-		
 		private final ColumnedRow columnedRow;
 		
-		RelationJoinRowConsumer(EntityInflater<C, I, ?> entityInflater, BeanRelationFixer<Object, C> beanRelationFixer, ColumnedRow columnedRow) {
+		private final BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer;
+		
+		private final IRowTransformer<C> rowTransformer;
+		
+		RelationJoinRowConsumer(EntityInflater<C, I, ?> entityInflater,
+								BeanRelationFixer<Object, C> beanRelationFixer,
+								ColumnedRow columnedRow,
+								@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer) {
 			this.entityType = entityInflater.getEntityType();
 			this.identifierProvider = entityInflater::giveIdentifier;
 			this.beanRelationFixer = beanRelationFixer;
 			this.columnedRow = columnedRow;
+			this.relationIdentifierComputer = (BiFunction<Row, ColumnedRow, Object>) Objects.preventNull(relationIdentifierComputer, this.identifierProvider);
 			this.rowTransformer = entityInflater.copyTransformerWithAliases(columnedRow);
 		}
 		
-		C applyRelatedEntity(Object parentJoinEntity, Row row, EntityCache entityCache) {
+		C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context) {
 			I rightIdentifier = identifierProvider.apply(row, columnedRow);
+			// we avoid treating twice same relation, overall to avoid adding twice same instance to a collection (one-to-many list cases)
+			// in case of multiple collections in ResultSet because it creates similar data (through cross join) which are treated as many as
+			// collections cross with each other. This also works for one-to-one relations but produces no bugs. It can also be seen as a performance
+			// enhancement even if it hasn't been measured.
+			RelationIdentifier eventuallyApplied = new RelationIdentifier(parentJoinEntity, this.entityType, relationIdentifierComputer.apply(row, columnedRow), this);
 			// primary key null means no entity => nothing to do
-			if (rightIdentifier != null) {
-				C rightEntity = entityCache.computeIfAbsent(entityType, rightIdentifier, () -> rowTransformer.transform(row));
+			if (rightIdentifier != null && context.isTreatedOrAppend(eventuallyApplied)) {
+				C rightEntity = (C) context.giveEntityFromCache(entityType, rightIdentifier, () -> rowTransformer.transform(row));
 				beanRelationFixer.apply(parentJoinEntity, rightEntity);
 				return rightEntity;
 			}
@@ -108,7 +129,6 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 	 * Simple class to ease access or creation to entity from the cache
 	 * @see #computeIfAbsent(Class, Object, Supplier)
 	 */
-	@VisibleForTesting
 	static final class BasicEntityCache implements EntityCache {
 		
 		private final Map<Class, Map<Object, Object>> entityCache = new HashMap<>();

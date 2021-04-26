@@ -8,7 +8,7 @@ import java.util.function.BiFunction;
 
 import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;
-import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.EntityCache;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IRowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
@@ -21,6 +21,8 @@ import org.gama.stalactite.sql.result.Row;
  * @author Guillaume Mary
  */
 public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
+
+	private final EntityJoinTree<C, I> tree;
 	
 	/** Root entity inflater */
 	private final EntityInflater<C, I, T> entityInflater;
@@ -33,9 +35,15 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	@Nullable
 	private String tableAlias;
 	
-	public JoinRoot(EntityInflater<C, I, T> entityInflater, T table) {
+	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I, T> entityInflater, T table) {
+		this.tree = tree;
 		this.entityInflater = entityInflater;
 		this.table = table;
+	}
+	
+	@Override
+	public EntityJoinTree<C, I> getTree() {
+		return tree;
 	}
 	
 	public EntityInflater<C, I, T> getEntityInflater() {
@@ -91,12 +99,12 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 			this.columnedRow = columnedRow;
 		}
 		
-		C createRootInstance(Row row, EntityCache entityCache) {
+		C createRootInstance(Row row, TreeInflationContext context) {
 			Object identifier = identifierDecoder.apply(row, columnedRow);
 			if (identifier == null) {
 				return null;
 			} else {
-				return entityCache.computeIfAbsent(entityType, identifier, () -> entityBuilder.transform(row));
+				return (C) context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
 			}
 		}
 	} 

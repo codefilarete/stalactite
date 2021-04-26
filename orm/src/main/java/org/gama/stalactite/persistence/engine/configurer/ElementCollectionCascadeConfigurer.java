@@ -232,7 +232,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 				collectionFactory,
 				(bean, input, collection) -> collection.add((TRGT) input.getElement()));	// element value is taken from ElementRecord
 		
-		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, EntityJoinTree.ROOT_STRATEGY_NAME, true);
+		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, EntityJoinTree.ROOT_STRATEGY_NAME, true);
 	}
 	
 	private Function<SRC, Collection<ElementRecord>> collectionProvider(IAccessor<SRC, C> collectionAccessor,

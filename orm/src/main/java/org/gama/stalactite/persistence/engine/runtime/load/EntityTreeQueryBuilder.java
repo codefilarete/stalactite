@@ -3,16 +3,16 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.Maps;
+import org.gama.stalactite.persistence.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.ConsumerNode;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;
@@ -130,13 +130,15 @@ public class EntityTreeQueryBuilder<C> {
 			from.setAlias(copyTable, tableAlias);
 		});
 		
-		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree());
+		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree(), columnAliases,
+				Maps.innerJoinOnValuesAndKeys(tree.getJoinIndex(), tablePerJoinNode));
 		
 		return new EntityTreeQuery<>(query, selectParameterBinders, columnAliases, entityTreeInflater);
 	}
 	
 	/**
 	 * Clones table of given join (only on its columns, no need for its foreign key clones nor indexes)
+	 * 
 	 * @param joinNode the join which table must be cloned
 	 * @return a copy (on name and columns) of given join table
 	 */
@@ -239,42 +241,6 @@ public class EntityTreeQueryBuilder<C> {
 		 */
 		public String buildColumnAlias(@Nonnull String tableAlias, Column selectableColumn) {
 			return tableAlias + "_" + selectableColumn.getName();
-		}
-		
-		/**
-		 * Iterator over {@link AbstractJoinNode} from given node over parents, execept root (because it's not a {@link AbstractJoinNode} so can't be returned)
-		 */
-		private class JoinNodeHierarchyIterator implements Iterator<AbstractJoinNode> {
-			
-			private AbstractJoinNode currentNode;
-			
-			private JoinNodeHierarchyIterator(AbstractJoinNode currentNode) {
-				this.currentNode = currentNode;
-			}
-			
-			@Override
-			public boolean hasNext() {
-				return currentNode != null;
-			}
-			
-			@Override
-			public AbstractJoinNode next() {
-				if (!hasNext()) {
-					throw new NoSuchElementException();
-				}
-				AbstractJoinNode toReturn = currentNode;
-				prepareNextIteration();
-				return toReturn;
-			}
-			
-			private void prepareNextIteration() {
-				JoinNode parent = currentNode.getParent();
-				if (parent instanceof AbstractJoinNode) {
-					currentNode = (AbstractJoinNode) parent;
-				} else {
-					currentNode = null;
-				}
-			}
 		}
 	}
 	

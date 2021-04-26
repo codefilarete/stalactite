@@ -1,11 +1,13 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -353,7 +355,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 																			Column<T1, ?> leftColumn,
 																			Column<T2, ?> rightColumn,
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			String joinName,
+																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
 																			boolean optional) {
 		
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)

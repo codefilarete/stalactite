@@ -524,6 +524,15 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answer.takeChoices(Arrays.asList(choice1, choice2, choice2, choice3));
 			answerPersister.insert(answer);
 			
+			Answer loadedAnswer = answerPersister.select(answer.getId());
+			answer.getChoices().remove(1);
+			answerPersister.update(answer, loadedAnswer, true);
+			
+			Answer loadedAnswer2 = answerPersister.select(answer.getId());
+			org.assertj.core.api.Assertions.assertThat(loadedAnswer2.getChoices())
+					.usingRecursiveComparison()
+					.isEqualTo(Arrays.asList(new AnswerChoice(choice1), new AnswerChoice(choice2), new AnswerChoice(choice3)));
+			
 			int deletedAnswerCount = answerPersister.delete(answer);
 			
 			assertEquals(1, deletedAnswerCount);

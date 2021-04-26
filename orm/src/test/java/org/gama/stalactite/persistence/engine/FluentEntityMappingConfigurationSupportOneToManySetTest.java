@@ -740,7 +740,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			countryPersister.update(persistedCountry, dummyCountry, true);
 			
 			Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
-			// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content of the memory one
+			// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content as the memory one
 			// but we didn't for regions, so all of them must be there
 			// (comparison are done on equals/hashCode => id)
 			assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
@@ -906,7 +906,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			countryPersister.update(persistedCountry, dummyCountry, true);
 			
 			Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
-			// Checking deletion has been take into account : the reloaded instance contains cities that are the same as of the memory one
+			// Checking deletion has been take into account : the reloaded instance contains cities that are the same as as the memory one
 			// (comparison are done on equals/hashCode => id)
 			assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
 			// Checking update is done too

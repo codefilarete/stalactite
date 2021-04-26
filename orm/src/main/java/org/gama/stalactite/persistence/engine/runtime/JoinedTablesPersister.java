@@ -1,8 +1,10 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -23,6 +25,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.Entity
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.EntitySelectExecutor;
@@ -35,6 +38,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.query.model.CriteriaChain;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.result.Row;
 
 import static java.util.Collections.emptyList;
 
@@ -42,7 +46,7 @@ import static java.util.Collections.emptyList;
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by the
  * {@link ClassMappingStrategy} passed to constructor and then it can be added to some other {@link IJoinedTablesPersister} thanks to
- * {@link IJoinedTablesPersister#joinAsMany(IJoinedTablesPersister, Column, Column, BeanRelationFixer, String, boolean)} and
+ * {@link IJoinedTablesPersister#joinAsMany(IJoinedTablesPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean)} and
  * {@link IJoinedTablesPersister#joinAsOne(IJoinedTablesPersister, Column, Column, String, BeanRelationFixer, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
@@ -274,6 +278,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 																			Column<T1, ?> leftColumn,
 																			Column<T2, ?> rightColumn,
 																			BeanRelationFixer<SRC, C> beanRelationFixer,
+																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																			String joinName,
 																			boolean optional) {
 		
@@ -285,7 +290,8 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 				(Column) rightColumn,
 				null,
 				optional ? JoinType.OUTER : JoinType.INNER,
-				beanRelationFixer);
+				beanRelationFixer,
+				duplicateIdentifierProvider);
 		
 		// adding our subgraph select to source persister
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);

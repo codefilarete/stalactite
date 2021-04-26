@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Nullable;
-import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
@@ -39,7 +38,6 @@ import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
 import static org.gama.lang.collection.Iterables.collect;
-import static org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.NOOP_REVERSE_SETTER;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
@@ -77,15 +75,9 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				associationPersister.getMainTable().getOneSideKeyColumn(),
 				JoinType.OUTER, (Set) Collections.emptySet());
 		
-		BeanRelationFixer<SRC, TRGT> beanRelationFixer = BeanRelationFixer.of(
-				manyRelationDescriptor.getCollectionSetter(),
-				manyRelationDescriptor.getCollectionGetter(),
-				manyRelationDescriptor.getCollectionFactory(),
-				Objects.preventNull(manyRelationDescriptor.getReverseSetter(), NOOP_REVERSE_SETTER));
-		
 		// we add target subgraph joins to main persister
 		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
-				associationPersister.getMainTable().getManySidePrimaryKey(), beanRelationFixer, associationTableJoinNodeName, true);
+				associationPersister.getMainTable().getManySidePrimaryKey(), manyRelationDescriptor.getRelationFixer(), null, associationTableJoinNodeName, true);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
@@ -292,12 +284,6 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 					}
 				});
 		
-		BeanRelationFixer<SRC, TRGT> beanRelationFixer = BeanRelationFixer.of(
-				manyRelationDescriptor.getCollectionSetter(),
-				manyRelationDescriptor.getCollectionGetter(),
-				manyRelationDescriptor.getCollectionFactory(),
-				Objects.preventNull(manyRelationDescriptor.getReverseSetter(), NOOP_REVERSE_SETTER));
-		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
 		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
@@ -322,7 +308,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 					// Associating target instances to source ones
 					Map<TRGTID, TRGT> targetPerId = Iterables.map(targets, targetPersister::getId);
 					result.forEach(src -> {
-						srcSetIdentityMap.get(src).forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)));
+						srcSetIdentityMap.get(src).forEach(targetId -> manyRelationDescriptor.getRelationFixer().apply(src, targetPerId.get(targetId)));
 					});
 				} finally {
 					cleanContext();

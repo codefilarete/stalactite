@@ -2,7 +2,9 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.gama.lang.collection.ReadOnlyList;
@@ -50,6 +52,18 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 		this.tableAlias = tableAlias;
 		parent.add(this);
 	}
+	
+	@Override
+	public <ROOT, ID> EntityJoinTree<ROOT, ID> getTree() {
+		// going up to the root to get tree from it because JoinRoot owns the information
+		JoinNodeHierarchyIterator joinNodeHierarchyIterator = new JoinNodeHierarchyIterator(this);
+		AbstractJoinNode currentNode = this;
+		while (joinNodeHierarchyIterator.hasNext()) {
+			currentNode = joinNodeHierarchyIterator.next();
+		}
+		// currentNode is the last before root
+		return currentNode.getParent().getTree();
+	} 
 	
 	public JoinNode<T1> getParent() {
 		return parent;
@@ -101,4 +115,39 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 		return this.rightJoinColumn.getTable();
 	}
 	
+	/**
+	 * Iterator over {@link AbstractJoinNode} from given node over parents, except root (because it's not a {@link AbstractJoinNode} so can't be returned)
+	 */
+	static class JoinNodeHierarchyIterator implements Iterator<AbstractJoinNode> {
+		
+		private AbstractJoinNode currentNode;
+		
+		JoinNodeHierarchyIterator(AbstractJoinNode currentNode) {
+			this.currentNode = currentNode;
+		}
+		
+		@Override
+		public boolean hasNext() {
+			return currentNode != null;
+		}
+		
+		@Override
+		public AbstractJoinNode next() {
+			if (!hasNext()) {
+				throw new NoSuchElementException();
+			}
+			AbstractJoinNode toReturn = currentNode;
+			prepareNextIteration();
+			return toReturn;
+		}
+		
+		private void prepareNextIteration() {
+			JoinNode parent = currentNode.getParent();
+			if (parent instanceof AbstractJoinNode) {
+				currentNode = (AbstractJoinNode) parent;
+			} else {
+				currentNode = null;
+			}
+		}
+	}
 }

@@ -27,7 +27,7 @@ class IndexedAssociationRecordMappingStrategy extends ClassMappingStrategy<Index
 						.add(IndexedAssociationRecord.RIGHT_ACCESSOR, targetTable.getManySideKeyColumn())
 						.add((IReversibleAccessor) IndexedAssociationRecord.INDEX_ACCESSOR, (Column) targetTable.getIndexColumn())
 				,
-				new ComposedIdMappingStrategy<>(new IdAccessor<IndexedAssociationRecord, IndexedAssociationRecord>() {
+				new ComposedIdMappingStrategy<IndexedAssociationRecord, IndexedAssociationRecord>(new IdAccessor<IndexedAssociationRecord, IndexedAssociationRecord>() {
 					@Override
 					public IndexedAssociationRecord getId(IndexedAssociationRecord associationRecord) {
 						return associationRecord;
@@ -39,23 +39,29 @@ class IndexedAssociationRecordMappingStrategy extends ClassMappingStrategy<Index
 						associationRecord.setRight(identifier.getRight());
 						associationRecord.setIndex(identifier.getIndex());
 					}
-				}, new AlreadyAssignedIdentifierManager<>(IndexedAssociationRecord.class, c -> {}, c -> false), new ComposedIdentifierAssembler<IndexedAssociationRecord>(targetTable) {
+				}, new AlreadyAssignedIdentifierManager<>(IndexedAssociationRecord.class, IndexedAssociationRecord::markAsPersisted, IndexedAssociationRecord::isPersisted),
+						new ComposedIdentifierAssembler<IndexedAssociationRecord>(targetTable) {
+							@Override
+							protected IndexedAssociationRecord assemble(Map<Column, Object> primaryKeyElements) {
+								return new IndexedAssociationRecord(
+										primaryKeyElements.get(targetTable.getOneSideKeyColumn()),
+										primaryKeyElements.get(targetTable.getManySideKeyColumn()),
+										(int) primaryKeyElements.get(targetTable.getIndexColumn()));
+							}
+							
+							@Override
+							public Map<Column, Object> getColumnValues(@Nonnull IndexedAssociationRecord id) {
+								return Maps.asMap(targetTable.getOneSideKeyColumn(), id.getLeft())
+										.add(targetTable.getManySideKeyColumn(), id.getRight())
+										.add((Column) targetTable.getIndexColumn(), id.getIndex())
+										.add(targetTable.getIndexColumn(), id.getIndex());
+							}
+						}) {
 					@Override
-					protected IndexedAssociationRecord assemble(Map<Column, Object> primaryKeyElements) {
-						return new IndexedAssociationRecord(
-								primaryKeyElements.get(targetTable.getOneSideKeyColumn()),
-								primaryKeyElements.get(targetTable.getManySideKeyColumn()),
-								(int) primaryKeyElements.get(targetTable.getIndexColumn()));
+					public boolean isNew(@Nonnull IndexedAssociationRecord entity) {
+						return !entity.isPersisted();
 					}
-					
-					@Override
-					public Map<Column, Object> getColumnValues(@Nonnull IndexedAssociationRecord id) {
-						return Maps.asMap(targetTable.getOneSideKeyColumn(), id.getLeft())
-								.add(targetTable.getManySideKeyColumn(), id.getRight())
-								.add((Column) targetTable.getIndexColumn(), id.getIndex())
-								.add(targetTable.getIndexColumn(), id.getIndex());
-					}
-				}));
+				});
 		// because main mapping forbids to update primary key (see EmbeddedBeanMappingStrategy), but index is part of it and will be updated,
 		// we need to add it to the mapping
 		ShadowColumnValueProvider<IndexedAssociationRecord, Integer, IndexedAssociationTable> indexValueProvider =

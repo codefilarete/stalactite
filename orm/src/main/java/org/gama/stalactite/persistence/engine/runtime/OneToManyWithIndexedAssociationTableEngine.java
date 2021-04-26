@@ -2,19 +2,33 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.gama.lang.Duo;
+import org.gama.lang.Nullable;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.PairIterator;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.structure.Column;
+import org.gama.stalactite.sql.result.Row;
 
 import static org.gama.lang.collection.Iterables.first;
 import static org.gama.lang.collection.Iterables.minus;
+import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
  * @author Guillaume Mary
@@ -22,11 +36,61 @@ import static org.gama.lang.collection.Iterables.minus;
 public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, IndexedAssociationRecord, IndexedAssociationTable> {
 	
+	private final Column<IndexedAssociationTable, Integer> indexColumn;
+	
 	public OneToManyWithIndexedAssociationTableEngine(IConfiguredJoinedTablesPersister<SRC, SRCID> joinedTablesPersister,
 													  IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
-													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister) {
+													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
+													  Column<IndexedAssociationTable, Integer> indexColumn) {
 		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
+		this.indexColumn = indexColumn;
+	}
+	
+	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
+		
+		// we join on the association table and add bean association in memory
+		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+				associationPersister.getMainTable().getOneSidePrimaryKey(),
+				associationPersister.getMainTable().getOneSideKeyColumn(),
+				JoinType.OUTER, (Set) Arrays.asHashSet(indexColumn));
+		
+		// we add target subgraph joins to main persister
+		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
+				associationPersister.getMainTable().getManySidePrimaryKey(), manyRelationDescriptor.getRelationFixer(), new BiFunction<Row, ColumnedRow, Object>() {
+					@Override
+					public Object apply(Row row, ColumnedRow columnedRow) {
+						TRGTID identifier = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+						Integer targetEntityIndex = EntityTreeInflater.currentContext().getRowDecoder().giveValue(associationTableJoinNodeName, indexColumn, row);
+						return identifier + "-" + targetEntityIndex;
+					}
+				}, associationTableJoinNodeName, true);
+		
+		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
+		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
+		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
+			@Override
+			public void beforeSelect(Iterable<SRCID> ids) {
+				// since ids are not those of its entities, we should not pass them as argument, this will only initialize things if needed
+				targetSelectListener.beforeSelect(Collections.emptyList());
+			}
+			
+			@Override
+			public void afterSelect(Iterable<? extends SRC> result) {
+				Iterable collect = Iterables.stream(result).flatMap(src -> Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+						.map(Collection::stream)
+						.getOr(Stream.empty()))
+						.collect(Collectors.toSet());
+				targetSelectListener.afterSelect(collect);
+			}
+			
+			@Override
+			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+				// since ids are not those of its entities, we should not pass them as argument
+				targetSelectListener.onError(Collections.emptyList(), exception);
+			}
+		});
 	}
 	
 	@Override

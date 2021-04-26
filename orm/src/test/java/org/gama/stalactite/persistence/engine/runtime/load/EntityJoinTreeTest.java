@@ -69,13 +69,13 @@ class EntityJoinTreeTest {
 		// Given following tree:
 		// Toto.id = Tata.id (X)
 		//   Tata.id = Tutu.id (Y)
-		EntityJoinTree entityJoinTree1 = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
+		EntityJoinTree entityJoinTree1 = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tataAddKey = entityJoinTree1.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
 		String tutuAddKey = entityJoinTree1.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
 		
 		// and following second one:
 		// Tata.id = Titi.id (Z)
-		EntityJoinTree entityJoinTree2 = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(tataMappingMock), tataMappingMock.getTargetTable()));
+		EntityJoinTree entityJoinTree2 = new EntityJoinTree(new EntityMappingStrategyAdapter(tataMappingMock), tataMappingMock.getTargetTable());
 		String titiAddKey = entityJoinTree2.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);
 		
 		// projecting second one to first one on X
@@ -141,7 +141,7 @@ class EntityJoinTreeTest {
 		// Toto.id = tata2.id (X')
 		//   tata2.id = tutu2.id (Y')
 		
-		EntityJoinTree entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
+		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
 		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
 		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);
@@ -206,7 +206,7 @@ class EntityJoinTreeTest {
 		// Toto.id = tata2.id (X')
 		//   tata2.id = tutu2.id (Y')
 		
-		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
+		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
 		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
 		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);
@@ -280,7 +280,7 @@ class EntityJoinTreeTest {
 		// Toto.id = tata2.id (X')
 		//   tata2.id = tutu2.id (Y')
 		
-		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree(new JoinRoot(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable()));
+		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
 		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
 		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);

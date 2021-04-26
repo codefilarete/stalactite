@@ -367,7 +367,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					manyAssociationConfiguration.srcPersister,
 					manyAssociationConfiguration.targetPersister,
 					manyRelationDescriptor,
-					indexedAssociationPersister);
+					indexedAssociationPersister,
+					intermediaryTable.getIndexColumn());
 		}
 	}
 	

@@ -1,6 +1,8 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.function.BiFunction;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -9,10 +11,12 @@ import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.IEntityPersister.ExecutableEntityQuery;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
+import org.gama.stalactite.sql.result.Row;
 
 /**
  * @author Guillaume Mary
@@ -52,6 +56,7 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param leftColumn left part of the join, expected to be one of source table 
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instanciation
+	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
 	 * 					not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
@@ -60,6 +65,7 @@ public interface IJoinedTablesPersister<C, I> {
 																	 Column<T1, ?> leftColumn,
 																	 Column<T2, ?> rightColumn,
 																	 BeanRelationFixer<SRC, C> beanRelationFixer,
+																	 @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																	 String joinName,
 																	 boolean optional);
 	

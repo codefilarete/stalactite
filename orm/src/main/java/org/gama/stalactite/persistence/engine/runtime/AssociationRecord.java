@@ -19,6 +19,7 @@ public class AssociationRecord {
 	
 	private Object left;
 	private Object right;
+	private boolean persisted = false;
 	
 	public AssociationRecord() {
 	}
@@ -42,6 +43,14 @@ public class AssociationRecord {
 	
 	public void setRight(Object right) {
 		this.right = right;
+	}
+	
+	public void markAsPersisted() {
+		persisted = true;
+	}
+	
+	public boolean isPersisted() {
+		return persisted;
 	}
 	
 	@Override
