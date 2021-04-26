@@ -289,7 +289,7 @@ public class EntityJoinTree<C, I> {
 		// because Table implements an hashCode on their name, we can use an HashSet to avoid duplicates
 		Set<Table> result = new HashSet<>();
 		result.add(root.getTable());
-		joinIterator().forEachRemaining(node -> {
+		foreachJoin(node -> {
 			if (!tablesToBeExcludedFromDDL.contains(node.getTable())) {
 				result.add(node.getTable());
 			}
@@ -298,14 +298,13 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	/**
+	 * Shortcut for {@code joinIterator().forEachRemaining()}.
 	 * Goes down this tree by breadth first. Made to avoid everyone implements node iteration.
 	 * Consumer is invoked foreach node <strong>except root</strong> because it usually has a special treatment. 
 	 * Traversal is made in pre-order : node is consumed first then its children.
 	 * 
 	 * @param consumer a {@link AbstractJoinNode} consumer
-	 * @deprecated replaced by {@link #joinIterator()}
 	 */
-	@Deprecated
 	public void foreachJoin(Consumer<AbstractJoinNode> consumer) {
 		joinIterator().forEachRemaining(consumer);
 	}

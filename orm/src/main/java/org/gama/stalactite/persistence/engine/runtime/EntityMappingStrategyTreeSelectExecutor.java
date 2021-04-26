@@ -213,10 +213,10 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 		
 		// We store information to make this instance reusable with different parameters to execute(..) 
 		
-		private EntityTreeInflater<C> entityTreeInflater;
-		private Map<String, ParameterBinder> selectParameterBinders;
-		private SelectExecutor.InternalExecutor executor;
-		private ConnectionProvider connectionProvider;
+		private final EntityTreeInflater<C> entityTreeInflater;
+		private final Map<String, ParameterBinder> selectParameterBinders;
+		private final SelectExecutor.InternalExecutor executor;
+		private final ConnectionProvider connectionProvider;
 		
 		@VisibleForTesting
 		InternalExecutor(EntityTreeQuery<C> entityTreeQuery, ConnectionProvider connectionProvider) {

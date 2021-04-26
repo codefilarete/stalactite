@@ -22,11 +22,11 @@ public class PassiveJoinNode<C, T1 extends Table, T2 extends Table, I> extends A
 	private TransformerListener<C> transformerListener;
 	
 	PassiveJoinNode(JoinNode<T1> parent,
-							  Column<T1, I> leftJoinColumn,
-							  Column<T2, I> rightJoinColumn,
-							  JoinType joinType,
-							  Set<Column<T2, Object>> columnsToSelect,
-							  @Nullable String tableAlias) {
+					Column<T1, I> leftJoinColumn,
+					Column<T2, I> rightJoinColumn,
+					JoinType joinType,
+					Set<Column<T2, Object>> columnsToSelect,
+					@Nullable String tableAlias) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 	}
 	

@@ -26,7 +26,8 @@ public interface IJoinedTablesPersister<C, I> {
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
 	 * Made as such because polymorphic cases (which are instance of this interface) are the only one who knows how to join themselves with another persister.
-	 *  @param <SRC> source entity type
+	 * 
+	 * @param <SRC> source entity type
 	 * @param <T1> left table type
 	 * @param <T2> right table type
 	 * @param <JID> join columns type, which can either be source persister identifier type (SRCID), or current instance identifier type (I)

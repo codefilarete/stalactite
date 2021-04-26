@@ -463,10 +463,10 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			} else {
 				// write is not authorized but we must maintain reverse column, so we'll create an update order for it
 				
-				// small class that helps locally to maintain update order and its values
+				// small class that helps locally to maintain SQL-update statement and its values
 				class ForeignKeyUpdateOrderProvider {
 					
-					private WriteOperation<UpwhereColumn<Table>> generateOrder() {
+					private WriteOperation<UpwhereColumn<Table>> generateOperation() {
 						PreparedUpdate<Table> tablePreparedUpdate = dialect.getDmlGenerator().buildUpdate(
 								Arrays.asList((Column<Table, Object>) rightColumn),
 								targetPersister.getMappingStrategy().getVersionedKeys());
@@ -498,7 +498,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					 */
 					@Override
 					public void afterInsert(Iterable<? extends SRC> entities) {
-						WriteOperation<UpwhereColumn<Table>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.generateOrder();
+						WriteOperation<UpwhereColumn<Table>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.generateOperation();
 						foreignKeyUpdateOrderProvider.<SRC>addValuesToUpdateBatch(entities, sourcePersister::getId, Function.identity(), upwhereColumnWriteOperation);
 						upwhereColumnWriteOperation.executeBatch();
 					}
@@ -508,7 +508,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					
 					@Override
 					public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> entities, boolean allColumnsStatement) {
-						WriteOperation<UpwhereColumn<Table>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.generateOrder();
+						WriteOperation<UpwhereColumn<Table>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.generateOperation();
 						foreignKeyUpdateOrderProvider.<Duo<SRC, SRC>>addValuesToUpdateBatch((Iterable<? extends Duo<SRC, SRC>>) entities,
 								duo -> sourcePersister.getId(duo.getLeft()),
 								Duo::getLeft,
@@ -529,7 +529,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					 */
 					@Override
 					public void beforeDelete(Iterable<SRC> entities) {
-						WriteOperation<UpwhereColumn<Table>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.generateOrder();
+						WriteOperation<UpwhereColumn<Table>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.generateOperation();
 						foreignKeyUpdateOrderProvider.<SRC>addValuesToUpdateBatch(entities,
 								duo -> null,
 								Function.identity(),

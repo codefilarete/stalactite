@@ -36,7 +36,7 @@ public class EntityTreeQueryBuilder<C> {
 	private final AliasBuilder aliasBuilder = new AliasBuilder();
 	
 	/**
-	 * @param parameterBinderProvider  Will give the {@link ParameterBinder} for the reading of the final select clause
+	 * @param parameterBinderProvider Will give the {@link ParameterBinder} for the reading of the final select clause
 	 */
 	public EntityTreeQueryBuilder(EntityJoinTree<C, ?> tree, ParameterBinderProvider<Column> parameterBinderProvider) {
 		this.tree = (EntityJoinTree<C, Object>) tree;
@@ -145,7 +145,7 @@ public class EntityTreeQueryBuilder<C> {
 	@VisibleForTesting
 	Table cloneTable(JoinNode joinNode) {
 		Table table = new Table(joinNode.getTable().getName());
-		((Set<Column>) joinNode.getTable().getColumns()).forEach(column ->  table.addColumn(column.getName(), column.getJavaType(), column.getSize()));
+		((Set<Column>) joinNode.getTable().getColumns()).forEach(column -> table.addColumn(column.getName(), column.getJavaType(), column.getSize()));
 		return table;
 	}
 	
@@ -199,6 +199,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		/**
 		 * Gives alias of given table root node
+		 * 
 		 * @param joinRoot the node which {@link Table} alias must be built
 		 * @return the given alias in priority or the name of the table
 		 */
@@ -208,6 +209,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		/**
 		 * Gives alias of given table root node
+		 * 
 		 * @param node the node which {@link Table} alias must be built
 		 * @return node alias if present, else node table name
 		 */
@@ -235,6 +237,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		/**
 		 * Gives the alias of a Column
+		 * 
 		 * @param tableAlias a non-null table alias
 		 * @param selectableColumn the {@link Column} for which an alias is requested
 		 * @return tableAlias + "_" + column.getName()
