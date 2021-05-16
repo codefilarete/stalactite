@@ -15,6 +15,7 @@ import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Collections;
+import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
 import org.gama.stalactite.persistence.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.gama.stalactite.persistence.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
@@ -92,6 +93,7 @@ public class EntityTreeInflater<C> {
 	}
 	
 	Nullable<C> transform(Row row, EntityTreeInflater<?>.TreeInflationContext context) {
+		context.setCurrentRow(row);
 		// Algorithm : we iterate depth by depth the tree structure of the joins
 		// We start by the root of the hierarchy.
 		// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
@@ -244,6 +246,8 @@ public class EntityTreeInflater<C> {
 		/** Storage for treated relations */
 		private final Set<RelationIdentifier> treatedRelations = new HashSet<>();
 		
+		private Row currentRow;
+		
 		@VisibleForTesting
 		TreeInflationContext() {
 			this(new BasicEntityCache());
@@ -251,6 +255,17 @@ public class EntityTreeInflater<C> {
 		
 		public TreeInflationContext(EntityCache entityCache) {
 			this.entityCache = entityCache;
+		}
+		
+		private TreeInflationContext setCurrentRow(Row currentRow) {
+			this.currentRow = currentRow;
+			return this;
+		}
+		
+		
+		@javax.annotation.Nullable
+		public <T extends Table<T>, O> O giveValue(String joinNodeName, Column<T, O> column) {
+			return getRowDecoder().giveValue(joinNodeName, column, currentRow);
 		}
 		
 		/**
@@ -316,7 +331,12 @@ public class EntityTreeInflater<C> {
 		 */
 		@javax.annotation.Nullable
 		public <T extends Table<T>, O> O giveValue(String joinNodeName, Column<T, O> column, Row row) {
-			Column<T, O> columnClone = tablePerJoinNodeName.get(joinNodeName).getColumn(column.getName());
+			Table table = tablePerJoinNodeName.get(joinNodeName);
+			if (table == null) {
+				// This is more for debugging purpose than for a real production goal, may be removed later
+				throw new MappingConfigurationException("Can't find node named " + joinNodeName + " in joins : " + this.tablePerJoinNodeName);
+			}
+			Column<T, O> columnClone = table.getColumn(column.getName());
 			return (O) row.get(columnAliases.get(columnClone));
 		}
 	}

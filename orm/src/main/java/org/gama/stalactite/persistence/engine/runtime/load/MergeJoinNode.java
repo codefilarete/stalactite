@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nullable;
+import java.util.Set;
 
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
@@ -26,7 +27,7 @@ class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJo
 							JoinType joinType,
 							@Nullable String tableAlias,
 							EntityMerger<C, T2> merger) {
-		super(parent, leftJoinColumn, rightJoinColumn, joinType, merger.getSelectableColumns(), tableAlias);
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, (Set) merger.getSelectableColumns(), tableAlias);
 		this.merger = merger;
 	}
 	

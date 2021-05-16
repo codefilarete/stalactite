@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -56,7 +57,7 @@ import org.gama.stalactite.sql.result.Row;
  */
 public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
-	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
+	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor;
 	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
@@ -351,16 +352,17 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID> void joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																			Column<T1, ?> leftColumn,
-																			Column<T2, ?> rightColumn,
-																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
-																			boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, ID> leftColumn,
+																				  Column<T2, ID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
+																				  boolean optional,
+																				  Set<Column<T2, ?>> selectableColumns) {
 		
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
-		sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
+		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
 				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
 						subclassPrimaryKey, selectExecutor,
 						DIFFERED_ENTITY_LOADER,
@@ -369,7 +371,9 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));	
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		
+		return createdJoinNodeName;
 	}
 	
 	@Override
@@ -390,7 +394,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		private SingleTableFirstPhaseRelationLoader(IdMappingStrategy<C, I> subEntityIdMappingStrategy,
 													Column primaryKey,
 													SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor,
-													ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder,
+													ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder,
 													Column<T, D> discriminatorColumn, Function<Class, ISelectExecutor> subtypeSelectors) {
 			// Note that selectExecutor won't be used because we dynamically lookup for it in fillCurrentRelationIds
 			super(subEntityIdMappingStrategy, primaryKey, selectExecutor, relationIdsHolder);
@@ -405,7 +409,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 			// we avoid NPE on polymorphismPolicy.getClass(discriminator) caused by null discriminator in case of empty relation
 			// by only treating known discriminator values (prefered way to check against null because type can be primitive one)
 			if (discriminatorValues.contains(discriminator)) {
-				Set<RelationIds<Object, C, I>> relationIds = (Set) relationIdsHolder.get();
+				Set<RelationIds<Object, C, I>> relationIds = ((Queue<Set<RelationIds<Object, C, I>>>) relationIdsHolder.get()).peek();
 				relationIds.add(new RelationIds(giveSelector(discriminator),
 						idMappingStrategy.getIdAccessor()::getId, bean, (I) columnedRow.getValue(primaryKey, row)));
 			}

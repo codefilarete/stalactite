@@ -84,7 +84,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer)}
+	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -110,7 +110,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 
 	/**
 	 * Adds a join to this executor.
-	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer)}
+	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
@@ -133,7 +133,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 			Column<T2, ID> rightJoinColumn,
 			boolean isOuterJoin) {
 		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingStrategyAdapter<>(strategy), leftJoinColumn, rightJoinColumn,
-				null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
+				null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, java.util.Collections.emptySet());
 	}
 	
 	/**

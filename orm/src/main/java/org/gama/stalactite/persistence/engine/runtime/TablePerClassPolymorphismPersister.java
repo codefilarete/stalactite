@@ -2,11 +2,13 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -54,7 +56,7 @@ import org.gama.stalactite.sql.result.Row;
  */
 public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
-	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
+	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final TablePerClassPolymorphicEntitySelectExecutor<C, I, T> entitySelectExecutor;
@@ -332,7 +334,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				rightColumn,
 				null,
 				optional ? JoinType.OUTER : JoinType.INNER,
-				beanRelationFixer);
+				beanRelationFixer, Collections.emptySet());
 		
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
 		
@@ -340,12 +342,13 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID> void joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																			Column<T1, ?> leftColumn,
-																			Column<T2, ?> rightColumn,
-																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
-																			boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, ID> leftColumn,
+																				  Column<T2, ID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
+																				  boolean optional,
+																				  Set<Column<T2, ?>> selectableColumns) {
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseRelationLoader
 		//  can compute disciminatorValue 
 		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMappingStrategy().getTargetTable()).getPrimaryKey().getColumns());
@@ -374,6 +377,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		
 		// adding second phase loader
 		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		
+		// FIXME : we shouldn't return null here but a created join node name: which one since we have several table to join ? see joinAsOne(..) maybe ?
+		return null;
 	}
 	
 	@Override

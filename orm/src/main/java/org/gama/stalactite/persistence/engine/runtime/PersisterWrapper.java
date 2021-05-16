@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -170,14 +171,15 @@ public class PersisterWrapper<C, I> implements IEntityConfiguredJoinedTablesPers
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID> void joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																			Column<T1, ?> leftColumn,
-																			Column<T2, ?> rightColumn,
-																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																			String joinName,
-																			boolean optional) {
-		surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider, joinName, optional);
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, ID> leftColumn,
+																				  Column<T2, ID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																				  String joinName,
+																				  boolean optional,
+																				  Set<Column<T2, ?>> selectableColumns) {
+		return surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider, joinName, optional, selectableColumns);
 	}
 	
 	@Override

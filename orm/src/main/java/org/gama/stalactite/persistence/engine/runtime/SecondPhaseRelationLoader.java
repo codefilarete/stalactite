@@ -1,9 +1,11 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -19,20 +21,21 @@ import org.gama.stalactite.persistence.engine.listening.SelectListener;
 public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<SRC, ID> {
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
-	private final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
+	private final ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder;
 	
-	public SecondPhaseRelationLoader(BeanRelationFixer<SRC, TRGT> beanRelationFixer, ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder) {
+	public SecondPhaseRelationLoader(BeanRelationFixer<SRC, TRGT> beanRelationFixer, ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder) {
 		this.beanRelationFixer = beanRelationFixer;
 		this.relationIdsHolder = relationIdsHolder;
 	}
 	
 	@Override
 	public void beforeSelect(Iterable<ID> ids) {
-		Set<RelationIds<Object, Object, Object>> existingSet = relationIdsHolder.get();
+		Queue<Set<RelationIds<Object, Object, Object>>> existingSet = relationIdsHolder.get();
 		if (existingSet == null) {
-			existingSet = new HashSet<>();
+			existingSet = new ArrayDeque<>();
 			relationIdsHolder.set(existingSet);
 		}
+		existingSet.add(new HashSet<>());
 	}
 	
 	@Override
@@ -51,7 +54,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 		Map<ISelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
 		Map<ISelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
 		Map<SRC, Set<TRGTID>> targetIdPerSource = new HashMap<>();
-		Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = (Set) relationIdsHolder.get();
+		Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = ((Queue<Set<RelationIds<SRC, TRGT, TRGTID>>>) (Queue) relationIdsHolder.get()).poll();
 		// we remove null targetIds (Target Ids may be null if relation is nullified) because
 		// - selecting entities with null id is non-sensence
 		// - it prevents from generating SQL "in ()" which is invalid

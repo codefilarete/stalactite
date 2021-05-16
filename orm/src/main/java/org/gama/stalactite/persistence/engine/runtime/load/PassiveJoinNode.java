@@ -18,31 +18,18 @@ import org.gama.stalactite.sql.result.Row;
  */
 public class PassiveJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
 	
-	@Nullable
-	private TransformerListener<C> transformerListener;
-	
 	PassiveJoinNode(JoinNode<T1> parent,
 					Column<T1, I> leftJoinColumn,
 					Column<T2, I> rightJoinColumn,
 					JoinType joinType,
-					Set<Column<T2, Object>> columnsToSelect,
+					Set<Column<T2, ?>> columnsToSelect,
 					@Nullable String tableAlias) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 	}
 	
-	public PassiveJoinNode<C, T1, T2, I> setTransformerListener(@Nullable TransformerListener<C> transformerListener) {
-		this.transformerListener = transformerListener;
-		return this;
-	}
-	
-	@Nullable
-	TransformerListener<C> getTransformerListener() {
-		return transformerListener;
-	}
-	
 	@Override
 	public JoinRowConsumer toConsumer(ColumnedRow columnedRow) {
-		return new PassiveJoinRowConsumer<>(transformerListener, columnedRow);
+		return new PassiveJoinRowConsumer<>(getTransformerListener(), columnedRow);
 	}
 	
 	static class PassiveJoinRowConsumer<C> implements JoinRowConsumer {

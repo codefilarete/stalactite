@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,18 +16,19 @@ import java.util.stream.Stream;
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
+import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.engine.runtime.load.AbstractJoinNode;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.IdentityMap;
-import org.gama.stalactite.sql.result.Row;
 
 /**
  * @author Guillaume Mary
@@ -42,17 +42,17 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	 * layers (entities and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
 	 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
 	 */
-	private final ThreadLocal<IdentityMap<TRGT, Integer>> currentSelectedIndexes = new ThreadLocal<>();
+	private final ThreadLocal<IdentityMap<TRGTID, Integer>> currentSelectedIndexes = new ThreadLocal<>();
 	
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
-	private final Column indexingColumn;
+	private final Column<Table, Integer> indexingColumn;
 	
 	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
 													   IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-													   Column indexingColumn) {
+													   Column<? extends Table, Integer> indexingColumn) {
 		super(targetPersister, manyRelationDefinition, sourcePersister);
-		this.indexingColumn = indexingColumn;
+		this.indexingColumn = (Column<Table, Integer>) indexingColumn;
 	}
 	
 	@Override
@@ -60,16 +60,16 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 								 Column relationOwner    // foreign key on target table
 	) {
 		// we add target subgraph joins to main persister
-		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, manyRelationDescriptor.getRelationFixer(),
-				new BiFunction<Row, ColumnedRow, Object>() {
-					@Override
-					public Object apply(Row row, ColumnedRow columnedRow) {
-						TRGTID identifier = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
-						Number targetEntityIndex = (Number) columnedRow.getValue(indexingColumn, row);
-						return identifier + "-" + targetEntityIndex;
-						
-					}
-				}, EntityJoinTree.ROOT_STRATEGY_NAME, relationOwner.isNullable());
+		Column<Table, TRGTID> primaryKey = (Column<Table, TRGTID>) Iterables.first(targetPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		String joinNodeName = targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, manyRelationDescriptor.getRelationFixer(),
+				(row, columnedRow) -> {
+					TRGTID identifier = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+					Integer targetEntityIndex = columnedRow.getValue(indexingColumn, row);
+					return identifier + "-" + targetEntityIndex;
+				}, EntityJoinTree.ROOT_STRATEGY_NAME, relationOwner.isNullable(),
+				Arrays.asHashSet(indexingColumn, primaryKey));
+		
+		addIndexSelection(joinNodeName, primaryKey);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity
@@ -96,12 +96,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				targetSelectListener.onError(Collections.emptyList(), exception);
 			}
 		});
-		addIndexSelection();
 	}
 	
-	private void addIndexSelection() {
-		// NB: should be "targetPersister.getSelectExecutor().getMappingStrategy().." but can't be due to interface ISelectExecutor
-		targetPersister.getMappingStrategy().addShadowColumnSelect(indexingColumn);
+	private void addIndexSelection(String joinNodeName, Column<Table, TRGTID> primaryKey) {
 		// Implementation note: 2 possiblities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
 		// - keep object indexes and sort the target List throught a comparator of indexes
@@ -120,7 +117,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
 						List<TRGT> apply = manyRelationDescriptor.getCollectionGetter().apply(src);
-						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(target)));
+						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(targetPersister.getId(target))));
 					});
 				} finally {
 					cleanContext();
@@ -136,16 +133,17 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				currentSelectedIndexes.remove();
 			}
 		});
-		// Adding a transformer listener to keep track of the index column read from ResultSet/Row
-		// We place it into a ThreadLocal, then the select listener will use it to reorder loaded beans
-		targetPersister.getMappingStrategy().addTransformerListener((bean, rowValueProvider) -> {
-			IdentityMap<TRGT, Integer> indexPerBean = currentSelectedIndexes.get();
+		AbstractJoinNode<TRGT, Table, Table, TRGTID> join = (AbstractJoinNode<TRGT, Table, Table, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
+		join.setTransformerListener((trgt, rowValueProvider) -> {
+			IdentityMap<TRGTID, Integer> indexPerBean = currentSelectedIndexes.get();
 			// indexPerBean may not be present because its mecanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
 			if (indexPerBean != null) {
 				// Indexing column is not defined in targetPersister.getMappingStrategy().getRowTransformer() but is present in row
 				// because it was read from ResultSet
-				indexPerBean.put(bean, (int) rowValueProvider.apply(indexingColumn));
+				int index = EntityTreeInflater.currentContext().giveValue(joinNodeName, indexingColumn);
+				TRGTID relationOwnerId = (TRGTID) EntityTreeInflater.currentContext().giveValue(joinNodeName, primaryKey);
+				indexPerBean.put(relationOwnerId, index);
 			}
 		});
 	}
@@ -165,7 +163,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition =
 				(IndexedMappedManyRelationDescriptor<SRC, TRGT, C>) this.manyRelationDescriptor;
 		Function<SRC, C> collectionGetter = this.manyRelationDescriptor.getCollectionGetter();
-		targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn, target -> {
+		targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Integer, Table>(indexingColumn, target -> {
 			SRC source = manyRelationDefinition.getReverseGetter().apply(target);
 			if (source == null) {
 				throw new RuntimeMappingException("Can't get index : " + target + " is not associated with a "

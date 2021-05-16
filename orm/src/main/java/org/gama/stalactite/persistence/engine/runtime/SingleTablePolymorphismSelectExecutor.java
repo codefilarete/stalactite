@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -110,7 +111,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
 			String joinName = persister.getEntityJoinTree().addRelationJoin(leftStrategyName, new EntityMappingStrategyAdapter<>(strategy),
-					leftJoinColumn, rightJoinColumn, null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer);
+					leftJoinColumn, rightJoinColumn, null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, Collections.emptySet());
 			joinNames.add(joinName);
 		});
 		if (joinNames.size() == 1) {

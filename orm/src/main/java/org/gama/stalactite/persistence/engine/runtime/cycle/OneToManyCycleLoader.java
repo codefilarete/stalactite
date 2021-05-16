@@ -7,8 +7,8 @@ import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
-import org.gama.stalactite.persistence.engine.configurer.CascadeOneConfigurer.ConfigurationResult;
-import org.gama.stalactite.persistence.engine.configurer.CascadeOneConfigurer.FirstPhaseCycleLoadListener;
+import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
+import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader;
@@ -16,17 +16,17 @@ import org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader;
 /**
  * Loader in case of same entity type present in entity graph as child of itself : A.b -> B.c -> C.a
  * Sibling is not the purpose of this class.
- * 
+ *
  * Implemented as such :
  * - very first query reads cycling entity type identifiers
  * - a secondary query is executed to load subgraph with above identifiers
- * 
+ *
  * @param <SRC> type of root entity graph
  * @param <TRGT> cycling entity type (the one to be loaded)
  * @param <TRGTID> cycling entity identifier type
- *     
+ *
  */
-public class OneToOneCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TRGT, TRGTID>, FirstPhaseCycleLoadListener<SRC, TRGTID> {
+public class OneToManyCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TRGT, TRGTID> {
 	
 	private final IEntityPersister<TRGT, TRGTID> targetPersister;
 	
@@ -39,7 +39,7 @@ public class OneToOneCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TR
 	
 	private final ThreadLocal<CycleLoadRuntimeContext<SRC, TRGT, TRGTID>> currentRuntimeContext = ThreadLocal.withInitial(CycleLoadRuntimeContext::new);
 	
-	OneToOneCycleLoader(IEntityPersister<TRGT, TRGTID> targetPersister) {
+	public OneToManyCycleLoader(IEntityPersister<TRGT, TRGTID> targetPersister) {
 		this.targetPersister = targetPersister;
 	}
 	
@@ -55,42 +55,50 @@ public class OneToOneCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TR
 	/**
 	 * Implemented to read very first identifiers of source type
 	 */
-	@Override
-	public void onFirstPhaseRowRead(SRC src, TRGTID targetId) {
-		if (!SecondPhaseRelationLoader.isDefaultValue(targetId)) {
-			this.relations.forEach((relationName, configurationResult) -> {
-				if (configurationResult.getSourcePersister().getClassToPersist().isInstance(src)) {
-					this.currentRuntimeContext.get().addRelationToInitialize(relationName, src, targetId);
-				}
-			});
-		}
+	public FirstPhaseCycleLoadListener<SRC, TRGTID> buildRowReader(String relationName) {
+		return (src, targetId) -> {
+			if (!SecondPhaseRelationLoader.isDefaultValue(targetId)) {
+				OneToManyCycleLoader.this.currentRuntimeContext.get().addRelationToInitialize(relationName, src, targetId);
+			}
+		};
 	}
 	
 	@Override
 	public void afterSelect(Iterable<? extends TRGT> result) {
 		CycleLoadRuntimeContext<SRC, TRGT, TRGTID> runtimeContext = this.currentRuntimeContext.get();
-		Set<TRGTID> targetIds = runtimeContext.giveIdentifiersToLoad();
-		// NB: Iterable.forEach(Set.remove(..)) is a better performance way of doing Set.removeAll(Iterable) because :
-		// - Iterable must be transformed as a List (with Iterables.collectToList for example)
-		// - and algorithm of Set.remove(..) depends on List.contains() (if List is smaller than Set) which is not efficient
-		result.forEach(o -> targetIds.remove(targetPersister.getId(o)));
-		// WARN : this select may be recursive if targetPersister is the same as source one or owns a relation of same type as source one
-		List<TRGT> targets = targetPersister.select(targetIds);
-		final Map<TRGTID, TRGT> targetPerId = Iterables.map(targets, targetPersister::getId);
-		relations.forEach((relationName, configurationResult) -> {
-			EntityRelationStorage<SRC, TRGT, TRGTID> targetIdsPerSource = runtimeContext.getEntitiesToFulFill(relationName);
-			if (targetIdsPerSource != null) {
-				applyRelationToSource(targetIdsPerSource, configurationResult.getBeanRelationFixer(), targetPerId);
-			}
-		});
-		runtimeContext.afterSelect();
+		try {
+			Set<TRGTID> targetIds = runtimeContext.giveIdentifiersToLoad();
+			// NB: Iterable.forEach(Set.remove(..)) is a better performance way of doing Set.removeAll(Iterable) because :
+			// - Iterable must be transformed as a List (with Iterables.collectToList for example)
+			// - and algorithm of Set.remove(..) depends on List.contains() (if List is smaller than Set) which is not efficient
+			result.forEach(o -> targetIds.remove(targetPersister.getId(o)));
+			// WARN : this select may be recursive if targetPersister is the same as source one or owns a relation of same type as source one
+			List<TRGT> targets = targetPersister.select(targetIds);
+			// Associating target instances to source ones
+			Map<TRGTID, TRGT> targetPerId = Iterables.map(targets, targetPersister::getId);
+			relations.forEach((relationName, configurationResult) -> {
+				EntityRelationStorage<SRC, TRGT, TRGTID> targetIdsPerSource = runtimeContext.getEntitiesToFulFill(relationName);
+				if (targetIdsPerSource != null) {
+					applyRelationToSource(targetIdsPerSource, configurationResult.getBeanRelationFixer(), targetPerId);
+				}
+			});
+		} finally {
+			runtimeContext.afterSelect();
+		}
 	}
 	
 	private void applyRelationToSource(EntityRelationStorage<SRC, TRGT, TRGTID> relationStorage, BeanRelationFixer<SRC, TRGT> beanRelationFixer, Map<TRGTID, TRGT> targetPerId) {
 		relationStorage.getEntitiesToFulFill().forEach(src -> {
 			Set<TRGTID> trgtids = relationStorage.getRelationToInitialize(src);
 			if (trgtids != null) {
-				trgtids.forEach(targetId -> beanRelationFixer.apply(src, targetPerId.get(targetId)));
+				trgtids.forEach(targetId -> {
+					// because we loop over all source instances of a recursion process (invoking SQL until no more entities need to be loaded),
+					// and whereas this method is called only for one iteration of the whole process, we may encountered source that are not concerned
+					// by given targetPerId, so we need to check for not null matching, else we would get a null element in target collection
+					if (targetPerId.get(targetId) != null) {
+						beanRelationFixer.apply(src, targetPerId.get(targetId));
+					}
+				});
 			}
 		});
 	}
@@ -99,5 +107,4 @@ public class OneToOneCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TR
 	public void onError(Iterable<TRGTID> ids, RuntimeException exception) {
 		throw exception;
 	}
-	
 }

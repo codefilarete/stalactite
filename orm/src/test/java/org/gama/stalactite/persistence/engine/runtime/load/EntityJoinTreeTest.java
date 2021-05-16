@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.runtime.load;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -70,13 +71,13 @@ class EntityJoinTreeTest {
 		// Toto.id = Tata.id (X)
 		//   Tata.id = Tutu.id (Y)
 		EntityJoinTree entityJoinTree1 = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataAddKey = entityJoinTree1.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
-		String tutuAddKey = entityJoinTree1.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
+		String tataAddKey = entityJoinTree1.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey = entityJoinTree1.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		// and following second one:
 		// Tata.id = Titi.id (Z)
 		EntityJoinTree entityJoinTree2 = new EntityJoinTree(new EntityMappingStrategyAdapter(tataMappingMock), tataMappingMock.getTargetTable());
-		String titiAddKey = entityJoinTree2.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);
+		String titiAddKey = entityJoinTree2.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		// projecting second one to first one on X
 		entityJoinTree2.projectTo(entityJoinTree1, tataAddKey);
@@ -85,15 +86,21 @@ class EntityJoinTreeTest {
 		// Toto.id = Tata.id (X)
 		//   Tata.id = Tutu.id (Y)
 		//   Tata.id = Titi.id (Z)
-		assertNotNull(entityJoinTree1.getJoin(tataAddKey));
+		JoinNode tataJoinClone = entityJoinTree1.getJoin(tataAddKey);
+		assertNotNull(tataJoinClone);
 		// by checking node count we ensure that node was added 
 		assertEquals(3, Iterables.stream(entityJoinTree1.joinIterator()).count());
 		// and there was no removal
 		assertNotNull(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey));
 		// we check that a copy was made, not a node move
-		assertNotSame(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey), entityJoinTree1.giveJoin(tataPrimaryKey, titiPrimaryKey));
-		assertEquals(titiMappingMock.getSelectableColumns(), entityJoinTree1.giveJoin(tataPrimaryKey, titiPrimaryKey).getColumnsToSelect());
-		assertEquals(entityJoinTree1.getJoin(tataAddKey), entityJoinTree1.giveJoin(tataPrimaryKey, titiPrimaryKey).getParent());
+		AbstractJoinNode abstractJoinNode = entityJoinTree1.giveJoin(tataPrimaryKey, titiPrimaryKey);
+		assertNotSame(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey), abstractJoinNode);
+		assertEquals(titiMappingMock.getSelectableColumns(), abstractJoinNode.getColumnsToSelect());
+		// copy must be put at the right place 
+		assertEquals(tataJoinClone, abstractJoinNode.getParent());
+		// we check that join indexes were updated: since it's difficult to check detailed content because of index naming strategy, we fallback to count them (far from perfect) 
+		assertEquals(4, entityJoinTree1.getJoinIndex().size());
+		assertEquals(2, entityJoinTree2.getJoinIndex().size());
 	}
 	
 	@Test
@@ -142,11 +149,11 @@ class EntityJoinTreeTest {
 		//   tata2.id = tutu2.id (Y')
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
-		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
-		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);
-		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null);
-		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingStrategyAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null);
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
+		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingStrategyAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		Iterator<AbstractJoinNode<?, ?, ?, ?>> actual = entityJoinTree.joinIterator();
 		org.assertj.core.api.Assertions.assertThat(Iterables.copy(actual))
@@ -207,11 +214,11 @@ class EntityJoinTreeTest {
 		//   tata2.id = tutu2.id (Y')
 		
 		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
-		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
-		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);
-		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null);
-		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingStrategyAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null);
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
+		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingStrategyAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		List<Integer> depth = new ArrayList<>();
 		List<AbstractJoinNode> collectedNodes = new ArrayList<>();
@@ -281,11 +288,11 @@ class EntityJoinTreeTest {
 		//   tata2.id = tutu2.id (Y')
 		
 		EntityJoinTree<?, ?> entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
-		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
-		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null);
-		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null);
-		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingStrategyAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null);
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
+		String titiAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(titiMappingMock), tataPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tataAddKey2 = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataCloneMappingMock), totoPrimaryKey, tataClonePrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey2 = entityJoinTree.addRelationJoin(tataAddKey2, new EntityMappingStrategyAdapter(tutuCloneMappingMock), tataClonePrimaryKey, tutuClonePrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		Set<Table> actualTables = entityJoinTree.giveTables();
 		

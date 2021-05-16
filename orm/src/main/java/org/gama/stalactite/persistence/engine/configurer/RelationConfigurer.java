@@ -10,10 +10,12 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.cycle.OneToManyCycleConfigurer;
 import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
@@ -93,33 +95,31 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					cascadeOne.getTargetProvider()));
 		}
 		for (CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>> cascadeMany : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(cascadeMany,
+					sourcePersister,
 					dialect,
 					connectionConfiguration,
-					persisterRegistry);
+					persisterRegistry,
+					foreignKeyNamingStrategy,
+					joinColumnNamingStrategy,
+					associationTableNamingStrategy,
+					indexColumnNamingStrategy);
+			
+			String relationName = AccessorDefinition.giveDefinition(cascadeMany.getCollectionProvider()).getName();
+			
 			if (currentBuilderContext.isCycling(cascadeMany.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
 				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				class OneToManyCycleSolver extends PostInitializer<TRGT> {
-					OneToManyCycleSolver(Class<TRGT> entityType) {
-						super(entityType);
-					}
-					
-					@Override
-					public void consume(IEntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
-						cascadeManyConfigurer.appendCascade(cascadeMany,
-								sourcePersister,
-								foreignKeyNamingStrategy,
-								joinColumnNamingStrategy,
-								indexColumnNamingStrategy,
-								associationTableNamingStrategy,
-								true,
-								targetPersister);
-					}
+				Class<TRGT> targetEntityType = cascadeMany.getTargetMappingConfiguration().getEntityType();
+				// adding the relation to an eventually already existing cycle configurer for the entity
+				OneToManyCycleConfigurer<TRGT> cycleSolver = (OneToManyCycleConfigurer<TRGT>)
+						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToManyCycleConfigurer && p.getEntityType() == targetEntityType);
+				if (cycleSolver == null) {
+					cycleSolver = new OneToManyCycleConfigurer<>(targetEntityType);
+					currentBuilderContext.addPostInitializers(cycleSolver);
 				}
-				PostInitializer<TRGT> postInitializer = new OneToManyCycleSolver(cascadeMany.getTargetMappingConfiguration().getEntityType());
-				currentBuilderContext.addPostInitializers(postInitializer);
+				cycleSolver.addCycleSolver(relationName, cascadeManyConfigurer);
 			} else {
 				cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
 						foreignKeyNamingStrategy,
@@ -141,19 +141,23 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		}
 	}
 	
-	// Small container aimed at lazily registering a relation into persister so it can be targeted by EntityCriteria
+	/**
+	 * Small container aimed at lazily registering a relation into source persister so it can be targeted by {@link EntityCriteria}
+	 * 
+	 * @param <TRGT> relation entity type
+	 */
 	class GraphLoadingRelationRegisterer<TRGT> extends PostInitializer<TRGT> {
 		
-		private final IReversibleAccessor reversibleAccessor;
+		private final IReversibleAccessor<C, Object> targetEntityAccessor;
 		
-		GraphLoadingRelationRegisterer(Class<TRGT> entityType, IReversibleAccessor reversibleAccessor) {
-			super(entityType);
-			this.reversibleAccessor = reversibleAccessor;
+		GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType, IReversibleAccessor<C, ?> targetEntityAccessor) {
+			super(targetEntityType);
+			this.targetEntityAccessor = (IReversibleAccessor<C, Object>) targetEntityAccessor;
 		}
 		
 		@Override
 		public void consume(IEntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
-			sourcePersister.getCriteriaSupport().getRootConfiguration().registerRelation(reversibleAccessor, targetPersister.getMappingStrategy());
+			sourcePersister.getCriteriaSupport().getRootConfiguration().registerRelation(targetEntityAccessor, targetPersister.getMappingStrategy());
 		}
 	}
 }

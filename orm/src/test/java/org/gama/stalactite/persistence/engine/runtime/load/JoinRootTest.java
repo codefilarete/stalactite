@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine.runtime.load;
 
+import java.util.Collections;
+
 import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -38,7 +40,7 @@ class JoinRootTest {
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(mappingStrategyMock), table);
 		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> {
 			// we don't care about other arguments (null passed) because existing strategy name is checked first
-			entityJoinTree.addRelationJoin("XX", null, null, null, null, OUTER, null);
+			entityJoinTree.addRelationJoin("XX", null, null, null, null, OUTER, null, Collections.emptySet());
 		});
 		assertEquals("No strategy with name XX exists to add a new strategy on", thrownException.getMessage());
 	}
@@ -62,9 +64,9 @@ class JoinRootTest {
 		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(totoMappingMock), totoMappingMock.getTargetTable());
-		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null);
-		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null);
-		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), totoPrimaryKey, titiPrimaryKey, null, INNER, null);
+		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());
+		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
+		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
 		
 		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), entityJoinTree.giveTables());
 	}

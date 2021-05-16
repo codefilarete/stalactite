@@ -1,12 +1,14 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
@@ -21,6 +23,7 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Id
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -112,22 +115,26 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 									Dialect dialect,
 									IConnectionConfiguration connectionConfiguration,
 									PersisterRegistry persisterRegistry) {
-		for (SubEntityMappingConfiguration<? extends C> subConfiguration : this.polymorphismPolicy.getSubClasses()) {
-			IEntityConfiguredJoinedTablesPersister<C, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
-			
-			if (subConfiguration.getPolymorphismPolicy() != null) {
-				registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry, subConfiguration,
-						subEntityPersister);
+		// we surround our relation configuration with cycle detection (see registerRelationCascades(..) implementation), this may seem too wide and
+		// could be closer to registerRelationCascades(..) method call (which actually requires it) but as doing such we also cover the case of 2
+		// subconfigurations using same entity in their relation 
+		PersisterBuilderContext.CURRENT.get().runInContext(mainPersister, () -> {
+			for (SubEntityMappingConfiguration<? extends C> subConfiguration : this.polymorphismPolicy.getSubClasses()) {
+				IEntityConfiguredJoinedTablesPersister<C, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
+				
+				if (subConfiguration.getPolymorphismPolicy() != null) {
+					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry, subConfiguration, subEntityPersister);
+				}
+				
+				// We register relation of sub class persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
+				registerRelationCascades(
+						(SubEntityMappingConfiguration<D>) subConfiguration,
+						dialect,
+						connectionConfiguration,
+						persisterRegistry,
+						(IEntityConfiguredJoinedTablesPersister<D, I>) subEntityPersister);
 			}
-			
-			// We register relation of sub class persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
-			registerRelationCascades(
-					(SubEntityMappingConfiguration<D>) subConfiguration,
-					dialect,
-					connectionConfiguration,
-					persisterRegistry,
-					(IEntityConfiguredJoinedTablesPersister<D, I>) subEntityPersister);
-		}
+		});
 	}
 	
 	private void registerPolymorphismCascades(Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
@@ -177,13 +184,16 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}
 	
-	private <D extends C> void registerRelationCascades(SubEntityMappingConfiguration<D> entityMappingConfiguration,
-														Dialect dialect,
-														IConnectionConfiguration connectionConfiguration,
-														PersisterRegistry persisterRegistry,
-														IEntityConfiguredJoinedTablesPersister<D, I> sourcePersister) {
-		for (CascadeOne<D, Object, Object> cascadeOne : entityMappingConfiguration.getOneToOnes()) {
-			CascadeOneConfigurer<D, Object, I, Object> cascadeOneConfigurer = new CascadeOneConfigurer<>(
+	private <D extends C, TRGT> void registerRelationCascades(SubEntityMappingConfiguration<D> entityMappingConfiguration,
+															  Dialect dialect,
+															  IConnectionConfiguration connectionConfiguration,
+															  PersisterRegistry persisterRegistry,
+															  IEntityConfiguredJoinedTablesPersister<D, I> sourcePersister) {
+		
+		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
+		
+		for (CascadeOne<D, TRGT, Object> cascadeOne : (List<CascadeOne<D, TRGT, Object>>) (List) entityMappingConfiguration.getOneToOnes()) {
+			CascadeOneConfigurer<D, TRGT, I, Object> cascadeOneConfigurer = new CascadeOneConfigurer<>(
 					cascadeOne,
 					sourcePersister,
 					dialect,
@@ -191,17 +201,38 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					persisterRegistry,
 					this.foreignKeyNamingStrategy,
 					this.joinColumnNamingStrategy);
-			// FIXME : null shouldn't be passed here, path of relations is expected
-			cascadeOneConfigurer.appendCascades(null, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+			
+			String relationName = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
+			
+			if (currentBuilderContext.isCycling(cascadeOne.getTargetMappingConfiguration())) {
+				// cycle detected
+				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
+				// fall into infinite loop (think to SQL generation of a cycling graph ...)
+				Class<TRGT> targetEntityType = cascadeOne.getTargetMappingConfiguration().getEntityType();
+				// adding the relation to an eventually already existing cycle configurer for the entity
+				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
+						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToOneCycleConfigurer && p.getEntityType() == targetEntityType);
+				if (cycleSolver == null) {
+					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
+					currentBuilderContext.addPostInitializers(cycleSolver);
+				}
+				cycleSolver.addCycleSolver(relationName, cascadeOneConfigurer);
+			} else {
+				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+			}
 		}
 		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(
+			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(cascadeMany, sourcePersister,
 					dialect,
 					connectionConfiguration,
-					persisterRegistry)
+					persisterRegistry,
+					this.foreignKeyNamingStrategy,
+					this.joinColumnNamingStrategy,
+					this.associationTableNamingStrategy,
+					this.indexColumnNamingStrategy)
 					// we must give primary key else reverse foreign key will target subclass table, which creates 2 fk in case of reuse of target persister
 					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns()));
-			if (PersisterBuilderContext.CURRENT.get().isCycling(cascadeMany.getTargetMappingConfiguration())) {
+			if (currentBuilderContext.isCycling(cascadeMany.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
 				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be inhanced), and
@@ -215,7 +246,6 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 								joinColumnNamingStrategy,
 								indexColumnNamingStrategy,
 								associationTableNamingStrategy,
-								true,
 								targetPersister);
 					}
 				};

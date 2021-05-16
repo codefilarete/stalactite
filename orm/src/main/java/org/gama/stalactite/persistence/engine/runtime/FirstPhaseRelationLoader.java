@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import java.util.Queue;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
@@ -20,12 +21,12 @@ class FirstPhaseRelationLoader<E, ID, T extends Table> implements EntityMerger<E
 	protected final Column<Table, ID> primaryKey;
 	protected final IdMappingStrategy<E, ID> idMappingStrategy;
 	private final ISelectExecutor<E, ID> selectExecutor;
-	protected final ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder;
+	protected final ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder;
 	
 	public FirstPhaseRelationLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
 									Column<Table, ID> primaryKey,
 									ISelectExecutor<E, ID> selectExecutor,
-									ThreadLocal<Set<RelationIds<Object, Object, Object>>> relationIdsHolder) {
+									ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder) {
 		this.primaryKey = primaryKey;
 		this.idMappingStrategy = subEntityIdMappingStrategy;
 		this.selectExecutor = selectExecutor;
@@ -56,7 +57,7 @@ class FirstPhaseRelationLoader<E, ID, T extends Table> implements EntityMerger<E
 	}
 	
 	protected void fillCurrentRelationIds(Row row, E bean, ColumnedRow columnedRow) {
-		Set<RelationIds<Object, E, ID>> relationIds = (Set) relationIdsHolder.get();
+		Set<RelationIds<Object, E, ID>> relationIds = ((Queue<Set<RelationIds<Object, E, ID>>>) (Queue) relationIdsHolder.get()).peek();
 		relationIds.add(new RelationIds<>(selectExecutor, idMappingStrategy.getIdAccessor()::getId, bean, (ID) columnedRow.getValue(primaryKey, row)));
 	}
 }

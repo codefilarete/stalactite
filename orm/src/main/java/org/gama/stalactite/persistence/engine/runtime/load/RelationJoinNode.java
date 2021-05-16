@@ -15,6 +15,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.Re
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.IRowTransformer;
+import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -38,7 +39,7 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 					 Column<T1, I> leftJoinColumn,
 					 Column<T2, I> rightJoinColumn,
 					 JoinType joinType,
-					 Set<Column<T2, Object>> columnsToSelect,
+					 Set<Column<T2, ?>> columnsToSelect,
 					 @Nullable String tableAlias,
 					 EntityInflater<C, I, T2> entityInflater,
 					 BeanRelationFixer<Object, C> beanRelationFixer,
@@ -63,7 +64,7 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 	
 	@Override
 	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
-		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, duplicateIdentifierProvider);
+		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, duplicateIdentifierProvider, getTransformerListener());
 	}
 	
 	static class RelationJoinRowConsumer<C, I> implements JoinRowConsumer {
@@ -81,16 +82,22 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		
 		private final IRowTransformer<C> rowTransformer;
 		
+		/** Optional listener of ResultSet decoding */
+		@Nullable
+		private final TransformerListener<C> transformerListener;
+		
 		RelationJoinRowConsumer(EntityInflater<C, I, ?> entityInflater,
 								BeanRelationFixer<Object, C> beanRelationFixer,
 								ColumnedRow columnedRow,
-								@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer) {
+								@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer,
+								@Nullable TransformerListener<C> transformerListener) {
 			this.entityType = entityInflater.getEntityType();
 			this.identifierProvider = entityInflater::giveIdentifier;
 			this.beanRelationFixer = beanRelationFixer;
 			this.columnedRow = columnedRow;
 			this.relationIdentifierComputer = (BiFunction<Row, ColumnedRow, Object>) Objects.preventNull(relationIdentifierComputer, this.identifierProvider);
 			this.rowTransformer = entityInflater.copyTransformerWithAliases(columnedRow);
+			this.transformerListener = transformerListener;
 		}
 		
 		C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context) {
@@ -104,6 +111,9 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 			if (rightIdentifier != null && context.isTreatedOrAppend(eventuallyApplied)) {
 				C rightEntity = (C) context.giveEntityFromCache(entityType, rightIdentifier, () -> rowTransformer.transform(row));
 				beanRelationFixer.apply(parentJoinEntity, rightEntity);
+				if (this.transformerListener != null) {
+					this.transformerListener.onTransform(rightEntity, column -> columnedRow.getValue(column, row));
+				}
 				return rightEntity;
 			}
 			return null;

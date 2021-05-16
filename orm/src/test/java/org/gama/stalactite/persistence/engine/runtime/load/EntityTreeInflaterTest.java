@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.runtime.load;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -83,7 +84,7 @@ class EntityTreeInflaterTest {
 				rightTableFkToLeftTable,
 				null,
 				JoinType.OUTER,
-				relationFixer);
+				relationFixer, Collections.emptySet());
 		entityJoinTree.addRelationJoin(
 				joinName,
 				rightMostEntityInflater,
@@ -91,7 +92,7 @@ class EntityTreeInflaterTest {
 				rightMostTableFkToRightTable,
 				null,
 				JoinType.OUTER,
-				Mockito.mock(BeanRelationFixer.class));
+				Mockito.mock(BeanRelationFixer.class), Collections.emptySet());
 		
 		EntityTreeQuery<Country> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, new Dialect().getColumnBinderRegistry()).buildSelectQuery();
 		EntityTreeInflater testInstance = entityTreeQuery.getInflater();

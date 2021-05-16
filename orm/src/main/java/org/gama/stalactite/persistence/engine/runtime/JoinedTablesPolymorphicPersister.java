@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -57,7 +58,12 @@ import org.gama.stalactite.sql.result.Row;
  */
 public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
-	private static final ThreadLocal<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
+	/**
+	 * Current storage of entities to be loaded during the 2-Phases load algorithm.
+	 * Tracked as a {@link Queue} to solve resource cleaning issue in case of recursive polymorphism. This may be solved by avoiding to have a static field
+	 */
+	// TODO : try a non-static field to remove Queue usage which impacts code complexity
+	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 	
 	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load */
@@ -385,13 +391,12 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		// (we don't need to create bean nor fulfill properties in first phase) 
 		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
 		String mainTableJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, (Set<Column<T2, Object>>) (Set) Arrays.asSet(rightColumn));
+				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, Arrays.asSet(rightColumn));
 		Column primaryKey = (Column) Iterables.first(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
 			sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
-					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
-							DIFFERED_ENTITY_LOADER),
+					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
 					primaryKey,
 					subclassPrimaryKey,
 					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
@@ -399,31 +404,32 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		});
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
 		
 		return mainTableJoinName;
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID> void joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																			Column<T1, ?> leftColumn,
-																			Column<T2, ?> rightColumn,
-																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
-																			boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																			  Column<T1, ID> leftColumn,
+																			  Column<T2, ID> rightColumn,
+																			  BeanRelationFixer<SRC, C> beanRelationFixer,
+																			  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																			  String joinName,
+																			  boolean optional,
+																			  Set<Column<T2, ?>> selectableColumns) {
 		
 		String createdJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(joinName,
-				(Column) leftColumn,
-				(Column) rightColumn,
+				leftColumn,
+				rightColumn,
 				JoinType.OUTER,
-				(Set) java.util.Collections.emptySet());
+				selectableColumns);
 		
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
 			sourcePersister.getEntityJoinTree().addMergeJoin(createdJoinName,
-					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
-							DIFFERED_ENTITY_LOADER),
+					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
 					mainTablePrimaryKey,
 					subclassPrimaryKey,
 					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
@@ -431,7 +437,9 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		});
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+		
+		return createdJoinName;
 	}
 	
 	@Override

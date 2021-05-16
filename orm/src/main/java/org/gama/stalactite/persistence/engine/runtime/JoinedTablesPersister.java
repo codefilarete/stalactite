@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -72,7 +73,8 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public JoinedTablesPersister(ClassMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect, IConnectionConfiguration connectionConfiguration) {
+	public JoinedTablesPersister(ClassMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect,
+								 IConnectionConfiguration connectionConfiguration) {
 		this.persister = new Persister<>(mainMappingStrategy, dialect, connectionConfiguration);
 		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
 		this.selectGraphExecutor = newSelectExecutor(mainMappingStrategy, connectionConfiguration.getConnectionProvider(), dialect);
@@ -81,7 +83,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	
 	protected EntityMappingStrategyTreeSelectExecutor<C, I, T> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
 																				 ConnectionProvider connectionProvider,
-													  							 Dialect dialect) {
+																				 Dialect dialect) {
 		return new EntityMappingStrategyTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
@@ -94,6 +96,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	
 	/**
 	 * Gives access to the select executor for further manipulations on {@link EntityJoinTree} for advanced usage
+	 * 
 	 * @return the executor for whole entity graph loading
 	 */
 	public EntityMappingStrategyTreeSelectExecutor<C, I, T> getEntityMappingStrategyTreeSelectExecutor() {
@@ -241,6 +244,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	
 	/**
 	 * Implementation for simple one-to-one cases : we add our joins to given persister
+	 * 
 	 * @return created join name
 	 */
 	@Override
@@ -262,7 +266,8 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 				rightColumn,
 				rightTableAlias,
 				optional ? JoinType.OUTER : JoinType.INNER,
-				beanRelationFixer);
+				beanRelationFixer,
+				Collections.emptySet());
 		
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
 		
@@ -273,13 +278,14 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	 * Implementation for simple one-to-many cases : we add our joins to given persister
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID> void joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																			Column<T1, ?> leftColumn,
-																			Column<T2, ?> rightColumn,
-																			BeanRelationFixer<SRC, C> beanRelationFixer,
-																			@Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																			String joinName,
-																			boolean optional) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, ID> leftColumn,
+																				  Column<T2, ID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																				  String joinName,
+																				  boolean optional,
+																				  Set<Column<T2, ?>> selectableColumns) {
 		
 		EntityMappingStrategyAdapter<C, I, T> strategy = new EntityMappingStrategyAdapter<>(getMappingStrategy());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
@@ -290,10 +296,13 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 				null,
 				optional ? JoinType.OUTER : JoinType.INNER,
 				beanRelationFixer,
+				selectableColumns,
 				duplicateIdentifierProvider);
 		
 		// adding our subgraph select to source persister
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
+		
+		return createdJoinNodeName;
 	}
 	
 	@Override

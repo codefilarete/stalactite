@@ -9,6 +9,7 @@ import java.util.Set;
 
 import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -38,17 +39,20 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	@Nullable
 	protected String tableAlias;
 	
+	@Nullable
+	private TransformerListener<C> transformerListener;
+	
 	protected AbstractJoinNode(JoinNode<T1> parent,
 							   Column<T1, I> leftJoinColumn,
 							   Column<T2, I> rightJoinColumn,
 							   JoinType joinType,
-							   Set<Column<T2, Object>> columnsToSelect,
+							   Set<Column<T2, ?>> columnsToSelect,
 							   @Nullable String tableAlias) {
 		this.parent = parent;
 		this.leftJoinColumn = leftJoinColumn;
 		this.rightJoinColumn = rightJoinColumn;
 		this.joinType = joinType;
-		this.columnsToSelect = columnsToSelect;
+		this.columnsToSelect = (Set) columnsToSelect;
 		this.tableAlias = tableAlias;
 		parent.add(this);
 	}
@@ -94,6 +98,16 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	@Override
 	public ReadOnlyList<AbstractJoinNode> getJoins() {
 		return new ReadOnlyList<>(joins);
+	}
+	
+	@Nullable
+	TransformerListener<C> getTransformerListener() {
+		return transformerListener;
+	}
+	
+	public AbstractJoinNode<C, T1, T2, I> setTransformerListener(@Nullable TransformerListener<C> transformerListener) {
+		this.transformerListener = transformerListener;
+		return this;
 	}
 	
 	@Override

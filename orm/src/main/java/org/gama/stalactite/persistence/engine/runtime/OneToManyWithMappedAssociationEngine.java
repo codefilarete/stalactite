@@ -2,9 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -18,17 +16,16 @@ import org.gama.lang.collection.Iterables;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.IEntityPersister;
-import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
+import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.IdentityMap;
 
 import static org.gama.lang.bean.Objects.not;
 import static org.gama.lang.collection.Iterables.stream;
@@ -50,14 +47,18 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
-	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
+	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
 	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-												ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
+												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 												IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.sourcePersister = sourcePersister;
+	}
+	
+	public MappedManyRelationDescriptor<SRC, TRGT, C> getManyRelationDescriptor() {
+		return manyRelationDescriptor;
 	}
 	
 	public void addSelectCascade(Column sourcePrimaryKey,
@@ -147,36 +148,19 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			}
 	}
 	
-	private final ThreadLocal<IdentityMap<SRC, Set<TRGTID>>> currentSelectedTargetEntitiesIds = new ThreadLocal<>();
-	
 	/**
 	 * Method to be invoked in case of entity cycle detected in its persistence configuration.
 	 * We add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
-	 * Query and SQL generation don't support several instances of table and columns in them (aliases generation must be inhanced),
-	 * and overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
 	 * 				
-	 * @param sourcePrimaryKey
-	 * @param relationOwner
-	 * @param targetPersister
-	 * @param persisterRegistry
+	 * @param sourcePrimaryKey left table primary key
+	 * @param relationOwner right table primary key
+	 * @param collectionGetter relation provider
+	 * @param firstPhaseCycleLoadListener code to be invoked when reading rows
 	 */
-	public void add2PhasesSelectCascade(Column sourcePrimaryKey,
-										Column relationOwner,
-										IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-										IReversibleAccessor<SRC, C> collectionGetter,
-										PersisterRegistry persisterRegistry) {
-		// Algorithm :
-		// 1- add the association table to entity load graph
-		// 2- read its right column when entity is loaded
-		// 3- after selection, run a select to read target entities
-		// .. but this is full of pitfall:
-		// - because right column reading is made in TransformerListener and selection is made by SelectListener, data (target entities ids) must be
-		//  shared : this is done through a ThreadLocal
-		// - to avoid stack overflow we have to clean the TrehadLocal before selecting target (happens in direct cycle : Person.children -> Person)
-		
-		
-		// we join on the association table and add bean association in memory
-		
+	public void addSelectCascadeIn2Phases(Column sourcePrimaryKey,
+										  Column relationOwner,
+										  IReversibleAccessor<SRC, C> collectionGetter,
+										  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		// Join is declared on non-added tables : Person (alias = null) / Person (alias = null)
 		Table relationOwnerTableClone = new Table(relationOwner.getTable().getName());
 		Column relationOwnerPrimaryKey = relationOwnerTableClone.addColumn(sourcePrimaryKey.getName(), sourcePrimaryKey.getJavaType());
@@ -187,59 +171,8 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				relationOwnerClone,
 				relationOwnerTableClone.getName() + "_" + AccessorDefinition.giveDefinition(collectionGetter).getName(),
 				JoinType.OUTER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
-				(src, rowValueProvider) -> {
-					IdentityMap<SRC, Set<TRGTID>> trgtIntegerIdentityMap = currentSelectedTargetEntitiesIds.get();
-					Set<TRGTID> targetIds = trgtIntegerIdentityMap.get(src);
-					if (targetIds == null) {
-						targetIds = new HashSet<>();
-						trgtIntegerIdentityMap.put(src, targetIds);
-					}
-					TRGTID targetId = (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey);
-					if (targetId != null) {
-						targetIds.add(targetId);
-					}
-				}, false);
-		
-		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
-		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
-		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
-			@Override
-			public void beforeSelect(Iterable<SRCID> ids) {
-				currentSelectedTargetEntitiesIds.set(new IdentityMap<>());
-			}
-			
-			@Override
-			public void afterSelect(Iterable<? extends SRC> result) {
-				try {
-					// Finding the right loader must be done dynamically because targetPersister is only a light version of the definitive one 
-					// since its mapping is polymorphic
-					IEntityPersister<TRGT, TRGTID> persister = persisterRegistry.getPersister(targetPersister.getClassToPersist());
-					// We do one request to load every target instances for better performance 
-					IdentityMap<SRC, Set<TRGTID>> srcSetIdentityMap = currentSelectedTargetEntitiesIds.get();
-					Set<TRGTID> targetIds = srcSetIdentityMap.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
-					// We clear context before next selection to avoid stackoverflow when cycle is direct (Person.children -> Person)
-					// This has no impact on other use cases
-					cleanContext();
-					List<TRGT> targets = persister.select(targetIds);
-					// Associating target instances to source ones
-					Map<TRGTID, TRGT> targetPerId = Iterables.map(targets, targetPersister::getId);
-					result.forEach(src -> {
-						srcSetIdentityMap.get(src).forEach(targetId -> manyRelationDescriptor.getRelationFixer().apply(src, targetPerId.get(targetId)));
-					});
-				} finally {
-					cleanContext();
-				}
-			}
-			
-			@Override
-			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
-				cleanContext();
-			}
-			
-			private void cleanContext() {
-				currentSelectedTargetEntitiesIds.remove();
-			}
-		});
+				(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey))
+				, false);
 	}
 	
 	public static class TargetInstancesInsertCascader<I, O, J> extends AfterInsertCollectionCascader<I, O> {

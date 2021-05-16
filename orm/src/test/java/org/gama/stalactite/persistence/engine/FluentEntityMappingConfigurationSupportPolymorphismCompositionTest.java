@@ -85,7 +85,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
 		assertEquals(Arrays.asHashSet("AbstractVehicle", "Car", "ElectricCar"), tables);
 		
-		// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
+		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
 		assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 		
 		// DML tests
@@ -146,7 +146,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
 		assertEquals(Arrays.asHashSet("Car", "AbstractVehicle"), tables);
 		
-		// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
+		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
 		assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 		
 		// DML tests
@@ -226,7 +226,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
 		assertEquals(Arrays.asHashSet("ElectricCar", "AbstractVehicle"), tables);
 		
-		// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
+		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
 		assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
 		
 		// DML tests

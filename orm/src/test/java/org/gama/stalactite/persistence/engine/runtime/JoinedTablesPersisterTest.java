@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -175,7 +176,7 @@ public class JoinedTablesPersisterTest {
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
 				new EntityMappingStrategyAdapter<>(persister2.getMappingStrategy()),
-				leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge);
+				leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());
 		testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 			@Override
 			public void afterInsert(Iterable<? extends Toto> entities) {
@@ -378,18 +379,18 @@ public class JoinedTablesPersisterTest {
 				"select Toto1.id as " + totoIdAlias
 						+ ", Toto1.a as " + totoAAlias
 						+ ", Toto1.b as " + totoBAlias
-						+ ", Toto2.id as " + toto2IdAlias
+						+ ", Toto2.z as " + toto2ZAlias
 						+ ", Toto2.x as " + toto2XAlias
 						+ ", Toto2.y as " + toto2YAlias
-						+ ", Toto2.z as " + toto2ZAlias
+						+ ", Toto2.id as " + toto2IdAlias
 						+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
 				"select Toto1.id as " + totoIdAlias
 						+ ", Toto1.a as " + totoAAlias
 						+ ", Toto1.b as " + totoBAlias
-						+ ", Toto2.id as " + toto2IdAlias
+						+ ", Toto2.z as " + toto2ZAlias
 						+ ", Toto2.x as " + toto2XAlias
 						+ ", Toto2.y as " + toto2YAlias
-						+ ", Toto2.z as " + toto2ZAlias
+						+ ", Toto2.id as " + toto2IdAlias
 						+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
 				statementArgCaptor.getAllValues());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);

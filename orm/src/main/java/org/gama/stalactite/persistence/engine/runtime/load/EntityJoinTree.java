@@ -45,7 +45,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * A mapping between a name and a join to help finding them when we want to join one with another new one
-	 * @see #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer) 
+	 * @see #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set) 
 	 */
 	private final Map<String, JoinNode> joinIndex = new HashMap<>();
 	
@@ -88,6 +88,7 @@ public class EntityJoinTree<C, I> {
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param joinType says wether or not the join must be open
 	 * @param beanRelationFixer a function to fullfill relation between beans
+	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
@@ -96,14 +97,15 @@ public class EntityJoinTree<C, I> {
 																					  Column<T2, ID> rightJoinColumn,
 																					  String rightTableAlias,
 																					  JoinType joinType,
-																					  BeanRelationFixer<C, U> beanRelationFixer) {
-		return addRelationJoin(leftStrategyName, inflater, leftJoinColumn, rightJoinColumn, rightTableAlias, joinType, beanRelationFixer, null);
+																					  BeanRelationFixer<C, U> beanRelationFixer,
+																					  Set<? extends Column<T2, ?>> additionalSelectableColumns) {
+		return addRelationJoin(leftStrategyName, inflater, leftJoinColumn, rightJoinColumn, rightTableAlias, joinType, beanRelationFixer, additionalSelectableColumns, null);
 	}
 	
 	/**
 	 * Adds a join to this select.
 	 * Use for one-to-one or one-to-many cases when join is used to describe a related bean.
-	 * Difference with {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer)} is last
+	 * Difference with {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set)} is last
 	 * parameter : an optional function which computes an identifier of a relation between 2 entities, this is required to prevent from fulfilling
 	 * twice the relation when SQL returns several times same identifier (when at least 2 collections are implied). By default this function is
 	 * made of parentEntityId + childEntityId and can be overwritten here (in particular when relation is a List, entity index is added to computation).
@@ -120,6 +122,7 @@ public class EntityJoinTree<C, I> {
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param joinType says wether or not the join must be open
 	 * @param beanRelationFixer a function to fullfill relation between beans
+	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 * 
@@ -132,11 +135,15 @@ public class EntityJoinTree<C, I> {
 																					  String rightTableAlias,
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer,
+																					  Set<? extends Column<T2, ?>> additionalSelectableColumns,
 																					  @Nullable BiFunction<Row, ColumnedRow, ID> duplicateIdentifierProvider) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
 				parent,
 				leftJoinColumn, rightJoinColumn, joinType,
-				inflater.getSelectableColumns(), rightTableAlias, inflater, (BeanRelationFixer<Object, U>) beanRelationFixer,
+				new HashSet<>(Collections.cat(inflater.getSelectableColumns(), additionalSelectableColumns)),
+				rightTableAlias,
+				inflater,
+				(BeanRelationFixer<Object, U>) beanRelationFixer,
 				duplicateIdentifierProvider));
 	}
 	
@@ -206,7 +213,7 @@ public class EntityJoinTree<C, I> {
 																				  Column<T1, ID> leftJoinColumn,
 																				  Column<T2, ID> rightJoinColumn,
 																				  JoinType joinType,
-																				  Set<Column<T2, Object>> columnsToSelect) {
+																				  Set<Column<T2, ?>> columnsToSelect) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				columnsToSelect, null));
@@ -216,7 +223,7 @@ public class EntityJoinTree<C, I> {
 																				  Column<T1, ID> leftJoinColumn,
 																				  Column<T2, ID> rightJoinColumn,
 																				  JoinType joinType,
-																				  Set<Column<T2, Object>> columnsToSelect,
+																				  Set<Column<T2, ?>> columnsToSelect,
 																				  TransformerListener<C> transformerListener) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
 				leftJoinColumn, rightJoinColumn, joinType,
@@ -228,7 +235,7 @@ public class EntityJoinTree<C, I> {
 																				  Column<T2, ID> rightJoinColumn,
 																				  String tableAlias,
 																				  JoinType joinType,
-																				  Set<Column<T2, Object>> columnsToSelect,
+																				  Set<Column<T2, ?>> columnsToSelect,
 																				  TransformerListener<C> transformerListener,
 																				  boolean rightTableParticipatesToDDL) {
 		if (!rightTableParticipatesToDDL) {
@@ -252,7 +259,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
-	 * {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer)}.
+	 * {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set)}.
 	 * When {@link #ROOT_STRATEGY_NAME} is given, {@link #getRoot()} will be used, meanwhile, be aware that using this method to retreive root node
 	 * is not the recommanded way : prefer usage of {@link #getRoot()} to prevent exposure of {@link #ROOT_STRATEGY_NAME}
 	 *
@@ -331,9 +338,9 @@ public class EntityJoinTree<C, I> {
 			}
 			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, projectedLeftColumn);
 			// maintaining join names through trees : we add current node name to target one. Then nodes can be found across trees
-			Set<Map.Entry<String, JoinNode>> set = tree.joinIndex.entrySet();
-			Entry<String, JoinNode> nodeName = Iterables.find(set, entry -> entry.getValue() == targetOwner);
-			this.joinIndex.put(nodeName.getKey(), nodeClone);
+			Set<Map.Entry<String, JoinNode>> set = this.joinIndex.entrySet();
+			Entry<String, JoinNode> nodeName = Iterables.find(set, entry -> entry.getValue() == currentNode);
+			tree.joinIndex.put(nodeName.getKey(), nodeClone);
 			
 			return nodeClone;
 		});
@@ -474,12 +481,13 @@ public class EntityJoinTree<C, I> {
 					node.getRightJoinColumn(),
 					node.getJoinType(),
 					node.getColumnsToSelect(),
-					node.getTableAlias())
-					.setTransformerListener(((PassiveJoinNode) node).getTransformerListener());
+					node.getTableAlias());
 		} else {
 			throw new UnsupportedOperationException("Unexpected type of join : some algorithm as change, please implement it here or fix it : "
 					+ Reflections.toString(node.getClass()));
 		}
+		nodeCopy.setTransformerListener(node.getTransformerListener());
+		
 		return nodeCopy;
 	}
 	
