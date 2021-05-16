@@ -12,7 +12,6 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
@@ -113,7 +112,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 		return persister.getUpdateExecutor();
 	}
 	
-	public ISelectExecutor<C, I> getSelectExecutor() {
+	public SelectExecutor<C, I, T> getSelectExecutor() {
 		return this.selectGraphExecutor;
 	}
 	

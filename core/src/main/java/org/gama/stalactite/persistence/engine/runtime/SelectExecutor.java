@@ -32,7 +32,7 @@ import org.gama.stalactite.sql.result.RowIterator;
  */
 public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> implements ISelectExecutor<C, I> {
 	
-	private SQLOperationListener<Column<T, Object>> operationListener;
+	protected SQLOperationListener<Column<T, Object>> operationListener;
 	
 	public SelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);

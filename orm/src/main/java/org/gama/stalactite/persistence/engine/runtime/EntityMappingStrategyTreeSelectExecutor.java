@@ -244,6 +244,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 					selectParameterBinders);
 			List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
 			try (ReadOperation<Column<T, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
+				columnReadOperation.setListener(EntityMappingStrategyTreeSelectExecutor.this.operationListener);
 				for (List<I> parcel : idsParcels) {
 					result.addAll(executor.execute(columnReadOperation, parcel));
 				}
