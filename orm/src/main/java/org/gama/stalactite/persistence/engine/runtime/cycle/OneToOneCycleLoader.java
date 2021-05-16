@@ -74,8 +74,6 @@ public class OneToOneCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TR
 	@Override
 	public void afterSelect(Iterable<? extends TRGT> result) {
 		Set<TRGTID> targetIds = this.currentRuntimeContext.get().giveIdentifiersToLoad();
-		// TODO: remove all target Ids already loaded to avoid infinite loop in case of entity cycle or two relations pointing to same entity, will 
-		//  avoid clones too
 		// NB: Iterable.forEach(Set.remove(..)) is a better performance way of doing Set.removeAll(Iterable) because :
 		// - Iterable must be transformed as a List (with Iterables.collectToList for example)
 		// - and algorithm of Set.remove(..) depends on List.contains() (if List is smaller than Set) which is not efficient

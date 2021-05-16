@@ -222,7 +222,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	@Override
 	public int persist(Iterable<? extends C> entities) {
 		// This class doesn't need to implement this method because it is better handled by wrapper, especially in triggering event
-		throw new NotImplementedException("This class doesn't need to implement this method because it is handle by wrapper");
+		throw new NotImplementedException("This class doesn't need to implement this method because it is handled by wrapper");
 	}
 	
 	@Override

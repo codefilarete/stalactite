@@ -57,13 +57,11 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 		
 		// we add target subgraph joins to main persister
 		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
-				associationPersister.getMainTable().getManySidePrimaryKey(), manyRelationDescriptor.getRelationFixer(), new BiFunction<Row, ColumnedRow, Object>() {
-					@Override
-					public Object apply(Row row, ColumnedRow columnedRow) {
-						TRGTID identifier = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
-						Integer targetEntityIndex = EntityTreeInflater.currentContext().getRowDecoder().giveValue(associationTableJoinNodeName, indexColumn, row);
-						return identifier + "-" + targetEntityIndex;
-					}
+				associationPersister.getMainTable().getManySidePrimaryKey(), manyRelationDescriptor.getRelationFixer(),
+				(row, columnedRow) -> {
+					TRGTID identifier = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+					Integer targetEntityIndex = EntityTreeInflater.currentContext().getRowDecoder().giveValue(associationTableJoinNodeName, indexColumn, row);
+					return identifier + "-" + targetEntityIndex;
 				}, associationTableJoinNodeName, true);
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.

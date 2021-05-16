@@ -76,7 +76,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
 			Table tableDefinedByInheritanceConfiguration = joinedTablesPolymorphism.giveTable(subConfiguration);
 			
-			assertAllAreEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+			assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
 			
 			Table subTable = nullable(tableDefinedByColumnOverride)
 					.elseSet(tableDefinedByInheritanceConfiguration)
@@ -113,7 +113,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		
-		JoinedTablesPolymorphicPersister<C, I> surrogate = new JoinedTablesPolymorphicPersister(
+		JoinedTablesPolymorphicPersister<C, I> surrogate = new JoinedTablesPolymorphicPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
 				dialect);
 		return surrogate;

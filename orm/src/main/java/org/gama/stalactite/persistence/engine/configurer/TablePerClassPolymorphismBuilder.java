@@ -71,7 +71,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
 			Table tableDefinedByInheritanceConfiguration = polymorphismPolicy.giveTable(subConfiguration);
 			
-			assertAllAreEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+			assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
 			
 			Table subTable = nullable(tableDefinedByColumnOverride)
 					.elseSet(tableDefinedByInheritanceConfiguration)

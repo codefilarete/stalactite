@@ -67,7 +67,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 			// if both are null we'll create a new one
 			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
 			
-			assertAllAreEqual(tableDefinedByColumnOverride, mainTable);
+			assertNullOrEqual(tableDefinedByColumnOverride, mainTable);
 			
 			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), mainTable,
 					this.columnBinderRegistry, this.columnNameProvider);

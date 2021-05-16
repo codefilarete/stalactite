@@ -33,12 +33,12 @@ import org.gama.stalactite.persistence.structure.Table;
 abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implements PolymorphismBuilder<C, I, T> {
 	
 	/**
-	 * Asserts that all given arguments are null, or all equals
+	 * Asserts that given arguments are null, or equal
 	 *
 	 * @param table1 any table, null accepted (that's the purpose of the method)
 	 * @param table2 any table, null accepted (that's the purpose of the method)
 	 */
-	protected static void assertAllAreEqual(Table table1, Table table2) {
+	protected static void assertNullOrEqual(Table table1, Table table2) {
 		Set<Table> availableTables = Arrays.asHashSet(table1, table2);
 		availableTables.remove(null);
 		if (availableTables.size() > 1) {

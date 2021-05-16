@@ -254,7 +254,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	@Override
 	public int persist(Iterable<? extends C> entities) {
 		// This class doesn't need to implement this method because it is better handled by wrapper, especially in triggering event
-		throw new NotImplementedException("This class doesn't need to implement this method because it is handle by wrapper");
+		throw new NotImplementedException("This class doesn't need to implement this method because it is handled by wrapper");
 	}
 	
 	private Map<IEntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<C> entities) {
