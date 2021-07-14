@@ -6,9 +6,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
+import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Iterables;
 
 /**

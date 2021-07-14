@@ -14,9 +14,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.gama.lang.Reflections;
+import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.Functions;

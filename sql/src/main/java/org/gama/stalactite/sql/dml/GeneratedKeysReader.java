@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
-import com.google.common.annotations.VisibleForTesting;
+import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.result.ResultSetIterator;

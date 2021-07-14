@@ -5,11 +5,11 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Map;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Arrays;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;

@@ -26,9 +26,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.Experimental;
 import org.gama.lang.ThreadLocals;
+import org.gama.lang.VisibleForTesting;
 import org.gama.lang.bean.ClassIterator;
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;

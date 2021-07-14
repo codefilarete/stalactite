@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.StringAppender;
 import org.gama.lang.Strings;
+import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;

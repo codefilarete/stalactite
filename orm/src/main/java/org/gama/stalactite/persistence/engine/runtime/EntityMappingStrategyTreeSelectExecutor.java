@@ -9,8 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.gama.lang.StringAppender;
+import org.gama.lang.VisibleForTesting;
 import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;

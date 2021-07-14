@@ -14,7 +14,6 @@
 	<properties>
 		<tools.version>1.0-SNAPSHOT</tools.version>
 		<reflection.version>1.0-SNAPSHOT</reflection.version>
-		<jsr305.version>3.0.0</jsr305.version>
 		<hsqldb.version>2.3.2</hsqldb.version>
 		<derby.version>10.14.1.0</derby.version>
 		<mysql-connector-java.version>5.1.38</mysql-connector-java.version>
@@ -48,11 +47,6 @@
 			<groupId>org.gama</groupId>
 			<artifactId>reflection</artifactId>
 			<version>${reflection.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.google.code.findbugs</groupId>
-			<artifactId>jsr305</artifactId>
-			<version>${jsr305.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hsqldb</groupId>
