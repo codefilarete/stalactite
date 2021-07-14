@@ -37,9 +37,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.test.PairSetList.pairSetList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -72,7 +71,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		
 		verify(dataSet.preparedStatement).executeQuery();
 		verify(dataSet.preparedStatement).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals("select a, b, c from Toto where a in (?)", dataSet.statementArgCaptor.getValue());
+		assertThat(dataSet.statementArgCaptor.getValue()).isEqualTo("select a, b, c from Toto where a in (?)");
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
@@ -96,11 +95,11 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(1)).onValuesSet(statementArgCaptor.capture());
-		assertEquals(Arrays.asList(
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 				Maps.asHashMap(colA, Arrays.asList(1, 2))
-		), statementArgCaptor.getAllValues());
+		));
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
-		assertEquals("select a, b, c from Toto where a in (?, ?)", sqlArgCaptor.getValue().getSQL());
+		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("select a, b, c from Toto where a in (?, ?)");
 	}
 	
 	@Test
@@ -114,7 +113,8 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// two queries because in operator is bounded to 3 values
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(4)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?)"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b," 
+				+ " c from Toto where a in (?)"));
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13).add(3, 17).newRow(1, 23);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
@@ -130,7 +130,8 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// two queries because in operator is bounded to 3 values
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(5)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b, c from Toto where a in (?, ?)"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)", "select a, b," 
+				+ " c from Toto where a in (?, ?)"));
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13).add(3, 17).newRow(1, 23).add(2, 29);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
@@ -146,7 +147,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// two queries because in operator is bounded to 3 values
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(6)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select a, b, c from Toto where a in (?, ?, ?)"));
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13).add(3, 17).newRow(1, 23).add(2, 29).add(3, 31);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
@@ -162,7 +163,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// one query because in operator is bounded to 3 values
 		verify(dataSet.preparedStatement, times(1)).executeQuery();
 		verify(dataSet.preparedStatement, times(2)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where a in (?, ?)"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select a, b, c from Toto where a in (?, ?)"));
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 11).add(2, 13);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
@@ -175,12 +176,12 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		
 		List<Toto> result = testInstance.select(Arrays.asList());
 		
-		assertTrue(result.isEmpty());
+		assertThat(result.isEmpty()).isTrue();
 		
 		// No queries
 		verify(dataSet.preparedStatement, times(0)).executeQuery();
 		verify(dataSet.preparedStatement, times(0)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertTrue(dataSet.statementArgCaptor.getAllValues().isEmpty());
+		assertThat(dataSet.statementArgCaptor.getAllValues().isEmpty()).isTrue();
 	}
 	
 	@Test
@@ -198,7 +199,8 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// two queries because in operator is bounded to 3 values
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(8)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", "select a, b, c from Toto where (a, b) in ((?, ?))"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?," 
+				+ " ?))", "select a, b, c from Toto where (a, b) in ((?, ?))"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 11).add(3, 2).add(4, 13).add(5, 3).add(6, 17)
 				.newRow(1, 4).add(2, 23);
@@ -220,7 +222,8 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// two queries because in operator is bounded to 3 values
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(10)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", "select a, b, c from Toto where (a, b) in ((?, ?), (?, ?))"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?," 
+				+ " ?))", "select a, b, c from Toto where (a, b) in ((?, ?), (?, ?))"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 11).add(3, 2).add(4, 13).add(5, 3).add(6, 17)
 				.newRow(1, 4).add(2, 23).add(3, 5).add(4, 29);
@@ -243,7 +246,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// two queries because in operator is bounded to 3 values
 		verify(dataSet.preparedStatement, times(2)).executeQuery();
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select a, b, c from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.add(1, 1).add(2, 11).add(3, 2).add(4, 13).add(5, 3).add(6, 17)
 				.newRow(1, 4).add(2, 23).add(3, 5).add(4, 29).add(5, 6).add(6, 31);
@@ -282,7 +285,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(2, 20, 200),
 				new Toto(3, 30, 300),
 				new Toto(4, 40, 400));
-		assertEquals(expectedResult.toString(), result.toString());
+		assertThat(result.toString()).isEqualTo(expectedResult.toString());
 	}
 	
 	@ParameterizedTest
@@ -309,7 +312,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 				new Tata(2, 20, 200),
 				new Tata(3, 30, 300),
 				new Tata(4, 40, 400));
-		assertEquals(expectedResult, new HashSet<>(result));
+		assertThat(new HashSet<>(result)).isEqualTo(expectedResult);
 	}
 	
 	@ParameterizedTest
@@ -329,9 +332,9 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		// test with 1 id
 		List<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
-		assertEquals(1, (Object) t.a);
-		assertEquals(10, (Object) t.b);
-		assertEquals(100, (Object) t.c);
+		assertThat((Object) t.a).isEqualTo(1);
+		assertThat((Object) t.b).isEqualTo(10);
+		assertThat((Object) t.c).isEqualTo(100);
 		
 		// test with 3 ids
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
@@ -339,7 +342,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(2, 20, 200),
 				new Toto(3, 30, 300),
 				new Toto(4, 40, 400));
-		assertEquals(expectedResult.toString(), totos.toString());
+		assertThat(totos.toString()).isEqualTo(expectedResult.toString());
 	}
 	
 	@Test
@@ -373,7 +376,7 @@ public class SelectExecutorTest extends AbstractDMLExecutorTest {
 		testInstance.new InternalExecutor().execute(readOperationMock, Arrays.asList(1, 2));
 		
 		verify(readOperationMock).setValues(capturedValues.capture());
-		assertEquals(Maps.asMap(id, Arrays.asList(10, 20)), capturedValues.getValue());
+		assertThat(capturedValues.getValue()).isEqualTo(Maps.asMap(id, Arrays.asList(10, 20)));
 	}
 	
 }

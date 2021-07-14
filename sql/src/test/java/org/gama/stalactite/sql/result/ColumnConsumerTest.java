@@ -8,9 +8,9 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_READER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author Guillaume Mary
@@ -32,11 +32,11 @@ public class ColumnConsumerTest {
 		
 		resultSet.next();
 		testInstance.assemble(targetInstance, resultSet);
-		assertEquals(42, targetInstance.getValue());
+		assertThat(targetInstance.getValue()).isEqualTo(42);
 		resultSet.next();
 		testInstance.assemble(targetInstance, resultSet);
 		// 42 + 666 = 708
-		assertEquals(708, targetInstance.getValue());
+		assertThat(targetInstance.getValue()).isEqualTo(708);
 	}
 	
 	@Test
@@ -51,16 +51,16 @@ public class ColumnConsumerTest {
 		));
 		
 		resultSet.next();
-		Exception thrownException = assertThrows(BindingException.class, () -> srcInstance.assemble(targetInstance, resultSet));
-		assertEquals("Error while reading column 'a'", thrownException.getMessage());
-		assertEquals(SQLException.class, thrownException.getCause().getClass());
-		assertEquals("Column doesn't exist : a", thrownException.getCause().getMessage());
+		assertThatThrownBy(() -> srcInstance.assemble(targetInstance, resultSet))
+				.isInstanceOf(BindingException.class)
+				.hasMessage("Error while reading column 'a'")
+				.hasCause(new SQLException("Column doesn't exist : a"));
 		
 		testInstance.assemble(targetInstance, resultSet);
-		assertEquals(42, targetInstance.getValue());
+		assertThat(targetInstance.getValue()).isEqualTo(42);
 		resultSet.next();
 		testInstance.assemble(targetInstance, resultSet);
 		// 42 + 666 = 708
-		assertEquals(708, targetInstance.getValue());
+		assertThat(targetInstance.getValue()).isEqualTo(708);
 	}
 }

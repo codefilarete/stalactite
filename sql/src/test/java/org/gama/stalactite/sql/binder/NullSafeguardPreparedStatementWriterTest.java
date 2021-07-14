@@ -6,9 +6,8 @@ import java.sql.SQLException;
 import org.gama.lang.trace.ModifiableBoolean;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -22,7 +21,7 @@ class NullSafeguardPreparedStatementWriterTest {
 		NullSafeguardPreparedStatementWriter<Object> testInstance =
 				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> isSurrogateInvoked.setTrue());
 		testInstance.set(mock(PreparedStatement.class), 42, 666);
-		assertTrue(isSurrogateInvoked.getValue());
+		assertThat(isSurrogateInvoked.getValue()).isTrue();
 	}
 	
 	@Test
@@ -32,9 +31,9 @@ class NullSafeguardPreparedStatementWriterTest {
 				new NullSafeguardPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> {
 			isSurrogateInvoked.setTrue();
 		});
-		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class,
-				() -> testInstance.set(mock(PreparedStatement.class), 42, null));
-		assertEquals("Trying to pass null as primitive value", thrownException.getMessage());
+		assertThatThrownBy(() -> testInstance.set(mock(PreparedStatement.class), 42, null))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Trying to pass null as primitive value");
 	}
 	
 }

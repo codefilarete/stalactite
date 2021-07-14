@@ -35,8 +35,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -68,7 +68,7 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(4)).addBatch();
 		verify(dataSet.preparedStatement, times(2)).executeBatch();
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", dataSet.statementArgCaptor.getValue());
+		assertThat(dataSet.statementArgCaptor.getValue()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 1).add(2, 17).add(3, 23)
 				.newRow(1, 2).add(2, 29).add(3, 31)
@@ -82,10 +82,10 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMappingStrategy().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.insert(Arrays.asList(new Toto(null, 23))));
-		assertEquals("Error while inserting values for Toto{a=1, b=null, c=23}", thrownException.getMessage());
-		assertEquals(BindingException.class, thrownException.getCause().getClass());
-		assertEquals("Expected non null value for : Toto.b", thrownException.getCause().getMessage());
+		assertThatThrownBy(() -> testInstance.insert(Arrays.asList(new Toto(null, 23))))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage("Error while inserting values for Toto{a=1, b=null, c=23}")
+				.hasCause(new BindingException("Expected non null value for : Toto.b"));
 	}
 	
 	@Test
@@ -104,12 +104,12 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertEquals(Arrays.asList(
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 				Maps.asHashMap(colA, 1).add(colB, 17).add(colC, 23),
 				Maps.asHashMap(colA, 2).add(colB, 29).add(colC, 31)
-				), statementArgCaptor.getAllValues());
+		));
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
-		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", sqlArgCaptor.getValue().getSQL());
+		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 	}
 	
 	@Test
@@ -144,15 +144,15 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 		
 		VersionnedToto toto = new VersionnedToto(42, 17, 23);
 		testInstance.insert(Arrays.asList(toto));
-		assertEquals(1, toto.getVersion());
+		assertThat(toto.getVersion()).isEqualTo(1);
 		
 		// a rollback must revert sequence increment
 		testInstance.getConnectionProvider().getCurrentConnection().rollback();
-		assertEquals(0, toto.getVersion());
+		assertThat(toto.getVersion()).isEqualTo(0);
 		
 		// multiple rollbacks don't imply multiple sequence decrement
 		testInstance.getConnectionProvider().getCurrentConnection().rollback();
-		assertEquals(0, toto.getVersion());
+		assertThat(toto.getVersion()).isEqualTo(0);
 	}
 	
 	public static class InsertExecutorTest_autoGenerateKeys extends AbstractDMLExecutorTest {
@@ -215,7 +215,7 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 			verify(dataSet.preparedStatement, times(4)).addBatch();
 			verify(dataSet.preparedStatement, times(2)).executeBatch();
 			verify(dataSet.preparedStatement, times(8)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-			assertEquals("insert into Toto(a, b, c) values (default, ?, ?)", dataSet.statementArgCaptor.getValue());
+			assertThat(dataSet.statementArgCaptor.getValue()).isEqualTo("insert into Toto(a, b, c) values (default, ?, ?)");
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 17).add(2, 23)
 					.newRow(1, 29).add(2, 31)
@@ -227,7 +227,7 @@ public class InsertExecutorTest extends AbstractDMLExecutorTest {
 			verify(generatedKeyResultSetMock, times(4)).getInt(eq("a"));
 			
 			// Verfy that database generated keys were set into Java instances
-			assertEquals(Arrays.asList(1, 2, 3, 4), Iterables.collectToList(totoList, toto -> toto.a));
+			assertThat(Iterables.collectToList(totoList, toto -> toto.a)).isEqualTo(Arrays.asList(1, 2, 3, 4));
 		}
 	}
 	

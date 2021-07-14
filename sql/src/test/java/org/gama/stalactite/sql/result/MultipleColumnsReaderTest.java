@@ -6,9 +6,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.test.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.lang.collection.Maps.asMap;
 
 /**
@@ -29,11 +29,11 @@ class MultipleColumnsReaderTest {
 		));
 		resultSet.next();
 		Map<String, Object> readValues = testInstance.read(resultSet);
-		Assertions.assertEquals(asMap("key1", (Object) 13L).add("key2", "a"), readValues);
+		assertThat(readValues).isEqualTo(asMap("key1", (Object) 13L).add("key2", "a"));
 		
 		resultSet.next();
 		readValues = testInstance.read(resultSet);
-		Assertions.assertEquals(asMap("key1", (Object) 17L).add("key2", "b"), readValues);
+		assertThat(readValues).isEqualTo(asMap("key1", (Object) 17L).add("key2", "b"));
 	}
 	
 }

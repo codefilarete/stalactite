@@ -32,8 +32,8 @@ import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Guillaume Mary
@@ -63,7 +63,8 @@ public class DefaultParameterBindersTest {
 	@ParameterizedTest
 	@MethodSource("dataSources")
 	public void testLongPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, dataSource,
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER,
+				dataSource,
 				"int not null", Arrays.asSet(null)));
 	}
 	
@@ -82,7 +83,8 @@ public class DefaultParameterBindersTest {
 	@ParameterizedTest
 	@MethodSource("dataSources")
 	public void testIntegerPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER, dataSource,
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER,
+				dataSource,
 				"int not null", Arrays.asSet(null)));
 	}
 	
@@ -101,7 +103,8 @@ public class DefaultParameterBindersTest {
 	@ParameterizedTest
 	@MethodSource("dataSources")
 	public void testBytePrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.BYTE_PRIMITIVE_BINDER, dataSource,
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(DefaultParameterBinders.BYTE_PRIMITIVE_BINDER,
+				dataSource,
 				"int not null", Arrays.asSet(null)));
 	}
 	
@@ -115,7 +118,7 @@ public class DefaultParameterBindersTest {
 			binarystreamBinder = DerbyParameterBinders.BYTES_BINDER;
 		}
 		Set<byte[]> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
-		assertEquals(Arrays.asSet(null, "Hello world !"), convertBytesToString(databaseContent));
+		assertThat(convertBytesToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
 	}
 	
 	static Set<String> convertBytesToString(Set<byte[]> databaseContent) {
@@ -137,7 +140,8 @@ public class DefaultParameterBindersTest {
 	@ParameterizedTest
 	@MethodSource("dataSources")
 	public void testDoublePrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER, dataSource,
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER,
+				dataSource,
 				"double not null", Arrays.asSet(null)));
 	}
 	
@@ -156,7 +160,8 @@ public class DefaultParameterBindersTest {
 	@ParameterizedTest
 	@MethodSource("dataSources")
 	public void testFloatPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER, dataSource,
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER,
+				dataSource,
 				"double not null", Arrays.asSet(null)));
 	}
 	
@@ -181,7 +186,8 @@ public class DefaultParameterBindersTest {
 	@ParameterizedTest
 	@MethodSource("dataSources")
 	public void testBooleanPrimitiveBinder_nullValuePassed_NPEThrown(DataSource dataSource) throws SQLException {
-		assertThrows(NullPointerException.class, () -> testParameterBinder(DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER, dataSource,
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER,
+				dataSource,
 				"boolean not null", Arrays.asSet(null)));
 	}
 	
@@ -253,7 +259,7 @@ public class DefaultParameterBindersTest {
 			binarystreamBinder = DerbyParameterBinders.BINARYSTREAM_BINDER;
 		}
 		Set<InputStream> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
-		assertEquals(Arrays.asSet(null, "Hello world !"), convertInputStreamToString(databaseContent));
+		assertThat(convertInputStreamToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
 	}
 	
 	static Set<String> convertInputStreamToString(Set<InputStream> databaseContent) {
@@ -276,7 +282,7 @@ public class DefaultParameterBindersTest {
 			binarystreamBinder = DerbyParameterBinders.BLOB_BINDER;
 		}
 		Set<Blob> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
-		assertEquals(Arrays.asSet(null, "Hello world !"), convertBlobToString(databaseContent));
+		assertThat(convertBlobToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
 	}
 	
 	static Set<String> convertBlobToString(Set<Blob> databaseContent) {
@@ -299,12 +305,12 @@ public class DefaultParameterBindersTest {
 			binarystreamBinder = DerbyParameterBinders.BLOB_INPUTSTREAM_BINDER;
 		}
 		Set<InputStream> databaseContent = insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
-		assertEquals(Arrays.asSet(null, "Hello world !"), convertInputStreamToString(databaseContent));
+		assertThat(convertInputStreamToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
 	}
 	
 	private <T> void testParameterBinder(ParameterBinder<T> testInstance, DataSource dataSource, String sqlColumnType, Set<T> valuesToInsert) throws SQLException {
 		Set<T> databaseContent = insertAndSelect(dataSource, testInstance, sqlColumnType, valuesToInsert);
-		assertEquals(valuesToInsert, databaseContent);
+		assertThat(databaseContent).isEqualTo(valuesToInsert);
 	}
 	
 	static <T> Set<T> insertAndSelect(DataSource dataSource, ParameterBinder<T> testInstance, String sqlColumnType, Set<T> valuesToInsert) throws SQLException {

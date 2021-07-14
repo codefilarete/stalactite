@@ -18,8 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -76,7 +75,7 @@ public class ColumnedCollectionMappingStrategyTest {
 	@MethodSource("testGetInsertValues")
 	public void testGetInsertValues(List<String> toInsert, ChainingMap<Column, String> expected) {
 		Map<Column<Table, Object>, Object> insertValues = testInstance.getInsertValues(toInsert);
-		assertEquals(insertValues, expected);
+		assertThat(expected).isEqualTo(insertValues);
 	}
 	
 	public static Object[][] testGetUpdateValues_diffOnly() {
@@ -103,7 +102,7 @@ public class ColumnedCollectionMappingStrategyTest {
 		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
-		assertEquals(expectationWithUpwhereColumn, updateValues);
+		assertThat(updateValues).isEqualTo(expectationWithUpwhereColumn);
 	}
 	
 	public static Object[][] testGetUpdateValues_allColumns() {
@@ -132,7 +131,7 @@ public class ColumnedCollectionMappingStrategyTest {
 		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
-		assertEquals(expectationWithUpwhereColumn, updateValues);
+		assertThat(updateValues).isEqualTo(expectationWithUpwhereColumn);
 	}
 	
 	@Test
@@ -143,12 +142,12 @@ public class ColumnedCollectionMappingStrategyTest {
 		row.put(col3.getName(), "c");
 		List<String> toto = testInstance.transform(row);
 		// all 5th first element should be filled
-		assertEquals("a", toto.get(0));
-		assertEquals("b", toto.get(1));
-		assertEquals("c", toto.get(2));
-		assertNull(toto.get(3));
-		assertNull(toto.get(4));
+		assertThat(toto.get(0)).isEqualTo("a");
+		assertThat(toto.get(1)).isEqualTo("b");
+		assertThat(toto.get(2)).isEqualTo("c");
+		assertThat(toto.get(3)).isNull();
+		assertThat(toto.get(4)).isNull();
 		// there's not more element since mapping used 5 columns
-		assertEquals(5, toto.size());
+		assertThat(toto.size()).isEqualTo(5);
 	}
 }

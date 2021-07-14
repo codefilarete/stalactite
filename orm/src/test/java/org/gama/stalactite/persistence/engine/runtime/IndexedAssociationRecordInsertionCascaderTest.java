@@ -17,7 +17,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -64,7 +64,7 @@ class IndexedAssociationRecordInsertionCascaderTest {
 				new IndexedAssociationRecord(inputData.getId(), key2.getId(), 2),
 				new IndexedAssociationRecord(inputData.getId(), key3.getId(), 3)
 		);
-		assertEquals(printIndexedAssociationRecord(expectedResult), printIndexedAssociationRecord(targets));
+		assertThat(printIndexedAssociationRecord(targets)).isEqualTo(printIndexedAssociationRecord(expectedResult));
 	}
 	
 	private static String printIndexedAssociationRecord(Iterable<IndexedAssociationRecord> records) {

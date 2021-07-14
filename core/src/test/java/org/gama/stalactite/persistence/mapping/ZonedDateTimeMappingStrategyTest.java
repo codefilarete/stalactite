@@ -26,10 +26,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.query.model.QueryEase.select;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -82,9 +80,9 @@ public class ZonedDateTimeMappingStrategyTest {
 						.add(colB.getName(), dialect.getColumnBinderRegistry().getBinder(colB)));
 		
 		// Then
-		assertTrue(rowIterator.hasNext());
+		assertThat(rowIterator.hasNext()).isTrue();
 		ZonedDateTime hydratedZonedDateTime = testInstance.transform(rowIterator.next());
-		assertEquals(hydratedZonedDateTime, toBePersisted);
+		assertThat(toBePersisted).isEqualTo(hydratedZonedDateTime);
 	}
 	
 	@Test
@@ -117,9 +115,9 @@ public class ZonedDateTimeMappingStrategyTest {
 						.add(colB.getName(), dialect.getColumnBinderRegistry().getBinder(colB)));
 		
 		// Then
-		assertTrue(rowIterator.hasNext());
+		assertThat(rowIterator.hasNext()).isTrue();
 		ZonedDateTime hydratedZonedDateTime = testInstance.transform(rowIterator.next());
-		assertEquals(hydratedZonedDateTime, modifiedZonedDateTime);
+		assertThat(modifiedZonedDateTime).isEqualTo(hydratedZonedDateTime);
 	}
 	
 	@Test
@@ -151,9 +149,9 @@ public class ZonedDateTimeMappingStrategyTest {
 						.add(colB.getName(), dialect.getColumnBinderRegistry().getBinder(colB)));
 		
 		// Then
-		assertTrue(rowIterator.hasNext());
+		assertThat(rowIterator.hasNext()).isTrue();
 		ZonedDateTime hydratedZonedDateTime = testInstance.transform(rowIterator.next());
-		assertNull(hydratedZonedDateTime);
+		assertThat(hydratedZonedDateTime).isNull();
 	}
 	
 	@Test
@@ -163,23 +161,23 @@ public class ZonedDateTimeMappingStrategyTest {
 		// Date time update
 		ZonedDateTime modifiedZonedDateTime = hydratedZonedDateTime.minusHours(4);
 		Map<UpwhereColumn, Object> updateValues = testInstance.getUpdateValues(modifiedZonedDateTime, hydratedZonedDateTime, false);
-		assertEquals(Maps.asMap(new UpwhereColumn(colA, true), modifiedZonedDateTime.toLocalDateTime()), updateValues);
+		assertThat(updateValues).isEqualTo(Maps.asMap(new UpwhereColumn(colA, true), modifiedZonedDateTime.toLocalDateTime()));
 		
 		// Date time update, all columns
 		modifiedZonedDateTime = hydratedZonedDateTime.minusHours(4);
 		updateValues = testInstance.getUpdateValues(modifiedZonedDateTime, hydratedZonedDateTime, true);
-		assertEquals(Maps.asMap(new UpwhereColumn(colA, true), (Object) modifiedZonedDateTime.toLocalDateTime())
-				.add(new UpwhereColumn(colB, true), modifiedZonedDateTime.getZone()), updateValues);
+		assertThat(updateValues).isEqualTo(Maps.asMap(new UpwhereColumn(colA, true), (Object) modifiedZonedDateTime.toLocalDateTime())
+				.add(new UpwhereColumn(colB, true), modifiedZonedDateTime.getZone()));
 		
 		// Zone update
 		modifiedZonedDateTime = hydratedZonedDateTime.withZoneSameLocal(ZoneId.of("Europe/Paris"));
 		updateValues = testInstance.getUpdateValues(modifiedZonedDateTime, hydratedZonedDateTime, false);
-		assertEquals(Maps.asMap(new UpwhereColumn(colB, true), modifiedZonedDateTime.getZone()), updateValues);
+		assertThat(updateValues).isEqualTo(Maps.asMap(new UpwhereColumn(colB, true), modifiedZonedDateTime.getZone()));
 		
 		// Date time and zone update
 		modifiedZonedDateTime = hydratedZonedDateTime.withZoneSameInstant(ZoneId.of("Europe/Paris"));
 		updateValues = testInstance.getUpdateValues(modifiedZonedDateTime, hydratedZonedDateTime, false);
-		assertEquals(Maps.asMap(new UpwhereColumn(colA, true), (Object) modifiedZonedDateTime.toLocalDateTime())
-				.add(new UpwhereColumn(colB, true), modifiedZonedDateTime.getZone()), updateValues);
+		assertThat(updateValues).isEqualTo(Maps.asMap(new UpwhereColumn(colA, true), (Object) modifiedZonedDateTime.toLocalDateTime())
+				.add(new UpwhereColumn(colB, true), modifiedZonedDateTime.getZone()));
 	}
 }

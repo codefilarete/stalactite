@@ -6,19 +6,21 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.gama.lang.Reflections;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.Serie.IntegerSerie;
-import org.gama.lang.test.Assertions;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
@@ -60,12 +62,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.lang.function.Functions.link;
-import static org.gama.lang.test.Assertions.assertAllEquals;
-import static org.gama.lang.test.Assertions.assertEquals;
-import static org.gama.lang.test.Assertions.hasExceptionInCauses;
-import static org.gama.lang.test.Assertions.hasMessage;
 import static org.gama.reflection.Accessors.accessorByMethodReference;
 import static org.gama.reflection.Accessors.mutatorByField;
 import static org.gama.reflection.Accessors.mutatorByMethodReference;
@@ -75,8 +75,6 @@ import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilde
 import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -122,11 +120,9 @@ public class PersisterBuilderImplTest {
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription));
-		assertThrows(UnsupportedOperationException.class, () -> testInstance.build(
-				DIALECT,
-				new ConnectionConfigurationSupport(new JdbcConnectionProvider(dataSource), 10),
-				persistenceContext,
-				null));
+		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new JdbcConnectionProvider(dataSource), 10);
+		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, persistenceContext, null))
+				.isInstanceOf(UnsupportedOperationException.class);
 	}
 	
 	@Test
@@ -169,8 +165,10 @@ public class PersisterBuilderImplTest {
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expected, actual, Object::toString);
+		assertThat(actual)
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(Object::toString))
+				.isEqualTo(expected);
 	}
 	
 	@Test
@@ -210,11 +208,15 @@ public class PersisterBuilderImplTest {
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		assertAllEquals(Arrays.asSet(new Table("Car")), map.giveTables(), Table::getAbsoluteName);
+		assertThat(map.giveTables())
+				.extracting(Table::getAbsoluteName)
+				.containsExactly("Car");
 		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expected, actual, Object::toString);
+		assertThat(actual)
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(Object::toString))
+				.isEqualTo(expected);
 	}
 	
 	@Test
@@ -247,7 +249,9 @@ public class PersisterBuilderImplTest {
 		
 		MappingPerTable map = testInstance.collectEmbeddedMappingFromInheritance();
 		
-		assertAllEquals(Arrays.asList(carTable, vehicleTable, abstractVehicleTable), map.giveTables(), Table::getAbsoluteName);
+		assertThat(map.giveTables())
+				.usingElementComparator(Comparator.comparing(Table::getAbsoluteName))
+				.containsExactly(carTable, vehicleTable, abstractVehicleTable);
 		// NB: AssertJ containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		// Checking Car mapping
@@ -259,8 +263,10 @@ public class PersisterBuilderImplTest {
 		expectedCarMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		List<Entry<IReversibleAccessor, Column>> actualCarMapping = new ArrayList<>(map.giveMapping(carTable).entrySet());
 		actualCarMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expectedCarMapping, actualCarMapping, Object::toString);
+		assertThat(actualCarMapping)
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(Object::toString))
+				.isEqualTo(expectedCarMapping);
 		
 		// Checking Vehicle mapping
 		List<Entry<IReversibleAccessor, Column>> expectedVehicleMapping = new ArrayList<>(Maps
@@ -272,8 +278,10 @@ public class PersisterBuilderImplTest {
 		expectedVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		List<Entry<IReversibleAccessor, Column>> actualVehicleMapping = new ArrayList<>(map.giveMapping(vehicleTable).entrySet());
 		actualVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expectedVehicleMapping, actualVehicleMapping, Object::toString);
+		assertThat(actualVehicleMapping)
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(Object::toString))
+				.isEqualTo(expectedVehicleMapping);
 		
 		// Checking AbstractVehicle mapping
 		// we get the table instance created by builder because our (the one of this test) is only one with same name but without columns because
@@ -293,9 +301,10 @@ public class PersisterBuilderImplTest {
 		expectedAbstractVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		List<Entry<IReversibleAccessor, Column>> actualAbstractVehicleMapping = new ArrayList<>(map.giveMapping(abstractVehicleTable).entrySet());
 		actualAbstractVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expectedAbstractVehicleMapping, actualAbstractVehicleMapping, Object::toString);
-		
+		assertThat(actualAbstractVehicleMapping)
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(Object::toString))
+				.isEqualTo(expectedAbstractVehicleMapping);
 	}
 	
 	@Test
@@ -335,8 +344,10 @@ public class PersisterBuilderImplTest {
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		// Objects are similar but not equals so we compare them throught their footprint (truely comparing them is quite hard)
-		assertAllEquals(expected, actual, Object::toString);
+		assertThat(actual)
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(Object::toString))
+				.isEqualTo(expected);
 	}
 	
 	@Test
@@ -355,9 +366,12 @@ public class PersisterBuilderImplTest {
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
 				chain(Column::getJavaType, Reflections::toString));
-		assertAllEquals(Arrays.asList(mainTable.getColumn("myId")), mainTable.getPrimaryKey().getColumns(), columnPrinter);
-		assertEquals(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated(), false);
-		assertEquals(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isNullable(), false);
+		assertThat((Set<Column>) mainTable.getPrimaryKey().getColumns())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(columnPrinter))
+				.containsExactly(mainTable.getColumn("myId"));
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated()).isFalse();
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isNullable()).isFalse();
 	}
 	
 	@Test
@@ -376,9 +390,12 @@ public class PersisterBuilderImplTest {
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
 				chain(Column::getJavaType, Reflections::toString));
-		assertAllEquals(Arrays.asList(mainTable.getColumn("myId")), mainTable.getPrimaryKey().getColumns(), columnPrinter);
-		assertEquals(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated(), false);
-		assertEquals(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isNullable(), false);
+		assertThat((Set<Column>) mainTable.getPrimaryKey().getColumns())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(columnPrinter))
+				.containsExactly(mainTable.getColumn("myId"));
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated()).isFalse();
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isNullable()).isFalse();
 	}
 	
 	@Test
@@ -397,8 +414,12 @@ public class PersisterBuilderImplTest {
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
 				chain(Column::getJavaType, Reflections::toString));
-		assertAllEquals(Arrays.asList(mainTable.getColumn("myId")), mainTable.getPrimaryKey().getColumns(), columnPrinter);
-		assertEquals(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated(), true);
+		assertThat((Set<Column>) mainTable.getPrimaryKey().getColumns())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(columnPrinter))
+				.containsExactly(mainTable.getColumn("myId"));
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated()).isTrue();
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isNullable()).isFalse();
 	}
 	
 	@Test
@@ -421,13 +442,25 @@ public class PersisterBuilderImplTest {
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
-				chain(Column::getJavaType, Reflections::toString));  
-		assertAllEquals(Arrays.asList(mainTable.getColumn("id")), mainTable.getPrimaryKey().getColumns(), columnPrinter);
-		assertEquals(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated(), true);
-		assertAllEquals(Arrays.asList(tableB.getColumn("id")), tableB.getPrimaryKey().getColumns(), columnPrinter);
-		assertEquals(Iterables.first((Set<Column>) tableB.getPrimaryKey().getColumns()).isAutoGenerated(), false);
-		assertAllEquals(Arrays.asList(tableC.getColumn("id")), tableC.getPrimaryKey().getColumns(), columnPrinter);
-		assertEquals(Iterables.first((Set<Column>) tableC.getPrimaryKey().getColumns()).isAutoGenerated(), false);
+				chain(Column::getJavaType, Reflections::toString));
+		assertThat((Set<Column>) mainTable.getPrimaryKey().getColumns())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(columnPrinter))
+				.containsExactly(mainTable.getColumn("id"));
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isAutoGenerated()).isTrue();
+		assertThat(Iterables.first((Set<Column>) mainTable.getPrimaryKey().getColumns()).isNullable()).isFalse();
+		assertThat((Set<Column>) tableB.getPrimaryKey().getColumns())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(columnPrinter))
+				.containsExactly(tableB.getColumn("id"));
+		assertThat(Iterables.first((Set<Column>) tableB.getPrimaryKey().getColumns()).isAutoGenerated()).isFalse();
+		assertThat(Iterables.first((Set<Column>) tableB.getPrimaryKey().getColumns()).isNullable()).isFalse();
+		assertThat((Set<Column>) tableC.getPrimaryKey().getColumns())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(columnPrinter))
+				.containsExactly(tableC.getColumn("id"));
+		assertThat(Iterables.first((Set<Column>) tableC.getPrimaryKey().getColumns()).isAutoGenerated()).isFalse();
+		assertThat(Iterables.first((Set<Column>) tableC.getPrimaryKey().getColumns()).isNullable()).isFalse();
 	}
 	
 	@Test
@@ -456,10 +489,14 @@ public class PersisterBuilderImplTest {
 				ForeignKey::getName,
 				link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 				link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
-		assertAllEquals(Arrays.asList(new ForeignKey("FK_Vehicle_id_AbstractVehicle_id", tableB.getColumn("id"), mainTable.getColumn("id"))), tableB.getForeignKeys(),
-				fkPrinter);
-		assertAllEquals(Arrays.asList(new ForeignKey("FK_Car_id_Vehicle_id", tableC.getColumn("id"), tableB.getColumn("id"))), tableC.getForeignKeys(),
-				fkPrinter);
+		assertThat(tableB.getForeignKeys())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(fkPrinter))
+				.containsExactly(new ForeignKey("FK_Vehicle_id_AbstractVehicle_id", tableB.getColumn("id"), mainTable.getColumn("id")));
+		assertThat(tableC.getForeignKeys())
+				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
+				.usingElementComparator(Comparator.comparing(fkPrinter))
+				.containsExactly(new ForeignKey("FK_Car_id_Vehicle_id", tableC.getColumn("id"), tableB.getColumn("id")));
 	}
 	
 	@Test
@@ -476,7 +513,7 @@ public class PersisterBuilderImplTest {
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProviderMock, DIALECT);
-		assertSame(testInstance.build(persistenceContext), testInstance.build(persistenceContext));
+		assertThat(testInstance.build(persistenceContext)).isSameAs(testInstance.build(persistenceContext));
 	}
 	
 	@Test
@@ -504,7 +541,8 @@ public class PersisterBuilderImplTest {
 		entity.setColor(new Color(123));
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
-		assertEquals(Arrays.asList("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)"), sqlCaptor.getAllValues());
+		assertThat(sqlCaptor.getAllValues())
+				.containsExactly("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)");
 	}
 	
 	@Test
@@ -536,7 +574,8 @@ public class PersisterBuilderImplTest {
 		entity.setColor(new Color(123));
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
-		assertEquals(Arrays.asList("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)"), sqlCaptor.getAllValues());
+		assertThat(sqlCaptor.getAllValues())
+				.containsExactly("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)");
 	}
 	
 	@Test
@@ -570,35 +609,35 @@ public class PersisterBuilderImplTest {
 		entity.setColor(new Color(123));
 		entity.setTimestamp(new Timestamp());
 		result.insert(entity);
-		assertEquals(Arrays.asList(
+		assertThat(insertCaptor.getAllValues()).containsExactly(
 				"insert into AbstractVehicle(creationDate, id, modificationDate) values (?, ?, ?)",
 				"insert into Vehicle(color, id) values (?, ?)",
-				"insert into Car(id, model) values (?, ?)"), insertCaptor.getAllValues());
+				"insert into Car(id, model) values (?, ?)");
 		
 		ArgumentCaptor<String> deleteCaptor = ArgumentCaptor.forClass(String.class);
 		when(connectionMock.prepareStatement(deleteCaptor.capture())).thenReturn(preparedStatementMock);
 		result.delete(entity);
-		assertEquals(Arrays.asList(
+		assertThat(deleteCaptor.getAllValues()).containsExactly(
 				"delete from Car where id = ?",
 				"delete from Vehicle where id = ?",
-				"delete from AbstractVehicle where id = ?"), deleteCaptor.getAllValues());
+				"delete from AbstractVehicle where id = ?");
 		
 		ArgumentCaptor<String> selectCaptor = ArgumentCaptor.forClass(String.class);
 		when(connectionMock.prepareStatement(selectCaptor.capture())).thenReturn(preparedStatementMock);
 		result.select(entity.getId());
-		assertEquals(Arrays.asList(
+		assertThat(selectCaptor.getAllValues()).containsExactly(
 				// the expected select may change in future as we don't care about select order nor joins order, tested in case of huge regression
-				"select" 
-						+ " Car.model as Car_model," 
+				"select"
+						+ " Car.model as Car_model,"
 						+ " Car.id as Car_id,"
 						+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
 						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
-						+ " AbstractVehicle.id as AbstractVehicle_id," 
-						+ " Vehicle.color as Vehicle_color," 
-						+ " Vehicle.id as Vehicle_id" 
-						+ " from Car inner join AbstractVehicle as AbstractVehicle on Car.id = AbstractVehicle.id" 
-						+ " inner join Vehicle as Vehicle on Car.id = Vehicle.id" 
-						+ " where Car.id in (?)"), selectCaptor.getAllValues());
+						+ " AbstractVehicle.id as AbstractVehicle_id,"
+						+ " Vehicle.color as Vehicle_color,"
+						+ " Vehicle.id as Vehicle_id"
+						+ " from Car inner join AbstractVehicle as AbstractVehicle on Car.id = AbstractVehicle.id"
+						+ " inner join Vehicle as Vehicle on Car.id = Vehicle.id"
+						+ " where Car.id in (?)");
 	}
 	
 	@Test
@@ -628,15 +667,17 @@ public class PersisterBuilderImplTest {
 		result.update(dummyCar.getId(), vehicle -> vehicle.setModel("Peugeot"));
 		
 		// only 1 select was done whereas entity was updated
-		assertEquals(Arrays.asList(
+		assertThat(insertCaptor.getAllValues()).containsExactly(
 				"insert into Car(id, model) values (?, ?)",
 				"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?)",
 				"update Car set model = ? where id = ?"
-				), insertCaptor.getAllValues());
+				);
 		ArgumentCaptor<Integer> valueIndexCaptor = ArgumentCaptor.forClass(int.class);
 		ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
 		verify(preparedStatementMock, times(2)).setString(valueIndexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("Renault", "Peugeot"), valueCaptor.getAllValues());
+		assertThat(valueCaptor.getAllValues()).containsExactly(
+				"Renault",
+				"Peugeot");
 		
 		verify(preparedStatementMock).executeQuery();
 		
@@ -653,24 +694,24 @@ public class PersisterBuilderImplTest {
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		Assertions.assertThrows(() -> result.persist(new Vehicle(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle")));
-		Assertions.assertThrows(() -> result.insert(new Vehicle(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle")));
-		Assertions.assertThrows(() -> result.update(new Vehicle(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle")));
-		Assertions.assertThrows(() -> result.updateById(new Vehicle(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle")));
-		Assertions.assertThrows(() -> result.delete(new Vehicle(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle")));
-		Assertions.assertThrows(() -> result.deleteById(new Vehicle(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle")));
+		assertThatThrownBy(() -> result.persist(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+		assertThatThrownBy(() -> result.insert(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+		assertThatThrownBy(() -> result.update(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+		assertThatThrownBy(() -> result.updateById(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+		assertThatThrownBy(() -> result.delete(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+		assertThatThrownBy(() -> result.deleteById(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
 	}
 	
 	@Test
@@ -686,24 +727,24 @@ public class PersisterBuilderImplTest {
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		Assertions.assertThrows(() -> result.persist(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.insert(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.update(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.updateById(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.delete(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.deleteById(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		assertThatThrownBy(() -> result.persist(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.insert(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.update(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.updateById(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.delete(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.deleteById(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
 	}
 	
 	@Test
@@ -719,24 +760,24 @@ public class PersisterBuilderImplTest {
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		Assertions.assertThrows(() -> result.persist(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.insert(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.update(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.updateById(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.delete(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
-		Assertions.assertThrows(() -> result.deleteById(new Car(42L)),
-				hasExceptionInCauses(UnsupportedOperationException.class).andProjection(
-						hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car")));
+		assertThatThrownBy(() -> result.persist(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.insert(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.update(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.updateById(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.delete(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+		assertThatThrownBy(() -> result.deleteById(new Car(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
 	}
 	
 	public static class ToStringBuilder<E> {

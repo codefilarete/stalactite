@@ -12,7 +12,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -32,7 +32,7 @@ public class InsertCommandBuilderTest {
 		
 		InsertCommandBuilder<Table> testInstance = new InsertCommandBuilder<>(insert);
 		
-		assertEquals("insert into Toto(a, b) values (?, 'tata')", testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo("insert into Toto(a, b) values (?, 'tata')");
 	}
 	
 	@Test
@@ -54,12 +54,12 @@ public class InsertCommandBuilderTest {
 //		binderRegistry.register(columnC, DefaultParameterBinders.STRING_BINDER);
 		
 		InsertStatement<Table> result = testInstance.toStatement(binderRegistry);
-		assertEquals("insert into Toto(a, b, c) values (?, ?, ?)", result.getSQL());
+		assertThat(result.getSQL()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 		
-		assertEquals(Maps.asMap(2, (Object) "tata"), result.getValues());
-		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(1));
-		assertEquals(DefaultParameterBinders.STRING_BINDER, result.getParameterBinder(2));
-		assertEquals(DefaultParameterBinders.STRING_BINDER, result.getParameterBinder(3));
+		assertThat(result.getValues()).isEqualTo(Maps.asMap(2, (Object) "tata"));
+		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
+		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
+		assertThat(result.getParameterBinder(3)).isEqualTo(DefaultParameterBinders.STRING_BINDER);
 		
 		result.setValue(columnA, 42L);
 		result.setValue(columnC, "toto");
@@ -73,7 +73,7 @@ public class InsertCommandBuilderTest {
 		// ensuring that column type override in registry is taken into account
 		binderRegistry.register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result = testInstance.toStatement(binderRegistry);
-		assertEquals(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, result.getParameterBinder(1));
+		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result.setValue(columnA, -42l);
 		result.setValue(columnC, "toto");
 		result.applyValues(mock);

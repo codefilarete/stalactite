@@ -3,8 +3,9 @@ package org.gama.stalactite.persistence.engine;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.gama.lang.Duo;
-import org.gama.lang.test.Assertions;
+import org.gama.lang.exception.Exceptions;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;
@@ -14,9 +15,8 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.lang.test.Assertions.hasExceptionInCauses;
-import static org.gama.lang.test.Assertions.hasMessage;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Guillaume Mary
@@ -33,8 +33,10 @@ class AssociationTableNamingStrategyTest {
 		
 		DefaultAssociationTableNamingStrategy testInstance = new DefaultAssociationTableNamingStrategy();
 		
-		assertEquals("Country_cities", testInstance.giveName(new AccessorDefinition(Country.class, "cities", Set.class), countryPK, countryFK));
-		assertEquals("Country_giveCities", testInstance.giveName(new AccessorDefinition(Country.class, "giveCities", Set.class), countryPK, countryFK));
+		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "cities", Set.class), countryPK, countryFK)).isEqualTo(
+				"Country_cities");
+		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "giveCities", Set.class), countryPK, countryFK)).isEqualTo(
+				"Country_giveCities");
 		
 	}
 	
@@ -53,7 +55,7 @@ class AssociationTableNamingStrategyTest {
 			Column cyclingModelIdColumn = cyclingModelTable.addColumn("id", long.class);
 			Duo<String, String> columnNames = testInstance.giveColumnNames(accessorDefinition, cyclingModelIdColumn, cyclingModelIdColumn);
 			// please note that ending "s" was removed, not a strong rule, could be removed if too "intrusive"
-			assertEquals(new Duo<>("cyclingModelTable_id", "cyclingModel_id"), columnNames);
+			assertThat(columnNames).isEqualTo(new Duo<>("cyclingModelTable_id", "cyclingModel_id"));
 		}
 		
 		@Test
@@ -66,10 +68,10 @@ class AssociationTableNamingStrategyTest {
 					methodReference.getPropertyType());
 			Table cyclingModelTable = new Table("CyclingModel");
 			Column cyclingModelIdColumn = cyclingModelTable.addColumn("id", long.class);
-			Assertions.assertThrows(() -> testInstance.giveColumnNames(accessorDefinition, cyclingModelIdColumn, cyclingModelIdColumn),
-					hasExceptionInCauses(MappingConfigurationException.class)
-					.andProjection(hasMessage("Identical column names in association table of collection" 
-							+ " o.g.s.p.e.keyColumnNames_primaryKeysTargetSameEntity_keyColumnNamesAreDifferent$CyclingModel.cyclingModels")));
+			assertThatThrownBy(() -> testInstance.giveColumnNames(accessorDefinition, cyclingModelIdColumn, cyclingModelIdColumn))
+					.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
+					.hasMessage("Identical column names in association table of collection" 
+							+ " o.g.s.p.e.keyColumnNames_primaryKeysTargetSameEntity_keyColumnNamesAreDifferent$CyclingModel.cyclingModels");
 		}
 		
 		private class CyclingModel {

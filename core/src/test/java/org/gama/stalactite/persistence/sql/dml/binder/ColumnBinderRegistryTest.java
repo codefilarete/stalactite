@@ -1,14 +1,14 @@
 package org.gama.stalactite.persistence.sql.dml.binder;
 
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.binder.DefaultParameterBinders;
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.lang.test.Assertions.assertThrows;
-import static org.gama.lang.test.Assertions.hasExceptionInCauses;
-import static org.gama.lang.test.Assertions.hasMessage;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Guillaume Mary
@@ -26,8 +26,9 @@ class ColumnBinderRegistryTest {
 		// registering the same binder has no consequence
 		testInstance.register(nameColumn, DefaultParameterBinders.STRING_BINDER);
 		// but doing it with a different binder throws an exception
-		assertThrows(() -> testInstance.register(nameColumn, DefaultParameterBinders.INTEGER_BINDER), hasExceptionInCauses(BindingException.class)
-				.andProjection(hasMessage("Binder for column toto.name already exists")));
+		assertThatThrownBy(() -> testInstance.register(nameColumn, DefaultParameterBinders.INTEGER_BINDER))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, BindingException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Binder for column toto.name already exists");
 	}
 	
 }

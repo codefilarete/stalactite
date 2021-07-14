@@ -3,26 +3,23 @@ package org.gama.stalactite.persistence.engine;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Hanger.Holder;
-import org.gama.lang.test.Assertions;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.Toto;
 import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.TotoTable;
-import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -34,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.clearInvocations;
@@ -125,7 +122,7 @@ class PersisterTest {
 		testInstance.getPersisterListener().addUpdateListener(updateListener);
 		
 		int rowCount = testInstance.persist(Arrays.asList());
-		assertEquals(0, rowCount);
+		assertThat(rowCount).isEqualTo(0);
 		verifyNoMoreInteractions(insertListener);
 		verifyNoMoreInteractions(updateListener);
 		verifyNoMoreInteractions(identifierManagerInsertListenerMock);
@@ -137,7 +134,7 @@ class PersisterTest {
 		mockedSelectAnswer.set(persisted);	// filling mock
 		
 		rowCount = testInstance.persist(unPersisted);
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		verify(insertListener).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
@@ -148,16 +145,12 @@ class PersisterTest {
 		
 		// On persist of a already persisted instance (with id), "rough update" chain must be invoked
 		rowCount = testInstance.persist(persisted);
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		ArgumentCaptor<Iterable<Duo>> updateArgCaptor = ArgumentCaptor.forClass(Iterable.class);
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, persisted)), Iterables.collectToList(updateArgCaptor.getValue(),
-				Function.identity()),
-				Objects::toString, Objects::toString);
+		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(persisted, persisted));
 		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(persisted, persisted)), Iterables.collectToList(updateArgCaptor.getValue(),
-				Function.identity()),
-				Objects::toString, Objects::toString);
+		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(persisted, persisted));
 		
 		clearInvocations(insertListener, identifierManagerInsertListenerMock, updateListener, identifierManagerSelectListenerMock);
 		// mix
@@ -166,7 +159,7 @@ class PersisterTest {
 		Toto totoModifiedFromDatabase = new Toto(1, 2, 4);
 		
 		rowCount = testInstance.persist(Arrays.asList(unPersisted, totoModifiedFromDatabase));
-		assertEquals(2, rowCount);
+		assertThat(rowCount).isEqualTo(2);
 		verify(insertListener).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
@@ -174,13 +167,9 @@ class PersisterTest {
 		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asList(1)));
 		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asList(totoInDatabase)));
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(totoModifiedFromDatabase, totoInDatabase)), Iterables.collectToList(updateArgCaptor.getValue(),
-				Function.identity()),
-				Objects::toString, Objects::toString);
+		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(totoModifiedFromDatabase, totoInDatabase));
 		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
-		Assertions.assertAllEquals(Arrays.asList(new Duo<>(totoModifiedFromDatabase, totoInDatabase)), Iterables.collectToList(updateArgCaptor.getValue(),
-				Function.identity()),
-				Objects::toString, Objects::toString);
+		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(totoModifiedFromDatabase, totoInDatabase));
 	}
 	
 	@Test
@@ -211,14 +200,14 @@ class PersisterTest {
 		testInstance.getPersisterListener().addInsertListener(insertListener);
 		
 		int rowCount = testInstance.insert(Arrays.asList());
-		assertEquals(0, rowCount);
+		assertThat(rowCount).isEqualTo(0);
 		verifyNoMoreInteractions(insertListener);
 		verifyNoMoreInteractions(identifierManagerInsertListenerMock);
 		
 		// On persist of a never persisted instance (no id), insertion chain must be invoked 
 		Toto toBeInserted = new Toto(1, 2, 3);
 		rowCount = testInstance.insert(toBeInserted);
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		verify(insertListener).beforeInsert(eq(Arrays.asList(toBeInserted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(toBeInserted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(toBeInserted)));
@@ -265,9 +254,9 @@ class PersisterTest {
 		Duo<Toto, Toto> expectedPayload = new Duo<>(modified, original);
 		ArgumentCaptor<Iterable<Duo<Toto, TotoTable>>> listenerArgumentCaptor = ArgumentCaptor.forClass(Iterable.class);
 		verify(updateListener).beforeUpdate(listenerArgumentCaptor.capture(), eq(false));
-		assertEquals(expectedPayload, Iterables.first(listenerArgumentCaptor.getValue()));
+		assertThat(Iterables.first(listenerArgumentCaptor.getValue())).isEqualTo(expectedPayload);
 		verify(updateListener).afterUpdate(listenerArgumentCaptor.capture(), eq(false));
-		assertEquals(expectedPayload, Iterables.first(listenerArgumentCaptor.getValue()));
+		assertThat(Iterables.first(listenerArgumentCaptor.getValue())).isEqualTo(expectedPayload);
 	}
 	
 	@Test
@@ -339,12 +328,12 @@ class PersisterTest {
 		
 		// when nothing to be deleted, listener is not invoked
 		int rowCount = testInstance.delete(Arrays.asList());
-		assertEquals(0, rowCount);
+		assertThat(rowCount).isEqualTo(0);
 		verifyNoMoreInteractions(deleteListener);
 		
 		Toto toBeDeleted = new Toto(1, 2, 3);
 		rowCount = testInstance.delete(toBeDeleted);
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		verify(deleteListener).beforeDelete(eq(Arrays.asList(toBeDeleted)));
 		verify(deleteListener).afterDelete(eq(Arrays.asList(toBeDeleted)));
 	}
@@ -377,12 +366,12 @@ class PersisterTest {
 		
 		// when nothing to be deleted, listener is not invoked
 		int rowCount = testInstance.deleteById(Arrays.asList());
-		assertEquals(0, rowCount);
+		assertThat(rowCount).isEqualTo(0);
 		verifyNoMoreInteractions(deleteListener);
 		Toto toBeDeleted = new Toto(1, 2, 3);
 		
 		rowCount = testInstance.deleteById(toBeDeleted);
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		verify(deleteListener).beforeDeleteById(eq(Arrays.asList(toBeDeleted)));
 		verify(deleteListener).afterDeleteById(eq(Arrays.asList(toBeDeleted)));
 	}

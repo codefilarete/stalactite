@@ -40,7 +40,7 @@ import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -329,7 +329,7 @@ public abstract class AbstractDMLExecutorTest {
 		for (Set<Duo<Integer, Integer>> expectedPair : expectedPairs.asList()) {
 			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
 		}
-		assertEquals(expectedPairs.asList(), obtained);
+		assertThat(obtained).isEqualTo(expectedPairs.asList());
 	}
 	
 	/**

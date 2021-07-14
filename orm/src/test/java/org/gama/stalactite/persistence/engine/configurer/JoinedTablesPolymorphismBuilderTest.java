@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
-import org.gama.lang.test.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -17,6 +18,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
@@ -50,8 +52,8 @@ class JoinedTablesPolymorphismBuilderTest {
 								.override(Color::getRgb, colorTable), new Table("TargetTable")));
 		
 		
-		Assertions.assertThrows(() -> configuration.build(persistenceContext), 
-				Assertions.hasExceptionInCauses(MappingConfigurationException.class)
-		.andProjection(Assertions.hasMessage("Table declared in inheritance is different from given one in embeddable properties override : MyOverridingTable, TargetTable")));
+		assertThatThrownBy(() -> configuration.build(persistenceContext))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Table declared in inheritance is different from given one in embeddable properties override : MyOverridingTable, TargetTable");
 	}
 }

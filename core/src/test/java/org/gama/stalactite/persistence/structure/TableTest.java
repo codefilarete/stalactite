@@ -3,12 +3,8 @@ package org.gama.stalactite.persistence.structure;
 import org.gama.lang.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Guillaume Mary
@@ -23,7 +19,7 @@ public class TableTest {
 		
 		// same column with same type doesn't has any consequence
 		Column newColumn = testInstance.addColumn("xx", String.class);
-		assertSame(xxColumn, newColumn);
+		assertThat(newColumn).isSameAs(xxColumn);
 	}
 	
 	@Test
@@ -33,11 +29,15 @@ public class TableTest {
 		testInstance.addColumn("xx", String.class);
 		
 		// same column with other type throws exception
-		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addColumn("xx", Integer.class));
-		assertEquals("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.Integer", thrownException.getMessage());
+		assertThatThrownBy(() -> testInstance.addColumn("xx", Integer.class))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Trying to add a column that already exists with a different type : toto.xx j.l.String vs"
+						+ " j.l.Integer");
+		
 		// same column with other type throws exception
-		thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addColumn("xx", String.class, 12));
-		assertEquals("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.String(12)", thrownException.getMessage());
+		assertThatThrownBy(() -> testInstance.addColumn("xx", String.class, 12))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.String(12)");
 	}
 	
 	@Test
@@ -51,7 +51,7 @@ public class TableTest {
 		
 		// same column with same type doesn't has any consequence
 		ForeignKey newFK = testInstance.addForeignKey("dummy FK name", xColumn, yColumn);
-		assertSame(fk, newFK);
+		assertThat(newFK).isSameAs(fk);
 	}
 	
 	@Test
@@ -65,62 +65,64 @@ public class TableTest {
 		testInstance.addForeignKey("dummy FK name", xColumn, yColumn);
 		
 		// same column with other type throws exception
-		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.addForeignKey("dummy FK name", xxColumn, yColumn));
-		assertEquals("Trying to add a foreign key that already exists with different columns : dummy FK name toto.x -> tata.y vs toto.xx -> tata.y", thrownException.getMessage());
+		assertThatThrownBy(() -> testInstance.addForeignKey("dummy FK name", xxColumn, yColumn))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Trying to add a foreign key that already exists with different columns : dummy FK name "
+						+ "toto.x -> tata.y vs toto.xx -> tata.y");
 	}
 	
 	@Test
 	public void findColumn() {
 		Table testInstance = new Table("toto");
 		// empty columns should throw any exception nor found anything
-		assertNull(testInstance.findColumn("xx"));
+		assertThat(testInstance.findColumn("xx")).isNull();
 		
 		// basic case
 		Column nameColumn = testInstance.addColumn("name", String.class);
-		assertSame(nameColumn, testInstance.findColumn("name"));
+		assertThat(testInstance.findColumn("name")).isSameAs(nameColumn);
 		// xx still doesn't exist
-		assertNull(testInstance.findColumn("xx"));
+		assertThat(testInstance.findColumn("xx")).isNull();
 	}
 	
 	@Test
 	public void getAbsoluteName() {
 		Table testInstance = new Table("toto");
 		Column nameColumn = testInstance.addColumn("name", String.class);
-		assertEquals("toto.name", nameColumn.getAbsoluteName());
+		assertThat(nameColumn.getAbsoluteName()).isEqualTo("toto.name");
 	}
 	
 	@Test
 	public void getAlias() {
 		Table testInstance = new Table("toto");
 		Column nameColumn = testInstance.addColumn("name", String.class);
-		assertEquals("toto_name", nameColumn.getAlias());
+		assertThat(nameColumn.getAlias()).isEqualTo("toto_name");
 	}
 	
 	@Test
 	public void getPrimaryKey() {
 		Table testInstance = new Table("toto");
-		assertNull(testInstance.getPrimaryKey());
+		assertThat(testInstance.getPrimaryKey()).isNull();
 		
 		Column dummyColumn = testInstance.addColumn("dummyColumn", String.class);
-		assertNull(testInstance.getPrimaryKey());
+		assertThat(testInstance.getPrimaryKey()).isNull();
 		
 		Column id = testInstance.addColumn("id", long.class);
 		id.primaryKey();
 		Column subId = testInstance.addColumn("subId", long.class);
 		subId.primaryKey();
-		assertNotNull(testInstance.getPrimaryKey());
-		assertIterableEquals(Arrays.asList(id, subId), testInstance.getPrimaryKey().getColumns());
+		assertThat(testInstance.getPrimaryKey()).isNotNull();
+		assertThat(testInstance.getPrimaryKey().getColumns()).isEqualTo(Arrays.asHashSet(id, subId));
 	}
 	
 	@Test
 	public void getColumnsPrimaryKey() {
 		Table testInstance = new Table("toto");
-		assertNull(testInstance.getPrimaryKey());
+		assertThat(testInstance.getPrimaryKey()).isNull();
 		
 		Column dummyColumn = testInstance.addColumn("dummyColumn", String.class);
 		Column id = testInstance.addColumn("id", long.class).primaryKey();
-		assertEquals(Arrays.asSet(id), testInstance.getPrimaryKey().getColumns());
-		assertIterableEquals(Arrays.asList(dummyColumn), testInstance.getColumnsNoPrimaryKey());
+		assertThat(testInstance.getPrimaryKey().getColumns()).isEqualTo(Arrays.asSet(id));
+		assertThat(testInstance.getColumnsNoPrimaryKey()).isEqualTo(Arrays.asHashSet(dummyColumn));
 	}
 	
 	@Test
@@ -132,11 +134,11 @@ public class TableTest {
 		
 		ForeignKey createdFK = testInstance1.addForeignKey("XX", tataId, id);
 		
-		assertEquals("XX", createdFK.getName());
-		assertEquals(Arrays.asSet(tataId), createdFK.getColumns());
-		assertEquals(testInstance1, createdFK.getTable());
-		assertEquals(Arrays.asSet(id), createdFK.getTargetColumns());
-		assertEquals(testInstance2, createdFK.getTargetTable());
+		assertThat(createdFK.getName()).isEqualTo("XX");
+		assertThat(createdFK.getColumns()).isEqualTo(Arrays.asSet(tataId));
+		assertThat(createdFK.getTable()).isEqualTo(testInstance1);
+		assertThat(createdFK.getTargetColumns()).isEqualTo(Arrays.asSet(id));
+		assertThat(createdFK.getTargetTable()).isEqualTo(testInstance2);
 	}
 	
 	@Test
@@ -148,10 +150,10 @@ public class TableTest {
 		
 		ForeignKey createdFK = testInstance1.addForeignKey((c1, c2) -> c1.getName() + "_" + c2.getName(), tataId, id);
 		
-		assertEquals("tataId_id", createdFK.getName());
-		assertEquals(Arrays.asSet(tataId), createdFK.getColumns());
-		assertEquals(testInstance1, createdFK.getTable());
-		assertEquals(Arrays.asSet(id), createdFK.getTargetColumns());
-		assertEquals(testInstance2, createdFK.getTargetTable());
+		assertThat(createdFK.getName()).isEqualTo("tataId_id");
+		assertThat(createdFK.getColumns()).isEqualTo(Arrays.asSet(tataId));
+		assertThat(createdFK.getTable()).isEqualTo(testInstance1);
+		assertThat(createdFK.getTargetColumns()).isEqualTo(Arrays.asSet(id));
+		assertThat(createdFK.getTargetTable()).isEqualTo(testInstance2);
 	}
 }

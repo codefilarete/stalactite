@@ -8,9 +8,7 @@ import org.gama.lang.collection.Arrays;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -31,11 +29,11 @@ public class PersistentFieldHarversterTest {
 		PersistentFieldHarverster testInstance = new PersistentFieldHarverster();
 		Iterable<Field> fields = testInstance.getFields(clazz);
 		Iterator<Field> fieldsIterator = fields.iterator();
-		assertTrue(fieldsIterator.hasNext());
+		assertThat(fieldsIterator.hasNext()).isTrue();
 		for (String expectedField : expectedFields) {
-			assertEquals(expectedField, fieldsIterator.next().getName());
+			assertThat(fieldsIterator.next().getName()).isEqualTo(expectedField);
 		}
-		assertFalse(fieldsIterator.hasNext());
+		assertThat(fieldsIterator.hasNext()).isFalse();
 	}
 	
 	static class X { private String f1; }

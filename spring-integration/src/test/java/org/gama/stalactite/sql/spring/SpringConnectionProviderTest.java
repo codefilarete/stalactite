@@ -4,12 +4,15 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.gama.lang.test.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.gama.lang.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +32,7 @@ class SpringConnectionProviderTest {
 		
 		SpringConnectionProvider testInstance = new SpringConnectionProvider(new DataSourceTransactionManager(dataSourceMock));
 		Connection currentConnection = testInstance.getCurrentConnection();
-		Assertions.assertEquals(currentConnection, expectedConnection);
+		assertThat(currentConnection).isSameAs(expectedConnection);
 	}
 	
 	@Test
@@ -43,14 +46,16 @@ class SpringConnectionProviderTest {
 		TransactionSynchronizationManager.bindResource(dataSourceMock, new ConnectionHolder(expectedConnection));
 		
 		SpringConnectionProvider testInstance = new SpringConnectionProvider(new DataSourceTransactionManager(dataSourceMock));
-		Assertions.assertThrows(testInstance::getCurrentConnection, Assertions.hasExceptionInCauses(IllegalStateException.class)
-				.andProjection(Assertions.hasMessage("No active transaction")));
+		assertThatThrownBy(testInstance::getCurrentConnection)
+				.extracting(t -> Exceptions.findExceptionInCauses(t, IllegalStateException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("No active transaction");
 	}
 	
 	@Test
 	void getCurrentConnection_noActiveTransaction_throwsException() {
 		SpringConnectionProvider testInstance = new SpringConnectionProvider(new DataSourceTransactionManager());
-		Assertions.assertThrows(testInstance::getCurrentConnection, Assertions.hasExceptionInCauses(IllegalStateException.class)
-				.andProjection(Assertions.hasMessage("No active transaction")));
+		assertThatThrownBy(testInstance::getCurrentConnection)
+				.extracting(t -> Exceptions.findExceptionInCauses(t, IllegalStateException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("No active transaction");
 	}
 }

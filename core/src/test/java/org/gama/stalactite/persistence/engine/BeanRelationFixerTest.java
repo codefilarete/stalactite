@@ -11,7 +11,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -24,7 +24,7 @@ public class BeanRelationFixerTest {
 		DummyTarget target = new DummyTarget();
 		String input = "toto";
 		testInstance.apply(target, input);
-		assertEquals(input, target.getProp1());
+		assertThat(target.getProp1()).isEqualTo(input);
 	}
 	
 	@Test
@@ -33,8 +33,8 @@ public class BeanRelationFixerTest {
 		Country target = new Country();
 		President president = new President();
 		testInstance.apply(target, president);
-		assertEquals(president, target.getPresident());
-		assertEquals(target, president.getCountry());
+		assertThat(target.getPresident()).isEqualTo(president);
+		assertThat(president.getCountry()).isEqualTo(target);
 	}
 	
 	@Test
@@ -43,7 +43,7 @@ public class BeanRelationFixerTest {
 		DummyTarget target = new DummyTarget();
 		testInstance.apply(target, 2);
 		testInstance.apply(target, 5);
-		assertEquals(Arrays.asList(2, 5), target.getProp2());
+		assertThat(target.getProp2()).isEqualTo(Arrays.asList(2, 5));
 	}
 	
 	@Test
@@ -52,15 +52,15 @@ public class BeanRelationFixerTest {
 		Country target = new Country();
 		City city = new City();
 		testInstance.apply(target, city);
-		assertEquals(city, Iterables.first(target.getCities()));
-		assertEquals(target, city.getCountry());
+		assertThat(Iterables.first(target.getCities())).isEqualTo(city);
+		assertThat(city.getCountry()).isEqualTo(target);
 	}
 	
 	@Test
 	public void giveCollectionFactory() {
-		assertEquals(ArrayList.class, BeanRelationFixer.giveCollectionFactory(List.class).get().getClass());
-		assertEquals(HashSet.class, BeanRelationFixer.giveCollectionFactory(Set.class).get().getClass());
-		assertEquals(LinkedHashSet.class, BeanRelationFixer.giveCollectionFactory(LinkedHashSet.class).get().getClass());
+		assertThat(BeanRelationFixer.giveCollectionFactory(List.class).get().getClass()).isEqualTo(ArrayList.class);
+		assertThat(BeanRelationFixer.giveCollectionFactory(Set.class).get().getClass()).isEqualTo(HashSet.class);
+		assertThat(BeanRelationFixer.giveCollectionFactory(LinkedHashSet.class).get().getClass()).isEqualTo(LinkedHashSet.class);
 	}
 	
 	

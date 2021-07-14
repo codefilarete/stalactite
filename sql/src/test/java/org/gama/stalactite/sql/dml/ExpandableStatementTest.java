@@ -12,7 +12,7 @@ import org.gama.stalactite.sql.binder.PreparedStatementWriter;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -75,7 +75,7 @@ public class ExpandableStatementTest {
 		// we ensure presence of the underlying SQL order before applying values to SQL statement
 		testInstance.ensureExpandableSQL(testInstance.getValues());
 		testInstance.applyValues(InvocationHandlerSupport.mock(PreparedStatement.class));
-		assertEquals(new HashMap<>(expectedIndexes), appliedIndexedValues);
+		assertThat(appliedIndexedValues).isEqualTo(new HashMap<>(expectedIndexes));
 		
 	}
 	

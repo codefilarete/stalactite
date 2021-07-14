@@ -16,10 +16,9 @@ import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author Guillaume Mary
@@ -56,11 +55,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapKey(Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertEquals(Arrays.asList(dummyCar), allCars);
+		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
-		assertEquals(dummyCar, loadedCar);
+		assertThat(loadedCar).isEqualTo(dummyCar);
 	}
 	
 	@Test
@@ -83,18 +82,18 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		
 		// insert test
 		carPersister.insert(dummyCar);
-		assertNotNull(dummyCar.getEngine().getId());
+		assertThat(dummyCar.getEngine().getId()).isNotNull();
 		
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey(Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertEquals(Arrays.asList(dummyCar), allCars);
+		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
-		assertEquals(dummyCar, loadedCar);
-		assertEquals(dummyCar.getEngine(), loadedCar.getEngine());
+		assertThat(loadedCar).isEqualTo(dummyCar);
+		assertThat(loadedCar.getEngine()).isEqualTo(dummyCar.getEngine());
 	}
 	
 	@Test
@@ -116,7 +115,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.build(persistenceContext);
 		
 		// by default inheritance is single_table one, to comply with default JPA inheritance strategy
-		assertEquals("Car", ((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName());
+		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Car");
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -132,11 +131,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapKey(Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertEquals(Arrays.asList(dummyCar), allCars);
+		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
-		assertEquals(dummyCar, loadedCar);
+		assertThat(loadedCar).isEqualTo(dummyCar);
 	}
 	
 	@Test
@@ -157,11 +156,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
-		assertEquals(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"),
-				DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet()));
-		assertEquals("AbstractVehicle", ((IConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMappingStrategy().getTargetTable().getName());
-		assertEquals("Vehicle", ((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName());
-		assertEquals("Car", ((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName());
+		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
+		assertThat(((IConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("AbstractVehicle");
+		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Vehicle");
+		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo(
+				"Car");
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -177,11 +176,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapKey(Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertEquals(Arrays.asList(dummyCar), allCars);
+		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
-		assertEquals(dummyCar, loadedCar);
+		assertThat(loadedCar).isEqualTo(dummyCar);
 	}
 	
 	static abstract class AbstractVehicle {

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,16 +68,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.lang.collection.Iterables.collect;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.lang.function.Functions.link;
-import static org.gama.lang.test.Assertions.assertAllEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -109,10 +104,10 @@ class FluentEntityMappingConfigurationSupportTest {
 				.add(Toto::getName);
 		
 		// column should be correctly created
-		assertEquals("Identifier is not defined for o.g.s.p.e.FluentEntityMappingConfigurationSupportTest$Toto," 
-						+ " please add one throught o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)",
-				assertThrows(UnsupportedOperationException.class, () -> mappingStrategy.build(persistenceContext))
-						.getMessage());
+		assertThatThrownBy(() -> mappingStrategy.build(persistenceContext))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Identifier is not defined for o.g.s.p.e.FluentEntityMappingConfigurationSupportTest$Toto,"
+						+ " please add one through o.g.s.p.e.ColumnOptions.identifier(o.g.s.p.e.ColumnOptions$IdentifierPolicy)");
 	}
 	
 	@Nested
@@ -138,8 +133,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			entity.setName("Tutu");
 			persister.insert(entity);
 			Toto loadedInstance = persister.select(entity.getId());
-			assertTrue(loadedInstance.isSetIdWasCalled(), "setId was not called");
-			assertFalse(loadedInstance.isConstructorWithIdWasCalled(), "constructor with Id was not called");
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was not called").isTrue();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was not called").isFalse();
 		}
 		
 		@Test
@@ -163,8 +158,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			entity.setName("Tutu");
 			persister.insert(entity);
 			Toto loadedInstance = persister.select(entity.getId());
-			assertTrue(loadedInstance.isSetIdWasCalled(), "setId was not called");
-			assertTrue(loadedInstance.isConstructorWithIdWasCalled(), "constructor with Id was called");
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was not called").isTrue();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
 		}
 		
 		@Test
@@ -188,8 +183,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			entity.setName("Tutu");
 			persister.insert(entity);
 			Toto loadedInstance = persister.select(entity.getId());
-			assertFalse(loadedInstance.isSetIdWasCalled(), "setId was called");
-			assertTrue(loadedInstance.isConstructorWithIdWasCalled(), "constructor with Id was called");
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
 		}
 		
 		@Test
@@ -214,8 +209,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			entity.setName("Hello");
 			persister.insert(entity);
 			Toto loadedInstance = persister.select(entity.getId());
-			assertFalse(loadedInstance.isSetIdWasCalled(), "setId was called");
-			assertEquals("Hello by constructor", loadedInstance.getName());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
+			assertThat(loadedInstance.getName()).isEqualTo("Hello by constructor");
 		}
 	}
 	
@@ -227,10 +222,10 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		// column should be correctly created
-		assertEquals("Toto", persister.getMappingStrategy().getTargetTable().getName());
+		assertThat(persister.getMappingStrategy().getTargetTable().getName()).isEqualTo("Toto");
 		Column columnForProperty = (Column) persister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("name");
-		assertNotNull(columnForProperty);
-		assertEquals(String.class, columnForProperty.getJavaType());
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
 	}
 	
 	@Test
@@ -251,10 +246,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		ddlDeployer.deployDDL();
 		
 		Toto toto = new Toto();
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> persister.insert(toto));
-		assertEquals("Error while inserting values for " + toto, thrownException.getMessage());
-		assertEquals(BindingException.class, thrownException.getCause().getClass());
-		assertEquals("Expected non null value for : Toto.firstName, Toto.name", thrownException.getCause().getMessage());
+		assertThatThrownBy(() -> persister.insert(toto))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage("Error while inserting values for " + toto)
+				.hasCause(new BindingException("Expected non null value for : Toto.firstName, Toto.name"));
 	}
 	
 	@Test
@@ -265,7 +260,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.add(Toto::getName).mandatory()
 				.build(persistenceContext);
 		
-		assertFalse(totoPersister.getMappingStrategy().getTargetTable().getColumn("name").isNullable());
+		assertThat(totoPersister.getMappingStrategy().getTargetTable().getColumn("name").isNullable()).isFalse();
 	}
 	
 	@Test
@@ -279,11 +274,11 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		// column should not have been created
 		Column columnForProperty = (Column) persister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("name");
-		assertNull(columnForProperty);
+		assertThat(columnForProperty).isNull();
 		
 		// title column is expected to be added to the mapping and participate to DML actions 
-		assertEquals(Arrays.asSet("id", "title"), persister.getMappingStrategy().getInsertableColumns().stream().map(Column::getName).collect(Collectors.toSet()));
-		assertEquals(Arrays.asSet("title"), persister.getMappingStrategy().getUpdatableColumns().stream().map(Column::getName).collect(Collectors.toSet()));
+		assertThat(persister.getMappingStrategy().getInsertableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("id", "title"));
+		assertThat(persister.getMappingStrategy().getUpdatableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("title"));
 	}
 	
 	@Test
@@ -302,7 +297,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.build(persistenceContext, totoTable);
 		// column should be correctly created
-		assertTrue(totoTable.getColumn("id").isPrimaryKey());
+		assertThat(totoTable.getColumn("id").isPrimaryKey()).isTrue();
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -312,39 +307,39 @@ class FluentEntityMappingConfigurationSupportTest {
 		persister.persist(toto);
 		
 		List<Duo> select = persistenceContext.select(Duo::new, id, name);
-		assertEquals(1, select.size());
-		assertEquals(toto.getId().getSurrogate().toString(), ((Identifier) select.get(0).getLeft()).getSurrogate().toString());
+		assertThat(select.size()).isEqualTo(1);
+		assertThat(((Identifier) select.get(0).getLeft()).getSurrogate().toString()).isEqualTo(toto.getId().getSurrogate().toString());
 	}
 	
 	@Test
 	void add_identifierDefinedTwice_throwsException() {
-		assertEquals("Identifier is already defined by Toto::getId",
-				assertThrows(IllegalArgumentException.class, () -> MappingEase.entityBuilder(Toto.class, Identifier.class)
-						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.add(Toto::getIdentifier).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
-						.getMessage());
+		assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getIdentifier).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Identifier is already defined by Toto::getId");
 	}
 	
 	@Test
 	void add_mappingDefinedTwiceByMethod_throwsException() {
-		assertEquals("Mapping is already defined by method Toto::getName",
-				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, Identifier.class)
-						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.add(Toto::getName)
-						.add(Toto::setName)
-						.build(persistenceContext))
-						.getMessage());
+		assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.add(Toto::setName)
+					.build(persistenceContext))
+				.isInstanceOf(MappingConfigurationException.class)
+				.hasMessage("Mapping is already defined by method Toto::getName");
 	}
 	
 	@Test
 	void add_mappingDefinedTwiceByColumn_throwsException() {
-		assertEquals("Column 'xyz' of mapping 'Toto::getName' is already targetted by 'Toto::getFirstName'",
-				assertThrows(MappingConfigurationException.class, () -> MappingEase.entityBuilder(Toto.class, Identifier.class)
-						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.add(Toto::getName, "xyz")
-						.add(Toto::getFirstName, "xyz")
-						.build(persistenceContext))
-						.getMessage());
+		assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName, "xyz")
+					.add(Toto::getFirstName, "xyz")
+					.build(persistenceContext))
+				.isInstanceOf(MappingConfigurationException.class)
+				.hasMessage("Column 'xyz' of mapping 'Toto::getName' is already targetted by 'Toto::getFirstName'");
 	}
 	
 	@Test
@@ -356,8 +351,8 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext, toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("noMatchingField");
-		assertNotNull(columnForProperty);
-		assertEquals(Long.class, columnForProperty.getJavaType());
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(Long.class);
 	}
 	
 	@Test
@@ -368,8 +363,8 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext, toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("id");
-		assertNotNull(columnForProperty);
-		assertEquals(Identifier.class, columnForProperty.getJavaType());
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(Identifier.class);
 	}
 	
 	@Test
@@ -383,8 +378,8 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(new PersistenceContext((ConnectionProvider) null, dialect), toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
-		assertNotNull(columnForProperty);
-		assertEquals(Date.class, columnForProperty.getJavaType());
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(Date.class);
 	}
 	
 	@Test
@@ -398,8 +393,8 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(new PersistenceContext((ConnectionProvider) null, dialect), toto);
 		
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("creationDate");
-		assertNotNull(columnForProperty);
-		assertEquals(Date.class, columnForProperty.getJavaType());
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(Date.class);
 	}
 	
 	@Test
@@ -417,17 +412,17 @@ class FluentEntityMappingConfigurationSupportTest {
 		Map<String, Column> columnsByName = toto.mapColumnsOnName();
 		
 		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
-		assertNull(columnsByName.get("creationDate"));
-		assertNull(columnsByName.get("modificationDate"));
+		assertThat(columnsByName.get("creationDate")).isNull();
+		assertThat(columnsByName.get("modificationDate")).isNull();
 
 		Column overridenColumn;
 		// Columns with good name must be present
 		overridenColumn = columnsByName.get("modifiedAt");
-		assertNotNull(overridenColumn);
-		assertEquals(Date.class, overridenColumn.getJavaType());
+		assertThat(overridenColumn).isNotNull();
+		assertThat(overridenColumn.getJavaType()).isEqualTo(Date.class);
 		overridenColumn = columnsByName.get("createdAt");
-		assertNotNull(overridenColumn);
-		assertEquals(Date.class, overridenColumn.getJavaType());
+		assertThat(overridenColumn).isNotNull();
+		assertThat(overridenColumn.getJavaType()).isEqualTo(Date.class);
 	}
 	
 	@Test
@@ -437,17 +432,16 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
 		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
 		
-		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
-				() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
-						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.add(Toto::getName)
-						.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
-								.add(Timestamp::getCreationDate)
-								.add(Timestamp::getModificationDate))
-						.overrideName(Timestamp::getCreationDate, "modificationDate")
-						.build(persistenceContext));
-		assertEquals("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'",
-				thrownException.getMessage());
+		assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.add(Timestamp::getCreationDate)
+							.add(Timestamp::getModificationDate))
+					.overrideName(Timestamp::getCreationDate, "modificationDate")
+					.build(persistenceContext))
+				.isInstanceOf(MappingConfigurationException.class)
+				.hasMessage("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'");
 	}
 	
 	@Test
@@ -470,13 +464,13 @@ class FluentEntityMappingConfigurationSupportTest {
 		Map<String, Column> columnsByName = targetTable.mapColumnsOnName();
 		
 		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
-		assertNull(columnsByName.get("creationDate"));
-		assertNull(columnsByName.get("modificationDate"));
+		assertThat(columnsByName.get("creationDate")).isNull();
+		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overriden column are in DML statements
-		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getInsertableColumns());
-		assertEquals(targetTable.getColumnsNoPrimaryKey(), persister.getMappingStrategy().getUpdatableColumns());
-		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getSelectableColumns());
+		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(targetTable.getColumns());
+		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(targetTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(targetTable.getColumns());
 	}
 	
 	@Test
@@ -498,13 +492,13 @@ class FluentEntityMappingConfigurationSupportTest {
 		Map<String, Column> columnsByName = targetTable.mapColumnsOnName();
 		
 		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
-		assertNull(columnsByName.get("creationDate"));
-		assertNull(columnsByName.get("modificationDate"));
+		assertThat(columnsByName.get("creationDate")).isNull();
+		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overriden column are in DML statements
-		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getInsertableColumns());
-		assertEquals(targetTable.getColumnsNoPrimaryKey(), persister.getMappingStrategy().getUpdatableColumns());
-		assertEquals(targetTable.getColumns(), persister.getMappingStrategy().getSelectableColumns());
+		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(targetTable.getColumns());
+		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(targetTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(targetTable.getColumns());
 	}
 	
 	@Test
@@ -535,14 +529,13 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		mappingBuilder.build(persistenceContext, countryTable);
 		
-		assertEquals(Arrays.asHashSet(
+		assertThat(countryTable.getColumns()).extracting(Column::getName).containsExactlyInAnyOrder(
 				// from Country
 				"id", "name",
 				// from Person
 				"presidentName", "presidentElectedAt",
 				// from Country.timestamp
-				"countryCreatedAt"),
-				collect(countryTable.getColumns(), Column::getName, HashSet::new));
+				"countryCreatedAt");
 		
 		Connection connectionMock = mock(Connection.class);
 		
@@ -553,13 +546,13 @@ class FluentEntityMappingConfigurationSupportTest {
 		Map<String, ? extends Column> columnsByName = countryTable.mapColumnsOnName();
 		
 		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
-		assertNull(columnsByName.get("creationDate"));
-		assertNull(columnsByName.get("modificationDate"));
+		assertThat(columnsByName.get("creationDate")).isNull();
+		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overriden column are in DML statements
-		assertEquals(countryTable.getColumns(), persister.getMappingStrategy().getInsertableColumns());
-		assertEquals(countryTable.getColumnsNoPrimaryKey(), persister.getMappingStrategy().getUpdatableColumns());
-		assertEquals(countryTable.getColumns(), persister.getMappingStrategy().getSelectableColumns());
+		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(countryTable.getColumns());
+		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(countryTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(countryTable.getColumns());
 		
 		Country country = new Country(new PersistableIdentifier<>(1L));
 		country.setName("France");
@@ -602,15 +595,14 @@ class FluentEntityMappingConfigurationSupportTest {
 		// Testing ...
 		persister.insert(country);
 		
-		assertEquals("insert into countryTable(countryCreatedAt, id, name, presidentElectedAt, presidentName) values (?, ?, ?, ?, ?)",
-				capturedSQL.toString());
-		assertEquals(Maps.forHashMap(Column.class, Object.class)
+		assertThat(capturedSQL.toString()).isEqualTo("insert into countryTable(countryCreatedAt, id, name, presidentElectedAt, presidentName) values" 
+				+ " (?, ?, ?, ?, ?)");
+		assertThat(capturedValues).isEqualTo(Maps.forHashMap(Column.class, Object.class)
 				.add(columnsByName.get("presidentName"), country.getPresident().getName())
 				.add(columnsByName.get("presidentElectedAt"), country.getPresident().getTimestamp().getModificationDate())
 				.add(columnsByName.get("name"), country.getName())
 				.add(columnsByName.get("countryCreatedAt"), country.getTimestamp().getCreationDate())
-				.add(columnsByName.get("id"), country.getId())
-				, capturedValues);
+				.add(columnsByName.get("id"), country.getId()));
 	}
 	
 	@Test
@@ -634,12 +626,11 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		mappingBuilder.build(persistenceContext, countryTable);
 		
-		assertEquals(Arrays.asHashSet(
+		assertThat(countryTable.getColumns()).extracting(Column::getName).containsExactlyInAnyOrder(
 				// from Country
 				"id", "name",
 				// from Person
-				"presidentName", "presidentElectedAt"),
-				collect(countryTable.getColumns(), Column::getName, HashSet::new));
+				"presidentName", "presidentElectedAt");
 		
 		Connection connectionMock = mock(Connection.class);
 		
@@ -649,13 +640,13 @@ class FluentEntityMappingConfigurationSupportTest {
 		Map<String, ? extends Column> columnsByName = countryTable.mapColumnsOnName();
 		
 		// columns with getter name must be absent (hard to test: can be absent for many reasons !)
-		assertNull(columnsByName.get("creationDate"));
-		assertNull(columnsByName.get("modificationDate"));
+		assertThat(columnsByName.get("creationDate")).isNull();
+		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overriden column are in DML statements
-		assertEquals(countryTable.getColumns(), persister.getMappingStrategy().getInsertableColumns());
-		assertEquals(countryTable.getColumnsNoPrimaryKey(), persister.getMappingStrategy().getUpdatableColumns());
-		assertEquals(countryTable.getColumns(), persister.getMappingStrategy().getSelectableColumns());
+		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(countryTable.getColumns());
+		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(countryTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(countryTable.getColumns());
 		
 		Country country = new Country(new PersistableIdentifier<>(1L));
 		country.setName("France");
@@ -692,14 +683,12 @@ class FluentEntityMappingConfigurationSupportTest {
 		// Testing ...
 		persister.insert(country);
 		
-		assertEquals("insert into countryTable(id, name, presidentElectedAt, presidentName) values (?, ?, ?, ?)",
-				capturedSQL.toString());
-		assertEquals(Maps.forHashMap(Column.class, Object.class)
+		assertThat(capturedSQL.toString()).isEqualTo("insert into countryTable(id, name, presidentElectedAt, presidentName) values (?, ?, ?, ?)");
+		assertThat(capturedValues).isEqualTo(Maps.forHashMap(Column.class, Object.class)
 				.add(columnsByName.get("presidentName"), country.getPresident().getName())
 				.add(columnsByName.get("presidentElectedAt"), country.getPresident().getTimestamp().getModificationDate())
 				.add(columnsByName.get("name"), country.getName())
-				.add(columnsByName.get("id"), country.getId())
-				, capturedValues);
+				.add(columnsByName.get("id"), country.getId()));
 	}
 	
 	@Test
@@ -722,31 +711,30 @@ class FluentEntityMappingConfigurationSupportTest {
 				.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 						.add(Timestamp::getCreationDate)
 						.add(Timestamp::getModificationDate));
-		MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
-				.build(persistenceContext, countryTable));
-		assertEquals("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : Timestamp::getCreationDate, Timestamp::getModificationDate", thrownException.getMessage());
+		assertThatThrownBy(() -> mappingBuilder.build(persistenceContext, countryTable))
+				.isInstanceOf(MappingConfigurationException.class)
+				.hasMessage("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+						", column names should be overriden : Timestamp::getCreationDate, Timestamp::getModificationDate");
 		
 		// we add an override, exception must still be thrown, with different message
 		mappingBuilder.overrideName(Timestamp::getModificationDate, "modifiedAt");
 		
-		thrownException = assertThrows(MappingConfigurationException.class, () -> mappingBuilder
-				.build(persistenceContext));
-		assertEquals("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
-				", column names should be overriden : Timestamp::getCreationDate", thrownException.getMessage());
+		assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
+				.isInstanceOf(MappingConfigurationException.class)
+				.hasMessage("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+						", column names should be overriden : Timestamp::getCreationDate");
 		
 		// we override the last field, no exception is thrown
 		mappingBuilder.overrideName(Timestamp::getCreationDate, "createdAt");
 		mappingBuilder.build(persistenceContext, countryTable);
 		
-		assertEquals(Arrays.asHashSet(
+		assertThat(countryTable.getColumns()).extracting(Column::getName).containsExactlyInAnyOrder(
 				// from Country
 				"id", "name",
 				// from Person
 				"presidentId", "version", "presidentName", "creationDate", "modificationDate",
 				// from Country.timestamp
-				"createdAt", "modifiedAt"),
-				collect(countryTable.getColumns(), Column::getName, HashSet::new));
+				"createdAt", "modifiedAt");
 	}
 	
 	@Nested
@@ -783,11 +771,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// Is everything fine in database ?
 			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertEquals(toto.getTimestamp(), select.get(0));
+			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
-			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+			assertThat(loadedToto.getTimestamp()).isEqualTo(toto.getTimestamp());
 		}
 		
 		@Test
@@ -830,11 +818,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// Is everything fine in database ?
 			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
-			assertEquals(toto.getTimestamp(), select.get(0));
+			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
-			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+			assertThat(loadedToto.getTimestamp()).isEqualTo(toto.getTimestamp());
 		}
 		
 		@Test
@@ -878,11 +866,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// Is everything fine in database ?
 			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
-			assertEquals(toto.getTimestamp(), select.get(0));
+			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
-			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+			assertThat(loadedToto.getTimestamp()).isEqualTo(toto.getTimestamp());
 		}
 		
 		@Test
@@ -908,7 +896,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Map<String, Column> columnsByName = totoTable.mapColumnsOnName();
 			
 			// columns with getter name must be absent (hard to test: can be absent for many reasons !)
-			assertNull(columnsByName.get("creationDate"));
+			assertThat(columnsByName.get("creationDate")).isNull();
 			
 			// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -921,11 +909,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// Is everything fine in database ?
 			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertEquals(toto.getTimestamp(), select.get(0));
+			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
-			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+			assertThat(loadedToto.getTimestamp()).isEqualTo(toto.getTimestamp());
 		}
 		
 		@Test
@@ -940,15 +928,14 @@ class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getCreationDate)
 					.add(Timestamp::getModificationDate);
 			
-			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
-					() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
-							.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.add(Toto::getName)
-							.embed(Toto::getTimestamp, timestampMapping)
-								.overrideName(Timestamp::getCreationDate, "modificationDate")
-							.build(persistenceContext));
-			assertEquals("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'",
-					thrownException.getMessage());
+			assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName)
+					.embed(Toto::getTimestamp, timestampMapping)
+					.overrideName(Timestamp::getCreationDate, "modificationDate")
+					.build(persistenceContext))
+					.isInstanceOf(MappingConfigurationException.class)
+					.hasMessage("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'");
 		}
 		
 		@Test
@@ -983,11 +970,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// Is everything fine in database ?
 			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertEquals(toto.getTimestamp(), select.get(0));
+			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
-			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+			assertThat(loadedToto.getTimestamp()).isEqualTo(toto.getTimestamp());
 		}
 		
 		@Test
@@ -1003,14 +990,13 @@ class FluentEntityMappingConfigurationSupportTest {
 					.add(Timestamp::getModificationDate)
 					.add(Timestamp::setModificationDate);
 			
-			MappingConfigurationException thrownException = assertThrows(MappingConfigurationException.class,
-					() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
-					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.add(Toto::getName)
-					.embed(Toto::getTimestamp, timestampMapping)
-					.build(persistenceContext));
-			
-			assertEquals("Mapping is already defined by method Timestamp::getModificationDate", thrownException.getMessage());
+			assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
+						.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.add(Toto::getName)
+						.embed(Toto::getTimestamp, timestampMapping)
+						.build(persistenceContext))
+					.isInstanceOf(MappingConfigurationException.class)
+					.hasMessage("Mapping is already defined by method Timestamp::getModificationDate");
 		}
 		
 		@Test
@@ -1033,7 +1019,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext);
 			
 			Map map = totoTable.mapColumnsOnName();
-			assertNull(map.get("creationDate"));
+			assertThat(map.get("creationDate")).isNull();
 			
 			// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1047,7 +1033,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
 			// timestamp is expected to be null because all columns in database are null, which proves that creationDate is not taken into account
-			assertNull(loadedToto.getTimestamp());
+			assertThat(loadedToto.getTimestamp()).isNull();
 		}
 		
 		@Test
@@ -1072,7 +1058,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext, totoTable);
 			
 			Map map = totoTable.mapColumnsOnName();
-			assertNull(map.get("creationDate"));
+			assertThat(map.get("creationDate")).isNull();
 			
 			/// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1085,11 +1071,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// Is everything fine in database ?
 			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertEquals(toto.getTimestamp(), select.get(0));
+			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
-			assertEquals(toto.getTimestamp(), loadedToto.getTimestamp());
+			assertThat(loadedToto.getTimestamp()).isEqualTo(toto.getTimestamp());
 		}
 	}
 	
@@ -1117,7 +1103,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
 				.mapKey(Integer::new, "gender", Integer.class)
 				.execute();
-		assertEquals(Arrays.asList(1), result);
+		assertThat(result).isEqualTo(Arrays.asList(1));
 	}
 	
 	@Test
@@ -1139,10 +1125,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		person.setName("toto");
 		person.setGender(null);
 		
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> personPersister.insert(person));
-		assertEquals("Error while inserting values for " + person, thrownException.getMessage());
-		assertEquals(BindingException.class, thrownException.getCause().getClass());
-		assertEquals("Expected non null value for : PersonWithGender.gender", thrownException.getCause().getMessage());
+		assertThatThrownBy(() -> personPersister.insert(person))
+				.isInstanceOf(RuntimeException.class)
+				.hasMessage("Error while inserting values for " + person)
+				.hasCause(new BindingException("Expected non null value for : PersonWithGender.gender"));
 	}
 	
 	@Test
@@ -1154,7 +1140,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.addEnum(PersonWithGender::getGender).mandatory()
 				.build(persistenceContext);
 		
-		assertFalse(personPersister.getMappingStrategy().getTargetTable().getColumn("gender").isNullable());
+		assertThat(personPersister.getMappingStrategy().getTargetTable().getColumn("gender").isNullable()).isFalse();
 	}
 	
 	@Test
@@ -1180,7 +1166,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
 				.mapKey(Integer::valueOf, "gender", String.class)
 				.execute();
-		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
+		assertThat(result).isEqualTo(Arrays.asList(person.getGender().ordinal()));
 	}
 	
 	@Test
@@ -1208,7 +1194,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
 				.mapKey(Integer::valueOf, "gender", String.class)
 				.execute();
-		assertEquals(Arrays.asList(person.getGender().ordinal()), result);
+		assertThat(result).isEqualTo(Arrays.asList(person.getGender().ordinal()));
 	}
 	
 	@Test
@@ -1233,7 +1219,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		PersonWithGender loadedPerson = personPersister.select(person.getId());
-		assertEquals(Gender.FEMALE, loadedPerson.getGender());
+		assertThat(loadedPerson.getGender()).isEqualTo(Gender.FEMALE);
 	}
 	
 	@Test
@@ -1258,7 +1244,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		PersonWithGender loadedPerson = personPersister.select(person.getId());
-		assertEquals(null, loadedPerson.getGender());
+		assertThat(loadedPerson.getGender()).isEqualTo(null);
 	}
 	
 	@Test
@@ -1284,9 +1270,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		PersonWithGender updatedPerson = new PersonWithGender(person.getId());
 		int updatedRowCount = personPersister.update(updatedPerson, person, true);
-		assertEquals(1, updatedRowCount);
+		assertThat(updatedRowCount).isEqualTo(1);
 		PersonWithGender loadedPerson = personPersister.select(person.getId());
-		assertEquals(null, loadedPerson.getGender());
+		assertThat(loadedPerson.getGender()).isEqualTo(null);
 	}
 	
 	@Nested
@@ -1311,7 +1297,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			personPersister.insert(person);
 			
 			Person loadedPerson = personPersister.select(person.getId());
-			assertEquals(Arrays.asSet("tonton"), loadedPerson.getNicknames());
+			assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tonton"));
 		}
 		
 		@Test
@@ -1334,13 +1320,13 @@ class FluentEntityMappingConfigurationSupportTest {
 			personPersister.insert(person);
 			
 			Person loadedPerson = personPersister.select(person.getId());
-			assertEquals(Arrays.asSet("tintin", "tonton"), loadedPerson.getNicknames());
+			assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tintin", "tonton"));
 			
 			
 			loadedPerson.addNickname("toutou");
 			personPersister.update(loadedPerson, person, true);
 			loadedPerson = personPersister.select(person.getId());
-			assertEquals(Arrays.asSet("tintin", "tonton", "toutou"), loadedPerson.getNicknames());
+			assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tintin", "tonton", "toutou"));
 		}
 		
 		@Test
@@ -1367,7 +1353,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			person.getNicknames().remove("tintin");
 			personPersister.update(person, loadedPerson, true);
 			loadedPerson = personPersister.select(person.getId());
-			assertEquals(Arrays.asSet("tonton"), loadedPerson.getNicknames());
+			assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("tonton"));
 		}
 		
 		@Test
@@ -1394,7 +1380,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			List<String> remainingNickNames = persistenceContext.newQuery("select nickNames from Person_nicknames", String.class)
 					.mapKey(String::new, "nickNames", String.class)
 					.execute();
-			assertEquals(Collections.emptyList(), remainingNickNames);
+			assertThat(remainingNickNames).isEqualTo(Collections.emptyList());
 		}
 		
 		@Test
@@ -1418,13 +1404,13 @@ class FluentEntityMappingConfigurationSupportTest {
 			person.addNickname("b");
 			
 			// because nickNames is initialized with HashSet we get this order
-			assertEquals(Arrays.asSet("a", "b", "c", "d"), person.getNicknames());
+			assertThat(person.getNicknames()).isEqualTo(Arrays.asSet("a", "b", "c", "d"));
 			
 			personPersister.insert(person);
 			
 			Person loadedPerson = personPersister.select(person.getId());
 			// because nickNames is initialized with TreeSet with reversed order we get this order
-			assertAllEquals(Arrays.asSet("d", "c", "b", "a"), loadedPerson.getNicknames());
+			assertThat(loadedPerson.getNicknames()).isEqualTo(Arrays.asSet("d", "c", "b", "a"));
 		}
 		
 		@Test
@@ -1448,10 +1434,9 @@ class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			assertAllEquals(
-					Arrays.asHashSet(new ForeignKey("FK_Person_nicknames_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
-					nickNamesTable.getForeignKeys(),
-					fkPrinter);
+			assertThat(nickNamesTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactly(new ForeignKey("FK_Person_nicknames_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id")));
 		}
 		
 		
@@ -1468,7 +1453,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Person_nicknames");
-			assertNotNull(nickNamesTable);
+			assertThat(nickNamesTable).isNotNull();
 			
 			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 					Column::getAbsoluteName,
@@ -1478,10 +1463,9 @@ class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			assertAllEquals(
-					Arrays.asHashSet(new ForeignKey("FK_Person_nicknames_identifier_Person_id", nickNamesTable.getColumn("identifier"), personTable.getColumn("id"))),
-					nickNamesTable.getForeignKeys(),
-					fkPrinter);
+			assertThat(nickNamesTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactly(new ForeignKey("FK_Person_nicknames_identifier_Person_id", nickNamesTable.getColumn("identifier"), personTable.getColumn("id")));
 		}
 		
 		@Test
@@ -1497,7 +1481,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Toto");
-			assertNotNull(nickNamesTable);
+			assertThat(nickNamesTable).isNotNull();
 			
 			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 					Column::getAbsoluteName,
@@ -1507,10 +1491,9 @@ class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			assertAllEquals(
-					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
-					nickNamesTable.getForeignKeys(),
-					fkPrinter);
+			assertThat(nickNamesTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactly(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id")));
 		}
 		
 		@Test
@@ -1536,10 +1519,9 @@ class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			assertAllEquals(
-					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
-					nickNamesTable.getForeignKeys(),
-					fkPrinter);
+			assertThat(nickNamesTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactly(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id")));
 		}
 		
 		@Test
@@ -1555,7 +1537,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Toto");
-			assertNotNull(nickNamesTable);
+			assertThat(nickNamesTable).isNotNull();
 			
 			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 					Column::getAbsoluteName,
@@ -1565,10 +1547,9 @@ class FluentEntityMappingConfigurationSupportTest {
 					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
 					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
 			
-			assertAllEquals(
-					Arrays.asHashSet(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id"))),
-					nickNamesTable.getForeignKeys(),
-					fkPrinter);
+			assertThat(nickNamesTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactly(new ForeignKey("FK_Toto_id_Person_id", nickNamesTable.getColumn("id"), personTable.getColumn("id")));
 		}
 		
 		@Test
@@ -1585,7 +1566,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Person_nicknames");
 			
-			assertEquals(Arrays.asHashSet("id", "toto"), nickNamesTable.mapColumnsOnName().keySet());
+			assertThat(nickNamesTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asHashSet("id", "toto"));
 		}
 		
 		
@@ -1613,7 +1594,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			personPersister.insert(person);
 			
 			Toto loadedPerson = personPersister.select(person.getId());
-			assertEquals(Arrays.asSet(State.DONE, State.IN_PROGRESS), loadedPerson.getPossibleStates());
+			assertThat(loadedPerson.getPossibleStates()).isEqualTo(Arrays.asSet(State.DONE, State.IN_PROGRESS));
 		}
 		
 		@Test
@@ -1644,7 +1625,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			personPersister.insert(person);
 			
 			Toto loadedPerson = personPersister.select(person.getId());
-			assertEquals(Arrays.asSet(timestamp1, timestamp2), loadedPerson.getTimes());
+			assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
 		}
 		
 		@Test
@@ -1670,7 +1651,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
 			Table totoTimesTable = tablePerName.get("Toto_times");
 			Map<String, Column> timesTableColumn = totoTimesTable.mapColumnsOnName();
-			assertNotNull(timesTableColumn.get("createdAt"));
+			assertThat(timesTableColumn.get("createdAt")).isNotNull();
 			
 			Toto person = new Toto();
 			person.setName("toto");
@@ -1682,7 +1663,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			personPersister.insert(person);
 			
 			Toto loadedPerson = personPersister.select(person.getId());
-			assertEquals(Arrays.asSet(timestamp1, timestamp2), loadedPerson.getTimes());
+			assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
 		}
 	}
 	

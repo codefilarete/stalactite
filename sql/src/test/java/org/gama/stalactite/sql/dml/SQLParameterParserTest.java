@@ -13,8 +13,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.gama.lang.collection.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Guillaume Mary
@@ -51,8 +52,8 @@ public class SQLParameterParserTest {
 	public void testParse(String sql, ParsedSQL expectedResult) {
 		SQLParameterParser testInstance = new SQLParameterParser(sql);
 		ParsedSQL parsedSQL = testInstance.parse();
-		assertEquals(expectedResult.getSqlSnippets(), parsedSQL.getSqlSnippets());
-		assertEquals(expectedResult.getParametersMap(), parsedSQL.getParametersMap());
+		assertThat(parsedSQL.getSqlSnippets()).isEqualTo(expectedResult.getSqlSnippets());
+		assertThat(parsedSQL.getParametersMap()).isEqualTo(expectedResult.getParametersMap());
 	}
 	
 	public static Object[][] testParse_inMatcher_data() {
@@ -71,7 +72,7 @@ public class SQLParameterParserTest {
 	@MethodSource("testParse_inMatcher_data")
 	public void testParse_inMatcher(String sql, boolean expectedResult) {
 		Matcher matcher = SQLParameterParser.IN_PATTERN.matcher(sql);
-		assertEquals(expectedResult, matcher.find());
+		assertThat(matcher.find()).isEqualTo(expectedResult);
 	}
 	
 	public static Object[][] testParse_in_data() {
@@ -99,8 +100,8 @@ public class SQLParameterParserTest {
 	public void testParse_in(String input, ParsedSQL expectedResult) {
 		SQLParameterParser testInstance = new SQLParameterParser(input);
 		ParsedSQL parsedSQL = testInstance.parse();
-		assertEquals(expectedResult.getSqlSnippets(), parsedSQL.getSqlSnippets());
-		assertEquals(expectedResult.getParametersMap(), parsedSQL.getParametersMap());
+		assertThat(parsedSQL.getSqlSnippets()).isEqualTo(expectedResult.getSqlSnippets());
+		assertThat(parsedSQL.getParametersMap()).isEqualTo(expectedResult.getParametersMap());
 	}
 	
 	@Test
@@ -108,7 +109,9 @@ public class SQLParameterParserTest {
 		// a parameter without name => error
 		String sql = "select a from Toto where b = :";
 		SQLParameterParser testInstance = new SQLParameterParser(sql);
-		assertThrows(IllegalArgumentException.class, testInstance::parse, "Parameter name can't be empty at position 30");
+		assertThatThrownBy(testInstance::parse)
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Parameter name can't be empty at position 30");
 	}
 	
 }

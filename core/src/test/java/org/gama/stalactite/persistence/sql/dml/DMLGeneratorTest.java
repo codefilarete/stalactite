@@ -17,7 +17,7 @@ import org.gama.stalactite.query.builder.DMLNameProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DMLGeneratorTest {
 
@@ -39,12 +39,12 @@ public class DMLGeneratorTest {
 		Column colB = toto.addColumn("B", String.class);
 
 		ColumnParameterizedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
-		assertEquals("insert into Toto(A, B) values (?, ?)", builtInsert.getSQL());
+		assertThat(builtInsert.getSQL()).isEqualTo("insert into Toto(A, B) values (?, ?)");
 		
-		assertEquals(1, builtInsert.getIndexes(colA)[0]);
-		assertEquals(2, builtInsert.getIndexes(colB)[0]);
-		assertEquals(stringBinder, builtInsert.getParameterBinder(colA));
-		assertEquals(stringBinder, builtInsert.getParameterBinder(colB));
+		assertThat(builtInsert.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtInsert.getIndexes(colB)[0]).isEqualTo(2);
+		assertThat(builtInsert.getParameterBinder(colA)).isEqualTo(stringBinder);
+		assertThat(builtInsert.getParameterBinder(colB)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -65,12 +65,12 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 
 		ColumnParameterizedSQL builtInsert = testInstance.buildInsert(toto.getColumns());
-		assertEquals("insert into Toto('key', B) values (?, ?)", builtInsert.getSQL());
+		assertThat(builtInsert.getSQL()).isEqualTo("insert into Toto('key', B) values (?, ?)");
 		
-		assertEquals(1, builtInsert.getIndexes(colA)[0]);
-		assertEquals(2, builtInsert.getIndexes(colB)[0]);
-		assertEquals(stringBinder, builtInsert.getParameterBinder(colA));
-		assertEquals(stringBinder, builtInsert.getParameterBinder(colB));
+		assertThat(builtInsert.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtInsert.getIndexes(colB)[0]).isEqualTo(2);
+		assertThat(builtInsert.getParameterBinder(colA)).isEqualTo(stringBinder);
+		assertThat(builtInsert.getParameterBinder(colB)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -80,15 +80,15 @@ public class DMLGeneratorTest {
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
 		PreparedUpdate builtUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA));
-		assertEquals("update Toto set A = ?, B = ? where A = ?", builtUpdate.getSQL());
+		assertThat(builtUpdate.getSQL()).isEqualTo("update Toto set A = ?, B = ? where A = ?");
 
-		assertEquals(1, builtUpdate.getIndex(new UpwhereColumn<>(colA, true)));
-		assertEquals(2, builtUpdate.getIndex(new UpwhereColumn<>(colB, true)));
-		assertEquals(3, builtUpdate.getIndex(new UpwhereColumn<>(colA, false)));
+		assertThat(builtUpdate.getIndex(new UpwhereColumn<>(colA, true))).isEqualTo(1);
+		assertThat(builtUpdate.getIndex(new UpwhereColumn<>(colB, true))).isEqualTo(2);
+		assertThat(builtUpdate.getIndex(new UpwhereColumn<>(colA, false))).isEqualTo(3);
 		
-		assertEquals(stringBinder, builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, true)));
-		assertEquals(stringBinder, builtUpdate.getParameterBinder(new UpwhereColumn<>(colB, true)));
-		assertEquals(stringBinder, builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, false)));
+		assertThat(builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, true))).isEqualTo(stringBinder);
+		assertThat(builtUpdate.getParameterBinder(new UpwhereColumn<>(colB, true))).isEqualTo(stringBinder);
+		assertThat(builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, false))).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -109,15 +109,15 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
 		PreparedUpdate builtUpdate = testInstance.buildUpdate(toto.getColumns(), Arrays.asList(colA, colB));
-		assertEquals("update Toto set 'key' = ?, B = ? where 'key' = ? and B = ?", builtUpdate.getSQL());
+		assertThat(builtUpdate.getSQL()).isEqualTo("update Toto set 'key' = ?, B = ? where 'key' = ? and B = ?");
 
-		assertEquals(1, builtUpdate.getIndex(new UpwhereColumn<>(colA, true)));
-		assertEquals(2, builtUpdate.getIndex(new UpwhereColumn<>(colB, true)));
-		assertEquals(3, builtUpdate.getIndex(new UpwhereColumn<>(colA, false)));
+		assertThat(builtUpdate.getIndex(new UpwhereColumn<>(colA, true))).isEqualTo(1);
+		assertThat(builtUpdate.getIndex(new UpwhereColumn<>(colB, true))).isEqualTo(2);
+		assertThat(builtUpdate.getIndex(new UpwhereColumn<>(colA, false))).isEqualTo(3);
 		
-		assertEquals(stringBinder, builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, true)));
-		assertEquals(stringBinder, builtUpdate.getParameterBinder(new UpwhereColumn<>(colB, true)));
-		assertEquals(stringBinder, builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, false)));
+		assertThat(builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, true))).isEqualTo(stringBinder);
+		assertThat(builtUpdate.getParameterBinder(new UpwhereColumn<>(colB, true))).isEqualTo(stringBinder);
+		assertThat(builtUpdate.getParameterBinder(new UpwhereColumn<>(colA, false))).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -127,10 +127,10 @@ public class DMLGeneratorTest {
 		toto.addColumn("B", String.class);
 		
 		ColumnParameterizedSQL builtDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
-		assertEquals("delete from Toto where A = ?", builtDelete.getSQL());
+		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where A = ?");
 		
-		assertEquals(1, builtDelete.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtDelete.getParameterBinder(colA));
+		assertThat(builtDelete.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtDelete.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -151,10 +151,10 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
 		ColumnParameterizedSQL builtDelete = testInstance.buildDelete(toto, Arrays.asList(colA));
-		assertEquals("delete from Toto where 'key' = ?", builtDelete.getSQL());
+		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where 'key' = ?");
 		
-		assertEquals(1, builtDelete.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtDelete.getParameterBinder(colA));
+		assertThat(builtDelete.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtDelete.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -165,10 +165,10 @@ public class DMLGeneratorTest {
 		
 		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Collections.singleton(colA);
 		ColumnParameterizedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 2);
-		assertEquals("delete from Toto where A in (?, ?)", builtDelete.getSQL());
+		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where A in (?, ?)");
 		
-		assertEquals(1, builtDelete.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtDelete.getParameterBinder(colA));
+		assertThat(builtDelete.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtDelete.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -180,10 +180,10 @@ public class DMLGeneratorTest {
 		
 		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Arrays.asList(colA, colB);
 		ColumnParameterizedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 3);
-		assertEquals("delete from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))", builtDelete.getSQL());
+		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))");
 		
-		assertEquals(1, builtDelete.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtDelete.getParameterBinder(colA));
+		assertThat(builtDelete.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtDelete.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -205,10 +205,10 @@ public class DMLGeneratorTest {
 		
 		Set<Column<Table, Object>> singleton = (Set) Collections.singleton(colA);
 		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, singleton, 1);
-		assertEquals("delete from Toto where 'key' in (?)", builtDelete.getSQL());
+		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where 'key' in (?)");
 		
-		assertEquals(1, builtDelete.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtDelete.getParameterBinder(colA));
+		assertThat(builtDelete.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtDelete.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -218,10 +218,10 @@ public class DMLGeneratorTest {
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
-		assertEquals("select A, B from Toto where A = ? and B = ?", builtSelect.getSQL());
+		assertThat(builtSelect.getSQL()).isEqualTo("select A, B from Toto where A = ? and B = ?");
 		
-		assertEquals(1, builtSelect.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtSelect.getParameterBinder(colA));
+		assertThat(builtSelect.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtSelect.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -242,10 +242,10 @@ public class DMLGeneratorTest {
 		DMLGenerator testInstance = new DMLGenerator(currentDialect.getColumnBinderRegistry(), NoopSorter.INSTANCE, dmlNameProvider);
 		
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelect(toto, Arrays.asList(colA, colB), Arrays.asList(colA, colB));
-		assertEquals("select 'key', B from Toto where 'key' = ? and B = ?", builtSelect.getSQL());
+		assertThat(builtSelect.getSQL()).isEqualTo("select 'key', B from Toto where 'key' = ? and B = ?");
 		
-		assertEquals(1, builtSelect.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtSelect.getParameterBinder(colA));
+		assertThat(builtSelect.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtSelect.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -257,10 +257,10 @@ public class DMLGeneratorTest {
 		Iterable<Column<Table, Object>> selection = Arrays.asList(colA, colB);
 		Set<Column<Table, Object>> keys = Collections.singleton(colA);
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 5);
-		assertEquals("select A, B from Toto where A in (?, ?, ?, ?, ?)", builtSelect.getSQL());
+		assertThat(builtSelect.getSQL()).isEqualTo("select A, B from Toto where A in (?, ?, ?, ?, ?)");
 		
-		assertEquals(1, builtSelect.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtSelect.getParameterBinder(colA));
+		assertThat(builtSelect.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtSelect.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	
@@ -273,10 +273,10 @@ public class DMLGeneratorTest {
 		Iterable<Column<Table, Object>> selection = Arrays.asList(colA, colB);
 		Set<Column<Table, Object>> keys = Arrays.asSet(colA, colB);
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, selection, keys, 3);
-		assertEquals("select A, B from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))", builtSelect.getSQL());
+		assertThat(builtSelect.getSQL()).isEqualTo("select A, B from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))");
 		
-		assertEquals(1, builtSelect.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtSelect.getParameterBinder(colA));
+		assertThat(builtSelect.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtSelect.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	@Test
@@ -298,10 +298,10 @@ public class DMLGeneratorTest {
 		
 		Set<Column<Table, Object>> keys = Collections.singleton(colA);
 		ColumnParameterizedSQL builtSelect = testInstance.buildSelectByKey(toto, Arrays.asList(colA, colB), keys, 5);
-		assertEquals("select 'key', B from Toto where 'key' in (?, ?, ?, ?, ?)", builtSelect.getSQL());
+		assertThat(builtSelect.getSQL()).isEqualTo("select 'key', B from Toto where 'key' in (?, ?, ?, ?, ?)");
 		
-		assertEquals(1, builtSelect.getIndexes(colA)[0]);
-		assertEquals(stringBinder, builtSelect.getParameterBinder(colA));
+		assertThat(builtSelect.getIndexes(colA)[0]).isEqualTo(1);
+		assertThat(builtSelect.getParameterBinder(colA)).isEqualTo(stringBinder);
 	}
 	
 	

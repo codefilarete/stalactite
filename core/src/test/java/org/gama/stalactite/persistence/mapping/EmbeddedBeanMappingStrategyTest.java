@@ -18,13 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.reflection.Accessors.*;
 import static org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -68,7 +64,7 @@ public class EmbeddedBeanMappingStrategyTest {
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<Column<Table, Object>, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
-		assertEquals(expectedResult, valuesToInsert);
+		assertThat(valuesToInsert).isEqualTo(expectedResult);
 	}
 	
 	public static Object[][] testGetUpdateValues_diffOnlyData() {
@@ -93,8 +89,8 @@ public class EmbeddedBeanMappingStrategyTest {
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn<Table>, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, false);
 		
-		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
-		assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToInsert)).isEqualTo(expectedResult);
+		assertThat(UpwhereColumn.getWhereColumns(valuesToInsert)).isEqualTo(new HashMap<Column, Object>());
 	}
 	
 	public static Object[][] testGetUpdateValues_allColumnsData() {
@@ -111,8 +107,8 @@ public class EmbeddedBeanMappingStrategyTest {
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn<Table>, Object> valuesToInsert = testInstance.getUpdateValues(modified, unmodified, true);
 		
-		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToInsert));
-		assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToInsert));
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToInsert)).isEqualTo(expectedResult);
+		assertThat(UpwhereColumn.getWhereColumns(valuesToInsert)).isEqualTo(new HashMap<Column, Object>());
 	}
 	
 	@Test
@@ -122,9 +118,9 @@ public class EmbeddedBeanMappingStrategyTest {
 		row.put("b", 2);
 		row.put("c", 3);
 		Toto toto = testInstance.transform(row);
-		assertEquals(1, (int) toto.a);
-		assertEquals(2, (int) toto.b);
-		assertEquals(3, (int) toto.c);
+		assertThat((int) toto.a).isEqualTo(1);
+		assertThat((int) toto.b).isEqualTo(2);
+		assertThat((int) toto.c).isEqualTo(3);
 	}
 	
 	@Test
@@ -135,36 +131,36 @@ public class EmbeddedBeanMappingStrategyTest {
 		row.put("c", null);
 		EmbeddedBeanMappingStrategy<Toto, Table> testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 		Toto toto = testInstance.transform(row);
-		assertNotNull(toto);
-		assertNull(toto.a);
-		assertNull(toto.b);
-		assertNull(toto.c);
+		assertThat(toto).isNotNull();
+		assertThat(toto.a).isNull();
+		assertThat(toto.b).isNull();
+		assertThat(toto.c).isNull();
 	}
 	
 	@Test
 	public void testDefaultValueDeterminer() {
 		DefaultValueDeterminer testInstance = new DefaultValueDeterminer() {};
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(Toto.class, "a")), null));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "x")), 0));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "y")), false));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(Toto.class, "a")), null));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "x")), 0));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "y")), false));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setX)), 0));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setY)), false));
-		assertTrue(testInstance.isDefaultValue(new Duo<>(colA, new AccessorChainMutator(
-				Arrays.asList(accessorByMethodReference(Object::toString)), mutatorByMethodReference(String::concat))), null));
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(Toto.class, "a")), null)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "x")), 0)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "y")), false)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(Toto.class, "a")), null)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "x")), 0)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "y")), false)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setX)), 0)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setY)), false)).isTrue();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, new AccessorChainMutator(
+				Arrays.asList(accessorByMethodReference(Object::toString)), mutatorByMethodReference(String::concat))), null)).isTrue();
 		
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(Toto.class, "a")), 42));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "x")), 42));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "y")), true));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(Toto.class, "a")), 42));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "x")), 42));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "y")), true));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setX)), 42));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setY)), true));
-		assertFalse(testInstance.isDefaultValue(new Duo<>(colA, new AccessorChainMutator(
-				Arrays.asList(accessorByMethodReference(Object::toString)), mutatorByMethodReference(String::concat))), ""));
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(Toto.class, "a")), 42)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "x")), 42)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, propertyAccessor(ClassWithPrimitiveTypeProperties.class, "y")), true)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(Toto.class, "a")), 42)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "x")), 42)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByField(ClassWithPrimitiveTypeProperties.class, "y")), true)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setX)), 42)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, mutatorByMethodReference(ClassWithPrimitiveTypeProperties::setY)), true)).isFalse();
+		assertThat(testInstance.isDefaultValue(new Duo<>(colA, new AccessorChainMutator(
+				Arrays.asList(accessorByMethodReference(Object::toString)), mutatorByMethodReference(String::concat))), "")).isFalse();
 		
 	}
 	
@@ -179,17 +175,17 @@ public class EmbeddedBeanMappingStrategyTest {
 				.add(propertyAccessor(Toto.class, "c"), colC);
 		EmbeddedBeanMappingStrategy testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 		// primary key shall not be written by this class
-		assertTrue(testInstance.getInsertableColumns().contains(colA));
-		assertFalse(testInstance.getUpdatableColumns().contains(colA));
-		assertTrue(testInstance.getRowTransformer().getColumnToMember().containsKey(colA));
+		assertThat(testInstance.getInsertableColumns().contains(colA)).isTrue();
+		assertThat(testInstance.getUpdatableColumns().contains(colA)).isFalse();
+		assertThat(testInstance.getRowTransformer().getColumnToMember().containsKey(colA)).isTrue();
 		// generated keys shall not be written by this class
-		assertFalse(testInstance.getInsertableColumns().contains(colB));
-		assertFalse(testInstance.getUpdatableColumns().contains(colB));
-		assertTrue(testInstance.getRowTransformer().getColumnToMember().containsKey(colB));
+		assertThat(testInstance.getInsertableColumns().contains(colB)).isFalse();
+		assertThat(testInstance.getUpdatableColumns().contains(colB)).isFalse();
+		assertThat(testInstance.getRowTransformer().getColumnToMember().containsKey(colB)).isTrue();
 		// standard columns shall be written by this class
-		assertTrue(testInstance.getInsertableColumns().contains(colC));
-		assertTrue(testInstance.getUpdatableColumns().contains(colC));
-		assertTrue(testInstance.getRowTransformer().getColumnToMember().containsKey(colC));
+		assertThat(testInstance.getInsertableColumns().contains(colC)).isTrue();
+		assertThat(testInstance.getUpdatableColumns().contains(colC)).isTrue();
+		assertThat(testInstance.getRowTransformer().getColumnToMember().containsKey(colC)).isTrue();
 	}
 	
 	private static class Toto {

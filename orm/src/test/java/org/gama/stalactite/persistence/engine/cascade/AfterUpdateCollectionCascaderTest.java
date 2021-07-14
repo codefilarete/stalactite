@@ -25,7 +25,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -91,9 +91,9 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 				new Duo<>(triggeringInstance2_modified, triggeringInstance2)), true);
 		
 		// check actions are done in good order
-		assertEquals(Arrays.asList("getTargets", "getTargets", "postTargetUpdate"), actions);
+		assertThat(actions).isEqualTo(Arrays.asList("getTargets", "getTargets", "postTargetUpdate"));
 		// check triggered targets are those expected
-		assertEquals(Arrays.asList(new Duo<>(triggeringInstance1_modified.tata, triggeringInstance1.tata),
-				new Duo<>(triggeringInstance2_modified.tata, triggeringInstance2.tata)), triggeredTarget);
+		assertThat(triggeredTarget).isEqualTo(Arrays.asList(new Duo<>(triggeringInstance1_modified.tata, triggeringInstance1.tata),
+				new Duo<>(triggeringInstance2_modified.tata, triggeringInstance2.tata)));
 	}
 }

@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Guillaume Mary
@@ -31,7 +31,7 @@ public class JavaTypeToSqlTypeMappingTest {
 	@ParameterizedTest
 	@MethodSource("testGetTypeName_withSingleton")
 	public void testGetTypeName_withSingleton(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
-		assertEquals(expected, testInstance.getTypeName(javaType, size));
+		assertThat(testInstance.getTypeName(javaType, size)).isEqualTo(expected);
 	}
 	
 	public static Object[][] testGetTypeName() {
@@ -58,13 +58,13 @@ public class JavaTypeToSqlTypeMappingTest {
 	@ParameterizedTest
 	@MethodSource("testGetTypeName")
 	public void testGetTypeName(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
-		assertEquals(expected, testInstance.getTypeName(javaType, size));
+		assertThat(testInstance.getTypeName(javaType, size)).isEqualTo(expected);
 	}
 	
 	@Test
 	public void testGetTypeName_unkonwnType_exceptionIsThrown() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
-		assertThrows(BindingException.class, () -> testInstance.getTypeName(Object.class, null));
+		assertThatExceptionOfType(BindingException.class).isThrownBy(() -> testInstance.getTypeName(Object.class, null));
 	}
 	
 	public static Object[][] testGetTypeName_column() {
@@ -90,13 +90,13 @@ public class JavaTypeToSqlTypeMappingTest {
 	@ParameterizedTest
 	@MethodSource("testGetTypeName_column")
 	public void testGetTypeName_column(JavaTypeToSqlTypeMapping testInstance, Column column, String expected) {
-		assertEquals(expected, testInstance.getTypeName(column));
+		assertThat(testInstance.getTypeName(column)).isEqualTo(expected);
 	}
 	
 	@Test
 	public void testGetTypeName_columnWithNullType_exceptionIsThrown() {
 		Table toto = new Table("toto");
 		// because we can't create a column with null type, if possible addd a safe guard in getTypeName
-		assertThrows(NullPointerException.class, () -> toto.addColumn("a", null));
+		assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> toto.addColumn("a", null));
 	}
 }

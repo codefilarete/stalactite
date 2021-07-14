@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.assertj.core.api.Assertions;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.model.Country;
@@ -28,7 +27,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -164,7 +163,7 @@ class EntityTreeInflaterTest {
 		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity111, entity1));
 		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity111, entity1, root));
 		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity111, entity1, root, root));
-		assertEquals(expectedEntityStackHistory, entityStackHistory);
+		assertThat(entityStackHistory).isEqualTo(expectedEntityStackHistory);
 	}
 	
 	@Test
@@ -217,7 +216,7 @@ class EntityTreeInflaterTest {
 		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity1));
 		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity1, root));
 		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity1, root, root));
-		assertEquals(expectedEntityStackHistory, entityStackHistory);
+		assertThat(entityStackHistory).isEqualTo(expectedEntityStackHistory);
 	}
 	
 	/**
@@ -240,21 +239,21 @@ class EntityTreeInflaterTest {
 		
 		@Test
 		void equals_verySameInstance() {
-			Assertions.assertThat(reference).isEqualTo(reference);
+			assertThat(reference).isEqualTo(reference);
 		}
 		
 		@Test
 		void equals_instanceWithSameValues() {
 			// all informations are the same => equality is true
 			RelationIdentifier id2 = new RelationIdentifier(rootEntityReference, Entity1.class, 1, rowConsumerReference);
-			Assertions.assertThat(reference).isEqualTo(id2);
+			assertThat(reference).isEqualTo(id2);
 		}
 		
 		@Test
 		void equals_instancesDifferOnIdentifier() {
 			// instances differ on identifier => equality is false
 			RelationIdentifier id3 = new RelationIdentifier(rootEntityReference, Entity1.class, 2, rowConsumerReference);
-			Assertions.assertThat(reference).isNotEqualTo(id3);
+			assertThat(reference).isNotEqualTo(id3);
 		}
 		
 		@Test
@@ -266,21 +265,21 @@ class EntityTreeInflaterTest {
 					return true;
 				}
 			}, rowConsumerReference);
-			Assertions.assertThat(id7).isEqualTo(reference);
+			assertThat(id7).isEqualTo(reference);
 		}
 		
 		@Test
 		void equals_instancesDifferOnRoot() {
 			// instances differ on root => equality is false
 			RelationIdentifier id4 = new RelationIdentifier(new Object(), Entity1.class, 1, rowConsumerReference);
-			Assertions.assertThat(reference).isNotEqualTo(id4);
+			assertThat(reference).isNotEqualTo(id4);
 		}
 		
 		@Test
 		void equals_instancesDifferOnEntityType() {
 			// instances differ on entity type => equality is false
 			RelationIdentifier id5 = new RelationIdentifier(rootEntityReference, Entity2.class, 1, rowConsumerReference);
-			Assertions.assertThat(reference).isNotEqualTo(id5);
+			assertThat(reference).isNotEqualTo(id5);
 		}
 		
 		@Test
@@ -288,40 +287,40 @@ class EntityTreeInflaterTest {
 			// instances differ on consumer type => equality is false
 			RelationJoinRowConsumer rowConsumer2 = mock(RelationJoinRowConsumer.class);
 			RelationIdentifier id6 = new RelationIdentifier(rootEntityReference, Entity1.class, 1, rowConsumer2);
-			Assertions.assertThat(reference).isNotEqualTo(id6);
+			assertThat(reference).isNotEqualTo(id6);
 		}
 		
 		@Test
 		void hashCode_verySameInstance() {
-			Assertions.assertThat(reference.hashCode()).isEqualTo(reference.hashCode());
+			assertThat(reference.hashCode()).isEqualTo(reference.hashCode());
 		}
 		
 		@Test
 		void hashCode_instanceWithSameValues() {
 			// all informations are the same => equality is true
 			RelationIdentifier id2 = new RelationIdentifier(rootEntityReference, Entity1.class, 1, rowConsumerReference);
-			Assertions.assertThat(reference.hashCode()).isEqualTo(id2.hashCode());
+			assertThat(reference.hashCode()).isEqualTo(id2.hashCode());
 		}
 		
 		@Test
 		void hashCode_instancesDifferOnIdentifier() {
 			// instances differ on identifier => equality is false
 			RelationIdentifier id3 = new RelationIdentifier(rootEntityReference, Entity1.class, 2, rowConsumerReference);
-			Assertions.assertThat(reference.hashCode()).isNotEqualTo(id3.hashCode());
+			assertThat(reference.hashCode()).isNotEqualTo(id3.hashCode());
 		}
 		
 		@Test
 		void hashCode_instancesDifferOnRoot() {
 			// instances differ on root => equality is false
 			RelationIdentifier id4 = new RelationIdentifier(new Object(), Entity1.class, 1, rowConsumerReference);
-			Assertions.assertThat(reference.hashCode()).isNotEqualTo(id4.hashCode());
+			assertThat(reference.hashCode()).isNotEqualTo(id4.hashCode());
 		}
 		
 		@Test
 		void hashCode_instancesDifferOnEntityType() {
 			// instances differ on entity type => equality is false
 			RelationIdentifier id5 = new RelationIdentifier(rootEntityReference, Entity2.class, 1, rowConsumerReference);
-			Assertions.assertThat(reference.hashCode()).isNotEqualTo(id5.hashCode());
+			assertThat(reference.hashCode()).isNotEqualTo(id5.hashCode());
 		}
 		
 		@Test
@@ -329,7 +328,7 @@ class EntityTreeInflaterTest {
 			// instances differ on consumer type => equality is false
 			RelationJoinRowConsumer rowConsumer2 = mock(RelationJoinRowConsumer.class);
 			RelationIdentifier id6 = new RelationIdentifier(rootEntityReference, Entity1.class, 1, rowConsumer2);
-			Assertions.assertThat(reference.hashCode()).isNotEqualTo(id6.hashCode());
+			assertThat(reference.hashCode()).isNotEqualTo(id6.hashCode());
 		}
 	}
 	

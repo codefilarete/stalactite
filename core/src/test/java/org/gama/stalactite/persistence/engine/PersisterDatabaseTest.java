@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -113,7 +113,7 @@ public class PersisterDatabaseTest {
 		Toto toBeUpdated = new Toto(persistedInstanceID, 11, 111);
 		int rowCount = testInstance.persist(Arrays.asList(toBeInserted, toBeUpdated));
 		transactionManager.getCurrentConnection().commit();
-		assertEquals(2, rowCount);
+		assertThat(rowCount).isEqualTo(2);
 		
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
 			@Override
@@ -124,10 +124,9 @@ public class PersisterDatabaseTest {
 		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		List<Map> result = Iterables.copy(resultSetIterator);
-		assertEquals(Arrays.asList(
+		assertThat(result).isEqualTo(Arrays.asList(
 				Maps.asMap("a", 1).add("b", 11).add("c", 111),
-				Maps.asMap("a", 2).add("b", 20).add("c", 200)),
-				result);
+				Maps.asMap("a", 2).add("b", 20).add("c", 200)));
 		connection.commit();
 	}
 	
@@ -151,7 +150,7 @@ public class PersisterDatabaseTest {
 		Toto toBeInserted = new Toto(1, 10, 100);
 		int rowCount = testInstance.insert(toBeInserted);
 		transactionManager.getCurrentConnection().commit();
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		
 		Connection connection = dataSource.getConnection();
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
@@ -163,7 +162,7 @@ public class PersisterDatabaseTest {
 		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		List<Map> result = Iterables.copy(resultSetIterator);
-		assertEquals(Arrays.asList(Maps.asMap("a", 1).add("b", 10).add("c", 100)), result);
+		assertThat(result).isEqualTo(Arrays.asList(Maps.asMap("a", 1).add("b", 10).add("c", 100)));
 		connection.commit();
 	}
 	
@@ -192,7 +191,7 @@ public class PersisterDatabaseTest {
 		
 		int rowCount = testInstance.update(new Toto(persistedInstanceID, 11, 111), new Toto(persistedInstanceID, 10, 100), true);
 		transactionManager.getCurrentConnection().commit();
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
 			@Override
@@ -203,20 +202,18 @@ public class PersisterDatabaseTest {
 		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		List<Map> result = Iterables.copy(resultSetIterator);
-		assertEquals(Arrays.asList(
-				Maps.asMap("a", 1).add("b", 11).add("c", 111)),
-				result);
+		assertThat(result).isEqualTo(Arrays.asList(
+				Maps.asMap("a", 1).add("b", 11).add("c", 111)));
 		connection.commit();
 		
 		rowCount = testInstance.updateById(new Toto(persistedInstanceID, 12, 122));
 		transactionManager.getCurrentConnection().commit();
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		resultSet = connection.prepareStatement("select * from Toto").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		result = Iterables.copy(resultSetIterator);
-		assertEquals(Arrays.asList(
-				Maps.asMap("a", 1).add("b", 12).add("c", 122)),
-				result);
+		assertThat(result).isEqualTo(Arrays.asList(
+				Maps.asMap("a", 1).add("b", 12).add("c", 122)));
 		connection.commit();
 	}
 	
@@ -245,7 +242,7 @@ public class PersisterDatabaseTest {
 		
 		int rowCount = testInstance.delete(new Toto(persistedInstanceID, 11, 111));
 		transactionManager.getCurrentConnection().commit();
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
 			@Override
@@ -257,7 +254,7 @@ public class PersisterDatabaseTest {
 		resultSetIterator.setResultSet(resultSet);
 		List<Map> result = Iterables.copy(resultSetIterator);
 		// Result must be empty
-		assertEquals(Arrays.asList(), result);
+		assertThat(result).isEqualTo(Arrays.asList());
 		connection.commit();
 		
 		// we simulate a database state to test entity update
@@ -267,11 +264,11 @@ public class PersisterDatabaseTest {
 		
 		rowCount = testInstance.deleteById(new Toto(persistedInstanceID, 12, 122));
 		transactionManager.getCurrentConnection().commit();
-		assertEquals(1, rowCount);
+		assertThat(rowCount).isEqualTo(1);
 		resultSet = connection.prepareStatement("select * from Toto").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		result = Iterables.copy(resultSetIterator);
-		assertEquals(Arrays.asList(), result);
+		assertThat(result).isEqualTo(Arrays.asList());
 		connection.commit();
 	}
 	
@@ -299,9 +296,9 @@ public class PersisterDatabaseTest {
 		connection.commit();
 		List<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
-		assertEquals(1, (Object) t.a);
-		assertEquals(10, (Object) t.b);
-		assertEquals(100, (Object) t.c);
+		assertThat((Object) t.a).isEqualTo(1);
+		assertThat((Object) t.b).isEqualTo(10);
+		assertThat((Object) t.c).isEqualTo(100);
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
 		
 		List<Toto> expectedResult = Arrays.asList(
@@ -309,7 +306,7 @@ public class PersisterDatabaseTest {
 				new Toto(3, 30, 300),
 				new Toto(4, 40, 400));
 		
-		assertEquals(expectedResult.toString(), totos.toString());
+		assertThat(totos.toString()).isEqualTo(expectedResult.toString());
 	}
 	
 	@ParameterizedTest
@@ -332,39 +329,39 @@ public class PersisterDatabaseTest {
 		
 		// check inserted row count
 		int insertedRowCount = testInstance.insert(new Toto(1, 10, 100));
-		assertEquals(1, insertedRowCount);
+		assertThat(insertedRowCount).isEqualTo(1);
 		insertedRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
-		assertEquals(3, insertedRowCount);
+		assertThat(insertedRowCount).isEqualTo(3);
 		
 		// check updated row count
 		int updatedByIdRowCount = testInstance.updateById(Arrays.asList(new Toto(1, 10, 100)));
-		assertEquals(1, updatedByIdRowCount);
+		assertThat(updatedByIdRowCount).isEqualTo(1);
 		updatedByIdRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
-		assertEquals(3, updatedByIdRowCount);
+		assertThat(updatedByIdRowCount).isEqualTo(3);
 		updatedByIdRowCount = testInstance.updateById(Arrays.asList(new Toto(-1, 10, 100)));
-		assertEquals(0, updatedByIdRowCount);
+		assertThat(updatedByIdRowCount).isEqualTo(0);
 		
 		// check updated row count
 		int updatedFullyRowCount = testInstance.update(Arrays.asList(
 				new Duo<>(new Toto(1, 10, 100), new Toto(1, 10, 101))), true);
-		assertEquals(1, updatedFullyRowCount);
+		assertThat(updatedFullyRowCount).isEqualTo(1);
 		updatedFullyRowCount = testInstance.update(Arrays.asList(
 				new Duo<>(new Toto(1, 10, 101), new Toto(1, 10, 101))), true);
-		assertEquals(0, updatedFullyRowCount);
+		assertThat(updatedFullyRowCount).isEqualTo(0);
 		updatedFullyRowCount = testInstance.update(Arrays.asList(
 				new Duo<>(new Toto(2, 20, 200), new Toto(2, 20, 201)),
 				new Duo<>(new Toto(3, 30, 300), new Toto(3, 30, 301)),
 				new Duo<>(new Toto(4, 40, 400), new Toto(4, 40, 401))), true);
-		assertEquals(3, updatedFullyRowCount);
+		assertThat(updatedFullyRowCount).isEqualTo(3);
 		
 		// check deleted row count
 		int deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100)));
-		assertEquals(1, deleteRowCount);
+		assertThat(deleteRowCount).isEqualTo(1);
 		testInstance.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100), new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
-		assertEquals(3, deleteRowCount);
+		assertThat(deleteRowCount).isEqualTo(3);
 		deleteRowCount = testInstance.delete(Arrays.asList(new Toto(1, 10, 100), new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
-		assertEquals(0, deleteRowCount);
+		assertThat(deleteRowCount).isEqualTo(0);
 	}
 	
 	static class Toto {

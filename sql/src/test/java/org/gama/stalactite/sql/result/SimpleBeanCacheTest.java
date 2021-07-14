@@ -5,7 +5,7 @@ import java.util.function.Function;
 import org.gama.lang.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -21,16 +21,16 @@ class SimpleBeanCacheTest {
 			return "hello " + key;
 		};
 		String s = testInstance.computeIfAbsent(String.class, 1, capturingFactory);
-		assertEquals("hello 1", s);
+		assertThat(s).isEqualTo("hello 1");
 		
 		// a second call with same key should hit the cache (no factory invokation) and give same result
 		s = testInstance.computeIfAbsent(String.class, 1, capturingFactory);
-		assertEquals("hello 1", s);
-		assertEquals(1, factoryCallCounter.getValue());
+		assertThat(s).isEqualTo("hello 1");
+		assertThat(factoryCallCounter.getValue()).isEqualTo(1);
 		
 		s = testInstance.computeIfAbsent(String.class, 2, capturingFactory);
-		assertEquals("hello 2", s);
-		assertEquals(2, factoryCallCounter.getValue());
+		assertThat(s).isEqualTo("hello 2");
+		assertThat(factoryCallCounter.getValue()).isEqualTo(2);
 	}
 	
 	@Test
@@ -43,11 +43,11 @@ class SimpleBeanCacheTest {
 		};
 		String s = testInstance.computeIfAbsent(String.class, new Object[] { 1, 2 }, capturingFactory);
 		// just to be sure ...
-		assertEquals("hello", s);
+		assertThat(s).isEqualTo("hello");
 		// a second call with same key should hit the cache (no factory invokation) and give same result
 		s = testInstance.computeIfAbsent(String.class, new Object[] { 1, 2 }, capturingFactory);
-		assertEquals("hello", s);
-		assertEquals(1, factoryCallCounter.getValue());
+		assertThat(s).isEqualTo("hello");
+		assertThat(factoryCallCounter.getValue()).isEqualTo(1);
 	}
 	
 }

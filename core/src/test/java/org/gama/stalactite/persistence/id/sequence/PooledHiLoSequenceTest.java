@@ -18,7 +18,7 @@ import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PooledHiLoSequenceTest {
 	
@@ -51,7 +51,7 @@ public class PooledHiLoSequenceTest {
 		
 		// we check that we can increment from an empty database
 		for (int i = 0; i < 45; i++) {
-			assertEquals(i, testInstance.next().intValue());
+			assertThat(testInstance.next().intValue()).isEqualTo(i);
 		}
 		
 		SequenceStorageOptions sequenceStorageOptions = totoSequenceOptions.getStorageOptions();
@@ -63,37 +63,37 @@ public class PooledHiLoSequenceTest {
 		RowIterator sequenceValues = new RowIterator(sequenceValueReader.executeQuery(), Maps.asMap(sequenceStorageOptions.getValueColumn(), DefaultResultSetReaders.INTEGER_PRIMITIVE_READER));
 		sequenceValues.hasNext();
 		Row row = sequenceValues.next();
-		assertEquals(50, row.get(sequenceStorageOptions.getValueColumn()));
+		assertThat(row.get(sequenceStorageOptions.getValueColumn())).isEqualTo(50);
 		
 		// we check that we can increment from a database with a new sequence in the same table
 		PooledHiLoSequenceOptions tataSequenceOptions = new PooledHiLoSequenceOptions(10, "Tata", SequenceStorageOptions.DEFAULT);
 		testInstance = new PooledHiLoSequence(tataSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
 		for (int i = 0; i < 45; i++) {
-			assertEquals(i, testInstance.next().intValue());
+			assertThat(testInstance.next().intValue()).isEqualTo(i);
 		}
 		
 		// we check that we can increment from a database with an existing sequence
 		testInstance = new PooledHiLoSequence(totoSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
-		assertEquals(50, testInstance.next().intValue());
+		assertThat(testInstance.next().intValue()).isEqualTo(50);
 		// after first access, sequence must be incremented
 		sequenceValueReader.setString(1, totoSequenceOptions.getSequenceName());
 		sequenceValues = new RowIterator(sequenceValueReader.executeQuery(), Maps.asMap(sequenceStorageOptions.getValueColumn(), DefaultResultSetReaders.INTEGER_PRIMITIVE_READER));
 		sequenceValues.hasNext();
 		row = sequenceValues.next();
 		// previous call ends at 50, so first increment mus put it to 50
-		assertEquals(60, row.get(sequenceStorageOptions.getValueColumn()));
+		assertThat(row.get(sequenceStorageOptions.getValueColumn())).isEqualTo(60);
 
 		for (int i = 1; i < 45; i++) {
 			// 50 because previous call to Toto sequence had a pool size of 10, and its last call was 45. So the external state was 50.
 			// (upper bound of 45 by step of 10)
-			assertEquals(50+i, testInstance.next().intValue());
+			assertThat(testInstance.next().intValue()).isEqualTo(50 + i);
 		}
 		
 		// we check that we can increment a sequence from a different initial value
 		PooledHiLoSequenceOptions titiSequenceOptions = new PooledHiLoSequenceOptions(10, "Titi", SequenceStorageOptions.DEFAULT, -42);
 		testInstance = new PooledHiLoSequence(titiSequenceOptions, dialect, connectionProvider, jdbcBatchSize);
 		for (int i = -42; i < -25; i++) {
-			assertEquals(i, testInstance.next().intValue());
+			assertThat(testInstance.next().intValue()).isEqualTo(i);
 		}
 	}
 }

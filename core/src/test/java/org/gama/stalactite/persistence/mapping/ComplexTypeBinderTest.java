@@ -24,8 +24,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -72,16 +71,16 @@ public class ComplexTypeBinderTest {
 		
 		// reading
 		Toto result = totoPersister.select(1);
-		assertEquals(Arrays.asList("a", "b"), result.myList);
+		assertThat(result.myList).isEqualTo(Arrays.asList("a", "b"));
 		
 		// a more low level reading to see if it's correctly persisted or can be used directly
 		ResultSet resultSet = connectionProvider.getCurrentConnection().prepareStatement("select * from Toto").executeQuery();
 		RowIterator rowIterator = new RowIterator(resultSet, ParameterBinderIndex.fromMap(Maps.asMap("myList", testInstance)));
 		
 		// Result must be decoded as a List
-		assertTrue(rowIterator.hasNext());
+		assertThat(rowIterator.hasNext()).isTrue();
 		Row singleLine = rowIterator.next();
-		assertEquals(Arrays.asList("a", "b"), singleLine.get("myList"));
+		assertThat(singleLine.get("myList")).isEqualTo(Arrays.asList("a", "b"));
 	}
 	
 	private static class Toto {

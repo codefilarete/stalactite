@@ -1,6 +1,7 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
-import org.gama.lang.test.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.MappingEase;
 import org.gama.stalactite.persistence.engine.model.Color;
@@ -10,8 +11,9 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author Guillaume Mary
@@ -28,7 +30,7 @@ class BeanMappingBuilderTest {
 				.add(Color::getRgb))
 				.override(Color::getRgb, colorTable);
 		Table result = BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
-		assertSame(expectedResult, result);
+		assertThat(result).isSameAs(expectedResult);
 	}
 	
 	@Test
@@ -44,9 +46,9 @@ class BeanMappingBuilderTest {
 						.add(Person::getVersion))
 				.override(Person::getName, nameColumn)
 				.override(Person::getVersion, versionColumn);
-		Assertions.assertThrows(() -> BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()),
-				Assertions.hasExceptionInCauses(MappingConfigurationException.class)
-						.andProjection(Assertions.hasMessage("Property override doesn't target main table : o.g.s.p.e.m.Person::getName")));
+		assertThatThrownBy(() -> BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Property override doesn't target main table : o.g.s.p.e.m.Person::getName");
 	}
 	
 	@Test
@@ -59,7 +61,7 @@ class BeanMappingBuilderTest {
 				.add(Person::getName))
 				.override(Person::getName, nameColumn);
 		Table result = BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
-		assertSame(expectedResult, result);
+		assertThat(result).isSameAs(expectedResult);
 	}
 	
 }

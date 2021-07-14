@@ -2,7 +2,7 @@ package org.gama.stalactite.sql.spring;
 
 import javax.sql.DataSource;
 
-import org.gama.lang.test.Assertions;
+import org.gama.lang.exception.Exceptions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor.JdbcOperation;
 import org.junit.jupiter.api.Test;
@@ -13,6 +13,8 @@ import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
@@ -25,8 +27,9 @@ class PlatformTransactionManagerConnectionProviderTest {
 	
 	@Test
 	void givenTransactionManagerIsNotSupported_throwException() {
-		Assertions.assertThrows(() -> new PlatformTransactionManagerConnectionProvider(mock(PlatformTransactionManager.class)),
-				Assertions.hasExceptionInCauses(UnsupportedOperationException.class));
+		assertThatThrownBy(() -> new PlatformTransactionManagerConnectionProvider(mock(PlatformTransactionManager.class)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class))
+				.isNotNull();
 	}
 	
 	@Test
@@ -43,7 +46,7 @@ class PlatformTransactionManagerConnectionProviderTest {
 		// When
 		testInstance.getCurrentConnection();
 		// Then
-		Assertions.assertEquals(1, getDataSourceInvokationCounter.getValue());
+		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
 	}
 	
 	@Test
@@ -61,7 +64,7 @@ class PlatformTransactionManagerConnectionProviderTest {
 		// When
 		testInstance.getCurrentConnection();
 		// Then
-		Assertions.assertEquals(1, getDataSourceInvokationCounter.getValue());
+		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
 	}
 	
 	@Test
@@ -79,7 +82,7 @@ class PlatformTransactionManagerConnectionProviderTest {
 		// When
 		testInstance.getCurrentConnection();
 		// Then
-		Assertions.assertEquals(1, getDataSourceInvokationCounter.getValue());
+		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
 	}
 	
 	@Test
@@ -108,7 +111,9 @@ class PlatformTransactionManagerConnectionProviderTest {
 		JdbcOperation jdbcOperationMock = mock(JdbcOperation.class);
 		doAnswer(new ThrowsException(new RuntimeException())).when(jdbcOperationMock).execute();
 		
-		Assertions.assertThrows(() -> testInstance.executeInNewTransaction(jdbcOperationMock), Assertions.hasExceptionInCauses(RuntimeException.class));
+		assertThatThrownBy(() -> testInstance.executeInNewTransaction(jdbcOperationMock))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class))
+				.isNotNull();
 		
 		// Then
 		InOrder inOrder = inOrder(jdbcOperationMock, transactionManagerMock);

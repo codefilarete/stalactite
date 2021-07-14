@@ -26,9 +26,7 @@ import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,11 +42,11 @@ class OptimizedUpdatePersisterTest {
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
 		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
 				new ConnectionConfigurationSupport(new TransactionAwareConnectionProvider(connectionProviderMock), 10)).getConnectionProvider();
-		assertTrue(testInstance instanceof RollbackObserver);
+		assertThat(testInstance instanceof RollbackObserver).isTrue();
 		
 		testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
 				new ConnectionConfigurationSupport(new JdbcConnectionProvider(mock(DataSource.class)), 10)).getConnectionProvider();
-		assertFalse(testInstance instanceof RollbackObserver);
+		assertThat(testInstance instanceof RollbackObserver).isFalse();
 	}
 	
 	@Test
@@ -104,6 +102,6 @@ class OptimizedUpdatePersisterTest {
 		Mockito.verify(preparedStatementMock).executeQuery();
 		OptimizedUpdatePersister.QUERY_CACHE.remove();
 		
-		assertEquals(cachedValues, data);
+		assertThat(data).isEqualTo(cachedValues);
 	}
 }

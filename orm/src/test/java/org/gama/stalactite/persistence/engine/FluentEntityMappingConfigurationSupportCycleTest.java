@@ -38,9 +38,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author Guillaume Mary
@@ -104,23 +103,23 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener()).isEqualTo(johnDo.getHouse().getGardener());
 			
 			Person newGardener = new Person(999);
 			newGardener.setName("Dandelion");
 			johnDo.getHouse().setGardener(newGardener);
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(999, loadedPerson.getHouse().getGardener().getId().getSurrogate());
-			assertEquals("Dandelion", loadedPerson.getHouse().getGardener().getName());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
 			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
-			assertEquals(Collections.emptyList(), allPersons);
+			assertThat(allPersons).isEqualTo(Collections.emptyList());
 		}
 		
 		/**
@@ -161,23 +160,23 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener()).isEqualTo(johnDo.getHouse().getGardener());
 			
 			Person newGardener = new Person(999);
 			newGardener.setName("Dandelion");
 			johnDo.getHouse().setGardener(newGardener);
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(999, loadedPerson.getHouse().getGardener().getId().getSurrogate());
-			assertEquals("Dandelion", loadedPerson.getHouse().getGardener().getName());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
 			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
-			assertEquals(Collections.emptyList(), allPersons);
+			assertThat(allPersons).isEqualTo(Collections.emptyList());
 		}
 		
 		/**
@@ -205,7 +204,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+			assertThat(loadedPerson.getPartner()).isEqualTo(johnDo.getPartner());
 		}
 		
 		/**
@@ -235,8 +234,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo, loadedPerson);
-			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
+			assertThat(loadedPerson).isEqualTo(johnDo);
+			assertThat(loadedPerson.getPartner()).isEqualTo(johnDo.getPartner());
 		}
 		
 		/**
@@ -280,25 +279,25 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getPartner()).isEqualTo(johnDo.getPartner());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener()).isEqualTo(johnDo.getHouse().getGardener());
 			
 			Person newGardener = new Person(999);
 			newGardener.setName("Dandelion");
 			johnDo.getHouse().setGardener(newGardener);
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(999, loadedPerson.getHouse().getGardener().getId().getSurrogate());
-			assertEquals("Dandelion", loadedPerson.getHouse().getGardener().getName());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
 			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
 			// previous partner is the only Person remainig because we asked for orphan removal
-			assertEquals(Arrays.asList(666L), allPersons);
+			assertThat(allPersons).isEqualTo(Arrays.asList(666L));
 		}
 		
 		/**
@@ -345,25 +344,25 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getPartner()).isEqualTo(johnDo.getPartner());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener()).isEqualTo(johnDo.getHouse().getGardener());
 			
 			Person newGardener = new Person(999);
 			newGardener.setName("Dandelion");
 			johnDo.getHouse().setGardener(newGardener);
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(999, loadedPerson.getHouse().getGardener().getId().getSurrogate());
-			assertEquals("Dandelion", loadedPerson.getHouse().getGardener().getName());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
 			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
 			// previous partner is the only Person remainig because we asked for orphan removal
-			assertEquals(Arrays.asList(666L), allPersons);
+			assertThat(allPersons).isEqualTo(Arrays.asList(666L));
 		}
 		
 		/**
@@ -407,11 +406,11 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getPartner()).isEqualTo(johnDo.getPartner());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener()).isEqualTo(johnDo.getHouse().getGardener());
 			// partner and gardeneer must be exactly same instance since its a cycle
-			assertSame(loadedPerson.getPartner(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getHouse().getGardener()).isSameAs(loadedPerson.getPartner());
 		}
 		
 		/**
@@ -458,11 +457,11 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getPartner()).isEqualTo(johnDo.getPartner());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse().getGardener()).isEqualTo(johnDo.getHouse().getGardener());
 			// partner and gardeneer must be exactly same instance since its a cycle
-			assertSame(loadedPerson.getPartner(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getHouse().getGardener()).isSameAs(loadedPerson.getPartner());
 		}
 		
 		/**
@@ -506,13 +505,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse1(), loadedPerson.getHouse1());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse1()).isEqualTo(johnDo.getHouse1());
 			
 			johnDo.getHouse().setName("new main house name");
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
 		}
 		
 		/**
@@ -568,26 +567,26 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getPartner(), loadedPerson.getPartner());
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(johnDo.getHouse1(), loadedPerson.getHouse1());
-			assertEquals(johnDo.getHouse().getGardener(), loadedPerson.getHouse().getGardener());
+			assertThat(loadedPerson.getPartner()).isEqualTo(johnDo.getPartner());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse1()).isEqualTo(johnDo.getHouse1());
+			assertThat(loadedPerson.getHouse().getGardener()).isEqualTo(johnDo.getHouse().getGardener());
 			
 			Person newGardener = new Person(new PersistedIdentifier<>(999L));
 			newGardener.setName("Dandelion");
 			johnDo.getHouse1().setGardener(newGardener);
 			personPersister.update(johnDo, loadedPerson, true);
 			loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getHouse(), loadedPerson.getHouse());
-			assertEquals(999, loadedPerson.getHouse1().getGardener().getId().getSurrogate());
-			assertEquals("Dandelion", loadedPerson.getHouse1().getGardener().getName());
+			assertThat(loadedPerson.getHouse()).isEqualTo(johnDo.getHouse());
+			assertThat(loadedPerson.getHouse1().getGardener().getId().getSurrogate()).isEqualTo(999);
+			assertThat(loadedPerson.getHouse1().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
 			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
 			// previous partner is the only Person remainig because we asked for orphan removal
-			assertEquals(Arrays.asList(666L), allPersons);
+			assertThat(allPersons).isEqualTo(Arrays.asList(666L));
 		}
 	}
 	
@@ -626,7 +625,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getChildren(), loadedPerson.getChildren());
+			assertThat(loadedPerson.getChildren()).isEqualTo(johnDo.getChildren());
 		}
 		
 		/**
@@ -650,7 +649,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			assertEquals(johnDo.getChildren(), loadedPerson.getChildren());
+			assertThat(loadedPerson.getChildren()).isEqualTo(johnDo.getChildren());
 		}
 		
 		/**
@@ -682,7 +681,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			personPersister.insert(johnDo);
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
-			org.assertj.core.api.Assertions.assertThat(johnDo.getChildren())
+			assertThat(johnDo.getChildren())
 					.containsExactlyElementsOf(loadedPerson.getChildren());
 		}
 		
@@ -744,13 +743,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			
-			org.assertj.core.api.Assertions.assertThat(johnDo.getChildren())
+			assertThat(johnDo.getChildren())
 					.containsExactlyElementsOf(loadedPerson.getChildren());
 			
 			// There must be :
 			// - one SQL statement for very first select
 			// - one SQL statement to select 2 children and 2 neighboors
-			org.assertj.core.api.Assertions.assertThat(capturedSQL)
+			assertThat(capturedSQL)
 					.containsExactly(
 							"select" 
 									+ " Person.name as Person_name," 
@@ -773,7 +772,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 							+ " where" 
 									+ " Person.id in (?, ?, ?, ?)"
 					);
-			org.assertj.core.api.Assertions.assertThat(capturedValues)
+			assertThat(capturedValues)
 					.extracting(map -> {
 						Map<String, Object> result = new HashMap<>();
 						map.forEach((column, value) -> {
@@ -853,13 +852,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			
-			org.assertj.core.api.Assertions.assertThat(johnDo.getChildren())
+			assertThat(johnDo.getChildren())
 					.containsExactlyElementsOf(loadedPerson.getChildren());
 			
 			// There must be :
 			// - one SQL statement for very first select
 			// - one SQL statement to select 2 children and 2 neighboors
-			org.assertj.core.api.Assertions.assertThat(capturedSQL)
+			assertThat(capturedSQL)
 					.containsExactly(
 							"select" 
 									+ " Person.name as Person_name," 
@@ -882,7 +881,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 									+ " where"
 									+ " Person.id in (?, ?, ?, ?)"
 					);
-			org.assertj.core.api.Assertions.assertThat(capturedValues)
+			assertThat(capturedValues)
 					.extracting(map -> {
 						Map<String, Object> result = new HashMap<>();
 						map.forEach((column, value) -> {
@@ -962,13 +961,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			
-			org.assertj.core.api.Assertions.assertThat(johnDo.getChildren())
+			assertThat(johnDo.getChildren())
 					.containsExactlyElementsOf(loadedPerson.getChildren());
 			
 			// There must be :
 			// - one SQL statement for very first select
 			// - one SQL statement to select 2 children and 2 neighboors
-			org.assertj.core.api.Assertions.assertThat(capturedSQL)
+			assertThat(capturedSQL)
 					.containsExactly(
 							"select"
 									+ " Person.name as Person_name,"
@@ -991,7 +990,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 								+ " where"
 									+ " Person.id in (?, ?, ?, ?)"
 					);
-			org.assertj.core.api.Assertions.assertThat(capturedValues)
+			assertThat(capturedValues)
 					.extracting(map -> {
 						Map<String, Object> result = new HashMap<>();
 						map.forEach((column, value) -> {

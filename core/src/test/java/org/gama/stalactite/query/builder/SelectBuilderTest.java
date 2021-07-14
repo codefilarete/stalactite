@@ -11,9 +11,9 @@ import org.gama.stalactite.query.model.Select;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.query.model.Operators.max;
 import static org.gama.stalactite.query.model.Operators.min;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -53,6 +53,6 @@ public class SelectBuilderTest {
 	@MethodSource("testToSQL_data")
 	public void testToSQL(Select select, Map<Table, String> tableAliases, String expected) {
 		SelectBuilder testInstance = new SelectBuilder(select, tableAliases);
-		assertEquals(expected, testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 }

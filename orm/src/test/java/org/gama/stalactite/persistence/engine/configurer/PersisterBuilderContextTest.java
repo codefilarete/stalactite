@@ -4,9 +4,7 @@ import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -24,28 +22,28 @@ class PersisterBuilderContextTest {
 		ModifiableInt invokationSafeGuard = new ModifiableInt();
 		testInstance.runInContext(entityMappingConfigurationMock, () -> {
 			invokationSafeGuard.increment();
-			assertTrue(testInstance.isCycling(entityMappingConfigurationMock));
+			assertThat(testInstance.isCycling(entityMappingConfigurationMock)).isTrue();
 			// testing by simulating recursive calls as it happens in production : we add a dummy EntityMappingConfiguration to the stack
 			EntityMappingConfiguration dummyConfiguration = mock(EntityMappingConfiguration.class);
 			when(dummyConfiguration.getEntityType()).thenReturn(String.class);
 			testInstance.runInContext(dummyConfiguration, () -> {
 				invokationSafeGuard.increment();
-				assertTrue(testInstance.isCycling(entityMappingConfigurationMock));
+				assertThat(testInstance.isCycling(entityMappingConfigurationMock)).isTrue();
 				// even deeper
 				testInstance.runInContext(dummyConfiguration, () -> {
 					invokationSafeGuard.increment();
-					assertTrue(testInstance.isCycling(entityMappingConfigurationMock));
-					assertFalse(testInstance.isCycling(mock(EntityMappingConfiguration.class)));
+					assertThat(testInstance.isCycling(entityMappingConfigurationMock)).isTrue();
+					assertThat(testInstance.isCycling(mock(EntityMappingConfiguration.class))).isFalse();
 				});
 			});
 			// testing sibling
 			testInstance.runInContext(dummyConfiguration, () -> {
 				invokationSafeGuard.increment();
-				assertTrue(testInstance.isCycling(entityMappingConfigurationMock));
-				assertFalse(testInstance.isCycling(mock(EntityMappingConfiguration.class)));
+				assertThat(testInstance.isCycling(entityMappingConfigurationMock)).isTrue();
+				assertThat(testInstance.isCycling(mock(EntityMappingConfiguration.class))).isFalse();
 			});
 		});
-		assertEquals(invokationSafeGuard.getValue(), 4);
+		assertThat(4).isEqualTo(invokationSafeGuard.getValue());
 	}
 	
 }

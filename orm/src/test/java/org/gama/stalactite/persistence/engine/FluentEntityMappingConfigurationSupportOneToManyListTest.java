@@ -9,13 +9,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.groups.Tuple;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.Predicates;
-import org.gama.lang.test.Assertions;
+import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
@@ -38,16 +39,14 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.gama.stalactite.query.model.QueryEase.select;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -101,9 +100,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute();
-		assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
+		assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 20L, 30L));
 		// stating that indexes are in same order than instances
-		assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, Result::getIdx));
+		assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(0, 1, 2));
 	}
 	
 	@Nested
@@ -132,9 +131,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// id should be left unmodified
-			assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 20L, 30L));
 			// but indexes must reflect swap done on instances
-			assertEquals(Arrays.asList(1, 0, 2), Iterables.collectToList(persistedChoices, Result::getIdx));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(1, 0, 2));
 		}
 		
 		@Test
@@ -164,8 +163,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// nothing should have changed
-			assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
-			assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, Result::getIdx));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 20L, 30L));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(0, 1, 2));
 		}
 		
 		@Test
@@ -192,9 +191,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// id should be left unmodified
-			assertEquals(Arrays.asList(10L, 20L, 30L, 40L), Iterables.collectToList(persistedChoices, Result::getId));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 20L, 30L, 40L));
 			// but indexes must reflect modifications
-			assertEquals(Arrays.asList(3, 2, 0, 1), Iterables.collectToList(persistedChoices, Result::getIdx));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(3, 2, 0, 1));
 		}
 		
 		@Test
@@ -221,9 +220,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// the removed id must be missing (entity asked for deletion)
-			assertEquals(Arrays.asList(10L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 30L));
 			// choice 1 (10) is last, choice 3 (30) is first
-			assertEquals(Arrays.asList(1, 0), Iterables.collectToList(persistedChoices, Result::getIdx));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(1, 0));
 		}
 		
 		/**
@@ -252,9 +251,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// the removed id must be missing (entity asked for deletion)
-			assertEquals(Arrays.asList(10L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 30L));
 			// choice 1 (10) is last, choice 3 (30) is first
-			assertEquals(Arrays.asList(1, 0), Iterables.collectToList(persistedChoices, Result::getIdx));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(1, 0));
 		}
 	}
 	
@@ -288,7 +287,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
 		connectionProvider.getCurrentConnection().commit();
-		assertEquals(Arrays.asSet(10L, 20L, 30L), Iterables.collect(select.getChoices(), chain(Choice::getId, StatefullIdentifier::getSurrogate), HashSet::new));
+		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefullIdentifier::getSurrogate)).containsExactlyInAnyOrder(10L, 20L, 30L);
 	}
 	
 	@Test
@@ -306,7 +305,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		newQuestion.setChoices(Arrays.asList(choice1, choice2, choice3));
 		questionPersister.insert(newQuestion);
 		
-		assertTrue(choice1.getId().isPersisted());
+		assertThat(choice1.getId().isPersisted()).isTrue();
 		
 		IEntityPersister<Answer, Identifier<Long>> answerPersister = duplicatesTestData.getAnswerPersister();
 		Answer answer = new Answer(1L);
@@ -317,12 +316,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		ResultSet resultSet;
 		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Answer");
-		assertFalse(resultSet.next());
+		assertThat(resultSet.next()).isFalse();
 		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Answer_Choices");
-		assertFalse(resultSet.next());
+		assertThat(resultSet.next()).isFalse();
 		// NB: target entities are not deleted with ASSOCIATION_ONLY cascading
 		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Choice");
-		assertTrue(resultSet.next());
+		assertThat(resultSet.next()).isTrue();
 	}
 	
 	@Test
@@ -350,10 +349,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Choice choice = new Choice(4L);
 		question.addChoice(choice);
 		
-		Assertions.assertThrows(() -> persisterWithNonExistingSetter.insert(question), Assertions.hasExceptionInCauses(RuntimeMappingException.class)
-				.andProjection(Assertions.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
+		assertThatThrownBy(() -> persisterWithNonExistingSetter.insert(question))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeMappingException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
 				+ "accessor for field" +
-				" o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.questionWithNoGetter returned null")));
+				" o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.questionWithNoGetter returned null");
 	}
 		
 	@Test
@@ -380,9 +380,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Question question = new Question(1L);
 		question.getChoices().add(new Choice(4L));
 		
-		Assertions.assertThrows(() -> persister.insert(question), Assertions.hasExceptionInCauses(RuntimeMappingException.class)
-				.andProjection(Assertions.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
-						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() returned null")));
+		assertThatThrownBy(() -> persister.insert(question))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeMappingException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
+						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() returned null");
 	}
 		
 	@Test
@@ -398,13 +399,14 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				.add(Choice::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Choice::getName);
 		
-		assertEquals("Indexing column is defined without owner : relation is only declared by Question::getChoices",
-				assertThrows(UnsupportedOperationException.class, () ->
+		assertThatThrownBy(() ->
 				entityBuilder(Question.class, LONG_TYPE)
 						.add(Question::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
 						.addOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx)
-						.build(persistenceContext)).getMessage());
+						.build(persistenceContext))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Indexing column is defined without owner : relation is only declared by Question::getChoices");
 	}
 	
 	@Nested
@@ -440,9 +442,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
-			assertEquals(Arrays.asList(10L, 20L, 20L, 30L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
+			assertThat(Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId)).isEqualTo(Arrays.asList(10L, 20L, 20L, 30L));
 			// stating that indexes are in same order than instances
-			assertEquals(Arrays.asList(0, 1, 2, 3), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
+			assertThat(Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx)).isEqualTo(Arrays.asList(0, 1, 2, 3));
 		}
 		
 		@Test
@@ -471,9 +473,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
 			
-			assertEquals((Long) 1L, selectedAnswer.getId().getSurrogate());
-			org.gama.lang.test.Assertions.assertAllEquals(Arrays.asList(choice1, choice2, choice2, choice3), selectedAnswer.getChoices(),
-					(c1, c2) -> Predicates.equalOrNull(c1.getId(), c2.getId()) && Predicates.equalOrNull(c1.getName(), c2.getName()));
+			assertThat(selectedAnswer.getId().getSurrogate()).isEqualTo((Long) 1L);
+			assertThat(selectedAnswer.getChoices()).extracting(AnswerChoice::getId, AnswerChoice::getName).containsExactly(
+					new Tuple(choice1.getId(), choice1.getName()),
+					new Tuple(choice2.getId(), choice2.getName()),
+					new Tuple(choice2.getId(), choice2.getName()),
+					new Tuple(choice3.getId(), choice3.getName()));
 		}
 		
 		/** Test to check that loading a target entity from its persister still work (no use of the aggregate persister) */
@@ -497,11 +502,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			// does loading the target entity from its persister work ?
 			Choice loadedChoice = persistenceContext.getPersister(Choice.class).select(new PersistableIdentifier<>(10L));
-			assertEquals(choice1, loadedChoice);
+			assertThat(loadedChoice).isEqualTo(choice1);
 			
 			// loading the target entity from its aggregate persister
 			Question loadedQuestion = duplicatesTestData.questionPersister.select(new PersistableIdentifier<>(1L));
-			assertEquals(newQuestion.getChoices(), loadedQuestion.getChoices());
+			assertThat(loadedQuestion.getChoices()).isEqualTo(newQuestion.getChoices());
 		}
 		
 		@Test
@@ -535,20 +540,21 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			int deletedAnswerCount = answerPersister.delete(answer);
 			
-			assertEquals(1, deletedAnswerCount);
+			assertThat(deletedAnswerCount).isEqualTo(1);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable), Long.class)
 					.mapKey(SerializableFunction.identity(), "c", long.class)
 					.execute();
-			assertEquals((Long) 0L, persistedChoices.get(0));
+			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
 			List<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", long.class)
 					.execute();
-			assertEquals(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate()), new HashSet<>(remainingChoices));
+			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
+					choice3.getId().getSurrogate()));
 		}
 		
 		@Test
@@ -573,20 +579,21 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			int deletedAnswerCount = answerPersister.deleteById(answer);
 			
-			assertEquals(1, deletedAnswerCount);
+			assertThat(deletedAnswerCount).isEqualTo(1);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable).getQuery(), Long.class)
 					.mapKey(SerializableFunction.identity(), "c", long.class)
 					.execute();
-			assertEquals((Long) 0L, persistedChoices.get(0));
+			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
 			List<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", long.class)
 					.execute();
-			assertEquals(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate()), new HashSet<>(remainingChoices));
+			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
+					choice3.getId().getSurrogate()));
 		}
 
 		@Test
@@ -632,9 +639,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
-			assertEquals(Arrays.asList(10L, 20L, 50L, 20L, 30L, 10L, 40L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
+			assertThat(Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId)).isEqualTo(Arrays.asList(10L, 20L, 50L, 20L, 30L, 10L, 40L));
 			// stating that indexes are in same order than instances
-			assertEquals(Arrays.asList(0, 1, 2, 3, 4, 5, 6), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
+			assertThat(Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx)).isEqualTo(Arrays.asList(0, 1, 2, 3, 4, 5, 6));
 			
 			// test with entity removal
 			Answer selectedAnswer1 = answerPersister.select(new PersistableIdentifier<>(1L));
@@ -647,9 +654,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
-			assertEquals(Arrays.asList(10L, 20L, 10L), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId));
+			assertThat(Iterables.collectToList(persistedChoices, RawAnswer::getChoiceId)).isEqualTo(Arrays.asList(10L, 20L, 10L));
 			// stating that indexes are in same order than instances
-			assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx));
+			assertThat(Iterables.collectToList(persistedChoices, RawAnswer::getChoiceIdx)).isEqualTo(Arrays.asList(0, 1, 2));
 		}
 	}
 	
@@ -981,9 +988,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
-			assertEquals(Arrays.asList(10L, 20L, 30L), Iterables.collectToList(persistedChoices, Result::getId));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 20L, 30L));
 			// stating that indexes are in same order than instances
-			assertEquals(Arrays.asList(0, 1, 2), Iterables.collectToList(persistedChoices, Result::getIdx));
+			assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(0, 1, 2));
 			return this;
 		}
 	}

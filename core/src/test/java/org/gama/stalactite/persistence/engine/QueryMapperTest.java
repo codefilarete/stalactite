@@ -25,10 +25,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.lang.Nullable.nullable;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -155,7 +153,7 @@ public class QueryMapperTest {
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
-		assertEquals(expected.toString(), result.toString());
+		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
 	
 	public static Object[][] queryMapperAPI_basicUsageWithConverter() {
@@ -194,7 +192,7 @@ public class QueryMapperTest {
 				new Toto(42, "coucou", false),
 				new Toto(43, "coucou", false)
 		);
-		assertEquals(expected.toString(), result.toString());
+		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
 	
 	/**
@@ -247,9 +245,9 @@ public class QueryMapperTest {
 		List<Toto> result = queryMapper.execute(() -> mock);
 		// Checking that setters were called
 		verify(statementMock, times(2)).setInt(anyInt(), captor.capture());
-		assertEquals(Arrays.asList(1, 2), captor.getAllValues());
+		assertThat(captor.getAllValues()).isEqualTo(Arrays.asList(1, 2));
 		// Checking instanciation was done
-		assertEquals(new Toto(42).toString(), Iterables.first(result).toString());
+		assertThat(Iterables.first(result).toString()).isEqualTo(new Toto(42).toString());
 	}
 	
 	@Test
@@ -273,7 +271,7 @@ public class QueryMapperTest {
 				new Toto(43, "oziuoie2", false),
 				new Toto(42, "ghoeihvoih3", false)
 		);
-		assertEquals(expected.toString(), result.toString());
+		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
 	
 	@Test
@@ -297,7 +295,7 @@ public class QueryMapperTest {
 				new Toto(43, "oziuoie2", false),
 				new Toto(42, "ghoeihvoih1", false)
 		);
-		assertEquals(expected.toString(), result.toString());
+		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
 	
 	@Test
@@ -322,13 +320,13 @@ public class QueryMapperTest {
 				new Toto(42, "John", false).setTata(new Tata("you"))
 		);
 		// Checking content by values
-		assertEquals(expected.toString(), result.toString());
+		assertThat(result.toString()).isEqualTo(expected.toString());
 		
 		// Checking content by object reference to ensure bean cache usage
-		assertSame(result.get(0), result.get(2));
-		assertSame(result.get(0).getTata(), result.get(2).getTata());
-		assertNotSame(result.get(1), result.get(2));
-		assertNotSame(result.get(1).getTata(), result.get(2).getTata());
+		assertThat(result.get(2)).isSameAs(result.get(0));
+		assertThat(result.get(2).getTata()).isSameAs(result.get(0).getTata());
+		assertThat(result.get(2)).isNotSameAs(result.get(1));
+		assertThat(result.get(2).getTata()).isNotSameAs(result.get(1).getTata());
 	}
 	
 	public static class Toto {
@@ -390,7 +388,7 @@ public class QueryMapperTest {
 		}
 		
 		/**
-		 * Implementation to ease assertEquals print understanding in cas of failure
+		 * Implemented to ease debug and represention of failing test cases
 		 * @return a chain containing attributes foot print
 		 */
 		@Override

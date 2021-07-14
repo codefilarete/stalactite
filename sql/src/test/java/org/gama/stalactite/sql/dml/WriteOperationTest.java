@@ -26,8 +26,7 @@ import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -57,7 +56,7 @@ public class WriteOperationTest {
 		testInstance.setValue(1, 1L);
 		testInstance.setValue(2, "tata");
 		int executeOne = testInstance.execute();
-		assertEquals(1, executeOne);
+		assertThat(executeOne).isEqualTo(1);
 	}
 	
 	@Test
@@ -69,11 +68,11 @@ public class WriteOperationTest {
 		WriteOperation<Integer> testInstance = new WriteOperation<>(new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders), connectionProvider);
 		testInstance.addBatch(Maps.asMap(1, (Object) 1L).add(2, "Tata"));
 		int executeMultiple = testInstance.executeBatch();
-		assertEquals(1, executeMultiple);
+		assertThat(executeMultiple).isEqualTo(1);
 		testInstance.addBatch(Maps.asMap(1, (Object) 2L).add(2, "Tata"));
 		testInstance.addBatch(Maps.asMap(1, (Object) 3L).add(2, "Tata"));
 		executeMultiple = testInstance.executeBatch();
-		assertEquals(2, executeMultiple);
+		assertThat(executeMultiple).isEqualTo(2);
 	}
 	
 	@Test
@@ -86,14 +85,14 @@ public class WriteOperationTest {
 		testInstance.setValue("id", 1L);
 		testInstance.setValue("name", "tata");
 		int executeOne = testInstance.execute();
-		assertEquals(1, executeOne);
+		assertThat(executeOne).isEqualTo(1);
 		
 		parameterBinders.clear();
 		parameterBinders.put("ids", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		WriteOperation<String> testInstanceForDelete = new WriteOperation<>(new StringParamedSQL("delete from Toto where id in (:ids)", parameterBinders), connectionProvider);
 		testInstanceForDelete.addBatch(Maps.asMap("ids", Arrays.asList(1L, 2L, 3L)));
 		int executeMultiple = testInstanceForDelete.executeBatch();
-		assertEquals(1, executeMultiple);
+		assertThat(executeMultiple).isEqualTo(1);
 	}
 	
 	@Test
@@ -105,11 +104,11 @@ public class WriteOperationTest {
 		WriteOperation<String> testInstance = new WriteOperation<>(new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders), connectionProvider);
 		testInstance.addBatch(Maps.asMap("id", (Object) 1L).add("name", "Tata"));
 		int executeMultiple = testInstance.executeBatch();
-		assertEquals(1, executeMultiple);
+		assertThat(executeMultiple).isEqualTo(1);
 		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
 		executeMultiple = testInstance.executeBatch();
-		assertEquals(2, executeMultiple);
+		assertThat(executeMultiple).isEqualTo(2);
 	}
 	
 	@Test
@@ -131,11 +130,11 @@ public class WriteOperationTest {
 		testInstance.addBatch(Maps.asMap(1, (Object) 2L).add(2, "toto"));
 		
 		int writeCount = testInstance.executeBatch();
-		assertEquals(2, writeCount);
+		assertThat(writeCount).isEqualTo(2);
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(?, ?) | {1={1=1, 2=tata}, 2={1=2, 2=toto}}", null));
-		assertTrue(logsRecipient.toString().contains(expectedLog));
+		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
@@ -159,11 +158,11 @@ public class WriteOperationTest {
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
 		
 		int writeCount = testInstance.executeBatch();
-		assertEquals(2, writeCount);
+		assertThat(writeCount).isEqualTo(2);
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(:id, :name) | {1={name=Tata, id=2}, 2={name=Toto, id=3}}", null));
-		assertTrue(logsRecipient.toString().contains(expectedLog));
+		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
@@ -188,11 +187,11 @@ public class WriteOperationTest {
 		testInstance.setValue(2, "tata");
 		
 		int writeCount = testInstance.execute();
-		assertEquals(1, writeCount);
+		assertThat(writeCount).isEqualTo(1);
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(?, ?) | {1=1, 2=X-masked value-X}", null));
-		assertTrue(logsRecipient.toString().contains(expectedLog));
+		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
@@ -217,11 +216,11 @@ public class WriteOperationTest {
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
 		
 		int writeCount = testInstance.executeBatch();
-		assertEquals(2, writeCount);
+		assertThat(writeCount).isEqualTo(2);
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(:id, :name) | {1={name=X-masked value-X, id=2}, 2={name=X-masked value-X, id=3}}", null));
-		assertTrue(logsRecipient.toString().contains(expectedLog));
+		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
@@ -249,8 +248,8 @@ public class WriteOperationTest {
 		
 		testInstance.setValue(1, 1L);
 		testInstance.setValue(2, "tata");
-		assertEquals(0, beforeValuesSetInvokationCount.getValue());
-		assertEquals(Maps.asHashMap(1, (Object) 1L).add(2, "tata"), capturedValues);
+		assertThat(beforeValuesSetInvokationCount.getValue()).isEqualTo(0);
+		assertThat(capturedValues).isEqualTo(Maps.asHashMap(1, (Object) 1L).add(2, "tata"));
 	}
 	
 	

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -113,7 +113,7 @@ public class FromBuilderTest {
 	@MethodSource("testToSQL_data")
 	public void testToSQL(From from, String expected) {
 		FromBuilder testInstance = new FromBuilder(from);
-		assertEquals(expected, testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
 	@Test
@@ -143,10 +143,9 @@ public class FromBuilderTest {
 		FromBuilder testInstance = new FromBuilder(from);
 		from.getTableAliases().put(tableToto2, "toChanged");
 		from.getTableAliases().put(tableTutu, "tuChanged");
-		assertEquals("Toto as to inner join Tata as ta on to.a = ta.a"
-						+ " inner join Tutu as tuChanged on to.b = tuChanged.b"
-						+ " inner join Toto as toChanged on tuChanged.b = toChanged.b",
-				testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo("Toto as to inner join Tata as ta on to.a = ta.a"
+				+ " inner join Tutu as tuChanged on to.b = tuChanged.b"
+				+ " inner join Toto as toChanged on tuChanged.b = toChanged.b");
 		
 	}
 }

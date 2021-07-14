@@ -34,9 +34,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.lang.collection.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,7 +65,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(4)).addBatch();
 		verify(dataSet.preparedStatement, times(2)).executeBatch();
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals("update Toto set b = ?, c = ? where a = ?", dataSet.statementArgCaptor.getValue());
+		assertThat(dataSet.statementArgCaptor.getValue()).isEqualTo("update Toto set b = ?, c = ? where a = ?");
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 17).add(2, 23).add(3, 1)
 				.newRow(1, 29).add(2, 31).add(3, 2)
@@ -83,8 +83,9 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		Iterable<UpdatePayload<Toto, Table>> payloads = UpdateListener.computePayloads(differencesIterable, true,
 				testInstance.getMappingStrategy());
 		
-		RuntimeException thrownException = assertThrows(IllegalArgumentException.class, () -> testInstance.updateMappedColumns(payloads));
-		assertEquals("Expected non null value for column Toto.b on instance Toto{a=1, b=null, c=23}", thrownException.getMessage());
+		assertThatThrownBy(() -> testInstance.updateMappedColumns(payloads))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Expected non null value for column Toto.b on instance Toto{a=1, b=null, c=23}");
 	}
 	
 	@Test
@@ -106,12 +107,13 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertEquals(Arrays.asList(
-				Maps.asHashMap(new UpwhereColumn<>(colA, false), 1).add(new UpwhereColumn<>(colB, true), 17).add(new UpwhereColumn<>(colC, true), 23),
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+				Maps.asHashMap(new UpwhereColumn<>(colA, false), 1).add(new UpwhereColumn<>(colB, true), 17).add(new UpwhereColumn<>(colC, true),
+						23),
 				Maps.asHashMap(new UpwhereColumn<>(colA, false), 2).add(new UpwhereColumn<>(colB, true), 29).add(new UpwhereColumn<>(colC, true), 31)
-		), statementArgCaptor.getAllValues());
+		));
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
-		assertEquals("update Toto set b = ?, c = ? where a = ?", sqlArgCaptor.getValue().getSQL());
+		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("update Toto set b = ?, c = ? where a = ?");
 	}
 	
 	@Test
@@ -124,7 +126,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
 				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), Retryer.NO_RETRY, 4);
 		
-		assertEquals(0, testInstance.updateById(Arrays.asList(new SimpleEntity())));
+		assertThat(testInstance.updateById(Arrays.asList(new SimpleEntity()))).isEqualTo(0);
 	}
 	
 	public static Object[][] testUpdate_diff_data() {
@@ -209,7 +211,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
 		verify(dataSet.preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
 		verify(dataSet.preparedStatement, times(expectedResult.setIntCallCount)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(expectedResult.updateStatements, dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(expectedResult.updateStatements);
 		assertCapturedPairsEqual(dataSet, expectedResult.statementValues);
 	}
 	
@@ -230,7 +232,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(4)).addBatch();
 		verify(dataSet.preparedStatement, times(2)).executeBatch();
 		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals(asList("update Toto set b = ?, c = ? where a = ?"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(asList("update Toto set b = ?, c = ? where a = ?"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 17).add(2, 123).add(3, 1)
 				.newRow(1, 129).add(2, 31).add(3, 2)
@@ -252,7 +254,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		
 		Iterable<UpdatePayload<SimpleEntity, T>> updatePayloads = UpdateListener.computePayloads(Arrays.asList(new Duo<>(new SimpleEntity(), 
 				new SimpleEntity())), true, testInstance.getMappingStrategy());
-		assertEquals(0, testInstance.updateMappedColumns(updatePayloads));
+		assertThat(testInstance.updateMappedColumns(updatePayloads)).isEqualTo(0);
 	}
 	
 	private static class SimpleEntity {

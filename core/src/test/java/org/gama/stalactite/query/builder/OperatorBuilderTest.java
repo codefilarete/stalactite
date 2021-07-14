@@ -11,6 +11,7 @@ import org.gama.stalactite.query.model.operator.IsNull;
 import org.gama.stalactite.query.model.operator.Like;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.query.model.Operators.between;
 import static org.gama.stalactite.query.model.Operators.contains;
 import static org.gama.stalactite.query.model.Operators.count;
@@ -26,7 +27,6 @@ import static org.gama.stalactite.query.model.Operators.min;
 import static org.gama.stalactite.query.model.Operators.not;
 import static org.gama.stalactite.query.model.Operators.startsWith;
 import static org.gama.stalactite.query.model.Operators.sum;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -46,7 +46,7 @@ public class OperatorBuilderTest {
 				return true;
 			}
 		}, new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("is null", result.toString());
+		assertThat(result.toString()).isEqualTo("is null");
 	}
 	
 	@Test
@@ -55,11 +55,11 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catNullValue(false, new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("is null", result.toString());
+		assertThat(result.toString()).isEqualTo("is null");
 		
 		result = new StringAppender();
 		testInstance.catNullValue(true, new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("is not null", result.toString());
+		assertThat(result.toString()).isEqualTo("is not null");
 	}
 	
 	@Test
@@ -68,18 +68,18 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIsNull(new IsNull(), new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("is null", result.toString());
+		assertThat(result.toString()).isEqualTo("is null");
 		
 		result = new StringAppender();
 		testInstance.catIsNull(not(new IsNull()), new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("is not null", result.toString());
+		assertThat(result.toString()).isEqualTo("is not null");
 		
 		// nothing happens on a value set on is null
 		result = new StringAppender();
 		IsNull isNull = new IsNull();
 		isNull.setValue(42);
 		testInstance.catIsNull(isNull, new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("is null", result.toString());
+		assertThat(result.toString()).isEqualTo("is null");
 	}
 	
 	@Test
@@ -88,19 +88,19 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLike(new Like("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("like 'a'", result.toString());
+		assertThat(result.toString()).isEqualTo("like 'a'");
 		
 		result = new StringAppender();
 		testInstance.catLike(contains("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("like '%a%'", result.toString());
+		assertThat(result.toString()).isEqualTo("like '%a%'");
 		
 		result = new StringAppender();
 		testInstance.catLike(startsWith("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("like 'a%'", result.toString());
+		assertThat(result.toString()).isEqualTo("like 'a%'");
 		
 		result = new StringAppender();
 		testInstance.catLike(endsWith("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("like '%a'", result.toString());	}
+		assertThat(result.toString()).isEqualTo("like '%a'");	}
 	
 	@Test
 	public void catIn() {
@@ -108,17 +108,17 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIn(in("a", "b"), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("in ('a', 'b')", result.toString());
+		assertThat(result.toString()).isEqualTo("in ('a', 'b')");
 		
 		// next test is meant to record the behavior, not to approve it
 		result = new StringAppender();
 		testInstance.catIn(in(), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("in ()", result.toString());
+		assertThat(result.toString()).isEqualTo("in ()");
 		
 		// next test is meant to record the behavior, not to approve it
 		result = new StringAppender();
 		testInstance.cat(in((Object) null), new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("in (null)", result.toString());
+		assertThat(result.toString()).isEqualTo("in (null)");
 	}
 	
 	@Test
@@ -127,15 +127,15 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catBetween(between(1, 2), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("between 1 and 2", result.toString());
+		assertThat(result.toString()).isEqualTo("between 1 and 2");
 		
 		result = new StringAppender();
 		testInstance.catBetween(between(1, null), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("> 1", result.toString());
+		assertThat(result.toString()).isEqualTo("> 1");
 		
 		result = new StringAppender();
 		testInstance.catBetween(between(null, 2), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("< 2", result.toString());
+		assertThat(result.toString()).isEqualTo("< 2");
 	}
 	
 	@Test
@@ -144,19 +144,19 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catGreater(gt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("> 1", result.toString());
+		assertThat(result.toString()).isEqualTo("> 1");
 		
 		result = new StringAppender();
 		testInstance.catGreater(not(gt(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("<= 1", result.toString());
+		assertThat(result.toString()).isEqualTo("<= 1");
 
 		result = new StringAppender();
 		testInstance.catGreater(gteq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals(">= 1", result.toString());
+		assertThat(result.toString()).isEqualTo(">= 1");
 		
 		result = new StringAppender();
 		testInstance.catGreater(not(gteq(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("< 1", result.toString());
+		assertThat(result.toString()).isEqualTo("< 1");
 	}
 	
 	@Test
@@ -165,19 +165,19 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLower(lt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("< 1", result.toString());
+		assertThat(result.toString()).isEqualTo("< 1");
 		
 		result = new StringAppender();
 		testInstance.catLower(not(lt(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals(">= 1", result.toString());
+		assertThat(result.toString()).isEqualTo(">= 1");
 		
 		result = new StringAppender();
 		testInstance.catLower(lteq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("<= 1", result.toString());
+		assertThat(result.toString()).isEqualTo("<= 1");
 		
 		result = new StringAppender();
 		testInstance.catLower(not(lteq(1)), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("> 1", result.toString());
+		assertThat(result.toString()).isEqualTo("> 1");
 	}
 	
 	@Test
@@ -186,7 +186,7 @@ public class OperatorBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.catEquals(eq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("= 1", result.toString());
+		assertThat(result.toString()).isEqualTo("= 1");
 	}
 	
 	@Test
@@ -198,7 +198,7 @@ public class OperatorBuilderTest {
 		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catEquals(eq(colA), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertEquals("= Toto.a", result.toString());
+		assertThat(result.toString()).isEqualTo("= Toto.a");
 	}
 	
 	@Test
@@ -210,7 +210,7 @@ public class OperatorBuilderTest {
 		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catSum(sum(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("sum(Toto.a)", result.toString());
+		assertThat(result.toString()).isEqualTo("sum(Toto.a)");
 	}
 	
 	@Test
@@ -222,7 +222,7 @@ public class OperatorBuilderTest {
 		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catCount(count(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("count(Toto.a)", result.toString());
+		assertThat(result.toString()).isEqualTo("count(Toto.a)");
 	}
 	
 	@Test
@@ -234,7 +234,7 @@ public class OperatorBuilderTest {
 		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catMin(min(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("min(Toto.a)", result.toString());
+		assertThat(result.toString()).isEqualTo("min(Toto.a)");
 	}
 	
 	@Test
@@ -246,6 +246,6 @@ public class OperatorBuilderTest {
 		Column colA = tableToto.addColumn("a", Integer.class);
 		
 		testInstance.catMax(max(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertEquals("max(Toto.a)", result.toString());
+		assertThat(result.toString()).isEqualTo("max(Toto.a)");
 	}
 }

@@ -11,7 +11,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DDLTableGeneratorTest {
 	
@@ -28,20 +28,20 @@ public class DDLTableGeneratorTest {
 		
 		t.addColumn("A", String.class);
 		String generatedCreateTable = testInstance.generateCreateTable(t);
-		assertEquals("create table Toto(A type)", generatedCreateTable);
+		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type)");
 		
 		t.addColumn("B", String.class);
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		assertEquals("create table Toto(A type, B type)", generatedCreateTable);
+		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type)");
 		
 		Column<Table, String> primaryKey = t.addColumn("C", String.class);
 		primaryKey.setPrimaryKey(true);
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		assertEquals("create table Toto(A type, B type, C type, primary key (C))", generatedCreateTable);
+		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type, C type, primary key (C))");
 		
 		t.addColumn("D", Integer.TYPE);	// test isNullable
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		assertEquals("create table Toto(A type, B type, C type, D type not null, primary key (C))", generatedCreateTable);
+		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type, C type, D type not null, primary key (C))");
 		
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -62,7 +62,7 @@ public class DDLTableGeneratorTest {
 		};
 		
 		generatedCreateTable = testInstance.generateCreateTable(t);
-		assertEquals("create table Toto(A type, B type, 'key' type, D type not null, primary key ('key'))", generatedCreateTable);
+		assertThat(generatedCreateTable).isEqualTo("create table Toto(A type, B type, 'key' type, D type not null, primary key ('key'))");
 	}
 	
 	@Test
@@ -72,7 +72,7 @@ public class DDLTableGeneratorTest {
 		Table toto = new Table(null, "Toto");
 		
 		String generateDropTable = testInstance.generateDropTable(toto);
-		assertEquals("drop table Toto", generateDropTable);
+		assertThat(generateDropTable).isEqualTo("drop table Toto");
 		
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -87,7 +87,7 @@ public class DDLTableGeneratorTest {
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
 		
 		generateDropTable = testInstance.generateDropTable(toto);
-		assertEquals("drop table 'user'", generateDropTable);
+		assertThat(generateDropTable).isEqualTo("drop table 'user'");
 	}
 	
 	@Test
@@ -97,7 +97,7 @@ public class DDLTableGeneratorTest {
 		Table toto = new Table(null, "Toto");
 		
 		String generateDropTable = testInstance.generateDropTableIfExists(toto);
-		assertEquals("drop table if exists Toto", generateDropTable);
+		assertThat(generateDropTable).isEqualTo("drop table if exists Toto");
 		
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -112,7 +112,7 @@ public class DDLTableGeneratorTest {
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
 		
 		generateDropTable = testInstance.generateDropTableIfExists(toto);
-		assertEquals("drop table if exists 'user'", generateDropTable);
+		assertThat(generateDropTable).isEqualTo("drop table if exists 'user'");
 	}
 	
 	@Test
@@ -128,7 +128,7 @@ public class DDLTableGeneratorTest {
 		
 		Column<Table, String> newColumn = t.addColumn("A", String.class);
 		String generateAddColumn = testInstance.generateAddColumn(newColumn);
-		assertEquals("alter table Toto add column A type", generateAddColumn);
+		assertThat(generateAddColumn).isEqualTo("alter table Toto add column A type");
 		
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -148,7 +148,7 @@ public class DDLTableGeneratorTest {
 		};
 		
 		generateAddColumn = testInstance.generateAddColumn(newColumn);
-		assertEquals("alter table Toto add column 'key' type", generateAddColumn);
+		assertThat(generateAddColumn).isEqualTo("alter table Toto add column 'key' type");
 	}
 	
 	@Test
@@ -164,7 +164,7 @@ public class DDLTableGeneratorTest {
 		
 		Column<Table, String> newColumn = t.addColumn("A", String.class);
 		String generateDropColumn = testInstance.generateDropColumn(newColumn);
-		assertEquals("alter table Toto drop column A", generateDropColumn);
+		assertThat(generateDropColumn).isEqualTo("alter table Toto drop column A");
 		
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -184,7 +184,7 @@ public class DDLTableGeneratorTest {
 		};
 		
 		generateDropColumn = testInstance.generateDropColumn(newColumn);
-		assertEquals("alter table Toto drop column 'key'", generateDropColumn);
+		assertThat(generateDropColumn).isEqualTo("alter table Toto drop column 'key'");
 	}
 	
 	@Test
@@ -197,11 +197,11 @@ public class DDLTableGeneratorTest {
 		
 		Index idx1 = t.addIndex("Idx1", colA);
 		String generatedCreateIndex = testInstance.generateCreateIndex(idx1);
-		assertEquals("create index Idx1 on Toto(A)", generatedCreateIndex);
+		assertThat(generatedCreateIndex).isEqualTo("create index Idx1 on Toto(A)");
 		
 		Index idx2 = t.addIndex("Idx2", colA, colB);
 		generatedCreateIndex = testInstance.generateCreateIndex(idx2);
-		assertEquals("create index Idx2 on Toto(A, B)", generatedCreateIndex);
+		assertThat(generatedCreateIndex).isEqualTo("create index Idx2 on Toto(A, B)");
 
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -216,7 +216,7 @@ public class DDLTableGeneratorTest {
 		t.addColumn("D", Integer.TYPE);	// test isNullable
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
 		generatedCreateIndex = testInstance.generateCreateIndex(idx2);
-		assertEquals("create index Idx2 on Toto('key', B)", generatedCreateIndex);
+		assertThat(generatedCreateIndex).isEqualTo("create index Idx2 on Toto('key', B)");
 	}
 	
 	@Test
@@ -229,7 +229,7 @@ public class DDLTableGeneratorTest {
 		Index idx = t.addIndex("idx1", colA);
 		
 		String generateDropIndex = testInstance.generateDropIndex(idx);
-		assertEquals("drop index idx1", generateDropIndex);
+		assertThat(generateDropIndex).isEqualTo("drop index idx1");
 		
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -249,7 +249,7 @@ public class DDLTableGeneratorTest {
 		};
 		
 		generateDropIndex = testInstance.generateDropIndex(idx);
-		assertEquals("drop index idx1", generateDropIndex);
+		assertThat(generateDropIndex).isEqualTo("drop index idx1");
 	}
 	
 	@Test
@@ -266,11 +266,11 @@ public class DDLTableGeneratorTest {
 		
 		ForeignKey foreignKey = toto.addForeignKey("FK1", colA, colA2);
 		String generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
-		assertEquals("alter table Toto add constraint FK1 foreign key(A) references Titi(A)", generatedCreateIndex);
+		assertThat(generatedCreateIndex).isEqualTo("alter table Toto add constraint FK1 foreign key(A) references Titi(A)");
 		
 		foreignKey = toto.addForeignKey("FK2", Arrays.asList(colA, colB), Arrays.asList(colA2, colB2));
 		generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
-		assertEquals("alter table Toto add constraint FK2 foreign key(A, B) references Titi(A, B)", generatedCreateIndex);
+		assertThat(generatedCreateIndex).isEqualTo("alter table Toto add constraint FK2 foreign key(A, B) references Titi(A, B)");
 
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -284,7 +284,7 @@ public class DDLTableGeneratorTest {
 		};
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
 		generatedCreateIndex = testInstance.generateCreateForeignKey(foreignKey);
-		assertEquals("alter table Toto add constraint FK2 foreign key('key', B) references Titi('key', B)", generatedCreateIndex);
+		assertThat(generatedCreateIndex).isEqualTo("alter table Toto add constraint FK2 foreign key('key', B) references Titi('key', B)");
 	}
 	
 	@Test
@@ -300,7 +300,7 @@ public class DDLTableGeneratorTest {
 		ForeignKey foreignKey = toto.addForeignKey("FK1", colA, colA2);
 		
 		String generateDropForeignKey = testInstance.generateDropForeignKey(foreignKey);
-		assertEquals("alter table Toto drop constraint FK1", generateDropForeignKey);
+		assertThat(generateDropForeignKey).isEqualTo("alter table Toto drop constraint FK1");
 		
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
@@ -320,6 +320,6 @@ public class DDLTableGeneratorTest {
 		};
 		
 		generateDropForeignKey = testInstance.generateDropForeignKey(foreignKey);
-		assertEquals("alter table Toto drop constraint FK1", generateDropForeignKey);
+		assertThat(generateDropForeignKey).isEqualTo("alter table Toto drop constraint FK1");
 	}
 }

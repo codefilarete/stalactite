@@ -17,10 +17,8 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -87,20 +85,20 @@ class EntityJoinTreeTest {
 		//   Tata.id = Tutu.id (Y)
 		//   Tata.id = Titi.id (Z)
 		JoinNode tataJoinClone = entityJoinTree1.getJoin(tataAddKey);
-		assertNotNull(tataJoinClone);
+		assertThat(tataJoinClone).isNotNull();
 		// by checking node count we ensure that node was added 
-		assertEquals(3, Iterables.stream(entityJoinTree1.joinIterator()).count());
+		assertThat(Iterables.stream(entityJoinTree1.joinIterator()).count()).isEqualTo(3);
 		// and there was no removal
-		assertNotNull(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey));
+		assertThat(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey)).isNotNull();
 		// we check that a copy was made, not a node move
 		AbstractJoinNode abstractJoinNode = entityJoinTree1.giveJoin(tataPrimaryKey, titiPrimaryKey);
-		assertNotSame(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey), abstractJoinNode);
-		assertEquals(titiMappingMock.getSelectableColumns(), abstractJoinNode.getColumnsToSelect());
+		assertThat(abstractJoinNode).isNotSameAs(entityJoinTree2.giveJoin(tataPrimaryKey, titiPrimaryKey));
+		assertThat(abstractJoinNode.getColumnsToSelect()).isEqualTo(titiMappingMock.getSelectableColumns());
 		// copy must be put at the right place 
-		assertEquals(tataJoinClone, abstractJoinNode.getParent());
+		assertThat(abstractJoinNode.getParent()).isEqualTo(tataJoinClone);
 		// we check that join indexes were updated: since it's difficult to check detailed content because of index naming strategy, we fallback to count them (far from perfect) 
-		assertEquals(4, entityJoinTree1.getJoinIndex().size());
-		assertEquals(2, entityJoinTree2.getJoinIndex().size());
+		assertThat(entityJoinTree1.getJoinIndex().size()).isEqualTo(4);
+		assertThat(entityJoinTree2.getJoinIndex().size()).isEqualTo(2);
 	}
 	
 	@Test

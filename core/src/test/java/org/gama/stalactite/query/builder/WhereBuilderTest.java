@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.EMPTY_MAP;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.query.model.Operators.between;
 import static org.gama.stalactite.query.model.Operators.endsWith;
 import static org.gama.stalactite.query.model.Operators.eq;
@@ -26,7 +27,6 @@ import static org.gama.stalactite.query.model.Operators.not;
 import static org.gama.stalactite.query.model.Operators.startsWith;
 import static org.gama.stalactite.query.model.QueryEase.filter;
 import static org.gama.stalactite.query.model.QueryEase.where;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -74,7 +74,7 @@ public class WhereBuilderTest {
 	@MethodSource("testToSQL_data")
 	public void testToSQL(CriteriaChain where, Map<Table, String> tableAliases, String expected) {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
-		assertEquals(expected, testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
 	public static Object[][] testToPreparedSQL_data() {
@@ -181,8 +181,8 @@ public class WhereBuilderTest {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
-		assertEquals(expectedPreparedStatement, preparedSQL.getSQL());
-		assertEquals(expectedValues, preparedSQL.getValues());
+		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
+		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}
 	
 }

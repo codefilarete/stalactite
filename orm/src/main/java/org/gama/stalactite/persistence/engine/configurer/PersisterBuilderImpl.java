@@ -836,7 +836,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		SerializableBiFunction<ColumnOptions, IdentifierPolicy, ColumnOptions> identifierMethodReference = ColumnOptions::identifier;
 		Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
 		return new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(entityMappingConfiguration.getEntityType())
-				+ ", please add one throught " + Reflections.toString(identifierSetter));
+				+ ", please add one through " + Reflections.toString(identifierSetter));
 	}
 	
 	/**

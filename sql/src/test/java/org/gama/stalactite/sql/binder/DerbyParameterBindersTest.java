@@ -12,7 +12,7 @@ import org.gama.stalactite.sql.test.DerbyInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -32,6 +32,6 @@ public class DerbyParameterBindersTest {
 		LinkedHashSet<InputStream> valuesToInsert = Arrays.asSet(inputStream, null);
 		ParameterBinder<InputStream> binarystreamBinder = DerbyParameterBinders.BINARYSTREAM_BINDER;
 		Set<InputStream> databaseContent = DefaultParameterBindersTest.insertAndSelect(dataSource, binarystreamBinder, "blob", valuesToInsert);
-		assertEquals(Arrays.asSet(null, "Hello world !"), DefaultParameterBindersTest.convertInputStreamToString(databaseContent));
+		assertThat(DefaultParameterBindersTest.convertInputStreamToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
 	}
 }

@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
 
 import org.gama.lang.collection.Arrays;
@@ -30,11 +29,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toSet;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Guillaume Mary
@@ -98,7 +95,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		};
 		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_PRESIDENTID_PERSON_ID", "COUNTRY", "PRESIDENTID", "PERSON", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		
 		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 				countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
@@ -113,7 +110,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		};
 		foundForeignKey = Iterables.first(fkCityIterator);
 		expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
-		assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+		assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 	}
 	
 	@Test
@@ -145,11 +142,11 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		// testing insert cascade
 		countryPersister.insert(dummyCountry);
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
-		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
-		assertEquals("French president", persistedCountry.getPresident().getName());
-		assertEquals("Paris", Iterables.first(persistedCountry.getCities()).getName());
-		assertTrue(persistedCountry.getPresident().getId().isPersisted());
-		assertTrue(Iterables.first(persistedCountry.getCities()).getId().isPersisted());
+		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
+		assertThat(persistedCountry.getPresident().getName()).isEqualTo("French president");
+		assertThat(Iterables.first(persistedCountry.getCities()).getName()).isEqualTo("Paris");
+		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
+		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 		
 		// testing update cascade
 		persistedCountry.getPresident().setName("New french president");
@@ -159,11 +156,11 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
 		persistedCountry = countryPersister.select(dummyCountry.getId());
-		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
-		assertEquals("New french president", persistedCountry.getPresident().getName());
-		assertEquals(Arrays.asHashSet("Grenoble", "Paris"), Iterables.collect(persistedCountry.getCities(), City::getName, HashSet::new));
-		assertTrue(persistedCountry.getPresident().getId().isPersisted());
-		assertTrue(Iterables.first(persistedCountry.getCities()).getId().isPersisted());
+		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
+		assertThat(persistedCountry.getPresident().getName()).isEqualTo("New french president");
+		assertThat(persistedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Paris");
+		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
+		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 	}
 	
 	
@@ -227,17 +224,17 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content as the memory one
 		// but we didn't for regions, so all of them must be there
 		// (comparison are done on equals/hashCode => id)
-		assertEquals(Arrays.asHashSet(lyon, grenoble), persistedCountry2.getCities());
-		assertEquals(Arrays.asHashSet(ardeche, isere), persistedCountry2.getStates());
+		assertThat(persistedCountry2.getCities()).isEqualTo(Arrays.asHashSet(lyon, grenoble));
+		assertThat(persistedCountry2.getStates()).isEqualTo(Arrays.asHashSet(ardeche, isere));
 		// Checking update is done too
-		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getCities().stream().map(City::getName).collect(toSet()));
-		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
+		assertThat(persistedCountry2.getCities().stream().map(City::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "Grenoble"));
+		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
 		// Ain should'nt have been deleted because we didn't asked for orphan removal
 		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 				.mapKey(Long::new, "id", long.class)
 				.execute();
-		assertNotNull(Iterables.first(loadedAin));
+		assertThat(Iterables.first(loadedAin)).isNotNull();
 	}
 	
 	@Test
@@ -284,7 +281,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		
 		// Changing country cities to see what happens when we save it to the database
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
-		assertEquals(dummyCountry, persistedCountry);
+		assertThat(persistedCountry).isEqualTo(dummyCountry);
 		persistedCountry.getAncientCities().remove(paris);
 		City grenoble = new City(cityIdProvider.giveNewIdentifier());
 		grenoble.setName("Grenoble");
@@ -303,16 +300,17 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		// Checking deletion : for cities we asked for deletion of removed entities so the reloaded instance must have the same content as the memory one
 		// but we didn't for regions, so all of them must be there
 		// (comparison are done on equals/hashCode => id)
-		assertEquals(Arrays.asList(lyon, lyon, grenoble), persistedCountry2.getAncientCities());
-		assertEquals(Arrays.asHashSet(ardeche, isere), persistedCountry2.getStates());
+		assertThat(persistedCountry2.getAncientCities()).isEqualTo(Arrays.asList(lyon, lyon, grenoble));
+		assertThat(persistedCountry2.getStates()).isEqualTo(Arrays.asHashSet(ardeche, isere));
 		// Checking update is done too
-		assertEquals(Arrays.asHashSet("changed", "Grenoble"), persistedCountry2.getAncientCities().stream().map(City::getName).collect(toSet()));
-		assertEquals(Arrays.asHashSet("changed", "ardeche"), persistedCountry2.getStates().stream().map(State::getName).collect(toSet()));
+		assertThat(persistedCountry2.getAncientCities().stream().map(City::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", 
+				"Grenoble"));
+		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
 		// Ain should'nt have been deleted because we didn't asked for orphan removal
 		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 				.mapKey(Long::new, "id", long.class)
 				.execute();
-		assertNotNull(Iterables.first(loadedAin));
+		assertThat(Iterables.first(loadedAin)).isNotNull();
 	}
 }

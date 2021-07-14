@@ -52,9 +52,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.test.PairSetList.pairSetList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -155,7 +154,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		int expectedParamCount = inputValues.size() * primaryKeyColumn.size();
 		verify(jdbcArgCaptor.preparedStatement, times(expectedParamCount)).setInt(jdbcArgCaptor.indexCaptor.capture(), jdbcArgCaptor.valueCaptor.capture());
 		
-		assertEquals(expectedSql, jdbcArgCaptor.statementArgCaptor.getAllValues());
+		assertThat(jdbcArgCaptor.statementArgCaptor.getAllValues()).isEqualTo(expectedSql);
 		
 		// Comparing indexes and values : we need to convert captured values to same format as the expected one
 		// We reassociate each couple to its query ("line") depending on its position in the captured values
@@ -169,7 +168,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 			}
 			capturedValuesAsPairSetList.add(c.getLeft(), c.getRight());
 		});
-		assertEquals(expectedParameters, capturedValuesAsPairSetList);
+		assertThat(capturedValuesAsPairSetList).isEqualTo(expectedParameters);
 	}
 	
 	@Test
@@ -196,12 +195,12 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		verify(jdbcArgCaptor.preparedStatement, times(1)).executeQuery();
 		verify(jdbcArgCaptor.preparedStatement, times(2)).setInt(jdbcArgCaptor.indexCaptor.capture(), jdbcArgCaptor.valueCaptor.capture());
 		
-		assertEquals(Arrays.asList("select dummyTable.dummyPK as dummyTable_dummyPK from dummyTable where dummyTable.dummyPK in (?, ?)"),
-				jdbcArgCaptor.statementArgCaptor.getAllValues());
+		assertThat(jdbcArgCaptor.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("select dummyTable.dummyPK as dummyTable_dummyPK from " 
+				+ "dummyTable where dummyTable.dummyPK in (?, ?)"));
 		
 		List<Duo<Integer, Integer>> expectedPairs = Arrays.asList(new Duo<>(1, 11), new Duo<>(2, 13));
 		PairIterator<Integer, Integer> capturedValues = new PairIterator<>(jdbcArgCaptor.indexCaptor.getAllValues(), jdbcArgCaptor.valueCaptor.getAllValues());
-		assertEquals(expectedPairs, Iterables.copy(capturedValues));
+		assertThat(Iterables.copy(capturedValues)).isEqualTo(expectedPairs);
 	}
 	
 	@Test
@@ -231,7 +230,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 			}
 		};
 		testInstance.select(Arrays.asList());
-		assertTrue(capturedSQL.isEmpty());
+		assertThat(capturedSQL.isEmpty()).isTrue();
 	}
 	
 	public static Object[][] datasources() {
@@ -299,11 +298,11 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		// Checking that selected entities by their id are those expected
 		EntityMappingStrategyTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, new Dialect(), connectionProvider);
 		List<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
-		assertEquals(Arrays.asList(entity1).toString(), select.toString());
+		assertThat(select.toString()).isEqualTo(Arrays.asList(entity1).toString());
 		
 		select = testInstance.select(Arrays.asList(new Toto(100, 1), new Toto(200, 2)));
 		Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> 31 * toto.getId1() + toto.getId2());
-		assertEquals(Arrays.asTreeSet(totoComparator, entity1, entity2).toString(), Arrays.asTreeSet(totoComparator, select).toString());
+		assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator, entity1, entity2).toString());
 	}
 	
 	private static class Toto {

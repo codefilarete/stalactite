@@ -23,8 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Guillaume Mary
@@ -174,7 +174,7 @@ public class ClassMappingStrategyTest {
 	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<Column<Table, Object>, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
-		assertEquals(expectedResult, valuesToInsert);
+		assertThat(valuesToInsert).isEqualTo(expectedResult);
 	}
 	
 	public static Object[][] testGetUpdateValues_diffOnly() {
@@ -203,11 +203,11 @@ public class ClassMappingStrategyTest {
 	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn<Table>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
 		
-		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEqualTo(expectedResult);
 		if (!expectedResult.isEmpty()) {
-			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToUpdate));
+			assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEqualTo(Maps.asMap(colA, modified.a));
 		} else {
-			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToUpdate));
+			assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEqualTo(new HashMap<Column, Object>());
 		}
 	}
 	
@@ -249,24 +249,25 @@ public class ClassMappingStrategyTest {
 	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<UpwhereColumn<Table>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
 		
-		assertEquals(expectedResult, UpwhereColumn.getUpdateColumns(valuesToUpdate));
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEqualTo(expectedResult);
 		if (!expectedResult.isEmpty()) {
-			assertEquals(Maps.asMap(colA, modified.a), UpwhereColumn.getWhereColumns(valuesToUpdate));
+			assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEqualTo(Maps.asMap(colA, modified.a));
 		} else {
-			assertEquals(new HashMap<Column, Object>(), UpwhereColumn.getWhereColumns(valuesToUpdate));
+			assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEqualTo(new HashMap<Column, Object>());
 		}
 	}
 	
 	@Test
 	public void testBeanKeyIsPresent() {
 		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
-		assertThrows(IllegalArgumentException.class, () -> new ClassMappingStrategy<>(Toto.class,
-						targetTable,
-						Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
-						// identifier is not present in previous statement so it leads to the expected exception
-						identifierAccesor,
-						new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
-				"Bean identifier '" + identifierAccesor + "' must have its matching column in the mapping");
+		assertThatExceptionOfType(IllegalArgumentException.class).as("Bean identifier '" + identifierAccesor + "' must have its matching column in " 
+				+ "the mapping").isThrownBy(() -> new ClassMappingStrategy<>(Toto.class,
+				targetTable,
+				Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
+				// identifier is not present in previous statement so it leads to the expected exception
+				identifierAccesor,
+				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {
+				}, c -> false)));
 	}
 	
 	private static class Toto {

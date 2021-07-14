@@ -20,8 +20,7 @@ import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -73,13 +72,13 @@ public class SQLOperationTest {
 			// we add a little wait to let select order to be started 
 			TimeUnit.MILLISECONDS.sleep(200);
 			// really ensure that select is stuck
-			assertFalse(isSelectExecuted.isTrue());
+			assertThat(isSelectExecuted.isTrue()).isFalse();
 			// this must free select order
 			testInstance.cancel();
 			// we let thread stops else it generates non expected exception (caused by test exit)
 			TimeUnit.MILLISECONDS.sleep(200);
 			
-			assertTrue(cancelOperationThrowablePredicate.test(capturedException[0]));
+			assertThat(cancelOperationThrowablePredicate.test(capturedException[0])).isTrue();
 			lockingConnection.commit();    // release lock for clean test exit
 		}
 	}

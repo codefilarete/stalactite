@@ -51,8 +51,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Matchers.anyInt;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -215,7 +215,7 @@ public class JoinedTablesPersisterTest {
 		for (Set<Duo<Integer, Integer>> expectedPair : expectedPairs.asList()) {
 			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
 		}
-		assertEquals(expectedPairs.asList(), obtained);
+		assertThat(obtained).isEqualTo(expectedPairs.asList());
 	}
 	
 	@Test
@@ -230,8 +230,8 @@ public class JoinedTablesPersisterTest {
 		verify(preparedStatement, times(8)).addBatch();
 		verify(preparedStatement, times(4)).executeBatch();
 		verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)", "insert into Toto2(id, x, y, z) values (?, ?, ?, ?)"),
-				statementArgCaptor.getAllValues());
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)", "insert into Toto2(id," 
+				+ " x, y, z) values (?, ?, ?, ?)"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 1).add(2, 17).add(3, 23)
 				.newRow(1, 2).add(2, 29).add(3, 31)
@@ -257,8 +257,8 @@ public class JoinedTablesPersisterTest {
 		verify(preparedStatement, times(8)).addBatch();
 		verify(preparedStatement, times(4)).executeBatch();
 		verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?", "update Toto2 set x = ?, y = ?, z = ? where id = ?"),
-				statementArgCaptor.getAllValues());
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?", "update Toto2 set x = ?," 
+				+ " y = ?, z = ? where id = ?"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 17).add(2, 23).add(3, 1)
 				.newRow(1, 29).add(2, 31).add(3, 2)
@@ -276,7 +276,7 @@ public class JoinedTablesPersisterTest {
 	public void testDelete() throws SQLException {
 		testInstance.delete(Arrays.asList(new Toto(7, 17, 23, 117, 123, -117)));
 		
-		assertEquals(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"), statementArgCaptor.getAllValues());
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"));
 		verify(preparedStatement, times(2)).addBatch();
 		verify(preparedStatement, times(2)).executeBatch();
 		verify(preparedStatement, times(0)).executeUpdate();
@@ -298,7 +298,7 @@ public class JoinedTablesPersisterTest {
 				new Toto(4, 43, 53, 143, 153, -143)
 		));
 		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"), statementArgCaptor.getAllValues());
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"));
 		verify(preparedStatement, times(8)).addBatch();
 		verify(preparedStatement, times(4)).executeBatch();
 		verify(preparedStatement, times(0)).executeUpdate();
@@ -317,7 +317,7 @@ public class JoinedTablesPersisterTest {
 				new Toto(7, 17, 23, 117, 123, -117)
 		));
 		
-		assertEquals(Arrays.asList("delete from Toto2 where id in (?)", "delete from Toto1 where id in (?)"), statementArgCaptor.getAllValues());
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?)", "delete from Toto1 where id in (?)"));
 		verify(preparedStatement, times(2)).executeUpdate();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -334,8 +334,9 @@ public class JoinedTablesPersisterTest {
 				new Toto(4, 43, 53, 143, 153, -143)
 		));
 		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto2 where id in (?, ?, ?)", "delete from Toto2 where id in (?)",
-				"delete from Toto1 where id in (?, ?, ?)", "delete from Toto1 where id in (?)"), statementArgCaptor.getAllValues());
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?, ?, ?)", "delete from Toto2 where id" 
+						+ " in (?)",
+				"delete from Toto1 where id in (?, ?, ?)", "delete from Toto1 where id in (?)"));
 		verify(preparedStatement, times(2)).addBatch();
 		verify(preparedStatement, times(2)).executeBatch();
 		verify(preparedStatement, times(2)).executeUpdate();
@@ -375,7 +376,7 @@ public class JoinedTablesPersisterTest {
 		
 		verify(preparedStatement, times(2)).executeQuery();
 		verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
-		assertEquals(Arrays.asList(
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 				"select Toto1.id as " + totoIdAlias
 						+ ", Toto1.a as " + totoAAlias
 						+ ", Toto1.b as " + totoBAlias
@@ -391,18 +392,17 @@ public class JoinedTablesPersisterTest {
 						+ ", Toto2.x as " + toto2XAlias
 						+ ", Toto2.y as " + toto2YAlias
 						+ ", Toto2.id as " + toto2IdAlias
-						+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"),
-				statementArgCaptor.getAllValues());
+						+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 		assertCapturedPairsEqual(expectedPairs);
 		
 		Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
-		assertEquals(Arrays.asTreeSet(totoComparator,
+		assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 				new Toto(7, 1, 2, 4, 5, 6),
 				new Toto(13, 1, 2, 4, 5, 6),
 				new Toto(17, 1, 2, 4, 5, 6),
 				new Toto(23, 1, 2, 4, 5, 6)
-				).toString(), Arrays.asTreeSet(totoComparator, select).toString());
+		).toString());
 	}
 	
 	private static class Toto implements Identified<Integer> {

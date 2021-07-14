@@ -1,8 +1,9 @@
 package org.gama.stalactite.persistence.engine;
 
 import org.gama.reflection.AccessorDefinition;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -11,8 +12,8 @@ public class ColumnNamingStrategyTest {
 	
 	@Test
 	public void testDefaultGetName() {
-		Assertions.assertEquals("nameId", ColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "setName", int.class)));
-		Assertions.assertEquals("nameId", ColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "getName", String.class)));
+		assertThat(ColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "setName", int.class))).isEqualTo("nameId");
+		assertThat(ColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "getName", String.class))).isEqualTo("nameId");
 	}
 	
 	private static class Toto {

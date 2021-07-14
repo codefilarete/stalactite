@@ -9,10 +9,10 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,11 +38,12 @@ class JoinRootTest {
 		Table table = new Table("toto");
 		ClassMappingStrategy mappingStrategyMock = buildMappingStrategyMock(table);
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingStrategyAdapter(mappingStrategyMock), table);
-		IllegalArgumentException thrownException = assertThrows(IllegalArgumentException.class, () -> {
-			// we don't care about other arguments (null passed) because existing strategy name is checked first
-			entityJoinTree.addRelationJoin("XX", null, null, null, null, OUTER, null, Collections.emptySet());
-		});
-		assertEquals("No strategy with name XX exists to add a new strategy on", thrownException.getMessage());
+		assertThatThrownBy(() -> {
+					// we don't care about other arguments (null passed) because existing strategy name is checked first
+					entityJoinTree.addRelationJoin("XX", null, null, null, null, OUTER, null, Collections.emptySet());
+				})
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("No strategy with name XX exists to add a new strategy on");
 	}
 	
 	@Test
@@ -68,6 +69,6 @@ class JoinRootTest {
 		String tutuAddKey = entityJoinTree.addRelationJoin(tataAddKey, new EntityMappingStrategyAdapter(tutuMappingMock), tataPrimaryKey, tutuPrimaryKey, null, INNER, null, Collections.emptySet());
 		String titiAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(titiMappingMock), totoPrimaryKey, titiPrimaryKey, null, INNER, null, Collections.emptySet());
 		
-		assertEquals(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable), entityJoinTree.giveTables());
+		assertThat(entityJoinTree.giveTables()).isEqualTo(Arrays.asHashSet(totoTable, tataTable, tutuTable, titiTable));
 	}
 }

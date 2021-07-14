@@ -8,8 +8,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.bean.MethodIterator;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -44,15 +43,15 @@ public class NoopResultSetTest {
 				}
 				// invokation result must be a default value
 				if (method.getReturnType().isArray()) {
-					assertTrue(invokationResult.getClass().isArray());
-					assertEquals(method.getReturnType().getComponentType(), invokationResult.getClass().getComponentType());
+					assertThat(invokationResult.getClass().isArray()).isTrue();
+					assertThat(invokationResult.getClass().getComponentType()).isEqualTo(method.getReturnType().getComponentType());
 				} else {
-					assertEquals(Reflections.PRIMITIVE_DEFAULT_VALUES.get(method.getReturnType()), invokationResult);
+					assertThat(invokationResult).isEqualTo(Reflections.PRIMITIVE_DEFAULT_VALUES.get(method.getReturnType()));
 				}
 			}
 		}
 		// checking that iteration over methods really worked
-		assertEquals(191, methodCount);
+		assertThat(methodCount).isEqualTo(191);
 	}
 	
 }

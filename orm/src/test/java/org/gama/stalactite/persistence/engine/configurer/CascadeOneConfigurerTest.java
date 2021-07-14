@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 
 import org.gama.lang.collection.Arrays;
@@ -42,8 +41,7 @@ import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
@@ -138,17 +136,17 @@ class CascadeOneConfigurerTest {
 		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration));
 		
 		// Then
-		assertEquals(Arrays.asSet("id", "capitalId", "name"), countryTable.mapColumnsOnName().keySet());
-		assertEquals(Arrays.asSet("FK_country_capitalId_city_id"), Iterables.collect(countryTable.getForeignKeys(), ForeignKey::getName, HashSet::new));
-		assertEquals(countryTableCapitalColumn, Iterables.first(Iterables.first(countryTable.getForeignKeys()).getColumns()));
-		assertEquals(cityTableIdColumn, Iterables.first(Iterables.first(countryTable.getForeignKeys()).getTargetColumns()));
+		assertThat(countryTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "capitalId", "name"));
+		assertThat(countryTable.getForeignKeys()).extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_country_capitalId_city_id");
+		assertThat(Iterables.first(Iterables.first(countryTable.getForeignKeys()).getColumns())).isEqualTo(countryTableCapitalColumn);
+		assertThat(Iterables.first(Iterables.first(countryTable.getForeignKeys()).getTargetColumns())).isEqualTo(cityTableIdColumn);
 		
-		assertEquals(Arrays.asSet("id", "name"), cityTable.mapColumnsOnName().keySet());
-		assertEquals(Arrays.asSet(), Iterables.collect(cityTable.getForeignKeys(), ForeignKey::getName, HashSet::new));
+		assertThat(cityTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "name"));
+		assertThat(cityTable.getForeignKeys()).extracting(ForeignKey::getName).isEmpty();
 		
 		// Additional checking on foreign key binder : it must have a binder due to relation owned by source throught Country::getCapital
 		ParameterBinder<Identifier> cityParameterBinder = dialect.getColumnBinderRegistry().getBinder(countryTableCapitalColumn);
-		assertNotNull(cityParameterBinder);
+		assertThat(cityParameterBinder).isNotNull();
 		
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		cityParameterBinder.set(preparedStatementMock, 1, new PersistableIdentifier<>(4L));
@@ -159,7 +157,7 @@ class CascadeOneConfigurerTest {
 		// to make underlying binder being called
 		when(resultSetMock.getObject(anyString())).thenReturn(new Object());
 		when(resultSetMock.getLong(anyString())).thenReturn(42L);
-		assertEquals(new PersistedIdentifier<>(42L), cityParameterBinder.get(resultSetMock, "whateverColumn"));
+		assertThat(cityParameterBinder.get(resultSetMock, "whateverColumn")).isEqualTo(new PersistedIdentifier<>(42L));
 	}
 	
 	@Test
@@ -239,13 +237,13 @@ class CascadeOneConfigurerTest {
 				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration));
 		
-		assertEquals(Arrays.asSet("id", "countryId", "name"), cityTable.mapColumnsOnName().keySet());
-		assertEquals(Arrays.asSet("FK_city_countryId_country_id"), Iterables.collect(cityTable.getForeignKeys(), ForeignKey::getName, HashSet::new));
-		assertEquals(cityTableCountryColumn, Iterables.first(Iterables.first(cityTable.getForeignKeys()).getColumns()));
-		assertEquals(countryTableIdColumn, Iterables.first(Iterables.first(cityTable.getForeignKeys()).getTargetColumns()));
+		assertThat(cityTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "countryId", "name"));
+		assertThat(cityTable.getForeignKeys()).extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_city_countryId_country_id");
+		assertThat(Iterables.first(Iterables.first(cityTable.getForeignKeys()).getColumns())).isEqualTo(cityTableCountryColumn);
+		assertThat(Iterables.first(Iterables.first(cityTable.getForeignKeys()).getTargetColumns())).isEqualTo(countryTableIdColumn);
 		
-		assertEquals(Arrays.asSet("id", "name"), countryTable.mapColumnsOnName().keySet());
-		assertEquals(Arrays.asSet(), Iterables.collect(countryTable.getForeignKeys(), ForeignKey::getName, HashSet::new));
+		assertThat(countryTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "name"));
+		assertThat(countryTable.getForeignKeys()).extracting(ForeignKey::getName).isEmpty();
 	}
 	
 }

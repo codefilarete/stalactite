@@ -8,12 +8,12 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.test.Assertions;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.lang.collection.Maps.asMap;
 import static org.mockito.Mockito.mock;
 
@@ -30,7 +30,7 @@ class GeneratedKeysReaderTest {
 				asMap("key", 17L),
 				asMap("key", 19L)
 		)));
-		Assertions.assertEquals(Arrays.asList(13L, 17L, 19L), readValues);
+		assertThat(readValues).containsExactly(13L, 17L, 19L);
 	}
 	
 	@Test

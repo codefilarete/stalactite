@@ -1,15 +1,13 @@
 package org.gama.stalactite.persistence.query;
 
-import java.util.HashMap;
-
-import org.gama.lang.collection.ValueFactoryMap;
-import org.gama.lang.test.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.gama.lang.collection.ValueFactoryHashMap;
+import org.gama.lang.exception.Exceptions;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.MappingEase;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
@@ -27,7 +25,8 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -67,7 +66,7 @@ class EntityCriteriaSupportTest {
 				.or(Country::setName, Operators.gteq("11"))
 				;
 		
-		WhereBuilder queryBuilder = new WhereBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getCriteria(), new DMLNameProvider(new ValueFactoryMap<>(new HashMap<>(), Table::getName)));
+		WhereBuilder queryBuilder = new WhereBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getCriteria(), new DMLNameProvider(new ValueFactoryHashMap<>(Table::getName)));
 		System.out.println(queryBuilder.toSQL());
 	}
 	
@@ -86,7 +85,7 @@ class EntityCriteriaSupportTest {
 				.getMappingStrategy();
 		
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
-		assertEquals(nameColumn, testInstance.getColumn(new AccessorByMethodReference<>(Country::getName)));
+		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getName))).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -112,7 +111,7 @@ class EntityCriteriaSupportTest {
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
 				((IEntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMappingStrategy());
-		assertEquals(nameColumn, testInstance.getColumn(new AccessorByMethodReference<>(Country::getCapital), new AccessorByMethodReference<>(City::getName)));
+		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCapital), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -138,7 +137,7 @@ class EntityCriteriaSupportTest {
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
 				((IEntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMappingStrategy());
-		assertEquals(nameColumn, testInstance.getColumn(new AccessorByMethodReference<>(Country::getCities), new AccessorByMethodReference<>(City::getName)));
+		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCities), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -154,8 +153,9 @@ class EntityCriteriaSupportTest {
 				.getMappingStrategy();
 		
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
-		Assertions.assertThrows(() -> testInstance.getColumn(new AccessorByMethodReference<>(Country::getName)),
-				Assertions.hasExceptionInCauses(RuntimeMappingException.class).andProjection(Assertions.hasMessage("Column for Country::getName was not found")));
+		assertThatThrownBy(() -> testInstance.getColumn(new AccessorByMethodReference<>(Country::getName)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Column for Country::getName was not found");
 	}
 	
 	@Test
@@ -171,7 +171,8 @@ class EntityCriteriaSupportTest {
 				.getMappingStrategy();
 		
 		EntityCriteriaSupport<Country> testInstance = new EntityCriteriaSupport<>(mappingStrategy);
-		Assertions.assertThrows(() -> testInstance.andMany(Country::getCities, City::getName, Operators.eq("Grenoble")),
-				Assertions.hasExceptionInCauses(RuntimeMappingException.class).andProjection(Assertions.hasMessage("Column for Country::getCities > City::getName was not found")));
+		assertThatThrownBy(() -> testInstance.andMany(Country::getCities, City::getName, Operators.eq("Grenoble")))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Column for Country::getCities > City::getName was not found");
 	}
 }

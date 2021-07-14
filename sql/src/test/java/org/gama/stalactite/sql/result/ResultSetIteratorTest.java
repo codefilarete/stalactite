@@ -14,10 +14,8 @@ import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class ResultSetIteratorTest {
 	
@@ -44,7 +42,7 @@ public class ResultSetIteratorTest {
 				return rs.getString("name");
 			}
 		};
-		assertFalse(resultSetIterator.hasNext());
+		assertThat(resultSetIterator.hasNext()).isFalse();
 	}
 	
 	@ParameterizedTest
@@ -66,13 +64,13 @@ public class ResultSetIteratorTest {
 				return rs.getString("name");
 			}
 		};
-		assertTrue(resultSetIterator.hasNext());
+		assertThat(resultSetIterator.hasNext()).isTrue();
 		resultSetIterator.next();
-		assertTrue(resultSetIterator.hasNext());
+		assertThat(resultSetIterator.hasNext()).isTrue();
 		resultSetIterator.next();
-		assertTrue(resultSetIterator.hasNext());
+		assertThat(resultSetIterator.hasNext()).isTrue();
 		resultSetIterator.next();
-		assertFalse(resultSetIterator.hasNext());
+		assertThat(resultSetIterator.hasNext()).isFalse();
 	}
 	
 	@ParameterizedTest
@@ -95,12 +93,12 @@ public class ResultSetIteratorTest {
 			}
 		};
 		// No call to hasNext() throws NoSuchElementException
-		assertThrows(NoSuchElementException.class, resultSetIterator::next);
+		assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(resultSetIterator::next);
 		
 		// Multiple calls to next() without calling hasNext() throw NoSuchElementException
-		assertTrue(resultSetIterator.hasNext());
+		assertThat(resultSetIterator.hasNext()).isTrue();
 		resultSetIterator.next();
-		assertThrows(NoSuchElementException.class, resultSetIterator::next);
+		assertThatExceptionOfType(NoSuchElementException.class).isThrownBy(resultSetIterator::next);
 	}
 	
 	@ParameterizedTest
@@ -122,7 +120,7 @@ public class ResultSetIteratorTest {
 				return rs.getString("name");
 			}
 		};
-		assertEquals(Arrays.asList("a", "b", "c"), resultSetIterator.convert());
+		assertThat(resultSetIterator.convert()).isEqualTo(Arrays.asList("a", "b", "c"));
 	}
 	
 	public void ensureTable(Connection connection) throws SQLException {

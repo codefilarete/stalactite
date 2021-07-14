@@ -4,12 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableDelete;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableUpdate;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
@@ -26,9 +24,9 @@ import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.stalactite.query.model.Operators.eq;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -55,27 +53,27 @@ public class PersistenceContextTest {
 		
 		// test update
 		int updatedRowCount = testInstance.update(totoTable).set(id, 1L).execute();
-		assertEquals(1, updatedRowCount);
+		assertThat(updatedRowCount).isEqualTo(1);
 		
 		ResultSet select_from_toto = connection.createStatement().executeQuery("select id, name from toto");
 		select_from_toto.next();
-		assertEquals(1, select_from_toto.getInt(1));
-		assertEquals("Hello world !", select_from_toto.getString(2));
+		assertThat(select_from_toto.getInt(1)).isEqualTo(1);
+		assertThat(select_from_toto.getString(2)).isEqualTo("Hello world !");
 		
 		// test update with where
 		ExecutableUpdate set = testInstance.update(totoTable).set(id, 2L);
 		set.where(id, eq(1L));
 		updatedRowCount = set.execute();
-		assertEquals(1, updatedRowCount);
+		assertThat(updatedRowCount).isEqualTo(1);
 		
 		select_from_toto = connection.createStatement().executeQuery("select id from toto");
 		select_from_toto.next();
-		assertEquals(2, select_from_toto.getInt(1));
+		assertThat(select_from_toto.getInt(1)).isEqualTo(2);
 		
 		// test delete
 		ExecutableDelete delete = testInstance.delete(totoTable);
 		delete.where(id, eq(2L));
-		assertEquals(1, delete.execute());
+		assertThat(delete.execute()).isEqualTo(1);
 	}
 	
 	@Test
@@ -92,9 +90,9 @@ public class PersistenceContextTest {
 		testInstance.delete(totoTable).where(id, eq(12L)).and(name, eq("42")).execute();
 		testInstance.update(totoTable).set(id, 6L).where(id, eq(12L)).and(name, eq("42")).execute();
 		
-		assertEquals(Arrays.asList(
+		assertThat(sqlCaptor.getAllValues()).isEqualTo(Arrays.asList(
 				"delete from toto where id = ? and name = ?",
-				"update toto set id = ? where id = ? and name = ?"), sqlCaptor.getAllValues());
+				"update toto set id = ? where id = ? and name = ?"));
 	}
 	
 	
@@ -115,24 +113,24 @@ public class PersistenceContextTest {
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
 		
 		List<Toto> records = testInstance.select(Toto::new, id);
-		assertEquals(Arrays.asList(new Toto(1), new Toto(2)).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1), new Toto(2)).toString());
 		
 		records = testInstance.select(Toto::new, id, name);
-		assertEquals(Arrays.asList(new Toto(1, "Hello"), new Toto(2, "World")).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, "Hello"), new Toto(2, "World")).toString());
 		
 		records = testInstance.select(Toto::new, id,
 				select -> select.add(name, Toto::setName).add(name, Toto::setName2));
-		assertEquals(Arrays.asList("Hello", "World"), Iterables.collect(records, Toto::getName2, ArrayList::new));
+		assertThat(records).extracting(Toto::getName2).isEqualTo(Arrays.asList("Hello", "World"));
 		
 		records = testInstance.select(Toto::new, id,
 				select -> select.add(name, Toto::setName),
 				where -> where.and(id, eq(1)));
-		assertEquals(Arrays.asList(new Toto(1, "Hello")).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, "Hello")).toString());
 		
 		records = testInstance.select(Toto::new, id, select -> 
 				select.add(name, Toto::setName), where -> 
 				where.and(id, eq(2)));
-		assertEquals(Arrays.asList(new Toto(2, "World")).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(2, "World")).toString());
 	}
 	
 	@Test
@@ -157,11 +155,11 @@ public class PersistenceContextTest {
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
 		
 		List<Toto> records = testInstance.select(Toto::new, id, dummyProp);
-		assertEquals(Arrays.asList(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World"))).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World"))).toString());
 		
 		records = testInstance.select(Toto::new, id,
 				select -> select.add(dummyProp, Toto::setDummyWrappedProp));
-		assertEquals(Arrays.asList("Hello", "World"), Iterables.collect(records, chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate), ArrayList::new));
+		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).isEqualTo(Arrays.asList("Hello", "World"));
 	}
 	
 	@Test
@@ -186,11 +184,11 @@ public class PersistenceContextTest {
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
 		
 		List<Toto> records = testInstance.select(Toto::new, id, dummyProp);
-		assertEquals(Arrays.asList(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World"))).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World"))).toString());
 		
 		records = testInstance.select(Toto::new, id,
 				select -> select.add(dummyProp, Toto::setDummyWrappedProp));
-		assertEquals(Arrays.asList("Hello", "World"), Iterables.collect(records, chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate), ArrayList::new));
+		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).isEqualTo(Arrays.asList("Hello", "World"));
 	}
 	
 	@Test
@@ -214,7 +212,7 @@ public class PersistenceContextTest {
 		List<Toto> records = testInstance.newQuery(QueryEase.select(id, name).from(totoTable), Toto.class)
 				.mapKey(Toto::new, id, name)
 				.execute();
-		assertEquals(Arrays.asList(new Toto(1, "Hello"), new Toto(2, "World")).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, "Hello"), new Toto(2, "World")).toString());
 	}
 	
 	@Test
@@ -248,7 +246,7 @@ public class PersistenceContextTest {
 		expectedToto1.setTata(new Tata("World"));
 		Toto expectedToto2 = new Toto(2, "Bonjour");
 		expectedToto2.setTata(new Tata("Tout le monde"));
-		assertEquals(Arrays.asList(expectedToto1, expectedToto2).toString(), records.toString());
+		assertThat(records.toString()).isEqualTo(Arrays.asList(expectedToto1, expectedToto2).toString());
 	}
 	
 	private static class Toto {
@@ -302,7 +300,7 @@ public class PersistenceContextTest {
 			return this;
 		}
 		
-		/** Implemented to ease debug and comparison for assertEquals(..) */
+		/** Implemented to ease debug and represention of failing test cases */
 		@Override
 		public String toString() {
 			return Strings.footPrint(this, Toto::getId, Toto::getName, Toto::getDummyWrappedProp, Toto::getTata);
@@ -329,7 +327,7 @@ public class PersistenceContextTest {
 			return surrogate;
 		}
 		
-		/** Implemented to ease debug and comparison for assertEquals(..) */
+		/** Implemented to ease debug and represention of failing test cases */
 		@Override
 		public String toString() {
 			return Strings.footPrint(this, Wrapper::getSurrogate);
@@ -347,7 +345,7 @@ public class PersistenceContextTest {
 			return name;
 		}
 		
-		/** Implemented to ease debug and comparison for assertEquals(..) */
+		/** Implemented to ease debug and represention of failing test cases */
 		@Override
 		public String toString() {
 			return Strings.footPrint(this, Tata::getName);

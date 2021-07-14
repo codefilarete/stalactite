@@ -5,7 +5,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.lang.test.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -27,7 +27,7 @@ class SelectTest {
 		);
 		testInstance.add("count(*)");
 		
-		assertEquals(testInstance.giveColumnAliases(), Maps.forHashMap(Column.class, String.class)
+		assertThat(testInstance.giveColumnAliases()).isEqualTo(Maps.forHashMap(Column.class, String.class)
 				.add(abcColumn, "HeT4L")
 				.add(defColumn, "Gef75J")
 				.add(ghiColumn, "ae8MO")

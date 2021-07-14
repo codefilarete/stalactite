@@ -12,10 +12,9 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_READER;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
  * @author Guillaume Mary
@@ -38,21 +37,21 @@ public class ResultSetRowTransformerTest {
 		
 		resultSet.next();
 		Car vehicle1 = testInstance.transform(resultSet);
-		assertEquals("bicycle", vehicle1.getName());
-		assertEquals(2, vehicle1.getWheelCount());
+		assertThat(vehicle1.getName()).isEqualTo("bicycle");
+		assertThat(vehicle1.getWheelCount()).isEqualTo(2);
 		resultSet.next();
 		Car vehicle2 = testInstance.transform(resultSet);
-		assertEquals("moto", vehicle2.getName());
-		assertEquals(2, vehicle2.getWheelCount());
+		assertThat(vehicle2.getName()).isEqualTo("moto");
+		assertThat(vehicle2.getWheelCount()).isEqualTo(2);
 		resultSet.next();
 		Car vehicle3 = testInstance.transform(resultSet);
-		assertEquals("car", vehicle3.getName());
-		assertEquals(4, vehicle3.getWheelCount());
+		assertThat(vehicle3.getName()).isEqualTo("car");
+		assertThat(vehicle3.getWheelCount()).isEqualTo(4);
 		resultSet.next();
 		Car vehicle4 = testInstance.transform(resultSet);
-		assertEquals("car", vehicle4.getName());
+		assertThat(vehicle4.getName()).isEqualTo("car");
 		// vehicle3 and vehicle4 shouldn't be the same despite their identical name
-		assertNotSame(vehicle4, vehicle3);
+		assertThat(vehicle3).isNotSameAs(vehicle4);
 	}
 	
 	@Test
@@ -68,10 +67,10 @@ public class ResultSetRowTransformerTest {
 		));
 		
 		resultSet.next();
-		assertEquals(43, testInstance.transform(resultSet).getValue());
+		assertThat(testInstance.transform(resultSet).getValue()).isEqualTo(43);
 		resultSet.next();
 		// no change on this one because "b" column is null on the row and we took null into account during incrementation
-		assertEquals(666, testInstance.transform(resultSet).getValue());
+		assertThat(testInstance.transform(resultSet).getValue()).isEqualTo(666);
 	}
 	
 	/**
@@ -94,10 +93,10 @@ public class ResultSetRowTransformerTest {
 		));
 		
 		resultSet.next();
-		assertEquals(43, testInstance.transform(resultSet).getValue());
+		assertThat(testInstance.transform(resultSet).getValue()).isEqualTo(43);
 		resultSet.next();
 		// no change on this one because "b" column is null on the row and we took null into account during incrementation
-		assertEquals(709, testInstance.transform(resultSet).getValue());
+		assertThat(testInstance.transform(resultSet).getValue()).isEqualTo(709);
 	}
 	
 	
@@ -110,7 +109,7 @@ public class ResultSetRowTransformerTest {
 		ResultSetRowTransformer<Integer, ModifiableInt> testInstance = sourceInstance.copyWithAliases(Maps.asHashMap("a", "x").add("b", "y"));
 		
 		// of course ....
-		assertNotSame(sourceInstance, testInstance);
+		assertThat(testInstance).isNotSameAs(sourceInstance);
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class).add("x", 42).add("y", 1),
@@ -118,10 +117,10 @@ public class ResultSetRowTransformerTest {
 		));
 		
 		resultSet.next();
-		assertEquals(43, testInstance.transform(resultSet).getValue());
+		assertThat(testInstance.transform(resultSet).getValue()).isEqualTo(43);
 		resultSet.next();
 		// no change on this one because "b" column is null on the row and we took null into account during incrementation
-		assertEquals(666, testInstance.transform(resultSet).getValue());
+		assertThat(testInstance.transform(resultSet).getValue()).isEqualTo(666);
 	}
 	
 	@Test
@@ -138,9 +137,9 @@ public class ResultSetRowTransformerTest {
 		
 		resultSet.next();
 		Car result = testInstance.transform(resultSet);
-		assertEquals("peugeot", result.getName());
-		assertEquals(4, result.getWheelCount());
-		assertEquals("red", result.getColor());
+		assertThat(result.getName()).isEqualTo("peugeot");
+		assertThat(result.getWheelCount()).isEqualTo(4);
+		assertThat(result.getColor()).isEqualTo("red");
 	}
 	
 	@Test
@@ -156,8 +155,8 @@ public class ResultSetRowTransformerTest {
 		
 		resultSet.next();
 		Person result = testInstance.transform(resultSet);
-		assertEquals("paul", result.getName());
-		assertEquals(Arrays.asSet("rue Vaugirard", "rue Menon"), new HashSet<>(result.getAddresses()));
+		assertThat(result.getName()).isEqualTo("paul");
+		assertThat(new HashSet<>(result.getAddresses())).isEqualTo(Arrays.asSet("rue Vaugirard", "rue Menon"));
 	}
 	
 	@Test
@@ -174,8 +173,8 @@ public class ResultSetRowTransformerTest {
 		
 		resultSet.next();
 		Person result = testInstance.transform(resultSet);
-		assertEquals("paul", result.getName());
-		assertEquals(Arrays.asSet("rue Vaugirard", "rue Menon"), new HashSet<>(result.getAddresses()));
+		assertThat(result.getName()).isEqualTo("paul");
+		assertThat(new HashSet<>(result.getAddresses())).isEqualTo(Arrays.asSet("rue Vaugirard", "rue Menon"));
 	}
 	
 	private static class Vehicle {

@@ -5,7 +5,7 @@ import java.sql.Savepoint;
 import org.gama.lang.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -37,18 +37,18 @@ public class TransactionListenerCollectionTest {
 		// With a non-temporary listener, our counter will be incremented as we call afterCommit()
 		isTemporary.setFalse();
 		testInstance.afterCommit();
-		assertEquals(1, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(1);
 		// A second call to afterCommit() will still increment our counter
 		testInstance.afterCommit();
-		assertEquals(2, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(2);
 		
 		// But if the listener is set as temporary then only next call to afterCommit() will be effective
 		isTemporary.setTrue();
 		testInstance.afterCommit();
-		assertEquals(3, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(3);
 		// no more increment
 		testInstance.afterCommit();
-		assertEquals(3, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(3);
 	}
 	
 	@Test
@@ -88,18 +88,18 @@ public class TransactionListenerCollectionTest {
 		// With a non-temporary listener, our counter will be incremented as we call afterRollback()
 		isTemporary.setFalse();
 		testInstance.afterRollback();
-		assertEquals(1, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(1);
 		// A second call to afterRollback() will still increment our counter
 		testInstance.afterRollback();
-		assertEquals(2, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(2);
 		
 		// But if the listener is set as temporary then only next call to afterRollback() will be effective
 		isTemporary.setTrue();
 		testInstance.afterRollback();
-		assertEquals(3, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(3);
 		// no more increment
 		testInstance.afterRollback();
-		assertEquals(3, modifiableInt.getValue());
+		assertThat(modifiableInt.getValue()).isEqualTo(3);
 	}
 	
 	private static class MutableBoolean {

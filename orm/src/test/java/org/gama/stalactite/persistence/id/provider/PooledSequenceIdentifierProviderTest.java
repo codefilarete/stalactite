@@ -7,7 +7,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
@@ -22,10 +24,8 @@ import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.lang.test.Assertions.assertThrows;
-import static org.gama.lang.test.Assertions.hasExceptionInCauses;
-import static org.gama.lang.test.Assertions.hasMessage;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Guillaume Mary
@@ -71,7 +71,7 @@ public class PooledSequenceIdentifierProviderTest {
 		}
 		
 		// The generated values must be those expected
-		assertEquals(expectedGeneration, generated);
+		assertThat(generated).isEqualTo(expectedGeneration);
 	}
 	
 	@Test
@@ -94,7 +94,8 @@ public class PooledSequenceIdentifierProviderTest {
 		Executor sameThreadExecutor = Runnable::run;
 		PooledSequenceIdentifierProvider testInstance = new PooledSequenceIdentifierProvider(starterKit, 2, sameThreadExecutor, Duration.ofSeconds(2),
 				sequenceIdentifierGenerator);
-		assertThrows(testInstance::giveNewIdentifier, hasExceptionInCauses(RuntimeException.class).andProjection(
-				hasMessage("Can't execute operation in separate transaction because connection provider doesn't implement o.g.s.p.e.SeparateTransactionExecutor")));
+		assertThatThrownBy(testInstance::giveNewIdentifier)
+				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Can't execute operation in separate transaction because connection provider doesn't implement o.g.s.p.e.SeparateTransactionExecutor");
 	}
 }

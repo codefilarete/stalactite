@@ -6,9 +6,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.lang.function.Serie.NowSerie;
-import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
@@ -23,8 +24,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Guillaume Mary
@@ -51,7 +53,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	@Test
 	public void testBuild_versionedPropertyIsOfUnsupportedType_throwsException() {
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
-		assertThrows(UnsupportedOperationException.class, () -> MappingEase.entityBuilder(Country.class,
+		assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -94,18 +96,18 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		countryPersister.update(dummyCountryClone1, dummyCountry, true);
 		
 		// checking
-		assertEquals(2, dummyCountryClone1.getVersion());
-		assertEquals(1, dummyCountry.getVersion());
+		assertThat(dummyCountryClone1.getVersion()).isEqualTo(2);
+		assertThat(dummyCountry.getVersion()).isEqualTo(1);
 		
 		// the reloaded version should be up to date
 		Country dummyCountryClone2 = countryPersister.select(dummyCountry.getId());
-		assertEquals(2, dummyCountryClone2.getVersion());
+		assertThat(dummyCountryClone2.getVersion()).isEqualTo(2);
 		
 		// another update should upgraded the entity again
 		dummyCountryClone2.setName("Tutu");
 		countryPersister.update(dummyCountryClone2, dummyCountryClone1, true);
-		assertEquals(3, dummyCountryClone2.getVersion());
-		assertEquals(1, dummyCountry.getVersion());
+		assertThat(dummyCountryClone2.getVersion()).isEqualTo(3);
+		assertThat(dummyCountry.getVersion()).isEqualTo(1);
 	}
 	
 	@Test
@@ -148,18 +150,18 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		countryPersister.update(dummyCountryClone1, dummyCountry, true);
 		
 		// checking
-		assertEquals(nowHistory.get(1), dummyCountryClone1.getModificationDate());
-		assertEquals(nowHistory.get(0), dummyCountry.getModificationDate());
+		assertThat(dummyCountryClone1.getModificationDate()).isEqualTo(nowHistory.get(1));
+		assertThat(dummyCountry.getModificationDate()).isEqualTo(nowHistory.get(0));
 		
 		// the reloaded version should be up to date
 		Country dummyCountryClone2 = countryPersister.select(dummyCountry.getId());
-		assertEquals(nowHistory.get(1), dummyCountryClone2.getModificationDate());
+		assertThat(dummyCountryClone2.getModificationDate()).isEqualTo(nowHistory.get(1));
 		
 		// another update should upgraded the entity again
 		dummyCountryClone2.setName("Tutu");
 		countryPersister.update(dummyCountryClone2, dummyCountryClone1, true);
-		assertEquals(nowHistory.get(2), dummyCountryClone2.getModificationDate());
-		assertEquals(nowHistory.get(0), dummyCountry.getModificationDate());
+		assertThat(dummyCountryClone2.getModificationDate()).isEqualTo(nowHistory.get(2));
+		assertThat(dummyCountry.getModificationDate()).isEqualTo(nowHistory.get(0));
 	}
 	
 	@Test
@@ -186,7 +188,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 		dummyCountry.setName("France");
 		countryPersister.insert(dummyCountry);
-		assertEquals(1, dummyCountry.getVersion());
+		assertThat(dummyCountry.getVersion()).isEqualTo(1);
 		
 		// test case : we out of sync the entity by loading it from database while another process will update it
 		Country dummyCountryClone = countryPersister.select(dummyCountry.getId());
@@ -197,18 +199,20 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		// the update must fail because the updated object is out of sync
 		dummyCountryClone.setName("Tata");
 		// the following should go wrong since version is not up to date on the clone and the original
-		Assertions.assertThrows(() -> countryPersister.update(dummyCountryClone, dummyCountry, true),
-				Assertions.hasExceptionInCauses(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
-		Assertions.assertThrows(() -> countryPersister.delete(dummyCountry),
-				Assertions.hasExceptionInCauses(StaleObjectExcepion.class).andProjection(Assertions.hasMessage("1 rows were expected to be hit but only 0 were effectively")));
+		assertThatThrownBy(() -> countryPersister.update(dummyCountryClone, dummyCountry, true))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, StaleObjectExcepion.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("1 rows were expected to be hit but only 0 were effectively");
+		assertThatThrownBy(() -> countryPersister.delete(dummyCountry))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, StaleObjectExcepion.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("1 rows were expected to be hit but only 0 were effectively");
 		// version is not reverted because rollback wasn't invoked 
-		assertEquals(2, dummyCountryClone.getVersion());
+		assertThat(dummyCountryClone.getVersion()).isEqualTo(2);
 		// ... but it is when we rollback
 		connectionProvider.getCurrentConnection().rollback();
-		assertEquals(1, dummyCountryClone.getVersion());
+		assertThat(dummyCountryClone.getVersion()).isEqualTo(1);
 		
 		// check that version is robust to multiple rollback
 		connectionProvider.getCurrentConnection().rollback();
-		assertEquals(1, dummyCountryClone.getVersion());
+		assertThat(dummyCountryClone.getVersion()).isEqualTo(1);
 	}
 }

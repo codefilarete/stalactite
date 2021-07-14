@@ -9,9 +9,8 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePay
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -32,7 +31,7 @@ public class PersisterListenerTest {
 		
 		ArrayList<Object> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
-		assertEquals(result, testInstance.doWithSelectListener(entities, () -> result));
+		assertThat(testInstance.doWithSelectListener(entities, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeSelect(eq(entities));
 		verify(listenerMock).afterSelect(eq(result));
@@ -46,8 +45,9 @@ public class PersisterListenerTest {
 		
 		ArrayList<Object> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithSelectListener(entities, () -> { throw error; }));
-		assertSame(error, thrownException);
+		assertThatThrownBy(() -> testInstance.doWithSelectListener(entities, () -> {
+					throw error;
+				})).isSameAs(error);
 		
 		verify(listenerMock).beforeSelect(eq(entities));
 		verify(listenerMock).onError(eq(entities), eq(error));
@@ -62,7 +62,7 @@ public class PersisterListenerTest {
 		
 		ArrayList<Object> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
-		assertEquals(result, testInstance.doWithInsertListener(entities, () -> result));
+		assertThat(testInstance.doWithInsertListener(entities, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeInsert(eq(entities));
 		verify(listenerMock).afterInsert(eq(result));
@@ -76,8 +76,9 @@ public class PersisterListenerTest {
 		
 		ArrayList<Object> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithInsertListener(entities, () -> { throw error; }));
-		assertSame(error, thrownException);
+		assertThatThrownBy(() -> testInstance.doWithInsertListener(entities, () -> {
+			throw error;
+		})).isSameAs(error);
 		
 		verify(listenerMock).beforeInsert(eq(entities));
 		verify(listenerMock).onError(eq(entities), eq(error));
@@ -93,7 +94,7 @@ public class PersisterListenerTest {
 		ArrayList<UpdatePayload> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
 		
-		assertEquals(result, testInstance.doWithUpdateListener(entities, true, (p, b) -> result));
+		assertThat(testInstance.doWithUpdateListener(entities, true, (p, b) -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeUpdate(eq(entities), eq(true));
 		verify(listenerMock).afterUpdate(eq(result), eq(true));
@@ -107,8 +108,9 @@ public class PersisterListenerTest {
 		
 		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithUpdateListener(entities, true, (p, b) -> { throw error; }));
-		assertSame(error, thrownException);
+		assertThatThrownBy(() -> testInstance.doWithUpdateListener(entities, true, (p, b) -> {
+			throw error;
+		})).isSameAs(error);
 		
 		verify(listenerMock).beforeUpdate(eq(entities), eq(true));
 		verify(listenerMock).onError(eq(entities), eq(error));
@@ -123,7 +125,7 @@ public class PersisterListenerTest {
 		
 		ArrayList<Object> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
-		assertEquals(result, testInstance.doWithUpdateByIdListener(entities, () -> result));
+		assertThat(testInstance.doWithUpdateByIdListener(entities, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeUpdateById(eq(entities));
 		verify(listenerMock).afterUpdateById(eq(result));
@@ -137,8 +139,9 @@ public class PersisterListenerTest {
 		
 		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithUpdateByIdListener(entities, () -> { throw error; }));
-		assertSame(error, thrownException);
+		assertThatThrownBy(() -> testInstance.doWithUpdateByIdListener(entities, () -> {
+			throw error;
+		})).isSameAs(error);
 		
 		verify(listenerMock).beforeUpdateById(eq(entities));
 		verify(listenerMock).onError(eq(entities), eq(error));
@@ -153,7 +156,7 @@ public class PersisterListenerTest {
 		
 		ArrayList<Object> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
-		assertEquals(result, testInstance.doWithDeleteListener(entities, () -> result));
+		assertThat(testInstance.doWithDeleteListener(entities, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeDelete(eq(entities));
 		verify(listenerMock).afterDelete(eq(result));
@@ -167,8 +170,9 @@ public class PersisterListenerTest {
 		
 		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithDeleteListener(entities, () -> { throw error; }));
-		assertSame(error, thrownException);
+		assertThatThrownBy(() -> testInstance.doWithDeleteListener(entities, () -> {
+			throw error;
+		})).isSameAs(error);
 		
 		verify(listenerMock).beforeDelete(eq(entities));
 		verify(listenerMock).onError(eq(entities), eq(error));
@@ -183,7 +187,7 @@ public class PersisterListenerTest {
 		
 		ArrayList<Object> entities = new ArrayList<>();
 		ArrayList<Object> result = new ArrayList<>();
-		assertEquals(result, testInstance.doWithDeleteByIdListener(entities, () -> result));
+		assertThat(testInstance.doWithDeleteByIdListener(entities, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeDeleteById(eq(entities));
 		verify(listenerMock).afterDeleteById(eq(result));
@@ -197,8 +201,9 @@ public class PersisterListenerTest {
 		
 		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		RuntimeException thrownException = assertThrows(RuntimeException.class, () -> testInstance.doWithDeleteByIdListener(entities, () -> { throw error; }));
-		assertSame(error, thrownException);
+		assertThatThrownBy(() -> testInstance.doWithDeleteByIdListener(entities, () -> {
+			throw error;
+		})).isSameAs(error);
 		
 		verify(listenerMock).beforeDeleteById(eq(entities));
 		verify(listenerMock).onError(eq(entities), eq(error));

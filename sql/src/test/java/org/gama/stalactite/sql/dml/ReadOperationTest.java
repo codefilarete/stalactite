@@ -18,8 +18,7 @@ import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -49,8 +48,8 @@ public class ReadOperationTest {
 		testInstance.setValue(1, 1L);
 		testInstance.setValue(2, "tata");
 		ResultSet resultSet = testInstance.execute();
-		assertTrue(resultSet.next());
-		assertEquals(0, resultSet.getInt(1));
+		assertThat(resultSet.next()).isTrue();
+		assertThat(resultSet.getInt(1)).isEqualTo(0);
 	}
 	
 	@Test
@@ -63,8 +62,8 @@ public class ReadOperationTest {
 		testInstance.setValue("id", 1L);
 		testInstance.setValue("name", "tata");
 		ResultSet resultSet = testInstance.execute();
-		assertTrue(resultSet.next());
-		assertEquals(0, resultSet.getInt(1));
+		assertThat(resultSet.next()).isTrue();
+		assertThat(resultSet.getInt(1)).isEqualTo(0);
 	}
 	
 	@Test
@@ -90,8 +89,8 @@ public class ReadOperationTest {
 		
 		testInstance.setValue("id", 1L);
 		testInstance.setValue("name", "tata");
-		assertEquals(0, beforeValuesSetInvokationCount.getValue());
-		assertEquals(Maps.asHashMap("id", (Object) 1L).add("name", "tata"), capturedValues);
+		assertThat(beforeValuesSetInvokationCount.getValue()).isEqualTo(0);
+		assertThat(capturedValues).isEqualTo(Maps.asHashMap("id", (Object) 1L).add("name", "tata"));
 	}
 	
 }

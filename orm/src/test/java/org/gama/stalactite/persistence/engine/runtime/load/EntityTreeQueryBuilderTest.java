@@ -6,7 +6,6 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.gama.lang.collection.Maps;
-import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -19,9 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -64,15 +63,14 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery<?> entityTreeQuery = testInstance.buildSelectQuery();
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
-		assertEquals("select"
-						+ " Toto.id as Toto_id, Toto.name as Toto_name"
-						+ ", Toto.tata1Id as Toto_tata1Id, Toto.tata2Id as Toto_tata2Id"
-						+ ", x.id as x_id, x.name as x_name"
-						+ ", y.id as y_id, y.name as y_name"
-						+ " from Toto"
-						+ " inner join Tata as x on Toto.tata1Id = x.id"
-						+ " inner join Tata as y on Toto.tata2Id = y.id"
-				, sqlQueryBuilder.toSQL());
+		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
+				+ " Toto.id as Toto_id, Toto.name as Toto_name"
+				+ ", Toto.tata1Id as Toto_tata1Id, Toto.tata2Id as Toto_tata2Id"
+				+ ", x.id as x_id, x.name as x_name"
+				+ ", y.id as y_id, y.name as y_name"
+				+ " from Toto"
+				+ " inner join Tata as x on Toto.tata1Id = x.id"
+				+ " inner join Tata as y on Toto.tata2Id = y.id");
 		
 		// checking root aliases computation
 		JoinNode root = entityJoinTree.getRoot();
@@ -163,17 +161,14 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery treeQuery = testInstance.buildSelectQuery();
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(treeQuery.getQuery());
-		assertEquals(expected, sqlQueryBuilder.toSQL());
+		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expected);
 		
 		IdentityMap<Column, String> expectedColumnClones = new IdentityMap<>();
-		expectedAliases.entrySet().forEach(entry -> {
-			Column column = entry.getKey();
-			expectedColumnClones.put(tableCloneMap.get(column.getTable()).getColumn(column.getName()), entry.getValue());
-		});
+		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).getColumn(column.getName()), value));
 		
-		Assertions.assertEquals(expectedColumnClones, treeQuery.getColumnAliases(),
-				// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-				IdentityMap::getDelegate);
+		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
+		assertThat(treeQuery.getColumnAliases().getDelegate())
+				.isEqualTo(expectedColumnClones.getDelegate());
 	}
 	
 	private static Object[] inheritance_tablePerClass_2Classes_testData() {
@@ -227,7 +222,7 @@ class EntityTreeQueryBuilderTest {
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, c -> mock(ParameterBinder.class));
 		entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingStrategyAdapter(classMappingStrategy), leftJoinColumn, rightJoinColumn, null, INNER, null, Collections.emptySet());
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(testInstance.buildSelectQuery().getQuery());
-		assertEquals(expected, sqlQueryBuilder.toSQL());
+		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expected);
 	}
 	
 	@Test
@@ -266,14 +261,13 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
-		assertEquals("select"
-						+ " Toto.id as Toto_id, Toto.name as Toto_name"
-						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-						+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
-						+ " from Toto"
-						+ " inner join Tata as Tata on Toto.id = Tata.id"
-						+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id"
-				, sqlQueryBuilder.toSQL());
+		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
+				+ " Toto.id as Toto_id, Toto.name as Toto_name"
+				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
+				+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
+				+ " from Toto"
+				+ " inner join Tata as Tata on Toto.id = Tata.id"
+				+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id");
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
 				.add(totoPrimaryKey, "Toto_id")
@@ -289,10 +283,9 @@ class EntityTreeQueryBuilderTest {
 			expectedColumnClones.put(tableCloneMap.get(column.getTable()).getColumn(column.getName()), entry.getValue());
 		});
 		
-		Assertions.assertEquals(expectedColumnClones,
-				entityTreeQuery.getColumnAliases(),
-				// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-				IdentityMap::getDelegate);
+		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
+		assertThat(entityTreeQuery.getColumnAliases().getDelegate())
+				.isEqualTo(expectedColumnClones.getDelegate());
 	}
 	
 	@Test
@@ -333,14 +326,13 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
-		assertEquals("select"
-						+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
-						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-						+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
-						+ " from Toto"
-						+ " inner join Tata as Tata on Toto.tataId = Tata.id"
-						+ " left outer join Tutu as Tutu on Toto.tutuId = Tutu.id"
-				, sqlQueryBuilder.toSQL());
+		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
+				+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
+				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
+				+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
+				+ " from Toto"
+				+ " inner join Tata as Tata on Toto.tataId = Tata.id"
+				+ " left outer join Tutu as Tutu on Toto.tutuId = Tutu.id");
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
 				.add(totoPrimaryKey, "Toto_id")
@@ -359,10 +351,9 @@ class EntityTreeQueryBuilderTest {
 		});
 		
 		
-		Assertions.assertEquals(expectedColumnClones,
-				entityTreeQuery.getColumnAliases(),
-				// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-				IdentityMap::getDelegate);
+		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
+		assertThat(entityTreeQuery.getColumnAliases().getDelegate())
+				.isEqualTo(expectedColumnClones.getDelegate());
 	}
 	
 	@Test
@@ -408,16 +399,15 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
 		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(entityTreeQuery.getQuery());
-		assertEquals("select"
-						+ " Toto.id as Toto_id, Toto.name as Toto_name"
-						+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-						+ ", Titi.id as Titi_id, Titi.name as Titi_name"
-						+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
-						+ " from Toto"
-						+ " inner join Tata as Tata on Toto.id = Tata.id"
-						+ " inner join Titi as Titi on Toto.id = Titi.id"
-						+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id"
-				, sqlQueryBuilder.toSQL());
+		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
+				+ " Toto.id as Toto_id, Toto.name as Toto_name"
+				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
+				+ ", Titi.id as Titi_id, Titi.name as Titi_name"
+				+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
+				+ " from Toto"
+				+ " inner join Tata as Tata on Toto.id = Tata.id"
+				+ " inner join Titi as Titi on Toto.id = Titi.id"
+				+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id");
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
 				.add(totoPrimaryKey, "Toto_id")
@@ -435,10 +425,9 @@ class EntityTreeQueryBuilderTest {
 			expectedColumnClones.put(tableCloneMap.get(column.getTable()).getColumn(column.getName()), entry.getValue());
 		});
 		
-		Assertions.assertEquals(expectedColumnClones,
-				entityTreeQuery.getColumnAliases(),
-				// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-				IdentityMap::getDelegate);
+		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
+		assertThat(entityTreeQuery.getColumnAliases().getDelegate())
+				.isEqualTo(expectedColumnClones.getDelegate());
 	}
 	
 	/**

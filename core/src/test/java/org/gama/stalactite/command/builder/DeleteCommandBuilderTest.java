@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Operators;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -34,13 +34,13 @@ public class DeleteCommandBuilderTest {
 		
 		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
 		
-		assertEquals("delete from Toto where a = 44 or a = b", testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto where a = 44 or a = b");
 		
 		delete = new Delete<Table>(totoTable);
 		
 		testInstance = new DeleteCommandBuilder<>(delete);
 		
-		assertEquals("delete from Toto", testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto");
 		
 	}
 	
@@ -58,14 +58,14 @@ public class DeleteCommandBuilderTest {
 		
 		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
 		
-		assertEquals("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 		
 		delete = new Delete<Table>(totoTable);
 		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
 		testInstance = new DeleteCommandBuilder<>(delete);
 		
-		assertEquals("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y", testInstance.toSQL());
+		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 	}
 	
 	@Test
@@ -82,11 +82,11 @@ public class DeleteCommandBuilderTest {
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
 		
 		PreparedSQL result = testInstance.toStatement(binderRegistry);
-		assertEquals("delete from Toto where a in (?, ?) or a = b", result.getSQL());
+		assertThat(result.getSQL()).isEqualTo("delete from Toto where a in (?, ?) or a = b");
 		
-		assertEquals(Maps.asMap(1, 42L).add(2, 43L), result.getValues());
-		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(1));
-		assertEquals(DefaultParameterBinders.LONG_BINDER, result.getParameterBinder(2));
+		assertThat(result.getValues()).isEqualTo(Maps.asMap(1, 42L).add(2, 43L));
+		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
+		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.LONG_BINDER);
 		
 		PreparedStatement mock = mock(PreparedStatement.class);
 		result.applyValues(mock);
@@ -96,8 +96,8 @@ public class DeleteCommandBuilderTest {
 		// ensuring that column type override in registry is taken into account
 		binderRegistry.register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result = testInstance.toStatement(binderRegistry);
-		assertEquals(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, result.getParameterBinder(1));
-		assertEquals(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, result.getParameterBinder(2));
+		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result.applyValues(mock);
 		verify(mock, times(2)).setLong(1, 42L);
 		verify(mock, times(2)).setLong(2, 43L);

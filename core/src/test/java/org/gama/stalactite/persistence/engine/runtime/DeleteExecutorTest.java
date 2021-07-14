@@ -19,8 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.test.PairSetList.pairSetList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,7 +47,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(0)).executeUpdate();
 		verify(dataSet.preparedStatement, times(1)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals("delete from Toto where a = ?", dataSet.statementArgCaptor.getValue());
+		assertThat(dataSet.statementArgCaptor.getValue()).isEqualTo("delete from Toto where a = ?");
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
@@ -71,19 +71,19 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertEquals(Arrays.asList(
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 				Maps.asHashMap(colA, 1),
 				Maps.asHashMap(colA, 2)
-		), statementArgCaptor.getAllValues());
+		));
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
-		assertEquals("delete from Toto where a = ?", sqlArgCaptor.getValue().getSQL());
+		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("delete from Toto where a = ?");
 	}
 	
 	@Test
 	public void testDelete_multiple() throws Exception {
 		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
-		assertEquals(Arrays.asList("delete from Toto where a = ?"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a = ?"));
 		verify(dataSet.preparedStatement, times(4)).addBatch();
 		verify(dataSet.preparedStatement, times(2)).executeBatch();
 		verify(dataSet.preparedStatement, times(0)).executeUpdate();
@@ -100,7 +100,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		verify(dataSet.preparedStatement, times(0)).executeBatch();
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
 		verify(dataSet.preparedStatement, times(1)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertEquals("delete from Toto where a in (?)", dataSet.statementArgCaptor.getValue());
+		assertThat(dataSet.statementArgCaptor.getValue()).isEqualTo("delete from Toto where a in (?)");
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
 		assertCapturedPairsEqual(dataSet, expectedPairs);
 	}
@@ -111,7 +111,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto where a in (?)"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto " 
+				+ "where a in (?)"));
 		verify(dataSet.preparedStatement, times(1)).addBatch();
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
@@ -126,7 +127,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53), new Toto(5, 59, 61)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto where a in (?, ?)"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto " 
+				+ "where a in (?, ?)"));
 		verify(dataSet.preparedStatement, times(1)).addBatch();
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
@@ -141,7 +143,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53), new Toto(5, 59, 61), new Toto(6, 67, 71)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto where a in (?, ?, ?)"), dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a in (?, ?, ?)"));
 		verify(dataSet.preparedStatement, times(2)).addBatch();
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(0)).executeUpdate();
@@ -163,8 +165,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", "delete from Toto where (a, b) in ((?, ?))"),
-				dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", 
+				"delete from Toto where (a, b) in ((?, ?))"));
 		verify(dataSet.preparedStatement, times(1)).addBatch();
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
@@ -186,8 +188,8 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53), new Toto(5, 59, 61)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", "delete from Toto where (a, b) in ((?, ?), (?, ?))"),
-				dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", 
+				"delete from Toto where (a, b) in ((?, ?), (?, ?))"));
 		verify(dataSet.preparedStatement, times(1)).addBatch();
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(1)).executeUpdate();
@@ -209,8 +211,7 @@ public class DeleteExecutorTest extends AbstractDMLExecutorTest {
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53), new Toto(5, 59, 61), new Toto(6, 67, 71)));
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertEquals(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))"),
-				dataSet.statementArgCaptor.getAllValues());
+		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))"));
 		verify(dataSet.preparedStatement, times(2)).addBatch();
 		verify(dataSet.preparedStatement, times(1)).executeBatch();
 		verify(dataSet.preparedStatement, times(0)).executeUpdate();

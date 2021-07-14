@@ -19,7 +19,7 @@ import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class SequencePersisterTest {
 	
@@ -43,7 +43,8 @@ public class SequencePersisterTest {
 		DDLGenerator ddlGenerator = new DDLGenerator(dialect.getJavaTypeToSqlTypeMapping());
 		ddlGenerator.addTables(testInstance.getMappingStrategy().getTargetTable());
 		List<String> creationScripts = ddlGenerator.getCreationScripts();
-		assertEquals(Arrays.asList("create table sequence_table(sequence_name VARCHAR(255), next_val int, primary key (sequence_name))"), creationScripts);
+		assertThat(creationScripts).isEqualTo(Arrays.asList("create table sequence_table(sequence_name VARCHAR(255), next_val int, primary key " 
+				+ "(sequence_name))"));
 	}
 	
 	@Test
@@ -53,7 +54,8 @@ public class SequencePersisterTest {
 		DDLGenerator ddlGenerator = new DDLGenerator(dialect.getJavaTypeToSqlTypeMapping());
 		ddlGenerator.addTables(testInstance.getMappingStrategy().getTargetTable());
 		List<String> creationScripts = ddlGenerator.getCreationScripts();
-		assertEquals(Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key (mySequenceNameCol))"), creationScripts);
+		assertThat(creationScripts).isEqualTo(Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key " 
+				+ "(mySequenceNameCol))"));
 	}
 	
 	@Test
@@ -62,18 +64,18 @@ public class SequencePersisterTest {
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(testInstance.getMappingStrategy().getTargetTable()));
 		ddlDeployer.deployDDL();
 		long identifier = testInstance.reservePool("toto", 10);
-		assertEquals(10, identifier);
+		assertThat(identifier).isEqualTo(10);
 		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
 		Statement statement = currentConnection.createStatement();
 		ResultSet resultSet = statement.executeQuery("select next_val from sequence_table where sequence_name = 'toto'");
 		resultSet.next();
-		assertEquals(10, resultSet.getInt("next_val"));
+		assertThat(resultSet.getInt("next_val")).isEqualTo(10);
 		
 		identifier = testInstance.reservePool("toto", 10);
-		assertEquals(20, identifier);
+		assertThat(identifier).isEqualTo(20);
 		
 		resultSet = statement.executeQuery("select next_val from sequence_table where sequence_name = 'toto'");
 		resultSet.next();
-		assertEquals(20, resultSet.getInt("next_val"));
+		assertThat(resultSet.getInt("next_val")).isEqualTo(20);
 	}
 }

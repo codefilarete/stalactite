@@ -5,9 +5,11 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.exception.Exceptions;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
@@ -28,9 +30,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.gama.lang.test.Assertions.assertThrows;
-import static org.gama.lang.test.Assertions.hasExceptionInCauses;
-import static org.gama.lang.test.Assertions.hasMessage;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
 import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
@@ -38,7 +39,6 @@ import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author Guillaume Mary
@@ -83,10 +83,10 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// Schema contains main and children tables
 		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-		assertEquals(Arrays.asHashSet("AbstractVehicle", "Car", "ElectricCar"), tables);
+		assertThat(tables).isEqualTo(Arrays.asHashSet("AbstractVehicle", "Car", "ElectricCar"));
 		
 		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
-		assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+		assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(AbstractVehicle.class);
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -104,24 +104,24 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(SerializableFunction.identity(), "model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
-		assertEquals(Arrays.asList("Renault"), allCars);
+		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
 		List<String> existingModels = modelQuery.execute();
-		assertEquals(Arrays.asList("Peugeot"), existingModels);
+		assertThat(existingModels).isEqualTo(Arrays.asList("Peugeot"));
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertEquals(dummyCar, loadedCar);
+		assertThat(loadedCar).isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
 		
 		existingModels = modelQuery.execute();
-		assertEquals(Collections.emptyList(), existingModels);
+		assertThat(existingModels).isEqualTo(Collections.emptyList());
 	}
 	
 	
@@ -144,10 +144,10 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// Schema contains only one table : parent class one
 		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-		assertEquals(Arrays.asHashSet("Car", "AbstractVehicle"), tables);
+		assertThat(tables).isEqualTo(Arrays.asHashSet("Car", "AbstractVehicle"));
 		
 		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
-		assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+		assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(AbstractVehicle.class);
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -165,24 +165,24 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(SerializableFunction.identity(), "model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
-		assertEquals(Arrays.asList("Renault"), allCars);
+		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
 		List<String> existingModels = modelQuery.execute();
-		assertEquals(Arrays.asList("Peugeot"), existingModels);
+		assertThat(existingModels).isEqualTo(Arrays.asList("Peugeot"));
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertEquals(dummyCar, loadedCar);
+		assertThat(loadedCar).isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
 		
 		existingModels = modelQuery.execute();
-		assertEquals(Collections.emptyList(), existingModels);
+		assertThat(existingModels).isEqualTo(Collections.emptyList());
 	}
 	
 	@Test
@@ -200,9 +200,9 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 										.addSubClass(subentityBuilder(ElectricCar.class)
 												.add(ElectricCar::getPlug))))
 				);
-		assertThrows(() -> builder.build(persistenceContext),
-				hasExceptionInCauses(NotImplementedException.class).andProjection(
-						hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism")));
+		assertThatThrownBy(() -> builder.build(persistenceContext))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism");
 	}
 	
 	@Test
@@ -224,10 +224,10 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		
 		// Schema contains only one table : parent class one
 		HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-		assertEquals(Arrays.asHashSet("ElectricCar", "AbstractVehicle"), tables);
+		assertThat(tables).isEqualTo(Arrays.asHashSet("ElectricCar", "AbstractVehicle"));
 		
 		// Subclasses are not present in context (because they have wrong behavior since some elements are configured on parent's persister)
-		assertEquals(Arrays.asHashSet(AbstractVehicle.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+		assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(AbstractVehicle.class);
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -245,24 +245,24 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(SerializableFunction.identity(), "model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
-		assertEquals(Arrays.asList("Renault"), allCars);
+		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
 		List<String> existingModels = modelQuery.execute();
-		assertEquals(Arrays.asList("Peugeot"), existingModels);
+		assertThat(existingModels).isEqualTo(Arrays.asList("Peugeot"));
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-		assertEquals(dummyCar, loadedCar);
+		assertThat(loadedCar).isEqualTo(dummyCar);
 		
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
 		
 		existingModels = modelQuery.execute();
-		assertEquals(Collections.emptyList(), existingModels);
+		assertThat(existingModels).isEqualTo(Collections.emptyList());
 	}
 	
 	@Test
@@ -280,9 +280,9 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 										.addSubClass(subentityBuilder(ElectricCar.class)
 												.add(ElectricCar::getPlug), "ELECTRIC_CAR")), "CAR")
 				);
-		assertThrows(() -> builder.build(persistenceContext),
-				hasExceptionInCauses(NotImplementedException.class).andProjection(
-						hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$SingleTablePolymorphism")));
+		assertThatThrownBy(() -> builder.build(persistenceContext))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$SingleTablePolymorphism");
 	}
 	
 	@Test
@@ -300,8 +300,8 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 										.addSubClass(subentityBuilder(ElectricCar.class)
 												.add(ElectricCar::getPlug))), "CAR")
 				);
-		assertThrows(() -> builder.build(persistenceContext),
-				hasExceptionInCauses(NotImplementedException.class).andProjection(
-						hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism")));
+		assertThatThrownBy(() -> builder.build(persistenceContext))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism");
 	}
 }

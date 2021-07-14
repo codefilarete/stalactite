@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -23,12 +23,12 @@ class DDLGeneratorTest {
 		totoTable.addColumn("id", String.class);
 		testInstance.addTables(totoTable);
 		
-		assertEquals(Arrays.asList("create table toto(id VARCHAR)"), testInstance.getCreationScripts());
-		assertEquals(Arrays.asList("drop table toto"), testInstance.getDropScripts());
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList("create table toto(id VARCHAR)"));
+		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList("drop table toto"));
 		
 		totoTable.addColumn("name", String.class);
-		assertEquals(Arrays.asList("create table toto(id VARCHAR, name VARCHAR)"), testInstance.getCreationScripts());
-		assertEquals(Arrays.asList("drop table toto"), testInstance.getDropScripts());
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList("create table toto(id VARCHAR, name VARCHAR)"));
+		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList("drop table toto"));
 	}
 	
 	@Test
@@ -41,14 +41,14 @@ class DDLGeneratorTest {
 		totoTable.addIndex("totoIDX", idColumn);
 		testInstance.addTables(totoTable);
 		
-		assertEquals(Arrays.asList(
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList(
 				"create table toto(id VARCHAR)",
 				"create index totoIDX on toto(id)"
-				), testInstance.getCreationScripts());
+		));
 		// by default indexes are not in final script because they are expected to be dropped with table
-		assertEquals(Arrays.asList(
+		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList(
 				"drop table toto"
-				), testInstance.getDropScripts());
+		));
 	}
 	
 	@Test
@@ -63,16 +63,16 @@ class DDLGeneratorTest {
 		totoTable.addForeignKey("totoFK", totoPKColumn, tataPKColumn);
 		testInstance.addTables(totoTable, tataTable);
 		
-		assertEquals(Arrays.asList(
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList(
 				"create table toto(id VARCHAR)",
 				"create table tata(id VARCHAR)",
 				"alter table toto add constraint totoFK foreign key(id) references tata(id)"
-				), testInstance.getCreationScripts());
+		));
 		// by default foreignKeys are not in final script because they are expected to be dropped with table
-		assertEquals(Arrays.asList(
+		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList(
 				"drop table toto",
 				"drop table tata"
-		), testInstance.getDropScripts());
+		));
 	}
 	
 	@Test
@@ -96,16 +96,16 @@ class DDLGeneratorTest {
 			}
 		});
 		
-		assertEquals(Arrays.asList(
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList(
 				"create table toto(id VARCHAR)",
 				"my wonderfull first SQL creation script",
 				"my wonderfull second SQL creation script"
-				), testInstance.getCreationScripts());
-		assertEquals(Arrays.asList(
+		));
+		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList(
 				"drop table toto",
 				"my wonderfull first SQL drop script",
 				"my wonderfull second SQL drop script"
-				), testInstance.getDropScripts());
+		));
 	}
 	
 }

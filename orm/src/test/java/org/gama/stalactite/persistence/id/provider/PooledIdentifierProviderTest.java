@@ -12,8 +12,7 @@ import java.util.concurrent.TimeUnit;
 import org.gama.lang.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -54,9 +53,9 @@ public class PooledIdentifierProviderTest {
 			// Sort to prevent from Thread precedence making pop() not done in ascending order
 			result.sort(Long::compareTo);
 			// assertion for forbidden duplicates
-			assertEquals(result, new ArrayList<>(new HashSet<>(result)));
+			assertThat(new ArrayList<>(new HashSet<>(result))).isEqualTo(result);
 			// assertion for unexpected identifier generation
-			assertTrue(generated.containsAll(result));
+			assertThat(generated.containsAll(result)).isTrue();
 		}
 	}
 	

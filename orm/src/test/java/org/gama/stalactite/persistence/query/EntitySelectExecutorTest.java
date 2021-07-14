@@ -4,11 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.Strings;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
@@ -40,10 +40,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.lang.function.Functions.chain;
 import static org.gama.lang.function.Functions.link;
-import static org.gama.lang.test.Assertions.assertAllEquals;
-import static org.gama.lang.test.Assertions.assertEquals;
 import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.query.model.Operators.eq;
@@ -108,8 +107,11 @@ class EntitySelectExecutorTest {
 		List<Country> select = testInstance.loadSelection(countryEntityCriteriaSupport.getCriteria());
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
 		expectedCountry.setName("France");
-		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
-		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
+		assertThat(Iterables.first(select))
+				.usingComparator(Comparator.comparing(chain(Country::getId, Identifier::getSurrogate)))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(Country::getName))
+				.isEqualTo(expectedCountry);
 	}
 	
 	@Test
@@ -142,14 +144,20 @@ class EntitySelectExecutorTest {
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
 		expectedCountry.setName("France");
 		expectedCountry.setTimestamp(new Timestamp(new Date(0), new Date(0)));
-		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
-		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
-		assertEquals(expectedCountry, Iterables.first(select), chain(Country::getTimestamp, Timestamp::getCreationDate));
-		assertEquals(expectedCountry, Iterables.first(select), chain(Country::getTimestamp, Timestamp::getModificationDate));
+		assertThat(Iterables.first(select))
+				.usingComparator(Comparator.comparing(chain(Country::getId, Identifier::getSurrogate)))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(Country::getName))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(chain(Country::getTimestamp, Timestamp::getCreationDate)))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(chain(Country::getTimestamp, Timestamp::getModificationDate)))
+				.isEqualTo(expectedCountry);
 		
 		// checking that criteria is in the where clause
 		verify(connectionMock).prepareStatement(sqlCaptor.capture());
-		assertEquals("and Country.name = ? and Country.modificationDate = ?)", sqlCaptor.getValue(), s -> Strings.tail(s, 29));
+		assertThat(sqlCaptor.getValue())
+				.contains("and Country.name = ? and Country.modificationDate = ?)");
 	}
 	
 	@Test
@@ -187,14 +195,20 @@ class EntitySelectExecutorTest {
 		City capital = new City(new PersistedIdentifier<>(42L));
 		capital.setName("Paris");
 		expectedCountry.setCapital(capital);
-		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
-		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
-		assertEquals(expectedCountry, Iterables.first(select), link(Country::getCapital, City::getId));
-		assertEquals(expectedCountry, Iterables.first(select), link(Country::getCapital, City::getName));
+		assertThat(Iterables.first(select))
+				.usingComparator(Comparator.comparing(chain(Country::getId, Identifier::getSurrogate)))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(Country::getName))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(link(Country::getCapital, City::getId, Identifier::getSurrogate)))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(link(Country::getCapital, City::getName)))
+				.isEqualTo(expectedCountry);
 		
 		// checking that criteria is in the where clause
 		verify(connectionMock).prepareStatement(sqlCaptor.capture());
-		assertEquals("and Country.name = ? and City.name = ?)", sqlCaptor.getValue(), s -> Strings.tail(s, 29));
+		assertThat(sqlCaptor.getValue())
+				.contains("and Country.name = ? and City.name = ?)");
 	}
 	
 	@Test
@@ -256,14 +270,16 @@ class EntitySelectExecutorTest {
 				testInstance.loadSelection(((CriteriaProvider) countryEntityCriteriaSupport).getCriteria())
 		);
 		
-		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
-		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
-		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getId);
-		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getName);
+		assertThat(Iterables.first(select))
+				.usingComparator(Comparator.comparing(chain(Country::getId, Identifier::getSurrogate)))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(Country::getName))
+				.isEqualTo(expectedCountry);
 		
 		// checking that criteria is in the where clause
 		verify(connectionMock).prepareStatement(sqlCaptor.capture());
-		assertEquals("and Country.name = ? and City.name = ?)", sqlCaptor.getValue(), s -> Strings.tail(s, 29));
+		assertThat(sqlCaptor.getValue())
+				.contains("and Country.name = ? and City.name = ?)");
 	}
 	
 	@Test
@@ -320,10 +336,11 @@ class EntitySelectExecutorTest {
 				testInstance.loadGraph(((CriteriaProvider) countryEntityCriteriaSupport).getCriteria())
 		);
 		
-		assertEquals(expectedCountry, Iterables.first(select), Country::getId);
-		assertEquals(expectedCountry, Iterables.first(select), Country::getName);
-		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getId);
-		assertAllEquals(expectedCountry.getCities(), Iterables.first(select).getCities(), City::getName);
+		assertThat(Iterables.first(select))
+				.usingComparator(Comparator.comparing(chain(Country::getId, Identifier::getSurrogate)))
+				.isEqualTo(expectedCountry)
+				.usingComparator(Comparator.comparing(Country::getName))
+				.isEqualTo(expectedCountry);
 	}
 	
 	@Test
@@ -356,7 +373,7 @@ class EntitySelectExecutorTest {
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
 		List<Country> select = countryEntityCriteriaSupport.execute();
 		
-		assertEquals(Collections.emptyList(), select);
+		assertThat(select).isEmpty();
 	}
 	
 }

@@ -4,8 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
@@ -14,7 +13,6 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
-import org.gama.lang.test.Assertions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
@@ -61,7 +59,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.gama.lang.test.Assertions.assertAllEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
 import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
@@ -71,9 +69,6 @@ import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -176,17 +171,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.getCurrentConnection().commit();
-		assertEquals(1, persister.delete(dummyCarModfied));
-		assertEquals(1, persister.delete(dummyTrukModfied));
+		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
+		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
+		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
-		assertEquals(dummyCarModfied, persister.select(dummyCar.getId()));
-		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
+		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
+		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModfied);
+		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId())))).isEqualTo(Arrays.asSet(dummyCarModfied,
+				dummyTrukModfied));
 	}
 	
 	static Object[][] polymorphism_trunkHasOneToMany_data() {
@@ -269,12 +265,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		// testing insert cascade
 		countryPersister.insert(dummyCountry);
 		Republic persistedCountry = (Republic) countryPersister.select(dummyCountry.getId());
-		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
-		assertEquals("French president", persistedCountry.getPresident().getName());
-		assertEquals("Paris", Iterables.first(persistedCountry.getCities()).getName());
-		assertEquals(250, persistedCountry.getDeputeCount());
-		assertTrue(persistedCountry.getPresident().getId().isPersisted());
-		assertTrue(Iterables.first(persistedCountry.getCities()).getId().isPersisted());
+		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
+		assertThat(persistedCountry.getPresident().getName()).isEqualTo("French president");
+		assertThat(Iterables.first(persistedCountry.getCities()).getName()).isEqualTo("Paris");
+		assertThat(persistedCountry.getDeputeCount()).isEqualTo(250);
+		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
+		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 		
 		// testing update cascade
 		persistedCountry.getPresident().setName("New french president");
@@ -284,11 +280,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
 		persistedCountry = (Republic) countryPersister.select(dummyCountry.getId());
-		assertEquals(new PersistedIdentifier<>(0L), persistedCountry.getId());
-		assertEquals("New french president", persistedCountry.getPresident().getName());
-		assertEquals(Arrays.asHashSet("Grenoble", "Paris"), Iterables.collect(persistedCountry.getCities(), City::getName, HashSet::new));
-		assertTrue(persistedCountry.getPresident().getId().isPersisted());
-		assertTrue(Iterables.first(persistedCountry.getCities()).getId().isPersisted());
+		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
+		assertThat(persistedCountry.getPresident().getName()).isEqualTo("New french president");
+		assertThat(persistedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Paris");
+		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
+		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 	}
 	
 	static Object[][] polymorphism_subClassHasOneToOne_data() {
@@ -371,20 +367,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.getCurrentConnection().commit();
-		assertEquals(1, persister.delete(dummyCarModfied));
-		assertEquals(1, persister.delete(dummyTrukModfied));
+		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
+		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
+		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
+		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
-		assertEquals(dummyCarModfied, selectedCar);
-		assertTrue(((Car) selectedCar).getRadio().isPersisted());	// testing afterSelect listener of sub entities relations 
-		assertEquals(dummyCarModfied.getRadio(), ((Car) selectedCar).getRadio());
-		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
+		assertThat(selectedCar).isEqualTo(dummyCarModfied);
+		assertThat(((Car) selectedCar).getRadio().isPersisted()).isTrue();	// testing afterSelect listener of sub entities relations 
+		assertThat(((Car) selectedCar).getRadio()).isEqualTo(dummyCarModfied.getRadio());
+		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId())))).isEqualTo(Arrays.asSet(dummyCarModfied,
+				dummyTrukModfied));
 	}
 	
 	static Object[][] polymorphism_subClassHasOneToMany_data() {
@@ -551,23 +548,23 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.getCurrentConnection().commit();
-		assertEquals(1, persister.delete(dummyCarModfied));
-		assertEquals(1, persister.delete(dummyTrukModfied));
+		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
+		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
+		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
+		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
 		dummyCarModfied.getWheels().forEach(w -> w.setVehicle(dummyCarModfied));	// this is done only for equality check of reverse setting, because deletion set it to null (which must be fixed, bug see CollecctionUpdater)
-		assertEquals(dummyCarModfied, selectedCar);
+		assertThat(selectedCar).isEqualTo(dummyCarModfied);
 		// testing afterSelect listener of sub entities relations
-		((Car) selectedCar).getWheels().forEach(wheel -> assertTrue(wheel.isPersisted()));
+		((Car) selectedCar).getWheels().forEach(wheel -> assertThat(wheel.isPersisted()).isTrue());
 			 
-		assertAllEquals(dummyCarModfied.getWheels(), ((Car) selectedCar).getWheels());
-		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
+		assertThat(((Car) selectedCar).getWheels()).isEqualTo(dummyCarModfied.getWheels());
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))).containsExactlyInAnyOrder(dummyCarModfied, dummyTrukModfied);
 	}
 	
 	static Object[][] polymorphism_subClassHasElementCollection_data() {
@@ -641,21 +638,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.getCurrentConnection().commit();
-		assertEquals(1, persister.delete(dummyCarModfied));
+		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
 		// nothing to delete because all was deleted by cascade
-		assertEquals(0, connectionProvider.getCurrentConnection().prepareStatement("delete from Car_plates").executeUpdate());
-		assertEquals(1, persister.delete(dummyTrukModfied));
+		assertThat(connectionProvider.getCurrentConnection().prepareStatement("delete from Car_plates").executeUpdate()).isEqualTo(0);
+		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(2, persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied)));
+		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
 		connectionProvider.getCurrentConnection().rollback();
 		
-		assertEquals(dummyTrukModfied, persister.select(dummyTruk.getId()));
+		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
-		assertEquals(dummyCarModfied, selectedCar);
-		assertAllEquals(Arrays.asList("XYZ-ABC-02"), ((Car) selectedCar).getPlates());
-		assertEquals(Arrays.asSet(dummyCarModfied, dummyTrukModfied), new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))));
+		assertThat(selectedCar).isEqualTo(dummyCarModfied);
+		assertThat(((Car) selectedCar).getPlates()).containsExactlyInAnyOrder("XYZ-ABC-02");
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))).containsExactlyInAnyOrder(dummyCarModfied, dummyTrukModfied);
 	}
 	
 	@Nested
@@ -678,10 +675,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains only one table : parent class one
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -699,30 +696,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
-			assertEquals(Arrays.asList("Renault"), allCars);
+			assertThat(allCars).containsExactly("Renault");
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
 			List<String> existingModels = modelQuery.execute();
-			assertEquals(Arrays.asList("Peugeot"), existingModels);
+			assertThat(existingModels).containsExactly("Peugeot");
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedCar);
+			assertThat(loadedCar).isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
 			
 			existingModels = modelQuery.execute();
-			assertEquals(Collections.emptyList(), existingModels);
+			assertThat(existingModels).isEmpty();
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -743,10 +740,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains only one table : parent class one
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -767,40 +764,40 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(Duo::new, "model", String.class, "color", Integer.class);
 			
 			List<Duo<String, Integer>> allCars = modelQuery.execute();
-			assertEquals(Arrays.asSet(new Duo<>("Renault", 666), new Duo<>(null, 42)), new HashSet<>(allCars));
+			assertThat(allCars).containsExactlyInAnyOrder(new Duo<>("Renault", 666), new Duo<>(null, 42));
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
 			List<Duo<String, Integer>> existingModels = modelQuery.execute();
-			assertEquals(Arrays.asSet(new Duo<>("Peugeot", 666), new Duo<>(null, 42)), new HashSet<>(existingModels));
+			assertThat(existingModels).containsExactlyInAnyOrder(new Duo<>("Peugeot", 666), new Duo<>(null, 42));
 			
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertEquals(dummyTruk, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyTruk);
 			
-			List<? extends AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertEquals(Arrays.asHashSet(dummyCar, dummyTruk), new HashSet<>(loadedVehicles));
+			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruk);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
 			
 			existingModels = modelQuery.execute();
-			assertEquals(Arrays.asSet(new Duo<>(null, 42)), new HashSet<>(existingModels));
+			assertThat(existingModels).containsExactlyInAnyOrder(new Duo<>(null, 42));
 			
 			abstractVehiclePersister.delete(dummyTruk);
 			existingModels = modelQuery.execute();
-			assertEquals(Collections.emptyList(), existingModels);
+			assertThat(existingModels).isEmpty();
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -821,10 +818,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains only one table : parent class one
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -846,13 +843,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
-			assertEquals(Arrays.asList(1), carIds);
+			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='TRUK'", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
-			assertEquals(Arrays.asList(2), trukIds);
+			assertThat(trukIds).containsExactly(2);
 			
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -861,21 +858,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
 			int updatedRowCount = abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
-			assertEquals(1, updatedRowCount);
+			assertThat(updatedRowCount).isEqualTo(1);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertEquals(dummyTruk, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyTruk);
 			
-			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
+			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruk);
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
-			assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -885,20 +882,20 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
-			assertEquals(0, carCount);
+			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
 					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertEquals(0, trukCount);
+			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -975,10 +972,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -996,30 +993,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
-			assertEquals(Arrays.asList("Renault"), allCars);
+			assertThat(allCars).containsExactly("Renault");
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
 			List<String> existingModels = modelQuery.execute();
-			assertEquals(Arrays.asList("Peugeot"), existingModels);
+			assertThat(existingModels).containsExactly("Peugeot");
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedCar);
+			assertThat(loadedCar).isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
 			
 			existingModels = modelQuery.execute();
-			assertEquals(Collections.emptyList(), existingModels);
+			assertThat(existingModels).isEmpty();
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -1042,10 +1039,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Truk", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1067,19 +1064,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> vehicleIds = vehicleIdQuery.execute();
-			assertEquals(Arrays.asList(1, 2), vehicleIds);
+			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
-			assertEquals(Arrays.asList(1), carIds);
+			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
-			assertEquals(Arrays.asList(2), trukIds);
+			assertThat(trukIds).containsExactly(2);
 			
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1088,12 +1085,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertEquals(dummyTruk, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyTruk);
 			
-			List<? extends AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertEquals(Arrays.asHashSet(dummyCar, dummyTruk), new HashSet<>(loadedVehicles));
+			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruk);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -1104,27 +1101,27 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "vehicleCount", Integer.class);
 			
 			Integer vehicleCount = Iterables.first(vehicleQuery.execute());
-			assertEquals(0, vehicleCount);
+			assertThat(vehicleCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
 					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
-			assertEquals(0, carCount);
+			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
 					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertEquals(0, trukCount);
+			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		
@@ -1146,10 +1143,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Vehicle", "Car", "Truk", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1171,19 +1168,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> vehicleIds = vehicleIdQuery.execute();
-			assertEquals(Arrays.asList(1, 2), vehicleIds);
+			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
-			assertEquals(Arrays.asList(1), carIds);
+			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
-			assertEquals(Arrays.asList(2), trukIds);
+			assertThat(trukIds).containsExactly(2);
 			
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1192,21 +1189,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
 			int updatedRowCount = abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
-			assertEquals(1, updatedRowCount);
+			assertThat(updatedRowCount).isEqualTo(1);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertEquals(dummyTruk, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyTruk);
 			
-			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
+			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruk);
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
-			assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -1216,20 +1213,20 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
-			assertEquals(0, carCount);
+			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
 					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertEquals(0, trukCount);
+			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -1307,10 +1304,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Car", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Car", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1328,30 +1325,30 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
-			assertEquals(Arrays.asList("Renault"), allCars);
+			assertThat(allCars).containsExactly("Renault");
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
 			List<String> existingModels = modelQuery.execute();
-			assertEquals(Arrays.asList("Peugeot"), existingModels);
+			assertThat(existingModels).containsExactly("Peugeot");
 			
 			// select test
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedCar);
+			assertThat(loadedCar).isEqualTo(dummyCar);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
 			
 			existingModels = modelQuery.execute();
-			assertEquals(Collections.emptyList(), existingModels);
+			assertThat(existingModels).isEmpty();
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -1372,10 +1369,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Car", "Truk", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1397,13 +1394,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 
 			List<Integer> carIds = carIdQuery.execute();
-			assertEquals(Arrays.asList(1), carIds);
+			assertThat(carIds).containsExactly(1);
 
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 
 			List<Integer> trukIds = trukIdQuery.execute();
-			assertEquals(Arrays.asList(2), trukIds);
+			assertThat(trukIds).containsExactly(2);
 
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1412,12 +1409,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			AbstractVehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertEquals(dummyTruk, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyTruk);
 
-			List<? extends AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertAllEquals(Arrays.asHashSet(dummyCar, dummyTruk), new HashSet<>(loadedVehicles));
+			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruk);
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -1427,20 +1424,20 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
 
 			Integer carCount = Iterables.first(carQuery.execute());
-			assertEquals(0, carCount);
+			assertThat(carCount).isEqualTo(0);
 
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
 					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertEquals(0, trukCount);
+			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -1461,10 +1458,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertEquals(Arrays.asHashSet("Car", "Truk", "Engine"), tables);
+			assertThat(tables).containsExactlyInAnyOrder("Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertEquals(Arrays.asHashSet(Vehicle.class, Engine.class), Iterables.collect(persistenceContext.getPersisters(), IEntityPersister::getClassToPersist, HashSet::new));
+			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1486,13 +1483,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 
 			List<Integer> carIds = carIdQuery.execute();
-			assertEquals(Arrays.asList(1), carIds);
+			assertThat(carIds).containsExactly(1);
 
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
 					.mapKey(SerializableFunction.identity(), "id", Integer.class);
 
 			List<Integer> trukIds = trukIdQuery.execute();
-			assertEquals(Arrays.asList(2), trukIds);
+			assertThat(trukIds).containsExactly(2);
 
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1501,15 +1498,15 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			// select test
 			Vehicle loadedVehicle;
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			assertEquals(dummyCar, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertEquals(dummyTruk, loadedVehicle);
+			assertThat(loadedVehicle).isEqualTo(dummyTruk);
 
-			List<? extends Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			assertAllEquals(Arrays.asHashSet(dummyTruk), new HashSet<>(loadedVehicles));
+			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruk);
 
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666))).execute();
-			assertAllEquals(Arrays.asHashSet(dummyCar), new HashSet<>(loadedVehicles));
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
 
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
@@ -1519,20 +1516,20 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
 
 			Integer carCount = Iterables.first(carQuery.execute());
-			assertEquals(0, carCount);
+			assertThat(carCount).isEqualTo(0);
 
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from truk where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
 					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertEquals(0, trukCount);
+			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
 					.mapKey(SerializableFunction.identity(), "id", Long.class);
 			
-			assertEquals(new ArrayList<>(), engineQuery.execute());
+			assertThat(engineQuery.execute()).isEmpty();
 		}
 		
 		@Test
@@ -1624,32 +1621,32 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(new Car(42L));
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating one-to-one relation
 			person.setVehicle(new Truk(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L))).isNull();
 			
 			// nullifying one-to-one relation
 			person.setVehicle(null);
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L))).isNull();
 			
 			
 			// setting new one-to-one relation
@@ -1657,13 +1654,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
-			assertNull(testInstance.select(person.getId()));
+			assertThat(testInstance.select(person.getId())).isNull();
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L))).isNull();
 		}
 		
 		@Test
@@ -1697,32 +1694,32 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(new Car(42L));
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating one-to-one relation
 			person.setVehicle(new Truk(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L))).isNull();
 			
 			// nullifying one-to-one relation
 			person.setVehicle(null);
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L))).isNull();
 			
 			
 			// setting new one-to-one relation
@@ -1730,13 +1727,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
-			assertNull(testInstance.select(person.getId()));
+			assertThat(testInstance.select(person.getId())).isNull();
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L))).isNull();
 		}
 		
 		@Test
@@ -1773,7 +1770,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(car);
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
@@ -1798,27 +1795,33 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Vehicle.class, vehiclePrinter::toString)
 					.build();
 			
-			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			assertThat(loadedPerson)
+					.usingComparator(Comparator.comparing(personPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+					.isEqualTo(person);
 			// ensuring that reverse side is also set
-			assertEquals(loadedPerson, loadedPerson.getVehicle().getOwner());
+			assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
 			
 			// updating one-to-one relation
 			person.setVehicle(new Truk(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			assertThat(loadedPerson)
+					.usingComparator(Comparator.comparing(personPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L))).isNull();
 			
 			// nullifying one-to-one relation
 			person.setVehicle(null);
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L))).isNull();
 			
 			
 			// setting new one-to-one relation
@@ -1826,13 +1829,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
-			assertNull(testInstance.select(person.getId()));
+			assertThat(testInstance.select(person.getId())).isNull();
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L))).isNull();
 		}
 		
 		@Test
@@ -1869,7 +1872,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			person.setVehicle(car);
 			testInstance.insert(person);
 			Person loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating embedded value
 			person.setTimestamp(new Timestamp());
@@ -1894,27 +1897,33 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Vehicle.class, vehiclePrinter::toString)
 					.build();
 			
-			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			assertThat(loadedPerson)
+					.usingComparator(Comparator.comparing(personPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+					.isEqualTo(person);
 			// ensuring that reverse side is also set
-			assertEquals(loadedPerson, loadedPerson.getVehicle().getOwner());
+			assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
 			
 			// updating one-to-one relation
 			person.setVehicle(new Truk(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			Assertions.assertEquals(person, loadedPerson, personPrinter::toString);
+			assertThat(loadedPerson)
+					.usingComparator(Comparator.comparing(personPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(Person.class, personPrinter))
+					.isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(42L))).isNull();
 			
 			// nullifying one-to-one relation
 			person.setVehicle(null);
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(666L))).isNull();
 			
 			
 			// setting new one-to-one relation
@@ -1922,18 +1931,16 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
-			assertEquals(person, loadedPerson);
+			assertThat(loadedPerson).isEqualTo(person);
 			
 			// testing deletion
 			testInstance.delete(person);
-			assertNull(testInstance.select(person.getId()));
+			assertThat(testInstance.select(person.getId())).isNull();
 			// checking for orphan removal (relation was marked as such)
-			assertNull(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L)));
+			assertThat(persistenceContext.getPersister(Vehicle.class).select(new PersistedIdentifier<>(17L))).isNull();
 		}
 		
 	}
-	
-	
 	
 	
 	@Nested
@@ -1980,9 +1987,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// testing select
 			Country loadedCountry = testInstance.select(country.getId());
-			assertEquals(country, loadedCountry);
+			assertThat(loadedCountry).isEqualTo(country);
 			// ensuring that reverse side is also set
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
 			
 			// testing update and select of mixed type of City
 			Town lyon = new Town(17L);
@@ -1994,9 +2001,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			loadedCountry = testInstance.select(country.getId());
 			// resulting select must contain Town and Village
-			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
 			// bidirectionality must be preserved
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
 			
 			// testing update : removal of a city, reversed column must be set to null
 			Country modifiedCountry = new Country(country.getId());
@@ -2007,7 +2014,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
 					.mapKey(i -> i, "Country_id", Long.class)
 					.execute();
-			assertEquals(Arrays.asList(country.getId().getSurrogate()), cityCountryIds);
+			assertThat(cityCountryIds).isEqualTo(Arrays.asList(country.getId().getSurrogate()));
 
 			// testing delete
 			testInstance.delete(modifiedCountry);
@@ -2015,7 +2022,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
 					.mapKey(i -> i, "id", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 		}
 		
 		@Test
@@ -2059,11 +2066,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// testing select
 			Country loadedCountry = testInstance.select(country.getId());
-			assertEquals(country, loadedCountry);
+			assertThat(loadedCountry).isEqualTo(country);
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
 			// which is far from sufficent for ou checking
-			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
 			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
 					.addProperty(Country::getId)
 					.addProperty(Country::getName)
@@ -2080,9 +2087,15 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Country.class, countryPrinter::toString)
 					.build();
 			
-			assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			assertThat(loadedCountry.getCities())
+					.usingElementComparator(Comparator.comparing(cityPrinter::toString))
+					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+					.isEqualTo(country.getCities());
+			
 			// ensuring that reverse side is also set
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities())
+					.extracting(City::getCountry)
+					.containsExactlyInAnyOrder(loadedCountry);
 			
 			// testing update and select of mixed type of City
 			Town lyon = new Town(17L);
@@ -2094,9 +2107,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			loadedCountry = testInstance.select(country.getId());
 			// resulting select must contain Town and Village
-			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
 			// bidirectionality must be preserved
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
 			
 			// testing update : removal of a city, reversed column must be set to null
 			Country modifiedCountry = new Country(country.getId());
@@ -2107,7 +2120,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityCountryIds = persistenceContext.newQuery("select CountryId from City", Long.class)
 					.mapKey(i -> i, "CountryId", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
 			
 			// testing delete
 			testInstance.delete(modifiedCountry);
@@ -2115,7 +2128,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
 					.mapKey(i -> i, "id", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+			assertThat(new HashSet<>(cityIds)).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 		}
 		
 		@Test
@@ -2159,9 +2172,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// testing select
 			Country loadedCountry = testInstance.select(country.getId());
-			assertEquals(country, loadedCountry);
+			assertThat(loadedCountry).isEqualTo(country);
 			// ensuring that reverse side is also set
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
 			
 			// testing update and select of mixed type of City
 			Town lyon = new Town(17L);
@@ -2173,9 +2186,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			loadedCountry = testInstance.select(country.getId());
 			// resulting select must contain Town and Village
-			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
 			// bidirectionality must be preserved
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
 			
 			// testing update : removal of a city, reversed column must be set to null
 			Country modifiedCountry = new Country(country.getId());
@@ -2186,7 +2199,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
 					.mapKey(i -> i, "Country_id", Long.class)
 					.execute();
-			assertEquals(Arrays.asList(country.getId().getSurrogate()), cityCountryIds);
+			assertThat(cityCountryIds).containsExactly(country.getId().getSurrogate());
 			
 			// testing delete
 			testInstance.delete(modifiedCountry);
@@ -2194,7 +2207,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
 					.mapKey(i -> i, "id", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 		}
 		
 		@Test
@@ -2238,7 +2251,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// testing select
 			Country loadedCountry = testInstance.select(country.getId());
-			assertEquals(country, loadedCountry);
+			assertThat(loadedCountry).isEqualTo(country);
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
 			// which is far from sufficent for ou checking
@@ -2259,9 +2272,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Country.class, countryPrinter::toString)
 					.build();
 			
-			assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			assertThat(loadedCountry.getCities())
+					.usingElementComparator(Comparator.comparing(cityPrinter::toString))
+					.isEqualTo(country.getCities());
 			// ensuring that reverse side is also set
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
 			
 			// testing update and select of mixed type of City
 			Town lyon = new Town(17L);
@@ -2273,9 +2288,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			loadedCountry = testInstance.select(country.getId());
 			// resulting select must contain Town and Village
-			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
 			// bidirectionality must be preserved
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
 			
 			// testing update : removal of a city, reversed column must be set to null
 			Country modifiedCountry = new Country(country.getId().getSurrogate());
@@ -2286,7 +2301,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityCountryIds = persistenceContext.newQuery("select CountryId from City", Long.class)
 					.mapKey(i -> i, "CountryId", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+			assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
 			
 			// testing delete
 			testInstance.delete(modifiedCountry);
@@ -2294,7 +2309,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
 					.mapKey(i -> i, "id", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 		}
 		
 		@Test
@@ -2338,9 +2353,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// testing select
 			Country loadedCountry = testInstance.select(country.getId());
-			assertEquals(country, loadedCountry);
+			assertThat(loadedCountry).isEqualTo(country);
 			// ensuring that reverse side is also set
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
 			
 			// testing update and select of mixed type of City
 			Town lyon = new Town(17L);
@@ -2352,9 +2367,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			loadedCountry = testInstance.select(country.getId());
 			// resulting select must contain Town and Village
-			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
 			// bidirectionality must be preserved
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
 			
 			// testing update : removal of a city, reversed column must be set to null
 			Country modifiedCountry = new Country(country.getId());
@@ -2365,7 +2380,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
 					.mapKey(i -> i, "Country_id", Long.class)
 					.execute();
-			assertEquals(Arrays.asList(country.getId().getSurrogate()), cityCountryIds);
+			assertThat(cityCountryIds).isEqualTo(Arrays.asList(country.getId().getSurrogate()));
 			
 			// testing delete
 			testInstance.delete(modifiedCountry);
@@ -2373,7 +2388,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityIds = persistenceContext.newQuery("select id from Town union all select id from Village", Long.class)
 					.mapKey(i -> i, "id", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 		}
 		
 		@Test
@@ -2422,7 +2437,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			};
 			JdbcForeignKey foundForeignKey = Iterables.first(fkVillageIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_VILLAGE_COUNTRYID_COUNTRY_ID", "VILLAGE", "COUNTRYID", "COUNTRY", "ID");
-			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 			
 			ResultSetIterator<JdbcForeignKey> fkTownIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
 					.getImportedKeys(null, null, "TOWN")) {
@@ -2437,7 +2452,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			};
 			foundForeignKey = Iterables.first(fkTownIterator);
 			expectedForeignKey = new JdbcForeignKey("FK_TOWN_COUNTRYID_COUNTRY_ID", "TOWN", "COUNTRYID", "COUNTRY", "ID");
-			assertEquals(expectedForeignKey.getSignature(), foundForeignKey.getSignature());
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 			
 		@Test
@@ -2481,7 +2496,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// testing select
 			Country loadedCountry = testInstance.select(country.getId());
-			assertEquals(country, loadedCountry);
+			assertThat(loadedCountry).isEqualTo(country);
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
 			// which is far from sufficent for ou checking
@@ -2502,9 +2517,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.withPrinter(Country.class, countryPrinter::toString)
 					.build();
 			
-			assertAllEquals(country.getCities(), loadedCountry.getCities(), cityPrinter::toString);
+			assertThat(loadedCountry.getCities())
+					.usingElementComparator(Comparator.comparing(cityPrinter::toString))
+					.isEqualTo(country.getCities());
 			// ensuring that reverse side is also set
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
 			
 			// testing update and select of mixed type of City
 			Town lyon = new Town(17L);
@@ -2516,9 +2533,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			loadedCountry = testInstance.select(country.getId());
 			// resulting select must contain Town and Village
-			assertEquals(Arrays.asHashSet(grenoble, lyon), loadedCountry.getCities());
+			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
 			// bidirectionality must be preserved
-			assertEquals(Arrays.asHashSet(loadedCountry), Iterables.collect(loadedCountry.getCities(), City::getCountry, HashSet::new));
+			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
 			
 			// testing update : removal of a city, reversed column must be set to null
 			Country modifiedCountry = new Country(country.getId().getSurrogate());
@@ -2529,7 +2546,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from Town union all select countryId from Village", Long.class)
 					.mapKey(i -> i, "countryId", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(country.getId().getSurrogate(), null), new HashSet<>(cityCountryIds));
+			assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
 			
 			// testing delete
 			testInstance.delete(modifiedCountry);
@@ -2537,7 +2554,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Long> cityIds = persistenceContext.newQuery("select id from Town union all select id from Village", Long.class)
 					.mapKey(i -> i, "id", Long.class)
 					.execute();
-			assertEquals(Arrays.asSet(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate()), new HashSet<>(cityIds));
+			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 		}
 	}
 	

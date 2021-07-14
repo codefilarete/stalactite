@@ -11,7 +11,7 @@ import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -27,7 +27,7 @@ class NameEnumParameterBinderTest {
 		ResultSet preparedStatementMock = new InMemoryResultSet(Arrays.asList(Maps.asMap("month", "JANUARY")));
 		preparedStatementMock.next();
 		Month readMonth = registeredBinder.get(preparedStatementMock, "month");
-		assertEquals(Month.JANUARY, readMonth);
+		assertThat(readMonth).isEqualTo(Month.JANUARY);
 	}
 	
 	@Test
@@ -38,6 +38,6 @@ class NameEnumParameterBinderTest {
 		
 		ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
 		verify(preparedStatementMock).setString(anyInt(), valueCaptor.capture());
-		assertEquals(Month.JANUARY.name(), valueCaptor.getValue());
+		assertThat(valueCaptor.getValue()).isEqualTo(Month.JANUARY.name());
 	}
 }

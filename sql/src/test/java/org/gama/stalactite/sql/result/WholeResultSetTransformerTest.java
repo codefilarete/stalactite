@@ -23,10 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author Guillaume Mary
@@ -60,17 +59,18 @@ public class WholeResultSetTransformerTest {
 			// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather
 			resultSet.next();
 			Chicken result = testInstance.transform(resultSet);
-			assertEquals("rooster", result.getName());
-			assertEquals(Arrays.asList("red"), result.getLeftWing().getFeathers().stream()
-					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+			assertThat(result.getName()).isEqualTo("rooster");
+			assertThat(result.getLeftWing().getFeathers().stream()
+					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("red"));
 			
 			// from second row, the previous instance of Chicken is kept (not new), and a new black feather was added
 			resultSet.next();
 			Chicken result1 = testInstance.transform(resultSet);
-			assertSame(result, result1);
-			assertEquals(2, result.getLeftWing().getFeathers().size());
-			assertEquals(Arrays.asList("red", "black"), result.getLeftWing().getFeathers().stream()
-					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+			assertThat(result1).isSameAs(result);
+			assertThat(result.getLeftWing().getFeathers().size()).isEqualTo(2);
+			assertThat(result.getLeftWing().getFeathers().stream()
+					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("red", 
+					"black"));
 		});
 	}
 	
@@ -110,30 +110,30 @@ public class WholeResultSetTransformerTest {
 			// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather on left wing
 			resultSet.next();
 			Chicken result = testInstance.transform(resultSet);
-			assertEquals("rooster", result.getName());
-			assertEquals(Arrays.asList("red"), result.getLeftWing().getFeathers().stream()
-					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+			assertThat(result.getName()).isEqualTo("rooster");
+			assertThat(result.getLeftWing().getFeathers().stream()
+					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("red"));
 			
 			// from second row, the previous instance of Chicken is kept (not new), and a new black feather was added on left wing
 			resultSet.next();
 			Chicken result1 = testInstance.transform(resultSet);
-			assertSame(result, result1);
-			assertEquals(Arrays.asList("red", "black"), result.getLeftWing().getFeathers().stream()
-					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+			assertThat(result1).isSameAs(result);
+			assertThat(result.getLeftWing().getFeathers().stream()
+					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("red", "black"));
 			
 			// from third row, checking that right wing is black and is not polluted by any null value or whatever
 			resultSet.next();
 			Chicken result2 = testInstance.transform(resultSet);
-			assertSame(result, result2);
-			assertEquals(Arrays.asList("black"), result.getRightWing().getFeathers().stream()
-					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+			assertThat(result2).isSameAs(result);
+			assertThat(result.getRightWing().getFeathers().stream()
+					.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("black"));
 			
 			// checking that wings share the same color instance
 			Function<Feather, String> colorNameAccessor = Functions.link(Feather::getColor, FeatherColor::getName);
 			Map<String, FeatherColor> leftWingFeatherColors = Iterables.map(result.getLeftWing().getFeathers(), colorNameAccessor, Feather::getColor);
 			
 			Map<String, FeatherColor> rightWingFeatherColors = Iterables.map(result.getRightWing().getFeathers(), colorNameAccessor, Feather::getColor);
-			assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
+			assertThat(rightWingFeatherColors.get("black")).isSameAs(leftWingFeatherColors.get("black"));
 		});
 	}
 	
@@ -167,17 +167,17 @@ public class WholeResultSetTransformerTest {
 			// from first row, a new instance of Chicken is created named "rooster", it has 1 red feather
 			resultSet.next();
 			WingInner result = testInstance.transform(resultSet);
-			assertEquals("left", result.getSide());
-			assertEquals(Arrays.asList("red"), result.getFeathers().stream()
-					.map(FeatherInner::getColor).collect(Collectors.toList()));
+			assertThat(result.getSide()).isEqualTo("left");
+			assertThat(result.getFeathers().stream()
+					.map(FeatherInner::getColor).collect(Collectors.toList())).isEqualTo(Arrays.asList("red"));
 			
 			// from second row, the previous instance of Chicken is kept (not new), and a new black feather was added
 			resultSet.next();
 			WingInner result1 = testInstance.transform(resultSet);
-			assertSame(result, result1);
-			assertEquals(2, result.getFeathers().size());
-			assertEquals(Arrays.asList("red", "black"), result.getFeathers().stream()
-					.map(FeatherInner::getColor).collect(Collectors.toList()));
+			assertThat(result1).isSameAs(result);
+			assertThat(result.getFeathers().size()).isEqualTo(2);
+			assertThat(result.getFeathers().stream()
+					.map(FeatherInner::getColor).collect(Collectors.toList())).isEqualTo(Arrays.asList("red", "black"));
 		});
 	}
 	
@@ -214,25 +214,25 @@ public class WholeResultSetTransformerTest {
 		
 		List<Chicken> result = testInstance.transformAll(resultSet);
 		// 3 chickens because of 3 rows in ResultSet
-		assertEquals(3, result.size());
+		assertThat(result.size()).isEqualTo(3);
 		// ... but they should be all the same
-		assertSame(result.get(0), result.get(1));
-		assertSame(result.get(0), result.get(2));
+		assertThat(result.get(1)).isSameAs(result.get(0));
+		assertThat(result.get(2)).isSameAs(result.get(0));
 		
 		Chicken rooster = result.get(0);
-		assertEquals("rooster", rooster.getName());
+		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Two colors on left : red and black
-		assertEquals(Arrays.asList("red", "black"), rooster.getLeftWing().getFeathers().stream()
-				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+		assertThat(rooster.getLeftWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("red", "black"));
 		// One color on right : black
-		assertEquals(Arrays.asList("black"), rooster.getRightWing().getFeathers().stream()
-				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+		assertThat(rooster.getRightWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("black"));
 		
 		// checking that wings share the same color instance
 		Function<Feather, String> colorNameAccessor = Functions.link(Feather::getColor, FeatherColor::getName);
 		Map<String, FeatherColor> leftWingFeatherColors = Iterables.map(rooster.getLeftWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		Map<String, FeatherColor> rightWingFeatherColors = Iterables.map(rooster.getRightWing().getFeathers(), colorNameAccessor, Feather::getColor);
-		assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
+		assertThat(rightWingFeatherColors.get("black")).isSameAs(leftWingFeatherColors.get("black"));
 	}
 	
 	public static Object[][] testTransform_withReuse() {
@@ -309,25 +309,26 @@ public class WholeResultSetTransformerTest {
 		
 		List<Chicken> result = testInstance.transformAll(resultSet);
 		// 3 chickens because of 3 rows in ResultSet
-		assertEquals(3, result.size());
+		assertThat(result.size()).isEqualTo(3);
 		// ... but they should be all the same
-		assertSame(result.get(0), result.get(1));
-		assertSame(result.get(0), result.get(2));
+		assertThat(result.get(1)).isSameAs(result.get(0));
+		assertThat(result.get(2)).isSameAs(result.get(0));
 		
 		Chicken rooster = result.get(0);
-		assertEquals("rooster", rooster.getName());
+		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Colors on left : red, black and pink put by dummy row transformer
-		assertEquals(Arrays.asList("red", "pink", "black", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
-				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+		assertThat(rooster.getLeftWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("red", "pink", 
+				"black", "pink", "pink"));
 		// One color on right : black
-		assertEquals(Arrays.asList("black"), rooster.getRightWing().getFeathers().stream()
-				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+		assertThat(rooster.getRightWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("black"));
 		
 		// checking that wings share the same color instance
 		Function<Feather, String> colorNameAccessor = Functions.link(Feather::getColor, FeatherColor::getName);
 		Map<String, FeatherColor> leftWingFeatherColors = Iterables.map(rooster.getLeftWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		Map<String, FeatherColor> rightWingFeatherColors = Iterables.map(rooster.getRightWing().getFeathers(), colorNameAccessor, Feather::getColor);
-		assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
+		assertThat(rightWingFeatherColors.get("black")).isSameAs(leftWingFeatherColors.get("black"));
 	}
 	
 	@Test
@@ -372,27 +373,28 @@ public class WholeResultSetTransformerTest {
 		
 		List<Rooster> result = testInstanceCopy.transformAll(resultSet);
 		// 3 chickens because of 3 rows in ResultSet
-		assertEquals(3, result.size());
+		assertThat(result.size()).isEqualTo(3);
 		// ... but they should be all the same
-		assertSame(result.get(0), result.get(1));
-		assertSame(result.get(0), result.get(2));
-		assertEquals(1, headCreationCounter.getValue());
+		assertThat(result.get(1)).isSameAs(result.get(0));
+		assertThat(result.get(2)).isSameAs(result.get(0));
+		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
 		Rooster rooster = result.get(0);
-		assertEquals("rooster", rooster.getName());
-		assertEquals(3, rooster.getChickCount());
+		assertThat(rooster.getName()).isEqualTo("rooster");
+		assertThat(rooster.getChickCount()).isEqualTo(3);
 		// Colors on left : red, black, and as many as were added by 
-		assertEquals(Arrays.asList("red", "pink", "yellow", "black", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
-				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+		assertThat(rooster.getLeftWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("red", "pink", 
+				"yellow", "black", "pink", "pink"));
 		// One color on right : black
-		assertEquals(Arrays.asList("black"), rooster.getRightWing().getFeathers().stream()
-				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+		assertThat(rooster.getRightWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("black"));
 		
 		// checking that wings share the same color instance
 		Function<Feather, String> colorNameAccessor = Functions.link(Feather::getColor, FeatherColor::getName);
 		Map<String, FeatherColor> leftWingFeatherColors = Iterables.map(rooster.getLeftWing().getFeathers(), colorNameAccessor, Feather::getColor);
 		Map<String, FeatherColor> rightWingFeatherColors = Iterables.map(rooster.getRightWing().getFeathers(), colorNameAccessor, Feather::getColor);
-		assertSame(leftWingFeatherColors.get("black"), rightWingFeatherColors.get("black"));
+		assertThat(rightWingFeatherColors.get("black")).isSameAs(leftWingFeatherColors.get("black"));
 	}
 	
 	@Test
@@ -420,17 +422,18 @@ public class WholeResultSetTransformerTest {
 		
 		List<Chicken> result = testInstance.transformAll(resultSet);
 		// 3 chickens because of 3 rows in ResultSet
-		assertEquals(3, result.size());
+		assertThat(result.size()).isEqualTo(3);
 		// ... but they should be all the same
-		assertSame(result.get(0), result.get(1));
-		assertSame(result.get(0), result.get(2));
-		assertEquals(1, headCreationCounter.getValue());
+		assertThat(result.get(1)).isSameAs(result.get(0));
+		assertThat(result.get(2)).isSameAs(result.get(0));
+		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
 		Chicken rooster = result.get(0);
-		assertEquals("rooster", rooster.getName());
+		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Colors on left : red, black, and as many as were added by 
-		assertEquals(Arrays.asList("pink", "yellow", "pink", "pink"), rooster.getLeftWing().getFeathers().stream()
-				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList()));
+		assertThat(rooster.getLeftWing().getFeathers().stream()
+				.map(Functions.link(Feather::getColor, FeatherColor::getName)).collect(Collectors.toList())).isEqualTo(Arrays.asList("pink", 
+				"yellow", "pink", "pink"));
 	}
 	
 	@Test
@@ -447,8 +450,8 @@ public class WholeResultSetTransformerTest {
 		));
 		
 		List<Person> result = testInstance.transformAll(resultSet);
-		assertEquals("paul", result.get(0).getName());
-		assertEquals(Arrays.asList("rue Vaugirard", "rue Menon"), result.get(0).getAddresses());
+		assertThat(result.get(0).getName()).isEqualTo("paul");
+		assertThat(result.get(0).getAddresses()).isEqualTo(Arrays.asList("rue Vaugirard", "rue Menon"));
 	}
 	
 	public static class Chicken {

@@ -12,7 +12,7 @@ import org.gama.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -66,14 +66,14 @@ public class ExpandableSQLTest {
 
 		ParsedSQL parsedSQL = new ParsedSQL(sqlSnippets, params);
 		ExpandableSQL testInstance = new ExpandableSQL(parsedSQL, ExpandableSQL.sizes(values));
-		assertEquals(expectedPreparedSql, testInstance.getPreparedSQL());
+		assertThat(testInstance.getPreparedSQL()).isEqualTo(expectedPreparedSql);
 
 		List<Parameter> expectedParams = Arrays.asList(paramB, paramC);
 		for (Parameter expectedParam : expectedParams) {
 			ExpandableParameter expandableParameter = testInstance.getExpandableParameters().get(expectedParam.getName());
 			int i = 0;
 			for (Integer expectedIndex : expectedIndexedValues.get(expectedParam.getName())) {
-				assertEquals((int) expectedIndex, expandableParameter.getMarkIndexes()[i++]);
+				assertThat(expandableParameter.getMarkIndexes()[i++]).isEqualTo((int) expectedIndex);
 			}
 		}
 	}

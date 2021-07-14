@@ -9,9 +9,9 @@ import org.gama.lang.collection.Maps.ChainingMap;
 import org.gama.stalactite.sql.binder.PreparedStatementWriter;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_BINDER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -23,16 +23,14 @@ public class SQLStatementTest {
 	public void testApplyValue_missingBinder_exceptionIsThrown() {
 		SQLStatement<String> testInstance = new SQLStatementStub(Maps.asMap("a", INTEGER_BINDER));
 		testInstance.setValues(Maps.asMap("a", 1).add("b", 2));
-		assertThrows(IllegalArgumentException.class, () -> testInstance.applyValues(mock(PreparedStatement.class)),
-				"Missing binder for [b] for values {a=1, b=2} in \"dummy sql\"");
+		assertThatExceptionOfType(IllegalArgumentException.class).as("Missing binder for [b] for values {a=1, b=2} in \"dummy sql\"").isThrownBy(() -> testInstance.applyValues(mock(PreparedStatement.class)));
 	}
 	
 	@Test
 	public void testApplyValue_missingValue_exceptionIsThrown() {
 		SQLStatement<String> testInstance = new SQLStatementStub(Maps.asMap("a", INTEGER_BINDER));
 		testInstance.setValues(Maps.asMap("b", 2));
-		assertThrows(IllegalArgumentException.class, () -> testInstance.applyValues(mock(PreparedStatement.class)),
-				"Missing value for parameters [a] in values {b=2} in \"dummy sql\"");
+		assertThatExceptionOfType(IllegalArgumentException.class).as("Missing value for parameters [a] in values {b=2} in \"dummy sql\"").isThrownBy(() -> testInstance.applyValues(mock(PreparedStatement.class)));
 	}
 	
 	@Test
@@ -47,7 +45,7 @@ public class SQLStatementTest {
 		ChainingMap<String, Integer> expectedValues = Maps.asMap("a", 1).add("b", 2);
 		testInstance.setValues(expectedValues);
 		testInstance.applyValues(mock(PreparedStatement.class));
-		assertEquals(expectedValues, appliedValues);
+		assertThat(appliedValues).isEqualTo(expectedValues);
 	}
 	
 	private static class SQLStatementStub extends SQLStatement<String> {

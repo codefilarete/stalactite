@@ -8,7 +8,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -28,8 +28,8 @@ class ToBeanRowTransformerTest {
 		row.add(columnB.getName(), "hello");
 		
 		Toto transform = testInstance.transform(row);
-		assertEquals(1, transform.prop1);
-		assertEquals("hello", transform.prop2);
+		assertThat(transform.prop1).isEqualTo(1);
+		assertThat(transform.prop2).isEqualTo("hello");
 		
 	}
 	
@@ -55,8 +55,8 @@ class ToBeanRowTransformerTest {
 		row.add("b_slided", "hello");
 		
 		Toto transform = testInstance.transform(row);
-		assertEquals(1, transform.prop1);
-		assertEquals("hello", transform.prop2);
+		assertThat(transform.prop1).isEqualTo(1);
+		assertThat(transform.prop2).isEqualTo("hello");
 		
 		testInstance = testInstance.copyWithAliases(new ColumnedRow(column -> {
 			if (column == columnA) {
@@ -72,8 +72,8 @@ class ToBeanRowTransformerTest {
 		row.add("b_slided2", "hello");
 		
 		transform = testInstance.transform(row);
-		assertEquals(1, transform.prop1);
-		assertEquals("hello", transform.prop2);
+		assertThat(transform.prop1).isEqualTo(1);
+		assertThat(transform.prop2).isEqualTo("hello");
 		
 	}
 	
