@@ -15,7 +15,7 @@ class EntityLinkageByColumnName<T> extends LinkageByColumnName<T> implements Ent
 	 *
 	 * @param accessor a {@link IReversibleAccessor}
 	 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link
-	 * org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping}
+	 * org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry}
 	 * @param columnName an override of the default name that will be generated
 	 */
 	<O> EntityLinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, @javax.annotation.Nullable String columnName) {

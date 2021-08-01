@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<parent>
+		<groupId>org.gama.stalactite</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	<packaging>pom</packaging>
+	
+	<artifactId>sql-adapter</artifactId>
+	
+	<modules>
+		<module>sql-postgresql-adapter</module>
+		<module>sql-mysql-adapter</module>
+		<module>sql-mariadb-adapter</module>
+		<module>sql-derby-adapter</module>
+		<module>sql-hsqldb-adapter</module>
+	</modules>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.gama.stalactite</groupId>
+			<artifactId>sql</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.gama.stalactite</groupId>
+			<artifactId>sql</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- Allow other projects to benefit from some tests classes of this project such as Assertions -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.1.2</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>test-jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+	
+</project>

@@ -6,14 +6,14 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator.NoopSorter;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

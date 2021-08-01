@@ -12,12 +12,24 @@
 	
 	<artifactId>core</artifactId>
 	
-	<properties>
-		<hsqldb.version>2.3.2</hsqldb.version>
-		<derby.version>10.14.1.0</derby.version>
-		<mysql-connector-java.version>5.1.38</mysql-connector-java.version>
-		<mariadb-java-client.version>1.3.4</mariadb-java-client.version>
-	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.gama.stalactite</groupId>
+			<artifactId>sql</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j-api.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j-api.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 	
 	<build>
 		<plugins>
@@ -35,63 +47,7 @@
 			</plugin>
 		</plugins>
 	</build>
-	
-	<dependencies>
-		<dependency>
-			<groupId>org.gama.stalactite</groupId>
-			<artifactId>sql</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>${slf4j-api.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.gama.stalactite</groupId>
-			<artifactId>sql</artifactId>
-			<version>${project.version}</version>
-			<type>test-jar</type>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>${slf4j-api.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.hsqldb</groupId>
-			<artifactId>hsqldb</artifactId>
-			<version>${hsqldb.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.derby</groupId>
-			<artifactId>derby</artifactId>
-			<version>${derby.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.mariadb.jdbc</groupId>
-			<artifactId>mariadb-java-client</artifactId>
-			<version>${mariadb-java-client.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>ch.vorburger.mariaDB4j</groupId>
-			<artifactId>mariaDB4j</artifactId>
-			<version>2.2.2</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>${mysql-connector-java.version}</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
-	
+
 	<repositories>
 		<repository>
 			<id>bintray</id>

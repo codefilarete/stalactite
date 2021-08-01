@@ -16,6 +16,8 @@
 		<module>orm</module>
 		<module>sql</module>
 		<module>spring-integration</module>
+		<module>sql-adapter</module>
+		<module>core-adapter</module>
 	</modules>
 	
 	<properties>

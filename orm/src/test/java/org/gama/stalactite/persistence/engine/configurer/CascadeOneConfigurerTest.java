@@ -122,7 +122,7 @@ class CascadeOneConfigurerTest {
 		// Checking tables structure foreign key presence
 		Dialect dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		// When
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
@@ -225,7 +225,7 @@ class CascadeOneConfigurerTest {
 		// Checking tables structure foreign key presence 
 		Dialect dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));

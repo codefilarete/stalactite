@@ -8,13 +8,13 @@ import java.util.Collection;
 import java.util.List;
 
 import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.dml.SQLExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,11 +61,11 @@ public class DDLDeployer {
 	 * Basic constructor that will create id own default {@link DDLGenerator}
 	 * Tables to deploy must be added throught {@link #getDdlGenerator()}.addTables(..)
 	 * 
-	 * @param javaTypeToSqlTypeMapping the SQL type per Java type provider
+	 * @param sqlTypeRegistry the SQL types per Column or Java type provider
 	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts
 	 */
-	public DDLDeployer(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ConnectionProvider connectionProvider) {
-		this(new DDLTableGenerator(javaTypeToSqlTypeMapping), connectionProvider);
+	public DDLDeployer(SqlTypeRegistry sqlTypeRegistry, ConnectionProvider connectionProvider) {
+		this(new DDLTableGenerator(sqlTypeRegistry), connectionProvider);
 	}
 	
 	/**

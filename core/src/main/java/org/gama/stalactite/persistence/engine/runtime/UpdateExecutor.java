@@ -1,10 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
@@ -15,11 +11,11 @@ import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.function.Predicates;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.RowCountManager;
-import org.gama.stalactite.persistence.engine.VersioningStrategy;
-import org.gama.stalactite.persistence.engine.runtime.InsertExecutor.VersioningStrategyRollbackListener;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
+import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
+import org.gama.stalactite.persistence.engine.runtime.InsertExecutor.VersioningStrategyRollbackListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
@@ -109,7 +105,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		Iterable<UpdatePayload<C, T>> updatePayloads = computePayloads(differencesIterable, allColumnsStatement);
 		if (Iterables.isEmpty(updatePayloads)) {
 			// nothing to update => we return immediatly without any call to listeners
@@ -126,7 +122,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param differencesIterable entities to persist
 	 * @return persistence payloads of entities
 	 */
-	protected Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	protected Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		return UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
 	}
 	

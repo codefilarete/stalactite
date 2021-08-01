@@ -7,19 +7,14 @@ import java.sql.Blob;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
 
-import org.gama.lang.Nullable;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
-
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BIGDECIMAL_WRITER;
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BLOB_INPUTSTREAM_WRITER;
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BLOB_WRITER;
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BOOLEAN_PRIMITIVE_WRITER;
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BYTES_WRITER;
@@ -154,10 +149,7 @@ public interface DefaultParameterBinders {
 	
 	/**
 	 * {@link ParameterBinder} for {@link ResultSet#getBinaryStream(String)} and {@link PreparedStatement#setBinaryStream(int, InputStream)}.
-	 * @see DerbyParameterBinders#BINARYSTREAM_BINDER
-	 * @see HSQLDBParameterBinders#BINARYSTREAM_BINDER
 	 * @see #BLOB_BINDER
-	 * @see #BLOB_INPUTSTREAM_BINDER
 	 */
 	ParameterBinder<InputStream> BINARYSTREAM_BINDER = new LambdaParameterBinder<>(BINARYSTREAM_READER, BINARYSTREAM_WRITER);
 	
@@ -169,27 +161,9 @@ public interface DefaultParameterBinders {
 	/**
 	 * {@link ParameterBinder} for {@link ResultSet#getBlob(String)} and {@link PreparedStatement#setBlob(int, Blob)}.
 	 * 
-	 * @see #BLOB_INPUTSTREAM_BINDER
 	 * @see #BINARYSTREAM_BINDER
 	 */
-	ParameterBinder<Blob> BLOB_BINDER = new LambdaParameterBinder<>(BLOB_READER, BLOB_WRITER);
-	
-	/**
-	 * Binder for {@link InputStream}. Differs from {@link #BLOB_BINDER} because it uses {@link PreparedStatement#setBlob(int, InputStream)}
-	 * for writing and {@link ResultSet#getBlob(String)} plus {@link Blob#getBinaryStream}.
-	 * Main difference stays in JDBC column type and may causes performance issue : Blob is expected with {@link PreparedStatement#setBlob(int, Blob)}
-	 * whereas LONGVARBINARY is expected with {@link PreparedStatement#setBlob(int, InputStream)} or {@link PreparedStatement#setBinaryStream(int, InputStream)}
-	 * 
-	 * @see #BLOB_BINDER
-	 * @see #BINARYSTREAM_BINDER
-	 */
-	ParameterBinder<InputStream> BLOB_INPUTSTREAM_BINDER = new LambdaParameterBinder<>(BLOB_READER.thenApply(stream -> {
-		try {
-			return Nullable.nullable(stream).mapThrower(Blob::getBinaryStream).get();
-		} catch (SQLException e) {
-			throw new SQLExecutionException(e);
-		}
-	}), BLOB_INPUTSTREAM_WRITER);
+	ParameterBinder<Blob> BLOB_BINDER = new NullAwareParameterBinder<>(new LambdaParameterBinder<>(BLOB_READER, BLOB_WRITER));
 	
 	/**
 	 * {@link ParameterBinder} for {@link java.util.Date}

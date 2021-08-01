@@ -1,7 +1,6 @@
 # Dialects
 
-Dialect contains the ways to interact with RDBMSes : each of them have particular ways to do the same things,
- even if they are SQL-99 compliant. Hence Dialect might be specialiazed for each RDBMS.
+Dialect contains the ways to interact with RDBMSes : each of them have particular ways to do the same things, even if they are SQL-99 compliant. Hence Dialect might be specialiazed for each RDBMS.
 
 They declare :
 

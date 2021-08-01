@@ -92,7 +92,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 	}
@@ -119,7 +119,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -143,7 +143,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -168,7 +168,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).setByConstructor()
@@ -194,7 +194,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table<?>, String> nameColumn = totoTable.addColumn("name", String.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			IEntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).setByConstructor()
@@ -233,7 +233,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		Table totoTable = new Table("Toto");
 		Column idColumn = totoTable.addColumn("id", Identifier.class);
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
 		IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -291,7 +291,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		Column name = totoTable.addColumn("name", String.class);
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(id, "varchar(255)");
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
 		
 		IEntityPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -430,7 +430,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		Table totoTable = new Table("Toto");
 		Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 		
 		assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -747,7 +747,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table, Date> creationDate = totoTable.addColumn("creationDate", Date.class);
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -786,11 +786,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			Column<Table, Locale> localeColumn = totoTable.addColumn("locale", Locale.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			dialect.getColumnBinderRegistry().register(Locale.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
 					(resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)),
 					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
-			dialect.getJavaTypeToSqlTypeMapping().put(Locale.class, "VARCHAR(20)");
+			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -833,11 +833,11 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationTime", Date.class);
 			Column<Table, Locale> localeColumn = totoTable.addColumn("locale", Locale.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			dialect.getColumnBinderRegistry().register(Locale.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
 					(resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)),
 					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
-			dialect.getJavaTypeToSqlTypeMapping().put(Locale.class, "VARCHAR(20)");
+			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -880,7 +880,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.add(Timestamp::getCreationDate)
@@ -921,7 +921,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -945,7 +945,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -982,7 +982,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -1004,7 +1004,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -1043,7 +1043,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);
 			Column<Table, Date> modificationDate = totoTable.addColumn("modificationDate", Date.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			// embeddeable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
@@ -1089,7 +1089,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -1116,7 +1116,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -1152,7 +1152,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getJavaTypeToSqlTypeMapping().put(gender, "INT");
+		dialect.getSqlTypeRegistry().put(gender, "INT");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -1180,7 +1180,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.addEnum(PersonWithGender::getGender, genderColumn).byOrdinal()
 				.build(persistenceContext);
 		
-		dialect.getJavaTypeToSqlTypeMapping().put(genderColumn, "INT");
+		dialect.getSqlTypeRegistry().put(genderColumn, "INT");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -1207,7 +1207,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -1232,7 +1232,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -1257,7 +1257,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
-		dialect.getJavaTypeToSqlTypeMapping().put(gender, "VARCHAR(255)");
+		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
@@ -1575,7 +1575,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Table totoTable = new Table("Toto");
 			Column idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			IEntityConfiguredPersister<Toto, Identifier> personPersister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -1602,7 +1602,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Table totoTable = new Table("Toto");
 			Column idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			IEntityConfiguredPersister<Toto, Identifier> personPersister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -1633,7 +1633,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Table totoTable = new Table("toto");
 			Column idColumn = totoTable.addColumn("id", Identifier.class);
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_PARAMETER_BINDER));
-			dialect.getJavaTypeToSqlTypeMapping().put(idColumn, "VARCHAR(255)");
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
 			IEntityConfiguredPersister<Toto, Identifier> personPersister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)

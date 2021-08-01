@@ -17,8 +17,8 @@ import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,9 +38,9 @@ public class PooledSequenceIdentifierProviderTest {
 	
 	@BeforeEach
 	public void setUp() {
-		simpleTypeMapping = new JavaTypeToSqlTypeMapping();
-		simpleTypeMapping.put(Long.class, "int");
-		simpleTypeMapping.put(String.class, "VARCHAR(255)");
+		simpleTypeMapping = new JavaTypeToSqlTypeMapping()
+				.with(long.class, "int")
+				.with(String.class, "VARCHAR(255)");
 		
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping));
 	}

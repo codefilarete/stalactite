@@ -11,8 +11,8 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.Toto;
-import org.gama.stalactite.persistence.engine.PersisterDatabaseTest.TotoTable;
+import org.gama.stalactite.persistence.engine.PersisterITTest.Toto;
+import org.gama.stalactite.persistence.engine.PersisterITTest.TotoTable;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -105,7 +105,7 @@ class PersisterTest {
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<? extends Duo<? extends Toto, ? extends Toto>> entities, boolean allColumnsStatement) {
+			protected int doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 				return ((Collection) entities).size();
 			}
 			
@@ -232,7 +232,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<? extends Duo<? extends Toto, ? extends Toto>> entities, boolean allColumnsStatement) {
+			protected int doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 				return ((Collection) entities).size();
 			}
 		};
@@ -401,7 +401,7 @@ class PersisterTest {
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<? extends Duo<? extends Toto, ? extends Toto>> entities, boolean allColumnsStatement) {
+			protected int doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 				return ((Collection) entities).size();
 			}
 			

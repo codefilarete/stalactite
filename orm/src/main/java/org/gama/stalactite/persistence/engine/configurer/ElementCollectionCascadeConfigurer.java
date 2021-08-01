@@ -162,7 +162,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	
 	private void registerColumnBinder(Column reverseColumn, Column sourcePK) {
 		dialect.getColumnBinderRegistry().register(reverseColumn, dialect.getColumnBinderRegistry().getBinder(sourcePK));
-		dialect.getJavaTypeToSqlTypeMapping().put(reverseColumn, dialect.getJavaTypeToSqlTypeMapping().getTypeName(sourcePK));
+		dialect.getSqlTypeRegistry().put(reverseColumn, dialect.getSqlTypeRegistry().getTypeName(sourcePK));
 	}
 	
 	private void addInsertCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,

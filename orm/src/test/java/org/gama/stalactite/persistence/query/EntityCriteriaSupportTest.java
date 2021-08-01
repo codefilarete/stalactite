@@ -39,7 +39,7 @@ class EntityCriteriaSupportTest {
 		
 		Dialect dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		IEntityConfiguredPersister<Country, Long> persister = MappingEase.entityBuilder(Country.class, long.class)
 				.add(Country::getId).identifier(IdentifierPolicy.AFTER_INSERT)
@@ -92,7 +92,7 @@ class EntityCriteriaSupportTest {
 	void graphNode_getColumn_withRelationOneToOne() {
 		Dialect dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");

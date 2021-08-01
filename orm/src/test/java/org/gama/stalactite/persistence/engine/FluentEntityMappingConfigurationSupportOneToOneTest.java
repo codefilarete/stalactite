@@ -63,7 +63,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	@BeforeEach
 	public void initTest() {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
@@ -307,9 +307,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		// we redifine th eDialcet to avoid polluting the instance one with some more mapping that is only the purpose of this test (avoid side effect)
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		dialect.getColumnBinderRegistry().register((Class) Person.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Person.class, "int");
+		dialect.getSqlTypeRegistry().put(Person.class, "int");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		

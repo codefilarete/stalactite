@@ -147,15 +147,15 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
-		Map<Class, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		Map<Class, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload -> {
 			C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
 			entitiesPerType.computeIfAbsent(entity.getClass(), k -> new HashSet<>()).add(payload);
 		});
 		ModifiableInt updateCount = new ModifiableInt();
 		subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
-			Set<Duo<? extends C, ? extends C>> entitiesToUpdate = entitiesPerType.get(subclass);
+			Set<Duo<C, C>> entitiesToUpdate = entitiesPerType.get(subclass);
 			if (entitiesToUpdate != null) {
 				updateCount.increment(updateExecutor.update(entitiesToUpdate, allColumnsStatement));
 			}

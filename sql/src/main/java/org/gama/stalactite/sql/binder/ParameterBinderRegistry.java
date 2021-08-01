@@ -83,6 +83,7 @@ public class ParameterBinderRegistry {
 		register(java.sql.Date.class, DefaultParameterBinders.DATE_SQL_BINDER);
 		register(LocalDate.class, DefaultParameterBinders.LOCALDATE_BINDER);
 		register(LocalDateTime.class, DefaultParameterBinders.LOCALDATETIME_BINDER);
+		register(java.sql.Timestamp.class, DefaultParameterBinders.TIMESTAMP_BINDER);
 		register(Boolean.class, DefaultParameterBinders.BOOLEAN_BINDER);
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
 		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);

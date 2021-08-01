@@ -16,12 +16,7 @@ import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.ISelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
-import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.gama.stalactite.persistence.engine.listening.*;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
@@ -304,7 +299,7 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if row wasn't found in database)
 	 */
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		if (Iterables.isEmpty(differencesIterable)) {
 			// nothing to update => we return immediatly without any call to listeners
 			return 0;
@@ -313,7 +308,7 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 		}
 	}
 	
-	protected int doUpdate(Iterable<? extends Duo<? extends C, ? extends C>> entities, boolean allColumnsStatement) {
+	protected int doUpdate(Iterable<? extends Duo<C, C>> entities, boolean allColumnsStatement) {
 		return updateExecutor.update(entities, allColumnsStatement);
 	}
 	

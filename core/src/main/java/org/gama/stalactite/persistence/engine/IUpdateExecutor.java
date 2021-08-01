@@ -30,5 +30,5 @@ public interface IUpdateExecutor<C> {
 	 */
 	int updateById(Iterable<C> entities);
 	
-	int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement);
+	int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement);
 }

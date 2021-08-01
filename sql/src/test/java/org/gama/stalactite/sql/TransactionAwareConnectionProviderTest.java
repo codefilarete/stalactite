@@ -1,9 +1,9 @@
 package org.gama.stalactite.sql;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -12,12 +12,12 @@ import static org.mockito.ArgumentMatchers.any;
 /**
  * @author Guillaume Mary
  */
-public class TransactionAwareConnectionProviderTest {
+class TransactionAwareConnectionProviderTest {
 	
 	@Test
-	public void test_whenCommitIsCalled_commitMethodsAreInvoked() throws SQLException {
-		HSQLDBInMemoryDataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
-		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
+	void commitIsCalled_commitMethodsAreInvoked() throws SQLException {
+		Connection connection = Mockito.mock(Connection.class);
+		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(connection));
 		
 		CommitListener commitListenerMock = Mockito.mock(CommitListener.class);
 		testInstance.addCommitListener(commitListenerMock);
@@ -28,9 +28,9 @@ public class TransactionAwareConnectionProviderTest {
 	}
 	
 	@Test
-	public void test_whenRollbackIsCalled_rollbackMethodsAreInvoked() throws SQLException {
-		HSQLDBInMemoryDataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
-		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
+	void rollbackIsCalled_rollbackMethodsAreInvoked() throws SQLException {
+		Connection connection = Mockito.mock(Connection.class);
+		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(connection));
 		
 		RollbackListener rollbackListenerMock = Mockito.mock(RollbackListener.class);
 		testInstance.addRollbackListener(rollbackListenerMock);
@@ -43,14 +43,13 @@ public class TransactionAwareConnectionProviderTest {
 	}
 	
 	@Test
-	public void test_whenRollbackSavepointIsCalled_rollbackSavepointMethodsAreInvoked() throws SQLException {
-		HSQLDBInMemoryDataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
-		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(inMemoryDataSource.getConnection()));
+	void rollbackSavepointIsCalled_rollbackSavepointMethodsAreInvoked() throws SQLException {
+		Connection connection = Mockito.mock(Connection.class);
+		TransactionAwareConnectionProvider testInstance = new TransactionAwareConnectionProvider(new SimpleConnectionProvider(connection));
 		
 		RollbackListener rollbackListenerMock = Mockito.mock(RollbackListener.class);
 		testInstance.addRollbackListener(rollbackListenerMock);
 		
-		testInstance.getCurrentConnection().setAutoCommit(false);	// necessary (at least with HSQLDB) to activate savepoint feature
 		Savepoint savepoint = testInstance.getCurrentConnection().setSavepoint();
 		testInstance.getCurrentConnection().rollback(savepoint);
 		Mockito.verify(rollbackListenerMock).beforeRollback(savepoint);

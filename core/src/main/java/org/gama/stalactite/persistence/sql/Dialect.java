@@ -2,16 +2,17 @@ package org.gama.stalactite.persistence.sql;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.bean.Objects;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 
 /**
  * Class that keeps objects necessary for "communication" with a Database at the SQL language level:
- * - column types for their creation: {@link JavaTypeToSqlTypeMapping} 
+ * - column types for their creation: {@link SqlTypeRegistry} 
  * - column types for their read and write in {@link java.sql.PreparedStatement} and {@link java.sql.ResultSet}: {@link ColumnBinderRegistry}
  * - engines for SQL generation: {@link DDLGenerator} and {@link DMLGenerator}
  * 
@@ -19,23 +20,23 @@ import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
  */
 public class Dialect {
 	
-	private JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping;
+	private final SqlTypeRegistry sqlTypeRegistry;
 	
-	private ColumnBinderRegistry columnBinderRegistry;
+	private final ColumnBinderRegistry columnBinderRegistry;
 	/** Helper to retry write operation, for instance with MySQL deadlock exception */
 	private Retryer writeOperationRetryer = Retryer.NO_RETRY;
 	/** Maximum number of values for a "in" operator */
 	private int inOperatorMaxSize = 1000;
 	
-	private DDLTableGenerator ddlTableGenerator;
+	private final DDLTableGenerator ddlTableGenerator;
 	
-	private DMLGenerator dmlGenerator;
+	private final DMLGenerator dmlGenerator;
 	
 	/**
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
 	 */
 	public Dialect() {
-		this(new DefaultTypeMapping());
+		this(new JavaTypeToSqlTypeMapping());
 	}
 	
 	/**
@@ -46,17 +47,17 @@ public class Dialect {
 	}
 	
 	/**
-	 * Creates a given {@link JavaTypeToSqlTypeMapping} and {@link ColumnBinderRegistry}
+	 * Creates a given {@link SqlTypeRegistry} and {@link ColumnBinderRegistry}
 	 */
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
-		this.javaTypeToSqlTypeMapping = javaTypeToSqlTypeMapping;
+		this.sqlTypeRegistry = new SqlTypeRegistry(javaTypeToSqlTypeMapping);
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.dmlGenerator = newDmlGenerator(columnBinderRegistry);
 		this.ddlTableGenerator = newDdlTableGenerator();
 	}
 	
 	protected DDLTableGenerator newDdlTableGenerator() {
-		return new DDLTableGenerator(getJavaTypeToSqlTypeMapping());
+		return new DDLTableGenerator(getSqlTypeRegistry());
 	}
 	
 	public DDLTableGenerator getDdlTableGenerator() {
@@ -71,8 +72,8 @@ public class Dialect {
 		return dmlGenerator;
 	}
 	
-	public JavaTypeToSqlTypeMapping getJavaTypeToSqlTypeMapping() {
-		return javaTypeToSqlTypeMapping;
+	public SqlTypeRegistry getSqlTypeRegistry() {
+		return sqlTypeRegistry;
 	}
 	
 	public ColumnBinderRegistry getColumnBinderRegistry() {

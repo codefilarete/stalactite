@@ -19,12 +19,14 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePay
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.test.PairSetList;
@@ -37,41 +39,40 @@ import org.mockito.ArgumentCaptor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.lang.collection.Arrays.asList;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
  */
 public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
-	private DataSet dataSet;
+	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
+		.with(Integer.class, "int"));
 	
 	private UpdateExecutor<Toto, Integer, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {
-		dataSet = new DataSet();
-		DMLGenerator dmlGenerator = new DMLGenerator(dataSet.dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new UpdateExecutor<>(dataSet.persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(dataSet.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
+		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
+		testInstance = new UpdateExecutor<>(persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
 	}
 	
 	@Test
 	public void testUpdateById() throws Exception {
 		testInstance.updateById(asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		
-		verify(dataSet.preparedStatement, times(4)).addBatch();
-		verify(dataSet.preparedStatement, times(2)).executeBatch();
-		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertThat(dataSet.statementArgCaptor.getValue()).isEqualTo("update Toto set b = ?, c = ? where a = ?");
+		verify(jdbcMock.preparedStatement, times(4)).addBatch();
+		verify(jdbcMock.preparedStatement, times(2)).executeBatch();
+		verify(jdbcMock.preparedStatement, times(12)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
+		assertThat(jdbcMock.sqlCaptor.getValue()).isEqualTo("update Toto set b = ?, c = ? where a = ?");
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 17).add(2, 23).add(3, 1)
 				.newRow(1, 29).add(2, 31).add(3, 2)
 				.newRow(1, 37).add(2, 41).add(3, 3)
 				.newRow(1, 43).add(2, 53).add(3, 4);
-		assertCapturedPairsEqual(dataSet, expectedPairs);
+		assertCapturedPairsEqual(jdbcMock, expectedPairs);
 	}
 	
 	@Test
@@ -208,11 +209,11 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		localTestInstance.updateVariousColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
 				false, localTestInstance.getMappingStrategy()));
 		
-		verify(dataSet.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
-		verify(dataSet.preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
-		verify(dataSet.preparedStatement, times(expectedResult.setIntCallCount)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(expectedResult.updateStatements);
-		assertCapturedPairsEqual(dataSet, expectedResult.statementValues);
+		verify(jdbcMock.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
+		verify(jdbcMock.preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
+		verify(jdbcMock.preparedStatement, times(expectedResult.setIntCallCount)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
+		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(expectedResult.updateStatements);
+		assertCapturedPairsEqual(jdbcMock, expectedResult.statementValues);
 	}
 	
 	@Test
@@ -229,16 +230,16 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		localTestInstance.updateMappedColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
 				true, localTestInstance.getMappingStrategy()));
 		
-		verify(dataSet.preparedStatement, times(4)).addBatch();
-		verify(dataSet.preparedStatement, times(2)).executeBatch();
-		verify(dataSet.preparedStatement, times(12)).setInt(dataSet.indexCaptor.capture(), dataSet.valueCaptor.capture());
-		assertThat(dataSet.statementArgCaptor.getAllValues()).isEqualTo(asList("update Toto set b = ?, c = ? where a = ?"));
+		verify(jdbcMock.preparedStatement, times(4)).addBatch();
+		verify(jdbcMock.preparedStatement, times(2)).executeBatch();
+		verify(jdbcMock.preparedStatement, times(12)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
+		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(asList("update Toto set b = ?, c = ? where a = ?"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 17).add(2, 123).add(3, 1)
 				.newRow(1, 129).add(2, 31).add(3, 2)
 				.newRow(1, 137).add(2, 141).add(3, 3)
 				.newRow(1, 143).add(2, 153).add(3, 4);
-		assertCapturedPairsEqual(dataSet, expectedPairs);
+		assertCapturedPairsEqual(jdbcMock, expectedPairs);
 	}
 	
 	@Test

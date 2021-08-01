@@ -102,7 +102,7 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		if (Iterables.isEmpty(differencesIterable)) {
 			// nothing to update => we return immediatly without any call to listeners
 			return 0;

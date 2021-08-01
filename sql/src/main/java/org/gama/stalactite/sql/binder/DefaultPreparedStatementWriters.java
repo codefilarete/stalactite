@@ -135,8 +135,6 @@ public final class DefaultPreparedStatementWriters {
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setBinaryStream(int, InputStream)}.
-	 * @see DerbyParameterBinders#BINARYSTREAM_BINDER
-	 * @see HSQLDBParameterBinders#BINARYSTREAM_BINDER
 	 */
 	public static final PreparedStatementWriter<InputStream> BINARYSTREAM_WRITER = new NullAwarePreparedStatementWriter<>(PreparedStatement::setBinaryStream);
 	
@@ -153,7 +151,7 @@ public final class DefaultPreparedStatementWriters {
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setBlob(int, InputStream)}.
 	 */
-	public static final PreparedStatementWriter<InputStream> BLOB_INPUTSTREAM_WRITER = new NullAwarePreparedStatementWriter<>(PreparedStatement::setBlob);
+	public static final PreparedStatementWriter<InputStream> BLOB_INPUTSTREAM_WRITER = new NullAwarePreparedStatementWriter<>(PreparedStatement::setBinaryStream);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link java.util.Date}

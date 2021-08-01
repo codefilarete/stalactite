@@ -5,6 +5,7 @@ import java.util.List;
 import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,7 +19,7 @@ class DDLGeneratorTest {
 	void addedTablesAreInFinalScript() {
 		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
 		typeMapping.put(String.class, "VARCHAR");
-		DDLGenerator testInstance = new DDLGenerator(typeMapping);
+		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping));
 		Table totoTable = new Table("toto");
 		totoTable.addColumn("id", String.class);
 		testInstance.addTables(totoTable);
@@ -32,10 +33,24 @@ class DDLGeneratorTest {
 	}
 	
 	@Test
+	void overridenColumnTypeIsTakenIntoAccount() {
+		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
+		typeMapping.put(String.class, "VARCHAR");
+		SqlTypeRegistry sqlTypeRegistry = new SqlTypeRegistry(typeMapping);
+		DDLGenerator testInstance = new DDLGenerator(sqlTypeRegistry);
+		Table totoTable = new Table("toto");
+		Column idColumn = totoTable.addColumn("id", String.class);
+		testInstance.addTables(totoTable);
+		sqlTypeRegistry.put(idColumn, "BLOB");
+		
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList("create table toto(id BLOB)"));
+	}
+	
+	@Test
 	void indexesAreInFinalScript() {
 		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
 		typeMapping.put(String.class, "VARCHAR");
-		DDLGenerator testInstance = new DDLGenerator(typeMapping);
+		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping));
 		Table totoTable = new Table("toto");
 		Column idColumn = totoTable.addColumn("id", String.class);
 		totoTable.addIndex("totoIDX", idColumn);
@@ -55,7 +70,7 @@ class DDLGeneratorTest {
 	void foreignKeysAreInFinalScript() {
 		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
 		typeMapping.put(String.class, "VARCHAR");
-		DDLGenerator testInstance = new DDLGenerator(typeMapping);
+		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping));
 		Table totoTable = new Table("toto");
 		Column totoPKColumn = totoTable.addColumn("id", String.class);
 		Table tataTable = new Table("tata");
@@ -79,7 +94,7 @@ class DDLGeneratorTest {
 	void addedDDLGeneratorsAreInFinalScript() {
 		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
 		typeMapping.put(String.class, "VARCHAR");
-		DDLGenerator testInstance = new DDLGenerator(typeMapping);
+		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping));
 		Table totoTable = new Table("toto");
 		totoTable.addColumn("id", String.class);
 		testInstance.addTables(totoTable);

@@ -76,8 +76,8 @@ public class PersisterListener<C, I> implements IPersisterListener<C, I> {
 		this.updateListener.add(updateListener);
 	}
 	
-	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement,
-														  BiFunction<Iterable<? extends Duo<? extends C, ? extends C>>, Boolean, R> delegate) {
+	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
+														  BiFunction<Iterable<? extends Duo<C, C>>, Boolean, R> delegate) {
 		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		R result;
 		try {

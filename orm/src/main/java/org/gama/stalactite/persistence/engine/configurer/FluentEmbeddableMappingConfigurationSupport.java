@@ -380,7 +380,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 		 * Constructor by {@link IReversibleAccessor}
 		 *
 		 * @param accessor a {@link IReversibleAccessor}
-		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping}
+		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry}
 		 * @param columnName an override of the default name that will be generated
 		 */
 		public <O> LinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, @Nullable String columnName) {

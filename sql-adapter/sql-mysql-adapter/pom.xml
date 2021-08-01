@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.gama.stalactite</groupId>
+        <artifactId>sql-adapter</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>sql-mysql-adapter</artifactId>
+
+    <properties>
+        <mysql-connector-java.version>5.1.38</mysql-connector-java.version>
+        <wix-embedded-mysql.version>4.6.1</wix-embedded-mysql.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql-connector-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wix</groupId>
+            <artifactId>wix-embedded-mysql</artifactId>
+            <version>${wix-embedded-mysql.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>

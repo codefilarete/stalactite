@@ -1,13 +1,13 @@
 package org.gama.stalactite.test;
 
+import org.gama.lang.Duo;
+import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.PairIterator;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.PairIterator;
 
 /**
  * Facility class for simple creation of List of Set of pairs. Main usage is unit test.
@@ -32,7 +32,7 @@ public class PairSetList<K, V> {
 		return new PairSetList<>(k, v);
 	}
 	
-	public static <K, V> List<Duo<? extends K, ? extends V>> toPairs(Iterable<K> values1, Iterable<V> values2) {
+	public static <K, V> List<Duo<K, V>> toPairs(Iterable<K> values1, Iterable<V> values2) {
 		PairIterator<K, V> pairIterator = new PairIterator<>(values1, values2);
 		return Iterables.copy(pairIterator);
 	}

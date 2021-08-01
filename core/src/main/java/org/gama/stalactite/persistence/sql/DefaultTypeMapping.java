@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
 
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 
 /**
  * A default mapping between Java types and SQL type names

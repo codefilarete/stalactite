@@ -1,81 +1,143 @@
 package org.gama.stalactite.persistence.id;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.persistence.engine.DDLDeployer;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister;
 import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.test.JdbcConnectionProvider;
-import org.junit.jupiter.api.BeforeEach;
+import org.gama.stalactite.persistence.structure.Column;
 import org.junit.jupiter.api.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class SequencePersisterTest {
 	
-	private SequencePersister testInstance;
-	private Dialect dialect;
-	private PersistenceContext persistenceContext;
-	
-	@BeforeEach
-	public void setUp() {
-		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
-		simpleTypeMapping.put(Long.class, "int");
-		simpleTypeMapping.put(String.class, "VARCHAR(255)");
-		
-		dialect = new Dialect(simpleTypeMapping);
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
-		testInstance = new SequencePersister(dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
+	@Test
+	void constructorWithoutArgs_usesDefaultStorageOptions() {
+		SequencePersister testInstance = new SequencePersister(new Dialect(), mock(SeparateTransactionExecutor.class), 42);
+		SequencePersister.SequenceTable sequenceTable = testInstance.getMappingStrategy().getTargetTable();
+
+		// Note that we don't use equals() method because it compares Table partially
+		assertThat(sequenceTable.getName()).isEqualTo(SequenceStorageOptions.DEFAULT.getTable());
+		assertThat(sequenceTable.mapColumnsOnName().keySet().size()).isEqualTo(2);
+		// checking types : since columns are bound to SequencePersister.Sequence fields, they are of their type
+		assertThat(sequenceTable.mapColumnsOnName().get(SequenceStorageOptions.DEFAULT.getSequenceNameColumn()))
+			.extracting(Column::getJavaType).isEqualTo(String.class);
+		assertThat(sequenceTable.mapColumnsOnName().get(SequenceStorageOptions.DEFAULT.getSequenceNameColumn()))
+			.extracting(Column::isPrimaryKey).isEqualTo(true);
+		assertThat(sequenceTable.mapColumnsOnName().get(SequenceStorageOptions.DEFAULT.getValueColumn()))
+			.extracting(Column::getJavaType).isEqualTo(long.class);
+		assertThat(sequenceTable.mapColumnsOnName().get(SequenceStorageOptions.DEFAULT.getValueColumn()))
+			.extracting(Column::isNullable).isEqualTo(false);
 	}
 	
 	@Test
-	public void testGetCreationScripts() {
-		DDLGenerator ddlGenerator = new DDLGenerator(dialect.getJavaTypeToSqlTypeMapping());
-		ddlGenerator.addTables(testInstance.getMappingStrategy().getTargetTable());
-		List<String> creationScripts = ddlGenerator.getCreationScripts();
-		assertThat(creationScripts).isEqualTo(Arrays.asList("create table sequence_table(sequence_name VARCHAR(255), next_val int, primary key " 
-				+ "(sequence_name))"));
+	void constructorWithOptions() {
+		SequenceStorageOptions storageOptions = new SequenceStorageOptions("myTable", "mySequenceNameCol", "myNextValCol");
+		SequencePersister testInstance = new SequencePersister(storageOptions, new Dialect(), mock(SeparateTransactionExecutor.class), 42);
+		SequencePersister.SequenceTable sequenceTable = testInstance.getMappingStrategy().getTargetTable();
+
+		// Note that we don't use equals() method because it compares Table partially
+		assertThat(sequenceTable.getName()).isEqualTo(storageOptions.getTable());
+		assertThat(sequenceTable.mapColumnsOnName().keySet().size()).isEqualTo(2);
+		// checking types : since columns are bound to SequencePersister.Sequence fields, they are of their type
+		assertThat(sequenceTable.mapColumnsOnName().get(storageOptions.getSequenceNameColumn()))
+			.extracting(Column::getJavaType).isEqualTo(String.class);
+		assertThat(sequenceTable.mapColumnsOnName().get(storageOptions.getSequenceNameColumn()))
+			.extracting(Column::isPrimaryKey).isEqualTo(true);
+		assertThat(sequenceTable.mapColumnsOnName().get(storageOptions.getValueColumn()))
+			.extracting(Column::getJavaType).isEqualTo(long.class);
+		assertThat(sequenceTable.mapColumnsOnName().get(storageOptions.getValueColumn()))
+			.extracting(Column::isNullable).isEqualTo(false);
 	}
 	
 	@Test
-	public void testGetCreationScripts_customized() {
-		testInstance = new SequencePersister(new SequenceStorageOptions("myTable", "mySequenceNameCol", "myNextValCol"),
-				dialect, (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
-		DDLGenerator ddlGenerator = new DDLGenerator(dialect.getJavaTypeToSqlTypeMapping());
-		ddlGenerator.addTables(testInstance.getMappingStrategy().getTargetTable());
-		List<String> creationScripts = ddlGenerator.getCreationScripts();
-		assertThat(creationScripts).isEqualTo(Arrays.asList("create table myTable(mySequenceNameCol VARCHAR(255), myNextValCol int, primary key " 
-				+ "(mySequenceNameCol))"));
-	}
-	
-	@Test
-	public void testReservePool_emptyDatabase() throws Exception {
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(testInstance.getMappingStrategy().getTargetTable()));
-		ddlDeployer.deployDDL();
+	void reservePool_emptyDatabase() {
+		List<String> selectedSequence = new ArrayList<>();
+		List<SequencePersister.Sequence> insertedSequence = new ArrayList<>();
+		List<SequencePersister.Sequence> updatedSequence = new ArrayList<>();
+		SeparateTransactionExecutor separateTransactionExecutorMock = mock(SeparateTransactionExecutor.class);
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer(InvocationOnMock invocationOnMock) throws Throwable {
+				((SeparateTransactionExecutor.JdbcOperation) invocationOnMock.getArgument(0)).execute();
+				return null;
+			}
+		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
+		SequencePersister testInstance = new SequencePersister(new Dialect(), separateTransactionExecutorMock, 42) {
+			
+			@Override
+			public Sequence select(String sequenceName) {
+				selectedSequence.add(sequenceName);
+				return null;
+			}
+
+			@Override
+			public int insert(Sequence entity) {
+				insertedSequence.add(entity);
+				return 1;
+			}
+
+			@Override
+			public int updateById(Sequence entity) {
+				updatedSequence.add(entity);
+				return 1;
+			}
+		};
 		long identifier = testInstance.reservePool("toto", 10);
 		assertThat(identifier).isEqualTo(10);
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
-		Statement statement = currentConnection.createStatement();
-		ResultSet resultSet = statement.executeQuery("select next_val from sequence_table where sequence_name = 'toto'");
-		resultSet.next();
-		assertThat(resultSet.getInt("next_val")).isEqualTo(10);
-		
-		identifier = testInstance.reservePool("toto", 10);
-		assertThat(identifier).isEqualTo(20);
-		
-		resultSet = statement.executeQuery("select next_val from sequence_table where sequence_name = 'toto'");
-		resultSet.next();
-		assertThat(resultSet.getInt("next_val")).isEqualTo(20);
+		assertThat(selectedSequence).isEqualTo(Arrays.asList("toto"));
+		assertThat(insertedSequence).flatExtracting(SequencePersister.Sequence::getSequenceName).isEqualTo(Arrays.asList("toto"));
+		assertThat(insertedSequence).flatExtracting(SequencePersister.Sequence::getStep).isEqualTo(Arrays.asList(10L));
+		assertThat(updatedSequence).isEmpty();
+	}
+
+	@Test
+	void reservePool_notEmptyDatabase() {
+		List<String> selectedSequence = new ArrayList<>();
+		List<SequencePersister.Sequence> insertedSequence = new ArrayList<>();
+		List<SequencePersister.Sequence> updatedSequence = new ArrayList<>();
+		SeparateTransactionExecutor separateTransactionExecutorMock = mock(SeparateTransactionExecutor.class);
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer(InvocationOnMock invocationOnMock) throws Throwable {
+				((SeparateTransactionExecutor.JdbcOperation) invocationOnMock.getArgument(0)).execute();
+				return null;
+			}
+		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
+		SequencePersister testInstance = new SequencePersister(new Dialect(), separateTransactionExecutorMock, 42) {
+
+			@Override
+			public Sequence select(String sequenceName) {
+				selectedSequence.add(sequenceName);
+				return new Sequence(sequenceName, 15);
+			}
+
+			@Override
+			public int insert(Sequence entity) {
+				insertedSequence.add(entity);
+				return 1;
+			}
+
+			@Override
+			public int updateById(Sequence entity) {
+				updatedSequence.add(entity);
+				return 1;
+			}
+		};
+		long identifier = testInstance.reservePool("toto", 10);
+		assertThat(identifier).isEqualTo(25);
+		assertThat(selectedSequence).isEqualTo(Arrays.asList("toto"));
+		assertThat(insertedSequence).isEmpty();
+		assertThat(updatedSequence).flatExtracting(SequencePersister.Sequence::getSequenceName).isEqualTo(Arrays.asList("toto"));
+		assertThat(updatedSequence).flatExtracting(SequencePersister.Sequence::getStep).isEqualTo(Arrays.asList(25L));
 	}
 }

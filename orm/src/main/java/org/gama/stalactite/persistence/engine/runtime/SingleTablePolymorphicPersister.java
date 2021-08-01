@@ -156,8 +156,8 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
-		Map<IUpdateExecutor<C>, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		Map<IUpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());

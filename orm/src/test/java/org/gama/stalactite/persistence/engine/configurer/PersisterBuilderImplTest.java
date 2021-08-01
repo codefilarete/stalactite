@@ -93,9 +93,9 @@ public class PersisterBuilderImplTest {
 	static void initBinders() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		DIALECT.getSqlTypeRegistry().put(Identifier.class, "int");
 		DIALECT.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Color.class, "int");
+		DIALECT.getSqlTypeRegistry().put(Color.class, "int");
 		
 		DIALECT.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 	}

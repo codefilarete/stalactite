@@ -35,7 +35,7 @@ class TablePerClassPolymorphismBuilderTest {
 	void build_targetTableAndOverringColumnsAreDifferent_throwsException() {
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		PersistenceContext persistenceContext = new PersistenceContext(Mockito.mock(ConnectionProvider.class), dialect);
 		
 		Table expectedResult = new Table("MyOverridingTable");

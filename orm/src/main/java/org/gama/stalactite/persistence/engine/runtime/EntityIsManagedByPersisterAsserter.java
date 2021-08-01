@@ -83,7 +83,7 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		// we clear asserter input from null because it doesn't support it, and it may happen in update cases of nullified one-to-one relation
 		List<C> nonNullEntities = Iterables.stream(differencesIterable).map(Duo::getLeft).filter(Objects::nonNull).collect(Collectors.toList());
 		assertPersisterManagesEntities(nonNullEntities);

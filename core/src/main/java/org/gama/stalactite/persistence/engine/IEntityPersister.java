@@ -122,7 +122,7 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 	@Experimental
 	default int update(Iterable<C> entities) {
 		List<I> ids = Iterables.collect(entities, this::getId, ArrayList::new);
-		return update(() -> new PairIterator<>(entities, select(ids)), true);
+		return update(() -> new PairIterator<C, C>(entities, select(ids)), true);
 	}
 	
 	/**

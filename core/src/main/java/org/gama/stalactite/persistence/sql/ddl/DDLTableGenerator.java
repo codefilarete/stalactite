@@ -5,11 +5,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.gama.lang.StringAppender;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.ForeignKey;
-import org.gama.stalactite.persistence.structure.Index;
-import org.gama.stalactite.persistence.structure.PrimaryKey;
-import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.persistence.structure.*;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 
 /**
@@ -17,15 +13,15 @@ import org.gama.stalactite.query.builder.DMLNameProvider;
  */
 public class DDLTableGenerator {
 	
-	private final JavaTypeToSqlTypeMapping typeMapping;
+	private final SqlTypeRegistry typeMapping;
 	
 	protected final DMLNameProvider dmlNameProvider;
 	
-	public DDLTableGenerator(JavaTypeToSqlTypeMapping typeMapping) {
+	public DDLTableGenerator(SqlTypeRegistry typeMapping) {
 		this(typeMapping, new DMLNameProvider(Collections.emptyMap()));
 	}
 
-	public DDLTableGenerator(JavaTypeToSqlTypeMapping typeMapping, DMLNameProvider dmlNameProvider) {
+	public DDLTableGenerator(SqlTypeRegistry typeMapping, DMLNameProvider dmlNameProvider) {
 		this.typeMapping = typeMapping;
 		this.dmlNameProvider = dmlNameProvider;
 	}

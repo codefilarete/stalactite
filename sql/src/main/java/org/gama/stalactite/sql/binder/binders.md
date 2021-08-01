@@ -1,18 +1,11 @@
 ## Binders overview
 
-Binders are aimed at giving a more fine grained access to
- - [ResultSet read](ResultSetReader.java)
- - [PreparedStatement write](PreparedStatementWriter.java)
+Binders aim at giving access to methods of ResultSet and PreparedStatement classes in a functional programming way,
+these accesses are given repectiviely through functional interfaces:
+- [ResultSet read](ResultSetReader.java)
+- [PreparedStatement write](PreparedStatementWriter.java)
 
-from a "column" point of view.
-
-These accesses are given repectiviely through functional interfaces:
- - `ResultSetReader#get(ResultSet resultSet, String columnName)`
- - `PreparedStatementWriter#set(PreparedStatement preparedStatement, int valueIndex, I value)`
-
-Those concepts are merged into the original main class [ParameterBinder](ParameterBinder.java) that implements
-those interfaces.
-
+A read and write wrapper is made through [ParameterBinder](ParameterBinder.java).
 
 ## Predefined binders
 

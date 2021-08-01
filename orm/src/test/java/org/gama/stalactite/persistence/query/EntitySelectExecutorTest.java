@@ -65,7 +65,7 @@ class EntitySelectExecutorTest {
 	void initTest() {
 		dialect = new Dialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 	}
 	
 	private void createConnectionProvider(List<Map<String, Object>> data) {
@@ -290,7 +290,7 @@ class EntitySelectExecutorTest {
 		
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
 		OptimizedUpdatePersister<Country, Identifier> persister = (OptimizedUpdatePersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
@@ -351,7 +351,7 @@ class EntitySelectExecutorTest {
 		
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "bigint");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
 		IEntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (IEntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)

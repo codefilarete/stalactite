@@ -156,7 +156,7 @@ public class PersisterWrapper<C, I> implements IEntityConfiguredJoinedTablesPers
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		return surrogate.update(differencesIterable, allColumnsStatement);
 	}
 	

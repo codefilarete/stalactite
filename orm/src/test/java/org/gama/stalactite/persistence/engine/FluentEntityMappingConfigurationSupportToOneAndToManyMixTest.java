@@ -48,7 +48,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	public void initTest() {
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
 		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,

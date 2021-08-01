@@ -53,7 +53,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 	public static void initAllTests() {
 		// binder creation for our identifier
 		DIALECT.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		DIALECT.getJavaTypeToSqlTypeMapping().put(Identifier.class, "int");
+		DIALECT.getSqlTypeRegistry().put(Identifier.class, "int");
 	}
 	
 	@Nested

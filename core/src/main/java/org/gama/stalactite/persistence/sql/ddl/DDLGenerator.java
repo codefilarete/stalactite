@@ -1,10 +1,6 @@
 package org.gama.stalactite.persistence.sql.ddl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.KeepOrderSet;
@@ -31,10 +27,10 @@ public class DDLGenerator implements DDLProvider {
 	 * Simple generator where column SQL types are took from given Java-SQL type mapping.
 	 * Name of tables and columns are given by a default {@link org.gama.stalactite.query.builder.DMLNameProvider}
 	 * 
-	 * @param typeMapping the mapping to be used to get SQL type of columns
+	 * @param sqlTypeRegistry the mapping to be used to get SQL type of columns
 	 */
-	public DDLGenerator(JavaTypeToSqlTypeMapping typeMapping) {
-		this.ddlTableGenerator = new DDLTableGenerator(typeMapping);
+	public DDLGenerator(SqlTypeRegistry sqlTypeRegistry) {
+		this.ddlTableGenerator = new DDLTableGenerator(sqlTypeRegistry);
 	}
 	
 	public DDLGenerator(DDLTableGenerator ddlTableGenerator) {

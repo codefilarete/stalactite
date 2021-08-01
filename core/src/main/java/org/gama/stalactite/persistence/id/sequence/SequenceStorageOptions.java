@@ -1,7 +1,5 @@
 package org.gama.stalactite.persistence.id.sequence;
 
-import org.gama.stalactite.persistence.structure.Table;
-
 /**
  * Options for storing a sequence in the database.
  * 
@@ -38,12 +36,5 @@ public class SequenceStorageOptions {
 	
 	public String getValueColumn() {
 		return valueColumn;
-	}
-	
-	public Table giveTable() {
-		Table result = new Table(null, getTable());
-		result.addColumn(getSequenceNameColumn(), String.class);
-		result.addColumn(getValueColumn(), long.class);
-		return result;
 	}
 }

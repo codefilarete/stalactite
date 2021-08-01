@@ -331,7 +331,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		return persister.update(differencesIterable, allColumnsStatement);
 	}
 	

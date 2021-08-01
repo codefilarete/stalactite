@@ -37,14 +37,15 @@ import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect.HSQLDBTypeMapping;
-import org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.persistence.sql.HSQLDBDialect;
+import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.gama.stalactite.sql.binder.HSQLDBTypeMapping;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.Test;
@@ -233,25 +234,16 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		assertThat(capturedSQL.isEmpty()).isTrue();
 	}
 	
-	public static Object[][] datasources() {
-		return new Object[][] {
-				// NB: Derby can't be tested because it doesn't support "tupled in"
-				new Object[] { new HSQLDBInMemoryDataSource() },
-				new Object[] { new MariaDBEmbeddableDataSource(3406) },
-				
-		};
-	}
-	
-	@ParameterizedTest
-	@MethodSource("datasources")
-	public void testExecute_realLife_composedId(DataSource dataSource) throws SQLException {
+	@Test
+	public void testExecute_realLife_composedId() throws SQLException {
+		DataSource dataSource = new HSQLDBInMemoryDataSource(); 
 		Table targetTable = new Table("Toto");
 		Column<Table, Long> id1 = targetTable.addColumn("id1", long.class).primaryKey();
 		Column<Table, Long> id2 = targetTable.addColumn("id2", long.class).primaryKey();
 		Column<Table, String> name = targetTable.addColumn("name", String.class);
 		
 		JdbcConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(new HSQLDBTypeMapping(), connectionProvider);
+		DDLDeployer ddlDeployer = new DDLDeployer(new SqlTypeRegistry(new HSQLDBTypeMapping()), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(targetTable);
 		ddlDeployer.deployDDL();
 		
@@ -296,7 +288,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		);
 		
 		// Checking that selected entities by their id are those expected
-		EntityMappingStrategyTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, new Dialect(), connectionProvider);
+		EntityMappingStrategyTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, new HSQLDBDialect(), connectionProvider);
 		List<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
 		assertThat(select.toString()).isEqualTo(Arrays.asList(entity1).toString());
 		

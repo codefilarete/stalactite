@@ -18,7 +18,7 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
  *
  * @param <C> the mapped type
  * @author Guillaume Mary
- * @see org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping
+ * @see org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry
  * @see org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry
  */
 public class ComplexTypeBinder<C> implements ParameterBinder<C> {
@@ -27,7 +27,7 @@ public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	
 	/**
 	 * Creates a binder for persisting C objects (handling eventually null values).
-	 * Instance should be registered into a {@link org.gama.stalactite.persistence.sql.ddl.JavaTypeToSqlTypeMapping} and {@link
+	 * Instance should be registered into a {@link org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link
 	 * org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry}
 	 * 
 	 * @param lowerBinder the binder that interacts with {@link PreparedStatement} and {@link ResultSet}

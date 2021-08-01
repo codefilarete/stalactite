@@ -4,8 +4,8 @@ import java.util.Map;
 
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister.SequenceTable;
@@ -59,7 +59,7 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 			super(schema, name);
 			sequenceNameColumn = addColumn(sequenceNameColName, String.class);
 			sequenceNameColumn.setPrimaryKey(true);
-			nextValColumn = addColumn(nextValColName, Long.class);
+			nextValColumn = addColumn(nextValColName, long.class);
 		}
 		
 		public Map<PropertyAccessor<Sequence, Object>, Column<SequenceTable, Object>> getPooledSequenceFieldMapping() {
@@ -94,6 +94,11 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 			this.sequenceName = sequenceName;
 		}
 		
+		public Sequence(String sequenceName, long step) {
+			this.sequenceName = sequenceName;
+			this.step = step;
+		}
+
 		public long getStep() {
 			return step;
 		}
@@ -119,7 +124,7 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 		private final int stepSize;
 		private Sequence sequence;
 		
-		public SequenceBoundJdbcOperation(String sequenceName, int nextStepSize) {
+		private SequenceBoundJdbcOperation(String sequenceName, int nextStepSize) {
 			this.sequenceName = sequenceName;
 			this.stepSize = nextStepSize;
 		}

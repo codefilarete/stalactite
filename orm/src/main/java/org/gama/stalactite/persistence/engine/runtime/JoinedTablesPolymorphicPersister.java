@@ -177,13 +177,13 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<? extends C, ? extends C>> differencesIterable, boolean allColumnsStatement) {
+	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		ModifiableInt mainUpdateCount = new ModifiableInt();
 		int mainRowCount = mainPersister.update(differencesIterable, allColumnsStatement);
 		mainUpdateCount.increment(mainRowCount);
 		
 		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
-		Map<IUpdateExecutor<C>, Set<Duo<? extends C, ? extends C>>> entitiesPerType = new HashMap<>();
+		Map<IUpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());

@@ -16,24 +16,17 @@ public class PooledHiLoSequence implements org.gama.lang.function.Sequence<Long>
 	
 	private LongPool sequenceState;
 	
-	private SequencePersister persister;
+	private final SequencePersister persister;
 	
-	private PooledHiLoSequenceOptions options;
-	
-	private final Dialect dialect;
-	private final SeparateTransactionExecutor separateTransactionExecutor;
-	private final int jdbcBatchSize;
+	private final PooledHiLoSequenceOptions options;
 	
 	public PooledHiLoSequence(PooledHiLoSequenceOptions options, Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
-		this.dialect = dialect;
-		this.separateTransactionExecutor = separateTransactionExecutor;
-		this.jdbcBatchSize = jdbcBatchSize;
-		configure(options);
+		this(options, new SequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize));
 	}
-	
-	public void configure(PooledHiLoSequenceOptions options) {
-		this.persister = new SequencePersister(options.getStorageOptions(), dialect, separateTransactionExecutor, jdbcBatchSize);
+
+	public PooledHiLoSequence(PooledHiLoSequenceOptions options, SequencePersister persister) {
 		this.options = options;
+		this.persister = persister;
 	}
 	
 	public SequencePersister getPersister() {
@@ -59,7 +52,7 @@ public class PooledHiLoSequence implements org.gama.lang.function.Sequence<Long>
 	}
 	
 	private void initSequenceState() {
-		String sequenceName = getSequenceName();
+		String sequenceName = this.options.getSequenceName();
 		Sequence existingSequence = this.persister.select(sequenceName);
 		long initialValue = existingSequence == null ? this.options.getInitialValue() : existingSequence.getStep();
 		// we decrement initialValue to compensate for LongPool incrementing first value on its next() call
@@ -71,10 +64,6 @@ public class PooledHiLoSequence implements org.gama.lang.function.Sequence<Long>
 		};
 		// we consider that a new boundary is reached in order to insert next state
 		sequenceState.onBoundReached();
-	}
-	
-	protected String getSequenceName() {
-		return this.options.getSequenceName();
 	}
 	
 	/**

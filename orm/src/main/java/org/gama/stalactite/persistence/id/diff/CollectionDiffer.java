@@ -105,7 +105,7 @@ public class CollectionDiffer<I> {
 		Set<I> helds = Iterables.intersect(afterIndexes.keySet(), beforeIndexes.keySet());
 		helds.forEach(i -> {
 			// NB: even if Integer can't be inherited, PairIterator is a Iterator<? extends X, ? extends X>
-			Iterable<Duo<? extends Integer, ? extends Integer>> indexPairs = () -> new UntilBothIterator<>(beforeIndexes.get(i), afterIndexes.get(i));
+			Iterable<Duo<Integer, Integer>> indexPairs = () -> new UntilBothIterator<>(beforeIndexes.get(i), afterIndexes.get(i));
 			// NB: These instances may no be added to result, it depends on iteration
 			IndexedDiff<I> removed = new IndexedDiff<>(REMOVED, i, null);
 			Object id = idProvider.apply(i);

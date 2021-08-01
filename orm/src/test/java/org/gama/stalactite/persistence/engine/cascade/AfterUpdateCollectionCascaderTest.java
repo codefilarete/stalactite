@@ -54,7 +54,7 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 						writeOperationRetryer, inOperatorMaxSize) {
 					
 					@Override
-					public int update(Iterable<? extends Duo<? extends Tata, ? extends Tata>> differencesIterable, boolean allColumnsStatement) {
+					public int update(Iterable<? extends Duo<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
 						// Overriden to do no action, because default super action is complex to mock
 						return 0;
 					}
