@@ -2,6 +2,7 @@ package org.gama.stalactite.sql.dml;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -11,7 +12,6 @@ import java.util.regex.Pattern;
 
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.ValueFactoryHashMap;
 
 /**
  * Parser for SQL String with named parameters.
@@ -244,7 +244,7 @@ public class SQLParameterParser {
 		private List<Object /* String or Parameter */> sqlSnippets = new ArrayList<>(10);
 		
 		/** Parameters mapped on their names */
-		private Map<String, Parameter> parametersMap = new ValueFactoryHashMap<>(Parameter::new);
+		private Map<String, Parameter> parametersMap = new HashMap<>();
 		
 		public ParsedSQL() {
 		}
@@ -268,13 +268,13 @@ public class SQLParameterParser {
 		}
 		
 		public void addParam(String paramName) {
-			Parameter parameter = this.parametersMap.get(paramName);
+			Parameter parameter = this.parametersMap.computeIfAbsent(paramName, Parameter::new);
 			// we must put the same instance into the Map as into the List for the expansion algorithm
 			this.sqlSnippets.add(parameter);
 		}
 		
 		public void addCollectionParam(String paramName) {
-			Parameter parameter = this.parametersMap.get(paramName);
+			Parameter parameter = this.parametersMap.computeIfAbsent(paramName, Parameter::new);
 			if (!(parameter instanceof CollectionParameter)) {
 				parameter = new CollectionParameter(paramName);
 				this.parametersMap.put(paramName, parameter);

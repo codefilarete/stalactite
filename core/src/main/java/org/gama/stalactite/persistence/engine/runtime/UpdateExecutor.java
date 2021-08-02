@@ -1,13 +1,17 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.function.Predicates;
 import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.RowCountManager;
@@ -298,19 +302,20 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 */
 	private class JDBCBatchingOperationCache implements JDBCBatchingOperationProvider<T> {
 		
-		private final Map<Set<UpwhereColumn<T>>, JDBCBatchingOperation<T>> updateOperationCache;
+		/** cache for WriteOperation instances (key is Columns to be updated) for batch use */
+		private final Map<Set<UpwhereColumn<T>>, JDBCBatchingOperation<T>> updateOperationCache = new HashMap<>();
+		private final DMLExecutor<C, I, T>.CurrentConnectionProvider currentConnectionProvider;
 		
 		private JDBCBatchingOperationCache(CurrentConnectionProvider currentConnectionProvider) {
-			// cache for WriteOperation instances (key is Columns to be updated) for batch use
-			updateOperationCache = new ValueFactoryHashMap<>(input -> {
-				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(UpwhereColumn.getUpdateColumns(input), getMappingStrategy().getVersionedKeys());
-				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, currentConnectionProvider), getBatchSize());
-			});
+			this.currentConnectionProvider = currentConnectionProvider;
 		}
 		
 		@Override
 		public JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns) {
-			return updateOperationCache.get(upwhereColumns);
+			return updateOperationCache.computeIfAbsent(upwhereColumns, input -> {
+				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(UpwhereColumn.getUpdateColumns(input), getMappingStrategy().getVersionedKeys());
+				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, currentConnectionProvider), getBatchSize());
+			});
 		}
 		
 		@Override

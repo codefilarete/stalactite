@@ -9,7 +9,6 @@ import java.util.stream.Stream;
 
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
 /**
@@ -25,7 +24,7 @@ public class JavaTypeToSqlTypeMapping {
 	 * SQL types storage per Java type, dedicated to sized-types.
 	 * Values are {@link SortedMap}s of size to SQL type. {@link SortedMap} are used to ease finding of types per size
 	 */
-	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new ValueFactoryHashMap<>(input -> new TreeMap<>());
+	private final Map<Class, SortedMap<Integer, String>> javaTypeToSQLType = new HashMap<>();
 	
 	/**
 	 * SQL types storage per Java type, usual cases.
@@ -52,8 +51,12 @@ public class JavaTypeToSqlTypeMapping {
 	 * @see #with(Class, int, String)
 	 */
 	public void put(Class clazz, int size, String sqlType) {
-		javaTypeToSQLType.get(clazz).put(size, sqlType);
+		getSQLType(clazz).put(size, sqlType);
 	}
+	
+	private SortedMap<Integer, String> getSQLType(Class clazz) {
+		return javaTypeToSQLType.computeIfAbsent(clazz, k -> new TreeMap<>());
+	} 
 	
 	/**
 	 * Same as {@link #put(Class, String)} with fluent writing
@@ -115,7 +118,7 @@ public class JavaTypeToSqlTypeMapping {
 		if (size == null) {
 			return getTypeName(javaType);
 		} else {
-			SortedMap<Integer, String> typeNames = javaTypeToSQLType.get(javaType).tailMap(size);
+			SortedMap<Integer, String> typeNames = getSQLType(javaType).tailMap(size);
 			String typeName = Iterables.firstValue(typeNames);
 			if (typeName != null) {
 				// NB: we use $l as Hibernate to ease an eventual switch between frameworks

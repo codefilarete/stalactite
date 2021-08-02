@@ -13,9 +13,9 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 /**
  * @author Guillaume Mary
  */
-public class JavaTypeToSqlTypeMappingTest {
+class JavaTypeToSqlTypeMappingTest {
 	
-	public static Object[][] testGetTypeName_withSingleton() {
+	static Object[][] getTypeName_withSingleton() {
 		JavaTypeToSqlTypeMapping testInstance1 = new JavaTypeToSqlTypeMapping();
 		testInstance1.put(String.class, "VARCHAR");
 		JavaTypeToSqlTypeMapping testInstance2 = new JavaTypeToSqlTypeMapping();
@@ -27,12 +27,12 @@ public class JavaTypeToSqlTypeMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetTypeName_withSingleton")
-	public void testGetTypeName_withSingleton(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
+	@MethodSource("getTypeName_withSingleton")
+	void getTypeName_withSingleton(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
 		assertThat(testInstance.getTypeName(javaType, size)).isEqualTo(expected);
 	}
 	
-	public static Object[][] testGetTypeName() {
+	static Object[][] getTypeName() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
 		testInstance.put(CharSequence.class, "VARCHAR");
 		testInstance.put(String.class, "VARCHAR(255)");
@@ -54,13 +54,13 @@ public class JavaTypeToSqlTypeMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetTypeName")
-	public void testGetTypeName(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
+	@MethodSource("getTypeName")
+	void getTypeName(JavaTypeToSqlTypeMapping testInstance, Class javaType, Integer size, String expected) {
 		assertThat(testInstance.getTypeName(javaType, size)).isEqualTo(expected);
 	}
 	
 	@Test
-	public void testGetTypeName_unkonwnType_exceptionIsThrown() {
+	void getTypeName_unkonwnType_exceptionIsThrown() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
 		assertThatExceptionOfType(BindingException.class).isThrownBy(() -> testInstance.getTypeName(Object.class, null));
 	}

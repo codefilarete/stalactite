@@ -1,7 +1,8 @@
 package org.gama.stalactite.persistence.query;
 
+import java.util.HashMap;
+
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.collection.ValueFactoryHashMap;
 import org.gama.lang.exception.Exceptions;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
@@ -66,7 +67,17 @@ class EntityCriteriaSupportTest {
 				.or(Country::setName, Operators.gteq("11"))
 				;
 		
-		WhereBuilder queryBuilder = new WhereBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getCriteria(), new DMLNameProvider(new ValueFactoryHashMap<>(Table::getName)));
+		WhereBuilder queryBuilder = new WhereBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getCriteria(), new DMLNameProvider(new HashMap<Table, String>() {
+			@Override
+			public String get(Object key) {
+				String o = super.get(key);
+				if (o == null) {
+					o = ((Table) key).getName();
+					put(((Table) key), o);
+				}
+				return o;
+			}
+		}));
 		System.out.println(queryBuilder.toSQL());
 	}
 	
