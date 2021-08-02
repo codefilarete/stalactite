@@ -13,7 +13,6 @@ import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.function.Predicates;
-import org.gama.stalactite.persistence.engine.IUpdateExecutor;
 import org.gama.stalactite.persistence.engine.RowCountManager;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
@@ -21,9 +20,9 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.engine.runtime.InsertExecutor.VersioningStrategyRollbackListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.structure.Column;
@@ -41,7 +40,7 @@ import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_RO
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IUpdateExecutor<C> {
+public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.gama.stalactite.persistence.engine.UpdateExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -50,7 +49,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private SQLOperationListener<UpwhereColumn<T>> operationListener;
 	
-	public UpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionConfiguration,
+	public UpdateExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);

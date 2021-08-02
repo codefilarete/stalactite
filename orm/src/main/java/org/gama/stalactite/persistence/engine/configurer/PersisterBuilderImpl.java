@@ -38,7 +38,7 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PersisterBuilder;
@@ -52,12 +52,12 @@ import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
 import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
@@ -70,7 +70,7 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
@@ -151,12 +151,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@Override
-	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
+	public EntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
 	@Override
-	public IEntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, @Nullable Table table) {
+	public EntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, @Nullable Table table) {
 		return build(
 				persistenceContext.getDialect(),
 				OptimizedUpdatePersister.wrapWithQueryCache(persistenceContext.getConnectionConfiguration()),
@@ -173,10 +173,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param table persistence target table
 	 * @return the built persister, never null
 	 */
-	public IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect,
-															  IConnectionConfiguration connectionConfiguration,
-															  PersisterRegistry persisterRegistry,
-															  @Nullable Table table) {
+	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect,
+															 ConnectionConfiguration connectionConfiguration,
+															 PersisterRegistry persisterRegistry,
+															 @Nullable Table table) {
 		boolean isInitiator = PersisterBuilderContext.CURRENT.get() == null;
 		
 		if (isInitiator) {
@@ -187,12 +187,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			// If a persister already exists for the type we return it : case of graph that declares twice / several times same mapped type 
 			// WARN : this does not take mapping configuration differences into account, so if configuration is different from previous one, since
 			// no check is done, then the very first persister is returned
-			IEntityPersister<C, Object> existingPersister = persisterRegistry.getPersister(this.entityMappingConfiguration.getEntityType());
+			EntityPersister<C, Object> existingPersister = persisterRegistry.getPersister(this.entityMappingConfiguration.getEntityType());
 			if (existingPersister != null) {
 				// we can cast because all persisters we registered implement the interface
-				return (IEntityConfiguredJoinedTablesPersister<C, I>) existingPersister;
+				return (EntityConfiguredJoinedTablesPersister<C, I>) existingPersister;
 			}
-			IEntityConfiguredJoinedTablesPersister<C, I> result = doBuild(table, dialect::buildGeneratedKeysReader,
+			EntityConfiguredJoinedTablesPersister<C, I> result = doBuild(table, dialect::buildGeneratedKeysReader,
 					dialect, connectionConfiguration, persisterRegistry);
 			
 			if (isInitiator) {	
@@ -201,7 +201,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				// because persistence configuration is made with a deep-first algorithm, this code (after doBuild()) will be called at the very end.
 				PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(invokation -> {
 					try {
-						invokation.consume((IEntityConfiguredJoinedTablesPersister) persisterRegistry.getPersister(invokation.getEntityType()));
+						invokation.consume((EntityConfiguredJoinedTablesPersister) persisterRegistry.getPersister(invokation.getEntityType()));
 					} catch (RuntimeException e) {
 						throw new MappingConfigurationException("Error while post processing persister of type "
 								+ Reflections.toString(invokation.getEntityType()), e);
@@ -217,11 +217,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@VisibleForTesting
-	IEntityConfiguredJoinedTablesPersister<C, I> doBuild(@Nullable Table table,
-														 GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
-														 Dialect dialect,
-														 IConnectionConfiguration connectionConfiguration,
-														 PersisterRegistry persisterRegistry) {
+	EntityConfiguredJoinedTablesPersister<C, I> doBuild(@Nullable Table table,
+														GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
+														Dialect dialect,
+														ConnectionConfiguration connectionConfiguration,
+														PersisterRegistry persisterRegistry) {
 		init(dialect.getColumnBinderRegistry(), table);
 		
 		mapEntityConfigurationPerTable();
@@ -265,7 +265,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					.forEach(relationConfigurer::registerRelationCascades);
 		});
 		
-		IEntityConfiguredJoinedTablesPersister<C, I> result = mainPersister;
+		EntityConfiguredJoinedTablesPersister<C, I> result = mainPersister;
 		// polymorphism handling
 		PolymorphismPolicy<C> polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
@@ -318,7 +318,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * Used in particular to deal with bean cycle load.
 	 * 
 	 * @param <P> entity type to be persisted
-	 * @see #consume(IEntityConfiguredJoinedTablesPersister) 
+	 * @see #consume(EntityConfiguredJoinedTablesPersister) 
 	 */
 	public static abstract class PostInitializer<P> {
 		
@@ -338,7 +338,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		 * 
 		 * @param persister entity type persister
 		 */
-		public abstract void consume(IEntityConfiguredJoinedTablesPersister<P, Object> persister);
+		public abstract void consume(EntityConfiguredJoinedTablesPersister<P, Object> persister);
 	}
 	
 	private <T extends Table> void handleVersioningStrategy(JoinedTablesPersister<C, I, T> result) {
@@ -357,7 +357,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 																						 Identification identification,
 																						 JoinedTablesPersister<C, I, T> mainPersister,
 																						 Dialect dialect,
-																						 IConnectionConfiguration connectionConfiguration) {
+																						 ConnectionConfiguration connectionConfiguration) {
 		KeepOrderSet<JoinedTablesPersister<C, I, Table>> parentPersisters = new KeepOrderSet<>();
 		Column superclassPK = (Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns());
 		Holder<Table> currentTable = new Holder<>(mainPersister.getMainTable());
@@ -388,7 +388,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private <T extends Table> JoinedTablesPersister<C, I, T> buildMainPersister(Identification identification,
 																				Mapping mapping,
 																				Dialect dialect,
-																				IConnectionConfiguration connectionConfiguration) {
+																				ConnectionConfiguration connectionConfiguration) {
 		EntityMappingConfiguration mappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
 		ClassMappingStrategy<C, I, T> parentMappingStrategy = createClassMappingStrategy(
 				identification.getIdentificationDefiner().getPropertiesMapping() == mappingConfiguration.getPropertiesMapping(),
@@ -402,7 +402,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	/**
-	 * Wide contract for {@link IEntityConfiguredJoinedTablesPersister} builders.
+	 * Wide contract for {@link EntityConfiguredJoinedTablesPersister} builders.
 	 * @param <C> persisted entity type
 	 * @param <I> identifier type
 	 * @param <T> table type
@@ -416,7 +416,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 		 * @return a persister
 		 */
-		IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
+		EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
 	}
 	
 	/**
@@ -436,7 +436,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			}
 			lastTable.set(p.getMainTable());
 		});
-		PersisterListener<C, I> persisterListener = mainPersister.getPersisterListener();
+		PersisterListenerCollection<C, I> persisterListener = mainPersister.getPersisterListener();
 		superPersistersWithChangingTable.forEach(superPersister -> {
 			// Before insert of child we must insert parent
 			persisterListener.addInsertListener(new BeforeInsertSupport<>(superPersister::insert, Function.identity()));

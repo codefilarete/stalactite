@@ -10,7 +10,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.function.Sequence;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
@@ -49,7 +49,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 	
 	@Test
 	void insert_basic() {
-		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.alreadyAssigned(Car::markAsPersisted, Car::isPersisted))
 				.add(Car::getModel)
 				.build(persistenceContext);
@@ -80,7 +80,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 	
 	@Test
 	void insert_oneToOne() {
-		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.alreadyAssigned(Car::markAsPersisted, Car::isPersisted))
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, String.class)
@@ -113,7 +113,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 
 	@Test
 	void insert_oneToOne_ownedByReverseSide() {
-		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.alreadyAssigned(Car::markAsPersisted, Car::isPersisted))
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, String.class)
@@ -157,12 +157,12 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 				.mapInheritance(inheritanceConfiguration)
 				.getConfiguration();
 
-		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 
-		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo(
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo(
 				"Car");
 
 		// DML tests
@@ -196,13 +196,13 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 				.mapInheritance(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 
-		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 
 		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
-		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Car");
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Car");
 
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

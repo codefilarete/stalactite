@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;

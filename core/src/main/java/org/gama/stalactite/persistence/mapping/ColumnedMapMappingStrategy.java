@@ -20,11 +20,11 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
 /**
- * A class that "roughly" persists a Map of {@link Column}s, without any bean class.
+ * A class that "roughly" persists a {@link Map} tom some {@link Column}s : mapping is made according to {@link Map} keys.
  *
  * @author Guillaume Mary
  */
-public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T extends Table> implements IEmbeddedBeanMappingStrategy<C, T> {
+public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T extends Table> implements EmbeddedBeanMappingStrategy<C, T> {
 	
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;

@@ -20,6 +20,7 @@ import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IAccessor;
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
@@ -27,8 +28,7 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.IJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
@@ -46,10 +46,10 @@ import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
-import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EmbeddedClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -65,15 +65,15 @@ import static org.gama.lang.bean.Objects.preventNull;
 public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
 	private final Dialect dialect;
-	private final IConnectionConfiguration connectionConfiguration;
+	private final ConnectionConfiguration connectionConfiguration;
 	
-	public ElementCollectionCascadeConfigurer(Dialect dialect, IConnectionConfiguration connectionConfiguration) {
+	public ElementCollectionCascadeConfigurer(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
 	public <T extends Table, TARGET_TABLE extends Table<?>> void appendCascade(ElementCollectionLinkage<SRC, TRGT, C> linkage,
-												   IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+												   EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
 												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 												   ColumnNamingStrategy columnNamingStrategy,
 												   ElementCollectionTableNamingStrategy tableNamingStrategy) {
@@ -133,7 +133,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 				v.primaryKey();
 			});
 			
-			EmbeddedBeanMappingStrategy<ElementRecord, Table> dd = new EmbeddedBeanMappingStrategy<>(ElementRecord.class,
+			EmbeddedClassMappingStrategy<ElementRecord, Table> dd = new EmbeddedClassMappingStrategy<>(ElementRecord.class,
 					targetTable, (Map) projectedColumnMap);
 			elementRecordStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, dd);
 		}
@@ -165,8 +165,8 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		dialect.getSqlTypeRegistry().put(reverseColumn, dialect.getSqlTypeRegistry().getTypeName(sourcePK));
 	}
 	
-	private void addInsertCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-								  IEntityPersister<ElementRecord, ElementRecord> wrapperPersister,
+	private void addInsertCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+								  EntityPersister<ElementRecord, ElementRecord> wrapperPersister,
 								  IAccessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord>> collectionProviderForInsert = collectionProvider(
 				collectionAccessor,
@@ -176,8 +176,8 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(wrapperPersister, collectionProviderForInsert));
 	}
 	
-	private void addUpdateCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-								  IEntityPersister<ElementRecord, ElementRecord> wrapperPersister,
+	private void addUpdateCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+								  EntityPersister<ElementRecord, ElementRecord> wrapperPersister,
 								  IAccessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord>> collectionProviderAsPersistedInstances = collectionProvider(
 				collectionAccessor,
@@ -206,8 +206,8 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		sourcePersister.addUpdateListener(new TargetInstancesUpdateCascader<>(wrapperPersister, updateListener));
 	}
 	
-	private void addDeleteCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-								  IEntityPersister<ElementRecord, ElementRecord> wrapperPersister,
+	private void addDeleteCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+								  EntityPersister<ElementRecord, ElementRecord> wrapperPersister,
 								  IAccessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord>> collectionProviderAsPersistedInstances = collectionProvider(
 				collectionAccessor,
@@ -216,13 +216,13 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
 	}
 	
-	private <T extends Table> void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-								  IJoinedTablesPersister<ElementRecord, ElementRecord> elementRecordPersister,
-								  Column sourcePK,
-								  Column elementRecordToSourceForeignKey,
-								  BiConsumer<SRC, C> collectionSetter,
-								  Function<SRC, C> collectionGetter,
-								  Supplier<C> collectionFactory) {
+	private <T extends Table> void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+													IJoinedTablesPersister<ElementRecord, ElementRecord> elementRecordPersister,
+													Column sourcePK,
+													Column elementRecordToSourceForeignKey,
+													BiConsumer<SRC, C> collectionSetter,
+													Function<SRC, C> collectionGetter,
+													Supplier<C> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
 		// because elementRecordPersister manages ElementRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it
@@ -256,7 +256,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 					new ElementRecordIdMappingStrategy(targetTable, idColumn, elementColumn));
 		}
 		
-		private ElementRecordMappingStrategy(Table targetTable, Column idColumn, EmbeddedBeanMappingStrategy<ElementRecord, Table> embeddableMapping) {
+		private ElementRecordMappingStrategy(Table targetTable, Column idColumn, EmbeddedClassMappingStrategy<ElementRecord, Table> embeddableMapping) {
 			super(ElementRecord.class, targetTable, (Map) Maps.putAll(Maps
 							.forHashMap(IReversibleAccessor.class, Column.class)
 							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn),
@@ -275,7 +275,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 						new ElementRecordIdentifierAssembler(targetTable, idColumn, elementColumn));
 			}
 			
-			public ElementRecordIdMappingStrategy(Table targetTable, Column idColumn, EmbeddedBeanMappingStrategy<ElementRecord, Table> elementColumn) {
+			public ElementRecordIdMappingStrategy(Table targetTable, Column idColumn, EmbeddedClassMappingStrategy<ElementRecord, Table> elementColumn) {
 				super(new ElementRecordIdAccessor(),
 						new AlreadyAssignedIdentifierManager<>(ElementRecord.class, c -> {}, c -> false),
 						new ElementRecordIdentifierAssembler2(targetTable, idColumn, elementColumn));
@@ -339,9 +339,9 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 			private static class ElementRecordIdentifierAssembler2 extends ComposedIdentifierAssembler<ElementRecord> {
 				
 				private final Column idColumn;
-				private final EmbeddedBeanMappingStrategy<ElementRecord, Table> elementColumn;
+				private final EmbeddedClassMappingStrategy<ElementRecord, Table> elementColumn;
 				
-				private ElementRecordIdentifierAssembler2(Table targetTable, Column idColumn, EmbeddedBeanMappingStrategy<ElementRecord, Table> elementColumn) {
+				private ElementRecordIdentifierAssembler2(Table targetTable, Column idColumn, EmbeddedClassMappingStrategy<ElementRecord, Table> elementColumn) {
 					super(targetTable);
 					this.idColumn = idColumn;
 					this.elementColumn = elementColumn;

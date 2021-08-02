@@ -9,17 +9,17 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Running context of {@link PersisterBuilderImpl}. Allows to share some information during configuraiton of the whole entity graph.
  * The currently available instance is accessible through {@link #CURRENT} variable which is created and destroyed by
- * {@link PersisterBuilderImpl#build(Dialect, IConnectionConfiguration, PersisterRegistry, Table)} 
+ * {@link PersisterBuilderImpl#build(Dialect, ConnectionConfiguration, PersisterRegistry, Table)} 
  * 
  * @author Guillaume Mary
  */
@@ -27,7 +27,7 @@ public class PersisterBuilderContext {
 	
 	/**
 	 * Give access to current {@link PersisterBuilderContext}, created and destroyed by
-	 * {@link PersisterBuilderImpl#build(Dialect, IConnectionConfiguration, PersisterRegistry, Table)}
+	 * {@link PersisterBuilderImpl#build(Dialect, ConnectionConfiguration, PersisterRegistry, Table)}
 	 * 
 	 * Made static because several {@link PersisterBuilderImpl}s are instanciated along the build process.
 	 * Not the best design ever, but works !
@@ -82,7 +82,7 @@ public class PersisterBuilderContext {
 	 * @param entityMappingConfiguration a configuration to remember as being currently treated
 	 * @param callable some code to run
 	 */
-	public void runInContext(IEntityPersister<?, ?> entityMappingConfiguration, Runnable callable) {
+	public void runInContext(EntityPersister<?, ?> entityMappingConfiguration, Runnable callable) {
 		runInContext(entityMappingConfiguration.getClassToPersist(), callable);
 	}
 	

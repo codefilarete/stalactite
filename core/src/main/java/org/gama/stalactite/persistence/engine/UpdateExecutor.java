@@ -7,7 +7,7 @@ import org.gama.lang.Duo;
 /**
  * @author Guillaume Mary
  */
-public interface IUpdateExecutor<C> {
+public interface UpdateExecutor<C> {
 	
 	/**
 	 * Updates roughly given entity: no differences are computed, only update statements (full column) are applied.

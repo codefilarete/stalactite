@@ -11,11 +11,10 @@ import java.util.Set;
 import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IInsertExecutor;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
@@ -33,7 +32,7 @@ import org.gama.stalactite.sql.dml.WriteOperation;
  *
  * @author Guillaume Mary
  */
-public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IInsertExecutor<C> {
+public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.gama.stalactite.persistence.engine.InsertExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -42,7 +41,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public InsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionConfiguration,
+	public InsertExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);

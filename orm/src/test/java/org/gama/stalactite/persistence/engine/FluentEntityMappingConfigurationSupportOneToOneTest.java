@@ -15,13 +15,13 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderOneToOneOptions;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToOneOptions;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -56,8 +56,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	private final HSQLDBDialect dialect = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personConfiguration;
-	private IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration;
+	private FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personConfiguration;
+	private FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
@@ -66,12 +66,12 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
-		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personConfiguration = personMappingBuilder;
 		
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
 		cityConfiguration = cityMappingBuilder;
@@ -82,7 +82,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void associationOnly_throwsException() {
-			IFluentMappingBuilderOneToOneOptions<Country, Identifier<Long>, ?> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			FluentMappingBuilderOneToOneOptions<Country, Identifier<Long>, ?> mappingBuilder = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -96,7 +96,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void notDefined_defaultIsAll_getter() {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -124,7 +124,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void readOnly_getter() throws SQLException {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -137,7 +137,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void readOnly_setter() throws SQLException {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -148,7 +148,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			assert_cascade_readOnly(countryPersister);
 		}
 		
-		private void assert_cascade_readOnly(IEntityPersister<Country, Identifier<Long>> countryPersister) throws SQLException {
+		private void assert_cascade_readOnly(EntityPersister<Country, Identifier<Long>> countryPersister) throws SQLException {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
@@ -196,7 +196,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void readOnly_getter_ownedByTarget() throws SQLException {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getName)
 					.add(Country::getDescription)
@@ -207,7 +207,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			assert_cascade_readOnly_ownByTarget(countryPersister);
 		}
 		
-		private void assert_cascade_readOnly_ownByTarget(IEntityPersister<Country, Identifier<Long>> countryPersister) throws SQLException {
+		private void assert_cascade_readOnly_ownByTarget(EntityPersister<Country, Identifier<Long>> countryPersister) throws SQLException {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
@@ -269,7 +269,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void cascade_deleteWithOrphanRemoval() throws SQLException {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
@@ -313,7 +313,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -376,7 +376,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					((IConfiguredPersister) persistenceContext.getPersister(City.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+					((ConfiguredPersister) persistenceContext.getPersister(City.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(
@@ -393,7 +393,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationOwnedByTargetSide() throws SQLException {
-			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -424,13 +424,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationIsDefinedByColumnOnTargetSide() throws SQLException {
-			IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(City::getName);
 			Table cityTable = new Table("city");
 			Column<Table, Identifier<Long>> stateColumn = cityTable.addColumn("state", Identifier.LONG_TYPE);
 			
-			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -468,13 +468,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationIsDefinedByColumnOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
-			IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(City::getName);
 			Table cityTable = new Table("city");
 			Column<Table, Identifier<Long>> stateColumn = cityTable.addColumn("state", Identifier.LONG_TYPE);
 			
-			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -505,13 +505,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationIsDefinedByColumnOnTargetSideAndReverseMutatorIsUsed_columnOverrideIsUsed() throws SQLException {
-			IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(City::getName);
 			Table cityTable = new Table("city");
 			Column<Table, Identifier<Long>> stateColumn = cityTable.addColumn("state", Identifier.LONG_TYPE);
 			
-			IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -544,7 +544,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void multiple_oneToOne() throws SQLException {
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)
@@ -625,7 +625,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	@Test
 	void multiple_oneToOne_partialOrphanRemoval() throws SQLException {
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getDescription)
 				.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL_ORPHAN_REMOVAL)
@@ -708,7 +708,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedBySourceSide() {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
@@ -719,7 +719,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedByReverseSideGetter() {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
@@ -730,7 +730,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void ownedByReverseSideSetter() {
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::setCountry)
@@ -749,7 +749,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(City::getName);
 			
-			IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Country::getDescription)
 					.addOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy(countryId)
@@ -763,7 +763,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		 * Should have been done with a @ParameterizedTest but can't be done in such a way due to database commit between tests and cityPersister
 		 * dependency
 		 */
-		private void checkCascadeAll(IEntityPersister<Country, Identifier<Long>> countryPersister) {
+		private void checkCascadeAll(EntityPersister<Country, Identifier<Long>> countryPersister) {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
@@ -789,7 +789,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Country modifiedCountry = persistedCountry;
 			Country referentCountry = dummyCountry;
 			
-			IEntityPersister<City, Object> cityPersister = persistenceContext.getPersister(City.class);
+			EntityPersister<City, Object> cityPersister = persistenceContext.getPersister(City.class);
 			// nullifiying relation test
 			modifiedCountry.setCapital(null);
 			countryPersister.update(modifiedCountry, referentCountry, false);
@@ -833,7 +833,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void insertOnce_targetInstanceIsInserted() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -862,7 +862,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void insertTwice_targetInstanceIsInsertedOnce() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -898,7 +898,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void mandatory_withNullTarget_throwsException() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -917,7 +917,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void insert_targetInstanceIsUpdated() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -955,7 +955,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void insert_targetInstanceIsUpdated_ownedByReverseSide() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -999,7 +999,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void relationChanged_relationIsOwnedBySource() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -1038,13 +1038,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				assertThat(countryFromDB.getPresident().getName()).isEqualTo("new French president");
 				assertThat(countryFromDB.getPresident().getId()).isEqualTo(newPresident.getId());
 				// and original one was left untouched
-				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
 				assertThat(personPersister.select(originalPresident.getId()).getName()).isEqualTo("French president renamed");
 			}
 			
 			@Test
 			void relationChanged_relationIsOwnedByTarget() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -1085,7 +1085,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				assertThat(countryFromDB.getPresident().getName()).isEqualTo("new French president");
 				assertThat(countryFromDB.getPresident().getId()).isEqualTo(newPresident.getId());
 				// and original one was left untouched
-				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
 				assertThat(personPersister.select(originalPresident.getId()).getName()).isEqualTo("French president renamed");
 				
 				// checking reverse side column value ...
@@ -1105,7 +1105,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void relationNullified_relationIsOwnedBySource() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -1133,7 +1133,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country countryFromDB = countryPersister.select(dummyCountry.getId());
 				assertThat(countryFromDB.getPresident()).isNull();
 				// President shouldn't be deleted because orphan removal wasn't asked
-				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
 				Person previousPresident = personPersister.select(president.getId());
 				assertThat(previousPresident).isNotNull();
 				// properties shouldn't have been nullified
@@ -1142,7 +1142,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void relationNullifiedWithOrphanRemoval() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -1170,14 +1170,14 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country countryFromDB = countryPersister.select(dummyCountry.getId());
 				assertThat(countryFromDB.getPresident()).isNull();
 				// previous president has been deleted
-				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
 				Person previousPresident = personPersister.select(president.getId());
 				assertThat(previousPresident).isNull();
 			}
 			
 			@Test
 			void relationChanged_relationIsOwnedBySource_withOrphanRemoval() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -1207,14 +1207,14 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country countryFromDB = countryPersister.select(dummyCountry.getId());
 				assertThat(countryFromDB.getPresident()).isEqualTo(newPresident);
 				// previous president has been deleted
-				IEntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
 				Person previousPresident = personPersister.select(president.getId());
 				assertThat(previousPresident).isNull();
 			}
 			
 			@Test
 			void mandatory_withNullTarget_throwsException() {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getName)
 						.add(Country::getDescription)
@@ -1246,7 +1246,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			@Test
 			void targetEntityIsDeleted() throws SQLException {
-				IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 						.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(Country::getDescription)
 						.addOneToOne(Country::getPresident, personConfiguration).cascading(ALL)

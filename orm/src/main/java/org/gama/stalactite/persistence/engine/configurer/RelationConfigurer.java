@@ -10,15 +10,15 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
+import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.cycle.OneToManyCycleConfigurer;
 import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -27,7 +27,7 @@ import org.gama.stalactite.persistence.structure.Table;
 public class RelationConfigurer<C, I, T extends Table<T>> {
 	
 	private final Dialect dialect;
-	private final IConnectionConfiguration connectionConfiguration;
+	private final ConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
 	private final JoinedTablesPersister<C, I, T> sourcePersister;
 	private final ColumnNamingStrategy columnNamingStrategy;
@@ -38,7 +38,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	
 	public RelationConfigurer(Dialect dialect,
-							  IConnectionConfiguration connectionConfiguration,
+							  ConnectionConfiguration connectionConfiguration,
 							  PersisterRegistry persisterRegistry,
 							  JoinedTablesPersister<C, I, T> sourcePersister,
 							  ColumnNamingStrategy columnNamingStrategy,
@@ -156,7 +156,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		}
 		
 		@Override
-		public void consume(IEntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
+		public void consume(EntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
 			sourcePersister.getCriteriaSupport().getRootConfiguration().registerRelation(targetEntityAccessor, targetPersister.getMappingStrategy());
 		}
 	}

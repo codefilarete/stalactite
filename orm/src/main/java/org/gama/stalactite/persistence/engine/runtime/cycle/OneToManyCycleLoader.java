@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
@@ -28,7 +28,7 @@ import org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader;
  */
 public class OneToManyCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TRGT, TRGTID> {
 	
-	private final IEntityPersister<TRGT, TRGTID> targetPersister;
+	private final EntityPersister<TRGT, TRGTID> targetPersister;
 	
 	/**
 	 * Relations to be fulfilled.
@@ -39,7 +39,7 @@ public class OneToManyCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<T
 	
 	private final ThreadLocal<CycleLoadRuntimeContext<SRC, TRGT, TRGTID>> currentRuntimeContext = ThreadLocal.withInitial(CycleLoadRuntimeContext::new);
 	
-	public OneToManyCycleLoader(IEntityPersister<TRGT, TRGTID> targetPersister) {
+	public OneToManyCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
 		this.targetPersister = targetPersister;
 	}
 	

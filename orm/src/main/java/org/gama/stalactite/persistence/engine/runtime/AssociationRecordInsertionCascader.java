@@ -5,7 +5,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 
 import static org.gama.lang.collection.Iterables.stream;
 
@@ -16,13 +16,13 @@ class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Col
 		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
 	
 	private final Function<SRC, C> collectionGetter;
-	private final IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy;
-	private final IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy;
+	private final EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy;
+	private final EntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy;
 	
 	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister,
 											  Function<SRC, C> collectionGetter,
-											  IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-											  IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+											  EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+											  EntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
 		this.collectionGetter = collectionGetter;
 		this.mappingStrategy = mappingStrategy;

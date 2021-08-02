@@ -7,7 +7,7 @@ import java.util.List;
  * 
  * @author Guillaume Mary
  */
-public interface ISelectExecutor<C, I> {
+public interface SelectExecutor<C, I> {
 	
 	List<C> select(Iterable<I> ids);
 }

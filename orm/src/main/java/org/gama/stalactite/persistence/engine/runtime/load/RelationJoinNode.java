@@ -14,8 +14,8 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinTy
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IRowTransformer;
-import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.RowTransformer;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -80,7 +80,7 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		
 		private final BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer;
 		
-		private final IRowTransformer<C> rowTransformer;
+		private final RowTransformer<C> rowTransformer;
 		
 		/** Optional listener of ResultSet decoding */
 		@Nullable

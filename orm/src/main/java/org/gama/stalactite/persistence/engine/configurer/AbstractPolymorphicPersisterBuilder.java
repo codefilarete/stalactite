@@ -22,10 +22,10 @@ import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.Colu
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PolymorphismBuilder;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -61,7 +61,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	}
 	
 	protected final PolymorphismPolicy<C> polymorphismPolicy;
-	protected final IEntityConfiguredJoinedTablesPersister<C, I> mainPersister;
+	protected final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	protected final Identification identification;
 	protected final ColumnBinderRegistry columnBinderRegistry;
 	protected final ColumnNameProvider columnNameProvider;
@@ -76,7 +76,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	
 	protected AbstractPolymorphicPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
 												  Identification identification,
-												  IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+												  EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 												  ColumnBinderRegistry columnBinderRegistry,
 												  ColumnNameProvider columnNameProvider,
 												  ColumnNamingStrategy columnNamingStrategy,
@@ -111,16 +111,16 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	 * @param connectionConfiguration the connection configuration
 	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 */
-	protected <D extends C> void registerCascades(Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
+	protected <D extends C> void registerCascades(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
 									Dialect dialect,
-									IConnectionConfiguration connectionConfiguration,
+									ConnectionConfiguration connectionConfiguration,
 									PersisterRegistry persisterRegistry) {
 		// we surround our relation configuration with cycle detection (see registerRelationCascades(..) implementation), this may seem too wide and
 		// could be closer to registerRelationCascades(..) method call (which actually requires it) but as doing such we also cover the case of 2
 		// subconfigurations using same entity in their relation 
 		PersisterBuilderContext.CURRENT.get().runInContext(mainPersister, () -> {
 			for (SubEntityMappingConfiguration<? extends C> subConfiguration : this.polymorphismPolicy.getSubClasses()) {
-				IEntityConfiguredJoinedTablesPersister<C, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
+				EntityConfiguredJoinedTablesPersister<C, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 				
 				if (subConfiguration.getPolymorphismPolicy() != null) {
 					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry, subConfiguration, subEntityPersister);
@@ -132,22 +132,22 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 						dialect,
 						connectionConfiguration,
 						persisterRegistry,
-						(IEntityConfiguredJoinedTablesPersister<D, I>) subEntityPersister);
+						(EntityConfiguredJoinedTablesPersister<D, I>) subEntityPersister);
 			}
 		});
 	}
 	
-	private void registerPolymorphismCascades(Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
+	private void registerPolymorphismCascades(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
 											  Dialect dialect,
-											  IConnectionConfiguration connectionConfiguration,
+											  ConnectionConfiguration connectionConfiguration,
 											  PersisterRegistry persisterRegistry,
 											  SubEntityMappingConfiguration<? extends C> subConfiguration,
-											  IEntityConfiguredJoinedTablesPersister<C, I> subEntityPersister) {
+											  EntityConfiguredJoinedTablesPersister<C, I> subEntityPersister) {
 		assertSubPolymorphismIsSupported(subConfiguration.getPolymorphismPolicy());
-		IEntityConfiguredJoinedTablesPersister<? extends C, I> subclassPersister =
+		EntityConfiguredJoinedTablesPersister<? extends C, I> subclassPersister =
 				buildSubPolymorphicPersister(subEntityPersister, subConfiguration.getPolymorphismPolicy(), dialect, connectionConfiguration,
 						persisterRegistry);
-		persisterPerSubclass.put(subConfiguration.getEntityType(), (IEntityConfiguredJoinedTablesPersister<C, I>) subclassPersister);
+		persisterPerSubclass.put(subConfiguration.getEntityType(), (EntityConfiguredJoinedTablesPersister<C, I>) subclassPersister);
 	}
 	
 	abstract void assertSubPolymorphismIsSupported(PolymorphismPolicy<? extends C> subPolymorphismPolicy);
@@ -161,11 +161,11 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	 * @param connectionConfiguration the connection configuration
 	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 */
-	private IEntityConfiguredJoinedTablesPersister<? extends C, I> buildSubPolymorphicPersister(IEntityConfiguredJoinedTablesPersister<C, I> subPersister,
-																								PolymorphismPolicy<? extends C> subPolymorphismPolicy,
-																								Dialect dialect,
-																								IConnectionConfiguration connectionConfiguration,
-																								PersisterRegistry persisterRegistry) {
+	private EntityConfiguredJoinedTablesPersister<? extends C, I> buildSubPolymorphicPersister(EntityConfiguredJoinedTablesPersister<C, I> subPersister,
+																							   PolymorphismPolicy<? extends C> subPolymorphismPolicy,
+																							   Dialect dialect,
+																							   ConnectionConfiguration connectionConfiguration,
+																							   PersisterRegistry persisterRegistry) {
 		// we only have to call a polymmoprhic builder with given methods arguments, and same configuration values as this instance
 		PolymorphismPersisterBuilder<? extends C, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder(
 				subPolymorphismPolicy,
@@ -186,9 +186,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	
 	private <D extends C, TRGT> void registerRelationCascades(SubEntityMappingConfiguration<D> entityMappingConfiguration,
 															  Dialect dialect,
-															  IConnectionConfiguration connectionConfiguration,
+															  ConnectionConfiguration connectionConfiguration,
 															  PersisterRegistry persisterRegistry,
-															  IEntityConfiguredJoinedTablesPersister<D, I> sourcePersister) {
+															  EntityConfiguredJoinedTablesPersister<D, I> sourcePersister) {
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
@@ -239,7 +239,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 				// overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
 				PostInitializer postInitializer = new PostInitializer(cascadeMany.getTargetMappingConfiguration().getEntityType()) {
 					@Override
-					public void consume(IEntityConfiguredJoinedTablesPersister targetPersister) {
+					public void consume(EntityConfiguredJoinedTablesPersister targetPersister) {
 						cascadeManyConfigurer.appendCascade(cascadeMany,
 								sourcePersister,
 								foreignKeyNamingStrategy,

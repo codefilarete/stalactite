@@ -14,7 +14,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
-import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
+import org.gama.stalactite.persistence.query.EntitySelectExecutor;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -36,7 +36,7 @@ import org.gama.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table> implements IEntitySelectExecutor<C> {
+public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
 	private final Map<Class, Table> tablePerSubConfiguration;
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;

@@ -1,5 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 
@@ -17,7 +18,7 @@ public interface IdMappingStrategy<C, I> {
 	/**
 	 * Expected to indicate if given entity is persisted or not, meaning already exists in database.
 	 * Necessary at different steps of the engine, for instance :
-	 * - to distinguish SQL statement to apply : insert or update (see {@link org.gama.stalactite.persistence.engine.IEntityPersister#persist(Object)}),
+	 * - to distinguish SQL statement to apply : insert or update (see {@link EntityPersister#persist(Object)}),
 	 * - to prevent from deletion of an instance that's actually not present in database 
 	 * 
 	 * <br/><br/>

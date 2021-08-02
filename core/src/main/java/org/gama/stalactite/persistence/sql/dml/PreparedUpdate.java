@@ -7,7 +7,7 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.PreparedStatementWriter;
 import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
 import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**

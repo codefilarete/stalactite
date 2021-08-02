@@ -62,7 +62,7 @@ class IndexedAssociationRecordMappingStrategy extends ClassMappingStrategy<Index
 						return !entity.isPersisted();
 					}
 				});
-		// because main mapping forbids to update primary key (see EmbeddedBeanMappingStrategy), but index is part of it and will be updated,
+		// because main mapping forbids to update primary key (see EmbeddedClassMappingStrategy), but index is part of it and will be updated,
 		// we need to add it to the mapping
 		ShadowColumnValueProvider<IndexedAssociationRecord, Integer, IndexedAssociationTable> indexValueProvider =
 				new ShadowColumnValueProvider<>(targetTable.getIndexColumn(), IndexedAssociationRecord.INDEX_ACCESSOR::get);

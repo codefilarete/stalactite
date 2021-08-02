@@ -23,25 +23,25 @@ import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
-import org.gama.stalactite.persistence.engine.IUpdateExecutor;
+import org.gama.stalactite.persistence.engine.EntityPersister;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
+import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
-import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
@@ -55,20 +55,20 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
+public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor;
-	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
-	private final IEntityConfiguredJoinedTablesPersister<C, I> mainPersister;
+	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	private final Column<T, D> discriminatorColumn;
 	private final SingleTablePolymorphism<C, D> polymorphismPolicy;
 	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, D> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
-	public SingleTablePolymorphicPersister(IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-										   Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+	public SingleTablePolymorphicPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+										   Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
 										   ConnectionProvider connectionProvider,
 										   Dialect dialect,
 										   Column<T, D> discriminatorColumn,
@@ -80,7 +80,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		this.subEntitiesPersisters = subEntitiesPersisters;
 		ShadowColumnValueProvider<C, D, T> discriminatorValueProvider = new ShadowColumnValueProvider<>(discriminatorColumn,
 				c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()));
-		this.subEntitiesPersisters.values().forEach(subclassPersister -> ((IEntityMappingStrategy) subclassPersister.getMappingStrategy())
+		this.subEntitiesPersisters.values().forEach(subclassPersister -> ((EntityMappingStrategy) subclassPersister.getMappingStrategy())
 				.addShadowColumnInsert(discriminatorValueProvider));
 		
 		subEntitiesPersisters.forEach((type, persister) ->
@@ -131,13 +131,13 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	@Override
-	public PersisterListener<C, I> getPersisterListener() {
+	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return mainPersister.getPersisterListener();
 	}
 	
 	@Override
 	public int insert(Iterable<? extends C> entities) {
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt insertCount = new ModifiableInt();
 		entitiesPerType.forEach((insertExecutor, cs) -> insertCount.increment(insertExecutor.insert(cs)));
@@ -147,7 +147,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int updateById(Iterable<C> entities) {
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt insertCount = new ModifiableInt();
 		entitiesPerType.forEach((updateExecutor, cs) -> insertCount.increment(updateExecutor.updateById(cs)));
@@ -157,7 +157,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		Map<IUpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
+		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
@@ -182,7 +182,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int delete(Iterable<C> entities) {
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt deleteCount = new ModifiableInt();
 		// We could think that deleting throught main persister would be suffiscient because we are in a single-table hence only table is touched
@@ -196,7 +196,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	@Override
 	public int deleteById(Iterable<C> entities) {
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		ModifiableInt deleteCount = new ModifiableInt();
 		// We could think that deleting throught main persister would be suffiscient because we are in a single-table hence only table is touched
@@ -208,8 +208,8 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		return deleteCount.getValue();
 	}
 	
-	private Map<IEntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
+	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {
@@ -297,19 +297,19 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	}
 	
 	/**
-	 * Overriden to capture {@link IEntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
-	 * {@link IEntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
+	 * Overriden to capture {@link EntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
+	 * {@link EntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
 	 * ourselves (Persister) but the case is to add a silent Column insert/update which is not the goal of the Persister to know implementation
-	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link IEntityMappingStrategy} are in charge of knowing
+	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link EntityMappingStrategy} are in charge of knowing
 	 * {@link Column} actions.
 	 *
 	 * @return an enhanced version of our main persister mapping strategy which dispatches silent column insert/update to sub-entities ones
 	 */
 	@Override
-	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
 		return new EntityMappingStrategyWrapper<C, I, T>(mainPersister.getMappingStrategy()) {
 			@Override
 			public void addTransformerListener(TransformerListener<C> listener) {
@@ -318,12 +318,12 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 			
 			@Override
 			public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> provider) {
-				subEntitiesPersisters.values().forEach(p -> ((IEntityMappingStrategy) p.getMappingStrategy()).addShadowColumnInsert(provider));
+				subEntitiesPersisters.values().forEach(p -> ((EntityMappingStrategy) p.getMappingStrategy()).addShadowColumnInsert(provider));
 			}
 			
 			@Override
 			public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> provider) {
-				subEntitiesPersisters.values().forEach(p -> ((IEntityMappingStrategy) p.getMappingStrategy()).addShadowColumnUpdate(provider));
+				subEntitiesPersisters.values().forEach(p -> ((EntityMappingStrategy) p.getMappingStrategy()).addShadowColumnUpdate(provider));
 			}
 		};
 	}
@@ -346,7 +346,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 		
 		return createdJoinNodeName;
 	}
@@ -371,7 +371,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 		
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 		
 		return createdJoinNodeName;
 	}
@@ -388,14 +388,14 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	
 	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader {
 		private final Column<T, D> discriminatorColumn;
-		private final Function<Class, ISelectExecutor> subtypeSelectors;
+		private final Function<Class, SelectExecutor> subtypeSelectors;
 		private final Set<D> discriminatorValues;
 		
 		private SingleTableFirstPhaseRelationLoader(IdMappingStrategy<C, I> subEntityIdMappingStrategy,
 													Column primaryKey,
 													SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor,
 													ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder,
-													Column<T, D> discriminatorColumn, Function<Class, ISelectExecutor> subtypeSelectors) {
+													Column<T, D> discriminatorColumn, Function<Class, SelectExecutor> subtypeSelectors) {
 			// Note that selectExecutor won't be used because we dynamically lookup for it in fillCurrentRelationIds
 			super(subEntityIdMappingStrategy, primaryKey, selectExecutor, relationIdsHolder);
 			this.discriminatorColumn = discriminatorColumn;
@@ -420,7 +420,7 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 			return Arrays.asSet(primaryKey, discriminatorColumn);
 		}
 		
-		private ISelectExecutor giveSelector(D discriminator) {
+		private SelectExecutor giveSelector(D discriminator) {
 			return subtypeSelectors.apply(polymorphismPolicy.getClass(discriminator));
 		}
 	}

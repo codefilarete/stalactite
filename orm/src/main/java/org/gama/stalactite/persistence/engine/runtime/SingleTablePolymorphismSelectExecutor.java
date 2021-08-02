@@ -10,14 +10,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.JoinableSelectExecutor;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -35,16 +35,16 @@ import org.gama.stalactite.sql.result.RowIterator;
  * @author Guillaume Mary
  */
 public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
-		implements ISelectExecutor<C, I>, JoinableSelectExecutor {
+		implements SelectExecutor<C, I>, JoinableSelectExecutor {
 	
-	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
 	private final T table;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismSelectExecutor(Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+	public SingleTablePolymorphismSelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
 													   Column<T, D> discriminatorColumn,
 													   SingleTablePolymorphism polymorphismPolicy,
 													   T table,
@@ -58,7 +58,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		this.subEntitiesPersisters = subEntitiesPersisters;
 	}
 	
-	public Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> getSubEntitiesPersisters() {
+	public Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> getSubEntitiesPersisters() {
 		return subEntitiesPersisters;
 	}
 	
@@ -103,7 +103,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 	
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(String leftStrategyName,
-																				  IEntityMappingStrategy<U, ID, T2> strategy,
+																				  EntityMappingStrategy<U, ID, T2> strategy,
 																				  BeanRelationFixer beanRelationFixer,
 																				  Column<T1, ID> leftJoinColumn,
 																				  Column<T2, ID> rightJoinColumn,
@@ -126,7 +126,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 	
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(String leftStrategyName,
-																						   IEntityMappingStrategy<U, ID, T2> strategy,
+																						   EntityMappingStrategy<U, ID, T2> strategy,
 																						   Column<T1, ID> leftJoinColumn,
 																						   Column<T2, ID> rightJoinColumn) {
 		Set<String> joinNames = new HashSet<>();

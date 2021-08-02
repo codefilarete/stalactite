@@ -14,7 +14,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
+import org.gama.stalactite.persistence.query.EntitySelectExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -32,7 +32,7 @@ import org.gama.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table> implements IEntitySelectExecutor<C> {
+public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
 	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2;
@@ -72,7 +72,7 @@ public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table>
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
 		
-		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
+		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> aliases = new HashMap<>();

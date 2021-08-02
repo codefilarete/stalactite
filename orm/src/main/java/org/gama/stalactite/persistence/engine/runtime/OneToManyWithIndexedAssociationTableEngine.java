@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinTy
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.lang.collection.Iterables.first;
@@ -35,8 +35,8 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 	
 	private final Column<IndexedAssociationTable, Integer> indexColumn;
 	
-	public OneToManyWithIndexedAssociationTableEngine(IConfiguredJoinedTablesPersister<SRC, SRCID> joinedTablesPersister,
-													  IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithIndexedAssociationTableEngine(ConfiguredJoinedTablesPersister<SRC, SRCID> joinedTablesPersister,
+													  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
 													  Column<IndexedAssociationTable, Integer> indexColumn) {
@@ -44,7 +44,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 		this.indexColumn = indexColumn;
 	}
 	
-	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
+	public void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		
 		// we join on the association table and add bean association in memory
 		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
@@ -197,8 +197,8 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
 			Function<SRC, C> collectionGetter,
 			AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
-			IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-			IEntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+			EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+			EntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
 		return new IndexedAssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	

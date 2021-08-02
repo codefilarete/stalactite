@@ -7,18 +7,18 @@ import org.gama.stalactite.sql.ConnectionProvider;
  * 
  * @author Guillaume Mary
  */
-public interface IConnectionConfiguration {
+public interface ConnectionConfiguration {
 	
 	ConnectionProvider getConnectionProvider();
 	
 	int getBatchSize();
 	
 	/**
-	 * Default implementation of {@link IConnectionConfiguration} that keeps and gives values provided at instanciation time
+	 * Default implementation of {@link ConnectionConfiguration} that keeps and gives values provided at instanciation time
 	 * 
 	 * @author Guillaume Mary
 	 */
-	class ConnectionConfigurationSupport implements IConnectionConfiguration {
+	class ConnectionConfigurationSupport implements ConnectionConfiguration {
 		
 		private final ConnectionProvider connectionProvider;
 		private final int batchSize;

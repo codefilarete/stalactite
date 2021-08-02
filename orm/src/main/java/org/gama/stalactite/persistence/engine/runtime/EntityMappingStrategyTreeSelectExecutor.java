@@ -24,7 +24,8 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.RowTransformer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
@@ -62,7 +63,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	private final PrimaryKey<Table> primaryKey;
 	private final WhereClauseDMLNameProvider whereClauseDMLNameProvider;
 	
-	public EntityMappingStrategyTreeSelectExecutor(IEntityMappingStrategy<C, I, T> classMappingStrategy,
+	public EntityMappingStrategyTreeSelectExecutor(EntityMappingStrategy<C, I, T> classMappingStrategy,
 												   Dialect dialect,
 												   ConnectionProvider connectionProvider) {
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
@@ -87,7 +88,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
-	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
+	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
 	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
 	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
@@ -99,7 +100,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
 			String leftStrategyName,
-			IEntityMappingStrategy<U, ID, T2> strategy,
+			EntityMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn) {
@@ -113,7 +114,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
-	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link org.gama.stalactite.persistence.mapping.IRowTransformer}
+	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
 	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
 	 * @param isOuterJoin says wether or not the join must be open
@@ -127,7 +128,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
 			String leftStrategyName,
-			IEntityMappingStrategy<U, ID, T2> strategy,
+			EntityMappingStrategy<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn,
@@ -152,7 +153,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(
 			String leftStrategyName,
-			IEntityMappingStrategy<U, ID, T2> strategy,
+			EntityMappingStrategy<U, ID, T2> strategy,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn) {
 		return entityJoinTree.addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy), leftJoinColumn, rightJoinColumn);

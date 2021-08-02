@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
@@ -29,12 +29,12 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	private final Function<I, C> collectionGetter;
 	private final BiConsumer<O, I> reverseSetter;
-	private final IEntityPersister<O, ?> targetPersister;
+	private final EntityPersister<O, ?> targetPersister;
 	private final boolean shouldDeleteRemoved;
 	
 	/**
 	 * Default and simple use case constructor.
-	 * See {@link #CollectionUpdater(Function, IEntityPersister, BiConsumer, boolean, Function)} for particular case about id policy
+	 * See {@link #CollectionUpdater(Function, EntityPersister, BiConsumer, boolean, Function)} for particular case about id policy
 	 * 
 	 * @param collectionGetter getter for collection from source entity
 	 * @param targetPersister target entities persister
@@ -42,7 +42,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	 * @param shouldDeleteRemoved true to delete orphans
 	 */
 	public CollectionUpdater(Function<I, C> collectionGetter,
-							 IEntityConfiguredPersister<O, ?> targetPersister,
+							 EntityConfiguredPersister<O, ?> targetPersister,
 							 @Nullable BiConsumer<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved) {
 		this(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, targetPersister.getMappingStrategy()::getId);
@@ -60,7 +60,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	 * @param idProvider expected to provide identifier of target beans, identifier are used to store them on it (in HashMap)
 	 */
 	public CollectionUpdater(Function<I, C> collectionGetter,
-							 IEntityPersister<O, ?> targetPersister,
+							 EntityPersister<O, ?> targetPersister,
 							 @Nullable BiConsumer<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved,
 							 Function<O, ?> idProvider) {

@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.gama.lang.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
@@ -42,7 +42,7 @@ class JoinedTablesPolymorphismBuilderTest {
 		Table expectedResult = new Table("MyOverridingTable");
 		Column colorTable = expectedResult.addColumn("myOverridingColumn", Integer.class);
 		
-		IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
 				.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
 						.addSubClass(subentityBuilder(Car.class)

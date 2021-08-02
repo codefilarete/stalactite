@@ -27,12 +27,12 @@ import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
 /**
- * A class that "roughly" persists a Collection of {@link Column}s, without any bean class.
- * One may override {@link #toCollectionValue(Object)} and {@link #toDatabaseValue(Object)} to adapt values.
+ * A class that "roughly" persists a {@link Collection} to some {@link Column}s : {@link Collection} values are written to given {@link Column}s.
+ * Write is made in iteration order. One may change this behavior by overriding {@link #toCollectionValue(Object)} and {@link #toDatabaseValue(Object)}.
  * 
  * @author Guillaume Mary
  */
-public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T extends Table> implements IEmbeddedBeanMappingStrategy<C, T> {
+public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T extends Table> implements EmbeddedBeanMappingStrategy<C, T> {
 	
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;

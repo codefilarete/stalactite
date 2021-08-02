@@ -13,7 +13,7 @@ import org.gama.stalactite.persistence.structure.Table;
  *
  * @author Guillaume Mary
  */
-public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingStrategy<C, T>, IdAccessor<C, I> {
+public interface EntityMappingStrategy<C, I, T extends Table> extends MappingStrategy<C, T>, IdAccessor<C, I> {
 	
 	T getTargetTable();
 	
@@ -38,5 +38,5 @@ public interface IEntityMappingStrategy<C, I, T extends Table> extends IMappingS
 	
 	Map<Column<T, Object>, Object> getVersionedKeyValues(C c);
 	
-	Map<IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies();
+	Map<IReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies();
 }

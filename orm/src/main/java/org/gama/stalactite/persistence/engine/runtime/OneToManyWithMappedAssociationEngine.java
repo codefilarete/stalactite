@@ -15,7 +15,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.IReversibleAccessor;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
@@ -43,15 +43,15 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		 */
 	};
 	
-	protected final IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	protected final EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
 	
-	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
+	protected final EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public OneToManyWithMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithMappedAssociationEngine(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
-												IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
+												EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		this.targetPersister = targetPersister;
 		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.sourcePersister = sourcePersister;
@@ -179,7 +179,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
-		public TargetInstancesInsertCascader(IEntityPersister<O, J> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
+		public TargetInstancesInsertCascader(EntityPersister<O, J> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -203,7 +203,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final BiConsumer<Duo<? extends I, ? extends I>, Boolean> updateListener;
 		
-		public TargetInstancesUpdateCascader(IEntityPersister<O, ?> targetPersister, BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> updateListener) {
+		public TargetInstancesUpdateCascader(EntityPersister<O, ?> targetPersister, BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> updateListener) {
 			super(targetPersister);
 			this.updateListener = (BiConsumer<Duo<? extends I, ? extends I>, Boolean>) updateListener;
 		}
@@ -228,7 +228,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
-		public DeleteTargetEntitiesBeforeDeleteCascader(IEntityPersister<O, ?> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
+		public DeleteTargetEntitiesBeforeDeleteCascader(EntityPersister<O, ?> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
 		}
@@ -252,7 +252,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		private final Function<I, ? extends Collection<O>> collectionGetter;
 		
-		public DeleteByIdTargetEntitiesBeforeDeleteByIdCascader(IEntityPersister<O, ?> targetPersister,
+		public DeleteByIdTargetEntitiesBeforeDeleteByIdCascader(EntityPersister<O, ?> targetPersister,
 																Function<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;

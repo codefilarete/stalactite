@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.gama.lang.Duo;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.MappingStrategy;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -64,7 +64,7 @@ public interface UpdateListener<C> {
 	}
 	
 	/**
-	 * Default behavior for giving {@link UpdatePayload} from some entities and a {@link IMappingStrategy}.
+	 * Default behavior for giving {@link UpdatePayload} from some entities and a {@link MappingStrategy}.
 	 * 
 	 * @param entities modified + unmodified entities
 	 * @param allColumns indicates if all columns must be updated or not
@@ -75,7 +75,7 @@ public interface UpdateListener<C> {
 	 */
 	static <C, T extends Table<T>> Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<C, C>> entities,
 																				 boolean allColumns,
-																				 IMappingStrategy<C, T> mappingStrategy) {
+																				 MappingStrategy<C, T> mappingStrategy) {
 		return (Iterable) computePayloads(entities, allColumns, (modified, unmodified, allColumnsLocal) ->
 				(Map) mappingStrategy.getUpdateValues(modified, unmodified, allColumnsLocal));
 	}

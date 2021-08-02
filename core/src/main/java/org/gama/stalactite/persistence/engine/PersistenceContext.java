@@ -31,8 +31,8 @@ import org.gama.stalactite.command.model.Update;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLBuilder;
@@ -57,7 +57,7 @@ import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
  */
 public class PersistenceContext implements PersisterRegistry {
 	
-	private final Map<Class<?>, IEntityPersister> persisterCache = new HashMap<>();
+	private final Map<Class<?>, EntityPersister> persisterCache = new HashMap<>();
 	private final Dialect dialect;
 	private final TransactionAwareConnectionConfiguration connectionConfiguration;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
@@ -66,7 +66,7 @@ public class PersistenceContext implements PersisterRegistry {
 		this(new ConnectionConfigurationSupport(connectionProvider, 100), dialect);
 	}
 	
-	public PersistenceContext(IConnectionConfiguration connectionConfiguration, Dialect dialect) {
+	public PersistenceContext(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
 		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
 		this.dialect = dialect;
 	}
@@ -102,7 +102,7 @@ public class PersistenceContext implements PersisterRegistry {
 		return persister;
 	}
 	
-	public Set<IEntityPersister> getPersisters() {
+	public Set<EntityPersister> getPersisters() {
 		// copy the Set because values() is backed by the Map and getPersisters() is not expected to permit such modifications
 		return new HashSet<>(persisterCache.values());
 	}
@@ -116,7 +116,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @return null if class has no persister registered
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
-	public <C, I> IEntityPersister<C, I> getPersister(Class<C> clazz) {
+	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
 		return persisterCache.get(clazz);
 	}
 	
@@ -126,8 +126,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param persister any {@link Persister}
 	 * @param <C> type of persisted bean
 	 */
-	public <C> void addPersister(IEntityPersister<C, ?> persister) {
-		IEntityPersister<C, ?> existingPersister = persisterCache.get(persister.getClassToPersist());
+	public <C> void addPersister(EntityPersister<C, ?> persister) {
+		EntityPersister<C, ?> existingPersister = persisterCache.get(persister.getClassToPersist());
 		if (existingPersister != null && existingPersister != persister) {
 			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getClassToPersist()));
 		}
@@ -135,7 +135,7 @@ public class PersistenceContext implements PersisterRegistry {
 		persisterCache.put(persister.getClassToPersist(), persister);
 	}
 	
-	public IConnectionConfiguration getConnectionConfiguration() {
+	public ConnectionConfiguration getConnectionConfiguration() {
 		return this.connectionConfiguration;
 	}
 	
@@ -634,22 +634,22 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	/**
-	 * Bridge between {@link ConnectionProvider}, {@link IConnectionConfiguration}, {@link org.gama.stalactite.sql.TransactionObserver}
+	 * Bridge between {@link ConnectionProvider}, {@link ConnectionConfiguration}, {@link org.gama.stalactite.sql.TransactionObserver}
 	 * and {@link SeparateTransactionExecutor} so one can notify {@link PersistenceContext} from commit and rollback as well as maintain internal
 	 * mecanisms such as :
 	 * - creating a separate transaction to manage HiLo Sequence
 	 * - revert entity version on transaction rollback (when versioning is active)
 	 */
 	private static class TransactionAwareConnectionConfiguration extends TransactionAwareConnectionProvider
-			implements IConnectionConfiguration,
+			implements ConnectionConfiguration,
 			SeparateTransactionExecutor	// for org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence
 	{
 		
-		private final IConnectionConfiguration connectionConfiguration;
+		private final ConnectionConfiguration connectionConfiguration;
 		
 		private final Nullable<SeparateTransactionExecutor> separateTransactionExecutor;
 		
-		private TransactionAwareConnectionConfiguration(IConnectionConfiguration connectionConfiguration) {
+		private TransactionAwareConnectionConfiguration(ConnectionConfiguration connectionConfiguration) {
 			super(connectionConfiguration.getConnectionProvider());
 			this.connectionConfiguration = connectionConfiguration;
 			// We'll be a real SeparateTransactionExecutor if given ConnectionProvider is one, else an exception will be thrown

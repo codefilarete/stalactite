@@ -70,7 +70,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(surrogateConnectionProvider);
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -117,7 +117,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
 		List<LocalDateTime> nowHistory = new ArrayList<>();
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -170,7 +170,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		persistenceContext = new PersistenceContext(surrogateConnectionProvider, DIALECT);
 		ConnectionProvider connectionProvider = persistenceContext.getConnectionProvider();
 		// mapping building thanks to fluent API
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)

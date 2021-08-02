@@ -13,7 +13,7 @@ import java.util.Map;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingHashMap;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.RollbackListener;
 import org.gama.stalactite.sql.RollbackObserver;

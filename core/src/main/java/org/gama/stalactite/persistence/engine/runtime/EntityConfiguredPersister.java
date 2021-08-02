@@ -1,11 +1,11 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 
 /**
  * @author Guillaume Mary
  */
-public interface IEntityConfiguredPersister<C, I> extends IEntityPersister<C, I>, IConfiguredPersister<C, I> {
+public interface EntityConfiguredPersister<C, I> extends EntityPersister<C, I>, ConfiguredPersister<C, I> {
 	
 	@Override
 	default I getId(C entity) {

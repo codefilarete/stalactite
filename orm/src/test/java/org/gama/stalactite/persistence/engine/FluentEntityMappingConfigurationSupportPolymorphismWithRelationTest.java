@@ -14,7 +14,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -150,7 +150,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphicOneToOne_data")
-	void crudPolymorphicOneToOne(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+	void crudPolymorphicOneToOne(String testDisplayName, EntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.setEngine(new Engine(100L));
@@ -190,12 +190,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
 		
-		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
+		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
+		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
@@ -247,7 +247,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphism_trunkHasOneToMany_data")
-	void crud_polymorphism_trunkHasOneToMany(String testDisplayName, IEntityPersister<Country, Identifier<Long>> countryPersister) {
+	void crud_polymorphism_trunkHasOneToMany(String testDisplayName, EntityPersister<Country, Identifier<Long>> countryPersister) {
 		LongProvider countryIdProvider = new LongProvider();
 		Republic dummyCountry = new Republic(new PersistableIdentifier<>(countryIdProvider.giveNewIdentifier()));
 		dummyCountry.setDeputeCount(250);
@@ -346,7 +346,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphism_subClassHasOneToOne_data")
-	void crud_polymorphism_subClassHasOneToOne(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+	void crud_polymorphism_subClassHasOneToOne(String testDisplayName, EntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.setRadio(new Radio("XYZ-ABC-01"));
@@ -527,7 +527,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphism_subClassHasOneToMany_data")
-	void crud_polymorphism_subClassHasOneToMany(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+	void crud_polymorphism_subClassHasOneToMany(String testDisplayName, EntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.addWheel(new Wheel("XYZ-ABC-01"));
@@ -617,7 +617,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@ParameterizedTest(name="{0}")
 	@MethodSource("polymorphism_subClassHasElementCollection_data")
-	void crud_polymorphism_subClassHasElementCollection(String testDisplayName, IEntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
+	void crud_polymorphism_subClassHasElementCollection(String testDisplayName, EntityPersister<AbstractVehicle, Identifier<Long>> persister, ConnectionProvider connectionProvider) throws SQLException {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.addPlate("XYZ-ABC-01");
@@ -660,7 +660,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -678,7 +678,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -724,7 +724,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -743,7 +743,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -802,7 +802,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -821,7 +821,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -900,7 +900,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void listenersAreNotified() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -958,7 +958,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -975,7 +975,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1021,7 +1021,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -1042,7 +1042,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1127,7 +1127,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -1146,7 +1146,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1231,7 +1231,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void listenersAreNotified() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -1289,7 +1289,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneSubClass() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -1307,7 +1307,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Car", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1353,7 +1353,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -1372,7 +1372,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1442,7 +1442,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.add(Vehicle::getColor)
@@ -1461,7 +1461,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(tables).containsExactlyInAnyOrder("Car", "Truk", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
-			assertThat(persistenceContext.getPersisters()).extracting(IEntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
+			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
 
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1534,7 +1534,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void listenersAreNotified() {
-			IEntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
+			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
@@ -1592,14 +1592,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneToJoinedTable_crud() {
-			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
 							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinedTables()
@@ -1607,7 +1607,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
-			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
@@ -1665,14 +1665,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneToJoinedTable_crud_ownedByReverseSide() {
-			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
 							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinedTables()
@@ -1680,7 +1680,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
-			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
 					.mapSuperClass(timestampedPersistentBeanMapping)
@@ -1738,14 +1738,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneToSingleTable_crud() {
-			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
 							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.add(Vehicle::getColor)
@@ -1754,7 +1754,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 									.addSubClass(subentityBuilder(Car.class), "C")
 							);
 			
-			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
@@ -1840,14 +1840,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		@Test
 		void oneToSingleTable_crud_ownedByReverseSide() {
-			IFluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Person> timestampedPersistentBeanMapping =
 					embeddableBuilder(Person.class)
 							.add(Person::getName)
 							.embed(Person::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
+			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
 							.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
 							.add(Vehicle::getColor)
@@ -1856,7 +1856,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 									.addSubClass(subentityBuilder(Car.class), "C")
 							);
 			
-			IEntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
+			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
 					.mapSuperClass(timestampedPersistentBeanMapping)
@@ -1949,14 +1949,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		@Test
 		void oneToJoinedTables_crud_withAssociationTable() {
 			
-			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
 							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
 							.add(City::getName)
@@ -1967,7 +1967,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 										.add(Town::getDiscotecCount))
 							);
 			
-			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 							.add(Country::getId).identifier(ALREADY_ASSIGNED)
 							.addOneToManySet(Country::getCities, cityConfiguration)
 								.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
@@ -2028,14 +2028,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		@Test
 		void oneToJoinedTables_crud_ownedByReverseSide() {
 			
-			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
 							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
 							.add(City::getName)
@@ -2046,7 +2046,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 											.add(Town::getDiscotecCount))
 							);
 			
-			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.add(Country::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToManySet(Country::getCities, cityConfiguration)
 						.mappedBy(City::getCountry)
@@ -2134,14 +2134,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		@Test
 		void oneToSingleTable_crud_withAssociationTable() {
 			
-			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
 							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
 							.add(City::getName)
@@ -2152,7 +2152,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 											.add(Town::getDiscotecCount), "T")
 							);
 			
-			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.add(Country::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToManySet(Country::getCities, cityConfiguration)
 						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
@@ -2213,14 +2213,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		@Test
 		void oneToSingleTable_crud_ownedByReverseSide() {
 			
-			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
 							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
 							.add(City::getName)
@@ -2231,7 +2231,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 											.add(Town::getDiscotecCount), "T")
 							);
 			
-			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.add(Country::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
@@ -2315,14 +2315,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		@Test
 		void oneToTablePerClass_crud_withAssociationTable() {
 			
-			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
 							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
 							.add(City::getName)
@@ -2333,7 +2333,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 											.add(Town::getDiscotecCount))
 							);
 			
-			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.add(Country::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToManySet(Country::getCities, cityConfiguration)
 						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
@@ -2394,14 +2394,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		@Test
 		void oneToTablePerClass_crud_ownedByReverseSide_foreignKeysAreCreated() throws SQLException {
 			
-			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
 							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
 							.add(City::getName)
@@ -2412,7 +2412,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 											.add(Town::getDiscotecCount))
 							);
 			
-			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.add(Country::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
@@ -2458,14 +2458,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		@Test
 		void oneToTablePerClass_crud_ownedByReverseSide() {
 			
-			IFluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
 					embeddableBuilder(Country.class)
 							.add(Country::getName)
 							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
 									.add(Timestamp::getCreationDate)
 									.add(Timestamp::getModificationDate));
 			
-			IFluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
 							.add(City::getId).identifier(ALREADY_ASSIGNED)
 							.add(City::getName)
@@ -2476,7 +2476,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 											.add(Town::getDiscotecCount))
 							);
 			
-			IEntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
+			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.add(Country::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)

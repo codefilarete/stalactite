@@ -25,7 +25,7 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	private final Consumer<C> asserter;
 	
 	
-	public EntityIsManagedByPersisterAsserter(IEntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public EntityIsManagedByPersisterAsserter(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
 		super(surrogate);
 		if (getDeepestSurrogate() instanceof PolymorphicPersister) {
 			Set<Class<? extends C>> supportedEntityTypes = ((PolymorphicPersister<C>) getDeepestSurrogate()).getSupportedEntityTypes();

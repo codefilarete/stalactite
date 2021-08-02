@@ -40,8 +40,8 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingConfiguration.IFluentEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfiguration;
+import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfiguration.FluentEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -193,8 +193,8 @@ class BeanMappingBuilder {
 				throw new MappingConfigurationException(column.getAbsoluteName() + " has no matching binder,"
 						+ " please consider adding one to dialect binder registry or use one of the "
 						+ toMethodReferenceString(
-						(SerializableTriFunction<IFluentEmbeddableMappingConfiguration, SerializableFunction, EmbeddableMappingConfigurationProvider, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-								IFluentEmbeddableMappingConfiguration::embed) + " methods"
+						(SerializableTriFunction<FluentEmbeddableMappingConfiguration, SerializableFunction, EmbeddableMappingConfigurationProvider, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
+								FluentEmbeddableMappingConfiguration::embed) + " methods"
 				);
 			}
 		}

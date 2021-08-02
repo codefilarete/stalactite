@@ -14,7 +14,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
-import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
+import org.gama.stalactite.persistence.query.EntitySelectExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -30,19 +30,19 @@ import org.gama.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, D> implements IEntitySelectExecutor<C> {
+public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, D> implements EntitySelectExecutor<C> {
 	
 	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	private static final String PRIMARY_KEY_ALIAS = "PK";
 	
-	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass;
+	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
+	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
 												Column<T, D> discriminatorColumn,
 												SingleTablePolymorphism polymorphismPolicy,
 												EntityJoinTree<C, I> mainEntityJoinTree,
@@ -65,7 +65,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	public List<C> loadGraph(CriteriaChain where) {
 		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
 		
-		SQLQueryBuilder sqlQueryBuilder = IEntitySelectExecutor.createQueryBuilder(where, query);
+		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// selecting ids and their discriminator
 		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());

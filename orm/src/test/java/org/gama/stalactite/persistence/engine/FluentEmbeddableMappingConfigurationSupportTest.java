@@ -16,7 +16,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	 * - interfaces are well written to return right types, so one can chain others methods
 	 * - at runtime instance of the right type is also returned
 	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.gama.stalactite.persistence.engine
-	 * .IFluentEmbeddableMappingBuilder")
+	 * .FluentEmbeddableMappingBuilder")
 	 * <p>
 	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
 	 * considered

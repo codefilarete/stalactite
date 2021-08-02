@@ -15,7 +15,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 * Defines the column as the identifier of the entity.
 	 * 
 	 * @param identifierPolicy an {@link IdentifierPolicy}
-	 * @return the enclosing {@link IFluentEntityMappingBuilder}
+	 * @return the enclosing {@link FluentEntityMappingBuilder}
 	 */
 	ColumnOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
 	

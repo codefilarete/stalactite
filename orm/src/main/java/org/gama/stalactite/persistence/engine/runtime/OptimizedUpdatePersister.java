@@ -37,8 +37,8 @@ import org.gama.lang.function.ThrowingTriConsumer;
 import org.gama.lang.sql.ConnectionWrapper;
 import org.gama.lang.sql.ResultSetWrapper;
 import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.RollbackObserver;
 import org.gama.stalactite.sql.dml.SQLExecutionException;
@@ -48,11 +48,11 @@ import org.gama.stalactite.sql.result.NoopPreparedStatement;
 
 /**
  * Persister with optimized {@link #update(Object, Consumer)} method by leveraging an internal cache so only one select is really executed. 
- * Acts as a proxy over a delegate {@link IEntityConfiguredJoinedTablesPersister persister} to enhance its {@link #update(Object, Consumer)}
+ * Acts as a proxy over a delegate {@link EntityConfiguredJoinedTablesPersister persister} to enhance its {@link #update(Object, Consumer)}
  * method.
  * <strong>
- * It requires that given {@link IEntityConfiguredJoinedTablesPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
- * ({@link org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl}) by calling {@link #wrapWithQueryCache(IConnectionConfiguration)}.
+ * It requires that given {@link EntityConfiguredJoinedTablesPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
+ * ({@link org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl}) by calling {@link #wrapWithQueryCache(ConnectionConfiguration)}.
  * </strong>
  * 
  * @author Guillaume Mary
@@ -63,14 +63,14 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	static final ThreadLocal<Map<ResultSetCacheKey, ResultSet>> QUERY_CACHE = new ThreadLocal<>();
 	
 	/**
-	 * Creates a new {@link IConnectionConfiguration} from given one and wraps its {@link ConnectionProvider} with one that caches select queries
+	 * Creates a new {@link ConnectionConfiguration} from given one and wraps its {@link ConnectionProvider} with one that caches select queries
 	 * on demand of {@link OptimizedUpdatePersister} instances.
-	 * Hence given {@link IConnectionConfiguration} should not be used anymore by caller.
+	 * Hence given {@link ConnectionConfiguration} should not be used anymore by caller.
 	 * 
 	 * @param connectionConfiguration the configuration to be wrapped with cache over its {@link ConnectionProvider}
-	 * @return a new {@link IConnectionConfiguration} with enhanced {@link ConnectionProvider}
+	 * @return a new {@link ConnectionConfiguration} with enhanced {@link ConnectionProvider}
 	 */
-	public static IConnectionConfiguration wrapWithQueryCache(IConnectionConfiguration connectionConfiguration) {
+	public static ConnectionConfiguration wrapWithQueryCache(ConnectionConfiguration connectionConfiguration) {
 		ConnectionProvider delegate = connectionConfiguration.getConnectionProvider();
 		CachingQueryConnectionProvider cachingQueryConnectionProvider = new CachingQueryConnectionProvider(delegate);
 		// We created a proxy that will redirect ConnectionProvider#getCurrentConnection to the caching one (then queries will be cached) and
@@ -87,7 +87,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		return new ConnectionConfigurationSupport(connectionProvider, connectionConfiguration.getBatchSize());
 	}
 	
-	public OptimizedUpdatePersister(IEntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public OptimizedUpdatePersister(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
 		super(surrogate);
 	}
 	

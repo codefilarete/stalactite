@@ -18,12 +18,12 @@ import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.SingleTablePolymorphicPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -38,7 +38,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, D> polymorphismPolicy,
 								   Identification identification,
-								   IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+								   EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 								   Map<IReversibleAccessor, Column> mainMapping,
 								   ColumnBinderRegistry columnBinderRegistry,
 								   ColumnNameProvider columnNameProvider,
@@ -56,8 +56,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 	}
 	
 	@Override
-	public IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
+	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		T mainTable = (T) mainPersister.getMappingStrategy().getTargetTable();

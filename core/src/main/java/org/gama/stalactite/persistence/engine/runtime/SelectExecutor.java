@@ -10,8 +10,7 @@ import java.util.Set;
 import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
@@ -30,11 +29,11 @@ import org.gama.stalactite.sql.result.RowIterator;
  * 
  * @author Guillaume Mary
  */
-public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> implements ISelectExecutor<C, I> {
+public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> implements org.gama.stalactite.persistence.engine.SelectExecutor<C, I> {
 	
 	protected SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public SelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
+	public SelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	

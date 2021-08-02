@@ -23,23 +23,23 @@ import org.gama.lang.collection.KeepOrderMap;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
-import org.gama.stalactite.persistence.engine.IUpdateExecutor;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
+import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
@@ -56,7 +56,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
+public class JoinedTablesPolymorphicPersister<C, I> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
 	/**
 	 * Current storage of entities to be loaded during the 2-Phases load algorithm.
@@ -65,7 +65,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	// TODO : try a non-static field to remove Queue usage which impacts code complexity
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 	
-	private final Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load */
 	private final JoinedTablesPolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
 	private final Class<C> parentClass;
@@ -74,10 +74,10 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	private final Column<?, I> mainTablePrimaryKey;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final JoinedTablesPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
-	private final IEntityConfiguredJoinedTablesPersister<C, I> mainPersister;
+	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	
-	public JoinedTablesPolymorphicPersister(IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-											Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+	public JoinedTablesPolymorphicPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+											Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
 											ConnectionProvider connectionProvider,
 											Dialect dialect) {
 		this.mainPersister = mainPersister;
@@ -85,8 +85,8 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		this.mainTablePrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
-		Set<Entry<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
-		Map<Class<? extends C>, ISelectExecutor<C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
+		Set<Entry<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
+		Map<Class<? extends C>, SelectExecutor<C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
 				Entry::getValue);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> e.getValue().getMappingStrategy().getIdMappingStrategy());
 		
@@ -137,7 +137,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	@Override
-	public PersisterListener<C, I> getPersisterListener() {
+	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return mainPersister.getPersisterListener();
 	}
 	
@@ -146,7 +146,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		mainPersister.insert(entities);
 		
 		ModifiableInt insertCount = new ModifiableInt();
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister((Iterable) entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister((Iterable) entities);
 		
 		entitiesPerType.forEach((insertExecutor, adhocEntities) -> insertCount.increment(insertExecutor.insert(adhocEntities)));
 		
@@ -160,7 +160,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		mainUpdateCount.increment(mainRowCount);
 		
 		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		entitiesPerType.forEach((updateExecutor, adhocEntities) -> subEntitiesUpdateCount.increment(updateExecutor.updateById(adhocEntities)));
 		
@@ -183,7 +183,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		mainUpdateCount.increment(mainRowCount);
 		
 		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
-		Map<IUpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
+		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
@@ -236,7 +236,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	@Override
 	public int delete(Iterable<C> entities) {
 		ModifiableInt deleteCount = new ModifiableInt();
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		entitiesPerType.forEach((deleteExecutor, adhocEntities) ->
 				deleteCount.increment(deleteExecutor.delete(adhocEntities))
@@ -248,7 +248,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	@Override
 	public int deleteById(Iterable<C> entities) {
 		ModifiableInt deleteCount = new ModifiableInt();
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		
 		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> 
 				deleteCount.increment(deleteExecutor.deleteById(adhocEntities))
@@ -263,8 +263,8 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		throw new NotImplementedException("This class doesn't need to implement this method because it is handled by wrapper");
 	}
 	
-	private Map<IEntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<C> entities) {
-		Map<IEntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
+	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<C> entities) {
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {
@@ -346,18 +346,18 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 	}
 	
 	/**
-	 * Implementation that captures {@link IEntityMappingStrategy#addTransformerListener(TransformerListener)}
+	 * Implementation that captures {@link EntityMappingStrategy#addTransformerListener(TransformerListener)}
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 * <p>
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
 	 * ourselves (Persister) but the case is to add a transformer which is not the goal of the Persister to know implementation
-	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link IEntityMappingStrategy} are in charge of knowing
+	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link EntityMappingStrategy} are in charge of knowing
 	 * {@link Column} actions.
 	 *
 	 * @return an enhanced version of our main persister mapping strategy which dispatches transformer listeners to sub-entities ones
 	 */
 	@Override
-	public <T extends Table> IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public <T extends Table> EntityMappingStrategy<C, I, T> getMappingStrategy() {
 		return new EntityMappingStrategyWrapper<C, I, T>(mainPersister.getMappingStrategy()) {
 			@Override
 			public void addTransformerListener(TransformerListener<C> listener) {
@@ -404,7 +404,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		});
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
 		
 		return mainTableJoinName;
 	}
@@ -437,7 +437,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements IEntityConfigured
 		});
 		
 		// adding second phase loader
-		((IPersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
 		
 		return createdJoinName;
 	}

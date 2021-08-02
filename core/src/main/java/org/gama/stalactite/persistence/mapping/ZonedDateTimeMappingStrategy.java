@@ -33,7 +33,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedBeanMappingStrategy<ZonedDateTime, T> {
+public class ZonedDateTimeMappingStrategy<T extends Table> implements EmbeddedBeanMappingStrategy<ZonedDateTime, T> {
 	
 	private final Column<T, LocalDateTime> dateTimeColumn;
 	private final Column<T, ZoneId> zoneColumn;
@@ -43,12 +43,9 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements IEmbeddedB
 	private final ZonedDateTimeToBeanRowTransformer zonedDateTimeRowTransformer;
 	
 	/**
-	 * Build a EmbeddedBeanMappingStrategy from a mapping between Field and Column.
-	 * Fields are expected to be from same class.
-	 * Columns are expected to be from same table.
-	 * No control is done about that, caller must be aware of it.
-	 * First entry of <tt>propertyToColumn</tt> is used to pick up persisted class and target table.
-	 *
+	 * Builds a {@link LocalDateTime} and {@link ZoneId} embedded mapping by specifying repective {@link Column}s.
+	 * {@link Column}s are expected to be from same table, no strong control is made about that except generic type, caller must be aware of it.
+	 * 
 	 * @param dateTimeColumn the column containing date and time part of final {@link ZonedDateTime}
 	 * @param zoneColumn the column containing the zone part of final {@link ZonedDateTime}
 	 * @throws IllegalArgumentException if dateTimeColumn is not of type {@link LocalDateTime} or zoneColumn of type {@link ZoneId}

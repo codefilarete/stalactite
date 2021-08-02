@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator.NoopSorter;
 import org.gama.stalactite.persistence.structure.Column;

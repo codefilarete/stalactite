@@ -10,7 +10,7 @@ import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IRowTransformer;
+import org.gama.stalactite.persistence.mapping.RowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -88,7 +88,7 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 		/** Root entity identifier decoder */
 		private final BiFunction<Row, ColumnedRow, I> identifierDecoder;
 		
-		private final IRowTransformer<C> entityBuilder;
+		private final RowTransformer<C> entityBuilder;
 		
 		private final ColumnedRow columnedRow;
 		

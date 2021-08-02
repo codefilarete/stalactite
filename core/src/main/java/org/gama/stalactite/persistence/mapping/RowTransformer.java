@@ -10,7 +10,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public interface IRowTransformer<C> {
+public interface RowTransformer<C> {
 	
 	C transform(Row row);
 	

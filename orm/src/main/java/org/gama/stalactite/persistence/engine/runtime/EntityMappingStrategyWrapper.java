@@ -8,25 +8,25 @@ import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IEmbeddedBeanMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
 /**
- * {@link IEntityMappingStrategy} that wraps another one and delegates all its methods to it without any additionnal feature.
+ * {@link EntityMappingStrategy} that wraps another one and delegates all its methods to it without any additionnal feature.
  * Made for overriding only some targeted methods.
  * 
  * @author Guillaume Mary
  */
-public class EntityMappingStrategyWrapper<C, I, T extends Table> implements IEntityMappingStrategy<C, I, T> {
+public class EntityMappingStrategyWrapper<C, I, T extends Table> implements EntityMappingStrategy<C, I, T> {
 	
-	private final IEntityMappingStrategy<C, I, T> surrogate;
+	private final EntityMappingStrategy<C, I, T> surrogate;
 	
-	public EntityMappingStrategyWrapper(IEntityMappingStrategy<C, I, T> surrogate) {
+	public EntityMappingStrategyWrapper(EntityMappingStrategy<C, I, T> surrogate) {
 		this.surrogate = surrogate;
 	}
 	
@@ -76,7 +76,7 @@ public class EntityMappingStrategyWrapper<C, I, T extends Table> implements IEnt
 	}
 	
 	@Override
-	public Map<IReversibleAccessor<C, Object>, IEmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies() {
+	public Map<IReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies() {
 		return surrogate.getEmbeddedBeanStrategies();
 	}
 	

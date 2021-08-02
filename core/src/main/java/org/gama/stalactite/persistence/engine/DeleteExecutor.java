@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 /**
  * @author Guillaume Mary
  */
-public interface IDeleteExecutor<C, I> {
+public interface DeleteExecutor<C, I> {
 	
 	/**
 	 * Will given instances.

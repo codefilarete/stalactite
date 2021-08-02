@@ -8,7 +8,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * Contract to define options when reusing a configuration of an embeddable, very close to {@link EmbedWithColumnOptions}
  * 
  * @author Guillaume Mary
- * @see IFluentEmbeddableMappingConfiguration#embed(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)
+ * @see FluentEmbeddableMappingConfiguration#embed(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)
  */
 public interface ImportedEmbedOptions<C> {
 	

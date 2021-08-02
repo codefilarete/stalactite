@@ -4,7 +4,7 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
@@ -20,12 +20,12 @@ class FirstPhaseRelationLoader<E, ID, T extends Table> implements EntityMerger<E
 	
 	protected final Column<Table, ID> primaryKey;
 	protected final IdMappingStrategy<E, ID> idMappingStrategy;
-	private final ISelectExecutor<E, ID> selectExecutor;
+	private final SelectExecutor<E, ID> selectExecutor;
 	protected final ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder;
 	
 	public FirstPhaseRelationLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
 									Column<Table, ID> primaryKey,
-									ISelectExecutor<E, ID> selectExecutor,
+									SelectExecutor<E, ID> selectExecutor,
 									ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder) {
 		this.primaryKey = primaryKey;
 		this.idMappingStrategy = subEntityIdMappingStrategy;

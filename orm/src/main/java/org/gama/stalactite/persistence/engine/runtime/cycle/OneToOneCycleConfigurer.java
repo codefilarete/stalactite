@@ -7,14 +7,14 @@ import org.gama.stalactite.persistence.engine.configurer.CascadeOneConfigurer;
 import org.gama.stalactite.persistence.engine.configurer.CascadeOneConfigurer.ConfigurationResult;
 import org.gama.stalactite.persistence.engine.configurer.CascadeOneConfigurer.FirstPhaseCycleLoadListener;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 
 /**
  * Container of {@link CascadeOneConfigurer}s of same entity type and their relation name (throught {@link RelationConfigurer}).
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link CascadeOneConfigurer}
- * {@link CascadeOneConfigurer#appendCascadesWith2PhasesSelect(String, IEntityConfiguredJoinedTablesPersister, FirstPhaseCycleLoadListener) appendCascadesWith2PhasesSelect method}
+ * {@link CascadeOneConfigurer#appendCascadesWith2PhasesSelect(String, EntityConfiguredJoinedTablesPersister, FirstPhaseCycleLoadListener) appendCascadesWith2PhasesSelect method}
  * with a {@link OneToOneCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link CascadeOneConfigurer}
@@ -34,11 +34,11 @@ public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	@Override
-	public void consume(IEntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
+	public void consume(EntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
 		registerRelationLoader(targetPersister);
 	}
 	
-	private <SRC, TRGTID> void registerRelationLoader(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+	private <SRC, TRGTID> void registerRelationLoader(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 		OneToOneCycleLoader<SRC, TRGT, TRGTID> oneToOneCycleLoader = new OneToOneCycleLoader<>(targetPersister);
 		targetPersister.addSelectListener(oneToOneCycleLoader);
 		relations.forEach((RelationConfigurer c) -> {

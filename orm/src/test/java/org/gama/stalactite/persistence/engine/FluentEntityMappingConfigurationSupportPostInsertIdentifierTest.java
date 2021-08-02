@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.gama.lang.collection.Arrays;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
@@ -36,7 +36,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_basic() {
-		IEntityPersister<Car, Long> carPersister = MappingEase.entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = MappingEase.entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Car::getModel)
 				.build(persistenceContext);
@@ -64,7 +64,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	
 	@Test
 	void insert_oneToOne() {
-		IEntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
+		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.add(Car::getId).identifier(IdentifierPolicy.AFTER_INSERT)
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
@@ -108,14 +108,14 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration)
 				.getConfiguration();
 		
-		IEntityPersister<Car, Long> carPersister = MappingEase
+		EntityPersister<Car, Long> carPersister = MappingEase
 				.entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
 		// by default inheritance is single_table one, to comply with default JPA inheritance strategy
-		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Car");
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Car");
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -150,16 +150,16 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapInheritance(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
-		IEntityPersister<Car, Long> carPersister = MappingEase
+		EntityPersister<Car, Long> carPersister = MappingEase
 				.entityBuilder(Car.class, long.class)
 				.add(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
 		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
-		assertThat(((IConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("AbstractVehicle");
-		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Vehicle");
-		assertThat(((IConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo(
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("AbstractVehicle");
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Vehicle");
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo(
 				"Car");
 		
 		// DML tests

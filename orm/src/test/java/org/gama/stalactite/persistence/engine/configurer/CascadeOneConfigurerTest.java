@@ -31,8 +31,8 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table;
@@ -130,7 +130,7 @@ class CascadeOneConfigurerTest {
 		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
 				countryPersister,
 				dialect,
-				mock(IConnectionConfiguration.class),
+				mock(ConnectionConfiguration.class),
 				mock(PersisterRegistry.class),
 				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration));
@@ -232,7 +232,7 @@ class CascadeOneConfigurerTest {
 		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
 				countryPersister,
 				dialect,
-				mock(IConnectionConfiguration.class),
+				mock(ConnectionConfiguration.class),
 				mock(PersisterRegistry.class),
 				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
 		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration));

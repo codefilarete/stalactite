@@ -3,26 +3,26 @@ package org.gama.stalactite.persistence.engine.runtime;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 
 /**
  * @author Guillaume Mary
  */
 class RelationIds<SRC, TRGT, TRGTID> {
-	private final ISelectExecutor<TRGT, TRGTID> selectExecutor;
+	private final SelectExecutor<TRGT, TRGTID> selectExecutor;
 	private final Function<TRGT, TRGTID> idAccessor;
 	private final SRC source;
 	private final TRGTID targetId;
 	
 	
-	RelationIds(ISelectExecutor<TRGT, TRGTID> selectExecutor, Function<TRGT, TRGTID> idAccessor, SRC source, TRGTID targetId) {
+	RelationIds(SelectExecutor<TRGT, TRGTID> selectExecutor, Function<TRGT, TRGTID> idAccessor, SRC source, TRGTID targetId) {
 		this.selectExecutor = selectExecutor;
 		this.idAccessor = idAccessor;
 		this.source = source;
 		this.targetId = targetId;
 	}
 	
-	public ISelectExecutor<TRGT, TRGTID> getSelectExecutor() {
+	public SelectExecutor<TRGT, TRGTID> getSelectExecutor() {
 		return selectExecutor;
 	}
 	

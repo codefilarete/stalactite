@@ -9,7 +9,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.sql.result.Row;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,12 +20,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.reflection.Accessors.*;
-import static org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy.*;
+import static org.gama.stalactite.persistence.mapping.EmbeddedClassMappingStrategy.*;
 
 /**
  * @author Guillaume Mary
  */
-public class EmbeddedBeanMappingStrategyTest {
+public class EmbeddedClassMappingStrategyTest {
 	
 	private static Table targetTable;
 	private static Column<Table, Integer> colA;
@@ -44,11 +44,11 @@ public class EmbeddedBeanMappingStrategyTest {
 				.add(propertyAccessor(Toto.class, "c"), colC);
 	}
 	
-	private EmbeddedBeanMappingStrategy<Toto, Table> testInstance;
+	private EmbeddedClassMappingStrategy<Toto, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
+		testInstance = new EmbeddedClassMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 	}
 	
 	public static Object[][] testGetInsertValuesData() {
@@ -129,7 +129,7 @@ public class EmbeddedBeanMappingStrategyTest {
 		row.put("a", null);
 		row.put("b", null);
 		row.put("c", null);
-		EmbeddedBeanMappingStrategy<Toto, Table> testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
+		EmbeddedClassMappingStrategy<Toto, Table> testInstance = new EmbeddedClassMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 		Toto toto = testInstance.transform(row);
 		assertThat(toto).isNotNull();
 		assertThat(toto.a).isNull();
@@ -173,7 +173,7 @@ public class EmbeddedBeanMappingStrategyTest {
 		Map<PropertyAccessor<Toto, Object>, Column<Table, Integer>> classMapping = Maps.asMap(propertyAccessor(Toto.class, "a"), colA)
 				.add(propertyAccessor(Toto.class, "b"), colB)
 				.add(propertyAccessor(Toto.class, "c"), colC);
-		EmbeddedBeanMappingStrategy testInstance = new EmbeddedBeanMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
+		EmbeddedClassMappingStrategy testInstance = new EmbeddedClassMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 		// primary key shall not be written by this class
 		assertThat(testInstance.getInsertableColumns().contains(colA)).isTrue();
 		assertThat(testInstance.getUpdatableColumns().contains(colA)).isFalse();

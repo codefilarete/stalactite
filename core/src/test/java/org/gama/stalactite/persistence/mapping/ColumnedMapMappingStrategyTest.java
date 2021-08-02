@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingMap;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;

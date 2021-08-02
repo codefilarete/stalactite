@@ -12,16 +12,16 @@ import org.gama.lang.Duo;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.EntityPersister;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
 import org.gama.stalactite.persistence.engine.listening.*;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
@@ -33,24 +33,24 @@ import org.gama.stalactite.sql.ConnectionProvider;
  * @author Guillaume Mary
  */
 @Nonnull
-public class Persister<C, I, T extends Table> implements IConfiguredPersister<C, I> {
+public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, I> {
 	
-	private final IEntityMappingStrategy<C, I, T> mappingStrategy;
-	private final IConnectionConfiguration connectionConfiguration;
+	private final EntityMappingStrategy<C, I, T> mappingStrategy;
+	private final ConnectionConfiguration connectionConfiguration;
 	private final DMLGenerator dmlGenerator;
 	private final Retryer writeOperationRetryer;
 	private final int inOperatorMaxSize;
-	private PersisterListener<C, I> persisterListener = new PersisterListener<>();
+	private PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	private final InsertExecutor<C, I, T> insertExecutor;
 	private final UpdateExecutor<C, I, T> updateExecutor;
 	private final DeleteExecutor<C, I, T> deleteExecutor;
-	private final ISelectExecutor<C, I> selectExecutor;
+	private final SelectExecutor<C, I> selectExecutor;
 	
-	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
+	public Persister(EntityMappingStrategy<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public Persister(IEntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, IConnectionConfiguration connectionConfiguration) {
+	public Persister(EntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
@@ -71,9 +71,9 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getSelectListener());
 	}
 	
-	public Persister(IConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
-					 int inOperatorMaxSize, IEntityMappingStrategy<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
-					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, ISelectExecutor<C, I> selectExecutor) {
+	public Persister(ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+					 int inOperatorMaxSize, EntityMappingStrategy<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
+					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, SelectExecutor<C, I> selectExecutor) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dmlGenerator;
@@ -85,8 +85,8 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 		this.selectExecutor = selectExecutor;
 	}
 	
-	protected InsertExecutor<C, I, T> newInsertExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-														IConnectionConfiguration connectionConfiguration,
+	protected InsertExecutor<C, I, T> newInsertExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+														ConnectionConfiguration connectionConfiguration,
 														DMLGenerator dmlGenerator,
 														Retryer writeOperationRetryer,
 														int inOperatorMaxSize) {
@@ -94,28 +94,28 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 				writeOperationRetryer, inOperatorMaxSize);
 	}
 	
-	protected UpdateExecutor<C, I, T> newUpdateExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-														IConnectionConfiguration connectionProvider,
-													  DMLGenerator dmlGenerator,
-													  Retryer writeOperationRetryer,
-													  int inOperatorMaxSize) {
+	protected UpdateExecutor<C, I, T> newUpdateExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+														ConnectionConfiguration connectionProvider,
+														DMLGenerator dmlGenerator,
+														Retryer writeOperationRetryer,
+														int inOperatorMaxSize) {
 		return new UpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
 				writeOperationRetryer, inOperatorMaxSize);
 	}
 	
-	protected DeleteExecutor<C, I, T> newDeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-														IConnectionConfiguration connectionConfiguration,
-															DMLGenerator dmlGenerator,
-															Retryer writeOperationRetryer,
-															int inOperatorMaxSize) {
+	protected DeleteExecutor<C, I, T> newDeleteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+														ConnectionConfiguration connectionConfiguration,
+														DMLGenerator dmlGenerator,
+														Retryer writeOperationRetryer,
+														int inOperatorMaxSize) {
 		return new DeleteExecutor<>(mappingStrategy, connectionConfiguration, dmlGenerator,
 				writeOperationRetryer, inOperatorMaxSize);
 	}
 	
-	protected ISelectExecutor<C, I> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
-													  ConnectionProvider connectionProvider,
-													  Dialect dialect) {
-		return new SelectExecutor<>(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
+	protected SelectExecutor<C, I> newSelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+													 ConnectionProvider connectionProvider,
+													 Dialect dialect) {
+		return new org.gama.stalactite.persistence.engine.runtime.SelectExecutor(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 	}
 	
 	public ConnectionProvider getConnectionProvider() {
@@ -140,7 +140,7 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 	}
 	
 	@Override
-	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
 		return mappingStrategy;
 	}
 	
@@ -159,7 +159,7 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 		return Collections.singleton(getMainTable());
 	}
 	
-	public void setPersisterListener(PersisterListener<C, I> persisterListener) {
+	public void setPersisterListener(PersisterListenerCollection<C, I> persisterListener) {
 		// prevent from null instance
 		if (persisterListener != null) {
 			this.persisterListener = persisterListener;
@@ -173,7 +173,7 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 	 */
 	@Nonnull
 	@Override
-	public PersisterListener<C, I> getPersisterListener() {
+	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return persisterListener;
 	}
 	
@@ -189,7 +189,7 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 		return deleteExecutor;
 	}
 	
-	public ISelectExecutor<C, I> getSelectExecutor() {
+	public SelectExecutor<C, I> getSelectExecutor() {
 		return selectExecutor;
 	}
 	
@@ -204,7 +204,7 @@ public class Persister<C, I, T extends Table> implements IConfiguredPersister<C,
 	 */
 	@Override
 	public int persist(Iterable<? extends C> entities) {
-		return IEntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
+		return EntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
 	}
 	
 	@Override

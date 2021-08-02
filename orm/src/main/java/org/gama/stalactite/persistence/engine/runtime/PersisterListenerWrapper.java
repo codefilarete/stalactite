@@ -8,22 +8,22 @@ import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 
 /**
- * Class for wrapping calls to {@link IEntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into
+ * Class for wrapping calls to {@link EntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into
  * {@link InsertListener#beforeInsert(Iterable)} and {@link InsertListener#afterInsert(Iterable)} (and corresponding methods for other methods),
- * this is made throught an internal {@link PersisterListener}.
+ * this is made throught an internal {@link PersisterListenerCollection}.
  * 
  * @author Guillaume Mary
  */
 public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	
-	private final PersisterListener<C, I> persisterListener = new PersisterListener<>();
+	private final PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	
-	public PersisterListenerWrapper(IEntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public PersisterListenerWrapper(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
 		super(surrogate);
 	}
 	
@@ -53,7 +53,7 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public PersisterListener<C, I> getPersisterListener() {
+	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return this.persisterListener;
 	}
 	

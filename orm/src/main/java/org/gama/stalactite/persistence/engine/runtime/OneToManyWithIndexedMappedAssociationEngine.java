@@ -25,7 +25,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.ShadowColumnValueProvider;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.IdentityMap;
@@ -47,9 +47,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	/** Column that stores index value, owned by reverse side table (table of targetPersister) */
 	private final Column<Table, Integer> indexingColumn;
 	
-	public OneToManyWithIndexedMappedAssociationEngine(IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition,
-													   IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+													   EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 													   Column<? extends Table, Integer> indexingColumn) {
 		super(targetPersister, manyRelationDefinition, sourcePersister);
 		this.indexingColumn = (Column<Table, Integer>) indexingColumn;
@@ -225,7 +225,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		private final Column indexingColumn;
 		
 		private ListCollectionUpdater(Function<SRC, C> collectionGetter,
-									 IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
+									 EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
 									 @Nullable BiConsumer<TRGT, SRC> reverseSetter,
 									 boolean shouldDeleteRemoved,
 									 Function<TRGT, ?> idProvider,
@@ -237,7 +237,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 		}
 		
-		private void addShadowIndexUpdate(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
+		private void addShadowIndexUpdate(EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
 			targetPersister.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
 					// Thread safe by updatableListIndex access
 					target -> currentUpdatableListIndex.get().get(target)) {
@@ -248,7 +248,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			});
 		}
 		
-		private void addShadowIndexInsert(IEntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
+		private void addShadowIndexInsert(EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
 			// adding index insert/update to strategy
 			targetPersister.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
 					// Thread safe by updatableListIndex access

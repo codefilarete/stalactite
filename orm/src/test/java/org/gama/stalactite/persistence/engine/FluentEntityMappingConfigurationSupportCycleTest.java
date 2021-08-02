@@ -73,7 +73,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		 */
 		@Test
 		void crud_cycleWithIntermediary_ownedBySource() {
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -87,7 +87,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -130,7 +130,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Table personTable = new Table("Person");
 			Column<Table, Identifier<Long>> reverseGardenerId = personTable.addColumn("reverseGardenerId", Identifier.LONG_TYPE);
 			
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -144,7 +144,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -185,13 +185,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		@Test
 		void insertSelect_cycleIsDirect_ownedBySource() {
 			// we need a holder to skip final variable problem 
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()));
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -215,13 +215,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Table personTable = new Table("Person");
 			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
 			// we need a holder to skip final variable problem
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId));
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -245,7 +245,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		@Test
 		void crud_2cycles_ownedBySource() {
 			// we need a holder to skip final variable problem 
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -260,7 +260,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -310,7 +310,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
 			
 			// we need a holder to skip final variable problem 
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -325,7 +325,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -373,7 +373,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		@Test
 		void crud_2cycles_ownedBySource_entityCycle() {
 			// we need a holder to skip final variable problem 
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -388,7 +388,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -424,7 +424,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
 			
 			// we need a holder to skip final variable problem 
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)
 					.add(Person::getName)
@@ -439,7 +439,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -474,8 +474,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Table personTable = new Table("Person");
 			
 			// we need a holder to skip final variable problem 
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			IFluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class,
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			FluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class,
 					Identifier.LONG_TYPE)
 					.add(House::getId).identifier(ALREADY_ASSIGNED)
 					.add(House::getName);
@@ -487,7 +487,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.addOneToOne(Person::getHouse1, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -524,8 +524,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Column<Table, Identifier<Long>> reversePartnerId = personTable.addColumn("reversePartnerId", Identifier.LONG_TYPE);
 			
 			// we need a holder to skip final variable problem 
-			Holder<IFluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			IFluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
+			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
+			FluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
 					.add(House::getId).identifier(ALREADY_ASSIGNED)
 					.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
 							.add(Address::getId).identifier(ALREADY_ASSIGNED)
@@ -540,7 +540,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.addOneToOne(Person::getHouse1, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext, personTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -595,7 +595,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		
 		private PersistenceContext persistenceContext;
 		
-		private IFluentEntityMappingBuilder<Person, Identifier<Long>> personMappingConfiguration;
+		private FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingConfiguration;
 		
 		@BeforeEach
 		public void initTest() {
@@ -612,7 +612,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		 */
 		@Test
 		void insertSelect_cycleIsDirect_withAssociationTable_1Parent_1Child() {
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -633,7 +633,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		 */
 		@Test
 		void insertSelect_cycleIsDirect_withAssociationTable_1Parent_2Children() {
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -663,7 +663,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::getFather);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -700,7 +700,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.addOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
 						.reverselySetBy(Person::setDirectNeighboor);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -809,7 +809,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.addOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
 						.mappedBy(Person::setDirectNeighboor);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -918,7 +918,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.addOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::setDirectNeighboor);
 			
-			IEntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();

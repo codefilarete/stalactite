@@ -18,7 +18,7 @@ public interface PersisterRegistry {
 	 * @return null if class has no persister registered
 	 * @throws IllegalArgumentException if the class is not mapped
 	 */
-	<C, I> IEntityPersister<C, I> getPersister(Class<C> clazz);
+	<C, I> EntityPersister<C, I> getPersister(Class<C> clazz);
 	
 	/**
 	 * Registers a {@link Persister} on this instance. May overwrite an existing one
@@ -26,6 +26,6 @@ public interface PersisterRegistry {
 	 * @param persister any {@link Persister}
 	 * @param <C> type of persisted bean
 	 */
-	<C> void addPersister(IEntityPersister<C, ?> persister);
+	<C> void addPersister(EntityPersister<C, ?> persister);
 	
 }

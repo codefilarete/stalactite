@@ -28,7 +28,7 @@ import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.EnumOptions;
-import org.gama.stalactite.persistence.engine.IFluentEmbeddableMappingBuilder;
+import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder;
 import org.gama.stalactite.persistence.engine.ImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.PropertyOptions;
 import org.gama.stalactite.persistence.structure.Column;
@@ -38,7 +38,7 @@ import org.gama.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
 /**
  * @author Guillaume Mary
  */
-public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller,
+public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller,
 		EmbeddableMappingConfiguration<C> {
 	
 	private EmbeddableMappingConfigurationProvider<? super C> superMappingBuilder;
@@ -122,7 +122,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	
 	/**
 	 * Gives access to currently configured {@link Inset}. Made so one can access features of {@link Inset} which are wider than
-	 * the one available through {@link IFluentEmbeddableMappingBuilder}.
+	 * the one available through {@link FluentEmbeddableMappingBuilder}.
 	 * 
 	 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction, EmbeddableMappingConfigurationProvider)}
 	 * or {@link #newInset(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
@@ -142,26 +142,26 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter) {
 		return addPropertyOptions(addMapping(setter, null));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter) {
 		return addPropertyOptions(addMapping(getter, null));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName) {
 		return addPropertyOptions(addMapping(setter, columnName));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName) {
 		return addPropertyOptions(addMapping(getter, columnName));
 	}
 	
-	IFluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(AbstractLinkage<C> linkage) {
+	FluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(AbstractLinkage<C> linkage) {
 		return new MethodReferenceDispatcher()
 				.redirect(PropertyOptions.class, new PropertyOptions() {
 					@Override
@@ -177,7 +177,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) IFluentEmbeddableMappingBuilderPropertyOptions.class);
+				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
@@ -201,30 +201,30 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter) {
 		AbstractLinkage<C> linkage = addMapping(setter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter) {
 		AbstractLinkage<C> linkage = addMapping(getter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
 		AbstractLinkage<C> linkage = addMapping(setter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> IFluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName) {
 		AbstractLinkage<C> linkage = addMapping(getter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
-	IFluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(AbstractLinkage<C> linkage) {
+	FluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(AbstractLinkage<C> linkage) {
 		return new MethodReferenceDispatcher()
 				.redirect(EnumOptions.class, new EnumOptions() {
 					
@@ -257,38 +257,38 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentEmbeddableMappingBuilderEnumOptions<C>>) (Class) IFluentEmbeddableMappingBuilderEnumOptions.class);
+				.build((Class<FluentEmbeddableMappingBuilderEnumOptions<C>>) (Class) FluentEmbeddableMappingBuilderEnumOptions.class);
 	}
 	
 	@Override
-	public IFluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration) {
+	public FluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration) {
 		this.superMappingBuilder = superMappingConfiguration;
 		return this;
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
-																											 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
+	public <O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
+																											EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return addImportedInset(newInset(getter, embeddableMappingBuilder));
 	}
 	
 	@Override
-	public <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
-																											 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
+	public <O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
+																											EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
 		return addImportedInset(newInset(setter, embeddableMappingBuilder));
 	}
 	
-	private <O> IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
+	private <O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
 		insets.add(inset);
 		return new MethodReferenceDispatcher()
 				// Why capturing overrideName(AccessorChain, String) this way ? (I mean with the "one method" capture instead of the usual "interface methods capture")
 				// Because of ... lazyness ;) : "interface method capture" (such as done with ImportedEmbedOptions) would have required a dedicated
 				// interface (inheriting from ImportedEmbedOptions) to define overrideName(AccessorChain, String)
-				.redirect((SerializableTriFunction<IFluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableFunction, String, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-						IFluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
+				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableFunction, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
+						FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
 						(BiConsumer<SerializableFunction, String>) inset::overrideName)
-				.redirect((SerializableTriFunction<IFluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, IFluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-						IFluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
+				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
+						FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
 						(BiConsumer<SerializableBiConsumer, String>) inset::overrideName)
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
@@ -318,7 +318,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements IFluentEm
 					
 				}, true)
 				.fallbackOn(this)
-				.build((Class<IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>>) (Class) IFluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions.class);
+				.build((Class<FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>>) (Class) FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions.class);
 	}
 	
 	/**

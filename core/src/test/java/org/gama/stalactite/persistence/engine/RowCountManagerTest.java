@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
-import org.gama.stalactite.persistence.mapping.IMappingStrategy.UpwhereColumn;
+import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;

@@ -20,11 +20,11 @@ import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.reflection.ValueAccessPointMap;
-import org.gama.stalactite.persistence.engine.IEntityPersister.EntityCriteria;
+import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;
@@ -46,17 +46,17 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	/** Root of the property-mapping graph representation. Must be constructed with {@link #registerRelation(ValueAccessPoint, ClassMappingStrategy)} */
 	private final EntityGraphNode rootConfiguration;
 	
-	public <O> EntityCriteriaSupport(IEntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(EntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, getter, operator);
 	}
 	
-	public <O> EntityCriteriaSupport(IEntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(EntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, setter, operator);
 	}
 	
-	public EntityCriteriaSupport(IEntityMappingStrategy<C, ?, ?> mappingStrategy) {
+	public EntityCriteriaSupport(EntityMappingStrategy<C, ?, ?> mappingStrategy) {
 		this.rootConfiguration = new EntityGraphNode(mappingStrategy);
 	}
 	
@@ -152,7 +152,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		private final Map<ValueAccessPoint, EntityGraphNode> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
-		EntityGraphNode(IEntityMappingStrategy<?, ?, ?> mappingStrategy) {
+		EntityGraphNode(EntityMappingStrategy<?, ?, ?> mappingStrategy) {
 			propertyToColumn.putAll(mappingStrategy.getPropertyToColumn());
 			// we add the identifier and primary key because they are not in the property mapping 
 			IdMappingStrategy<?, ?> idMappingStrategy = mappingStrategy.getIdMappingStrategy();
@@ -174,7 +174,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		 * @param mappingStrategy a {@link ClassMappingStrategy}
 		 * @return a new {@link EntityGraphNode} containing
 		 */
-		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, IEntityMappingStrategy<?, ?, ?> mappingStrategy) {
+		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, EntityMappingStrategy<?, ?, ?> mappingStrategy) {
 			EntityGraphNode graphNode = new EntityGraphNode(mappingStrategy);
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information

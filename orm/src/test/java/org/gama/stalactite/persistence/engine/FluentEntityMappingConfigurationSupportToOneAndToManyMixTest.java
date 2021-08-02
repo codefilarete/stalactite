@@ -9,12 +9,12 @@ import java.util.List;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.IFluentEntityMappingBuilder.IFluentMappingBuilderPropertyOptions;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
 import org.gama.stalactite.persistence.engine.model.State;
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -41,8 +41,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	private final HSQLDBDialect dialect = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
-	private IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingConfiguration;
-	private IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingConfiguration;
+	private FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingConfiguration;
+	private FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingConfiguration;
 	
 	@BeforeEach
 	public void initTest() {
@@ -51,13 +51,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
 		
-		IFluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
+		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Person::getName);
 		personMappingConfiguration = personMappingBuilder;
 		
-		IFluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
+		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class,
 				Identifier.LONG_TYPE)
 				.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(City::getName);
@@ -67,7 +67,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	@Test
 	void foreignKeyIsCreated() throws SQLException {
 		// mapping building thanks to fluent API
-		IConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
+		ConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -83,7 +83,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		
 		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				((IConfiguredPersister) persistenceContext.getPersister(Person.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(
@@ -116,7 +116,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	@Test
 	public void testCascade_oneToOneAndOneToMany_CRUD() {
 		// mapping building thanks to fluent API
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
@@ -166,12 +166,12 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	public void testCascade_SetSetMix_update() {
-		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
+		FluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
 				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName);
 		
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)
@@ -239,12 +239,12 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	public void testCascade_ListSetMix_listContainsDuplicate_CRUD() {
-		IFluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
+		FluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class,
 				Identifier.LONG_TYPE)
 				.add(State::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(State::getName);
 		
-		IEntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription)

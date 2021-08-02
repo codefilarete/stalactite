@@ -22,9 +22,9 @@ import org.gama.lang.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IRowTransformer;
-import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.RowTransformer;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -82,7 +82,7 @@ public class EntityJoinTree<C, I> {
 	 * @param <T2> joined right table
 	 * @param <ID> type of joined values
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
-	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link IRowTransformer}
+	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
 	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
@@ -116,7 +116,7 @@ public class EntityJoinTree<C, I> {
 	 * @param <T2> joined right table
 	 * @param <ID> type of joined values
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
-	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link IRowTransformer}
+	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
 	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
@@ -157,7 +157,7 @@ public class EntityJoinTree<C, I> {
 	 * @param <ID> type of joined values
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}.
 	 * 						Right table data will be merged with this "root".
-	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link IRowTransformer}
+	 * @param inflater the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
 	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
@@ -520,13 +520,13 @@ public class EntityJoinTree<C, I> {
 		
 		I giveIdentifier(Row row, ColumnedRow columnedRow);
 		
-		IRowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
+		RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
 		
 		Set<Column<T, Object>> getSelectableColumns();
 		
 		/**
-		 * Adapter of a {@link IEntityMappingStrategy} as a {@link EntityInflater}.
-		 * Implemented as a simple wrapper of a {@link IEntityMappingStrategy} because methods are very close.
+		 * Adapter of a {@link EntityMappingStrategy} as a {@link EntityInflater}.
+		 * Implemented as a simple wrapper of a {@link EntityMappingStrategy} because methods are very close.
 		 * 
 		 * @param <E> entity type
 		 * @param <I> identifier type
@@ -534,9 +534,9 @@ public class EntityJoinTree<C, I> {
 		 */
 		class EntityMappingStrategyAdapter<E, I, T extends Table> implements EntityInflater<E, I, T> {
 			
-			private final IEntityMappingStrategy<E, I, T> delegate;
+			private final EntityMappingStrategy<E, I, T> delegate;
 			
-			public EntityMappingStrategyAdapter(IEntityMappingStrategy<E, I, T> delegate) {
+			public EntityMappingStrategyAdapter(EntityMappingStrategy<E, I, T> delegate) {
 				this.delegate = delegate;
 			}
 			
@@ -551,7 +551,7 @@ public class EntityJoinTree<C, I> {
 			}
 			
 			@Override
-			public IRowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
+			public RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
 				return this.delegate.copyTransformerWithAliases(columnedRow);
 			}
 			
@@ -571,27 +571,27 @@ public class EntityJoinTree<C, I> {
 	 */
 	public interface EntityMerger<E, T extends Table> {
 		
-		IRowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
+		RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
 		
 		Set<Column<T, Object>> getSelectableColumns();
 		
 		/**
-		 * Adapter of a {@link IEntityMappingStrategy} as a {@link EntityMerger}.
-		 * Implemented as a simple wrapper of a {@link IEntityMappingStrategy} because methods are very close.
+		 * Adapter of a {@link EntityMappingStrategy} as a {@link EntityMerger}.
+		 * Implemented as a simple wrapper of a {@link EntityMappingStrategy} because methods are very close.
 		 *
 		 * @param <E> entity type
 		 * @param <T> table type
 		 */
 		class EntityMergerAdapter<E, T extends Table> implements EntityMerger<E, T> {
 			
-			private final IEntityMappingStrategy<E, ?, T> delegate;
+			private final EntityMappingStrategy<E, ?, T> delegate;
 			
-			public EntityMergerAdapter(IEntityMappingStrategy<E, ?, T> delegate) {
+			public EntityMergerAdapter(EntityMappingStrategy<E, ?, T> delegate) {
 				this.delegate = delegate;
 			}
 			
 			@Override
-			public IRowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
+			public RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
 				return delegate.copyTransformerWithAliases(columnedRow);
 			}
 			

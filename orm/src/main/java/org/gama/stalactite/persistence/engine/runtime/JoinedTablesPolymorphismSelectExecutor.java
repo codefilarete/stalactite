@@ -11,7 +11,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -31,17 +31,17 @@ import static org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelation
 /**
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> implements ISelectExecutor<C, I> {
+public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> implements SelectExecutor<C, I> {
 	
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
-	private final Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors;
+	private final Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors;
 	private final T mainTable;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
 	public JoinedTablesPolymorphismSelectExecutor(
 			Map<Class<? extends C>, Table> tablePerSubEntity,
-			Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors,
+			Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			Dialect dialect

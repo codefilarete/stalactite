@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 
 /**
@@ -19,9 +19,9 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener;
  */
 public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements UpdateListener<TRIGGER> {
 	
-	private final IEntityPersister<TARGET, ?> persister;
+	private final EntityPersister<TARGET, ?> persister;
 	
-	public AfterUpdateCollectionCascader(IEntityPersister<TARGET, ?> persister) {
+	public AfterUpdateCollectionCascader(EntityPersister<TARGET, ?> persister) {
 		this.persister = persister;
 		this.persister.addUpdateListener(new UpdateListener<TARGET>() {
 			@Override
@@ -31,7 +31,7 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 		});
 	}
 	
-	public IEntityPersister<TARGET, ?> getPersister() {
+	public EntityPersister<TARGET, ?> getPersister() {
 		return persister;
 	}
 	

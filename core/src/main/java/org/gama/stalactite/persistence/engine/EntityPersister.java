@@ -16,13 +16,13 @@ import org.gama.lang.Experimental;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
-import org.gama.stalactite.persistence.engine.listening.IPersisterListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * @author Guillaume Mary
  */
-public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecutor<C>, ISelectExecutor<C, I>, IDeleteExecutor<C, I>, IPersisterListener<C, I> {
+public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor<C>, SelectExecutor<C, I>, DeleteExecutor<C, I>, PersisterListener<C, I> {
 	
 	/**
 	 * Persists an instance either it is already persisted or not (insert or update).
@@ -47,9 +47,9 @@ public interface IEntityPersister<C, I> extends IInsertExecutor<C>, IUpdateExecu
 	
 	static <C, I> int persist(Iterable<? extends C> entities,
 							   Predicate<C> isNewProvider,
-							   ISelectExecutor<C, I> selector,
-							   IUpdateExecutor<C> updater,
-							   IInsertExecutor<C> inserter,
+							   SelectExecutor<C, I> selector,
+							   UpdateExecutor<C> updater,
+							   InsertExecutor<C> inserter,
 							   Function<C, I> idProvider) {
 		if (Iterables.isEmpty(entities)) {
 			return 0;

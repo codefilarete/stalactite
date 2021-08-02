@@ -17,9 +17,9 @@ import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.engine.runtime.UpdateExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -46,10 +46,10 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		
-		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(IConnectionConfiguration.class)) {
+		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(ConnectionConfiguration.class)) {
 			
 			@Override
-			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(IEntityMappingStrategy<Tata, Long, T> mappingStrategy, IConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int inOperatorMaxSize) {
+			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(EntityMappingStrategy<Tata, Long, T> mappingStrategy, ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int inOperatorMaxSize) {
 				return new UpdateExecutor<Tata, Long, T>(mappingStrategy, connectionConfiguration, dmlGenerator,
 						writeOperationRetryer, inOperatorMaxSize) {
 					

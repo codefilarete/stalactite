@@ -13,7 +13,7 @@ import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions;
 import org.gama.lang.trace.ModifiableInt;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
@@ -33,10 +33,10 @@ import org.gama.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> implements ISelectExecutor<C, I> {
+public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> implements SelectExecutor<C, I> {
 	
 	private final Map<Class, Table> tablePerSubEntity;
-	private final Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors;
+	private final Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors;
 	private final ConnectionProvider connectionProvider;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final Table mainTable;
@@ -62,7 +62,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 	
 	public TablePerClassPolymorphicSelectExecutor(
 			Map<Class, Table> tablePerSubEntity,
-			Map<Class<? extends C>, ISelectExecutor<C, I>> subEntitiesSelectors,
+			Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			ColumnBinderRegistry columnBinderRegistry

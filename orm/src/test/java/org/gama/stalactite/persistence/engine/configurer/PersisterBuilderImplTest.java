@@ -27,8 +27,8 @@ import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
@@ -44,7 +44,7 @@ import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
@@ -535,7 +535,7 @@ public class PersisterBuilderImplTest {
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
 		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
-		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
 		entity.setColor(new Color(123));
@@ -568,7 +568,7 @@ public class PersisterBuilderImplTest {
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
 		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
-		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
 		entity.setColor(new Color(123));
@@ -603,7 +603,7 @@ public class PersisterBuilderImplTest {
 		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
 		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptyIterator()));
 		
-		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
 		entity.setColor(new Color(123));
@@ -657,7 +657,7 @@ public class PersisterBuilderImplTest {
 				.add("Car_id", 1L)
 				.add("Car_model", "Renault"))));
 		
-		IEntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		
@@ -693,7 +693,7 @@ public class PersisterBuilderImplTest {
 								.add(Timestamp::getModificationDate))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		assertThatThrownBy(() -> result.persist(new Vehicle(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
@@ -726,7 +726,7 @@ public class PersisterBuilderImplTest {
 							.addSubClass(subentityBuilder(Vehicle.class, Identifier.class)))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		assertThatThrownBy(() -> result.persist(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
@@ -759,7 +759,7 @@ public class PersisterBuilderImplTest {
 								.addSubClass(subentityBuilder(Vehicle.class, Identifier.class), "Vehicle"))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		IEntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		assertThatThrownBy(() -> result.persist(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");

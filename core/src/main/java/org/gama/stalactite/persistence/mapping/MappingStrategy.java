@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 import org.gama.reflection.IReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
-import org.gama.stalactite.persistence.mapping.IRowTransformer.TransformerListener;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -20,7 +20,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public interface IMappingStrategy<C, T extends Table> {
+public interface MappingStrategy<C, T extends Table> {
 	
 	/**
 	 * Returns columns that must be inserted
@@ -65,7 +65,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * It is not expected to use it to tamper with the value of a mapped property, even this is not forbidden and may work, it is not guaranteed to
 	 * be a feature.
 	 * 
-	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
+	 * This method might have no purpose for many classes implementing {@link MappingStrategy}.
 	 * 
 	 * @param valueProvider the column value provider
 	 * @param <O> Java type of the column value 
@@ -83,7 +83,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * It is not expected to use it to tamper with the value of a mapped property, even this is not forbidden and may work, it is not guaranteed to
 	 * be a feature.
 	 * 
-	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
+	 * This method might have no purpose for many classes implementing {@link MappingStrategy}.
 	 *
 	 * @param valueProvider the column value provider
 	 * @param <O> Java type of the column value 
@@ -95,7 +95,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	/**
 	 * Adds a column to select. This column is not expected to be already mapped to a bean property of the &lt;T&gt; class.
 	 *
-	 * This method might have no purpose for many classes implementing {@link IMappingStrategy}.
+	 * This method might have no purpose for many classes implementing {@link MappingStrategy}.
 	 *
 	 * @param column the column to be read
 	 * @param <O> Java type of the column value 
@@ -227,7 +227,7 @@ public interface IMappingStrategy<C, T extends Table> {
 	 * <br/>
 	 * An instance may reject to provide a value in some circumstances by overriding {@link #accept(Object)} (which returns true by default).
 	 * 
-	 * Reader my be interested in getting {@link Column} value in select phase, then he may use {@link IMappingStrategy#addShadowColumnSelect(Column)}
+	 * Reader my be interested in getting {@link Column} value in select phase, then he may use {@link MappingStrategy#addShadowColumnSelect(Column)}
 	 * 
 	 * @param <C> bean type to read value from
 	 * @param <V> value type

@@ -17,7 +17,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.Re
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IRowTransformer;
+import org.gama.stalactite.persistence.mapping.RowTransformer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -57,7 +57,7 @@ class EntityTreeInflaterTest {
 		// these lines are needed to trigger "main bean instance" creation
 		when(leftEntityInflater.giveIdentifier(any(), any())).thenReturn(42);
 		when(leftEntityInflater.getEntityType()).thenReturn(Object.class);
-		IRowTransformer rightEntityBuilder = mock(IRowTransformer.class);
+		RowTransformer rightEntityBuilder = mock(RowTransformer.class);
 		when(rightEntityBuilder.transform(any())).thenReturn(new Object());
 		when(leftEntityInflater.copyTransformerWithAliases(any(ColumnedRow.class))).thenReturn(rightEntityBuilder);
 		
@@ -71,7 +71,7 @@ class EntityTreeInflaterTest {
 		// we create a last inflater to be related with the intermediary one (the right one),
 		// but we'll expect none of its method to be invoked
 		EntityInflater rightMostEntityInflater = Mockito.mock(EntityInflater.class);
-		IRowTransformer rightMostRowTransformerMock = mock(IRowTransformer.class);
+		RowTransformer rightMostRowTransformerMock = mock(RowTransformer.class);
 		when(rightMostEntityInflater.copyTransformerWithAliases(any(ColumnedRow.class))).thenReturn(rightMostRowTransformerMock);
 		
 		// composing entity tree : leftInflater gets a relation on rightInflater

@@ -7,8 +7,9 @@ import java.util.stream.Stream;
 
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IEntityPersister;
+import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 
 /**
  * Cascader for insert, written for one-to-many style of cascade where Target owns the relationship to Trigger
@@ -19,14 +20,14 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
  */
 public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements InsertListener<TRIGGER> {
 	
-	private final IEntityPersister<TARGET, ?> persister;
+	private final EntityPersister<TARGET, ?> persister;
 	
 	/**
-	 * Simple constructor. Created instance must be added to PersisterListener afterward.
+	 * Simple constructor. Created instance must be added to {@link PersisterListenerCollection} afterward.
 	 *
 	 * @param persister
 	 */
-	public AfterInsertCollectionCascader(IEntityPersister<TARGET, ?> persister) {
+	public AfterInsertCollectionCascader(EntityPersister<TARGET, ?> persister) {
 		this.persister = persister;
 		this.persister.addInsertListener(new InsertListener<TARGET>() {
 			@Override
@@ -36,7 +37,7 @@ public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements 
 		});
 	}
 	
-	public IEntityPersister<TARGET, ?> getPersister() {
+	public EntityPersister<TARGET, ?> getPersister() {
 		return persister;
 	}
 	

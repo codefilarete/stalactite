@@ -21,14 +21,14 @@ import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.gama.stalactite.persistence.engine.runtime.IEntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPolymorphicPersister;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
@@ -46,7 +46,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 	
 	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C> polymorphismPolicy,
 									Identification identification,
-									IEntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+									EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 									ColumnBinderRegistry columnBinderRegistry,
 									ColumnNameProvider columnNameProvider,
 									TableNamingStrategy tableNamingStrategy,
@@ -63,12 +63,12 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 	}
 	
 	@Override
-	public IEntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, IConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<? extends C>, IEntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
+	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		for (SubEntityMappingConfiguration<? extends C> subConfiguration : joinedTablesPolymorphism.getSubClasses()) {
-			IEntityConfiguredJoinedTablesPersister<? extends C, I> subclassPersister;
+			EntityConfiguredJoinedTablesPersister<? extends C, I> subclassPersister;
 			
 			// first we'll use table of columns defined in embedded override
 			// then the one defined by inheritance
@@ -108,7 +108,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 					new EntityMergerAdapter<C, Table>(mainPersister.getMappingStrategy()),
 					subEntityPrimaryKey, entityPrimaryKey);
 			
-			persisterPerSubclass.put(subConfiguration.getEntityType(), (IEntityConfiguredJoinedTablesPersister<C, I>) subclassPersister);
+			persisterPerSubclass.put(subConfiguration.getEntityType(), (EntityConfiguredJoinedTablesPersister<C, I>) subclassPersister);
 		}
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);

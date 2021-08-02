@@ -94,7 +94,7 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	/**
 	 * Allows to change the mapping used by this instance to a new one. A new instance is returned that will read keys according to the given
 	 * "sliding" function.
-	 * Helpfull to reuse a {@link IRowTransformer} over multiple queries which different column aliases.
+	 * Helpfull to reuse a {@link RowTransformer} over multiple queries which different column aliases.
 	 * 
 	 * @param columnedRow a wrapper that gives {@link Row} values by {@link Column}.
 	 * @return a new instance of {@link ToBeanRowTransformer} which read keys are those given by the function

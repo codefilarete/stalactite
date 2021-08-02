@@ -12,7 +12,7 @@ import java.util.function.Function;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.ISelectExecutor;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 
 /**
@@ -51,8 +51,8 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 	 * @param <TRGTID> target identifier type
 	 */
 	private <TRGTID> void selectTargetEntities(Iterable<? extends SRC> sourceEntities) {
-		Map<ISelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
-		Map<ISelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
+		Map<SelectExecutor<TRGT, TRGTID>, Set<TRGTID>> selectsToExecute = new HashMap<>();
+		Map<SelectExecutor<TRGT, TRGTID>, Function<TRGT, TRGTID>> idAccessors = new HashMap<>();
 		Map<SRC, Set<TRGTID>> targetIdPerSource = new HashMap<>();
 		Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = ((Queue<Set<RelationIds<SRC, TRGT, TRGTID>>>) (Queue) relationIdsHolder.get()).poll();
 		// we remove null targetIds (Target Ids may be null if relation is nullified) because
@@ -66,7 +66,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 		});
 		
 		// we load target entities from their ids, and map them per their loader
-		Map<ISelectExecutor, List<TRGT>> targetsPerSelector = new HashMap<>();
+		Map<SelectExecutor, List<TRGT>> targetsPerSelector = new HashMap<>();
 		selectsToExecute.forEach((selectExecutor, ids) -> targetsPerSelector.put(selectExecutor, selectExecutor.select(ids)));
 		// then we apply them onto their source entities, to remember which target applies to which source, we use target id
 		Map<TRGTID, TRGT> targetPerId = new HashMap<>();

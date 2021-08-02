@@ -9,13 +9,12 @@ import java.util.Set;
 import org.gama.lang.Retryer;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.IDeleteExecutor;
 import org.gama.stalactite.persistence.engine.RowCountManager;
 import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.structure.Column;
@@ -29,13 +28,13 @@ import org.gama.stalactite.sql.dml.WriteOperation;
  * 
  * @author Guillaume Mary
  */
-public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements IDeleteExecutor<C, I> {
+public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.gama.stalactite.persistence.engine.DeleteExecutor<C, I> {
 	
 	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public DeleteExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy, IConnectionConfiguration connectionConfiguration,
+	public DeleteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
 						  int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);

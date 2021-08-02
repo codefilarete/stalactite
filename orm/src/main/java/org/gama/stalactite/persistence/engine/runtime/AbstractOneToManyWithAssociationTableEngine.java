@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCasca
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
@@ -28,7 +28,7 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssocia
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.sql.dml.PreparedSQL;
@@ -44,16 +44,16 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected final AssociationRecordPersister<R, T> associationPersister;
 	
-	protected final PersisterListener<SRC, SRCID> persisterListener;
+	protected final PersisterListenerCollection<SRC, SRCID> persisterListener;
 	
-	protected final IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	protected final ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
 	
-	protected final IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
+	protected final EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
-	public AbstractOneToManyWithAssociationTableEngine(IConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-													   IEntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public AbstractOneToManyWithAssociationTableEngine(ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+													   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister) {
 		this.sourcePersister = sourcePersister;
@@ -67,7 +67,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		return manyRelationDescriptor;
 	}
 	
-	public void addSelectCascade(IEntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
+	public void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		
 		// we join on the association table and add bean association in memory
 		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
@@ -248,8 +248,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected abstract AfterInsertCollectionCascader<SRC, R> newRecordInsertionCascader(Function<SRC, C> collectionGetter,
 																						AssociationRecordPersister<R, T> associationPersister,
-																						IEntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-																						IEntityMappingStrategy<TRGT, TRGTID, ?> strategy);
+																						EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
+																						EntityMappingStrategy<TRGT, TRGTID, ?> strategy);
 	
 	protected abstract R newRecord(SRC e, TRGT target, int index);
 	

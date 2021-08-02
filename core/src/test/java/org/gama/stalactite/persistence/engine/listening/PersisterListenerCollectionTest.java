@@ -21,11 +21,11 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Guillaume Mary
  */
-public class PersisterListenerTest {
+public class PersisterListenerCollectionTest {
 	
 	@Test
 	public void doWithSelectListener() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		SelectListener listenerMock = mock(SelectListener.class);
 		testInstance.addSelectListener(listenerMock);
 		
@@ -39,7 +39,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithSelectListener_onError() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		SelectListener listenerMock = mock(SelectListener.class);
 		testInstance.addSelectListener(listenerMock);
 		
@@ -56,7 +56,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithInsertListener() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		InsertListener listenerMock = mock(InsertListener.class);
 		testInstance.addInsertListener(listenerMock);
 		
@@ -70,7 +70,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithInsertListener_onError() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		InsertListener listenerMock = mock(InsertListener.class);
 		testInstance.addInsertListener(listenerMock);
 		
@@ -87,7 +87,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithUpdateListener() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		UpdateListener listenerMock = mock(UpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
@@ -102,7 +102,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithUpdateListener_onError() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		UpdateListener listenerMock = mock(UpdateListener.class);
 		testInstance.addUpdateListener(listenerMock);
 		
@@ -119,7 +119,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithUpdateByIdListener() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		UpdateByIdListener listenerMock = mock(UpdateByIdListener.class);
 		testInstance.addUpdateByIdListener(listenerMock);
 		
@@ -133,7 +133,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithUpdateByIdListener_onError() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		UpdateByIdListener listenerMock = mock(UpdateByIdListener.class);
 		testInstance.addUpdateByIdListener(listenerMock);
 		
@@ -150,7 +150,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithDeleteListener() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		DeleteListener listenerMock = mock(DeleteListener.class);
 		testInstance.addDeleteListener(listenerMock);
 		
@@ -164,7 +164,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithDeleteListener_onError() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		DeleteListener listenerMock = mock(DeleteListener.class);
 		testInstance.addDeleteListener(listenerMock);
 		
@@ -181,7 +181,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithDeleteByIdListener() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		DeleteByIdListener listenerMock = mock(DeleteByIdListener.class);
 		testInstance.addDeleteByIdListener(listenerMock);
 		
@@ -195,7 +195,7 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void doWithDeleteByIdListener_onError() {
-		PersisterListener testInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		DeleteByIdListener listenerMock = mock(DeleteByIdListener.class);
 		testInstance.addDeleteByIdListener(listenerMock);
 		
@@ -212,8 +212,8 @@ public class PersisterListenerTest {
 	
 	@Test
 	public void moveTo() {
-		PersisterListener testInstance = new PersisterListener();
-		PersisterListener targetInstance = new PersisterListener();
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
+		PersisterListenerCollection targetInstance = new PersisterListenerCollection();
 		
 		InsertListener expectedInsertListener = Mockito.mock(InsertListener.class);
 		UpdateListener expectedUpdateListener = Mockito.mock(UpdateListener.class);

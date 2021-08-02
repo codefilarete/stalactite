@@ -14,7 +14,7 @@ import org.gama.stalactite.sql.result.Row;
  *
  * @author Guillaume Mary
  */
-public abstract class AbstractTransformer<C> implements IRowTransformer<C> {
+public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	
 	protected final Function<Function<Column, Object>, C> beanFactory;
 	

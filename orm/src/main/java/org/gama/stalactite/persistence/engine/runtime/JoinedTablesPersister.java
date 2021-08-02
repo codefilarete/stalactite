@@ -17,7 +17,7 @@ import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
@@ -26,13 +26,13 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.Entity
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IEntityMappingStrategy;
+import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
+import org.gama.stalactite.persistence.query.EntityGraphSelectExecutor;
 import org.gama.stalactite.persistence.query.EntitySelectExecutor;
-import org.gama.stalactite.persistence.query.IEntitySelectExecutor;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.IConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
@@ -60,11 +60,11 @@ import static java.util.Collections.emptyList;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConfiguredJoinedTablesPersister<C, I> {
+public class JoinedTablesPersister<C, I, T extends Table> implements EntityConfiguredJoinedTablesPersister<C, I> {
 	
 	private final Persister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
-	private final IEntitySelectExecutor<C> entitySelectExecutor;
+	private final EntitySelectExecutor<C> entitySelectExecutor;
 	/** Support for defining Entity criteria on {@link #newWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingStrategyTreeSelectExecutor<C, I, T> selectGraphExecutor;
@@ -74,22 +74,22 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	}
 	
 	public JoinedTablesPersister(ClassMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect,
-								 IConnectionConfiguration connectionConfiguration) {
+								 ConnectionConfiguration connectionConfiguration) {
 		this.persister = new Persister<>(mainMappingStrategy, dialect, connectionConfiguration);
 		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
 		this.selectGraphExecutor = newSelectExecutor(mainMappingStrategy, connectionConfiguration.getConnectionProvider(), dialect);
 		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
 	}
 	
-	protected EntityMappingStrategyTreeSelectExecutor<C, I, T> newSelectExecutor(IEntityMappingStrategy<C, I, T> mappingStrategy,
+	protected EntityMappingStrategyTreeSelectExecutor<C, I, T> newSelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
 																				 ConnectionProvider connectionProvider,
 																				 Dialect dialect) {
 		return new EntityMappingStrategyTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
-	protected IEntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
-		return new EntitySelectExecutor<>(
-				getEntityMappingStrategyTreeSelectExecutor().getEntityJoinTree(),
+	protected EntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
+		return new EntityGraphSelectExecutor<>(
+				getEntityJoinTree(),
 				persister.getConnectionProvider(),
 				dialect.getColumnBinderRegistry());
 	}
@@ -148,7 +148,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	}
 	
 	@Override
-	public IEntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
 		return persister.getMappingStrategy();
 	}
 	
@@ -158,7 +158,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements IEntityConf
 	}
 	
 	@Override
-	public PersisterListener<C, I> getPersisterListener() {
+	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return persister.getPersisterListener();
 	}
 	

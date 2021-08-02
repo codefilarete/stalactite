@@ -8,7 +8,7 @@ import org.gama.stalactite.persistence.structure.Table;
  * Contract for configuring embedded object
  * 
  * @author Guillaume Mary
- * @see IFluentEmbeddableMappingConfiguration#embed(SerializableFunction, EmbeddableMappingConfigurationProvider)  
+ * @see FluentEmbeddableMappingConfiguration#embed(SerializableFunction, EmbeddableMappingConfigurationProvider)  
  */
 public interface EmbedOptions<C> {
 	

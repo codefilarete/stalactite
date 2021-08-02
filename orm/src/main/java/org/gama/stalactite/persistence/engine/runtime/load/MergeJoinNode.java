@@ -7,7 +7,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.Entity
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IRowTransformer;
+import org.gama.stalactite.persistence.mapping.RowTransformer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -47,9 +47,9 @@ class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJo
 	 */
 	static class MergeJoinRowConsumer<C> implements JoinRowConsumer {
 		
-		private final IRowTransformer<C> merger;
+		private final RowTransformer<C> merger;
 		
-		public MergeJoinRowConsumer(IRowTransformer<C> merger) {
+		public MergeJoinRowConsumer(RowTransformer<C> merger) {
 			this.merger = merger;
 		}
 		

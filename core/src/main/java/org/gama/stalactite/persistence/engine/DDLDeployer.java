@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.gama.stalactite.persistence.engine.runtime.IConfiguredPersister;
+import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
@@ -37,7 +37,7 @@ public class DDLDeployer {
 	 */
 	public static Collection<Table> collectTables(PersistenceContext persistenceContext) {
 		List<Table> result = new ArrayList<>(20);
-		persistenceContext.getPersisters().forEach(p -> result.addAll(((IConfiguredPersister) p).giveImpliedTables()));
+		persistenceContext.getPersisters().forEach(p -> result.addAll(((ConfiguredPersister) p).giveImpliedTables()));
 		return result;
 	}
 	
