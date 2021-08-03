@@ -45,9 +45,9 @@ import static java.util.Collections.emptyList;
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by the
- * {@link ClassMappingStrategy} passed to constructor and then it can be added to some other {@link IJoinedTablesPersister} thanks to
- * {@link IJoinedTablesPersister#joinAsMany(IJoinedTablesPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean)} and
- * {@link IJoinedTablesPersister#joinAsOne(IJoinedTablesPersister, Column, Column, String, BeanRelationFixer, boolean)}.
+ * {@link ClassMappingStrategy} passed to constructor and then it can be added to some other {@link RelationalEntityPersister} thanks to
+ * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean)} and
+ * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Column, Column, String, BeanRelationFixer, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
  * entity loading.
@@ -248,7 +248,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements EntityConfi
 	 * @return created join name
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																				  Column<T1, JID> leftColumn,
 																				  Column<T2, JID> rightColumn,
 																				  String rightTableAlias,
@@ -278,7 +278,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements EntityConfi
 	 * Implementation for simple one-to-many cases : we add our joins to given persister
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																				  Column<T1, ID> leftColumn,
 																				  Column<T2, ID> rightColumn,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,

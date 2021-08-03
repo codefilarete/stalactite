@@ -21,9 +21,11 @@ import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.sql.result.Row;
 
 /**
+ * Contract to allow joining a persister with another for entities with relation.
+ * 
  * @author Guillaume Mary
  */
-public interface IJoinedTablesPersister<C, I> {
+public interface RelationalEntityPersister<C, I> {
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
@@ -41,7 +43,7 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
-	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																		   Column<T1, JID> leftColumn,
 																		   Column<T2, JID> rightColumn,
 																		   String rightTableAlias,
@@ -64,13 +66,13 @@ public interface IJoinedTablesPersister<C, I> {
 	 * 					not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 */
-	default <SRC, T1 extends Table, T2 extends Table, SRCID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																	 Column<T1, ?> leftColumn,
-																	 Column<T2, ?> rightColumn,
-																	 BeanRelationFixer<SRC, C> beanRelationFixer,
-																	 @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																	 String joinName,
-																	 boolean optional) {
+	default <SRC, T1 extends Table, T2 extends Table, SRCID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																			   Column<T1, ?> leftColumn,
+																			   Column<T2, ?> rightColumn,
+																			   BeanRelationFixer<SRC, C> beanRelationFixer,
+																			   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																			   String joinName,
+																			   boolean optional) {
 		return joinAsMany(sourcePersister, (Column) leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider, joinName, optional, Collections.emptySet());
 	}
 	
@@ -91,14 +93,14 @@ public interface IJoinedTablesPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param selectableColumns columns to be added to SQL select clause
 	 */
-	<SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																	   Column<T1, ID> leftColumn,
-																	   Column<T2, ID> rightColumn,
-																	   BeanRelationFixer<SRC, C> beanRelationFixer,
-																	   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																	   String joinName,
-																	   boolean optional,
-																	   Set<Column<T2, ?>> selectableColumns);
+	<SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																		   Column<T1, ID> leftColumn,
+																		   Column<T2, ID> rightColumn,
+																		   BeanRelationFixer<SRC, C> beanRelationFixer,
+																		   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																		   String joinName,
+																		   boolean optional,
+																		   Set<Column<T2, ?>> selectableColumns);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();
 	

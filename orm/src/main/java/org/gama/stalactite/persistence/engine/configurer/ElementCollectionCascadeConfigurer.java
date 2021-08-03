@@ -29,7 +29,7 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Lin
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.IJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.RelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.runtime.CollectionUpdater;
@@ -217,7 +217,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	}
 	
 	private <T extends Table> void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-													IJoinedTablesPersister<ElementRecord, ElementRecord> elementRecordPersister,
+													RelationalEntityPersister<ElementRecord, ElementRecord> elementRecordPersister,
 													Column sourcePK,
 													Column elementRecordToSourceForeignKey,
 													BiConsumer<SRC, C> collectionSetter,

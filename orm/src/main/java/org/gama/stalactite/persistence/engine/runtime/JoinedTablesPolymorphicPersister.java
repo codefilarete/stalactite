@@ -380,7 +380,7 @@ public class JoinedTablesPolymorphicPersister<C, I> implements EntityConfiguredJ
 	 * @return created join name
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																				  Column<T1, JID> leftColumn,
 																				  Column<T2, JID> rightColumn,
 																				  String rightTableAlias,
@@ -410,14 +410,14 @@ public class JoinedTablesPolymorphicPersister<C, I> implements EntityConfiguredJ
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(IJoinedTablesPersister<SRC, SRCID> sourcePersister,
-																			  Column<T1, ID> leftColumn,
-																			  Column<T2, ID> rightColumn,
-																			  BeanRelationFixer<SRC, C> beanRelationFixer,
-																			  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																			  String joinName,
-																			  boolean optional,
-																			  Set<Column<T2, ?>> selectableColumns) {
+	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																				  Column<T1, ID> leftColumn,
+																				  Column<T2, ID> rightColumn,
+																				  BeanRelationFixer<SRC, C> beanRelationFixer,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																				  String joinName,
+																				  boolean optional,
+																				  Set<Column<T2, ?>> selectableColumns) {
 		
 		String createdJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(joinName,
 				leftColumn,
