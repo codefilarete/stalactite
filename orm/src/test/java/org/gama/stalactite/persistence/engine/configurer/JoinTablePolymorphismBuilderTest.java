@@ -30,7 +30,7 @@ import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMIT
 /**
  * @author Guillaume Mary
  */
-class JoinedTablesPolymorphismBuilderTest {
+class JoinTablePolymorphismBuilderTest {
 	
 	@Test
 	void build_targetTableAndOverringColumnsAreDifferent_throwsException() {
@@ -44,7 +44,7 @@ class JoinedTablesPolymorphismBuilderTest {
 		
 		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
 				.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getModel)
 								.embed(Vehicle::getColor, embeddableBuilder(Color.class)

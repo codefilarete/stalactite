@@ -15,15 +15,15 @@ import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrate
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
+import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinTablePolymorphism;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.JoinTablePolymorphismPersister;
 import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPolymorphicPersister;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
@@ -39,26 +39,26 @@ import static org.gama.lang.Nullable.nullable;
 /**
  * @author Guillaume Mary
  */
-class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
+class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final JoinedTablesPolymorphism<C> joinedTablesPolymorphism;
+	private final JoinTablePolymorphism<C> joinTablePolymorphism;
 	private final PrimaryKey mainTablePrimaryKey;
 	
-	JoinedTablesPolymorphismBuilder(JoinedTablesPolymorphism<C> polymorphismPolicy,
-									Identification identification,
-									EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-									ColumnBinderRegistry columnBinderRegistry,
-									ColumnNameProvider columnNameProvider,
-									TableNamingStrategy tableNamingStrategy,
-									ColumnNamingStrategy columnNamingStrategy,
-									ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-									ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-									ColumnNamingStrategy joinColumnNamingStrategy,
-									ColumnNamingStrategy indexColumnNamingStrategy,
-									AssociationTableNamingStrategy associationTableNamingStrategy) {
+	JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
+								 Identification identification,
+								 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+								 ColumnBinderRegistry columnBinderRegistry,
+								 ColumnNameProvider columnNameProvider,
+								 TableNamingStrategy tableNamingStrategy,
+								 ColumnNamingStrategy columnNamingStrategy,
+								 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+								 ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
+								 ColumnNamingStrategy joinColumnNamingStrategy,
+								 ColumnNamingStrategy indexColumnNamingStrategy,
+								 AssociationTableNamingStrategy associationTableNamingStrategy) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
 				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
-		this.joinedTablesPolymorphism = polymorphismPolicy;
+		this.joinTablePolymorphism = polymorphismPolicy;
 		this.mainTablePrimaryKey = this.mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey();
 	}
 	
@@ -67,14 +67,14 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
-		for (SubEntityMappingConfiguration<? extends C> subConfiguration : joinedTablesPolymorphism.getSubClasses()) {
+		for (SubEntityMappingConfiguration<? extends C> subConfiguration : joinTablePolymorphism.getSubClasses()) {
 			EntityConfiguredJoinedTablesPersister<? extends C, I> subclassPersister;
 			
 			// first we'll use table of columns defined in embedded override
 			// then the one defined by inheritance
 			// if both are null we'll create a new one
 			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
-			Table tableDefinedByInheritanceConfiguration = joinedTablesPolymorphism.giveTable(subConfiguration);
+			Table tableDefinedByInheritanceConfiguration = joinTablePolymorphism.giveTable(subConfiguration);
 			
 			assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
 			
@@ -113,7 +113,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		
-		JoinedTablesPolymorphicPersister<C, I> surrogate = new JoinedTablesPolymorphicPersister<>(
+		JoinTablePolymorphismPersister<C, I> surrogate = new JoinTablePolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
 				dialect);
 		return surrogate;
@@ -123,7 +123,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 	protected void assertSubPolymorphismIsSupported(PolymorphismPolicy<? extends C> subPolymorphismPolicy) {
 		// Everything else than joined-tables and single-table is not implemented (meaning table-per-class)
 		// Written as a negative condition to explicitly say what we support
-		if (!(subPolymorphismPolicy instanceof JoinedTablesPolymorphism
+		if (!(subPolymorphismPolicy instanceof PolymorphismPolicy.JoinTablePolymorphism
 				|| subPolymorphismPolicy instanceof PolymorphismPolicy.SingleTablePolymorphism)) {
 			throw new NotImplementedException("Combining joined-tables polymorphism policy with " + Reflections.toString(subPolymorphismPolicy.getClass()));
 		}

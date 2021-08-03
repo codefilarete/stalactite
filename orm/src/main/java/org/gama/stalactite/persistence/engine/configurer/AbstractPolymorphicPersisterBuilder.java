@@ -260,7 +260,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 			}
 		}
 		// Please note that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
-		// is made in two phases, see JoinedTablesPolymorphismEntitySelectExecutor (instanciated in JoinedTablesPolymorphicPersister)
+		// is made in two phases, see JoinTablePolymorphismEntitySelectExecutor (instanciated in JoinTablePolymorphismPersister)
 		
 		// taking element collections into account
 		for (ElementCollectionLinkage<D, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {

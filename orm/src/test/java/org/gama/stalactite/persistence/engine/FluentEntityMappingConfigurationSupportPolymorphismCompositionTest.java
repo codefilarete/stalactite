@@ -69,13 +69,13 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
 				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getId)
 								.add(Car::getModel)
 								.add(Car::getColor)
 								// A second level of polymorphism
-								.mapPolymorphism(PolymorphismPolicy.<Car>joinedTables()
+								.mapPolymorphism(PolymorphismPolicy.<Car>joinTable()
 										.addSubClass(subentityBuilder(ElectricCar.class)
 												.add(ElectricCar::getPlug)))
 						))
@@ -130,7 +130,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
 				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.add(Car::getId)
 								.add(Car::getModel)
@@ -190,7 +190,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> builder = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
 				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
-				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
+				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.add(Car::getId)
 								.add(Car::getModel)
@@ -216,7 +216,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 										.add(Car::getModel)
 										.add(Car::getColor)
 										// A second level of polymorphism
-										.mapPolymorphism(PolymorphismPolicy.<Car>joinedTables()
+										.mapPolymorphism(PolymorphismPolicy.<Car>joinTable()
 												.addSubClass(subentityBuilder(ElectricCar.class)
 														.add(ElectricCar::getPlug)))
 								, "CAR"))

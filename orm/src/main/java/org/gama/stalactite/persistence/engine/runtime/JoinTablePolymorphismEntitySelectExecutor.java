@@ -32,7 +32,7 @@ import org.gama.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
+public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
 	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
 	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2;
@@ -41,12 +41,12 @@ public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table>
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinedTablesPolymorphismEntitySelectExecutor(Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
-														Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2,
-													   T mainTable,
-													   EntityJoinTree<C, I> entityJoinTree,
-													   ConnectionProvider connectionProvider,
-													   Dialect dialect) {
+	public JoinTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
+													 Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2,
+													 T mainTable,
+													 EntityJoinTree<C, I> entityJoinTree,
+													 ConnectionProvider connectionProvider,
+													 Dialect dialect) {
 		this.persisterPerSubclass = persisterPerSubclass;
 		this.persisterPerSubclass2 = persisterPerSubclass2;
 		this.mainTable = mainTable;

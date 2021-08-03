@@ -55,7 +55,7 @@ import org.gama.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
+public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
@@ -67,12 +67,12 @@ public class SingleTablePolymorphicPersister<C, I, T extends Table<T>, D> implem
 	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, D> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
-	public SingleTablePolymorphicPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-										   Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
-										   ConnectionProvider connectionProvider,
-										   Dialect dialect,
-										   Column<T, D> discriminatorColumn,
-										   SingleTablePolymorphism<C, D> polymorphismPolicy) {
+	public SingleTablePolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+											Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+											ConnectionProvider connectionProvider,
+											Dialect dialect,
+											Column<T, D> discriminatorColumn,
+											SingleTablePolymorphism<C, D> polymorphismPolicy) {
 		this.mainPersister = mainPersister;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;

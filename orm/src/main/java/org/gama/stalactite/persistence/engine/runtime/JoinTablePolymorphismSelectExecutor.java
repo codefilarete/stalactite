@@ -31,7 +31,7 @@ import static org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelation
 /**
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> implements SelectExecutor<C, I> {
+public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implements SelectExecutor<C, I> {
 	
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
 	private final Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors;
@@ -39,7 +39,7 @@ public class JoinedTablesPolymorphismSelectExecutor<C, I, T extends Table> imple
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinedTablesPolymorphismSelectExecutor(
+	public JoinTablePolymorphismSelectExecutor(
 			Map<Class<? extends C>, Table> tablePerSubEntity,
 			Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors,
 			T mainTable,

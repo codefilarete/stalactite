@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.Colu
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
-import org.gama.stalactite.persistence.engine.runtime.SingleTablePolymorphicPersister;
+import org.gama.stalactite.persistence.engine.runtime.SingleTablePolymorphismPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
@@ -94,7 +94,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 		Column<T, D> discriminatorColumn = createDiscriminatorToSelect();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
-		SingleTablePolymorphicPersister<C, I, ?, ?> surrogate = new SingleTablePolymorphicPersister<>(
+		SingleTablePolymorphismPersister<C, I, ?, ?> surrogate = new SingleTablePolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
 				discriminatorColumn, polymorphismPolicy);
 		
@@ -109,7 +109,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 		// - single-table with single-table is non sensence
 		// - single-table with table-per-class is not implemented
 		// Written as a negative condition to explicitly say what we support
-		if (!(subPolymorphismPolicy instanceof PolymorphismPolicy.JoinedTablesPolymorphism)) {
+		if (!(subPolymorphismPolicy instanceof PolymorphismPolicy.JoinTablePolymorphism)) {
 			throw new NotImplementedException("Combining joined-tables polymorphism policy with " + Reflections.toString(subPolymorphismPolicy.getClass()));
 		}
 	}

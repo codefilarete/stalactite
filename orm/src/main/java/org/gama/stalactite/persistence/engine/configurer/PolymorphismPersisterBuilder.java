@@ -10,7 +10,7 @@ import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrate
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinedTablesPolymorphism;
+import org.gama.stalactite.persistence.engine.PolymorphismPolicy.JoinTablePolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
@@ -27,7 +27,7 @@ import org.gama.stalactite.persistence.structure.Table;
 
 /**
  * Builder of polymorphic persisters. Handles {@link PolymorphismPolicy} subtypes, as such, it is the main entry point for polymorphic persisters :
- * it will invoke {@link JoinedTablesPolymorphismBuilder}, {@link SingleTablePolymorphismBuilder} or {@link TablePerClassPolymorphismBuilder}
+ * it will invoke {@link JoinTablePolymorphismBuilder}, {@link SingleTablePolymorphismBuilder} or {@link TablePerClassPolymorphismBuilder}
  * accoring to policy. Hence those builders are not expected to be invoked directly outside of this class.
  * 
  * @author Guillaume Mary
@@ -92,8 +92,8 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
 					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
 					this.associationTableNamingStrategy);
-		} else if (polymorphismPolicy instanceof PolymorphismPolicy.JoinedTablesPolymorphism) {
-			polymorphismBuilder = new JoinedTablesPolymorphismBuilder<>((JoinedTablesPolymorphism<C>) polymorphismPolicy,
+		} else if (polymorphismPolicy instanceof PolymorphismPolicy.JoinTablePolymorphism) {
+			polymorphismBuilder = new JoinTablePolymorphismBuilder<>((JoinTablePolymorphism<C>) polymorphismPolicy,
 					this.identification, this.mainPersister, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
 					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
 					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,

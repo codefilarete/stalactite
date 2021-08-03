@@ -19,12 +19,12 @@ public interface PolymorphismPolicy<C> {
 		return new TablePerClassPolymorphism<>();
 	}
 	
-	static <C> JoinedTablesPolymorphism<C> joinedTables() {
-		return new JoinedTablesPolymorphism<>();
+	static <C> JoinTablePolymorphism<C> joinTable() {
+		return new JoinTablePolymorphism<>();
 	}
 	
-	static <C> JoinedTablesPolymorphism<C> joinedTables(Class<? extends C> c) {
-		return new JoinedTablesPolymorphism<>();
+	static <C> JoinTablePolymorphism<C> joinTable(Class<? extends C> c) {
+		return new JoinTablePolymorphism<>();
 	}
 	
 	/**
@@ -66,16 +66,16 @@ public interface PolymorphismPolicy<C> {
 		}
 	}
 	
-	class JoinedTablesPolymorphism<C> implements PolymorphismPolicy<C> {
+	class JoinTablePolymorphism<C> implements PolymorphismPolicy<C> {
 		
 		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new HashSet<>();
 		
-		public JoinedTablesPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
 			return this;
 		}
 		
-		public JoinedTablesPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
 			subClasses.add(new Duo<>(entityMappingConfigurationProvider, table));
 			return this;
 		}

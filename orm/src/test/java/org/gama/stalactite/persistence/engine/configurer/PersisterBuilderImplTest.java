@@ -722,7 +722,7 @@ public class PersisterBuilderImplTest {
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.add(Timestamp::getCreationDate)
 								.add(Timestamp::getModificationDate))
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinedTables()
+						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 							.addSubClass(subentityBuilder(Vehicle.class, Identifier.class)))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));

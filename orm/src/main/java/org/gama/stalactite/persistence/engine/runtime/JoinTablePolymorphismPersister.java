@@ -56,7 +56,7 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class JoinedTablesPolymorphicPersister<C, I> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
+public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
 	/**
 	 * Current storage of entities to be loaded during the 2-Phases load algorithm.
@@ -67,19 +67,19 @@ public class JoinedTablesPolymorphicPersister<C, I> implements EntityConfiguredJ
 	
 	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load */
-	private final JoinedTablesPolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
+	private final JoinTablePolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
 	private final Class<C> parentClass;
 	private final Map<Class<? extends C>, IdMappingStrategy<C, I>> subclassIdMappingStrategies;
 	private final Map<Class<? extends C>, Table> tablePerSubEntityType;
 	private final Column<?, I> mainTablePrimaryKey;
 	private final EntityCriteriaSupport<C> criteriaSupport;
-	private final JoinedTablesPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
+	private final JoinTablePolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
 	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	
-	public JoinedTablesPolymorphicPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-											Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
-											ConnectionProvider connectionProvider,
-											Dialect dialect) {
+	public JoinTablePolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+										  Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+										  ConnectionProvider connectionProvider,
+										  Dialect dialect) {
 		this.mainPersister = mainPersister;
 		this.parentClass = this.mainPersister.getClassToPersist();
 		this.mainTablePrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
@@ -100,12 +100,12 @@ public class JoinedTablesPolymorphicPersister<C, I> implements EntityConfiguredJ
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
 				Entry::getKey,
 				entry -> entry.getValue().getMappingStrategy().getTargetTable());
-		this.mainSelectExecutor = new JoinedTablesPolymorphismSelectExecutor<>(
+		this.mainSelectExecutor = new JoinTablePolymorphismSelectExecutor<>(
 				tablePerSubEntityType,
 				subclassSelectExecutors,
 				mainPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect);
 		
-		this.entitySelectExecutor = new JoinedTablesPolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters,
+		this.entitySelectExecutor = new JoinTablePolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters,
 				mainPersister.getMappingStrategy().getTargetTable(),
 				mainPersister.getEntityJoinTree(), connectionProvider, dialect);
 		
