@@ -9,7 +9,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ValueAccessPointMap;
@@ -27,7 +27,7 @@ import static org.gama.lang.Reflections.propertyName;
 public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	/** The method that gives the entities from the "root" entity */
-	private final IReversibleAccessor<SRC, C> collectionProvider;
+	private final ReversibleAccessor<SRC, C> collectionProvider;
 	private final Class<TRGT> componentType;
 	/** Optional provider of collection instance to be used if collection value is null */
 	private Supplier<C> collectionFactory;
@@ -84,7 +84,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		this.embeddableConfigurationProvider = embeddableConfigurationProvider;
 	}
 	
-	public IReversibleAccessor<SRC, C> getCollectionProvider() {
+	public ReversibleAccessor<SRC, C> getCollectionProvider() {
 		return collectionProvider;
 	}
 	

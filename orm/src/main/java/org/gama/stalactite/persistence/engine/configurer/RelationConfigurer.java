@@ -4,7 +4,7 @@ import java.util.Collection;
 
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
@@ -148,11 +148,11 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	 */
 	class GraphLoadingRelationRegisterer<TRGT> extends PostInitializer<TRGT> {
 		
-		private final IReversibleAccessor<C, Object> targetEntityAccessor;
+		private final ReversibleAccessor<C, Object> targetEntityAccessor;
 		
-		GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType, IReversibleAccessor<C, ?> targetEntityAccessor) {
+		GraphLoadingRelationRegisterer(Class<TRGT> targetEntityType, ReversibleAccessor<C, ?> targetEntityAccessor) {
 			super(targetEntityType);
-			this.targetEntityAccessor = (IReversibleAccessor<C, Object>) targetEntityAccessor;
+			this.targetEntityAccessor = (ReversibleAccessor<C, Object>) targetEntityAccessor;
 		}
 		
 		@Override

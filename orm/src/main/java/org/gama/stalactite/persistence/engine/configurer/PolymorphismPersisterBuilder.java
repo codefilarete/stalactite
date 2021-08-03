@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 import java.util.Map;
 
 import org.gama.lang.exception.NotImplementedException;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
@@ -46,7 +46,7 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 	private final ColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
-	private final Map<IReversibleAccessor, Column> mainMapping;
+	private final Map<ReversibleAccessor, Column> mainMapping;
 	private final TableNamingStrategy tableNamingStrategy;
 	
 	PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
@@ -60,7 +60,7 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 								 ColumnNamingStrategy joinColumnNamingStrategy,
 								 ColumnNamingStrategy indexColumnNamingStrategy,
 								 AssociationTableNamingStrategy associationTableNamingStrategy,
-								 Map<IReversibleAccessor, Column> mainMapping,
+								 Map<ReversibleAccessor, Column> mainMapping,
 								 TableNamingStrategy tableNamingStrategy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;

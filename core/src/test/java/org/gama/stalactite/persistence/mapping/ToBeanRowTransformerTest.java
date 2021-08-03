@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.mapping;
 
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IMutator;
+import org.gama.reflection.Mutator;
 import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -21,7 +21,7 @@ class ToBeanRowTransformerTest {
 		Column columnA = table.addColumn("a", int.class);
 		Column columnB = table.addColumn("b", String.class);
 		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (IMutator) Accessors.mutatorByMethodReference(Toto::setProp1))
+				.asMap(columnA, (Mutator) Accessors.mutatorByMethodReference(Toto::setProp1))
 				.add(columnB, Accessors.mutatorByMethodReference(Toto::setProp2)));
 		Row row = new Row();
 		row.add(columnA.getName(), 1);
@@ -39,7 +39,7 @@ class ToBeanRowTransformerTest {
 		Column columnA = table.addColumn("a", int.class);
 		Column columnB = table.addColumn("b", String.class);
 		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (IMutator) Accessors.mutatorByMethodReference(Toto::setProp1))
+				.asMap(columnA, (Mutator) Accessors.mutatorByMethodReference(Toto::setProp1))
 				.add(columnB, Accessors.mutatorByMethodReference(Toto::setProp2)));
 		testInstance = testInstance.copyWithAliases(new ColumnedRow(column -> {
 			if (column == columnA) {

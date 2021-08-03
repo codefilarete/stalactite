@@ -9,7 +9,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.IdentityMap;
 import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
-import org.gama.stalactite.query.model.From.IJoin;
+import org.gama.stalactite.query.model.From.Join;
 
 /**
  * Class to ease From clause creation in a Select SQL statement.
@@ -18,9 +18,9 @@ import org.gama.stalactite.query.model.From.IJoin;
  * 
  * @author Guillaume Mary
  */
-public class From implements Iterable<IJoin>, JoinChain {
+public class From implements Iterable<Join>, JoinChain {
 	
-	private final List<IJoin> joins = new ArrayList<>();
+	private final List<Join> joins = new ArrayList<>();
 	
 	/**
 	 * Table aliases.
@@ -32,7 +32,7 @@ public class From implements Iterable<IJoin>, JoinChain {
 		// default constructor, properties are already assigned
 	}
 	
-	public List<IJoin> getJoins() {
+	public List<Join> getJoins() {
 		return joins;
 	}
 	
@@ -135,20 +135,20 @@ public class From implements Iterable<IJoin>, JoinChain {
 	 * @param join the join to be added
 	 * @return this
 	 */
-	public From add(IJoin join) {
+	public From add(Join join) {
 		this.joins.add(join);
 		return this;
 	}
 	
 	@Override
-	public Iterator<IJoin> iterator() {
+	public Iterator<Join> iterator() {
 		return this.joins.iterator();
 	}
 	
 	/**
-	 * Small contract for join
+	 * Small contract of a join
 	 */
-	public interface IJoin {
+	public interface Join {
 		
 		Table getLeftTable();
 	}
@@ -156,7 +156,7 @@ public class From implements Iterable<IJoin>, JoinChain {
 	/**
 	 * Parent class for join
 	 */
-	public abstract static class AbstractJoin implements IJoin {
+	public abstract static class AbstractJoin implements Join {
 		
 		public enum JoinDirection {
 			INNER_JOIN,
@@ -197,7 +197,7 @@ public class From implements Iterable<IJoin>, JoinChain {
 	/**
 	 * A class for cross join with some fluent API to chain with other kind of join
 	 */
-	public class CrossJoin implements IJoin {
+	public class CrossJoin implements Join {
 		
 		private final Table leftTable;
 		

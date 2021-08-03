@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.gama.reflection.Accessor;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
@@ -21,7 +22,7 @@ public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> 
 	/**
 	 * Getter signature for exception message purpose, can't be deduce from {@code reverseGetter}
 	 * because it can be either a {@link org.danekja.java.util.function.serializable.SerializableFunction},
-	 * or {@link Function} took from an {@link org.gama.reflection.IAccessor}
+	 * or {@link Function} took from an {@link Accessor}
 	 */
 	private final String reverseGetterSignature;
 	
@@ -34,7 +35,7 @@ public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> 
 	 * @param reverseGetter getter on the owning side for source bean, required to find out entity index into the collection
 	 * @param reverseGetterSignature signature of the reverse getter, for better message on exception. Can't be deduce from {@code reverseGetter}
 	 * 		because it can be either a {@link org.danekja.java.util.function.serializable.SerializableFunction},
-	 * 		or {@link Function} took from an {@link org.gama.reflection.IAccessor}
+	 * 		or {@link Function} took from an {@link Accessor}
 	 */
 	public IndexedMappedManyRelationDescriptor(Function<I, C> collectionGetter,
 											   BiConsumer<I, C> collectionSetter,
@@ -58,7 +59,7 @@ public class IndexedMappedManyRelationDescriptor<I, O, C extends Collection<O>> 
 	/**
 	 * Gives getter signature. For exception message purpose, because it can't be deduce from {@code reverseGetter}
 	 * because it can be either a {@link org.danekja.java.util.function.serializable.SerializableFunction}
-	 * or {@link Function} took from an {@link org.gama.reflection.IAccessor}
+	 * or {@link Function} took from an {@link Accessor}
 	 */
 	public String getReverseGetterSignature() {
 		return reverseGetterSignature;

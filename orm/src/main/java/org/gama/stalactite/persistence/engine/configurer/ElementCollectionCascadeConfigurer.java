@@ -14,11 +14,11 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.IAccessor;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
@@ -106,7 +106,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 			elementRecordStrategy = new ElementRecordMappingStrategy(targetTable, reverseColumn, elementColumn);
 		} else {
 			BeanMappingBuilder elementCollectionMappingBuilder = new BeanMappingBuilder();
-			Map<IReversibleAccessor, Column> columnMap = elementCollectionMappingBuilder.build(embeddableConfiguration, targetTable,
+			Map<ReversibleAccessor, Column> columnMap = elementCollectionMappingBuilder.build(embeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 						@Override
 						protected String giveColumnName(Linkage pawn) {
@@ -115,7 +115,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 						}
 					});
 			
-			Map<IReversibleAccessor, Column> projectedColumnMap = new HashMap<>();
+			Map<ReversibleAccessor, Column> projectedColumnMap = new HashMap<>();
 			columnMap.forEach((k, v) -> {
 				
 				AccessorChain accessorChain = AccessorChain.forModel(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, k), (accessor, valueType) -> {
@@ -142,7 +142,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		JoinedTablesPersister<ElementRecord, ElementRecord, Table> elementRecordPersister = new JoinedTablesPersister<>(elementRecordStrategy, dialect, connectionConfiguration);
 		
 		// insert management
-		IAccessor<SRC, C> collectionAccessor = linkage.getCollectionProvider();
+		Accessor<SRC, C> collectionAccessor = linkage.getCollectionProvider();
 		addInsertCascade(sourcePersister, elementRecordPersister, collectionAccessor);
 		
 		// update management
@@ -167,7 +167,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	
 	private void addInsertCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
 								  EntityPersister<ElementRecord, ElementRecord> wrapperPersister,
-								  IAccessor<SRC, C> collectionAccessor) {
+								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord>> collectionProviderForInsert = collectionProvider(
 				collectionAccessor,
 				sourcePersister.getMappingStrategy(),
@@ -178,7 +178,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	
 	private void addUpdateCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
 								  EntityPersister<ElementRecord, ElementRecord> wrapperPersister,
-								  IAccessor<SRC, C> collectionAccessor) {
+								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord>> collectionProviderAsPersistedInstances = collectionProvider(
 				collectionAccessor,
 				sourcePersister.getMappingStrategy(),
@@ -208,7 +208,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	
 	private void addDeleteCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
 								  EntityPersister<ElementRecord, ElementRecord> wrapperPersister,
-								  IAccessor<SRC, C> collectionAccessor) {
+								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord>> collectionProviderAsPersistedInstances = collectionProvider(
 				collectionAccessor,
 				sourcePersister.getMappingStrategy(),
@@ -235,7 +235,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, EntityJoinTree.ROOT_STRATEGY_NAME, true);
 	}
 	
-	private Function<SRC, Collection<ElementRecord>> collectionProvider(IAccessor<SRC, C> collectionAccessor,
+	private Function<SRC, Collection<ElementRecord>> collectionProvider(Accessor<SRC, C> collectionAccessor,
 																		IdAccessor<SRC, ID> idAccessor,
 																		Function<ID, StatefullIdentifier> idWrapper) {
 		return src -> Iterables.collect(collectionAccessor.get(src),
@@ -250,7 +250,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	private static class ElementRecordMappingStrategy extends ClassMappingStrategy<ElementRecord, ElementRecord, Table> {
 		private ElementRecordMappingStrategy(Table targetTable, Column idColumn, Column elementColumn) {
 			super(ElementRecord.class, targetTable, (Map) Maps
-							.forHashMap(IReversibleAccessor.class, Column.class)
+							.forHashMap(ReversibleAccessor.class, Column.class)
 							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn)
 							.add(ElementRecord.ELEMENT_ACCESSOR, elementColumn),
 					new ElementRecordIdMappingStrategy(targetTable, idColumn, elementColumn));
@@ -258,7 +258,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		
 		private ElementRecordMappingStrategy(Table targetTable, Column idColumn, EmbeddedClassMappingStrategy<ElementRecord, Table> embeddableMapping) {
 			super(ElementRecord.class, targetTable, (Map) Maps.putAll(Maps
-							.forHashMap(IReversibleAccessor.class, Column.class)
+							.forHashMap(ReversibleAccessor.class, Column.class)
 							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn),
 							embeddableMapping.getPropertyToColumn()),
 					new ElementRecordIdMappingStrategy(targetTable, idColumn, embeddableMapping));

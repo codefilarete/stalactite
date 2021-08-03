@@ -7,7 +7,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -82,7 +82,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 					.elseSet(tableDefinedByInheritanceConfiguration)
 					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
 			
-			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
+			Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
 					this.columnBinderRegistry, this.columnNameProvider);
 			addPrimarykey(subTable);
 			addForeignKey(subTable);

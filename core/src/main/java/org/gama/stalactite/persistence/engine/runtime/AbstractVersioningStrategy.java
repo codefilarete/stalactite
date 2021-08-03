@@ -1,8 +1,8 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
 import org.gama.lang.function.Serie;
-import org.gama.reflection.IMutator;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.Mutator;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 
@@ -16,17 +16,17 @@ import org.gama.stalactite.persistence.engine.VersioningStrategy;
  */
 public abstract class AbstractVersioningStrategy<I, C> implements VersioningStrategy<I, C>, Serie<C> {
 	
-	private final IReversibleAccessor<I, C> versionAccessor;
-	/** {@link IMutator} took from {@link #versionAccessor} to prevent to ask for it at every upgrade because the toMutator() may be costy */
-	private final IMutator<I, C> versionMutator;
+	private final ReversibleAccessor<I, C> versionAccessor;
+	/** {@link Mutator} took from {@link #versionAccessor} to prevent to ask for it at every upgrade because the toMutator() may be costy */
+	private final Mutator<I, C> versionMutator;
 	
-	public AbstractVersioningStrategy(IReversibleAccessor<I, C> versioningAttributeAccessor) {
+	public AbstractVersioningStrategy(ReversibleAccessor<I, C> versioningAttributeAccessor) {
 		this.versionAccessor = versioningAttributeAccessor;
 		this.versionMutator = versionAccessor.toMutator();
 	}
 	
 	@Override
-	public IReversibleAccessor<I, C> getVersionAccessor() {
+	public ReversibleAccessor<I, C> getVersionAccessor() {
 		return versionAccessor;
 	}
 	

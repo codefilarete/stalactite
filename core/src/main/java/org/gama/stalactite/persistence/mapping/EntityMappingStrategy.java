@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -38,5 +38,5 @@ public interface EntityMappingStrategy<C, I, T extends Table> extends MappingStr
 	
 	Map<Column<T, Object>, Object> getVersionedKeyValues(C c);
 	
-	Map<IReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies();
+	Map<ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies();
 }

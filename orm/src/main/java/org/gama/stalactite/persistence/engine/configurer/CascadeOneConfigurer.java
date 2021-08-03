@@ -20,11 +20,11 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Functions.NullProofFunction;
 import org.gama.lang.function.Predicates;
+import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IAccessor;
-import org.gama.reflection.IMutator;
+import org.gama.reflection.Mutator;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -242,7 +242,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		@Override
 		protected void determineRelationFixer() {
-			IMutator<SRC, TRGT> targetSetter = cascadeOne.getTargetProvider().toMutator();
+			Mutator<SRC, TRGT> targetSetter = cascadeOne.getTargetProvider().toMutator();
 			this.beanRelationFixer = BeanRelationFixer.of(targetSetter::set);
 		}
 		
@@ -543,13 +543,13 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		@Override
 		protected void determineRelationFixer() {
-			IMutator<SRC, TRGT> sourceIntoTargetFixer = cascadeOne.getTargetProvider().toMutator();
+			Mutator<SRC, TRGT> sourceIntoTargetFixer = cascadeOne.getTargetProvider().toMutator();
 			if (cascadeOne.getReverseGetter() != null) {
 				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(cascadeOne.getReverseGetter());
 				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
 				
 				// we take advantage of foreign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
-				IMutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
+				Mutator<TRGT, SRC> targetIntoSourceFixer = Accessors.mutatorByMethod(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
 				this.beanRelationFixer = (src, target) -> {
 					// fixing source on target
 					if (target != null) {	// prevent NullPointerException, actually means no linked entity (null relation), so nothing to do
@@ -775,9 +775,9 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	
 	public static class MandatoryRelationCheckingBeforeInsertListener<C> implements InsertListener<C> {
 		
-		private final IAccessor<C, ?> targetAccessor;
+		private final Accessor<C, ?> targetAccessor;
 		
-		public MandatoryRelationCheckingBeforeInsertListener(IAccessor<C, ?> targetAccessor) {
+		public MandatoryRelationCheckingBeforeInsertListener(Accessor<C, ?> targetAccessor) {
 			this.targetAccessor = targetAccessor;
 		}
 		
@@ -794,9 +794,9 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	
 	public static class MandatoryRelationCheckingBeforeUpdateListener<C> implements UpdateListener<C> {
 		
-		private final IAccessor<C, ?> targetAccessor;
+		private final Accessor<C, ?> targetAccessor;
 		
-		public MandatoryRelationCheckingBeforeUpdateListener(IAccessor<C, ?> targetAccessor) {
+		public MandatoryRelationCheckingBeforeUpdateListener(Accessor<C, ?> targetAccessor) {
 			this.targetAccessor = targetAccessor;
 		}
 		
@@ -820,10 +820,10 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	private static class OrphanRemovalOnUpdate<SRC, TRGT> implements UpdateListener<SRC> {
 		
 		private final EntityConfiguredPersister<TRGT, ?> targetPersister;
-		private final IAccessor<SRC, TRGT> targetAccessor;
-		private final IAccessor<TRGT, ?> targetIdAccessor;
+		private final Accessor<SRC, TRGT> targetAccessor;
+		private final Accessor<TRGT, ?> targetIdAccessor;
 		
-		private OrphanRemovalOnUpdate(EntityConfiguredPersister<TRGT, ?> targetPersister, IAccessor<SRC, TRGT> targetAccessor) {
+		private OrphanRemovalOnUpdate(EntityConfiguredPersister<TRGT, ?> targetPersister, Accessor<SRC, TRGT> targetAccessor) {
 			this.targetPersister = targetPersister;
 			this.targetAccessor = targetAccessor;
 			this.targetIdAccessor = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdAccessor()::getId;

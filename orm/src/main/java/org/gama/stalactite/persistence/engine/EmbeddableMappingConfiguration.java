@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 
@@ -58,7 +58,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	 */
 	interface Linkage<C> {
 		
-		<I> IReversibleAccessor<C, I> getAccessor();
+		<I> ReversibleAccessor<C, I> getAccessor();
 		
 		@Nullable
 		String getColumnName();

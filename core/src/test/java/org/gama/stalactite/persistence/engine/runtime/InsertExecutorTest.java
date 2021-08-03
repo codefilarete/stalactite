@@ -9,7 +9,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -129,7 +129,7 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 		Table totoTable = new Table("toto");
 		Column pk = totoTable.addColumn("id", Integer.class).primaryKey();
 		Column versionColumn = totoTable.addColumn("version", Long.class);
-		Map<IReversibleAccessor, Column> mapping = Maps.asMap((IReversibleAccessor)
+		Map<ReversibleAccessor, Column> mapping = Maps.asMap((ReversibleAccessor)
 				PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
 				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA), pk);
 		testInstance = new InsertExecutor<>(new ClassMappingStrategy<VersionnedToto, Integer, Table>(VersionnedToto.class, totoTable, (Map) mapping,

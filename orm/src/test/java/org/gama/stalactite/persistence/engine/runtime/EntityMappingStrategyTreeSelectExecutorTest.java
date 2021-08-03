@@ -24,7 +24,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
@@ -270,7 +270,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 				}));
 		ClassMappingStrategy<Toto, Toto, Table> classMappingStrategy = new ClassMappingStrategy<Toto, Toto, Table>(Toto.class, targetTable,
 				(Map)
-				Maps.asMap((IReversibleAccessor) Accessors.accessorByMethodReference(Toto::getId1, Toto::setId1), (Column) id1)
+				Maps.asMap((ReversibleAccessor) Accessors.accessorByMethodReference(Toto::getId1, Toto::setId1), (Column) id1)
 						.add(Accessors.accessorByMethodReference(Toto::getId2, Toto::setId2), id2)
 						.add(Accessors.accessorByMethodReference(Toto::getName, Toto::setName), name),
 				new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false)

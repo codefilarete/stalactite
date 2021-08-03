@@ -13,7 +13,7 @@ import java.util.function.Function;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.function.Predicates;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -179,7 +179,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 	}
 	
 	@Override
-	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMappingStrategy.class) + " can't export a mapping between some accessors and their columns");
 	}
 	

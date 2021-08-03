@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.NotImplementedException;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -38,12 +38,12 @@ import static org.gama.lang.Nullable.nullable;
 class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
 	private final TablePerClassPolymorphism<C> polymorphismPolicy;
-	private final Map<IReversibleAccessor, Column> mainMapping;
+	private final Map<ReversibleAccessor, Column> mainMapping;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
 									 Identification identification,
 									 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-									 Map<IReversibleAccessor, Column> mainMapping,
+									 Map<ReversibleAccessor, Column> mainMapping,
 									 ColumnBinderRegistry columnBinderRegistry,
 									 ColumnNameProvider columnNameProvider,
 									 TableNamingStrategy tableNamingStrategy,
@@ -77,11 +77,11 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 					.elseSet(tableDefinedByInheritanceConfiguration)
 					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
 			
-			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
+			Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
 					this.columnBinderRegistry, this.columnNameProvider);
 			// in table-per-class polymorphism, main properties must be transfered to sub-entities ones, because CRUD operations are dipatched to them
 			// by a proxy and main persister is not so much used
-			Map<IReversibleAccessor, Column> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
+			Map<ReversibleAccessor, Column> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
 			subEntityPropertiesMapping.putAll(projectedMainMapping);
 			addPrimarykey(subTable);
 			Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);

@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
@@ -25,7 +25,7 @@ import org.gama.stalactite.persistence.structure.Table;
 public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	/** The method that gives the "many" entities from the "one" entity */
-	private final IReversibleAccessor<SRC, C> collectionProvider;
+	private final ReversibleAccessor<SRC, C> collectionProvider;
 	
 	private final ValueAccessPointByMethodReference methodReference;
 	/** Configuration used for "many" side beans persistence */
@@ -56,7 +56,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @param targetTable optional table to be used to store target entities
 	 * @param <T>
 	 */
-	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider,
+	public <T extends Table> CascadeMany(ReversibleAccessor<SRC, C> collectionProvider,
 										 ValueAccessPointByMethodReference methodReference,
 										 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
 										 @Nullable T targetTable) {
@@ -73,7 +73,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @param targetTable
 	 * @param <T>
 	 */
-	public <T extends Table> CascadeMany(IReversibleAccessor<SRC, C> collectionProvider,
+	public <T extends Table> CascadeMany(ReversibleAccessor<SRC, C> collectionProvider,
 										 ValueAccessPointByMethodReference methodReference,
 										 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
 										 @Nullable T targetTable) {
@@ -83,7 +83,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.targetTable = targetTable;
 	}
 	
-	public IReversibleAccessor<SRC, C> getCollectionProvider() {
+	public ReversibleAccessor<SRC, C> getCollectionProvider() {
 		return collectionProvider;
 	}
 	

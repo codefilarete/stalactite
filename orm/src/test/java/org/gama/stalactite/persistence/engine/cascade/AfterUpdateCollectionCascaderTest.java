@@ -12,7 +12,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.engine.runtime.UpdateExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -38,10 +38,10 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		T tataTable = (T) new Table("Tata");
 		Column<T, Long> primaryKey = tataTable.addColumn("id", Long.class).primaryKey();
 		Column<T, String> nameColumn = tataTable.addColumn("name", String.class);
-		IReversibleAccessor<Tata, Long> identifier = Accessors.accessorByField(Tata.class, "id");
-		IReversibleAccessor<Tata, Long> propName = Accessors.accessorByField(Tata.class, "name");
+		ReversibleAccessor<Tata, Long> identifier = Accessors.accessorByField(Tata.class, "id");
+		ReversibleAccessor<Tata, Long> propName = Accessors.accessorByField(Tata.class, "name");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends IReversibleAccessor<Tata, Object>, Column<T, Object>> mapping = (Map) Maps.asMap(identifier, (Column) primaryKey).add(propName, nameColumn);
+		Map<? extends ReversibleAccessor<Tata, Object>, Column<T, Object>> mapping = (Map) Maps.asMap(identifier, (Column) primaryKey).add(propName, nameColumn);
 		ClassMappingStrategy<Tata, Long, T> mappingStrategyMock = new ClassMappingStrategy<>(Tata.class, tataTable,
 				mapping, identifier,
 				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));

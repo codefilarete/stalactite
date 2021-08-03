@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 
 /**
  * @author Guillaume Mary
@@ -8,7 +8,7 @@ import org.gama.reflection.IReversibleAccessor;
  */
 public interface VersioningStrategy<C, V> {
 	
-	IReversibleAccessor<C, V> getVersionAccessor();
+	ReversibleAccessor<C, V> getVersionAccessor();
 	
 	V getVersion(C o);
 	

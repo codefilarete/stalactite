@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Objects;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 
 import static org.gama.reflection.Accessors.accessorByMethodReference;
 
@@ -14,8 +14,8 @@ import static org.gama.reflection.Accessors.accessorByMethodReference;
  */
 public class AssociationRecord {
 	
-	public static final IReversibleAccessor<AssociationRecord, Object> LEFT_ACCESSOR = accessorByMethodReference(AssociationRecord::getLeft, AssociationRecord::setLeft);
-	public static final IReversibleAccessor<AssociationRecord, Object> RIGHT_ACCESSOR = accessorByMethodReference(AssociationRecord::getRight, AssociationRecord::setRight);
+	public static final ReversibleAccessor<AssociationRecord, Object> LEFT_ACCESSOR = accessorByMethodReference(AssociationRecord::getLeft, AssociationRecord::setLeft);
+	public static final ReversibleAccessor<AssociationRecord, Object> RIGHT_ACCESSOR = accessorByMethodReference(AssociationRecord::getRight, AssociationRecord::setRight);
 	
 	private Object left;
 	private Object right;

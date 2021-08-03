@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 
 /**
  * An {@link IdAccessor} dedicated to single-property id.
@@ -10,13 +10,13 @@ import org.gama.reflection.IReversibleAccessor;
  */
 public final class SinglePropertyIdAccessor<T, I> implements IdAccessor<T, I> {
 	
-	private final IReversibleAccessor<T, I> idAccessor;
+	private final ReversibleAccessor<T, I> idAccessor;
 	
-	public SinglePropertyIdAccessor(IReversibleAccessor<T, I> idAccessor) {
+	public SinglePropertyIdAccessor(ReversibleAccessor<T, I> idAccessor) {
 		this.idAccessor = idAccessor;
 	}
 	
-	public IReversibleAccessor<T, I> getIdAccessor() {
+	public ReversibleAccessor<T, I> getIdAccessor() {
 		return idAccessor;
 	}
 	

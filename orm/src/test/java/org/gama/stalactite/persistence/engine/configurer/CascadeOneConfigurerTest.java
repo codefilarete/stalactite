@@ -11,7 +11,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -62,11 +62,11 @@ class CascadeOneConfigurerTest {
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
 		Column countryTableNameColumn = countryTable.addColumn("name", String.class);
 		Column countryTableCapitalColumn = countryTable.addColumn("capitalId", Identifier.LONG_TYPE);
-		Map<IReversibleAccessor, Column> countryMapping = Maps
-				.asMap((IReversibleAccessor) new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getId), Accessors.mutatorByField(Country.class, "id")), countryTableIdColumn)
+		Map<ReversibleAccessor, Column> countryMapping = Maps
+				.asMap((ReversibleAccessor) new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getId), Accessors.mutatorByField(Country.class, "id")), countryTableIdColumn)
 				.add(new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getName), new MutatorByMethodReference<>(Country::setName)), countryTableNameColumn)
 				.add(new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(Country::setCapital)), countryTableCapitalColumn);
-		IReversibleAccessor<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new PropertyAccessor<>(
+		ReversibleAccessor<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new PropertyAccessor<>(
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
@@ -89,7 +89,7 @@ class CascadeOneConfigurerTest {
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
 		Column cityTableIdColumn = cityTable.addColumn("id", Identifier.class).primaryKey();
-		IReversibleAccessor<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new PropertyAccessor<>(
+		ReversibleAccessor<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new PropertyAccessor<>(
 				Accessors.accessorByMethodReference(City::getId),
 				Accessors.mutatorByField(City.class, "id")
 		);
@@ -166,10 +166,10 @@ class CascadeOneConfigurerTest {
 		Table<?> countryTable = new Table<>("country");
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
 		Column countryTableNameColumn = countryTable.addColumn("name", String.class);
-		Map<IReversibleAccessor, Column> countryMapping = Maps
-				.asMap((IReversibleAccessor) new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getId), Accessors.mutatorByField(Country.class, "id")), countryTableIdColumn)
+		Map<ReversibleAccessor, Column> countryMapping = Maps
+				.asMap((ReversibleAccessor) new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getId), Accessors.mutatorByField(Country.class, "id")), countryTableIdColumn)
 				.add(new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getName), new MutatorByMethodReference<>(Country::setName)), countryTableNameColumn);
-		IReversibleAccessor<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new PropertyAccessor<>(
+		ReversibleAccessor<Country, Identifier<Long>> countryIdentifierAccessorByMethodReference = new PropertyAccessor<>(
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
@@ -180,7 +180,7 @@ class CascadeOneConfigurerTest {
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
 		Column cityTableCountryColumn = cityTable.addColumn("countryId", long.class);
-		IReversibleAccessor<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new PropertyAccessor<>(
+		ReversibleAccessor<City, Identifier<Long>> cityIdentifierAccessorByMethodReference = new PropertyAccessor<>(
 				Accessors.accessorByMethodReference(City::getId),
 				Accessors.mutatorByField(City.class, "id")
 		);

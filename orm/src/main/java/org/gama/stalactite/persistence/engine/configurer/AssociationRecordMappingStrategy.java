@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 
 import org.gama.lang.collection.Maps;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.AssociationTable;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
@@ -21,7 +21,7 @@ class AssociationRecordMappingStrategy extends ClassMappingStrategy<AssociationR
 	
 	public AssociationRecordMappingStrategy(AssociationTable targetTable) {
 		super(AssociationRecord.class, targetTable, (Map) Maps
-						.forHashMap(IReversibleAccessor.class, Column.class)
+						.forHashMap(ReversibleAccessor.class, Column.class)
 						.add(AssociationRecord.LEFT_ACCESSOR, targetTable.getOneSideKeyColumn())
 						.add(AssociationRecord.RIGHT_ACCESSOR, targetTable.getManySideKeyColumn())
 				,

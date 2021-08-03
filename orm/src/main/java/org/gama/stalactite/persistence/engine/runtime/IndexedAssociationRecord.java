@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 
 import static org.gama.reflection.Accessors.accessorByMethodReference;
 
@@ -11,9 +11,9 @@ import static org.gama.reflection.Accessors.accessorByMethodReference;
  */
 public class IndexedAssociationRecord extends AssociationRecord {
 	
-	public static final IReversibleAccessor<IndexedAssociationRecord, Object> LEFT_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getLeft, IndexedAssociationRecord::setLeft);
-	public static final IReversibleAccessor<IndexedAssociationRecord, Object> RIGHT_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getRight, IndexedAssociationRecord::setRight);
-	public static final IReversibleAccessor<IndexedAssociationRecord, Integer> INDEX_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getIndex, IndexedAssociationRecord::setIndex);
+	public static final ReversibleAccessor<IndexedAssociationRecord, Object> LEFT_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getLeft, IndexedAssociationRecord::setLeft);
+	public static final ReversibleAccessor<IndexedAssociationRecord, Object> RIGHT_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getRight, IndexedAssociationRecord::setRight);
+	public static final ReversibleAccessor<IndexedAssociationRecord, Integer> INDEX_ACCESSOR = accessorByMethodReference(IndexedAssociationRecord::getIndex, IndexedAssociationRecord::setIndex);
 	
 	private int index;
 	

@@ -12,7 +12,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
@@ -38,7 +38,7 @@ public class ClassMappingStrategyTest {
 	private static Column colD2;
 	private static Column colE1;
 	private static Column colE2;
-	private static Map<? extends IReversibleAccessor, ? extends Column> classMapping;
+	private static Map<? extends ReversibleAccessor, ? extends Column> classMapping;
 	private static Table targetTable;
 	private static PersistentFieldHarverster persistentFieldHarverster;
 	private static Map<String, Column> columnMapOnName;
@@ -76,7 +76,7 @@ public class ClassMappingStrategyTest {
 		testInstance = new ClassMappingStrategy<>(
 				Toto.class,
 				targetTable,
-				(Map<IReversibleAccessor<Toto, Object>, Column<Table, Object>>) classMapping,
+				(Map<ReversibleAccessor<Toto, Object>, Column<Table, Object>>) classMapping,
 				Accessors.propertyAccessor(persistentFieldHarverster.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false));

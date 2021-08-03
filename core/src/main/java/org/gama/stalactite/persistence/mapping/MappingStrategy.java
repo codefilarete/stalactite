@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
@@ -106,7 +106,7 @@ public interface MappingStrategy<C, T extends Table> {
 	
 	void addPropertySetByConstructor(ValueAccessPoint accessor);
 	
-	Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
+	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
 	
 	AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	

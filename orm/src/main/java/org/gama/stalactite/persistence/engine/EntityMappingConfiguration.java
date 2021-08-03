@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 import org.gama.lang.Nullable;
 import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.configurer.CascadeMany;
 import org.gama.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
@@ -30,7 +30,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	IdentifierPolicy getIdentifierPolicy();
 	
-	IReversibleAccessor<C, I> getIdentifierAccessor();
+	ReversibleAccessor<C, I> getIdentifierAccessor();
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	

@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import javax.annotation.Nonnull;
 import java.util.function.Function;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -47,7 +47,7 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 		}
 	}
 	
-	public SimpleIdMappingStrategy(IReversibleAccessor<C, I> identifierAccessor,
+	public SimpleIdMappingStrategy(ReversibleAccessor<C, I> identifierAccessor,
 								   IdentifierInsertionManager<C, I> identifierInsertionManager,
 								   SimpleIdentifierAssembler identifierMarshaller) {
 		this(new SinglePropertyIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);

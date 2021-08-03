@@ -20,8 +20,8 @@ import org.gama.reflection.AccessorByMember;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IMutator;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.Mutator;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.PropertyAccessor;
@@ -234,8 +234,8 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 		private final ColumnNamingStrategy joinColumnNamingStrategy;
 		private final ColumnNamingStrategy indexColumnNamingStrategy;
-		private final IReversibleAccessor<SRC, C> collectionGetter;
-		private final IMutator<SRC, C> setter;
+		private final ReversibleAccessor<SRC, C> collectionGetter;
+		private final Mutator<SRC, C> setter;
 		private final boolean orphanRemoval;
 		private final boolean writeAuthorized;
 		

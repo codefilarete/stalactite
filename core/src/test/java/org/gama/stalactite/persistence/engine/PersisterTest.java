@@ -10,7 +10,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.PersisterITTest.Toto;
 import org.gama.stalactite.persistence.engine.PersisterITTest.TotoTable;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
@@ -50,8 +50,8 @@ class PersisterTest {
 	void constructor_mustIncludeIdMappingListener() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
-		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
+		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
 		IdentifierInsertionManager<Toto, Long> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
 		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
@@ -83,8 +83,8 @@ class PersisterTest {
 	void testPersist() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
-		IReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
+		ReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
 		IdentifierInsertionManager<Toto, Integer> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Integer.class);
 		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
@@ -176,8 +176,8 @@ class PersisterTest {
 	void testInsert() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
-		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
+		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
 		
 		IdentifierInsertionManager<Toto, Long> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
@@ -219,10 +219,10 @@ class PersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		IReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
@@ -264,10 +264,10 @@ class PersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		IReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
@@ -304,10 +304,10 @@ class PersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		IReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
@@ -343,10 +343,10 @@ class PersisterTest {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
-		IReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
-		IReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
+		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
+		ReversibleAccessor<Toto, Long> propB = Accessors.accessorByField(Toto.class, "b");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
 		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
@@ -380,8 +380,8 @@ class PersisterTest {
 	void testSelect() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
-		IReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
-		Map<? extends IReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
+		ReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
+		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps.asMap(identifier, primaryKey);
 		IdentifierInsertionManager<Toto, Integer> identifierInsertionManagerMock = mock(IdentifierInsertionManager.class);
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Integer.class);
 		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);

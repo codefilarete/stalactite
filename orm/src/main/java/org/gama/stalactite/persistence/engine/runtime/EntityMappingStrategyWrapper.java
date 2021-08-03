@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
@@ -76,7 +76,7 @@ public class EntityMappingStrategyWrapper<C, I, T extends Table> implements Enti
 	}
 	
 	@Override
-	public Map<IReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies() {
+	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies() {
 		return surrogate.getEmbeddedBeanStrategies();
 	}
 	
@@ -118,7 +118,7 @@ public class EntityMappingStrategyWrapper<C, I, T extends Table> implements Enti
 	}
 	
 	@Override
-	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		return surrogate.getPropertyToColumn();
 	}
 	

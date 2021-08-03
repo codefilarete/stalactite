@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.gama.lang.Reflections;
 import org.gama.lang.exception.NotImplementedException;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -34,12 +34,12 @@ import org.gama.stalactite.persistence.structure.Table;
 class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
 	private final SingleTablePolymorphism<C, D> polymorphismPolicy;
-	private final Map<IReversibleAccessor, Column> mainMapping;
+	private final Map<ReversibleAccessor, Column> mainMapping;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, D> polymorphismPolicy,
 								   Identification identification,
 								   EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-								   Map<IReversibleAccessor, Column> mainMapping,
+								   Map<ReversibleAccessor, Column> mainMapping,
 								   ColumnBinderRegistry columnBinderRegistry,
 								   ColumnNameProvider columnNameProvider,
 								   TableNamingStrategy tableNamingStrategy, ColumnNamingStrategy columnNamingStrategy,
@@ -69,7 +69,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 			
 			assertNullOrEqual(tableDefinedByColumnOverride, mainTable);
 			
-			Map<IReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), mainTable,
+			Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), mainTable,
 					this.columnBinderRegistry, this.columnNameProvider);
 			// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dipatched to them
 			// by a proxy and main persister is not so much used

@@ -11,11 +11,11 @@ import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
 import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Arrays;
+import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.IAccessor;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointByMethodReference;
@@ -187,8 +187,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		private static AccessorChain toAccessorChain(ValueAccessPointByMethodReference... accessPoints) {
 			AccessorChain<Object, Object> result = new AccessorChain<>();
 			for (ValueAccessPointByMethodReference accessPoint : accessPoints) {
-				if (accessPoint instanceof IAccessor) {
-					result.add((IAccessor) accessPoint);
+				if (accessPoint instanceof Accessor) {
+					result.add((Accessor) accessPoint);
 				} else if (accessPoint instanceof MutatorByMethodReference) {
 					MutatorByMethodReference mutatorPoint = (MutatorByMethodReference) accessPoint;
 					result.add(new AccessorByMethod<>(Reflections.getMethod(mutatorPoint.getDeclaringClass(), mutatorPoint.getMethodName(), mutatorPoint.getPropertyType())));

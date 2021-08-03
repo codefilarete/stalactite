@@ -10,7 +10,7 @@ import org.gama.stalactite.query.model.From.AbstractJoin;
 import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.gama.stalactite.query.model.From.ColumnJoin;
 import org.gama.stalactite.query.model.From.CrossJoin;
-import org.gama.stalactite.query.model.From.IJoin;
+import org.gama.stalactite.query.model.From.Join;
 import org.gama.stalactite.query.model.From.RawTableJoin;
 
 /**
@@ -31,7 +31,7 @@ public class FromBuilder implements SQLBuilder {
 	public String toSQL() {
 		StringAppender sql = new FromGenerator();
 		
-		Iterator<IJoin> joinIterator = from.getJoins().iterator();
+		Iterator<Join> joinIterator = from.getJoins().iterator();
 		if (!joinIterator.hasNext()) {
 			// invalid SQL
 			throw new IllegalArgumentException("Empty from");

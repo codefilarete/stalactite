@@ -15,7 +15,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Predicates;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -124,7 +124,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements EmbeddedBe
 	}
 	
 	@Override
-	public Map<IReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMappingStrategy.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}

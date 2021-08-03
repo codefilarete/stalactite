@@ -19,7 +19,7 @@ import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
@@ -393,7 +393,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			@javax.annotation.Nullable T table) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
-		IReversibleAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
+		ReversibleAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
@@ -416,7 +416,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	private <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
-			IReversibleAccessor<C, S> propertyAccessor,
+			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -442,7 +442,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			@javax.annotation.Nullable T table) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
-		IReversibleAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
+		ReversibleAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
@@ -465,7 +465,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	private <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
-			IReversibleAccessor<C, S> propertyAccessor,
+			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -567,7 +567,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		}
 		
 		@Override
-		protected <O> EntityLinkageByColumnName<C> newLinkage(IReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
+		protected <O> EntityLinkageByColumnName<C> newLinkage(ReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
 			return new EntityLinkageByColumnName<>(accessor, returnType, linkName);
 		}
 		
@@ -580,11 +580,11 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		}
 		
 		/**
-		 * Equivalent of {@link #addMapping(IReversibleAccessor, AccessorDefinition, String)} with a {@link Column}
+		 * Equivalent of {@link #addMapping(ReversibleAccessor, AccessorDefinition, String)} with a {@link Column}
 		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
-		AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, Column column) {
+		AbstractLinkage<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, Column column) {
 			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(propertyAccessor, column);
 			mapping.add(newLinkage);
 			return newLinkage;

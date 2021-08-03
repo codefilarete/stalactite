@@ -14,7 +14,7 @@ import org.gama.lang.Nullable;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
@@ -159,7 +159,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	 */
 	public void addSelectCascadeIn2Phases(Column sourcePrimaryKey,
 										  Column relationOwner,
-										  IReversibleAccessor<SRC, C> collectionGetter,
+										  ReversibleAccessor<SRC, C> collectionGetter,
 										  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		// Join is declared on non-added tables : Person (alias = null) / Person (alias = null)
 		Table relationOwnerTableClone = new Table(relationOwner.getTable().getName());

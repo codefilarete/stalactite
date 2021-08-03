@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
 import org.gama.stalactite.persistence.structure.Column;
 
@@ -9,23 +9,23 @@ import org.gama.stalactite.persistence.structure.Column;
  */
 class EntityLinkageByColumn<T> extends AbstractLinkage<T> implements EntityLinkage<T> {
 	
-	private final IReversibleAccessor<T, ?> function;
+	private final ReversibleAccessor<T, ?> function;
 	private final Column column;
 	
 	/**
 	 * Constructor with mandatory objects
 	 *
-	 * @param propertyAccessor a {@link IReversibleAccessor}
+	 * @param propertyAccessor a {@link ReversibleAccessor}
 	 * @param column an override of the default column that would have been generated
 	 */
-	EntityLinkageByColumn(IReversibleAccessor<T, ?> propertyAccessor, Column column) {
+	EntityLinkageByColumn(ReversibleAccessor<T, ?> propertyAccessor, Column column) {
 		this.function = propertyAccessor;
 		this.column = column;
 	}
 	
 	@Override
-	public <I> IReversibleAccessor<T, I> getAccessor() {
-		return (IReversibleAccessor<T, I>) function;
+	public <I> ReversibleAccessor<T, I> getAccessor() {
+		return (ReversibleAccessor<T, I>) function;
 	}
 	
 	@Override

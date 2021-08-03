@@ -10,7 +10,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.bean.FieldIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IMutator;
+import org.gama.reflection.Mutator;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
@@ -22,7 +22,7 @@ import org.gama.stalactite.sql.result.Row;
  */
 public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	
-	private final Map<Column, IMutator> columnToMember;
+	private final Map<Column, Mutator> columnToMember;
 	
 	/**
 	 * A constructor that maps all fields of a class by name
@@ -54,7 +54,7 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	 * @param clazz the constructor to be used to instanciate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
-	public ToBeanRowTransformer(Class<C> clazz, Map<Column, IMutator> columnToMember) {
+	public ToBeanRowTransformer(Class<C> clazz, Map<Column, Mutator> columnToMember) {
 		super(clazz);
 		this.columnToMember = columnToMember;
 	}
@@ -64,30 +64,30 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	 * @param beanFactory factory to be used to instanciate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
-	public ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember) {
+	public ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
 		super(beanFactory, new ColumnedRow());
 		this.columnToMember = columnToMember;
 	}
 	
-	protected ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember,
+	protected ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
 								   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
 		super(beanFactory, columnedRow, rowTransformerListeners);
 		this.columnToMember = columnToMember;
 	}
 	
-	public Map<Column, IMutator> getColumnToMember() {
+	public Map<Column, Mutator> getColumnToMember() {
 		return columnToMember;
 	}
 	
 	@Override
 	public void applyRowToBean(Row source, C targetRowBean) {
-		for (Entry<Column, IMutator> columnFieldEntry : columnToMember.entrySet()) {
+		for (Entry<Column, Mutator> columnFieldEntry : columnToMember.entrySet()) {
 			Object propertyValue = getColumnedRow().getValue(columnFieldEntry.getKey(), source);
 			applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
 		}
 	}
 	
-	protected void applyValueToBean(C targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
+	protected void applyValueToBean(C targetRowBean, Entry<Column, Mutator> columnFieldEntry, Object propertyValue) {
 		columnFieldEntry.getValue().set(targetRowBean, propertyValue);
 	}
 	

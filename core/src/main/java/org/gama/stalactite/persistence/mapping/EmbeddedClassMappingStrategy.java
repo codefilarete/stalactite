@@ -17,11 +17,11 @@ import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Predicates;
+import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IAccessor;
-import org.gama.reflection.IMutator;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.Mutator;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.structure.Column;
@@ -40,19 +40,19 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 	
 	private final T targetTable;
 	
-	private final Map<IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn;
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn;
 	
 	private final Set<Column<T, Object>> columns;
 	
 	private final Set<Column<T, Object>> insertableColumns;
 	
 	/** Acts as a cache of updatable properties, could be dynamically deduced from {@link #propertyToColumn} and {@link #insertableColumns} */
-	private final Map<IReversibleAccessor<C, Object>, Column<T, Object>> insertableProperties;
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> insertableProperties;
 	
 	private final Set<Column<T, Object>> updatableColumns;
 	
 	/** Acts as a cache of updatable properties, could be dynamically deduced from {@link #propertyToColumn} and {@link #updatableColumns} */
-	private final Map<IReversibleAccessor<C, Object>, Column<T, Object>> updatableProperties;
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> updatableProperties;
 	
 	private final ToBeanRowTransformer<C> rowTransformer;
 	
@@ -73,25 +73,25 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 	private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 	
 	/**
-	 * Builds an embedded class mapping between its properties (as {@link IReversibleAccessor}) and some {@link Column}s.
+	 * Builds an embedded class mapping between its properties (as {@link ReversibleAccessor}) and some {@link Column}s.
 	 * {@link Column}s are expected to be from same table, no strong control is made about that except generic type, caller must be aware of it.
 	 * 
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
-	public EmbeddedClassMappingStrategy(Class<C> classToPersist, T targetTable, Map<? extends IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn) {
+	public EmbeddedClassMappingStrategy(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn) {
 		this(classToPersist, targetTable, propertyToColumn, row -> Reflections.newInstance(classToPersist));
 	}
 	
 	public EmbeddedClassMappingStrategy(Class<C> classToPersist,
 										T targetTable,
-										Map<? extends IReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
 										Function<Function<Column, Object>, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.propertyToColumn = new HashMap<>(propertyToColumn);
-		Map<Column<T, Object>, IMutator> columnToField = Iterables.map(propertyToColumn.entrySet(), Entry::getValue, e -> e.getKey().toMutator());
+		Map<Column<T, Object>, Mutator> columnToField = Iterables.map(propertyToColumn.entrySet(), Entry::getValue, e -> e.getKey().toMutator());
 		this.rowTransformer = new EmbeddedBeanRowTransformer(beanFactory, (Map) columnToField);
 		this.columns = new LinkedHashSet<>(propertyToColumn.values());
 		
@@ -131,7 +131,7 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 	/**
 	 * @return an immutable {@link Map} of the configured mapping
 	 */
-	public Map<IReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		return Collections.unmodifiableMap(propertyToColumn);
 	}
 	
@@ -272,7 +272,7 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 	 */
 	private class EmbeddedBeanRowTransformer extends ToBeanRowTransformer<C> {
 		
-		public EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember) {
+		public EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
 			super(beanFactory, columnToMember);
 		}
 		
@@ -283,7 +283,7 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 		 * @param columnedRow mapping between {@link Column} and their alias in given row to {@link #transform(Row)} 
 		 * @param rowTransformerListeners listeners that need notification of bean creation
 		 */
-		private EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, IMutator> columnToMember,
+		private EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
 										   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
 			super(beanFactory, columnToMember, columnedRow, rowTransformerListeners);
 		}
@@ -297,15 +297,15 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 			// per accessor to this bean. Example : with the mappings "Person::getTimestamp, Timestamp::setCreationDate" and
 			// "Person::getTimestamp, Timestamp::setModificationDate", then we keep a boolean per "Person::getTimestamp" saying that if one of
 			// creationDate and modificationDate is not null then we should instanciate Timestamp, if both are null then not. 
-			Map<Entry<Column, IMutator>, Object> beanValues = new HashMap<>();
-			Map<IAccessor, MutableBoolean> valuesAreDefaultOnes = new HashMap<>();
-			for (Entry<Column, IMutator> columnFieldEntry : getColumnToMember().entrySet()) {
+			Map<Entry<Column, Mutator>, Object> beanValues = new HashMap<>();
+			Map<Accessor, MutableBoolean> valuesAreDefaultOnes = new HashMap<>();
+			for (Entry<Column, Mutator> columnFieldEntry : getColumnToMember().entrySet()) {
 				Object propertyValue = getColumnedRow().getValue(columnFieldEntry.getKey(), values);
 				beanValues.put(columnFieldEntry, propertyValue);
 				boolean valueIsDefault = EmbeddedClassMappingStrategy.this.defaultValueDeterminer.isDefaultValue(
 						new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
 				if (columnFieldEntry.getValue() instanceof AccessorChainMutator) {
-					IAccessor valuesAreDefaultOnesKey = (IAccessor) ((AccessorChainMutator) columnFieldEntry.getValue()).getAccessors().get(0);
+					Accessor valuesAreDefaultOnesKey = (Accessor) ((AccessorChainMutator) columnFieldEntry.getValue()).getAccessors().get(0);
 					MutableBoolean mutableBoolean = valuesAreDefaultOnes.computeIfAbsent(valuesAreDefaultOnesKey, k -> new MutableBoolean(true));
 					mutableBoolean.and(valueIsDefault);
 				}
@@ -313,7 +313,7 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 			// we apply values only if one of them is not a default one, because if all values are default one there's no reason that we create the bean
 			beanValues.forEach((mapping, value) -> {
 				if (mapping.getValue() instanceof AccessorChainMutator) {
-					IAccessor valuesAreDefaultOnesKey = (IAccessor) ((AccessorChainMutator) mapping.getValue()).getAccessors().get(0);
+					Accessor valuesAreDefaultOnesKey = (Accessor) ((AccessorChainMutator) mapping.getValue()).getAccessors().get(0);
 					boolean valueIsDefault = valuesAreDefaultOnes.get(valuesAreDefaultOnesKey).value();
 					if (!valueIsDefault) {
 						applyValueToBean(targetRowBean, mapping, value);
@@ -325,7 +325,7 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 		}
 		
 		@Override
-		protected void applyValueToBean(C targetRowBean, Entry<Column, IMutator> columnFieldEntry, Object propertyValue) {
+		protected void applyValueToBean(C targetRowBean, Entry<Column, Mutator> columnFieldEntry, Object propertyValue) {
 			// we skip properties set by constructor
 			if (!propertiesSetByConstructor.contains(columnFieldEntry.getValue())) {
 				super.applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);
@@ -373,10 +373,10 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 		 * 
 		 * @param mappedProperty column and its mapped property (configured in the {@link EmbeddedClassMappingStrategy}).
 		 * 						 So one can use either the column or the accessor for fine grained default value determination
-		 * @param value value coming from a JDBC {@link java.sql.ResultSet}, mapped by the couple {@link Column} + {@link IMutator}.
+		 * @param value value coming from a JDBC {@link java.sql.ResultSet}, mapped by the couple {@link Column} + {@link Mutator}.
 		 * @return true if value is a default one for column/property
 		 */
-		default boolean isDefaultValue(Duo<Column, IMutator> mappedProperty, Object value) {
+		default boolean isDefaultValue(Duo<Column, Mutator> mappedProperty, Object value) {
 			// we consider accessor type as more fine grained than Column one, hence we check default value with it
 			Class inputType = Accessors.giveInputType(mappedProperty.getRight());
 			return (!inputType.isPrimitive() && value == null)

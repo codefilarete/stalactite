@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.IndexedAssociationTable;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
@@ -25,7 +25,7 @@ class IndexedAssociationRecordMappingStrategy extends ClassMappingStrategy<Index
 		super(IndexedAssociationRecord.class, targetTable, Maps
 						.asMap(IndexedAssociationRecord.LEFT_ACCESSOR, targetTable.getOneSideKeyColumn())
 						.add(IndexedAssociationRecord.RIGHT_ACCESSOR, targetTable.getManySideKeyColumn())
-						.add((IReversibleAccessor) IndexedAssociationRecord.INDEX_ACCESSOR, (Column) targetTable.getIndexColumn())
+						.add((ReversibleAccessor) IndexedAssociationRecord.INDEX_ACCESSOR, (Column) targetTable.getIndexColumn())
 				,
 				new ComposedIdMappingStrategy<IndexedAssociationRecord, IndexedAssociationRecord>(new IdAccessor<IndexedAssociationRecord, IndexedAssociationRecord>() {
 					@Override

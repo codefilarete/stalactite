@@ -22,7 +22,7 @@ import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
@@ -638,7 +638,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			private Table currentTable;
 			
-			private Map<IReversibleAccessor, Column> currentColumnMap = new HashMap<>();
+			private Map<ReversibleAccessor, Column> currentColumnMap = new HashMap<>();
 			
 			private Mapping currentMapping;
 			
@@ -648,7 +648,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			@Override
 			public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
-				Map<IReversibleAccessor, Column> propertiesMapping = beanMappingBuilder.build(
+				Map<ReversibleAccessor, Column> propertiesMapping = beanMappingBuilder.build(
 						embeddableMappingConfiguration,
 						this.currentTable,
 						PersisterBuilderImpl.this.columnBinderRegistry,
@@ -786,7 +786,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private <X> void determineIdentifierManager(
 			Identification identification,
 			MappingPerTable mappingPerTable,
-			IReversibleAccessor idAccessor,
+			ReversibleAccessor idAccessor,
 			GeneratedKeysReaderBuilder generatedKeysReaderBuilder) {
 		IdentifierInsertionManager<X, I> identifierInsertionManager = null;
 		IdentifierPolicy identifierPolicy = identification.getIdentifierPolicy();
@@ -856,14 +856,14 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	static <X, I, T extends Table> ClassMappingStrategy<X, I, T> createClassMappingStrategy(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
-			Map<? extends IReversibleAccessor, Column> mapping,
+			Map<? extends ReversibleAccessor, Column> mapping,
 			ValueAccessPointSet propertiesSetByConstructor,
 			Identification identification,
 			Class<X> beanType,
 			@Nullable Function<Function<Column, Object>, X> beanFactory) {
 
 		Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
-		IReversibleAccessor idAccessor = identification.getIdAccessor();
+		ReversibleAccessor idAccessor = identification.getIdAccessor();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
 		IdentifierInsertionManager<X, I> identifierInsertionManager = (IdentifierInsertionManager<X, I>) (isIdentifyingConfiguration
@@ -899,7 +899,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	static class Identification {
 		
-		private final IReversibleAccessor idAccessor;
+		private final ReversibleAccessor idAccessor;
 		private final IdentifierPolicy identifierPolicy;
 		private final EntityMappingConfiguration identificationDefiner;
 		
@@ -915,7 +915,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			this.identificationDefiner = identificationDefiner;
 		}
 		
-		public IReversibleAccessor getIdAccessor() {
+		public ReversibleAccessor getIdAccessor() {
 			return idAccessor;
 		}
 		
@@ -933,13 +933,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		private final KeepOrderSet<Mapping> mappings = new KeepOrderSet<>();
 		
 		Mapping add(Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration,
-				 Table table, Map<IReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
+					Table table, Map<ReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
 			Mapping newMapping = new Mapping(mappingConfiguration, table, mapping, mappedSuperClass);
 			this.mappings.add(newMapping);
 			return newMapping;
 		}
 		
-		Map<IReversibleAccessor, Column> giveMapping(Table table) {
+		Map<ReversibleAccessor, Column> giveMapping(Table table) {
 			Mapping foundMapping = Iterables.find(this.mappings, m -> m.getTargetTable().equals(table));
 			if (foundMapping == null) {
 				throw new IllegalArgumentException("Can't find table '" + table.getAbsoluteName()
@@ -962,11 +962,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		static class Mapping {
 			private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 			private final Table targetTable;
-			private final Map<IReversibleAccessor, Column> mapping;
+			private final Map<ReversibleAccessor, Column> mapping;
 			private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 			private final boolean mappedSuperClass;
 			
-			Mapping(Object mappingConfiguration, Table targetTable, Map<IReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
+			Mapping(Object mappingConfiguration, Table targetTable, Map<ReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
 				this.mappingConfiguration = mappingConfiguration;
 				this.targetTable = targetTable;
 				this.mapping = mapping;
@@ -993,11 +993,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				return targetTable;
 			}
 			
-			public Map<IReversibleAccessor, Column> getMapping() {
+			public Map<ReversibleAccessor, Column> getMapping() {
 				return mapping;
 			}
 			
-			void addIdentifier(IReversibleAccessor identifierAccessor) {
+			void addIdentifier(ReversibleAccessor identifierAccessor) {
 				Column primaryKey = (Column) Iterables.first(getTargetTable().getPrimaryKey().getColumns());
 				getMapping().put(identifierAccessor, primaryKey);
 			}

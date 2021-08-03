@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.gama.reflection.Accessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -24,7 +25,7 @@ public class MappedManyRelationDescriptor<I, O, C extends Collection<O>> extends
 	 * @param collectionFactory collection factory
 	 * @param reverseSetter setter on the owning side for source bean, optional
 	 * 		because it can be either a {@link org.danekja.java.util.function.serializable.SerializableFunction},
-	 * 		or {@link Function} took from an {@link org.gama.reflection.IAccessor}
+	 * 		or {@link Function} took from an {@link Accessor}
 	 * @param reverseColumn
 	 */
 	public MappedManyRelationDescriptor(Function<I, C> collectionGetter,

@@ -22,7 +22,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.reflection.AccessorChain;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
@@ -149,8 +149,8 @@ public class PersisterBuilderImplTest {
 		
 		// NB: containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
-		ArrayList<Entry<IReversibleAccessor, Column>> expected = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
+		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
+				.forHashMap(ReversibleAccessor.class, Column.class)
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getId), mutatorByField(Car.class, "id")),
 						dummyTable.getColumn("id"))
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
@@ -163,7 +163,7 @@ public class PersisterBuilderImplTest {
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
+		ArrayList<Entry<ReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actual)
 				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
@@ -194,8 +194,8 @@ public class PersisterBuilderImplTest {
 		
 		// NB: AssertJ containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
-		ArrayList<Entry<IReversibleAccessor, Column>> expected = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
+		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
+				.forHashMap(ReversibleAccessor.class, Column.class)
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getId), mutatorByField(Car.class, "id")),
 						dummyTable.getColumn("id"))
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
@@ -211,7 +211,7 @@ public class PersisterBuilderImplTest {
 		assertThat(map.giveTables())
 				.extracting(Table::getAbsoluteName)
 				.containsExactly("Car");
-		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
+		ArrayList<Entry<ReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actual)
 				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
@@ -255,13 +255,13 @@ public class PersisterBuilderImplTest {
 		// NB: AssertJ containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		// Checking Car mapping
-		List<Entry<IReversibleAccessor, Column>> expectedCarMapping = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
+		List<Entry<ReversibleAccessor, Column>> expectedCarMapping = new ArrayList<>(Maps
+				.forHashMap(ReversibleAccessor.class, Column.class)
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						carTable.getColumn("model"))
 				.entrySet());
 		expectedCarMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		List<Entry<IReversibleAccessor, Column>> actualCarMapping = new ArrayList<>(map.giveMapping(carTable).entrySet());
+		List<Entry<ReversibleAccessor, Column>> actualCarMapping = new ArrayList<>(map.giveMapping(carTable).entrySet());
 		actualCarMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actualCarMapping)
 				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
@@ -269,14 +269,14 @@ public class PersisterBuilderImplTest {
 				.isEqualTo(expectedCarMapping);
 		
 		// Checking Vehicle mapping
-		List<Entry<IReversibleAccessor, Column>> expectedVehicleMapping = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
+		List<Entry<ReversibleAccessor, Column>> expectedVehicleMapping = new ArrayList<>(Maps
+				.forHashMap(ReversibleAccessor.class, Column.class)
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Vehicle::getColor), mutatorByMethodReference(Vehicle::setColor)),
 								new PropertyAccessor<>(accessorByMethodReference(Color::getRgb), mutatorByField(Color.class, "rgb"))),
 						vehicleTable.getColumn("rgb"))
 				.entrySet());
 		expectedVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		List<Entry<IReversibleAccessor, Column>> actualVehicleMapping = new ArrayList<>(map.giveMapping(vehicleTable).entrySet());
+		List<Entry<ReversibleAccessor, Column>> actualVehicleMapping = new ArrayList<>(map.giveMapping(vehicleTable).entrySet());
 		actualVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actualVehicleMapping)
 				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
@@ -287,8 +287,8 @@ public class PersisterBuilderImplTest {
 		// we get the table instance created by builder because our (the one of this test) is only one with same name but without columns because
 		// it wasn't given at mapping definition time
 		abstractVehicleTable = Iterables.find(map.giveTables(), abstractVehicleTable::equals);
-		List<Entry<IReversibleAccessor, Column>> expectedAbstractVehicleMapping = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
+		List<Entry<ReversibleAccessor, Column>> expectedAbstractVehicleMapping = new ArrayList<>(Maps
+				.forHashMap(ReversibleAccessor.class, Column.class)
 				.add(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getId), mutatorByField(Car.class, "id")),
 						abstractVehicleTable.getColumn("id"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
@@ -299,7 +299,7 @@ public class PersisterBuilderImplTest {
 						abstractVehicleTable.getColumn("modificationDate"))
 				.entrySet());
 		expectedAbstractVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		List<Entry<IReversibleAccessor, Column>> actualAbstractVehicleMapping = new ArrayList<>(map.giveMapping(abstractVehicleTable).entrySet());
+		List<Entry<ReversibleAccessor, Column>> actualAbstractVehicleMapping = new ArrayList<>(map.giveMapping(abstractVehicleTable).entrySet());
 		actualAbstractVehicleMapping.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actualAbstractVehicleMapping)
 				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)
@@ -328,8 +328,8 @@ public class PersisterBuilderImplTest {
 		
 		// NB: containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
-		ArrayList<Entry<IReversibleAccessor, Column>> expected = new ArrayList<>(Maps
-				.forHashMap(IReversibleAccessor.class, Column.class)
+		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
+				.forHashMap(ReversibleAccessor.class, Column.class)
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getId), mutatorByField(Car.class, "id")),
 						dummyTable.getColumn("id"))
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
@@ -342,7 +342,7 @@ public class PersisterBuilderImplTest {
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		ArrayList<Entry<IReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
+		ArrayList<Entry<ReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actual)
 				// Objects are similar but not equals so we compare them throught their footprint (truly comparing them is quite hard)

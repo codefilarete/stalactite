@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
@@ -17,7 +17,7 @@ import org.gama.stalactite.persistence.structure.Table;
 public class CascadeOne<SRC, TRGT, TRGTID> {
 	
 	/** The method that gives the target entity from the source one */
-	private final IReversibleAccessor<SRC, TRGT> targetProvider;
+	private final ReversibleAccessor<SRC, TRGT> targetProvider;
 	
 	/** Configuration used for target beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
@@ -37,18 +37,18 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	
-	<T extends Table> CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
+	<T extends Table> CascadeOne(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this(targetProvider, () -> targetMappingConfiguration, table);
 	}
 	
-	<T extends Table> CascadeOne(IReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration, T table) {
+	<T extends Table> CascadeOne(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this.targetMappingConfiguration = targetMappingConfiguration;
 		this.targetProvider = targetProvider;
 		this.targetTable = table;
 	}
 	
 	/** Original method reference given for mapping */
-	public IReversibleAccessor<SRC, TRGT> getTargetProvider() {
+	public ReversibleAccessor<SRC, TRGT> getTargetProvider() {
 		return targetProvider;
 	}
 	

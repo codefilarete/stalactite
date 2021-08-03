@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.List;
 
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
@@ -20,7 +20,7 @@ public class CascadeManyList<SRC, TRGT, TRGTID, C extends List<TRGT>> extends Ca
 	
 	private Column indexingColumn;
 	
-	public <T extends Table> CascadeManyList(IReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference,
+	public <T extends Table> CascadeManyList(ReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference,
 											 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
 		super(collectionProvider, methodReference, targetMappingConfiguration, targetTable);
 	}

@@ -16,7 +16,7 @@ import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.IReversibleAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
@@ -181,22 +181,22 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
-		IReversibleAccessor<C, E> mutator = Accessors.mutator(setter);
+		ReversibleAccessor<C, E> mutator = Accessors.mutator(setter);
 		return addMapping(mutator, AccessorDefinition.giveDefinition(mutator), columnName);
 	}
 	
 	<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
-		IReversibleAccessor<C, E> accessor = Accessors.accessor(getter);
+		ReversibleAccessor<C, E> accessor = Accessors.accessor(getter);
 		return addMapping(accessor, AccessorDefinition.giveDefinition(accessor), columnName);
 	}
 	
-	AbstractLinkage<C> addMapping(IReversibleAccessor<C, ?> propertyAccessor, AccessorDefinition accessorDefinition, @Nullable String columnName) {
+	AbstractLinkage<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, AccessorDefinition accessorDefinition, @Nullable String columnName) {
 		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, accessorDefinition.getMemberType(), columnName);
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
-	protected <O> LinkageByColumnName<C> newLinkage(IReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
+	protected <O> LinkageByColumnName<C> newLinkage(ReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
 		return new LinkageByColumnName<>(accessor, returnType, linkName);
 	}
 	
@@ -370,28 +370,28 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 */
 	public static class LinkageByColumnName<T> extends AbstractLinkage<T> {
 		
-		private final IReversibleAccessor<T, ?> function;
+		private final ReversibleAccessor<T, ?> function;
 		private final Class<?> columnType;
 		/** Column name override if not default */
 		@Nullable
 		private final String columnName;
 		
 		/**
-		 * Constructor by {@link IReversibleAccessor}
+		 * Constructor by {@link ReversibleAccessor}
 		 *
-		 * @param accessor a {@link IReversibleAccessor}
+		 * @param accessor a {@link ReversibleAccessor}
 		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry}
 		 * @param columnName an override of the default name that will be generated
 		 */
-		public <O> LinkageByColumnName(IReversibleAccessor<T, O> accessor, Class<O> columnType, @Nullable String columnName) {
+		public <O> LinkageByColumnName(ReversibleAccessor<T, O> accessor, Class<O> columnType, @Nullable String columnName) {
 			this.function = accessor;
 			this.columnType = columnType;
 			this.columnName = columnName;
 		}
 		
 		@Override
-		public <O> IReversibleAccessor<T, O> getAccessor() {
-			return (IReversibleAccessor<T, O>) function;
+		public <O> ReversibleAccessor<T, O> getAccessor() {
+			return (ReversibleAccessor<T, O>) function;
 		}
 		
 		@Override
