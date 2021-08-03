@@ -43,7 +43,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 	
 	public TablePerClassPolymorphicSelectExecutor(
 			Map<SubEntityMappingConfiguration, Table> tablePerSubConfiguration,
-			Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
+			Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			ColumnBinderRegistry columnBinderRegistry,
@@ -54,7 +54,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 				Entry::getValue);
 		this.subEntitiesSelectors = Iterables.map(persisterPerSubclass.entrySet(),
 				Entry::getKey,
-				Functions.chain(Entry::getValue, JoinedTablesPersister::getSelectExecutor));
+				Functions.chain(Entry::getValue, SimpleRelationalEntityPersister::getSelectExecutor));
 		this.connectionProvider = connectionProvider;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.mainTable = mainTable;

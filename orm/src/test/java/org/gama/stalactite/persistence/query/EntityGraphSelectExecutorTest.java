@@ -21,7 +21,7 @@ import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;

@@ -22,7 +22,7 @@ import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.Colu
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPolymorphicPersister;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
@@ -99,7 +99,7 @@ class JoinedTablesPolymorphismBuilder<C, I, T extends Table> extends AbstractPol
 			
 			// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 			// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
-			subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
+			subclassPersister = new SimpleRelationalEntityPersister(classMappingStrategy, dialect, connectionConfiguration);
 			
 			// Adding join with parent table to select
 			Column subEntityPrimaryKey = (Column) Iterables.first(subclassPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());

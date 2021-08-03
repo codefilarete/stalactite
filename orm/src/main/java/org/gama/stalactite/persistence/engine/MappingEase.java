@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport;
 import org.gama.stalactite.persistence.engine.configurer.FluentSubEntityMappingConfigurationSupport;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.mapping.EmbeddedClassMappingStrategy;
 
 /**
@@ -16,7 +16,7 @@ public final class MappingEase {
 	/**
 	 * Starts a {@link FluentEntityMappingBuilder} for a given class.
 	 *
-	 * @param classToPersist the class to be persisted by the {@link JoinedTablesPersister}
+	 * @param classToPersist the class to be persisted by the {@link SimpleRelationalEntityPersister}
 	 * 						 that will be created by {@link FluentEntityMappingBuilder#build(PersistenceContext)}
 	 * @param identifierType entity identifier type
 	 * @param <T> any type to be persisted

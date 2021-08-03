@@ -58,7 +58,7 @@ import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
@@ -244,7 +244,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		// Creating main persister 
 		Mapping mainMapping = Iterables.first(inheritanceMappingPerTable.getMappings());
-		JoinedTablesPersister<C, I, Table> mainPersister = buildMainPersister(identification, mainMapping, dialect, connectionConfiguration);
+		SimpleRelationalEntityPersister<C, I, Table> mainPersister = buildMainPersister(identification, mainMapping, dialect, connectionConfiguration);
 		PersisterBuilderContext.CURRENT.get().addEntity(mainPersister.getMappingStrategy().getClassToPersist());
 		
 		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, persisterRegistry, mainPersister,
@@ -292,7 +292,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		// parent persister must be kept in ascending order for further treatments
 		Iterator<Mapping> mappings = Iterables.filter(Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().asSet()),
 				m -> !mainMapping.equals(m) && !m.mappedSuperClass);
-		KeepOrderSet<JoinedTablesPersister<C, I, Table>> parentPersisters = buildParentPersisters(() -> mappings,
+		KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> parentPersisters = buildParentPersisters(() -> mappings,
 				identification, mainPersister, dialect, connectionConfiguration
 		);
 		
@@ -341,7 +341,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		public abstract void consume(EntityConfiguredJoinedTablesPersister<P, Object> persister);
 	}
 	
-	private <T extends Table> void handleVersioningStrategy(JoinedTablesPersister<C, I, T> result) {
+	private <T extends Table> void handleVersioningStrategy(SimpleRelationalEntityPersister<C, I, T> result) {
 		VersioningStrategy versioningStrategy = this.entityMappingConfiguration.getOptimisticLockOption();
 		if (versioningStrategy != null) {
 			// we have to declare it to the mapping strategy. To do that we must find the versionning column
@@ -353,12 +353,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 	}
 	
-	private <T extends Table> KeepOrderSet<JoinedTablesPersister<C, I, Table>> buildParentPersisters(Iterable<Mapping> mappings,
-																						 Identification identification,
-																						 JoinedTablesPersister<C, I, T> mainPersister,
-																						 Dialect dialect,
-																						 ConnectionConfiguration connectionConfiguration) {
-		KeepOrderSet<JoinedTablesPersister<C, I, Table>> parentPersisters = new KeepOrderSet<>();
+	private <T extends Table> KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> buildParentPersisters(Iterable<Mapping> mappings,
+																											   Identification identification,
+																											   SimpleRelationalEntityPersister<C, I, T> mainPersister,
+																											   Dialect dialect,
+																											   ConnectionConfiguration connectionConfiguration) {
+		KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> parentPersisters = new KeepOrderSet<>();
 		Column superclassPK = (Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns());
 		Holder<Table> currentTable = new Holder<>(mainPersister.getMainTable());
 		mappings.forEach(mapping -> {
@@ -373,7 +373,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					mapping.giveEmbeddableConfiguration().getBeanType(),
 					null);
 			
-			JoinedTablesPersister<C, I, Table> currentPersister = new JoinedTablesPersister<>(currentMappingStrategy, dialect, connectionConfiguration);
+			SimpleRelationalEntityPersister<C, I, Table> currentPersister = new SimpleRelationalEntityPersister<>(currentMappingStrategy, dialect, connectionConfiguration);
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
@@ -385,10 +385,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		return parentPersisters;
 	}
 	
-	private <T extends Table> JoinedTablesPersister<C, I, T> buildMainPersister(Identification identification,
-																				Mapping mapping,
-																				Dialect dialect,
-																				ConnectionConfiguration connectionConfiguration) {
+	private <T extends Table> SimpleRelationalEntityPersister<C, I, T> buildMainPersister(Identification identification,
+																						  Mapping mapping,
+																						  Dialect dialect,
+																						  ConnectionConfiguration connectionConfiguration) {
 		EntityMappingConfiguration mappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
 		ClassMappingStrategy<C, I, T> parentMappingStrategy = createClassMappingStrategy(
 				identification.getIdentificationDefiner().getPropertiesMapping() == mappingConfiguration.getPropertiesMapping(),
@@ -398,7 +398,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				identification,
 				mappingConfiguration.getEntityType(),
 				mappingConfiguration.getEntityFactory());
-		return new JoinedTablesPersister<>(parentMappingStrategy, dialect, connectionConfiguration);
+		return new SimpleRelationalEntityPersister<>(parentMappingStrategy, dialect, connectionConfiguration);
 	}
 	
 	/**
@@ -424,11 +424,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param mainPersister main persister
 	 * @param superPersisters persisters in ascending order
 	 */
-	private void addCascadesBetweenChildAndParentTable(JoinedTablesPersister<C, I, ? extends Table> mainPersister,
-													   KeepOrderSet<JoinedTablesPersister<C, I, Table>> superPersisters) {
+	private void addCascadesBetweenChildAndParentTable(SimpleRelationalEntityPersister<C, I, ? extends Table> mainPersister,
+													   KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> superPersisters) {
 		// we add cascade only on persister with different table : we keep the "lowest" one because it gets all inherited properties,
 		// upper ones are superfluous
-		KeepOrderSet<JoinedTablesPersister<C, I, Table>> superPersistersWithChangingTable = new KeepOrderSet<>();
+		KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> superPersistersWithChangingTable = new KeepOrderSet<>();
 		Holder<Table> lastTable = new Holder<>(mainPersister.getMainTable());
 		superPersisters.forEach(p -> {
 			if (!p.getMainTable().equals(lastTable.get())) {
@@ -453,7 +453,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 		});
 		
-		List<JoinedTablesPersister<C, I, Table>> copy = Iterables.copy(superPersistersWithChangingTable);
+		List<SimpleRelationalEntityPersister<C, I, Table>> copy = Iterables.copy(superPersistersWithChangingTable);
 		java.util.Collections.reverse(copy);
 		copy.forEach(superPersister -> {
 			// On child deletion, parent must be deleted after

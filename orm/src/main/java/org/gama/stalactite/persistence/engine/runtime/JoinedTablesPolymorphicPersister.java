@@ -34,7 +34,7 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;

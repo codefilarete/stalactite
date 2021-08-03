@@ -34,15 +34,15 @@ import org.gama.stalactite.sql.result.RowIterator;
  */
 public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2;
+	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
+	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2;
 	private final T mainTable;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinedTablesPolymorphismEntitySelectExecutor(Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
-														Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass2,
+	public JoinedTablesPolymorphismEntitySelectExecutor(Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
+														Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2,
 													   T mainTable,
 													   EntityJoinTree<C, I> entityJoinTree,
 													   ConnectionProvider connectionProvider,
@@ -100,8 +100,8 @@ public class JoinedTablesPolymorphismEntitySelectExecutor<C, I, T extends Table>
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
 				Class<? extends C> entitySubclass;
-				Set<Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>>> entries = persisterPerSubclass.entrySet();
-				Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>> subclassEntityOnRow = Iterables.find(entries,
+				Set<Entry<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>>> entries = persisterPerSubclass.entrySet();
+				Entry<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> subclassEntityOnRow = Iterables.find(entries,
 						e -> {
 							boolean isPKEmpty = true;
 							Iterator<Column> columnIt = e.getValue().getMainTable().getPrimaryKey().getColumns().iterator();

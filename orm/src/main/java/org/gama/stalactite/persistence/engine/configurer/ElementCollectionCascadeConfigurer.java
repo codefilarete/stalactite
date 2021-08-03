@@ -30,7 +30,7 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProv
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.RelationalEntityPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.runtime.CollectionUpdater;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
@@ -139,7 +139,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		}
 			
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
-		JoinedTablesPersister<ElementRecord, ElementRecord, Table> elementRecordPersister = new JoinedTablesPersister<>(elementRecordStrategy, dialect, connectionConfiguration);
+		SimpleRelationalEntityPersister<ElementRecord, ElementRecord, Table> elementRecordPersister = new SimpleRelationalEntityPersister<>(elementRecordStrategy, dialect, connectionConfiguration);
 		
 		// insert management
 		Accessor<SRC, C> collectionAccessor = linkage.getCollectionProvider();

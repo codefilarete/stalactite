@@ -20,7 +20,7 @@ import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.Colu
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.TablePerClassPolymorphismPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
@@ -61,7 +61,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 	
 	@Override
 	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
+		Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		for (SubEntityMappingConfiguration<? extends C> subConfiguration : polymorphismPolicy.getSubClasses()) {
@@ -105,7 +105,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 				classMappingStrategy.addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
 			});
 			
-			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
+			SimpleRelationalEntityPersister subclassPersister = new SimpleRelationalEntityPersister(classMappingStrategy, dialect, connectionConfiguration);
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		

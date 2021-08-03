@@ -11,7 +11,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.EntityPersister.ExecutableEntityQuery;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;

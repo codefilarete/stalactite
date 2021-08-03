@@ -43,7 +43,7 @@ import org.gama.stalactite.persistence.engine.model.PersonWithGender;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -580,7 +580,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
-		((JoinedTablesPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 			@Override
 			public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 				capturedValues.putAll(values);
@@ -668,7 +668,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
-		((JoinedTablesPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 			@Override
 			public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 				capturedValues.putAll(values);

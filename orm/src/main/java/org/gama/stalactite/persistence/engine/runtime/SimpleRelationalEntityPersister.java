@@ -60,7 +60,7 @@ import static java.util.Collections.emptyList;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class JoinedTablesPersister<C, I, T extends Table> implements EntityConfiguredJoinedTablesPersister<C, I> {
+public class SimpleRelationalEntityPersister<C, I, T extends Table> implements EntityConfiguredJoinedTablesPersister<C, I> {
 	
 	private final Persister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
@@ -69,12 +69,12 @@ public class JoinedTablesPersister<C, I, T extends Table> implements EntityConfi
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingStrategyTreeSelectExecutor<C, I, T> selectGraphExecutor;
 	
-	public JoinedTablesPersister(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
+	public SimpleRelationalEntityPersister(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public JoinedTablesPersister(ClassMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect,
-								 ConnectionConfiguration connectionConfiguration) {
+	public SimpleRelationalEntityPersister(ClassMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect,
+										   ConnectionConfiguration connectionConfiguration) {
 		this.persister = new Persister<>(mainMappingStrategy, dialect, connectionConfiguration);
 		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
 		this.selectGraphExecutor = newSelectExecutor(mainMappingStrategy, connectionConfiguration.getConnectionProvider(), dialect);
@@ -154,7 +154,7 @@ public class JoinedTablesPersister<C, I, T extends Table> implements EntityConfi
 	
 	@Override
 	public Set<Table> giveImpliedTables() {
-		return getEntityMappingStrategyTreeSelectExecutor().getEntityJoinTree().giveTables();
+		return getEntityJoinTree().giveTables();
 	}
 	
 	@Override

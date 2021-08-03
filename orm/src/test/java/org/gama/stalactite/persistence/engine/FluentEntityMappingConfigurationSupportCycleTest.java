@@ -17,7 +17,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -729,7 +729,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((JoinedTablesPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -838,7 +838,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((JoinedTablesPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);
@@ -947,7 +947,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
 			List<String> capturedSQL = new ArrayList<>();
-			((JoinedTablesPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
 				@Override
 				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
 					capturedValues.add(values);

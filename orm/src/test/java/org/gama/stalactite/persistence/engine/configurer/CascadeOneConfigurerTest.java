@@ -22,7 +22,7 @@ import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
@@ -125,7 +125,7 @@ class CascadeOneConfigurerTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		// When
-		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
+		SimpleRelationalEntityPersister<Country, Identifier<Long>, Table> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
 				countryPersister,
@@ -227,7 +227,7 @@ class CascadeOneConfigurerTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
-		JoinedTablesPersister<Country, Identifier<Long>, Table> countryPersister = new JoinedTablesPersister<>(countryClassMappingStrategy, dialect,
+		SimpleRelationalEntityPersister<Country, Identifier<Long>, Table> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
 				countryPersister,

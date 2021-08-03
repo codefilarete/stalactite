@@ -14,7 +14,7 @@ import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.cycle.OneToManyCycleConfigurer;
 import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -29,7 +29,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
-	private final JoinedTablesPersister<C, I, T> sourcePersister;
+	private final SimpleRelationalEntityPersister<C, I, T> sourcePersister;
 	private final ColumnNamingStrategy columnNamingStrategy;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
@@ -40,7 +40,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
 							  PersisterRegistry persisterRegistry,
-							  JoinedTablesPersister<C, I, T> sourcePersister,
+							  SimpleRelationalEntityPersister<C, I, T> sourcePersister,
 							  ColumnNamingStrategy columnNamingStrategy,
 							  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 							  ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,

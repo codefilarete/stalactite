@@ -61,9 +61,9 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class JoinedTablesPersisterTest {
+public class SimpleRelationalEntityPersisterTest {
 	
-	private JoinedTablesPersister<Toto, StatefullIdentifier<Integer>, ?> testInstance;
+	private SimpleRelationalEntityPersister<Toto, StatefullIdentifier<Integer>, ?> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
@@ -171,7 +171,7 @@ public class JoinedTablesPersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		transactionManager.setDataSource(dataSource);
-		testInstance = new JoinedTablesPersister<>(totoClassMappingStrategy_ontoTable1, dialect, new ConnectionConfigurationSupport(transactionManager, 3));
+		testInstance = new SimpleRelationalEntityPersister<>(totoClassMappingStrategy_ontoTable1, dialect, new ConnectionConfigurationSupport(transactionManager, 3));
 		// we add a copier onto a another table
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,

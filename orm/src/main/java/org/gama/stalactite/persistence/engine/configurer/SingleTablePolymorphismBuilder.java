@@ -19,7 +19,7 @@ import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.SingleTablePolymorphicPersister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -86,7 +86,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 			classMappingStrategy.addShadowColumns((ClassMappingStrategy) mainPersister.getMappingStrategy());
 			
 			// no primary key to add nor foreign key since table is the same as main one (single table strategy)
-			JoinedTablesPersister subclassPersister = new JoinedTablesPersister(classMappingStrategy, dialect, connectionConfiguration);
+			SimpleRelationalEntityPersister subclassPersister = new SimpleRelationalEntityPersister(classMappingStrategy, dialect, connectionConfiguration);
 			
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}

@@ -39,14 +39,14 @@ import org.gama.stalactite.sql.result.RowIterator;
 public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
 	private final Map<Class, Table> tablePerSubConfiguration;
-	private final Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass;
+	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
 	private final ConnectionProvider connectionProvider;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final Table mainTable;
 	
 	public TablePerClassPolymorphicEntitySelectExecutor(
 			Map<SubEntityMappingConfiguration, Table> tablePerSubConfiguration,
-			Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
+			Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			ColumnBinderRegistry columnBinderRegistry,
@@ -62,7 +62,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 	
 	public TablePerClassPolymorphicEntitySelectExecutor(
 			Map<Class, Table> tablePerSubConfiguration,
-			Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> persisterPerSubclass,
+			Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			ColumnBinderRegistry columnBinderRegistry

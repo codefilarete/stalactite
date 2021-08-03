@@ -34,7 +34,7 @@ import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.engine.runtime.JoinedTablesPersister.CriteriaProvider;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
@@ -66,16 +66,16 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private final Map<Class<? extends C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	
 	public TablePerClassPolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-											  Map<Class<? extends C>, JoinedTablesPersister<C, I, T>> subEntitiesPersisters,
+											  Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> subEntitiesPersisters,
 											  ConnectionProvider connectionProvider,
 											  Dialect dialect) {
 		this.mainPersister = mainPersister;
-		Set<Entry<Class<? extends C>, JoinedTablesPersister<C, I, T>>> entries = subEntitiesPersisters.entrySet();
+		Set<Entry<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>>> entries = subEntitiesPersisters.entrySet();
 		this.subclassUpdateExecutors = Iterables.map(entries, Entry::getKey, e -> e.getValue().getUpdateExecutor(), KeepOrderMap::new);
 		
 		Map<Class, Table> tablePerSubEntity = Iterables.map((Set) entries,
 				Entry::getKey,
-				Functions.<Entry<Class, JoinedTablesPersister>, JoinedTablesPersister, Table>chain(Entry::getValue, JoinedTablesPersister::getMainTable));
+				Functions.<Entry<Class, SimpleRelationalEntityPersister>, SimpleRelationalEntityPersister, Table>chain(Entry::getValue, SimpleRelationalEntityPersister::getMainTable));
 		
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
@@ -85,7 +85,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		
 		Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors = Iterables.map(subEntitiesPersisters.entrySet(),
 				Entry::getKey,
-				Functions.chain(Entry::getValue, JoinedTablesPersister::getSelectExecutor));
+				Functions.chain(Entry::getValue, SimpleRelationalEntityPersister::getSelectExecutor));
 		this.selectExecutor = new TablePerClassPolymorphicSelectExecutor<>(
 				tablePerSubEntity,
 				subEntitiesSelectors,
