@@ -19,12 +19,12 @@ import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionOptions;
@@ -33,8 +33,8 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProv
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.EnumOptions;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.FluentSubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.ImportedEmbedWithColumnOptions;
 import org.gama.stalactite.persistence.engine.IndexableCollectionOptions;
@@ -382,14 +382,14 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	@Override
 	public <O, J, S extends Set<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		return addOneToManySet(getter, mappingConfiguration, null);
 	}
 		
 	@Override
 	public <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
@@ -404,7 +404,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	@Override
 	public <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			SerializableBiConsumer<C, S> setter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
@@ -418,9 +418,10 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	private <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
-		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(propertyAccessor, methodReference, mappingConfiguration.getConfiguration(), table);
+		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(propertyAccessor, methodReference,
+				(EntityMappingConfigurationProvider<? extends O, J>) mappingConfiguration, table);
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
@@ -431,14 +432,14 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	@Override
 	public <O, J, S extends List<O>> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration) {
 		return addOneToManyList(getter, mappingConfiguration, null);
 	}
 		
 	@Override
 	public <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
@@ -453,7 +454,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	@Override
 	public <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			SerializableBiConsumer<C, S> setter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
 		
 		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
@@ -467,9 +468,10 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	private <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			EntityMappingConfigurationProvider<? super O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
-		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(propertyAccessor, methodReference, mappingConfiguration.getConfiguration(), table);
+		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(propertyAccessor, methodReference,
+			(EntityMappingConfiguration<? extends O, J>) mappingConfiguration.getConfiguration(), table);
 		this.cascadeManys.add(cascadeMany);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
