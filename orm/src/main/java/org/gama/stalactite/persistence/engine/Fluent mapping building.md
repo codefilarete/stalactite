@@ -45,10 +45,10 @@ Reader may have a look to [identifier generation policies](../../../../../../../
 
 ## Naming table, columns, foreign keys
 
-Table names can be controlled by creating the right Table and passing it to the `from(..)` method of the [IFluentMappingBuilder](IFluentMappingBuilder.java).
-As well as tables, colum names can be controlled by passing it to the `add` method of the [IFluentMappingBuilder](IFluentMappingBuilder.java).
+Table names can be controlled by creating the right Table and passing it to the `from(..)` method of the [FluentMappingBuilder](FluentMappingBuilder.java).
+As well as tables, colum names can be controlled by passing it to the `add` method of the [FluentMappingBuilder](FluentMappingBuilder.java).
 
-Foreign keys are named according to a [ForeignKeyNamingStrategy](ForeignKeyNamingStrategy.java) that can be given to the [IFluentMappingBuilder](IFluentMappingBuilder.java)
+Foreign keys are named according to a [ForeignKeyNamingStrategy](ForeignKeyNamingStrategy.java) that can be given to the [FluentMappingBuilder](FluentMappingBuilder.java)
 through `foreignKeyNamingStrategy(..)` method.
 
 Finally, in case of one-to-many with an association table (relation is not owned by target entities), association table name and its column names can

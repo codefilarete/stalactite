@@ -118,15 +118,15 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @see #addOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Set<O>>
-	IFluentMappingBuilderOneToManyOptions<C, I, O, S>
+	FluentMappingBuilderOneToManyOptions<C, I, O, S>
 	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends Set<O>, T extends Table>
-	IFluentMappingBuilderOneToManyOptions<C, I, O, S>
+	FluentMappingBuilderOneToManyOptions<C, I, O, S>
 	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends Set<O>, T extends Table>
-	IFluentMappingBuilderOneToManyOptions<C, I, O, S>
+	FluentMappingBuilderOneToManyOptions<C, I, O, S>
 	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
