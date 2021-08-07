@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class QueryMapperTest {
+class QueryMapperTest {
 	
 	/**
 	 * @return a {@link QueryMapper} as first argument and expected {@link Toto} built bean instance as second
@@ -57,7 +57,12 @@ public class QueryMapperTest {
 		String dummySql = "never executed statement";
 		// we use different ways of mapping the same thing
 		return new Object[][] {
-				{	// default API: constructor with 1 arg, column name, column type
+				{	// no given key
+					new QueryMapper<>(TotoWithNoArgConstructor.class, dummySql, columnBinderRegistry)
+						.map("id", Toto::setId, long.class)
+						.map("name", Toto::setName, String.class)
+						.map("active", Toto::setActive), expected },
+				{	// constructor with 1 arg, column name, column type
 					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", long.class)
 						.map("name", Toto::setName, String.class)
@@ -68,7 +73,7 @@ public class QueryMapperTest {
 						.map("id", Toto::setId)
 						.map("name", Toto::setName, String.class)
 						.map("active", Toto::setActive), expected },
-				{	// default API: constructor as factory method
+				{	// constructor as factory method
 					new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 							.mapKey(Toto::ofId, "id", long.class)
 							.map("name", Toto::setName, String.class)
@@ -108,35 +113,35 @@ public class QueryMapperTest {
 				{	// with Java Bean constructor with 3 arguments
 						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", long.class, "name", String.class, "active", boolean.class), expected },
-				{	// default API: constructor as factory method without type
+				{	// constructor as factory method without type
 						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 								.mapKey(Toto::ofId, "id")
 								.map("name", Toto::setName, String.class)
 								.map("active", Toto::setActive), expected },
-				{	// default API: no-arg constructor
+				{	// no-arg constructor
 						new QueryMapper<>(TotoWithNoArgConstructor.class, dummySql, columnBinderRegistry)
-								.mapKeyNoArg(TotoWithNoArgConstructor::new, "id", long.class)
+								.mapKey(TotoWithNoArgConstructor::new, "id", long.class)
 								.map("id", Toto::setId, long.class)
 								.map("name", Toto::setName, String.class)
 								.map("active", Toto::setActive), expected },
-				{	// default API: constructor without giving type
+				{	// constructor without giving type
 						new QueryMapper<>(TotoWithOneArgConstructor.class, dummySql, columnBinderRegistry)
 								.mapKey(TotoWithOneArgConstructor::new, "id")
 								.map("name", Toto::setName, String.class)
 								.map("active", Toto::setActive), expected },
-				{	// default API: constructor as factory method without type
+				{	// constructor as factory method without type
 						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 								.mapKey(Toto::ofIdAndName, "id", "name")
 								.map("active", Toto::setActive), expected },
-				{	// default API: constructor without giving type
+				{	// constructor without giving type
 						new QueryMapper<>(TotoWithTwoArgConstructor.class, dummySql, columnBinderRegistry)
 								.mapKey(TotoWithTwoArgConstructor::new, "id", "name")
 								.map("active", Toto::setActive), expected },
-				{	// default API: constructor as factory method without type
+				{	// constructor as factory method without type
 						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 								.mapKey(Toto::ofIdAndNameAndActive, "id", "name", "active")
 								, expected },
-				{	// default API: constructor without giving type
+				{	// constructor without giving type
 						new QueryMapper<>(TotoWithThreeArgConstructor.class, dummySql, columnBinderRegistry)
 								.mapKey(TotoWithThreeArgConstructor::new, "id", "name", "active")
 								, expected },
@@ -145,13 +150,43 @@ public class QueryMapperTest {
 	
 	@ParameterizedTest
 	@MethodSource("queryMapperAPI_basicUsage")
-	public void queryMapperAPI_basicUsage(QueryMapper<Toto> queryMapper, List<Toto> expected) {
+	void queryMapperAPI_basicUsage(QueryMapper<Toto> queryMapper, List<Toto> expected) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.forHashMap(String.class, Object.class).add("id", 42L).add("name", "coucou").add("active", true),
 				Maps.forHashMap(String.class, Object.class).add("id", 43L).add("name", "hello").add("active", false)
 		);
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		
+		assertThat(result.toString()).isEqualTo(expected.toString());
+	}
+	
+	@Test
+	void execute_noGivenKey_oneInstancePerRowIsCreated() {
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+			Maps.forHashMap(String.class, Object.class).add("name", "coucou").add("active", true),
+			Maps.forHashMap(String.class, Object.class).add("name", "hello").add("active", false),
+			Maps.forHashMap(String.class, Object.class).add("name", "hola").add("active", false),
+			Maps.forHashMap(String.class, Object.class).add("name", "salut").add("active", false)
+		);
+		
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		Table totoTable = new Table<>("Toto");
+		totoTable.addColumn("name", String.class);
+		totoTable.addColumn("active", boolean.class);
+		
+		QueryMapper testInstance = new QueryMapper<>(TotoWithNoArgConstructor.class, "never executed statement", columnBinderRegistry)
+			.map("name", Toto::setName, String.class)
+			.map("active", Toto::setActive);
+		
+		List<Toto> expected = Arrays.asList(
+			new Toto(-1, "coucou", true),
+			new Toto(-1, "hello", false),
+			new Toto(-1, "hola", false),
+			new Toto(-1, "salut", false)
+		);
+		
+		List<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
 		
 		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
@@ -180,7 +215,7 @@ public class QueryMapperTest {
 	
 	@ParameterizedTest
 	@MethodSource("queryMapperAPI_basicUsageWithConverter")
-	public void newQuery_withConverter(QueryMapper<Toto> queryMapper) {
+	void newQuery_withConverter(QueryMapper<Toto> queryMapper) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih").add("active", false),
 				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie").add("active", false)
@@ -218,7 +253,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void execute_instanceHasParameter() throws SQLException {
+	void execute_instanceHasParameter() throws SQLException {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		// NB: SQL String is there only for clarification but is never executed
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "select id, name from Toto where id in (:id)", columnBinderRegistry)
@@ -251,7 +286,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void execute_instanceHasAssembler() {
+	void execute_instanceHasAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		ModifiableInt assemblerCounter = new ModifiableInt();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
@@ -275,7 +310,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void execute_instanceHasAssembler_thatRunOnce() {
+	void execute_instanceHasAssembler_thatRunOnce() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		ModifiableInt assemblerCounter = new ModifiableInt();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
@@ -299,7 +334,7 @@ public class QueryMapperTest {
 	}
 	
 	@Test
-	public void execute_instanceHasRelation() {
+	void execute_instanceHasRelation() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)

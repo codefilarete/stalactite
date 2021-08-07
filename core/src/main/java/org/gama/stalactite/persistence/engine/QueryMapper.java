@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Converter;
@@ -69,6 +71,8 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	/** Delegate for {@link java.sql.ResultSet} transformation, will get all the mapping configuration */
 	private WholeResultSetTransformer<?, C> rootTransformer;
 	
+	private final QueryMapping<C, ?> mapping = new QueryMapping<>();
+	
 	/**
 	 * Simple constructor
 	 * 
@@ -121,7 +125,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	}
 	
 	@Override
-	public <I> QueryMapper<C> mapKeyNoArg(SerializableSupplier<C> factory, String columnName, Class<I> columnType) {
+	public <I> QueryMapper<C> mapKey(SerializableSupplier<C> factory, String columnName, Class<I> columnType) {
 		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), i -> factory.get());
 		return this;
 	}
@@ -388,7 +392,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	}
 	
 	private <I> void add(ColumnMapping<C, I> columnMapping) {
-		rootTransformer.add(columnMapping.getColumn().getName(), columnMapping.getColumn().getBinder(), columnMapping.getSetter());
+		mapping.add((ColumnMapping) columnMapping);
 	}
 	
 	/** Overriden to adapt return type */
@@ -399,13 +403,13 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	
 	@Override
 	public QueryMapper<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
-		rootTransformer.add(assembler, assemblyPolicy);
+		mapping.add(assembler, assemblyPolicy);
 		return this;
 	}
 	
 	@Override
 	public <K, V> QueryMapper<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
-		rootTransformer.add(combiner, relatedBeanCreator);
+		mapping.add((BiConsumer) combiner, relatedBeanCreator);
 		return this;
 	}
 	
@@ -418,14 +422,18 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 * @return a {@link List} filled by the instances built
 	 */
 	public List<C> execute(ConnectionProvider connectionProvider) {
+		WholeResultSetTransformer<?, C> transformerToUse;
 		if (rootTransformer == null) {
-			throw new IllegalArgumentException("Bean creation is not defined, use mapKey(..)");
+			transformerToUse = new WholeResultSetTransformer<>(rootBeanType, () -> Reflections.newInstance(rootBeanType));
+		} else {
+			transformerToUse = rootTransformer;
 		}
+		this.mapping.applyTo((WholeResultSetTransformer) transformerToUse);
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toSQL().toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
 			readOperation.setValues(sqlArguments);
 			
-			return rootTransformer.transformAll(readOperation.execute());
+			return transformerToUse.transformAll(readOperation.execute());
 		}
 	}
 	
@@ -587,6 +595,89 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		
 		public SerializableBiConsumer<T, I> getSetter() {
 			return setter;
+		}
+	}
+	
+	
+	/**
+	 * Stores configuration defined by user to let user uses {@link QueryMapper} methods in any order : without it mapKey(..) should be used first
+	 * because we might have to apply mapping to {@link WholeResultSetTransformer} instance
+	 * 
+	 * @param <C> created instance type
+	 * @param <I> identifier type
+	 */
+	private static class QueryMapping<C, I> {
+		
+		private final List<Mapping> mappings = new ArrayList<>(10);
+		
+		public void add(QueryMapper<C>.ColumnMapping<C, I> columnMapping) {
+			mappings.add(new ColumnMapping(columnMapping));
+		}
+		
+		public void add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
+			mappings.add(new AssemblerMapping(assembler, assemblyPolicy));
+		}
+		
+		public <K, V> void add(BiConsumer<K, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+			mappings.add(new RelationMapping(combiner, relatedBeanCreator));
+		}
+		
+		/**
+		 * Transfert this mapping to given instance
+		 * @param target instance that will consume current mapping
+		 */
+		public void applyTo(WholeResultSetTransformer<I, C> target) {
+			this.mappings.forEach(m -> {
+				if (m instanceof ColumnMapping) {
+					QueryMapper.ColumnMapping columnMapping = ((ColumnMapping) m).columnMapping;
+					target.add(columnMapping.getColumn().getName(), columnMapping.getColumn().getBinder(), columnMapping.getSetter());
+				} else if (m instanceof AssemblerMapping) {
+					AssemblerMapping assemblerMapping = (AssemblerMapping) m;
+					target.add(assemblerMapping.assembler, assemblerMapping.policy);
+				} else if (m instanceof RelationMapping) {
+					RelationMapping relationMapping = (RelationMapping) m;
+					target.add(relationMapping.combiner, relationMapping.relatedBeanCreator);
+				}
+			});
+		}
+		
+		/**
+		 * A marking interface for different kind of mapping configurations, made to allow them being stored in {@link java.util.Collection}.
+		 * Only used by {@link QueryMapping}
+		 */
+		private interface Mapping {
+			
+		}
+		
+		/** Simple store for property-column mapping */
+		private static class ColumnMapping implements Mapping {
+			private final QueryMapper.ColumnMapping columnMapping;
+			
+			private ColumnMapping(QueryMapper.ColumnMapping columnMapping) {
+				this.columnMapping = columnMapping;
+			}
+		}
+		
+		/** Simple store for assembly mapping */
+		private static class AssemblerMapping implements Mapping {
+			private final ResultSetRowAssembler assembler;
+			private final AssemblyPolicy policy;
+			
+			private AssemblerMapping(ResultSetRowAssembler assembler, AssemblyPolicy policy) {
+				this.assembler = assembler;
+				this.policy = policy;
+			}
+		}
+		
+		/** Simple store for relation mapping */
+		private static class RelationMapping implements Mapping {
+			private final BiConsumer combiner;
+			private final ResultSetRowTransformer relatedBeanCreator;
+			
+			private RelationMapping(BiConsumer combiner, ResultSetRowTransformer relatedBeanCreator) {
+				this.combiner = combiner;
+				this.relatedBeanCreator = relatedBeanCreator;
+			}
 		}
 	}
 }

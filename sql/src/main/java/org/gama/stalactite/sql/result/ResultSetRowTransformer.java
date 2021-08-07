@@ -1,5 +1,6 @@
 package org.gama.stalactite.sql.result;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,6 +11,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.bean.Factory;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 
@@ -21,7 +23,7 @@ import static org.gama.lang.Nullable.nullable;
  * defined with {@link ColumnConsumer}.
  * Instances of this class can be reused over multiple {@link ResultSet} (supposed to have same columns).
  * They can also be adapted to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
- * Moreover they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, Function)}.
+ * Moreover they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, SerializableFunction)}.
  * 
  * @param <I> the type of the bean key (Input)
  * @param <C> the type of the bean
@@ -30,7 +32,7 @@ import static org.gama.lang.Nullable.nullable;
  */
 public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>, ResultSetRowAssembler<C> {
 	
-	private final BeanFactory<I, C> beanFactory;
+	private final BeanFactory<C> beanFactory;
 	
 	private final Class<C> beanType;
 	
@@ -47,8 +49,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
 	public ResultSetRowTransformer(Class<C> beanType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
-		this.beanType = beanType;
-		this.beanFactory = new BeanFactory<>(new SingleColumnReader<>(columnName, reader), beanFactory);
+		this(beanType, new IdentifierArgBeanFactory<>(new SingleColumnReader<>(columnName, reader), beanFactory));
 	}
 	
 	/**
@@ -59,11 +60,27 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
 	 */
 	public ResultSetRowTransformer(Class<C> beanType, ColumnReader<I> reader, SerializableFunction<I, C> beanFactory) {
-		this.beanType = beanType;
-		this.beanFactory = new BeanFactory<>(reader, beanFactory);
+		this(beanType, new IdentifierArgBeanFactory<>(reader, beanFactory));
 	}
 	
-	public ResultSetRowTransformer(Class<C> beanType, BeanFactory<I, C> beanFactory) {
+	/**
+	 * Constructor with main and mandatory arguments.
+	 * With  this constructor an instance per {@link ResultSet} row will be created since there's no mean to distinguish a row instance from another
+	 * because no key reader is given
+	 *
+	 * @param beanType type of built instances
+	 * @param beanFactory the bean creator
+	 */
+	public ResultSetRowTransformer(Class<C> beanType, SerializableSupplier<C> beanFactory) {
+		this(beanType, new NoIdentifierBeanFactory<>(beanFactory));
+	}
+	
+	/**
+	 * For internal usage
+	 * @param beanType type of built instances
+	 * @param beanFactory bean factory to use as contructor
+	 */
+	ResultSetRowTransformer(Class<C> beanType, BeanFactory<C> beanFactory) {
 		this.beanType = beanType;
 		this.beanFactory = beanFactory;
 	}
@@ -72,7 +89,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		return beanType;
 	}
 	
-	public BeanFactory<I, C> getBeanFactory() {
+	public BeanFactory<C> getBeanFactory() {
 		return beanFactory;
 	}
 	
@@ -110,10 +127,27 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	
 	@Override
 	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
-		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, this.beanFactory.copyFor(beanFactory));
+		if (!(this.beanFactory instanceof IdentifierArgBeanFactory)) {
+			throw new UnsupportedOperationException("This instance can only be cloned with an identifier-arg constructor because it was created with one");
+		}
+		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, ((IdentifierArgBeanFactory) this.beanFactory).copyFor(beanFactory));
 		result.consumers.addAll((Set) this.consumers);
-		this.relations.forEach((consumer, transformer) ->
-				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, transformer.beanFactory.factory)));
+		this.relations.forEach((consumer, transformer) -> {
+			result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, ((SerializableFunction) transformer.getBeanFactory().getFactory())));
+		});
+		return result;
+	}
+	
+	@Override
+	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory) {
+		if (!(this.beanFactory instanceof NoIdentifierBeanFactory)) {
+			throw new UnsupportedOperationException("This instance can only be cloned with a no-arg constructor because it was created with one");
+		}
+		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, ((NoIdentifierBeanFactory) this.beanFactory).copyFor(beanFactory));
+		result.consumers.addAll((Set) this.consumers);
+		this.relations.forEach((consumer, transformer) -> {
+				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, ((SerializableSupplier) transformer.getBeanFactory().getFactory())));
+		});
 		return result;
 	}
 	
@@ -168,12 +202,66 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	}
 	
 	/**
-	 * An abstraction of a one-arg constructor that can instanciate a bean from a {@link ResultSet}
+	 * Definition of a factory focused on {@link ResultSetRowTransformer} usage
+	 * @param <C> created type
+	 */
+	public interface BeanFactory<C> extends Factory<ResultSet, C>, CopiableForAnotherQuery<C> {
+		
+		Serializable getFactory();
+		
+		@Override
+		BeanFactory<C> copyWithAliases(Function<String, String> columnMapping);
+	}
+	
+	/**
+	 * Specialization of {@link BeanFactory} for no-arg contructor classes.
+	 * 
+	 * @param <C> created type
+	 */
+	public static class NoIdentifierBeanFactory<C> implements BeanFactory<C> {
+		
+		private final SerializableSupplier<C> factory;
+		
+		public NoIdentifierBeanFactory(SerializableSupplier<C> factory) {
+			this.factory = factory;
+		}
+		
+		public C createInstance() {
+			return factory.get();
+		}
+		
+		public SerializableSupplier<C> getFactory() {
+			return factory;
+		}
+		
+		@Override
+		public C createInstance(ResultSet input) {
+			return factory.get();
+		}
+		
+		@Override
+		public BeanFactory<C> copyWithAliases(Function<String, String> columnMapping) {
+			return new NoIdentifierBeanFactory<>(factory);
+		}
+		
+		/**
+		 * Used to copy this instance for a subclass of its bean type, required for inheritance implementation.
+		 * @param beanFactory subclass no-arg constructor
+		 * @param <T> subclass type
+		 * @return a new {@link BeanFactory} for a subclass bean which read same column as this instance
+		 */
+		public <T extends C> NoIdentifierBeanFactory<T> copyFor(SerializableSupplier<T> beanFactory) {
+			return new NoIdentifierBeanFactory<>(beanFactory);
+		}
+	}
+	
+	/**
+	 * Specialization of {@link BeanFactory} for one-arg constructor classes
 	 * 
 	 * @param <I> constructor input type (also column type)
 	 * @param <C> bean type
 	 */
-	public static class BeanFactory<I, C> implements Factory<ResultSet, C>, CopiableForAnotherQuery<C> {
+	public static class IdentifierArgBeanFactory<I, C> implements BeanFactory<C> {
 		
 		/** {@link ResultSet} reader */
 		private final ColumnReader<I> reader;
@@ -182,7 +270,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		private final SerializableFunction<I, C> factory;
 		
 		
-		public BeanFactory(ColumnReader<I> reader, SerializableFunction<I, C> factory) {
+		public IdentifierArgBeanFactory(ColumnReader<I> reader, SerializableFunction<I, C> factory) {
 			this.reader = reader;
 			this.factory = factory;
 		}
@@ -205,8 +293,8 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		}
 		
 		@Override
-		public BeanFactory<I, C> copyWithAliases(Function<String, String> columnMapping) {
-			return new BeanFactory<>(reader.copyWithAliases(columnMapping), this.factory);
+		public IdentifierArgBeanFactory<I, C> copyWithAliases(Function<String, String> columnMapping) {
+			return new IdentifierArgBeanFactory<>(reader.copyWithAliases(columnMapping), this.factory);
 		}
 		
 		/**
@@ -215,8 +303,8 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		 * @param <T> subclass type
 		 * @return a new {@link BeanFactory} for a subclass bean which read same column as this instance
 		 */
-		public <T extends C> BeanFactory<I, T> copyFor(SerializableFunction<I, T> beanFactory) {
-			return new BeanFactory<>(this.reader, beanFactory);
+		public <T extends C> IdentifierArgBeanFactory<I, T> copyFor(SerializableFunction<I, T> beanFactory) {
+			return new IdentifierArgBeanFactory<>(this.reader, beanFactory);
 		}
 	}
 }

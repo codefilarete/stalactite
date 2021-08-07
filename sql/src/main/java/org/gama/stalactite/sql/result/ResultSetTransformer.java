@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 
@@ -78,8 +79,8 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 
 	/**
 	 * Clones this instance for another type of bean.
-	 * Usefull to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning this, all that's
-	 * left is to register specific columns of the inheritant bean.
+	 * Usefull to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning current instance,
+	 * one has only to register specific columns of the inheritant bean.
 	 * 
 	 * @param beanType the target bean type
 	 * @param beanFactory the adhoc constructor for the target bean
@@ -87,6 +88,18 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 * @return a new instance, kind of clone of this but for another type
 	 */
 	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory);
+	
+	/**
+	 * Clones this instance for another type of bean.
+	 * Usefull to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning current instance,
+	 * one has only to register specific columns of the inheritant bean.
+	 *
+	 * @param beanType the target bean type
+	 * @param beanFactory the adhoc constructor for the target bean
+	 * @param <T> the target bean type
+	 * @return a new instance, kind of clone of this but for another type
+	 */
+	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory);
 	
 	/**
 	 * Will combine bean created by this instance with the one created by relatedBeanCreator thanks to given combiner.

@@ -30,9 +30,9 @@ import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.command.model.Update;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLBuilder;
@@ -570,7 +570,7 @@ public class PersistenceContext implements PersisterRegistry {
 		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
 		
 		@Override
-		<I> ExecutableSelect<C> mapKeyNoArg(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
+		<I> ExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
 		
 		@Override
 		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);

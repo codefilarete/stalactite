@@ -66,7 +66,7 @@ public interface MappableQuery<C> {
 	 * @param <I> identifier type
 	 * @return an instance that allows method chaining
 	 */
-	<I> MappableQuery<C> mapKeyNoArg(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
+	<I> MappableQuery<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
 	
 	/**
 	 * Declares root bean constructor and key of {@link java.sql.ResultSet}.

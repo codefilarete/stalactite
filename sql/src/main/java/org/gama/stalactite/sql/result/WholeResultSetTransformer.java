@@ -14,12 +14,16 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.sql.binder.ResultSetReader;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer.IdentifierArgBeanFactory;
+import org.gama.stalactite.sql.result.ResultSetRowTransformer.NoIdentifierBeanFactory;
 
 import static org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy.ON_EACH_ROW;
 
@@ -89,9 +93,22 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	/**
+	 * Constructor with root bean instanciation parameters.
+	 * 
+	 * With this constructor a root instance per {@link ResultSet} row will be created since there's no mean to distinguish a row instance from another
+	 * because no key reader is given. This is expected to be used for flat data retrieval. 
+	 *
+	 * @param rootType main bean type
+	 * @param beanFactory the bean creator
+	 */
+	public WholeResultSetTransformer(Class<C> rootType, SerializableSupplier<C> beanFactory) {
+		this(new ResultSetRowTransformer<>(rootType, new NoIdentifierBeanFactory<>(beanFactory)));
+	}
+	
+	/**
 	 * Special constructor aimed at defining root transformer when other constructors are unsufficient
 	 * 
-	 * @param rootTransformer trasnformer that will create graph root-beans from {@link ResultSet}
+	 * @param rootTransformer transformer that will create graph root-beans from {@link ResultSet}
 	 */
 	public WholeResultSetTransformer(ResultSetRowTransformer<I, C> rootTransformer) {
 		this.rootConverter = new CachingResultSetRowTransformer<>(rootTransformer);
@@ -216,6 +233,17 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
 		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
 		ResultSetRowTransformer<I, T> newRootConverter = this.rootConverter.transformer.copyFor(beanType, beanFactory);
+		return copy(newRootConverter);
+	}
+	
+	@Override
+	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory) {
+		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
+		ResultSetRowTransformer<I, T> newRootConverter = this.rootConverter.transformer.copyFor(beanType, beanFactory);
+		return copy(newRootConverter);
+	}
+	
+	private <T extends C> WholeResultSetTransformer<I, T> copy(ResultSetRowTransformer<I, T> newRootConverter) {
 		// Making the copy
 		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(newRootConverter);
 		// Note: combiners can't be copied except if they were ResultSetRowTransfomer which they are not, at least by their type, but 
@@ -429,17 +457,25 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		}
 		
 		public C transform(ResultSet resultSet) {
-			I beanKey = transformer.getBeanFactory().readBeanKey(resultSet);
-			try {
-				// we don't call the cache if the bean key is null
-				return beanKey == null ? null : CURRENT_BEAN_CACHE.get().computeIfAbsent(transformer.getBeanType(), beanKey, i -> transformer.transform(resultSet));
-			} catch (ClassCastException cce) {
-				// Trying to give a more accurate reason that the default one
-				// Put into places for rare cases of misusage by wrapping code that loses reader and bean factory types,
-				// ending with a constructor input type error
-				MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
-				throw new ClassCastException("Can't apply " + beanKey + " on constructor "
-						+ Reflections.toString(methodReferenceCapturer.findExecutable(transformer.getBeanFactory().getFactory())) + " : " + cce.getMessage());
+			BeanFactory<C> beanFactory = transformer.getBeanFactory();
+			if (beanFactory instanceof ResultSetRowTransformer.NoIdentifierBeanFactory) {
+				return ((NoIdentifierBeanFactory<C>) beanFactory).createInstance();
+			} else if (beanFactory instanceof ResultSetRowTransformer.IdentifierArgBeanFactory) {
+				I beanKey = ((IdentifierArgBeanFactory<I, C>) beanFactory).readBeanKey(resultSet);
+				try {
+					// we don't call the cache if the bean key is null
+					return beanKey == null ? null : CURRENT_BEAN_CACHE.get().computeIfAbsent(transformer.getBeanType(), beanKey, i -> transformer.transform(resultSet));
+				} catch (ClassCastException cce) {
+					// Trying to give a more accurate reason that the default one
+					// Put into places for rare cases of misusage by wrapping code that loses reader and bean factory types,
+					// ending with a constructor input type error
+					MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+					throw new ClassCastException("Can't apply " + beanKey + " on constructor "
+						+ Reflections.toString(methodReferenceCapturer.findExecutable(((IdentifierArgBeanFactory<I, C>) beanFactory).getFactory())) + " : " + cce.getMessage());
+				}
+			} else {
+				// should not happen
+				throw new IllegalArgumentException("Class " + Reflections.toString(beanFactory.getClass()) + " is not implemented");
 			}
 		}
 	}
