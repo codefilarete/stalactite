@@ -12,7 +12,7 @@ import org.gama.lang.collection.Arrays;
 /**
  * Implementation of {@link Blob} based on in-memory storage which is far from optimized. Far from perfect :
  * - {@link SQLException} should be thrown when arguments are not into the bounds of internal buffer
- * - optimization could be done on {@link #getBinaryStream()}.write because returned {@link OutputStream} doesn't override {@link OutputStream#write(byte[], int, int)}
+ * - optimization could be done on {@link #setBinaryStream(long)}.write because returned {@link OutputStream} doesn't override {@link OutputStream#write(byte[], int, int)}
  * 
  * @author Guillaume Mary
  */

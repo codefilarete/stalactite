@@ -228,7 +228,6 @@ public class PersistenceContext implements PersisterRegistry {
 			.build((Class<UniqueResultExecutableSelect<C>>) (Class) UniqueResultExecutableSelect.class);
 		
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		SerializableFunction<ExecutableQuery, List<C>> execute = ExecutableQuery::execute;
 		return methodDispatcher
 				.redirect((SerializableFunction<ExecutableQuery<C>, List<C>>) ExecutableQuery::execute, () -> execute(queryMapperSupport))
 				.redirect((SerializableFunction<ExecutableSelect<C>, UniqueResultExecutableSelect<C>>) ExecutableSelect::uniqueResult, () -> build)

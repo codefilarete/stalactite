@@ -19,16 +19,15 @@ import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.persistence.structure.Column;
 
 /**
- * Registry of {@link ParameterBinder}s per {@link Column} to simplify access to method of {@link PreparedStatement} per {@link Column}.
- * Use {@link #register(Column, ParameterBinder)} or {@link #register(Class, ParameterBinder)} to specify the best
- * binder for a column or type.
+ * Registry of {@link ParameterBinder}s per {@link Column} to simplify access to method of {@link PreparedStatement} for {@link Column}s.
+ * See {@link #register(Column, ParameterBinder)} and {@link #register(Class, ParameterBinder)} to specify binder for a column or type.
  *
  * @author Guillaume Mary
  */
 public class ColumnBinderRegistry extends ParameterBinderRegistry implements ParameterBinderIndex<Column, ParameterBinder> {
 	
 	/**
-	 * Registry for Columns
+	 * Registry for {@link Column}s
 	 */
 	private final Map<Column, ParameterBinder> bindersPerColumn = new HashMap<>();
 	
@@ -63,8 +62,11 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 			if (columnBinder != null) {
 				return columnBinder;
 			} else {
-				// exception is replaced by a better message
-				throw newMissingBinderException(column);
+				// Why do we throw an exception instead of returning null ? because null would generate a NullPointerException for caller
+				// which should handle this case with ... what ? in fact there's no solution to missing binder else than throwing an exception
+				// saying that configuration is insufficient, that's what we do.
+				throw new BindingException("No binder found for column " + column.getAbsoluteName()
+						+ " (type " + Reflections.toString(column.getJavaType()) + ")");
 			}
 		}
 	}
@@ -79,8 +81,4 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 		return bindersPerColumn.entrySet();
 	}
 	
-	private BindingException newMissingBinderException(Column column) {
-		return new BindingException("No binder found for column " + column.getAbsoluteName()
-				+ " (type " + Reflections.toString(column.getJavaType()) + ")");
-	}
 }

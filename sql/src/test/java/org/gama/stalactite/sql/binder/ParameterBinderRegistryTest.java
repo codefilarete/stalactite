@@ -36,20 +36,20 @@ class ParameterBinderRegistryTest {
 	void getBinder_findCompliantBinder() {
 		ParameterBinderRegistry testInstance = new ParameterBinderRegistry();
 		// just to be sure that nobody corrupted this test by adding StringBuilder in the default registry
-		assertThat(testInstance.getBindersPerType().keySet().contains(StringBuilder.class)).isFalse();
+		assertThat(testInstance.getBindersPerType().containsKey(StringBuilder.class)).isFalse();
 		
 		NullAwareParameterBinder<CharSequence> expectedBinder = new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
 				DefaultParameterBinders.STRING_BINDER, String::toString, CharSequence::toString));
 		testInstance.register(CharSequence.class, expectedBinder);
 		assertThat(testInstance.getBinder(StringBuilder.class)).isEqualTo(expectedBinder);
-		assertThat(testInstance.getBindersPerType().keySet().contains(StringBuilder.class)).isTrue();
+		assertThat(testInstance.getBindersPerType().containsKey(StringBuilder.class)).isTrue();
 	}
 	
 	@Test
 	void getBinder_findCompliantBinder_enum() throws SQLException {
 		ParameterBinderRegistry testInstance = new ParameterBinderRegistry();
 		// just to be sure that nobody corrupted this test by adding TimeUnit in the default registry
-		assertThat(testInstance.getBindersPerType().keySet().contains(TimeUnit.class)).isFalse();
+		assertThat(testInstance.getBindersPerType().containsKey(TimeUnit.class)).isFalse();
 		
 		// because enum binders are dynamically produced we don't have to register it nor can't check their presence by reference checking
 		// so we ask to read some data and see if it's an enum
@@ -64,7 +64,7 @@ class ParameterBinderRegistryTest {
 		assertThat(timeUnitBinder.get(fakeResultSet, "X")).isEqualTo(TimeUnit.SECONDS);
 		fakeResultSet.next();
 		assertThat(timeUnitBinder.get(fakeResultSet, "X")).isNull();
-		assertThat(testInstance.getBindersPerType().keySet().contains(TimeUnit.class)).isTrue();
+		assertThat(testInstance.getBindersPerType().containsKey(TimeUnit.class)).isTrue();
 	}
 	
 	@Test

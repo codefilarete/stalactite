@@ -389,7 +389,7 @@ class BeanMappingBuilder {
 		private final String columnNameToCheck;
 		private final ReversibleAccessor propertyAccessor;
 		private final ColumnNameProvider columnNameProvider;
-		private final ValueAccessPointComparator valueAccessPointComparator = new ValueAccessPointComparator();
+		private static final ValueAccessPointComparator VALUE_ACCESS_POINT_COMPARATOR = new ValueAccessPointComparator();
 		
 		DuplicateDefinitionChecker(ReversibleAccessor propertyAccessor, String columnNameToCheck, ColumnNameProvider columnNameProvider) {
 			this.columnNameToCheck = columnNameToCheck;
@@ -399,7 +399,7 @@ class BeanMappingBuilder {
 		@Override
 		public void accept(Linkage pawn) {
 			ReversibleAccessor accessor = pawn.getAccessor();
-			if (valueAccessPointComparator.compare(accessor, propertyAccessor) == 0) {
+			if (VALUE_ACCESS_POINT_COMPARATOR.compare(accessor, propertyAccessor) == 0) {
 				throw new MappingConfigurationException("Mapping is already defined by method " + AccessorDefinition.toString(propertyAccessor));
 			} else if (columnNameToCheck.equals(nullable(pawn.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(pawn)))) {
 				throw new MappingConfigurationException("Column '" + columnNameToCheck + "' of mapping '" + AccessorDefinition.toString(propertyAccessor)

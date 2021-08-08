@@ -2,6 +2,8 @@ package org.gama.stalactite.sql.binder;
 
 import java.util.Map;
 
+import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+
 /**
  * @author Guillaume Mary
  */
@@ -18,7 +20,7 @@ public interface PreparedStatementWriterProvider<K> {
 	default PreparedStatementWriter getWriter(K key) {
 		PreparedStatementWriter writer = doGetWriter(key);
 		if (writer == null) {
-			throw new RuntimeException("Binder for " + key + " is not registered");
+			throw new BindingException("Binder for " + key + " is not registered");
 		}
 		return writer;
 	}
