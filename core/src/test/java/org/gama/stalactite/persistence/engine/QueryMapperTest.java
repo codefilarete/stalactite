@@ -3,13 +3,16 @@ package org.gama.stalactite.persistence.engine;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.gama.lang.Strings;
+import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.collection.Maps.ChainingHashMap;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
@@ -152,41 +155,11 @@ class QueryMapperTest {
 	@MethodSource("queryMapperAPI_basicUsage")
 	void queryMapperAPI_basicUsage(QueryMapper<Toto> queryMapper, List<Toto> expected) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
-				Maps.forHashMap(String.class, Object.class).add("id", 42L).add("name", "coucou").add("active", true),
-				Maps.forHashMap(String.class, Object.class).add("id", 43L).add("name", "hello").add("active", false)
+				newRow().add("id", 42L).add("name", "coucou").add("active", true),
+				newRow().add("id", 43L).add("name", "hello").add("active", false)
 		);
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
-		
-		assertThat(result.toString()).isEqualTo(expected.toString());
-	}
-	
-	@Test
-	void execute_noGivenKey_oneInstancePerRowIsCreated() {
-		List<Map<String, Object>> resultSetData = Arrays.asList(
-			Maps.forHashMap(String.class, Object.class).add("name", "coucou").add("active", true),
-			Maps.forHashMap(String.class, Object.class).add("name", "hello").add("active", false),
-			Maps.forHashMap(String.class, Object.class).add("name", "hola").add("active", false),
-			Maps.forHashMap(String.class, Object.class).add("name", "salut").add("active", false)
-		);
-		
-		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		Table totoTable = new Table<>("Toto");
-		totoTable.addColumn("name", String.class);
-		totoTable.addColumn("active", boolean.class);
-		
-		QueryMapper testInstance = new QueryMapper<>(TotoWithNoArgConstructor.class, "never executed statement", columnBinderRegistry)
-			.map("name", Toto::setName, String.class)
-			.map("active", Toto::setActive);
-		
-		List<Toto> expected = Arrays.asList(
-			new Toto(-1, "coucou", true),
-			new Toto(-1, "hello", false),
-			new Toto(-1, "hola", false),
-			new Toto(-1, "salut", false)
-		);
-		
-		List<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
 		
 		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
@@ -215,10 +188,10 @@ class QueryMapperTest {
 	
 	@ParameterizedTest
 	@MethodSource("queryMapperAPI_basicUsageWithConverter")
-	void newQuery_withConverter(QueryMapper<Toto> queryMapper) {
+	void queryMapperAPI_withConverter(QueryMapper<Toto> queryMapper) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
-				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih").add("active", false),
-				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie").add("active", false)
+				newRow().add("id", 42L).add("name", "ghoeihvoih").add("active", false),
+				newRow().add("id", 43L).add("name", "oziuoie").add("active", false)
 		);
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
@@ -227,6 +200,36 @@ class QueryMapperTest {
 				new Toto(42, "coucou", false),
 				new Toto(43, "coucou", false)
 		);
+		assertThat(result.toString()).isEqualTo(expected.toString());
+	}
+	
+	@Test
+	void execute_noGivenKey_oneInstancePerRowIsCreated() {
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+			newRow().add("name", "coucou").add("active", true),
+			newRow().add("name", "hello").add("active", false),
+			newRow().add("name", "hola").add("active", false),
+			newRow().add("name", "salut").add("active", false)
+		);
+		
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		Table totoTable = new Table<>("Toto");
+		totoTable.addColumn("name", String.class);
+		totoTable.addColumn("active", boolean.class);
+		
+		QueryMapper testInstance = new QueryMapper<>(TotoWithNoArgConstructor.class, "never executed statement", columnBinderRegistry)
+			.map("name", Toto::setName, String.class)
+			.map("active", Toto::setActive);
+		
+		List<Toto> expected = Arrays.asList(
+			new Toto(-1, "coucou", true),
+			new Toto(-1, "hello", false),
+			new Toto(-1, "hola", false),
+			new Toto(-1, "salut", false)
+		);
+		
+		List<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
+		
 		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
 	
@@ -261,7 +264,7 @@ class QueryMapperTest {
 				.set("id", Arrays.asList(1, 2), Integer.class);
 		
 		// Very simple data are necessary for the ResultSet since only id is mapped 
-		List<Map<String, Object>> resultSetData = Arrays.asList(Maps.asHashMap("id", 42L));
+		List<Map<String, Object>> resultSetData = Arrays.asList(newRow().add("id", 42L));
 		
 		// creation of a Connection that will give our test case data and will capture statement arguments
 		Connection mock = mock(Connection.class);
@@ -294,9 +297,9 @@ class QueryMapperTest {
 				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()));
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(
-				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
-				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie"),
-				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih")
+				newRow().add("id", 42L).add("name", "ghoeihvoih"),
+				newRow().add("id", 43L).add("name", "oziuoie"),
+				newRow().add("id", 42L).add("name", "ghoeihvoih")
 		);
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
@@ -318,9 +321,9 @@ class QueryMapperTest {
 				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()), AssemblyPolicy.ONCE_PER_BEAN);
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(
-				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih"),
-				Maps.asHashMap("id", (Object) 43L).add("name", "oziuoie"),
-				Maps.asHashMap("id", (Object) 42L).add("name", "ghoeihvoih")
+				newRow().add("id", 42L).add("name", "ghoeihvoih"),
+				newRow().add("id", 43L).add("name", "oziuoie"),
+				newRow().add("id", 42L).add("name", "ghoeihvoih")
 		);
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
@@ -342,9 +345,9 @@ class QueryMapperTest {
 				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new));
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(
-				Maps.asHashMap("id", (Object) 42L).add("name", "John").add("tataName", "you"),
-				Maps.asHashMap("id", (Object) 43L).add("name", "Bob").add("tataName", "me"),
-				Maps.asHashMap("id", (Object) 42L).add("name", "John").add("tataName", "you")
+				newRow().add("id", 42L).add("name", "John").add("tataName", "you"),
+				newRow().add("id", 43L).add("name", "Bob").add("tataName", "me"),
+				newRow().add("id", 42L).add("name", "John").add("tataName", "you")
 				);
 		
 		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
@@ -362,6 +365,78 @@ class QueryMapperTest {
 		assertThat(result.get(2).getTata()).isSameAs(result.get(0).getTata());
 		assertThat(result.get(2)).isNotSameAs(result.get(1));
 		assertThat(result.get(2).getTata()).isNotSameAs(result.get(1).getTata());
+	}
+	
+	@Test
+	void execute_emptyResultSet() {
+		List<Map<String, Object>> resultSetData = Collections.EMPTY_LIST;
+		
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		Table totoTable = new Table<>("Toto");
+		totoTable.addColumn("name", String.class);
+		totoTable.addColumn("active", boolean.class);
+		
+		QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry)
+			.mapKey(Toto::new, "id", long.class)
+			.map("name", Toto::setName, String.class)
+			.map("active", Toto::setActive);
+		
+		List<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
+		
+		assertThat(result).isEmpty();
+	}
+	
+	@Test
+	void executeUnique_instanceHasAssembler() {
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
+			.mapKey(Toto::new, "id", long.class)
+			.add((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name1")))
+			.add((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name2")))
+			;
+		
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+			newRow().add("id", 42L).add("name1", "Hello").add("name2", " world !")
+		);
+		
+		Toto result = invokeExecuteUniqueWithData(queryMapper, resultSetData);
+		
+		Toto expected = new Toto(42, "Hello world !", false);
+		assertThat(result.toString()).isEqualTo(expected.toString());
+	}
+	
+	@Test
+	void executeUnique_emptyResultSet_returnsNull() {
+		List<Map<String, Object>> resultSetData = Collections.EMPTY_LIST;
+		
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		Table totoTable = new Table<>("Toto");
+		totoTable.addColumn("name", String.class);
+		totoTable.addColumn("active", boolean.class);
+		
+		QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry)
+			.mapKey(Toto::new, "id", long.class)
+			.map("name", Toto::setName, String.class)
+			.map("active", Toto::setActive);
+		
+		Toto result = invokeExecuteUniqueWithData(testInstance, resultSetData);
+		
+		assertThat(result).isNull();
+	}
+	
+	private <C> C invokeExecuteUniqueWithData(QueryMapper<C> queryMapper, List<? extends Map<? extends String, ? extends Object>> resultSetData) {
+		// creation of a Connection that will give our test case data
+		Connection connectionMock = mock(Connection.class);
+		try {
+			PreparedStatement statementMock = mock(PreparedStatement.class);
+			when(connectionMock.prepareStatement(any())).thenReturn(statementMock);
+			when(statementMock.executeQuery()).thenReturn(new InMemoryResultSet(resultSetData));
+		} catch (SQLException e) {
+			// impossible since there's no real database connection
+			throw Exceptions.asRuntimeException(e);
+		}
+		
+		return queryMapper.executeUnique(() -> connectionMock);
 	}
 	
 	public static class Toto {
@@ -403,6 +478,10 @@ class QueryMapperTest {
 		
 		public void setId(long id) {
 			this.id = id;
+		}
+		
+		public String getName() {
+			return name;
 		}
 		
 		public void setName(String name) {
@@ -477,5 +556,9 @@ class QueryMapperTest {
 		public String getName() {
 			return name;
 		}
+	}
+	
+	private static ChainingHashMap<String, Object> newRow() {
+		return Maps.forHashMap(String.class, Object.class);
 	}
 }

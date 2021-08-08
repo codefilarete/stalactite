@@ -283,7 +283,16 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		return doWithBeanCache(() -> Iterables.stream(resultSetIterator).collect(Collectors.toList()));
 	}
 	
-	private <O> O doWithBeanCache(Supplier<O> callable) {
+	/**
+	 * Executes given code by initializing internal caches so one can use {@link #transform(ResultSet)} without getting {@link NullPointerException}
+	 * due to their absence. Hence, given code is expected to use {@link #transform(ResultSet)} else this method is useless.
+	 * This method is not to be considered as a primary usage of this class since its purpose is to iterate over a whole {@link ResultSet}.
+	 * 
+	 * @param callable any code using {@link #transform(ResultSet)}
+	 * @param <O> type of instance returned by this method which is the one returned by given code
+	 * @return object returned by given {@link Supplier}
+	 */
+	public <O> O doWithBeanCache(Supplier<O> callable) {
 		return ThreadLocals.doWithThreadLocal(CURRENT_BEAN_CACHE, SimpleBeanCache::new,
 				(Supplier<O>) () -> ThreadLocals.doWithThreadLocal(CURRENT_TREATED_ASSEMBLERS, HashSet::new, callable));
 	}

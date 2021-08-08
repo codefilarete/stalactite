@@ -4,10 +4,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.gama.lang.collection.Arrays;
+import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -117,5 +121,33 @@ public class PersistenceContextTest {
 		
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("delete from toto where id = ? and name = ?");
 		assertThat(valuesStatementCaptor.getAllValues()).containsExactly(42L, "Hello world !");
+	}
+	
+	@Test
+	void uniqueResult() throws SQLException {
+		Connection connectionMock = Mockito.mock(Connection.class);
+		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+		ArgumentCaptor<String> sqlStatementCaptor = ArgumentCaptor.forClass(String.class);
+		when(connectionMock.prepareStatement(sqlStatementCaptor.capture())).thenReturn(preparedStatementMock);
+		CapturingMatcher<Object> valuesStatementCaptor = new CapturingMatcher<>();
+		doNothing().when(preparedStatementMock).setLong(anyInt(), capture(long.class, valuesStatementCaptor));
+		doNothing().when(preparedStatementMock).setString(anyInt(), capture(String.class, valuesStatementCaptor));
+		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Arrays.asList(
+			Maps.forHashMap(String.class, Object.class).add("id", 42).add("name", "tata").add("count", 666)
+		)));
+		
+		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new Dialect());
+		Table totoTable = new Table("toto");
+		Column<Table, Long> id = totoTable.addColumn("id", long.class);
+		Column<Table, String> name = totoTable.addColumn("name", String.class);
+		
+		// test select
+		Integer count = testInstance.newQuery("select count(*) as count from Toto", Integer.class)
+			.mapKey(SerializableFunction.identity(), "count", Integer.class)
+			.uniqueResult().execute();
+		
+		assertThat(count).isEqualTo(666);
+		assertThat(sqlStatementCaptor.getValue()).isEqualTo("select count(*) as count from Toto");
+		assertThat(valuesStatementCaptor.getAllValues()).isEmpty();
 	}
 }

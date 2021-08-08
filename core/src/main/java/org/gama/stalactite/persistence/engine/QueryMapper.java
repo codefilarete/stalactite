@@ -2,6 +2,8 @@ package org.gama.stalactite.persistence.engine;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -29,6 +32,7 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.dml.ReadOperation;
 import org.gama.stalactite.sql.dml.StringParamedSQL;
 import org.gama.stalactite.sql.result.MultipleColumnsReader;
+import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.result.ResultSetRowAssembler;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.gama.stalactite.sql.result.SingleColumnReader;
@@ -422,6 +426,35 @@ public class QueryMapper<C> implements MappableQuery<C> {
 	 * @return a {@link List} filled by the instances built
 	 */
 	public List<C> execute(ConnectionProvider connectionProvider) {
+		return execute(WholeResultSetTransformer::transformAll, connectionProvider);
+	}
+	
+	/**
+	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a bean thanks to the
+	 * definition given through {@link #mapKey(SerializableFunction, String, Class)}, {@link #map(String, SerializableBiConsumer, Class)}
+	 * and {@link #map(String, SerializableBiConsumer)} methods.
+	 *
+	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
+	 * @return an object, maybe null
+	 */
+	public C executeUnique(ConnectionProvider connectionProvider) {
+		return execute((transformerToUse, resultSet) -> {
+			// mimicing what WholeResultSetTransformer.transformAll does, but with only first ResultSet Row
+			ResultSetIterator<C> resultSetIterator = new ResultSetIterator<C>(resultSet) {
+				@Override
+				public C convert(ResultSet resultSet) throws SQLException {
+					return transformerToUse.transform(resultSet);
+				}
+			};
+			// we transform only first result since method is expected to return it
+			return transformerToUse.doWithBeanCache(() -> resultSetIterator.hasNext() ? resultSetIterator.next() : null);
+		}, connectionProvider);
+	}
+	
+	/**
+	 * Method that mutualizes code of {@link #execute(ConnectionProvider)} and {@link #executeUnique(ConnectionProvider)}
+	 */
+	private <O> O execute(BiFunction<WholeResultSetTransformer<?, C>, ResultSet, O> code, ConnectionProvider connectionProvider) {
 		WholeResultSetTransformer<?, C> transformerToUse;
 		if (rootTransformer == null) {
 			transformerToUse = new WholeResultSetTransformer<>(rootBeanType, () -> Reflections.newInstance(rootBeanType));
@@ -432,8 +465,7 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toSQL().toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
 			readOperation.setValues(sqlArguments);
-			
-			return transformerToUse.transformAll(readOperation.execute());
+			return code.apply(transformerToUse, readOperation.execute());
 		}
 	}
 	
