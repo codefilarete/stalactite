@@ -124,7 +124,7 @@ public class PersistenceContextTest {
 	}
 	
 	@Test
-	void uniqueResult() throws SQLException {
+	void singleResult() throws SQLException {
 		Connection connectionMock = Mockito.mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		ArgumentCaptor<String> sqlStatementCaptor = ArgumentCaptor.forClass(String.class);
@@ -144,7 +144,7 @@ public class PersistenceContextTest {
 		// test select
 		Integer count = testInstance.newQuery("select count(*) as count from Toto", Integer.class)
 			.mapKey(SerializableFunction.identity(), "count", Integer.class)
-			.uniqueResult().execute();
+			.singleResult().execute();
 		
 		assertThat(count).isEqualTo(666);
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("select count(*) as count from Toto");

@@ -221,16 +221,14 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	private <C> ExecutableSelect<C> wrapIntoExecutable(QueryMapper<C> queryMapperSupport) {
-		MethodReferenceDispatcher uniqueResultmethodDispatcher = new MethodReferenceDispatcher();
-		UniqueResultExecutableSelect<C> build = uniqueResultmethodDispatcher
-			.redirect((SerializableFunction<UniqueResultExecutableSelect<C>, C>) UniqueResultExecutableSelect::execute, () -> executeUnique(queryMapperSupport))
+		SingleResultExecutableSelect<C> singleResultDispatcher = new MethodReferenceDispatcher()
+			.redirect((SerializableFunction<SingleResultExecutableSelect<C>, C>) SingleResultExecutableSelect::execute, () -> executeUnique(queryMapperSupport))
 			.redirect(MappableQuery.class, queryMapperSupport, true)
-			.build((Class<UniqueResultExecutableSelect<C>>) (Class) UniqueResultExecutableSelect.class);
+			.build((Class<SingleResultExecutableSelect<C>>) (Class) SingleResultExecutableSelect.class);
 		
-		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		return methodDispatcher
+		return new MethodReferenceDispatcher()
 				.redirect((SerializableFunction<ExecutableQuery<C>, List<C>>) ExecutableQuery::execute, () -> execute(queryMapperSupport))
-				.redirect((SerializableFunction<ExecutableSelect<C>, UniqueResultExecutableSelect<C>>) ExecutableSelect::uniqueResult, () -> build)
+				.redirect((SerializableFunction<ExecutableSelect<C>, SingleResultExecutableSelect<C>>) ExecutableSelect::singleResult, () -> singleResultDispatcher)
 				.redirect(MappableQuery.class, queryMapperSupport, true)
 				.build((Class<ExecutableSelect<C>>) (Class) ExecutableSelect.class);
 	}
@@ -646,86 +644,86 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Forces query to return very first result
 		 * @return a configurable query that will only return first result when executed
 		 */
-		UniqueResultExecutableSelect<C> uniqueResult();
+		SingleResultExecutableSelect<C> singleResult();
 	}
 	
 	/**
 	 * Configurable query that will only return first result when executed
 	 * @param <C> type of object returned by query execution
 	 */
-	public interface UniqueResultExecutableSelect<C> extends MappableQuery<C> {
+	public interface SingleResultExecutableSelect<C> extends MappableQuery<C> {
 		
 		@Override
-		<I> UniqueResultExecutableSelect<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
+		<I> SingleResultExecutableSelect<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
 		
 		@Override
-		<I, J> UniqueResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
+		<I, J> SingleResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
 		
 		@Override
-		<I, J, K> UniqueResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
+		<I, J, K> SingleResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
 		
 		@Override
-		<I> UniqueResultExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
+		<I> SingleResultExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
 		
 		@Override
-		<I> UniqueResultExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);
+		<I> SingleResultExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);
 		
 		@Override
-		<I, J> UniqueResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
-										  String column2Name, Class<J> column2Type);
+		<I, J> SingleResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
+													  String column2Name, Class<J> column2Type);
 		
 		@Override
-		<I, J, K> UniqueResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
-											 String column2Name, Class<J> column2Type,
-											 String column3Name, Class<K> column3Type);
+		<I, J, K> SingleResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
+														 String column2Name, Class<J> column2Type,
+														 String column3Name, Class<K> column3Type);
 		
 		@Override
-		<I> UniqueResultExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, Column<? extends Table, I> column);
+		<I> SingleResultExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, Column<? extends Table, I> column);
 		
 		@Override
-		<I, J> UniqueResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, Column<? extends Table, I> column1, Column<? extends Table, J> column2);
+		<I, J> SingleResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, Column<? extends Table, I> column1, Column<? extends Table, J> column2);
 		
 		@Override
-		<I, J, K> UniqueResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
-											 Column<? extends Table, I> column1,
-											 Column<? extends Table, J> column2,
-											 Column<? extends Table, K> column3
+		<I, J, K> SingleResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
+														 Column<? extends Table, I> column1,
+														 Column<? extends Table, J> column2,
+														 Column<? extends Table, K> column3
 		);
 		
 		@Override
-		<I> UniqueResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
+		<I> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
 		
 		@Override
-		<I, J> UniqueResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
+		<I, J> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 		
 		@Override
-		<I> UniqueResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter);
+		<I> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter);
 		
 		@Override
-		<I, J> UniqueResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+		<I, J> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
-		<I> UniqueResultExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
+		<I> SingleResultExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
 		
 		@Override
-		<I, J> UniqueResultExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+		<I, J> SingleResultExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
-		<K, V> UniqueResultExecutableSelect<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+		<K, V> SingleResultExecutableSelect<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 		
 		@Override
-		default UniqueResultExecutableSelect<C> add(ResultSetRowAssembler<C> assembler) {
-			return (UniqueResultExecutableSelect<C>) add(assembler, AssemblyPolicy.ON_EACH_ROW);
+		default SingleResultExecutableSelect<C> add(ResultSetRowAssembler<C> assembler) {
+			return (SingleResultExecutableSelect<C>) add(assembler, AssemblyPolicy.ON_EACH_ROW);
 		}
 		
 		@Override
-		UniqueResultExecutableSelect<C> set(String paramName, Object value);
+		SingleResultExecutableSelect<C> set(String paramName, Object value);
 		
 		@Override
-		<O> UniqueResultExecutableSelect<C> set(String paramName, O value, Class<? super O> valueType);
+		<O> SingleResultExecutableSelect<C> set(String paramName, O value, Class<? super O> valueType);
 		
 		@Override
-		<O> UniqueResultExecutableSelect<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
+		<O> SingleResultExecutableSelect<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
 		
 		C execute();
 	}
