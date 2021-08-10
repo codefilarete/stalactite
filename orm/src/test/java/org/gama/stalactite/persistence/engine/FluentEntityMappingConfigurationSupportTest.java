@@ -1378,7 +1378,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Person loadedPerson = personPersister.select(person.getId());
 			personPersister.delete(loadedPerson);
 			List<String> remainingNickNames = persistenceContext.newQuery("select nickNames from Person_nicknames", String.class)
-					.mapKey(String::new, "nickNames", String.class)
+					.mapKey(SerializableFunction.identity(), "nickNames", String.class)
 					.execute();
 			assertThat(remainingNickNames).isEqualTo(Collections.emptyList());
 		}

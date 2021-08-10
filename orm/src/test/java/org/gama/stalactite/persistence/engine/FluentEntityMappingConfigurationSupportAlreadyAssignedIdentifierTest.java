@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.function.Sequence;
 import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -67,7 +68,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		assertThat(dummyCar.isPersisted()).as("car is persisted").isTrue();
 		
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
-				.mapKey(Car::new, "id", long.class)
+				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
@@ -100,7 +101,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		carPersister.insert(dummyCar);
 		
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
-				.mapKey(Car::new, "id", long.class)
+				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
@@ -136,7 +137,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		carPersister.insert(dummyCar);
 		
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
-				.mapKey(Car::new, "id", long.class)
+				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
@@ -176,7 +177,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		carPersister.insert(dummyCar);
 
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
-				.mapKey(Car::new, "id", long.class)
+				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
@@ -215,7 +216,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		carPersister.insert(dummyCar);
 
 		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
-				.mapKey(Car::new, "id", long.class)
+				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));

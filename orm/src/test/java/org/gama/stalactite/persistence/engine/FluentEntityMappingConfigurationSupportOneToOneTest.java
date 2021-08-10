@@ -178,18 +178,18 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
-					.mapKey(String::new, "name", String.class)
+					.mapKey(SerializableFunction.identity(), "name", String.class)
 					.execute()
 					.get(0)).isEqualTo("French president");
 			
 			// deletion has no action on target
 			countryPersister.delete(loadedCountry);
 			assertThat(persistenceContext.newQuery("select name from Country", String.class)
-					.mapKey(String::new, "name", String.class)
+					.mapKey(SerializableFunction.identity(), "name", String.class)
 					.execute()
 					.isEmpty()).isTrue();
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
-					.mapKey(String::new, "name", String.class)
+					.mapKey(SerializableFunction.identity(), "name", String.class)
 					.execute()
 					.get(0)).isEqualTo("French president");
 		}
@@ -235,7 +235,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
-					.mapKey(String::new, "name", String.class)
+					.mapKey(SerializableFunction.identity(), "name", String.class)
 					.execute()
 					.get(0)).isEqualTo("French president");
 			
@@ -255,14 +255,14 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			countryPersister.delete(dummyCountry);
 			
 			assertThat(persistenceContext.newQuery("select name from Country", String.class)
-					.mapKey(String::new, "name", String.class)
+					.mapKey(SerializableFunction.identity(), "name", String.class)
 					.execute()).isEmpty();
 			assertThat(persistenceContext.newQuery("select name from Person", String.class)
-					.mapKey(String::new, "name", String.class)
+					.mapKey(SerializableFunction.identity(), "name", String.class)
 					.execute())
 					.containsExactly("French president", "New French president");
 			assertThat(persistenceContext.newQuery("select name from Person where id = 2", String.class)
-					.mapKey(String::new, "name", String.class)
+					.mapKey(SerializableFunction.identity(), "name", String.class)
 					.execute())
 					.first().isEqualTo("New French president");
 		}

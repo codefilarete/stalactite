@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -341,12 +342,12 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
-				.mapKey(String::new, "name", String.class)
+				.mapKey(SerializableFunction.identity(), "name", String.class)
 				.execute()
 				.get(0)).isEqualTo("Paris");
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
-				.mapKey(String::new, "name", String.class)
+				.mapKey(SerializableFunction.identity(), "name", String.class)
 				.execute()
 				.get(0)).isEqualTo("touched France");
 		
@@ -355,12 +356,12 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		assertThat(rowCount).isEqualTo(1);
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
-				.mapKey(String::new, "name", String.class)
+				.mapKey(SerializableFunction.identity(), "name", String.class)
 				.execute()).isEqualTo(Collections.emptyList());
 		
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
-				.mapKey(String::new, "name", String.class)
+				.mapKey(SerializableFunction.identity(), "name", String.class)
 				.execute()
 				.get(0)).isEqualTo("Paris");
 	}

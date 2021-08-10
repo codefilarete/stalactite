@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
@@ -164,7 +165,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			carPersister.insert(dummyCar);
 			
 			List<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
-					.mapKey(Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
+					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model_col", Car::setModel)
 					.map("color_col", Car::setColor)
 					.execute();
@@ -199,7 +200,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			carPersister.insert(dummyCar);
 			
 			List<Car> allCars = persistenceContext.newQuery("select id_supercol, model_supercol, color_supercol from Car", Car.class)
-					.mapKey(Car::new, "id_supercol", (Class<Identifier<Long>>) (Class) Identifier.class)
+					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id_supercol", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model_supercol", Car::setModel)
 					.map("color_supercol", Car::setColor)
 					.execute();
@@ -241,7 +242,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			carPersister.insert(dummyCar);
 			
 			List<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
-					.mapKey(Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
+					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model_col", Car::setModel)
 					.map("color_col", Car::setColor)
 					.execute();
@@ -295,7 +296,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			// checking with query to understand what's under the hood : rgb column is created instead of color
 			List<Car> allCars = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
-					.mapKey(Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
+					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new)
 					.execute();
@@ -542,7 +543,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			// checking with query to understand what's under the hood : rgb column is created instead of color
 			List<Car> allCars = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
-					.mapKey(Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
+					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new)
 					.execute();
