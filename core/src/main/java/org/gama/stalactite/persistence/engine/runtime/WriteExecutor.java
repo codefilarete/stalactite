@@ -1,10 +1,10 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.SteppingIterator;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
@@ -16,22 +16,22 @@ import org.gama.stalactite.sql.dml.WriteOperation;
 public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> {
 	
 	private final int batchSize;
-	private final Retryer writeOperationRetryer;
+	private final WriteOperationFactory writeOperationFactory;
 	
 	public WriteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
-						 ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+						 ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 						 int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration.getConnectionProvider(), dmlGenerator, inOperatorMaxSize);
 		this.batchSize = connectionConfiguration.getBatchSize();
-		this.writeOperationRetryer = writeOperationRetryer;
+		this.writeOperationFactory = writeOperationFactory;
 	}
 	
 	public int getBatchSize() {
 		return batchSize;
 	}
 	
-	public Retryer getWriteOperationRetryer() {
-		return writeOperationRetryer;
+	public WriteOperationFactory getWriteOperationFactory() {
+		return writeOperationFactory;
 	}
 	
 	/**

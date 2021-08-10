@@ -21,6 +21,7 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.id.diff.IndexedDiff;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.lang.collection.Iterables.first;
@@ -39,8 +40,9 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 													  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
-													  Column<IndexedAssociationTable, Integer> indexColumn) {
-		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister);
+													  Column<IndexedAssociationTable, Integer> indexColumn,
+													  WriteOperationFactory writeOperationFactory) {
+		super(joinedTablesPersister, targetPersister, manyRelationDescriptor, associationPersister, writeOperationFactory);
 		this.indexColumn = indexColumn;
 	}
 	

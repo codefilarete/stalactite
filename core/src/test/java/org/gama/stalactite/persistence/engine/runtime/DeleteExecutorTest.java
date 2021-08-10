@@ -2,14 +2,14 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Map;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.engine.RowCountManager;
 import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -22,7 +22,9 @@ import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.stalactite.test.PairSetList.pairSetList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	
@@ -36,7 +38,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
 	}
 	
 	@Test
@@ -159,7 +161,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
@@ -182,7 +184,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
@@ -205,7 +207,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.RowCountManager;
@@ -17,6 +16,7 @@ import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
@@ -35,9 +35,9 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
 	public DeleteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
-						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 						  int inOperatorMaxSize) {
-		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
+		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
 	}
 	
 	public void setRowCountManager(RowCountManager rowCountManager) {
@@ -49,7 +49,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, CurrentConnectionProvider currentConnectionProvider) {
-		WriteOperation<Column<T, Object>> writeOperation = new WriteOperation<>(statement, currentConnectionProvider, getWriteOperationRetryer());
+		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider);
 		writeOperation.setListener(operationListener);
 		return writeOperation;
 	}

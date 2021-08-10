@@ -6,8 +6,6 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.Retryer;
-import org.gama.lang.Retryer.RetryException;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.ThrowingExecutable;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -25,19 +23,11 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	/** JDBC Batch statement count, for logging */
 	private int batchedStatementCount = 0;
 	
-	/** Instance that helps to retry update statements on error, default is no {@link Retryer#NO_RETRY}, should not be null */
-	private final Retryer retryer;
-	
 	/** Batched values, mainly for logging, filled when debug is required */
 	private final Map<Integer /* batch count */, Map<ParamType, ?>> batchedValues = new HashMap<>();
 	
 	public WriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
-		this(sqlGenerator, connectionProvider, Retryer.NO_RETRY);
-	}
-	
-	public WriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, Retryer retryer) {
 		super(sqlGenerator, connectionProvider);
-		this.retryer = retryer;
 	}
 	
 	public int getUpdatedRowCount() {
@@ -46,7 +36,7 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
 	/**
 	 * Executes the statement, wraps {@link PreparedStatement#executeUpdate()}.
-	 * To be used if you don't used {@link #addBatch(Map)}
+	 * To be used if you didn't use {@link #addBatch(Map)}
 	 *
 	 * @return the same as {@link PreparedStatement#executeUpdate()}
 	 * @see #setValue(Object, Object)
@@ -67,22 +57,28 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	public int executeBatch() {
 		LOGGER.debug("Batching statement {} times", batchedStatementCount);
 		try {
-			updatedRowCount = computeUpdatedRowCount(doExecuteBatch());
+			getListener().onExecute(getSqlStatement());
+			int[] insertedRowCount = doWithLogManagement(this::doExecuteBatch);
+			updatedRowCount = computeUpdatedRowCount(insertedRowCount);
 			return updatedRowCount;
 		} finally {
 			batchedStatementCount = 0;
 		}
 	}
 	
-	private int executeUpdate() {
+	protected int[] doExecuteBatch() throws SQLException {
+		return preparedStatement.executeBatch();
+	}
+	
+	protected int executeUpdate() {
 		try {
-			return doWithRetry(this::doExecuteUpdate);
-		} catch (SQLException | RetryException e) {
+			return this.doExecuteUpdate();
+		} catch (SQLException e) {
 			throw new SQLExecutionException(getSQL(), e);
 		}
 	}
 	
-	private int doExecuteUpdate() throws SQLException {
+	protected int doExecuteUpdate() throws SQLException {
 		return preparedStatement.executeUpdate();
 	}
 	
@@ -110,18 +106,35 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			}
 		}
 		return updatedRowCountSum;
-	} 
+	}
 	
-	private int[] doExecuteBatch() {
-		getListener().onExecute(getSqlStatement());
+//	private int[] doExecuteBatch() {
+//		getListener().onExecute(getSqlStatement());
+//		logExecution(() -> {
+//			HashMap<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
+//			valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
+//			return valuesClone.toString();
+//		});
+//		try {
+//			return (int[]) doWithRetry((ThrowingExecutable<Object, SQLException>) () -> preparedStatement.executeBatch());
+//		} catch (SQLException | RetryException e) {
+//			throw new SQLExecutionException(getSQL(), e);
+//		} finally {
+//			if (LOGGER.isTraceEnabled()) {
+//				batchedValues.clear();
+//			}
+//		}
+//	}
+	
+	private <T, E extends SQLException> T doWithLogManagement(ThrowingExecutable<T, E> delegateWithResult) {
 		logExecution(() -> {
 			HashMap<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
 			valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
 			return valuesClone.toString();
 		});
 		try {
-			return (int[]) doWithRetry((ThrowingExecutable<Object, SQLException>) () -> preparedStatement.executeBatch());
-		} catch (SQLException | RetryException e) {
+			return delegateWithResult.execute();
+		} catch (SQLException e) {
 			throw new SQLExecutionException(getSQL(), e);
 		} finally {
 			if (LOGGER.isTraceEnabled()) {
@@ -130,9 +143,9 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		}
 	}
 	
-	private <T, E extends Exception> T doWithRetry(ThrowingExecutable<T, E> delegateWithResult) throws E, RetryException {
-		return retryer.execute(delegateWithResult, getSQL());
-	}
+//	private <T, E extends Exception> T doWithRetry(ThrowingExecutable<T, E> delegateWithResult) throws E, RetryException {
+//		return retryer.execute(delegateWithResult, getSQL());
+//	}
 	
 	/**
 	 * Add values as a batched statement

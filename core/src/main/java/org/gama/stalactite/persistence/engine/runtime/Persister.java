@@ -9,20 +9,25 @@ import java.util.Set;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
-import org.gama.stalactite.persistence.engine.listening.*;
+import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.gama.stalactite.persistence.engine.listening.DeleteListener;
+import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
+import org.gama.stalactite.persistence.engine.listening.SelectListener;
+import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -38,7 +43,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	private final EntityMappingStrategy<C, I, T> mappingStrategy;
 	private final ConnectionConfiguration connectionConfiguration;
 	private final DMLGenerator dmlGenerator;
-	private final Retryer writeOperationRetryer;
+	private final WriteOperationFactory writeOperationFactory;
 	private final int inOperatorMaxSize;
 	private PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	private final InsertExecutor<C, I, T> insertExecutor;
@@ -54,14 +59,14 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
-		this.writeOperationRetryer = dialect.getWriteOperationRetryer();
+		this.writeOperationFactory = dialect.getWriteOperationFactory();
 		this.inOperatorMaxSize = dialect.getInOperatorMaxSize();
 		this.insertExecutor = newInsertExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationRetryer, inOperatorMaxSize);
+				writeOperationFactory, inOperatorMaxSize);
 		this.updateExecutor = newUpdateExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationRetryer, inOperatorMaxSize);
+				writeOperationFactory, inOperatorMaxSize);
 		this.deleteExecutor = newDeleteExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
-				writeOperationRetryer, inOperatorMaxSize);
+				writeOperationFactory, inOperatorMaxSize);
 		this.selectExecutor = newSelectExecutor(mappingStrategy, this.connectionConfiguration.getConnectionProvider(), dialect);
 		
 		// Transfering identifier manager InsertListerner to here
@@ -71,13 +76,13 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getSelectListener());
 	}
 	
-	public Persister(ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+	public Persister(ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 					 int inOperatorMaxSize, EntityMappingStrategy<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
 					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, SelectExecutor<C, I> selectExecutor) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dmlGenerator;
-		this.writeOperationRetryer = writeOperationRetryer;
+		this.writeOperationFactory = writeOperationFactory;
 		this.inOperatorMaxSize = inOperatorMaxSize;
 		this.insertExecutor = insertExecutor;
 		this.updateExecutor = updateExecutor;
@@ -88,28 +93,28 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	protected InsertExecutor<C, I, T> newInsertExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
 														ConnectionConfiguration connectionConfiguration,
 														DMLGenerator dmlGenerator,
-														Retryer writeOperationRetryer,
+														WriteOperationFactory writeOperationFactory,
 														int inOperatorMaxSize) {
 		return new InsertExecutor<>(mappingStrategy, connectionConfiguration, dmlGenerator,
-				writeOperationRetryer, inOperatorMaxSize);
+				writeOperationFactory, inOperatorMaxSize);
 	}
 	
 	protected UpdateExecutor<C, I, T> newUpdateExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
 														ConnectionConfiguration connectionProvider,
 														DMLGenerator dmlGenerator,
-														Retryer writeOperationRetryer,
+														WriteOperationFactory writeOperationFactory,
 														int inOperatorMaxSize) {
 		return new UpdateExecutor<>(mappingStrategy, connectionProvider, dmlGenerator,
-				writeOperationRetryer, inOperatorMaxSize);
+				writeOperationFactory, inOperatorMaxSize);
 	}
 	
 	protected DeleteExecutor<C, I, T> newDeleteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
 														ConnectionConfiguration connectionConfiguration,
 														DMLGenerator dmlGenerator,
-														Retryer writeOperationRetryer,
+														WriteOperationFactory writeOperationFactory,
 														int inOperatorMaxSize) {
 		return new DeleteExecutor<>(mappingStrategy, connectionConfiguration, dmlGenerator,
-				writeOperationRetryer, inOperatorMaxSize);
+				writeOperationFactory, inOperatorMaxSize);
 	}
 	
 	protected SelectExecutor<C, I> newSelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
@@ -124,10 +129,6 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	
 	public DMLGenerator getDmlGenerator() {
 		return dmlGenerator;
-	}
-	
-	public Retryer getWriteOperationRetryer() {
-		return writeOperationRetryer;
 	}
 	
 	public int getInOperatorMaxSize() {

@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.Duo;
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
@@ -25,6 +24,7 @@ import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -50,9 +50,9 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	private SQLOperationListener<UpwhereColumn<T>> operationListener;
 	
 	public UpdateExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
-						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 						  int inOperatorMaxSize) {
-		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
+		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
 	}
 	
 	public void setRowCountManager(RowCountManager rowCountManager) {
@@ -76,7 +76,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	private WriteOperation<UpwhereColumn<T>> newWriteOperation(SQLStatement<UpwhereColumn<T>> statement, CurrentConnectionProvider currentConnectionProvider) {
-		WriteOperation<UpwhereColumn<T>> writeOperation = new WriteOperation<>(statement, currentConnectionProvider, getWriteOperationRetryer());
+		WriteOperation<UpwhereColumn<T>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider);
 		writeOperation.setListener(this.operationListener);
 		return writeOperation;
 	}

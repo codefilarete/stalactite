@@ -1,14 +1,14 @@
 package org.gama.stalactite.persistence.sql;
 
-import org.gama.lang.Retryer;
-import org.gama.lang.bean.Objects;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.ReadOperationFactory;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 
 /**
  * Class that keeps objects necessary for "communication" with a Database at the SQL language level:
@@ -23,14 +23,17 @@ public class Dialect {
 	private final SqlTypeRegistry sqlTypeRegistry;
 	
 	private final ColumnBinderRegistry columnBinderRegistry;
-	/** Helper to retry write operation, for instance with MySQL deadlock exception */
-	private Retryer writeOperationRetryer = Retryer.NO_RETRY;
+	
 	/** Maximum number of values for a "in" operator */
 	private int inOperatorMaxSize = 1000;
 	
 	private final DDLTableGenerator ddlTableGenerator;
 	
 	private final DMLGenerator dmlGenerator;
+	
+	private final WriteOperationFactory writeOperationFactory;
+	
+	private final ReadOperationFactory readOperationFactory;
 	
 	/**
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
@@ -54,6 +57,8 @@ public class Dialect {
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.dmlGenerator = newDmlGenerator(columnBinderRegistry);
 		this.ddlTableGenerator = newDdlTableGenerator();
+		this.writeOperationFactory = newWriteOperationFactory();
+		this.readOperationFactory = newReadOperationFactory();
 	}
 	
 	protected DDLTableGenerator newDdlTableGenerator() {
@@ -72,20 +77,28 @@ public class Dialect {
 		return dmlGenerator;
 	}
 	
+	protected WriteOperationFactory newWriteOperationFactory() {
+		return new WriteOperationFactory();
+	}
+	
+	public WriteOperationFactory getWriteOperationFactory() {
+		return writeOperationFactory;
+	}
+	
+	protected ReadOperationFactory newReadOperationFactory() {
+		return new ReadOperationFactory();
+	}
+	
+	public ReadOperationFactory getReadOperationFactory() {
+		return readOperationFactory;
+	}
+	
 	public SqlTypeRegistry getSqlTypeRegistry() {
 		return sqlTypeRegistry;
 	}
 	
 	public ColumnBinderRegistry getColumnBinderRegistry() {
 		return columnBinderRegistry;
-	}
-	
-	public Retryer getWriteOperationRetryer() {
-		return writeOperationRetryer;
-	}
-	
-	public void setWriteOperationRetryer(Retryer writeOperationRetryer) {
-		this.writeOperationRetryer = Objects.preventNull(writeOperationRetryer, Retryer.NO_RETRY);
 	}
 	
 	public int getInOperatorMaxSize() {

@@ -1,16 +1,19 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
@@ -18,9 +21,10 @@ import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierMan
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -39,8 +43,13 @@ import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -56,7 +65,8 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 	void setUp() {
 		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy, new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+		testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
+			new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
 	}
 	
 	@Test
@@ -135,7 +145,7 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 		testInstance = new InsertExecutor<>(new ClassMappingStrategy<VersionnedToto, Integer, Table>(VersionnedToto.class, totoTable, (Map) mapping,
 				PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
 				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
-				new ConnectionConfigurationSupport(connectionProvider, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+				new ConnectionConfigurationSupport(connectionProvider, 3), dmlGenerator, new WriteOperationFactory(), 3);
 		
 		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
 		testInstance.setVersioningStrategy(new VersioningStrategySupport<>(versioningAttributeAccessor, input -> ++input));
@@ -205,7 +215,7 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 			
 			DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 			InsertExecutor<Toto, Integer, Table> testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
-					new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, Retryer.NO_RETRY, 3);
+					new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
 			List<Toto> totoList = Arrays.asList(new Toto(17, 23), new Toto(29, 31), new Toto(37, 41), new Toto(43, 53));
 			testInstance.insert(totoList);
 			

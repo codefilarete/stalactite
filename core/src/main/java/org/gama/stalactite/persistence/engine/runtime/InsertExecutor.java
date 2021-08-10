@@ -1,14 +1,11 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.StringAppender;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
@@ -17,6 +14,7 @@ import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -42,9 +40,9 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
 	public InsertExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
-						  DMLGenerator dmlGenerator, Retryer writeOperationRetryer,
+						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 						  int inOperatorMaxSize) {
-		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationRetryer, inOperatorMaxSize);
+		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
 		this.identifierInsertionManager = mappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager();
 	}
 	
@@ -64,13 +62,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, CurrentConnectionProvider currentConnectionProvider) {
-		WriteOperation<Column<T, Object>> writeOperation = new WriteOperation<Column<T, Object>>(statement, currentConnectionProvider, getWriteOperationRetryer()) {
-			@Override
-			protected void prepareStatement(Connection connection) throws SQLException {
-				// NB: simple implementation: we don't use the column-specifying signature since not all databases support reading by column name
-				this.preparedStatement = identifierInsertionManager.prepareStatement(connection, getSQL());
-			}
-		};
+		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, identifierInsertionManager::prepareStatement);
 		writeOperation.setListener(this.operationListener);
 		return writeOperation;
 	}

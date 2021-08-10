@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 
 /**
  * @author Guillaume Mary
@@ -14,8 +15,9 @@ public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C ext
 	public OneToManyWithAssociationTableEngine(ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 											   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
-											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister) {
-		super(sourcePersister, targetPersister, manyRelationDescriptor, associationPersister);
+											   AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister,
+											   WriteOperationFactory writeOperationFactory) {
+		super(sourcePersister, targetPersister, manyRelationDescriptor, associationPersister, writeOperationFactory);
 	}
 	
 	@Override

@@ -29,6 +29,7 @@ import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssocia
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.id.diff.AbstractDiff;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.sql.dml.PreparedSQL;
@@ -52,15 +53,19 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
+	private final WriteOperationFactory writeOperationFactory;
+	
 	public AbstractOneToManyWithAssociationTableEngine(ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
 													   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
-													   AssociationRecordPersister<R, T> associationPersister) {
+													   AssociationRecordPersister<R, T> associationPersister,
+													   WriteOperationFactory writeOperationFactory) {
 		this.sourcePersister = sourcePersister;
 		this.persisterListener = sourcePersister.getPersisterListener();
 		this.targetPersister = targetPersister;
 		this.manyRelationDescriptor = manyRelationDescriptor;
 		this.associationPersister = associationPersister;
+		this.writeOperationFactory = writeOperationFactory;
 	}
 	
 	public ManyRelationDescriptor<SRC, TRGT, C> getManyRelationDescriptor() {
@@ -227,7 +232,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
-				try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, associationPersister.getConnectionProvider())) {
+				try (WriteOperation<Integer> writeOperation = writeOperationFactory.createInstance(deleteStatement, associationPersister.getConnectionProvider())) {
 					writeOperation.setValues(deleteStatement.getValues());
 					writeOperation.execute();
 				}

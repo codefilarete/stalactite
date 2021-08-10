@@ -463,7 +463,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 */
 		public int execute() {
 			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(updateStatement, getConnectionProvider())) {
+			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				return writeOperation.execute();
 			}
@@ -508,7 +508,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 */
 		public int execute() {
 			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(insertStatement, getConnectionProvider())) {
+			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
 				return writeOperation.execute();
 			}
@@ -528,7 +528,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 */
 		public int execute() {
 			PreparedSQL deleteStatement = new DeleteCommandBuilder<T>(this).toStatement(getDialect().getColumnBinderRegistry());
-			try (WriteOperation<Integer> writeOperation = new WriteOperation<>(deleteStatement, getConnectionProvider())) {
+			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				return writeOperation.execute();
 			}

@@ -403,7 +403,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					manyAssociationConfiguration.srcPersister,
 					targetPersister,
 					manyRelationDescriptor,
-					associationPersister);
+					associationPersister, dialect.getWriteOperationFactory());
 		}
 		
 		private void assignEngineForIndexedAssociation(Column rightPrimaryKey,
@@ -442,7 +442,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					targetPersister,
 					manyRelationDescriptor,
 					indexedAssociationPersister,
-					intermediaryTable.getIndexColumn());
+					intermediaryTable.getIndexColumn(), dialect.getWriteOperationFactory());
 		}
 	}
 	

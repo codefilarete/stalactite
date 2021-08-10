@@ -6,9 +6,11 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import org.gama.lang.trace.ModifiableBoolean;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 abstract class SQLOperationITTest {
 
 	protected DataSource dataSource;
+	
+	protected BiFunction<PreparedSQL, ConnectionProvider, ReadOperation<Integer>> readOperationFactory;
 
 	@BeforeEach
 	abstract void createDataSource();
@@ -31,7 +35,12 @@ abstract class SQLOperationITTest {
 	abstract String giveLockStatement();
 
 	abstract Predicate<Throwable> giveCancelOperationPredicate();
-
+	
+	@BeforeEach
+	protected void createReadOperationFactory() {
+		this.readOperationFactory = ReadOperation::new;
+	}
+	
 	@Test
 	void cancel() throws SQLException, InterruptedException {
 		DataSourceConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
@@ -47,8 +56,7 @@ abstract class SQLOperationITTest {
 			CountDownLatch countDownLatch = new CountDownLatch(1);
 			ModifiableBoolean isSelectExecuted = new ModifiableBoolean(false);
 			Connection connection = dataSource.getConnection();
-			ReadOperation<Integer> testInstance = new ReadOperation<>(new PreparedSQL("select * from toto", new HashMap<>()),
-					new SimpleConnectionProvider(connection));
+			ReadOperation<Integer> testInstance = readOperationFactory.apply(new PreparedSQL("select * from toto", new HashMap<>()), new SimpleConnectionProvider(connection));
 			Throwable[] capturedException = new Throwable[1];
 			Thread thread = new Thread(() -> {
 				try (ReadOperation<Integer> localTestInstance = testInstance) {

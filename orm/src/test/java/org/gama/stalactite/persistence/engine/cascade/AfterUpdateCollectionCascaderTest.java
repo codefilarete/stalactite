@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.gama.lang.Duo;
-import org.gama.lang.Retryer;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
@@ -18,9 +17,10 @@ import org.gama.stalactite.persistence.engine.runtime.UpdateExecutor;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
@@ -49,9 +49,9 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(ConnectionConfiguration.class)) {
 			
 			@Override
-			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(EntityMappingStrategy<Tata, Long, T> mappingStrategy, ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, Retryer writeOperationRetryer, int inOperatorMaxSize) {
+			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(EntityMappingStrategy<Tata, Long, T> mappingStrategy, ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory, int inOperatorMaxSize) {
 				return new UpdateExecutor<Tata, Long, T>(mappingStrategy, connectionConfiguration, dmlGenerator,
-						writeOperationRetryer, inOperatorMaxSize) {
+						new WriteOperationFactory(), inOperatorMaxSize) {
 					
 					@Override
 					public int update(Iterable<? extends Duo<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {

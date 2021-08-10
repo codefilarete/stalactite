@@ -470,7 +470,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 						PreparedUpdate<Table> tablePreparedUpdate = dialect.getDmlGenerator().buildUpdate(
 								Arrays.asList((Column<Table, Object>) rightColumn),
 								targetPersister.getMappingStrategy().getVersionedKeys());
-						return new WriteOperation<>(tablePreparedUpdate,
+						return dialect.getWriteOperationFactory().createInstance(tablePreparedUpdate,
 								connectionConfiguration.getConnectionProvider());
 					}
 					
