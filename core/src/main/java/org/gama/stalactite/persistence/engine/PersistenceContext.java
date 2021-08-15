@@ -140,42 +140,42 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	/**
-	 * Creates a {@link ExecutableSelect} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
+	 * Creates a {@link ExecutableBeanPropertyKeyQueryMapper} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
 	 * Should be chained with {@link QueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
 	 * 
 	 * @param queryProvider the query provider to give the {@link Query} execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
-	 * @return a new {@link ExecutableSelect} that must be configured and executed
+	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 * @see org.gama.stalactite.query.model.QueryEase
 	 */
-	public <C> ExecutableSelect<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
+	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
 		return newQuery(new SQLQueryBuilder(queryProvider), beanType);
 	}
 	
 	/**
-	 * Creates a {@link ExecutableSelect} from a {@link Query} in order to build beans from the {@link Query}.
-	 * Should be chained with {@link MappableQuery} mapping methods and obviously with its {@link ExecutableQuery#execute()}
+	 * Creates a {@link ExecutableBeanPropertyKeyQueryMapper} from a {@link Query} in order to build beans from the {@link Query}.
+	 * Should be chained with {@link ExecutableBeanPropertyKeyQueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
 	 * 
 	 * @param query the query to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
-	 * @return a new {@link ExecutableSelect} that must be configured and executed
+	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 */
-	public <C> ExecutableSelect<C> newQuery(Query query, Class<C> beanType) {
+	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
 		return newQuery(new SQLQueryBuilder(query), beanType);
 	}
 	
 	/**
-	 * Creates a {@link ExecutableSelect} from some SQL in order to build beans from the SQL.
-	 * Should be chained with {@link ExecutableSelect} mapping methods and obviously with its {@link ExecutableQuery#execute()}
+	 * Creates a {@link ExecutableBeanPropertyKeyQueryMapper} from some SQL in order to build beans from the SQL.
+	 * Should be chained with {@link ExecutableBeanPropertyKeyQueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
 	 * 
 	 * @param sql the SQL to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
-	 * @return a new {@link ExecutableSelect} that must be configured and executed
+	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 */
-	public <C> ExecutableSelect<C> newQuery(CharSequence sql, Class<C> beanType) {
+	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(CharSequence sql, Class<C> beanType) {
 		return newQuery(() -> sql, beanType);
 	}
 	
@@ -186,9 +186,9 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param sql the builder of SQL to be called for final SQL
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
-	 * @return a new {@link ExecutableSelect} that must be configured and executed
+	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 */
-	public <C> ExecutableSelect<C> newQuery(SQLBuilder sql, Class<C> beanType) {
+	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(SQLBuilder sql, Class<C> beanType) {
 		return wrapIntoExecutable(newTransformableQuery(sql, beanType));
 	}
 	
@@ -220,17 +220,26 @@ public class PersistenceContext implements PersisterRegistry {
 				.execute();
 	}
 	
-	private <C> ExecutableSelect<C> wrapIntoExecutable(QueryMapper<C> queryMapperSupport) {
+	private <C> ExecutableBeanPropertyKeyQueryMapper<C> wrapIntoExecutable(QueryMapper<C> queryMapperSupport) {
 		SingleResultExecutableSelect<C> singleResultDispatcher = new MethodReferenceDispatcher()
-			.redirect((SerializableFunction<SingleResultExecutableSelect<C>, C>) SingleResultExecutableSelect::execute, () -> executeUnique(queryMapperSupport))
-			.redirect(MappableQuery.class, queryMapperSupport, true)
-			.build((Class<SingleResultExecutableSelect<C>>) (Class) SingleResultExecutableSelect.class);
+				.redirect(SingleResultExecutableSelect<C>::execute, () -> executeUnique(queryMapperSupport))
+				.redirect(BeanPropertyQueryMapper.class, queryMapperSupport, true)
+				.build((Class<SingleResultExecutableSelect<C>>) (Class) SingleResultExecutableSelect.class);
+		
+		ExecutableBeanPropertyQueryMapper<C> beanPropertyMappingHandler = new MethodReferenceDispatcher()
+				// since ExecutableBeanPropertyQueryMapper can be run we redirect execute() method to the underlying method
+				.redirect(ExecutableQuery<C>::execute, () -> execute(queryMapperSupport))
+				// redirecting singleResult() to convenient instance handler
+				.redirect(ExecutableBeanPropertyQueryMapper<C>::singleResult, () -> singleResultDispatcher)
+				.redirect(BeanPropertyQueryMapper.class, queryMapperSupport, true)
+				.build((Class<ExecutableBeanPropertyQueryMapper<C>>) (Class) ExecutableBeanPropertyQueryMapper.class);
 		
 		return new MethodReferenceDispatcher()
-				.redirect((SerializableFunction<ExecutableQuery<C>, List<C>>) ExecutableQuery::execute, () -> execute(queryMapperSupport))
-				.redirect((SerializableFunction<ExecutableSelect<C>, SingleResultExecutableSelect<C>>) ExecutableSelect::singleResult, () -> singleResultDispatcher)
-				.redirect(MappableQuery.class, queryMapperSupport, true)
-				.build((Class<ExecutableSelect<C>>) (Class) ExecutableSelect.class);
+				// BeanKeyQueryMapper methods are applied to a convenient instance but their results are redirected to another one to comply with their signature 
+				.redirect(BeanKeyQueryMapper.class, queryMapperSupport, beanPropertyMappingHandler)
+				// since ExecutableBeanPropertyKeyQueryMapper can be run we redirect execute() method to the underlying method
+				.redirect(ExecutableQuery<C>::execute, () -> execute(queryMapperSupport))
+				.build((Class<ExecutableBeanPropertyKeyQueryMapper<C>>) (Class) ExecutableBeanPropertyKeyQueryMapper.class);
 	}
 	
 	/**
@@ -252,8 +261,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
 	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
-		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), ((Class<C>) constructor.getDeclaringClass()))
+		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
+		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2)
 				.execute();
 	}
@@ -279,8 +288,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
 	public <C, I, J, K, T extends Table> List<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
-		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), ((Class<C>) constructor.getDeclaringClass()))
+		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
+		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2, column3)
 				.execute();
 	}
@@ -347,7 +356,7 @@ public class PersistenceContext implements PersisterRegistry {
 	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
 												  Consumer<SelectMapping<C>> selectMapping,
 												  Consumer<CriteriaChain> where) {
-		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		Query query = QueryEase.select(column).from(column.getTable()).getQuery();
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
@@ -378,7 +387,7 @@ public class PersistenceContext implements PersisterRegistry {
 	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
 												  Consumer<SelectMapping<C>> selectMapping,
 												  Consumer<CriteriaChain> where) {
-		Constructor constructor = new MethodReferenceCapturer().findConstructor(factory);
+		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		Query query = QueryEase.select(column1,column2).from(column1.getTable()).getQuery();
 		where.accept(query.getWhere());
 		SelectMapping<C> selectMappingSupport = new SelectMapping<>();
@@ -562,86 +571,72 @@ public class PersistenceContext implements PersisterRegistry {
 		
 	}
 	
-	/**
-	 * Mashup between {@link MappableQuery} and {@link ExecutableQuery} to make an {@link MappableQuery} executable
-	 * @param <C> type of object returned by query execution
-	 */
-	public interface ExecutableSelect<C> extends MappableQuery<C>, ExecutableQuery<C> {
+	public interface ExecutableBeanPropertyKeyQueryMapper<C> extends BeanKeyQueryMapper<C>, ExecutableQuery<C> {
 		
-		@Override
-		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
+		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
 		
-		@Override
-		<I, J> ExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
 		
-		@Override
-		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
+		<I, J, K> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor,
+															  String columnName1,
+															  String columnName2,
+															  String columnName3);
 		
-		@Override
-		<I> ExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
+		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
 		
-		@Override
-		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);
+		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName, Class<I> columnType);
 		
-		@Override
-		<I, J> ExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
-										  String column2Name, Class<J> column2Type);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor,
+														   String column1Name, Class<I> column1Type,
+														   String column2Name, Class<J> column2Type);
 		
-		@Override
-		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
-											 String column2Name, Class<J> column2Type,
-											 String column3Name, Class<K> column3Type);
+		<I, J, K> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor,
+															  String column1Name, Class<I> column1Type,
+															  String column2Name, Class<J> column2Type,
+															  String column3Name, Class<K> column3Type);
 		
-		@Override
-		<I> ExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, Column<? extends Table, I> column);
+		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, Column<? extends Table, I> column);
 		
-		@Override
-		<I, J> ExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, Column<? extends Table, I> column1, Column<? extends Table, J> column2);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, Column<? extends Table, I> column1, Column<
+			? extends Table, J> column2);
 		
-		@Override
-		<I, J, K> ExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
-											 Column<? extends Table, I> column1,
-											 Column<? extends Table, J> column2,
-											 Column<? extends Table, K> column3
+		<I, J, K> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor,
+															  Column<? extends Table, I> column1,
+															  Column<? extends Table, J> column2,
+															  Column<? extends Table, K> column3
 		);
 		
-		@Override
-		<I> ExecutableSelect<I> mapKey(String columnName, Class<I> columnType);
+		<I> ExecutableBeanPropertyQueryMapper<I> mapKey(String columnName, Class<I> columnType);
 		
-		@Override
-		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
+	}
+	
+	public interface ExecutableBeanPropertyQueryMapper<C> extends ExecutableQuery<C>, BeanPropertyQueryMapper<C> {
 		
-		@Override
-		<I, J> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
 		
-		@Override
-		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 		
-		@Override
-		<I, J> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter);
 		
-		@Override
-		<I> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
-		@Override
-		<I, J> ExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
+		<I> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
 		
-		@Override
-		<K, V> ExecutableSelect<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
-		@Override
-		default ExecutableSelect<C> add(ResultSetRowAssembler<C> assembler) {
-			return (ExecutableSelect<C>) add(assembler, AssemblyPolicy.ON_EACH_ROW);
+		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+		
+		default ExecutableBeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
+			return add(assembler, AssemblyPolicy.ON_EACH_ROW);
 		}
 		
-		@Override
-		ExecutableSelect<C> set(String paramName, Object value);
+		ExecutableBeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
 		
-		@Override
-		<O> ExecutableSelect<C> set(String paramName, O value, Class<? super O> valueType);
+		ExecutableBeanPropertyQueryMapper<C> set(String paramName, Object value);
 		
-		@Override
-		<O> ExecutableSelect<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
+		<O> ExecutableBeanPropertyQueryMapper<C> set(String paramName, O value, Class<? super O> valueType);
+		
+		<O> ExecutableBeanPropertyQueryMapper<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
 		
 		/**
 		 * Forces query to return very first result
@@ -654,47 +649,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * Configurable query that will only return first result when executed
 	 * @param <C> type of object returned by query execution
 	 */
-	public interface SingleResultExecutableSelect<C> extends MappableQuery<C> {
-		
-		@Override
-		<I> SingleResultExecutableSelect<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
-		
-		@Override
-		<I, J> SingleResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
-		
-		@Override
-		<I, J, K> SingleResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
-		
-		@Override
-		<I> SingleResultExecutableSelect<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
-		
-		@Override
-		<I> SingleResultExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, String columnName, Class<I> columnType);
-		
-		@Override
-		<I, J> SingleResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, String column1Name, Class<I> column1Type,
-													  String column2Name, Class<J> column2Type);
-		
-		@Override
-		<I, J, K> SingleResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory, String column1Name, Class<I> column1Type,
-														 String column2Name, Class<J> column2Type,
-														 String column3Name, Class<K> column3Type);
-		
-		@Override
-		<I> SingleResultExecutableSelect<C> mapKey(SerializableFunction<I, C> factory, Column<? extends Table, I> column);
-		
-		@Override
-		<I, J> SingleResultExecutableSelect<C> mapKey(SerializableBiFunction<I, J, C> factory, Column<? extends Table, I> column1, Column<? extends Table, J> column2);
-		
-		@Override
-		<I, J, K> SingleResultExecutableSelect<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
-														 Column<? extends Table, I> column1,
-														 Column<? extends Table, J> column2,
-														 Column<? extends Table, K> column3
-		);
-		
-		@Override
-		<I> SingleResultExecutableSelect<I> mapKey(String columnName, Class<I> columnType);
+	public interface SingleResultExecutableSelect<C> extends BeanPropertyQueryMapper<C> {
 		
 		@Override
 		<I> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);

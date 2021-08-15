@@ -10,14 +10,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToOneOptions;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
-import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
+import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.model.Person;
@@ -1090,7 +1089,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				
 				// checking reverse side column value ...
 				// ... must be null for old president
-				ExecutableSelect<Long> countryIdQuery = persistenceContext.newQuery("select countryId from Person where id = :personId", Long.class)
+				ExecutableBeanPropertyQueryMapper<Long> countryIdQuery = persistenceContext.newQuery("select countryId from Person where id = :personId", Long.class)
 						.mapKey("countryId", Long.class);
 				List<Long> originalPresidentCountryId = countryIdQuery
 						.set("personId", originalPresident.getId())

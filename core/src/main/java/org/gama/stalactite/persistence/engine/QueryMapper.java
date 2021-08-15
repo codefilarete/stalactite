@@ -49,7 +49,7 @@ import static org.gama.stalactite.sql.binder.NullAwareParameterBinder.ALWAYS_SET
  * 
  * @author Guillaume Mary
  */
-public class QueryMapper<C> implements MappableQuery<C> {
+public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryMapper<C> {
 	
 	/** Default method capturer. Shared to cache result of each lookup. */
 	private static final MethodReferenceCapturer METHOD_REFERENCE_CAPTURER = new MethodReferenceCapturer();

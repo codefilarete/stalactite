@@ -17,7 +17,7 @@ import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
-import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
+import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyKeyQueryMapper;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
@@ -435,7 +435,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answer.takeChoices(Arrays.asList(choice1, choice2, choice2, choice3));
 			answerPersister.insert(answer);
 			
-			ExecutableSelect<RawAnswer> query = persistenceContext.newQuery(
+			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
@@ -632,7 +632,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			selectedAnswer.takeChoices(Arrays.asList(choice1, choice2, newChoice, choice2, choice3, choice1, choice4));
 			answerPersister.update(selectedAnswer, answer, true);
 			
-			ExecutableSelect<RawAnswer> query = persistenceContext.newQuery(
+			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
 					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query

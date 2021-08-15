@@ -12,7 +12,7 @@ import org.gama.lang.exception.Exceptions;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
-import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableSelect;
+import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.Color;
@@ -99,7 +99,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		// insert test
 		abstractVehiclePersister.insert(dummyCar);
 		
-		ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
+		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
 				.mapKey("model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
@@ -160,7 +160,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		// insert test
 		abstractVehiclePersister.insert(dummyCar);
 		
-		ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
+		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
 				.mapKey("model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
@@ -240,7 +240,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		// insert test
 		abstractVehiclePersister.insert(dummyCar);
 		
-		ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
+		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
 				.mapKey("model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
