@@ -342,12 +342,12 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
-				.mapKey(SerializableFunction.identity(), "name", String.class)
+				.mapKey("name", String.class)
 				.execute()
 				.get(0)).isEqualTo("Paris");
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
-				.mapKey(SerializableFunction.identity(), "name", String.class)
+				.mapKey("name", String.class)
 				.execute()
 				.get(0)).isEqualTo("touched France");
 		
@@ -356,12 +356,12 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		assertThat(rowCount).isEqualTo(1);
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
-				.mapKey(SerializableFunction.identity(), "name", String.class)
+				.mapKey("name", String.class)
 				.execute()).isEqualTo(Collections.emptyList());
 		
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
-				.mapKey(SerializableFunction.identity(), "name", String.class)
+				.mapKey("name", String.class)
 				.execute()
 				.get(0)).isEqualTo("Paris");
 	}

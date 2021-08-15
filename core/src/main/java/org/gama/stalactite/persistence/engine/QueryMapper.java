@@ -298,6 +298,12 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		return this;
 	}
 	
+	@Override
+	public <I> QueryMapper<I> mapKey(String columnName, Class<I> columnType) {
+		this.rootTransformer = (WholeResultSetTransformer<?, C>) buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), SerializableFunction.identity());
+		return (QueryMapper<I>) this;
+	}
+	
 	/**
 	 * Defines a mapping between a column of the query and a bean property through its setter
 	 *
@@ -469,8 +475,8 @@ public class QueryMapper<C> implements MappableQuery<C> {
 		}
 	}
 	
-	private <I> WholeResultSetTransformer<I, C> buildSingleColumnKeyTransformer(Column<I> keyColumn, SerializableFunction<I, C> beanFactory) {
-		return new WholeResultSetTransformer<>(rootBeanType, keyColumn.getName(), keyColumn.getBinder(), beanFactory);
+	private <I, O> WholeResultSetTransformer<I, O> buildSingleColumnKeyTransformer(Column<I> keyColumn, SerializableFunction<I, O> beanFactory) {
+		return new WholeResultSetTransformer<>((Class<O>) rootBeanType, keyColumn.getName(), keyColumn.getBinder(), beanFactory);
 	}
 	
 	private WholeResultSetTransformer<Object[], C> buildComposedKeyTransformer(Set<Column> columns, SerializableFunction<Object[], C> beanFactory) {

@@ -606,6 +606,9 @@ public class PersistenceContext implements PersisterRegistry {
 		);
 		
 		@Override
+		<I> ExecutableSelect<I> mapKey(String columnName, Class<I> columnType);
+		
+		@Override
 		<I> ExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
 		
 		@Override
@@ -689,6 +692,9 @@ public class PersistenceContext implements PersisterRegistry {
 														 Column<? extends Table, J> column2,
 														 Column<? extends Table, K> column3
 		);
+		
+		@Override
+		<I> SingleResultExecutableSelect<I> mapKey(String columnName, Class<I> columnType);
 		
 		@Override
 		<I> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);

@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -143,7 +142,7 @@ public class PersistenceContextTest {
 		
 		// test select
 		Integer count = testInstance.newQuery("select count(*) as count from Toto", Integer.class)
-			.mapKey(SerializableFunction.identity(), "count", Integer.class)
+			.mapKey("count", Integer.class)
 			.singleResult().execute();
 		
 		assertThat(count).isEqualTo(666);

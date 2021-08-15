@@ -12,7 +12,6 @@ import java.util.Objects;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -544,14 +543,14 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable), Long.class)
-					.mapKey(SerializableFunction.identity(), "c", long.class)
+					.mapKey("c", long.class)
 					.execute();
 			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
 			List<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", long.class)
+					.mapKey("id", long.class)
 					.execute();
 			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
 					choice3.getId().getSurrogate()));
@@ -583,14 +582,14 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable).getQuery(), Long.class)
-					.mapKey(SerializableFunction.identity(), "c", long.class)
+					.mapKey("c", long.class)
 					.execute();
 			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
 			List<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", long.class)
+					.mapKey("id", long.class)
 					.execute();
 			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
 					choice3.getId().getSurrogate()));

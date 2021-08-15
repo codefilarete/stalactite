@@ -8,7 +8,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -693,7 +692,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(dummyCar);
 			
 			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from Vehicle", String.class)
-					.mapKey(SerializableFunction.identity(), "model", String.class);
+					.mapKey("model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactly("Renault");
@@ -717,7 +716,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -795,7 +794,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -840,13 +839,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='CAR'", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='TRUK'", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -879,21 +878,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -990,7 +989,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(dummyCar);
 			
 			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from Vehicle left outer join car on Vehicle.id = car.id", String.class)
-					.mapKey(SerializableFunction.identity(), "model", String.class);
+					.mapKey("model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactly("Renault");
@@ -1014,7 +1013,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -1061,19 +1060,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
 			ExecutableSelect<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> vehicleIds = vehicleIdQuery.execute();
 			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -1098,28 +1097,28 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			ExecutableSelect<Integer> vehicleQuery = persistenceContext.newQuery("select"
 					+ " count(*) as vehicleCount from Vehicle where id in ("
 					+ dummyCar.getId().getSurrogate() + ", " + + dummyTruk.getId().getSurrogate() + ")", Integer.class)
-					.mapKey(SerializableFunction.identity(), "vehicleCount", Integer.class);
+					.mapKey("vehicleCount", Integer.class);
 			
 			Integer vehicleCount = Iterables.first(vehicleQuery.execute());
 			assertThat(vehicleCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -1165,19 +1164,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
 			ExecutableSelect<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> vehicleIds = vehicleIdQuery.execute();
 			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -1210,21 +1209,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -1322,7 +1321,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(dummyCar);
 			
 			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
-					.mapKey(SerializableFunction.identity(), "model", String.class);
+					.mapKey("model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactly("Renault");
@@ -1346,7 +1345,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -1391,13 +1390,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -1421,21 +1420,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}
@@ -1480,13 +1479,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -1513,21 +1512,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from truk where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableSelect<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
-					.mapKey(SerializableFunction.identity(), "id", Long.class);
+					.mapKey("id", Long.class);
 			
 			assertThat(engineQuery.execute()).isEmpty();
 		}

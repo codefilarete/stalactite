@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.Exceptions;
@@ -101,7 +100,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		abstractVehiclePersister.insert(dummyCar);
 		
 		ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
-				.mapKey(SerializableFunction.identity(), "model", String.class);
+				.mapKey("model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
@@ -162,7 +161,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		abstractVehiclePersister.insert(dummyCar);
 		
 		ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
-				.mapKey(SerializableFunction.identity(), "model", String.class);
+				.mapKey("model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
@@ -242,7 +241,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		abstractVehiclePersister.insert(dummyCar);
 		
 		ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
-				.mapKey(SerializableFunction.identity(), "model", String.class);
+				.mapKey("model", String.class);
 		
 		List<String> allCars = modelQuery.execute();
 		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));

@@ -193,7 +193,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(dummyCar);
 			
 			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
-					.mapKey(SerializableFunction.identity(), "model", String.class);
+					.mapKey("model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactly("Renault");
@@ -322,13 +322,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='CAR'", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='TRUK'", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -361,14 +361,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
@@ -460,7 +460,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(dummyCar);
 			
 			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
-					.mapKey(SerializableFunction.identity(), "model", String.class);
+					.mapKey("model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactly("Renault");
@@ -520,19 +520,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
 			ExecutableSelect<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from abstractVehicle", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> vehicleIds = vehicleIdQuery.execute();
 			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -557,21 +557,21 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableSelect<Integer> vehicleQuery = persistenceContext.newQuery("select"
 					+ " count(*) as vehicleCount from abstractVehicle where id in ("
 					+ dummyCar.getId().getSurrogate() + ", " + + dummyTruk.getId().getSurrogate() + ")", Integer.class)
-					.mapKey(SerializableFunction.identity(), "vehicleCount", Integer.class);
+					.mapKey("vehicleCount", Integer.class);
 			
 			Integer vehicleCount = Iterables.first(vehicleQuery.execute());
 			assertThat(vehicleCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
@@ -614,19 +614,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 			
 			ExecutableSelect<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> vehicleIds = vehicleIdQuery.execute();
 			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 			
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -659,14 +659,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 			
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 			
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
@@ -757,7 +757,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(dummyCar);
 			
 			ExecutableSelect<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
-					.mapKey(SerializableFunction.identity(), "model", String.class);
+					.mapKey("model", String.class);
 			
 			List<String> allCars = modelQuery.execute();
 			assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
@@ -815,13 +815,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).isEqualTo(Arrays.asList(1));
 
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).isEqualTo(Arrays.asList(2));
@@ -845,14 +845,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);
@@ -893,13 +893,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
 
 			ExecutableSelect<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 
 			ExecutableSelect<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
-					.mapKey(SerializableFunction.identity(), "id", Integer.class);
+					.mapKey("id", Integer.class);
 
 			List<Integer> trukIds = trukIdQuery.execute();
 			assertThat(trukIds).containsExactly(2);
@@ -926,14 +926,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 
 			ExecutableSelect<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "carCount", Integer.class);
+					.mapKey("carCount", Integer.class);
 
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 
 			ExecutableSelect<Integer> trukQuery = persistenceContext.newQuery("select"
 					+ " count(*) as trukCount from truk where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey(SerializableFunction.identity(), "trukCount", Integer.class);
+					.mapKey("trukCount", Integer.class);
 
 			Integer trukCount = Iterables.first(trukQuery.execute());
 			assertThat(trukCount).isEqualTo(0);

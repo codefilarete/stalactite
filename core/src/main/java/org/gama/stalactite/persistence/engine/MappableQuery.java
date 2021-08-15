@@ -161,6 +161,16 @@ public interface MappableQuery<C> {
 	);
 	
 	/**
+	 * Key mapper for cases where given column is the only retrieved, meaning that there's no bean to be built else than the column value
+	 *
+	 * @param columnName column containing value
+	 * @param columnType column type
+	 * @param <I> identifier type
+	 * @return an instance that allows method chaining
+	 */
+	<I> MappableQuery<I> mapKey(String columnName, Class<I> columnType);
+	
+	/**
 	 * Maps a column to a bean property
 	 * 
 	 * @param columnName column name that will fill the property
