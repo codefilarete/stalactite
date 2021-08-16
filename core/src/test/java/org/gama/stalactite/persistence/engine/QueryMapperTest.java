@@ -292,7 +292,7 @@ class QueryMapperTest {
 	void execute_instanceHasAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		ModifiableInt assemblerCounter = new ModifiableInt();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
 				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()));
 		
@@ -316,7 +316,7 @@ class QueryMapperTest {
 	void execute_instanceHasAssembler_thatRunOnce() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		ModifiableInt assemblerCounter = new ModifiableInt();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
 				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()), AssemblyPolicy.ONCE_PER_BEAN);
 		
@@ -339,7 +339,7 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasRelation() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
 				.map("name", Toto::setName)
 				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new));
@@ -389,7 +389,7 @@ class QueryMapperTest {
 	@Test
 	void executeUnique_instanceHasAssembler() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it not executed", columnBinderRegistry)
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 			.mapKey(Toto::new, "id", long.class)
 			.add((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name1")))
 			.add((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name2")))
