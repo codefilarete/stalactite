@@ -1,7 +1,10 @@
 package org.gama.stalactite.persistence.engine;
 
+import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -16,6 +19,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.Converter;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.MethodReferenceCapturer;
@@ -33,6 +37,8 @@ import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.DialectResolver;
+import org.gama.stalactite.persistence.sql.ServiceLoaderDialectResolver;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.SQLBuilder;
@@ -43,6 +49,7 @@ import org.gama.stalactite.query.model.Query;
 import org.gama.stalactite.query.model.QueryEase;
 import org.gama.stalactite.query.model.QueryProvider;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
@@ -54,6 +61,7 @@ import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
  *
  * @author Guillaume Mary
+ * @see #PersistenceContext(DataSource)
  */
 public class PersistenceContext implements PersisterRegistry {
 	
@@ -62,10 +70,81 @@ public class PersistenceContext implements PersisterRegistry {
 	private final TransactionAwareConnectionConfiguration connectionConfiguration;
 	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
 	
+	/**
+	 * Constructor with minimal but necessary information.
+	 * JDBC batch size is set to 100.
+	 * Dialect is deduced from JVM Service Provider and connection metadata.
+	 * 
+	 * @param connectionProvider a JDBC {@link Connection} provider
+	 */
+	public PersistenceContext(DataSource connectionProvider) {
+		this(new DataSourceConnectionProvider(connectionProvider));
+	}
+	
+	/**
+	 * Constructor with minimal but necessary information.
+	 * JDBC batch size is set to 100.
+	 * Dialect is deduced from JVM Service Provider and connection metadata.
+	 *
+	 * @param connectionProvider a JDBC {@link Connection} provider
+	 */
+	public PersistenceContext(ConnectionProvider connectionProvider) {
+		this(new ConnectionConfigurationSupport(connectionProvider, 100), new ServiceLoaderDialectResolver());
+	}
+	
+	/**
+	 * Constructor with {@link Connection} information.
+	 * Dialect is deduced from JVM Service Provider and connection metadata.
+	 *
+	 * @param connectionConfiguration necessary information on JDBC {@link Connection}
+	 */
+	public PersistenceContext(ConnectionConfiguration connectionConfiguration) {
+		this(connectionConfiguration, new ServiceLoaderDialectResolver());
+	}
+	
+	/**
+	 * Constructor with {@link Connection} provider and dialect provider.
+	 * JDBC batch size is set to 100.
+	 * 
+	 * @param connectionProvider a JDBC {@link Connection} provider
+	 * @param dialectResolver dialect provider
+	 */
+	public PersistenceContext(ConnectionProvider connectionProvider, DialectResolver dialectResolver) {
+		this(new ConnectionConfigurationSupport(connectionProvider, 100), dialectResolver);
+	}
+	
+	/**
+	 * Constructor with {@link Connection} information and dialect provider.
+	 *
+	 * @param connectionConfiguration necessary information on JDBC {@link Connection}
+	 * @param dialectResolver dialect provider
+	 */
+	public PersistenceContext(ConnectionConfiguration connectionConfiguration, DialectResolver dialectResolver) {
+		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
+		try (Connection currentConnection = this.connectionConfiguration.getCurrentConnection()) {
+			this.dialect = dialectResolver.determineDialect(currentConnection);
+		} catch (SQLException throwable) {
+			throw Exceptions.asRuntimeException(throwable);
+		}
+	}
+	
+	/**
+	 * Constructor with {@link Connection} provider and dialect.
+	 * JDBC batch size is set to 100.
+	 *
+	 * @param connectionProvider a JDBC {@link Connection} provider
+	 * @param dialect dialect to be used with {@link Connection}
+	 */
 	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
 		this(new ConnectionConfigurationSupport(connectionProvider, 100), dialect);
 	}
 	
+	/**
+	 * Constructor with {@link Connection} information and dialect.
+	 *
+	 * @param connectionConfiguration necessary information on JDBC {@link Connection}
+	 * @param dialect dialect to be used with {@link Connection}
+	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, Dialect dialect) {
 		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
 		this.dialect = dialect;
