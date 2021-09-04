@@ -19,7 +19,11 @@ public class MariaDBRetryer extends Retryer {
 	}
 	
 	@Override
-	protected boolean shouldRetry(Throwable t) {
-		return Exceptions.findExceptionInCauses(t, SQLException.class, "Lock wait timeout exceeded; try restarting transaction") != null;
+	protected boolean shouldRetry(Result result) {
+		if (result instanceof Failure<?>) {
+			return Exceptions.findExceptionInCauses(((Failure<?>) result).getError(), SQLException.class, "Lock wait timeout exceeded; try restarting transaction") != null;
+		} else {
+			return false;
+		}
 	}
 }
