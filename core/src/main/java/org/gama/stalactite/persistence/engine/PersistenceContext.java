@@ -75,10 +75,21 @@ public class PersistenceContext implements PersisterRegistry {
 	 * JDBC batch size is set to 100.
 	 * Dialect is deduced from JVM Service Provider and connection metadata.
 	 * 
-	 * @param connectionProvider a JDBC {@link Connection} provider
+	 * @param dataSource a JDBC {@link Connection} provider
 	 */
-	public PersistenceContext(DataSource connectionProvider) {
-		this(new DataSourceConnectionProvider(connectionProvider));
+	public PersistenceContext(DataSource dataSource) {
+		this(new DataSourceConnectionProvider(dataSource));
+	}
+	
+	/**
+	 * Constructor with minimal but necessary information.
+	 * JDBC batch size is set to 100.
+	 *
+	 * @param dataSource a JDBC {@link Connection} provider
+	 * @param dialect dialect to be used with {@link Connection} gioven by dataSource
+	 */
+	public PersistenceContext(DataSource dataSource, Dialect dialect) {
+		this(new DataSourceConnectionProvider(dataSource), dialect);
 	}
 	
 	/**

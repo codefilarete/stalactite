@@ -5,11 +5,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-import org.gama.lang.trace.ModifiableBoolean;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
@@ -43,7 +42,7 @@ abstract class SQLOperationITTest {
 	
 	@Test
 	void cancel() throws SQLException, InterruptedException {
-		DataSourceConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
+		ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
 		
 		// we're going to take a lock on a table that another thread wants to read
 		try (Connection lockingConnection = connectionProvider.getCurrentConnection()) {
@@ -51,41 +50,45 @@ abstract class SQLOperationITTest {
 			lockingConnection.setAutoCommit(false);
 			lockingConnection.prepareStatement("create table Toto(id bigint)").execute();
 			lockingConnection.commit();	// some databases require a commit to have DDL elements available to other transactions, like DML elements (PostgreSQL)
-			lockingConnection.prepareStatement(giveLockStatement()).execute();
+			// current Thread locks table
+			lockTable(lockingConnection);
 			
-			CountDownLatch countDownLatch = new CountDownLatch(1);
-			ModifiableBoolean isSelectExecuted = new ModifiableBoolean(false);
+			CountDownLatch threadStartedMarker = new CountDownLatch(1);
+			AtomicBoolean isSelectExecuted = new AtomicBoolean(false);
 			Connection connection = dataSource.getConnection();
 			ReadOperation<Integer> testInstance = readOperationFactory.apply(new PreparedSQL("select * from toto", new HashMap<>()), new SimpleConnectionProvider(connection));
 			Throwable[] capturedException = new Throwable[1];
-			Thread thread = new Thread(() -> {
+			Thread selectCommandThread = new Thread(() -> {
 				try (ReadOperation<Integer> localTestInstance = testInstance) {
-					countDownLatch.countDown();
+					threadStartedMarker.countDown();
 					localTestInstance.execute();
-					isSelectExecuted.setTrue();
+					isSelectExecuted.set(true);
 				} catch (Throwable t) {
 					capturedException[0] = t;
 				}
 			});
-			thread.start();
+			selectCommandThread.start();
 			
 			// we wait for the thread which is itself waiting for lock
-			countDownLatch.await();
-			// we add a little wait to let select order to be started 
-			TimeUnit.MILLISECONDS.sleep(200);
+			threadStartedMarker.await();
+			// we wait a bit to let select order starts 
+			selectCommandThread.join(200);
 			// really ensure that select is stuck
-			assertThat(isSelectExecuted.isTrue()).isFalse();
+			assertThat(isSelectExecuted.get()).isFalse();
 			// this must free select order
-			doCancel(testInstance);
-			// we let thread stops else it generates non expected exception (caused by test exit)
-			TimeUnit.MILLISECONDS.sleep(200);
+			testInstance.cancel();
+			// The Thread should still be stuck because the statment is cancelled, not him
+			selectCommandThread.join(200);	// waiting to let the Thread eventually access the isSelectExecuted.set(true) code
+			assertThat(isSelectExecuted.get()).isFalse();
+			// we let thread stops else it generates unexpected exception (caused by test exit)
+			selectCommandThread.join(200);
 			
 			assertThat(giveCancelOperationPredicate().test(capturedException[0])).isTrue();
-			lockingConnection.commit();    // release lock for clean test exit
+			lockingConnection.rollback();    // release lock for clean test exit
 		}
 	}
 	
-	protected void doCancel(ReadOperation<Integer> testInstance) throws SQLException {
-		testInstance.cancel();
+	protected void lockTable(Connection lockingConnection) throws SQLException {
+		lockingConnection.prepareStatement(giveLockStatement()).execute();
 	}
 }

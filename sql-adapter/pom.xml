@@ -13,11 +13,12 @@
 	<artifactId>sql-adapter</artifactId>
 	
 	<modules>
-		<module>sql-postgresql-adapter</module>
-		<module>sql-mysql-adapter</module>
-		<module>sql-mariadb-adapter</module>
 		<module>sql-derby-adapter</module>
+		<module>sql-h2-adapter</module>
 		<module>sql-hsqldb-adapter</module>
+		<module>sql-mariadb-adapter</module>
+		<module>sql-mysql-adapter</module>
+		<module>sql-postgresql-adapter</module>
 	</modules>
 	
 	<dependencies>

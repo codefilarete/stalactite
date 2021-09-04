@@ -39,7 +39,7 @@ public class Dialect {
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
 	 */
 	public Dialect() {
-		this(new JavaTypeToSqlTypeMapping());
+		this(new DefaultTypeMapping());
 	}
 	
 	/**

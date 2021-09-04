@@ -3,6 +3,7 @@ package org.gama.stalactite.sql.dml;
 import java.sql.SQLException;
 
 import org.apache.derby.impl.jdbc.EmbedConnection;
+import org.apache.derby.impl.jdbc.EmbedStatement;
 import org.gama.stalactite.sql.ConnectionProvider;
 
 /**
@@ -16,6 +17,7 @@ public class DerbyReadOperation<ParamType> extends ReadOperation<ParamType> {
 	
 	/**
 	 * Overriden to use Derby special {@link EmbedConnection#cancelRunningStatement()} method
+	 * to avoid exception "ERROR 0A000: Feature not implemented: cancel" (see {@link EmbedStatement#cancel()} implementation).
 	 * 
 	 * @throws SQLException if cancellation fails
 	 */
