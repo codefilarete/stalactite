@@ -199,12 +199,10 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Returns the {@link Persister} mapped for a class.
-	 * Prefer usage of that returned by {@link #add(ClassMappingStrategy)} because it's better typed (with identifier type)
 	 * 
 	 * @param clazz the class for which the {@link Persister} must be given
 	 * @param <C> the type of the persisted entity
 	 * @return null if class has no persister registered
-	 * @throws IllegalArgumentException if the class is not mapped
 	 */
 	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
 		return persisterCache.get(clazz);
@@ -215,6 +213,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * 
 	 * @param persister any {@link Persister}
 	 * @param <C> type of persisted bean
+	 * @throws IllegalArgumentException if a persister already exists for class persisted by given persister
 	 */
 	public <C> void addPersister(EntityPersister<C, ?> persister) {
 		EntityPersister<C, ?> existingPersister = persisterCache.get(persister.getClassToPersist());

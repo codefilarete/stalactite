@@ -32,7 +32,7 @@ public abstract class SQLStatement<ParamType> {
 	
 	/**
 	 * 
-	 * @param parameterBinders expected to be the exact necessary binders of every parameters in the SQL order (no more, no less).
+	 * @param parameterBinders expected to be the exact necessary binders of every parameter in the SQL order (no more, no less).
 	 * Checked by {@link #assertValuesAreApplyable()}
 	 */
 	protected SQLStatement(Map<? extends ParamType, ? extends PreparedStatementWriter> parameterBinders) {
@@ -41,7 +41,7 @@ public abstract class SQLStatement<ParamType> {
 	
 	/**
 	 *
-	 * @param parameterBinderProvider expected to be the exact necessary binders of every parameters in the SQL order (no more, no less).
+	 * @param parameterBinderProvider expected to be the exact necessary binders of every parameter in the SQL order (no more, no less).
 	 * Checked by {@link #assertValuesAreApplyable()}
 	 */
 	protected SQLStatement(PreparedStatementWriterIndex<? extends ParamType, ? extends PreparedStatementWriter> parameterBinderProvider) {
@@ -64,8 +64,8 @@ public abstract class SQLStatement<ParamType> {
 	 * Set a particular value to be given to the {@link PreparedStatement}. Values are not applied to {@link PreparedStatement}.
 	 * 
 	 * @see #applyValues(PreparedStatement) 
-	 * @param index
-	 * @param value
+	 * @param index value key in statement, usually an int or a String depending on internal statement type 
+	 * @param value value to set for index
 	 */
 	public void setValue(ParamType index, Object value) {
 		this.values.put(index, value);
@@ -88,8 +88,8 @@ public abstract class SQLStatement<ParamType> {
 	}
 	
 	/**
-	 * Expected to gives the SQL run in the {@link PreparedStatement}
-	 * @return
+	 * Expected to give the SQL run in the {@link PreparedStatement}
+	 * @return the SQL run in the {@link PreparedStatement}
 	 */
 	public abstract String getSQL();
 	
@@ -97,7 +97,7 @@ public abstract class SQLStatement<ParamType> {
 	 * Calls right setXXX method (according to {@link ParameterBinder} given at contructor) on the given
 	 * {@link PreparedStatement}. Called by {@link SQLOperation} classes.
 	 * 
-	 * @param statement
+	 * @param statement target for values
 	 */
 	public void applyValues(PreparedStatement statement) {
 		assertValuesAreApplyable();

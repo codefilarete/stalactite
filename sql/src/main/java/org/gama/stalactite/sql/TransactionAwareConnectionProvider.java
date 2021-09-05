@@ -4,8 +4,8 @@ import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 /**
- * A bridge between a {@link ConnectionProvider} and transaction observers as {@link CommitObserver} and {@link RollbackObserver} in order
- * to make provided {@link Connection}s observable for transactions commit and rollback.
+ * A bridge between a {@link ConnectionProvider} and transaction observers ({@link CommitObserver}, {@link RollbackObserver}) in order
+ * to make provided {@link Connection}s observable for transaction commit and rollback.
  * 
  * @author Guillaume Mary
  */

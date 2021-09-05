@@ -108,24 +108,6 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		return updatedRowCountSum;
 	}
 	
-//	private int[] doExecuteBatch() {
-//		getListener().onExecute(getSqlStatement());
-//		logExecution(() -> {
-//			HashMap<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
-//			valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
-//			return valuesClone.toString();
-//		});
-//		try {
-//			return (int[]) doWithRetry((ThrowingExecutable<Object, SQLException>) () -> preparedStatement.executeBatch());
-//		} catch (SQLException | RetryException e) {
-//			throw new SQLExecutionException(getSQL(), e);
-//		} finally {
-//			if (LOGGER.isTraceEnabled()) {
-//				batchedValues.clear();
-//			}
-//		}
-//	}
-	
 	private <T, E extends SQLException> T doWithLogManagement(ThrowingExecutable<T, E> delegateWithResult) {
 		logExecution(() -> {
 			HashMap<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
@@ -142,10 +124,6 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 			}
 		}
 	}
-	
-//	private <T, E extends Exception> T doWithRetry(ThrowingExecutable<T, E> delegateWithResult) throws E, RetryException {
-//		return retryer.execute(delegateWithResult, getSQL());
-//	}
 	
 	/**
 	 * Add values as a batched statement

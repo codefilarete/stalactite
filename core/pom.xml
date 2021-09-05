@@ -48,12 +48,4 @@
 		</plugins>
 	</build>
 
-	<repositories>
-		<repository>
-			<id>bintray</id>
-			<name>bintray</name>
-			<url>http://jcenter.bintray.com</url>
-		</repository>
-	</repositories>
-
 </project>
