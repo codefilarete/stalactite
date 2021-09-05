@@ -27,7 +27,7 @@ public class SpringConnectionProvider implements SeparateTransactionExecutor {
 	
 	@Nonnull
 	@Override
-	public Connection getCurrentConnection() {
+	public Connection giveConnection() {
 		// DataSourceUtils.getConnection(..) gets a connection even if no surrounding transaction exists so we have to check it before
 		if (!TransactionSynchronizationManager.isActualTransactionActive()) {
 			throw new IllegalStateException("No active transaction");

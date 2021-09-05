@@ -55,7 +55,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 				lastParcel = java.util.Collections.emptyList();
 			}
 			// We ensure that the same Connection is used for all operations
-			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection());
+			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().giveConnection());
 			// We distinguish the default case where packets are of the same size from the (last) case where it's different
 			// So we can apply the same read operation to all the firsts packets
 			T targetTable = getMappingStrategy().getTargetTable();

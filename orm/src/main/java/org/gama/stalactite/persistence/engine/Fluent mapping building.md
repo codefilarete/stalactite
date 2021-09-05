@@ -19,7 +19,7 @@ which will map the `Country` class to a same-named table and columns.
 
 With a more complex example that associates a `Country`, a `Person` as president, and some `City`s, you get :
 <pre>
-PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), new HSQLDBDialect());
+PersistenceContext persistenceContext = new PersistenceContext(dataSource, new HSQLDBDialect());
 
 Persister<Person, Identifier<Long>, ?> personMappingBuilder = FluentMappingBuilder.from(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)

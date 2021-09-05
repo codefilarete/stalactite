@@ -3,6 +3,7 @@ package org.gama.stalactite.persistence.sql;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 import org.gama.lang.Retryer;
 import org.gama.lang.Retryer.RetryException;
@@ -55,5 +56,37 @@ public class MySQLWriteOperation<ParamType> extends WriteOperation<ParamType> {
 		} catch (RetryException e) {
 			throw new SQLExecutionException(getSQL(), e);
 		}
+	}
+	
+	/**
+	 * Overriden to count {@link Statement#SUCCESS_NO_INFO} as 1 update to get around MySQL way of counting updated rows.
+	 * This is a temporary fix : according to JDBC documentation it appears that returning a sum of updated element can hardly be achieved since
+	 * JDBC specification states that {@link Statement#SUCCESS_NO_INFO} is an accepted value, even if many databases return real updated row count.
+	 * Sadly MySQL seems to differ on that point.
+	 * Hence, the gloabl approach of returning the sum of updated row count must be reviewed : it simply can't be done. Since the goal is to check
+	 * that row count matches SQLStatement order, the solution would be that caller gives its way of checking it at construction time since it's
+	 * there that SQL statement is also given and both can be decoralated.
+	 * 
+	 * TODO : fix global row count computation approach
+	 * 
+	 * @param rowCounts
+	 * @return
+	 */
+	@Override
+	protected int computeUpdatedRowCount(int[] rowCounts) {
+		int updatedRowCountSum = 0;
+		for (int rowCount : rowCounts) {
+			switch (rowCount) {
+				// first two cases are for drivers that conform to Statement.executeBatch specification
+				case Statement.SUCCESS_NO_INFO:
+					updatedRowCountSum++;
+					break;
+				case Statement.EXECUTE_FAILED:
+					return Statement.EXECUTE_FAILED;
+				default:	// 0 or really updated row count
+					updatedRowCountSum += rowCount;
+			}
+		}
+		return updatedRowCountSum;
 	}
 }

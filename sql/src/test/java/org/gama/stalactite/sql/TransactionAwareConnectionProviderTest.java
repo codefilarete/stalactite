@@ -22,7 +22,7 @@ class TransactionAwareConnectionProviderTest {
 		CommitListener commitListenerMock = Mockito.mock(CommitListener.class);
 		testInstance.addCommitListener(commitListenerMock);
 		
-		testInstance.getCurrentConnection().commit();
+		testInstance.giveConnection().commit();
 		Mockito.verify(commitListenerMock).beforeCommit();
 		Mockito.verify(commitListenerMock).afterCommit();
 	}
@@ -35,7 +35,7 @@ class TransactionAwareConnectionProviderTest {
 		RollbackListener rollbackListenerMock = Mockito.mock(RollbackListener.class);
 		testInstance.addRollbackListener(rollbackListenerMock);
 		
-		testInstance.getCurrentConnection().rollback();
+		testInstance.giveConnection().rollback();
 		Mockito.verify(rollbackListenerMock).beforeRollback();
 		Mockito.verify(rollbackListenerMock).afterRollback();
 		Mockito.verify(rollbackListenerMock, Mockito.never()).beforeRollback(any());
@@ -50,8 +50,8 @@ class TransactionAwareConnectionProviderTest {
 		RollbackListener rollbackListenerMock = Mockito.mock(RollbackListener.class);
 		testInstance.addRollbackListener(rollbackListenerMock);
 		
-		Savepoint savepoint = testInstance.getCurrentConnection().setSavepoint();
-		testInstance.getCurrentConnection().rollback(savepoint);
+		Savepoint savepoint = testInstance.giveConnection().setSavepoint();
+		testInstance.giveConnection().rollback(savepoint);
 		Mockito.verify(rollbackListenerMock).beforeRollback(savepoint);
 		Mockito.verify(rollbackListenerMock).afterRollback(savepoint);
 		Mockito.verify(rollbackListenerMock, Mockito.never()).beforeRollback();

@@ -126,7 +126,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		 * @param versionColumn the column that stores the version
 		 * @param rollbackObserver the {@link RollbackObserver} to revert upgrade when rollback happens
 		 * @param <C> a {@link ConnectionProvider} that notifies rollback.
-		 * {@link ConnectionProvider#getCurrentConnection()} is not used here, simple mark to help understanding
+		 * {@link ConnectionProvider#giveConnection()} is not used here, simple mark to help understanding
 		 */
 		private <C extends RollbackObserver & ConnectionProvider> RevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C rollbackObserver) {
 			super(versioningStrategy, versionColumn, rollbackObserver);

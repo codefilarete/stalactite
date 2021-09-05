@@ -13,6 +13,7 @@ import org.gama.lang.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.gama.stalactite.persistence.engine.TransactionalConnectionProvider;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
@@ -20,7 +21,6 @@ import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +42,7 @@ public class PooledSequenceIdentifierProviderTest {
 				.with(long.class, "int")
 				.with(String.class, "VARCHAR(255)");
 		
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping));
+		persistenceContext = new PersistenceContext(new TransactionalConnectionProvider(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping));
 	}
 	
 	@Test

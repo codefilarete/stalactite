@@ -107,7 +107,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * @throws SQLException in case of error during execution
 	 */
 	protected void ensureStatement() throws SQLException {
-		Connection connection = this.connectionProvider.getCurrentConnection();
+		Connection connection = this.connectionProvider.giveConnection();
 		if (this.preparedStatement == null) {
 			prepareStatement(connection);
 		}

@@ -23,7 +23,7 @@ abstract class AbstractRevertOnRollbackMVCC {
 	 * @param versionColumn the column that stores the version
 	 * @param rollbackObserver the {@link RollbackObserver} to revert upgrade when rollback happens
 	 * @param <C> a {@link ConnectionProvider} that notifies rollback.
-	 * {@link ConnectionProvider#getCurrentConnection()} is not used here, simple mark to help understanding
+	 * {@link ConnectionProvider#giveConnection()} is not used here, simple mark to help understanding
 	 */
 	protected <C extends RollbackObserver & ConnectionProvider> AbstractRevertOnRollbackMVCC(VersioningStrategy versioningStrategy, Column versionColumn, C rollbackObserver) {
 		this.versioningStrategy = versioningStrategy;

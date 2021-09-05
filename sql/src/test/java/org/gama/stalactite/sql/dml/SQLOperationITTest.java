@@ -45,7 +45,7 @@ abstract class SQLOperationITTest {
 		ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
 		
 		// we're going to take a lock on a table that another thread wants to read
-		try (Connection lockingConnection = connectionProvider.getCurrentConnection()) {
+		try (Connection lockingConnection = connectionProvider.giveConnection()) {
 			// activate manual transaction
 			lockingConnection.setAutoCommit(false);
 			lockingConnection.prepareStatement("create table Toto(id bigint)").execute();

@@ -10,6 +10,7 @@ import com.wix.mysql.EmbeddedMysql;
 import com.wix.mysql.config.MysqldConfig;
 import com.wix.mysql.config.SchemaConfig;
 import org.gama.stalactite.sql.UrlAwareDataSource;
+
 import static com.wix.mysql.config.Charset.UTF8;
 import static com.wix.mysql.distribution.Version.v5_6_latest;
 

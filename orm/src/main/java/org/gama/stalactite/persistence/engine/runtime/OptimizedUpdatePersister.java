@@ -73,16 +73,16 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	public static ConnectionConfiguration wrapWithQueryCache(ConnectionConfiguration connectionConfiguration) {
 		ConnectionProvider delegate = connectionConfiguration.getConnectionProvider();
 		CachingQueryConnectionProvider cachingQueryConnectionProvider = new CachingQueryConnectionProvider(delegate);
-		// We created a proxy that will redirect ConnectionProvider#getCurrentConnection to the caching one (then queries will be cached) and
+		// We created a proxy that will redirect ConnectionProvider#giveConnection to the caching one (then queries will be cached) and
 		// leave other methods invoked on original provider 
 		// NB : we use a Set to avoid error thrown by Proxy.newProxyInstance when an interface is present several time
 		Set<Class> interfaces = new HashSet<>(Iterables.copy(new InterfaceIterator(new ClassIterator(delegate.getClass(), null))));
 		ConnectionProvider connectionProvider = (ConnectionProvider) Proxy.newProxyInstance(delegate.getClass().getClassLoader(), interfaces.toArray(new Class[0]),
 				(proxy, method, args) -> {
-					if (!method.getName().equals("getCurrentConnection")) {
+					if (!method.getName().equals("giveConnection")) {
 						return method.invoke(delegate, args);
 					}
-					return cachingQueryConnectionProvider.getCurrentConnection();
+					return cachingQueryConnectionProvider.giveConnection();
 				});
 		return new ConnectionConfigurationSupport(connectionProvider, connectionConfiguration.getBatchSize());
 	}
@@ -187,9 +187,9 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		
 		@Nonnull
 		@Override
-		public Connection getCurrentConnection() {
+		public Connection giveConnection() {
 			if (currentConnection == null) {
-				currentConnection = new CachingQueryConnectionWrapper(delegate.getCurrentConnection());
+				currentConnection = new CachingQueryConnectionWrapper(delegate.giveConnection());
 			}
 			return currentConnection;
 		}

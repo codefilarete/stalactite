@@ -18,7 +18,7 @@ public class SimpleConnectionProvider implements ConnectionProvider {
 	
 	@Nonnull
 	@Override
-	public Connection getCurrentConnection() {
+	public Connection giveConnection() {
 		return this.connection;
 	}
 	

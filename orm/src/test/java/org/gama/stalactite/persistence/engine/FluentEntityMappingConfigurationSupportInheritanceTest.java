@@ -19,10 +19,10 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -46,7 +46,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
+	private final ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll

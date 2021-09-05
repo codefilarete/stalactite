@@ -132,7 +132,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, DialectResolver dialectResolver) {
 		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
-		try (Connection currentConnection = this.connectionConfiguration.getCurrentConnection()) {
+		try (Connection currentConnection = this.connectionConfiguration.giveConnection()) {
 			this.dialect = dialectResolver.determineDialect(currentConnection);
 		} catch (SQLException throwable) {
 			throw Exceptions.asRuntimeException(throwable);

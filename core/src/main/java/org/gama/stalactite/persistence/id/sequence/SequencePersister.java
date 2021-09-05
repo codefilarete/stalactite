@@ -10,8 +10,8 @@ import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManag
 import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister.SequenceTable;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;

@@ -33,7 +33,7 @@ class PlatformTransactionManagerConnectionProviderTest {
 	}
 	
 	@Test
-	void getCurrentConnection_givenHibernateTransactionManager_itsDataSourceIsCalled() {
+	void giveConnection_givenHibernateTransactionManager_itsDataSourceIsCalled() {
 		ModifiableInt getDataSourceInvokationCounter = new ModifiableInt();
 		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new HibernateTransactionManager() {
 			@Override
@@ -44,13 +44,13 @@ class PlatformTransactionManagerConnectionProviderTest {
 		});
 		
 		// When
-		testInstance.getCurrentConnection();
+		testInstance.giveConnection();
 		// Then
 		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
 	}
 	
 	@Test
-	void getCurrentConnection_givenJpaTransactionManager_itsDataSourceIsCalled() {
+	void giveConnection_givenJpaTransactionManager_itsDataSourceIsCalled() {
 		ModifiableInt getDataSourceInvokationCounter = new ModifiableInt();
 		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new JpaTransactionManager() {
 			@Override
@@ -62,13 +62,13 @@ class PlatformTransactionManagerConnectionProviderTest {
 		
 		
 		// When
-		testInstance.getCurrentConnection();
+		testInstance.giveConnection();
 		// Then
 		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
 	}
 	
 	@Test
-	void getCurrentConnection_givenDataSourceTransactionManager_itsDataSourceIsCalled() {
+	void giveConnection_givenDataSourceTransactionManager_itsDataSourceIsCalled() {
 		ModifiableInt getDataSourceInvokationCounter = new ModifiableInt();
 		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new DataSourceTransactionManager() {
 			@Override
@@ -80,7 +80,7 @@ class PlatformTransactionManagerConnectionProviderTest {
 		
 		
 		// When
-		testInstance.getCurrentConnection();
+		testInstance.giveConnection();
 		// Then
 		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
 	}

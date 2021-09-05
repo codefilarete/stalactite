@@ -202,7 +202,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	InternalExecutor newInternalExecutor(EntityTreeQuery<C> entityTreeQuery) {
 		return new InternalExecutor(entityTreeQuery,
 				// NB : this instance is reused so we must ensure that the same Connection is used for all operations
-				new SimpleConnectionProvider(getConnectionProvider().getCurrentConnection()));
+				new SimpleConnectionProvider(getConnectionProvider().giveConnection()));
 	}
 	
 	/**

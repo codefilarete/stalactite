@@ -113,7 +113,7 @@ public class DDLDeployer {
 	}
 	
 	protected Connection getCurrentConnection() {
-		return connectionProvider.getCurrentConnection();
+		return connectionProvider.giveConnection();
 	}
 	
 }

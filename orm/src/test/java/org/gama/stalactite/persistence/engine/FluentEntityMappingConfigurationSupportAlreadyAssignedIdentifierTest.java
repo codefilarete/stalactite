@@ -8,15 +8,12 @@ import java.util.stream.Collectors;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Arrays;
-import org.gama.lang.function.Sequence;
-import org.gama.lang.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,20 +29,10 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 	private HSQLDBDialect dialect = new HSQLDBDialect();
 	private DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
-	private Sequence<Long> longSequence;
 	
 	@BeforeEach
 	public void initTest() {
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
-		longSequence = new Sequence<Long>() {
-			
-			private final ModifiableInt counter = new ModifiableInt(0);
-			
-			@Override
-			public Long next() {
-				return (long) counter.increment();
-			}
-		};
+		persistenceContext = new PersistenceContext(dataSource, dialect);
 	}
 	
 	@Test

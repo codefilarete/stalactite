@@ -11,10 +11,10 @@ import java.sql.Connection;
 public interface ConnectionProvider {
 	
 	/**
-	 * Gives an eventually existing {@link Connection} or opens a new one if current one is closed.
+	 * Gives an eventually existing {@link Connection} or opens a new one if it doesn't exist or current one is closed.
 	 * 
 	 * @return neither null nor a closed connection
 	 */
 	@Nonnull
-	Connection getCurrentConnection();
+	Connection giveConnection();
 }

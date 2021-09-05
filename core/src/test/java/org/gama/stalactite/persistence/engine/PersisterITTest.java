@@ -18,15 +18,13 @@ import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.result.ResultSetIterator;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,21 +35,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 abstract class PersisterITTest {
 
-	protected DataSource dataSource;
+	private DataSource dataSource;
 
-	@BeforeEach
-	abstract void createDataSource();
+	abstract DataSource createDataSource();
+	
+	abstract Dialect createDialect();
 	
 	private Persister<Toto, Integer, TotoTable> testInstance;
-	private JdbcConnectionProvider transactionManager;
+	private DataSourceConnectionProvider connectionProvider;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMappingStrategy<Toto, Integer, TotoTable> totoClassMappingStrategy;
-	private Dialect dialect;
-	private TotoTable totoClassTable;
 	
 	@BeforeEach
-	void setUp() {
-		totoClassTable = new TotoTable(null, "Toto");
+	void setUp() throws SQLException {
+		TotoTable totoClassTable = new TotoTable(null, "Toto");
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<PropertyAccessor<Toto, Object>, Column<TotoTable, Object>> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
 		Map<String, Column<TotoTable, Object>> columns = totoClassTable.mapColumnsOnName();
@@ -59,7 +55,7 @@ abstract class PersisterITTest {
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
-		totoClassMappingStrategy = new ClassMappingStrategy<>(
+		ClassMappingStrategy<Toto, Integer, TotoTable> totoClassMappingStrategy = new ClassMappingStrategy<>(
 				Toto.class,
 				totoClassTable,
 				totoClassMapping,
@@ -67,36 +63,27 @@ abstract class PersisterITTest {
 				new BeforeInsertIdentifierManager<>(new SinglePropertyIdAccessor<>(identifierAccessor), identifierGenerator, Integer.class)
 		);
 		
-		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
-		simpleTypeMapping.put(Integer.class, "int");
+		this.dataSource = createDataSource();
+		Dialect dialect = createDialect();
 		
-		transactionManager = new JdbcConnectionProvider(null);
-		dialect = new Dialect(simpleTypeMapping);
+		connectionProvider = new DataSourceConnectionProvider(dataSource);
 		
 		// reset id counter between 2 tests else id "overflows"
 		identifierGenerator.reset();
 		
-		testInstance = new Persister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(transactionManager, 3));
+		testInstance = new Persister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
+		ddlDeployer.deployDDL();
+		connectionProvider.giveConnection().commit();
 	}
 	
 	@Test
 	void persist() throws SQLException {
-		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), transactionManager) {
-			@Override
-			protected Connection getCurrentConnection() {
-				try {
-					return dataSource.getConnection();
-				} catch (SQLException e) {
-					throw new SQLExecutionException(e);
-				}
-			}
-		};
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
-		ddlDeployer.deployDDL();
-		
 		// we simulate a database state to test entity update
 		Connection connection = dataSource.getConnection();
+		connection.setAutoCommit(false);
 		Integer persistedInstanceID = identifierGenerator.next();
 		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
 		connection.commit();
@@ -104,7 +91,7 @@ abstract class PersisterITTest {
 		Toto toBeInserted = new Toto(null, 20, 200);
 		Toto toBeUpdated = new Toto(persistedInstanceID, 11, 111);
 		int rowCount = testInstance.persist(Arrays.asList(toBeInserted, toBeUpdated));
-		transactionManager.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(rowCount).isEqualTo(2);
 		
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
@@ -113,7 +100,7 @@ abstract class PersisterITTest {
 				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
 			}
 		};
-		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
+		ResultSet resultSet = connection.prepareStatement("select * from Toto order by a").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		List<Map> result = Iterables.copy(resultSetIterator);
 		assertThat(result).isEqualTo(Arrays.asList(
@@ -124,23 +111,9 @@ abstract class PersisterITTest {
 	
 	@Test
 	void insert() throws SQLException {
-		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), transactionManager) {
-			@Override
-			protected Connection getCurrentConnection() {
-				try {
-					return dataSource.getConnection();
-				} catch (SQLException e) {
-					throw new SQLExecutionException(e);
-				}
-			}
-		};
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
-		ddlDeployer.deployDDL();
-		
 		Toto toBeInserted = new Toto(1, 10, 100);
 		int rowCount = testInstance.insert(toBeInserted);
-		transactionManager.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(rowCount).isEqualTo(1);
 		
 		Connection connection = dataSource.getConnection();
@@ -154,33 +127,19 @@ abstract class PersisterITTest {
 		resultSetIterator.setResultSet(resultSet);
 		List<Map> result = Iterables.copy(resultSetIterator);
 		assertThat(result).isEqualTo(Arrays.asList(Maps.asMap("a", 1).add("b", 10).add("c", 100)));
-		connection.commit();
 	}
 	
 	@Test
 	void update() throws SQLException {
-		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), transactionManager) {
-			@Override
-			protected Connection getCurrentConnection() {
-				try {
-					return dataSource.getConnection();
-				} catch (SQLException e) {
-					throw new SQLExecutionException(e);
-				}
-			}
-		};
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
-		ddlDeployer.deployDDL();
-		
 		// we simulate a database state to test entity update
 		Connection connection = dataSource.getConnection();
+		connection.setAutoCommit(false);
 		Integer persistedInstanceID = identifierGenerator.next();
 		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
 		connection.commit();
 		
 		int rowCount = testInstance.update(new Toto(persistedInstanceID, 11, 111), new Toto(persistedInstanceID, 10, 100), true);
-		transactionManager.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(rowCount).isEqualTo(1);
 		
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
@@ -197,40 +156,26 @@ abstract class PersisterITTest {
 		connection.commit();
 		
 		rowCount = testInstance.updateById(new Toto(persistedInstanceID, 12, 122));
-		transactionManager.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(rowCount).isEqualTo(1);
 		resultSet = connection.prepareStatement("select * from Toto").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		result = Iterables.copy(resultSetIterator);
 		assertThat(result).isEqualTo(Arrays.asList(
 				Maps.asMap("a", 1).add("b", 12).add("c", 122)));
-		connection.commit();
 	}
 	
 	@Test
 	void delete() throws SQLException {
-		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), transactionManager) {
-			@Override
-			protected Connection getCurrentConnection() {
-				try {
-					return dataSource.getConnection();
-				} catch (SQLException e) {
-					throw new SQLExecutionException(e);
-				}
-			}
-		};
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
-		ddlDeployer.deployDDL();
-		
 		// we simulate a database state to test entity update
 		Connection connection = dataSource.getConnection();
+		connection.setAutoCommit(false);
 		Integer persistedInstanceID = identifierGenerator.next();
 		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
 		connection.commit();
 		
 		int rowCount = testInstance.delete(new Toto(persistedInstanceID, 11, 111));
-		transactionManager.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(rowCount).isEqualTo(1);
 		
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
@@ -248,35 +193,23 @@ abstract class PersisterITTest {
 		
 		// we simulate a database state to test entity update
 		connection = dataSource.getConnection();
+		connection.setAutoCommit(false);
 		connection.prepareStatement("insert into Toto(a, b, c) values ("+ persistedInstanceID +", 10, 100)").execute();
 		connection.commit();
 		
 		rowCount = testInstance.deleteById(new Toto(persistedInstanceID, 12, 122));
-		transactionManager.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(rowCount).isEqualTo(1);
 		resultSet = connection.prepareStatement("select * from Toto").executeQuery();
 		resultSetIterator.setResultSet(resultSet);
 		result = Iterables.copy(resultSetIterator);
 		assertThat(result).isEqualTo(Arrays.asList());
-		connection.commit();
 	}
 	
 	@Test
 	void select() throws SQLException {
-		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), transactionManager) {
-			@Override
-			protected Connection getCurrentConnection() {
-				try {
-					return dataSource.getConnection();
-				} catch (SQLException e) {
-					throw new SQLExecutionException(e);
-				}
-			}
-		};
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
-		ddlDeployer.deployDDL();
 		Connection connection = dataSource.getConnection();
+		connection.setAutoCommit(false);
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (2, 20, 200)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
@@ -299,21 +232,6 @@ abstract class PersisterITTest {
 	
 	@Test
 	void select_rowCount() {
-		transactionManager.setDataSource(dataSource);
-		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), transactionManager) {
-			@Override
-			protected Connection getCurrentConnection() {
-				try {
-					return dataSource.getConnection();
-				} catch (SQLException e) {
-					throw new SQLExecutionException(e);
-				}
-			}
-		};
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
-		ddlDeployer.deployDDL();
-		
-		
 		// check inserted row count
 		int insertedRowCount = testInstance.insert(new Toto(1, 10, 100));
 		assertThat(insertedRowCount).isEqualTo(1);
@@ -323,7 +241,7 @@ abstract class PersisterITTest {
 		// check updated row count
 		int updatedByIdRowCount = testInstance.updateById(Arrays.asList(new Toto(1, 10, 100)));
 		assertThat(updatedByIdRowCount).isEqualTo(1);
-		updatedByIdRowCount = testInstance.insert(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
+		updatedByIdRowCount = testInstance.updateById(Arrays.asList(new Toto(2, 20, 200), new Toto(3, 30, 300), new Toto(4, 40, 400)));
 		assertThat(updatedByIdRowCount).isEqualTo(3);
 		updatedByIdRowCount = testInstance.updateById(Arrays.asList(new Toto(-1, 10, 100)));
 		assertThat(updatedByIdRowCount).isEqualTo(0);

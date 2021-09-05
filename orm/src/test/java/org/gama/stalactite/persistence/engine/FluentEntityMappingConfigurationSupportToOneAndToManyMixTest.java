@@ -24,7 +24,6 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +48,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
+		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
 		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
@@ -81,7 +80,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+		Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 			@Override

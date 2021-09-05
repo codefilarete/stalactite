@@ -25,10 +25,10 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -56,7 +56,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
+	private final ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -75,9 +75,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 	
 	
 	static Object[][] polymorphicPersisters() {
-		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		Object[][] result = new Object[][] {
 				{	"single table",
 					entityBuilder(AbstractVehicle.class, LONG_TYPE)
@@ -143,14 +143,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
-		connectionProvider.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
 		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModfied);

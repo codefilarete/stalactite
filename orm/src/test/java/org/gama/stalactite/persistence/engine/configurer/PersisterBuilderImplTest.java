@@ -22,8 +22,8 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.Serie.IntegerSerie;
 import org.gama.reflection.AccessorChain;
-import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
@@ -43,18 +43,18 @@ import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -112,7 +112,7 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void build_connectionProviderIsNotRollbackObserver_throwsException() {
-		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -120,7 +120,7 @@ public class PersisterBuilderImplTest {
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.add(Country::getDescription));
-		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new JdbcConnectionProvider(dataSource), 10);
+		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 10);
 		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, persistenceContext, null))
 				.isInstanceOf(UnsupportedOperationException.class);
 	}
@@ -530,7 +530,7 @@ public class PersisterBuilderImplTest {
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.getCurrentConnection()).thenReturn(connectionMock);
+		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
@@ -563,7 +563,7 @@ public class PersisterBuilderImplTest {
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.getCurrentConnection()).thenReturn(connectionMock);
+		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
@@ -596,7 +596,7 @@ public class PersisterBuilderImplTest {
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.getCurrentConnection()).thenReturn(connectionMock);
+		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 		ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
@@ -648,7 +648,7 @@ public class PersisterBuilderImplTest {
 				.add(Car::getModel));
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.getCurrentConnection()).thenReturn(connectionMock);
+		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 		ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);

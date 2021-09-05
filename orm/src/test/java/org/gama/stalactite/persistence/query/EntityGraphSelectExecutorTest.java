@@ -72,7 +72,7 @@ class EntityGraphSelectExecutorTest {
 		// creation of a Connection that will give our test case data
 		connectionProviderMock = mock(ConnectionProvider.class);
 		connectionMock = mock(Connection.class);
-		when(connectionProviderMock.getCurrentConnection()).thenReturn(connectionMock);
+		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 		try {
 			PreparedStatement statementMock = mock(PreparedStatement.class);
 			sqlCaptor = ArgumentCaptor.forClass(String.class);
@@ -305,7 +305,7 @@ class EntityGraphSelectExecutorTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Connection currentConnection = connectionProvider.getCurrentConnection();
+		Connection currentConnection = connectionProvider.giveConnection();
 		currentConnection.prepareStatement("insert into Country(id, name) values(12, 'France')").execute();
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(42, 'Paris', 12)").execute();
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(43, 'Lyon', 12)").execute();

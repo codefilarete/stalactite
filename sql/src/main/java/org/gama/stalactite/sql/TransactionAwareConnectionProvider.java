@@ -25,8 +25,8 @@ public class TransactionAwareConnectionProvider implements ConnectionProvider, T
 	
 	@Override
 	@Nonnull
-	public Connection getCurrentConnection() {
-		Connection connection = surrogate.getCurrentConnection();
+	public Connection giveConnection() {
+		Connection connection = surrogate.giveConnection();
 		transactionAwareConnexionWrapper.setSurrogate(connection);
 		return transactionAwareConnexionWrapper;
 	}

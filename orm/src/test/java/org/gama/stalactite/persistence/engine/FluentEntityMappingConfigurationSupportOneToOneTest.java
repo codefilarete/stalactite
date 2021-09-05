@@ -35,7 +35,6 @@ import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.result.RowIterator;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,7 +62,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	public void initTest() {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
+		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
 		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.add(Person::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -163,8 +162,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.extracting(t -> Exceptions.findExceptionInCauses(t, BatchUpdateException.class), InstanceOfAssertFactories.THROWABLE)
 					.hasMessage("integrity constraint violation: foreign key no parent; FK_COUNTRY_PRESIDENTID_PERSON_ID table: COUNTRY");
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
-			persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
+			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
 			
 			// select selects entity and relation
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
@@ -277,21 +276,21 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
 			
 			Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(100L));
 			countryPersister.delete(persistedCountry);
 			ResultSet resultSet;
 			// Checking that we deleted what we wanted
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 100");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 100");
 			assertThat(resultSet.next()).isFalse();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person where id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person where id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// but we did'nt delete everything !
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 200");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 200");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person where id = 666");
 			assertThat(resultSet.next()).isTrue();
 		}
 	}
@@ -310,7 +309,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		dialect.getColumnBinderRegistry().register((Class) Person.class, Identified.identifiedBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Person.class, "int");
 		
-		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, dialect);
 		
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -333,7 +332,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		countryPersister.insert(dummyCountry);
 		
 		// Checking that the country has the right president in the database
-		ResultSet resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery(
+		ResultSet resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery(
 				"select count(*) as countryCount from Country where presidentId = " + person.getId().getSurrogate());
 		RowIterator resultSetIterator = new RowIterator(resultSet, Maps.asMap("countryCount", DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER));
 		resultSetIterator.hasNext();
@@ -349,7 +348,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		countryPersister.update(dummyCountry, selectedCountry, false);
 		
 		// Checking that the country has changed from president in the database
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery(
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery(
 				"select count(*) as countryCount from Country where presidentId = " + person2.getId().getSurrogate());
 		resultSetIterator = new RowIterator(resultSet, Maps.asMap("countryCount", DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER));
 		resultSetIterator.hasNext();
@@ -373,7 +372,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 					((ConfiguredPersister) persistenceContext.getPersister(City.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 				@Override
@@ -404,7 +403,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 				@Override
@@ -449,7 +448,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 				@Override
@@ -485,7 +484,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 				@Override
@@ -522,7 +521,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
 				@Override
@@ -596,28 +595,28 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		countryPersister.update(persistedCountry2, dummyCountry2, true);
 		// database must be up to date
 		ResultSet resultSet;
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from Person");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from Person");
 		resultSet.next();
 		assertThat(resultSet.getString("name")).isEqualTo("French president renamed");
 		assertThat(resultSet.next()).isFalse();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from City");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City");
 		resultSet.next();
 		assertThat(resultSet.getString("name")).isEqualTo("Paris renamed");
 		assertThat(resultSet.next()).isFalse();
 		
 		// testing delete cascade
 		// but we have to remove first the other country that points to the same president, else will get a constraint violation
-		assertThat(persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate(
+		assertThat(persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate(
 				"update Country set presidentId = null, capitalId = null where id = " + dummyCountry2.getId().getSurrogate())).isEqualTo(1);
 		countryPersister.delete(persistedCountry);
 		// database must be up to date
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement()
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from Country where id = " + persistedCountry.getId().getSurrogate());
 		assertThat(resultSet.next()).isFalse();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement()
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from Person where id = " + persistedCountry.getPresident().getId().getSurrogate());
 		assertThat(resultSet.next()).isTrue();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement()
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from City where id = " + persistedCountry.getCapital().getId().getSurrogate());
 		assertThat(resultSet.next()).isTrue();
 	}
@@ -673,16 +672,16 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		// testing update cascade
 		// but we have to remove first the other country that points to the same president, else will get a constraint violation
-		assertThat(persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate(
+		assertThat(persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate(
 				"update Country set presidentId = null, capitalId = null where id = " + dummyCountry.getId().getSurrogate())).isEqualTo(1);
 		persistedCountry2.setPresident(null);
 		persistedCountry2.getCapital().setName("Paris renamed");
 		countryPersister.update(persistedCountry2, dummyCountry2, true);
 		// database must be up to date
 		ResultSet resultSet;
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from Person");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from Person");
 		assertThat(resultSet.next()).isFalse();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from City");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City");
 		resultSet.next();
 		assertThat(resultSet.getString("name")).isEqualTo("Paris renamed");
 		assertThat(resultSet.next()).isFalse();
@@ -690,13 +689,13 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		// testing delete cascade
 		countryPersister.delete(persistedCountry2);
 		// database must be up to date
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement()
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from Country where id = " + persistedCountry2.getId().getSurrogate());
 		assertThat(resultSet.next()).isFalse();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement()
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from Person where id = " + dummyCountry2.getPresident().getId().getSurrogate());
 		assertThat(resultSet.next()).isFalse();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement()
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement()
 				.executeQuery("select id from City where id = " + persistedCountry2.getCapital().getId().getSurrogate());
 		assertThat(resultSet.next()).isTrue();
 	}
@@ -1254,24 +1253,24 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 				ddlDeployer.deployDDL();
 				
-				persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
-				persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
+				persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Person(id) values (42), (666)");
+				persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id, presidentId) values (100, 42), (200, 666)");
 				
 				Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(100L));
 				countryPersister.delete(persistedCountry);
 				ResultSet resultSet;
 				// Checking that we deleted what we wanted
-				resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country" 
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 
 						+ " where id = 100");
 				assertThat(resultSet.next()).isFalse();
-				resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person " 
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person " 
 						+ "where id = 42");
 				assertThat(resultSet.next()).isTrue();
 				// but we didn't delete everything !
-				resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country" 
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 
 						+ " where id = 200");
 				assertThat(resultSet.next()).isTrue();
-				resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Person where id = 666");
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person where id = 666");
 				assertThat(resultSet.next()).isTrue();
 			}
 		}

@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,7 +47,6 @@ import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.trace.ObjectPrinterBuilder;
 import org.gama.trace.ObjectPrinterBuilder.ObjectPrinter;
 import org.junit.jupiter.api.BeforeAll;
@@ -79,8 +77,6 @@ import static org.mockito.Mockito.verify;
 class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -94,14 +90,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	@BeforeEach
 	public void beforeTest() {
-		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 	}
 	
 	
 	static Object[][] polymorphicOneToOne_data() {
-		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		Object[][] result = new Object[][] {
 				{	"single table",
 					entityBuilder(Vehicle.class, LONG_TYPE)
@@ -169,14 +165,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
-		connectionProvider.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
 		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModfied);
@@ -185,9 +181,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	static Object[][] polymorphism_trunkHasOneToMany_data() {
-		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		
 		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class,
 				Identifier.LONG_TYPE)
@@ -287,9 +283,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	static Object[][] polymorphism_subClassHasOneToOne_data() {
-		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		Object[][] result = new Object[][] {
 					{	"single table / one-to-one with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
@@ -365,14 +361,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
-		connectionProvider.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
 		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
@@ -385,12 +381,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	
 	static Object[][] polymorphism_subClassHasOneToMany_data() {
 		// each test has each own context so they can't pollute each other
-		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext4 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext5 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext6 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext4 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext5 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext6 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		Table wheelTable1 = new Table("Wheel");
 		Column<Table, Integer> indexColumn1 = wheelTable1.addColumn("idx", Integer.class);
 		Table wheelTable2 = new Table("Wheel");
@@ -546,14 +542,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
-		connectionProvider.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
 		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
@@ -567,9 +563,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	static Object[][] polymorphism_subClassHasElementCollection_data() {
-		PersistenceContext persistenceContext1 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext2 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
-		PersistenceContext persistenceContext3 = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+		PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		Object[][] result = new Object[][] {
 //				{	"single table",
 //					entityBuilder(Vehicle.class, LONG_TYPE)
@@ -636,16 +632,16 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
-		connectionProvider.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
 		// nothing to delete because all was deleted by cascade
-		assertThat(connectionProvider.getCurrentConnection().prepareStatement("delete from Car_plates").executeUpdate()).isEqualTo(0);
+		assertThat(connectionProvider.giveConnection().prepareStatement("delete from Car_plates").executeUpdate()).isEqualTo(0);
 		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
 		
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		
 		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
@@ -2422,7 +2418,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkVillageIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData()
 					.getImportedKeys(null, null, "VILLAGE")) {
 				@Override

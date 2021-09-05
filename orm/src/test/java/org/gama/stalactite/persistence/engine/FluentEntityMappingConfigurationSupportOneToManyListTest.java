@@ -30,9 +30,9 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,7 +57,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	
 	private static final Dialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private final ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
+	private final ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -285,7 +285,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		questionPersister.insert(newQuestion);
 		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
-		connectionProvider.getCurrentConnection().commit();
+		connectionProvider.giveConnection().commit();
 		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefullIdentifier::getSurrogate)).containsExactlyInAnyOrder(10L, 20L, 30L);
 	}
 	
@@ -314,12 +314,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		answerPersister.delete(answer);
 		
 		ResultSet resultSet;
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Answer");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Answer");
 		assertThat(resultSet.next()).isFalse();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Answer_Choices");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Answer_Choices");
 		assertThat(resultSet.next()).isFalse();
 		// NB: target entities are not deleted with ASSOCIATION_ONLY cascading
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Choice");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Choice");
 		assertThat(resultSet.next()).isTrue();
 	}
 	

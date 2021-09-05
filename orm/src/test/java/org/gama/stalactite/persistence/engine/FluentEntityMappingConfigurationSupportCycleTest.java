@@ -17,8 +17,8 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -32,7 +32,6 @@ import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -64,7 +63,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		
 		@BeforeEach
 		public void initTest() {
-			persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+			persistenceContext = new PersistenceContext(dataSource, DIALECT);
 			
 		}
 		
@@ -599,7 +598,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		
 		@BeforeEach
 		public void initTest() {
-			persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+			persistenceContext = new PersistenceContext(dataSource, DIALECT);
 			
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.add(Person::getId).identifier(ALREADY_ASSIGNED)

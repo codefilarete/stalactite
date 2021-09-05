@@ -18,14 +18,14 @@
 			<artifactId>core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<!-- for HSQLDBTypeMapping -->
+		<!-- for HSQLDBTypeMapping to do IT tests -->
 		<dependency>
 			<groupId>org.gama.stalactite</groupId>
 			<artifactId>sql-hsqldb-adapter</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- for HSQLDBInMemoryDataSource -->
+		<!-- for HSQLDBInMemoryDataSource to do IT tests -->
 		<dependency>
 			<groupId>org.gama.stalactite</groupId>
 			<artifactId>sql-hsqldb-adapter</artifactId>
@@ -33,14 +33,14 @@
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- for HSQLDBDialect -->
+		<!-- for HSQLDBDialect to do IT tests -->
 		<dependency>
 			<groupId>org.gama.stalactite</groupId>
 			<artifactId>core-hsqldb-adapter</artifactId>
 			<version>${project.version}</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- for JdbcConnectionProvider -->
+		<!-- for test tools -->
 		<dependency>
 			<groupId>org.gama.stalactite</groupId>
 			<artifactId>core</artifactId>

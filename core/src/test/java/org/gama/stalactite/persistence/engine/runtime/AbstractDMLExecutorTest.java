@@ -5,7 +5,12 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Maps;
@@ -18,10 +23,15 @@ import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.mapping.*;
+import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
+import org.gama.stalactite.persistence.mapping.IdAccessor;
+import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
+import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.test.JdbcConnectionProvider;
+import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
@@ -179,7 +189,7 @@ abstract class AbstractDMLExecutorTest {
 		protected ArgumentCaptor<Integer> valueCaptor;
 		protected ArgumentCaptor<Integer> indexCaptor;
 		protected ArgumentCaptor<String> sqlCaptor;
-		protected JdbcConnectionProvider transactionManager;
+		protected ConnectionProvider transactionManager;
 		protected Connection connection;
 		
 		protected JdbcMock() {
@@ -200,7 +210,7 @@ abstract class AbstractDMLExecutorTest {
 
 				DataSource dataSource = mock(DataSource.class);
 				when(dataSource.getConnection()).thenReturn(connection);
-				transactionManager = new JdbcConnectionProvider(dataSource);
+				transactionManager = new DataSourceConnectionProvider(dataSource);
 			} catch (SQLException e) {
 				// this should not happen since every thing is mocked, left as safeguard, and avoid catching
 				// exception by caller which don't know what to do with the exception else same thing as here

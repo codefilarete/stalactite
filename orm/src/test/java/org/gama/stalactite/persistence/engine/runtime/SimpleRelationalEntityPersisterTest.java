@@ -38,14 +38,14 @@ import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +68,6 @@ public class SimpleRelationalEntityPersisterTest {
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
-	private JdbcConnectionProvider transactionManager;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	private ClassMappingStrategy<Toto, StatefullIdentifier<Integer>, Table> totoClassMappingStrategy_ontoTable1, totoClassMappingStrategy2_ontoTable2;
 	private Dialect dialect;
@@ -134,7 +133,6 @@ public class SimpleRelationalEntityPersisterTest {
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Identifier.class, "int");
 		
-		transactionManager = new JdbcConnectionProvider(null);
 		dialect = new Dialect(simpleTypeMapping);
 		dialect.setInOperatorMaxSize(3);
 		dialect.getColumnBinderRegistry().register(Identifier.class, new ParameterBinder<Identifier>() {
@@ -170,8 +168,7 @@ public class SimpleRelationalEntityPersisterTest {
 		
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
-		transactionManager.setDataSource(dataSource);
-		testInstance = new SimpleRelationalEntityPersister<>(totoClassMappingStrategy_ontoTable1, dialect, new ConnectionConfigurationSupport(transactionManager, 3));
+		testInstance = new SimpleRelationalEntityPersister<>(totoClassMappingStrategy_ontoTable1, dialect, new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 3));
 		// we add a copier onto a another table
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,

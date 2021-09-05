@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
@@ -35,12 +34,12 @@ import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.result.ResultSetIterator;
 import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.sql.result.RowIterator;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -66,7 +65,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private static FluentMappingBuilderPropertyOptions<City, Identifier<Long>> CITY_MAPPING_CONFIGURATION;
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private ConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
+	private final ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -104,7 +103,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 		ddlDeployer.deployDDL();
 		
-		Connection currentConnection = persistenceContext.getConnectionProvider().getCurrentConnection();
+		Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 		
 		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
 				((ConfiguredPersister) countryPersister).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
@@ -323,13 +322,13 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		// Checking that country is persisted and its city because we didn't set relation mode and default is ALL
 		// NB: we don't check with countryPersister.select(..) because select(..) depends on outer join which we don't want to be bothered by 
 		ResultSet resultSet;
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
 		assertThat(resultSet.next()).isTrue();
-		resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City");
+		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City");
 		assertThat(resultSet.next()).isTrue();
 		
 		// preparing next tests by relating a city to the existing country
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
 		
 		// select selects entity and relations
 		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
@@ -380,9 +379,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		ddlDeployer.deployDDL();
 		
 		// preparing data
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
 		
 		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Paris", "Lyon");
@@ -404,9 +403,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		ddlDeployer.deployDDL();
 		
 		// preparing data
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
-		persistenceContext.getConnectionProvider().getCurrentConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name) values (42, 'France')").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (2, 'Lyon', 42)").execute();
 		
 		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 		assertThat(loadedCountry.getCities().getClass()).isEqualTo(TreeSet.class);
@@ -419,7 +418,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		// to avoid duplicate table + FK name
 		return new Object[][] {
 				{ (ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException>) () -> {
-					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+					PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 					EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
@@ -433,7 +432,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					return countryPersister;
 				}},
 				{ (ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException>) () -> {
-					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+					PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 					EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 							.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.add(Country::getName)
@@ -447,7 +446,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					return countryPersister;
 				}},
 				{ (ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException>) () -> {
-					PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), DIALECT);
+					PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 					Table cityTable = new Table("city");
 					Column<Table, Identifier> countryId = cityTable.addColumn("countryId", Identifier.class);
 					EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
@@ -522,9 +521,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'French president')");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id) values (1, 10)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'French president')");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id) values (1, 10)");
 			
 			LongProvider countryIdProvider = new LongProvider(1);
 			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
@@ -763,18 +762,18 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id, countryId) values (100, 42), (200, 42), (300, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id, countryId) values (100, 42), (200, 42), (300, 666)");
 			
 			Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 			countryPersister.delete(persistedCountry);
 			ResultSet resultSet;
 			// Checking that we deleted what we wanted
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery(
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery(
 					"select id from Country where id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// database owning side must be cut
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery(
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery(
 					"select countryId from City where id in (100, 200)");
 			assertThat(Iterables.copy(new ResultSetIterator<Object>(resultSet) {
 				@Override
@@ -786,10 +785,10 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			// but cut database link : memory should mirror this
 			assertThat(Iterables.collectToList(persistedCountry.getCities(), City::getCountry)).isEqualTo(Arrays.asList(null, null));
 			// but we did'nt delete everything !
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country " 
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country " 
 					+ "where id = 666");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where " 
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where " 
 					+ "id = 300");
 			assertThat(resultSet.next()).isTrue();
 		}
@@ -806,9 +805,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 			
 			Country country1 = new Country(new PersistedIdentifier<>(42L));
@@ -825,15 +824,15 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			ResultSet resultSet;
 			// Checking that we deleted what we wanted
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country " 
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country " 
 					+ "where id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from " 
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from " 
 					+ "Country_cities where country_Id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are not deleted when an association table exists with cascade All
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where " 
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where " 
 					+ "id in (100, 200)");
 			assertThat(Iterables.copy(new ResultSetIterator<Object>(resultSet) {
 				@Override
@@ -843,20 +842,20 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			})).isEqualTo(Arrays.asList(100, 200));
 			
 			// but we did'nt delete everything !
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
 			assertThat(resultSet.next()).isTrue();
 			
 			// testing deletion of the last one
 			countryPersister.delete(country2);
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isFalse();
 			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are not deleted when an association table exists with cascade All
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where " 
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where " 
 					+ "id = 300");
 			assertThat(Iterables.copy(new ResultSetIterator<Object>(resultSet) {
 				@Override
@@ -928,21 +927,21 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id, countryId) values (100, 42), (200, 42), (300, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id, countryId) values (100, 42), (200, 42), (300, 666)");
 			
 			Country persistedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 			countryPersister.delete(persistedCountry);
 			ResultSet resultSet;
 			// Checking that we deleted what we wanted
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
 			assertThat(resultSet.next()).isFalse();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
 			assertThat(resultSet.next()).isFalse();
 			// but we did'nt delete everything !
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
 			assertThat(resultSet.next()).isTrue();
 		}
 		
@@ -958,9 +957,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 			
 			Country country1 = new Country(new PersistedIdentifier<>(42L));
@@ -977,30 +976,30 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			ResultSet resultSet;
 			// Checking that we deleted what we wanted
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are not deleted when an association table exists with cascade All
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
 			assertThat(resultSet.next()).isFalse();
 			
 			// but we did'nt delete everything !
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
 			assertThat(resultSet.next()).isTrue();
 			
 			// testing deletion of the last one
 			countryPersister.delete(country2);
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isFalse();
 			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are not deleted when an association table exists with cascade All
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
 			assertThat(resultSet.next()).isFalse();
 		}
 	}
@@ -1036,7 +1035,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			// We need to insert target cities because they won't be inserted by ASSOCIATION_ONLY cascade
 			// If they were inserted by cascade an constraint violation error will be thrown 
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
 			
 			Country country1 = new Country(new PersistableIdentifier<>(42L));
 			City city1 = new City(new PersistableIdentifier<>(100L));
@@ -1052,14 +1051,14 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			ResultSet resultSet;
 			// Checking that we inserted what we wanted
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
 			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
 			assertThat(resultSet.next()).isTrue();
 		}
 		
@@ -1076,7 +1075,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			ddlDeployer.deployDDL();
 			
 			// we need to insert target cities because they won't be inserted by ASSOCIATION_ONLY cascade
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200)");
 			
 			Country country1 = new Country(new PersistableIdentifier<>(42L));
 			City city1 = new City(new PersistableIdentifier<>(100L));
@@ -1093,11 +1092,11 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			ResultSet resultSet;
 			// Checking that country name was updated
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from Country where id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from Country where id = 42");
 			ResultSetIterator<Row> countryIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
 			assertThat(Iterables.collectToList(() -> countryIterator, row -> row.get("name"))).isEqualTo(Arrays.asList("France"));
 			// .. but not its city name
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City where id = 100");
 			ResultSetIterator<Row> cityIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
 			assertThat(Iterables.collectToList(() -> cityIterator, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
 			
@@ -1107,7 +1106,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			country1.getCities().remove(city1);
 			assertThat(country1.getCities().size()).isEqualTo(1);	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
 			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City where id = 100");
 			ResultSetIterator<Row> cityIterator2 = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
 			assertThat(Iterables.collectToList(() -> cityIterator2, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
 		}
@@ -1126,7 +1125,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			ddlDeployer.deployDDL();
 			
 			// we need to insert target cities because they won't be inserted by ASSOCIATION_ONLY cascade
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200)");
 			
 			Country country1 = new Country(new PersistableIdentifier<>(42L));
 			City city1 = new City(new PersistableIdentifier<>(100L));
@@ -1143,11 +1142,11 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			ResultSet resultSet;
 			// Checking that country name was updated
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from Country where id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from Country where id = 42");
 			ResultSetIterator<Row> countryIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
 			assertThat(Iterables.collectToList(() -> countryIterator, row -> row.get("name"))).isEqualTo(Arrays.asList("France"));
 			// .. but not its city name
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City where id = 100");
 			ResultSetIterator<Row> cityIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
 			assertThat(Iterables.collectToList(() -> cityIterator, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
 			
@@ -1157,7 +1156,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			country1.getAncientCities().remove(city1);
 			assertThat(country1.getAncientCities().size()).isEqualTo(1);	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
 			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select name from City where id = 100");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City where id = 100");
 			ResultSetIterator<Row> cityIterator2 = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
 			assertThat(Iterables.collectToList(() -> cityIterator2, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
 		}
@@ -1174,9 +1173,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 			
 			Country country1 = new Country(new PersistedIdentifier<>(42L));
@@ -1193,29 +1192,29 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			ResultSet resultSet;
 			// Checking that we deleted what we wanted
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are deleted when an association table exists
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
 			assertThat(resultSet.next()).isTrue();
 			// but we did'nt delete everything !
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
 			assertThat(resultSet.next()).isTrue();
 			
 			// testing deletion of the last one
 			countryPersister.delete(country2);
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from Country where id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isFalse();
 			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are deleted when an association table exists
-			resultSet = persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeQuery("select id from City where id = 300");
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
 			assertThat(resultSet.next()).isTrue();
 		}
 	}
@@ -1240,7 +1239,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			ddlDeployer.deployDDL();
 			
 			// we only register one country without any city
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42)");
 			
 			// Then : Country must exist and have an empty city collection
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
@@ -1261,7 +1260,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			ddlDeployer.deployDDL();
 			
 			// we only register one country without any city
-			persistenceContext.getConnectionProvider().getCurrentConnection().createStatement().executeUpdate("insert into Country(id) values (42)");
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42)");
 			
 			// Then : Country must exist and have an empty city collection
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));

@@ -44,12 +44,12 @@ public abstract class DMLExecutor<C, I, T extends Table> {
 	}
 	
 	/**
-	 * Implementation that gives the {@link ConnectionProvider#getCurrentConnection()} of instanciation time
+	 * Implementation that gives the {@link ConnectionProvider#giveConnection()} of instanciation time
 	 */
 	protected class CurrentConnectionProvider extends SimpleConnectionProvider {
 		
 		public CurrentConnectionProvider() {
-			super(connectionProvider.getCurrentConnection());
+			super(connectionProvider.giveConnection());
 		}
 	}
 }

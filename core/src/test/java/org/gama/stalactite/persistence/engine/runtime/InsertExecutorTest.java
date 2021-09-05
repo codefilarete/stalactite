@@ -132,7 +132,7 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 		when(connection.prepareStatement(anyString(), anyInt())).thenReturn(preparedStatement);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
-		when(connectionProviderMock.getCurrentConnection()).thenReturn(connection);
+		when(connectionProviderMock.giveConnection()).thenReturn(connection);
 		
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(connectionProviderMock);
 		
@@ -155,11 +155,11 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 		assertThat(toto.getVersion()).isEqualTo(1);
 		
 		// a rollback must revert sequence increment
-		testInstance.getConnectionProvider().getCurrentConnection().rollback();
+		testInstance.getConnectionProvider().giveConnection().rollback();
 		assertThat(toto.getVersion()).isEqualTo(0);
 		
 		// multiple rollbacks don't imply multiple sequence decrement
-		testInstance.getConnectionProvider().getCurrentConnection().rollback();
+		testInstance.getConnectionProvider().giveConnection().rollback();
 		assertThat(toto.getVersion()).isEqualTo(0);
 	}
 

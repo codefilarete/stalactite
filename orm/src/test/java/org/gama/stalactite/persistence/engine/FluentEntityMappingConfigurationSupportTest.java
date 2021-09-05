@@ -43,8 +43,8 @@ import org.gama.stalactite.persistence.engine.model.PersonWithGender;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
+import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
@@ -63,7 +63,6 @@ import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -94,7 +93,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
+		persistenceContext = new PersistenceContext(dataSource, dialect);
 	}
 	
 	@Test
@@ -284,7 +283,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	@Test
 	void add_definedAsIdentifier_identifierIsStoredAsString() {
 		HSQLDBDialect dialect = new HSQLDBDialect();
-		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(new HSQLDBInMemoryDataSource()), dialect);
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
 		
 		Table totoTable = new Table("Toto");
 		Column id = totoTable.addColumn("id", Identifier.class).primaryKey();

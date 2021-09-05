@@ -42,11 +42,11 @@ import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
 import org.gama.stalactite.sql.binder.HSQLDBTypeMapping;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -242,14 +242,14 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		Column<Table, Long> id2 = targetTable.addColumn("id2", long.class).primaryKey();
 		Column<Table, String> name = targetTable.addColumn("name", String.class);
 		
-		JdbcConnectionProvider connectionProvider = new JdbcConnectionProvider(dataSource);
+		ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(new SqlTypeRegistry(new HSQLDBTypeMapping()), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(targetTable);
 		ddlDeployer.deployDDL();
 		
 		Toto entity1 = new Toto(100, 1, "entity1");
 		Toto entity2 = new Toto(200, 2, "entity2");
-		Connection currentConnection = connectionProvider.getCurrentConnection();
+		Connection currentConnection = connectionProvider.giveConnection();
 		PreparedStatement insertStatement = currentConnection.prepareStatement("insert into Toto(id1, id2, name) values (?, ?, ?)");
 		insertStatement.setLong(1, entity1.id1);
 		insertStatement.setLong(2, entity1.id2);

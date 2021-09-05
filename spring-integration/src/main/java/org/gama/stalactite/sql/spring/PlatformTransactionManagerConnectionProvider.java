@@ -59,7 +59,7 @@ public class PlatformTransactionManagerConnectionProvider implements SeparateTra
 	
 	@Nonnull
 	@Override
-	public Connection getCurrentConnection() {
+	public Connection giveConnection() {
 		return DataSourceUtils.getConnection(dataSourceProvider.getDataSource());
 	}
 	

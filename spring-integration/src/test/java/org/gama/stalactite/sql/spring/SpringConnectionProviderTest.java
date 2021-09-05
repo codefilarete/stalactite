@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 class SpringConnectionProviderTest {
 	
 	@Test
-	void getCurrentConnection_returnsActiveTransactionConnection() throws SQLException {
+	void giveConnection_returnsActiveTransactionConnection() throws SQLException {
 		DataSource dataSourceMock = mock(DataSource.class);
 		Connection expectedConnection = mock(Connection.class);
 		when(dataSourceMock.getConnection()).thenReturn(expectedConnection);
@@ -31,12 +31,12 @@ class SpringConnectionProviderTest {
 		TransactionSynchronizationManager.bindResource(dataSourceMock, new ConnectionHolder(expectedConnection));
 		
 		SpringConnectionProvider testInstance = new SpringConnectionProvider(new DataSourceTransactionManager(dataSourceMock));
-		Connection currentConnection = testInstance.getCurrentConnection();
+		Connection currentConnection = testInstance.giveConnection();
 		assertThat(currentConnection).isSameAs(expectedConnection);
 	}
 	
 	@Test
-	void getCurrentConnection_transactionIsNoMoreActive_throwsException() throws SQLException {
+	void giveConnection_transactionIsNoMoreActive_throwsException() throws SQLException {
 		DataSource dataSourceMock = mock(DataSource.class);
 		Connection expectedConnection = mock(Connection.class);
 		when(dataSourceMock.getConnection()).thenReturn(expectedConnection);
@@ -46,15 +46,15 @@ class SpringConnectionProviderTest {
 		TransactionSynchronizationManager.bindResource(dataSourceMock, new ConnectionHolder(expectedConnection));
 		
 		SpringConnectionProvider testInstance = new SpringConnectionProvider(new DataSourceTransactionManager(dataSourceMock));
-		assertThatThrownBy(testInstance::getCurrentConnection)
+		assertThatThrownBy(testInstance::giveConnection)
 				.extracting(t -> Exceptions.findExceptionInCauses(t, IllegalStateException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("No active transaction");
 	}
 	
 	@Test
-	void getCurrentConnection_noActiveTransaction_throwsException() {
+	void giveConnection_noActiveTransaction_throwsException() {
 		SpringConnectionProvider testInstance = new SpringConnectionProvider(new DataSourceTransactionManager());
-		assertThatThrownBy(testInstance::getCurrentConnection)
+		assertThatThrownBy(testInstance::giveConnection)
 				.extracting(t -> Exceptions.findExceptionInCauses(t, IllegalStateException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("No active transaction");
 	}

@@ -15,7 +15,6 @@ import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	
 	@BeforeEach
 	public void initTest() {
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), dialect);
+		persistenceContext = new PersistenceContext(dataSource, dialect);
 		longSequence = new Sequence<Long>() {
 			
 			private final ModifiableInt counter = new ModifiableInt(0);

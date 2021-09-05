@@ -15,6 +15,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.Maps.ChainingHashMap;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.RollbackListener;
 import org.gama.stalactite.sql.RollbackObserver;
 import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
@@ -22,7 +23,6 @@ import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.sql.result.RowIterator;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -45,21 +45,21 @@ class OptimizedUpdatePersisterTest {
 		assertThat(testInstance instanceof RollbackObserver).isTrue();
 		
 		testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
-				new ConnectionConfigurationSupport(new JdbcConnectionProvider(mock(DataSource.class)), 10)).getConnectionProvider();
+				new ConnectionConfigurationSupport(new DataSourceConnectionProvider(mock(DataSource.class)), 10)).getConnectionProvider();
 		assertThat(testInstance instanceof RollbackObserver).isFalse();
 	}
 	
 	@Test
 	void cachingQueryConnectionProvider_notifiesRollbackObserverWhenGivenOneIsAwareOfTransaction() throws SQLException {
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
-		when(connectionProviderMock.getCurrentConnection()).thenReturn(mock(Connection.class));
+		when(connectionProviderMock.giveConnection()).thenReturn(mock(Connection.class));
 		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
 				new ConnectionConfigurationSupport(new TransactionAwareConnectionProvider(connectionProviderMock), 10)).getConnectionProvider();
 		
 		RollbackListener rollbackListenerMock = mock(RollbackListener.class);
 		
 		((RollbackObserver) testInstance).addRollbackListener(rollbackListenerMock);
-		testInstance.getCurrentConnection().rollback();
+		testInstance.giveConnection().rollback();
 		
 		verify(rollbackListenerMock).beforeRollback();
 	}
@@ -77,10 +77,10 @@ class OptimizedUpdatePersisterTest {
 		InMemoryResultSet dummyResultSet = new InMemoryResultSet(data);
 		when(preparedStatementMock.executeQuery()).thenReturn(dummyResultSet);
 		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
-				new ConnectionConfigurationSupport(new JdbcConnectionProvider(dataSourceMock), 10)).getConnectionProvider();
+				new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSourceMock), 10)).getConnectionProvider();
 		
 		OptimizedUpdatePersister.QUERY_CACHE.set(new HashMap<>());
-		Connection currentConnection = testInstance.getCurrentConnection();
+		Connection currentConnection = testInstance.giveConnection();
 		PreparedStatement preparedStatement1 = currentConnection.prepareStatement("Select * from WhateverYouWant");
 		ResultSet effectiveResultSet = preparedStatement1.executeQuery();
 		RowIterator rsReader = new RowIterator(Maps.forHashMap(String.class, ResultSetReader.class)

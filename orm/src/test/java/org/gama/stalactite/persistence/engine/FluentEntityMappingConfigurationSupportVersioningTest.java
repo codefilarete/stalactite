@@ -16,10 +16,10 @@ import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIden
 import org.gama.stalactite.persistence.id.provider.LongProvider;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.gama.stalactite.test.JdbcConnectionProvider;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,12 +47,12 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
 	@BeforeEach
 	public void initTest() {
-		persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+		persistenceContext = new PersistenceContext(dataSource, DIALECT);
 	}
 	
 	@Test
 	public void testBuild_versionedPropertyIsOfUnsupportedType_throwsException() {
-		PersistenceContext persistenceContext = new PersistenceContext(new JdbcConnectionProvider(dataSource), DIALECT);
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> MappingEase.entityBuilder(Country.class,
 				Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
@@ -65,9 +65,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	}
 	
 	@Test
-	public void testUpdate_versionIsUpgraded_integerVersion() throws SQLException {
-		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
-		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(surrogateConnectionProvider);
+	public void testUpdate_versionIsUpgraded_integerVersion() {
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new DataSourceConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
@@ -112,8 +111,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
 	@Test
 	public void testUpdate_versionIsUpgraded_dateVersion() throws SQLException {
-		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
-		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(surrogateConnectionProvider);
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new DataSourceConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
 		List<LocalDateTime> nowHistory = new ArrayList<>();
@@ -166,8 +164,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
 	@Test
 	public void testUpdate_entityIsOutOfSync_databaseIsNotUpdated() throws SQLException {
-		JdbcConnectionProvider surrogateConnectionProvider = new JdbcConnectionProvider(dataSource);
-		persistenceContext = new PersistenceContext(surrogateConnectionProvider, DIALECT);
+		persistenceContext = new PersistenceContext(dataSource, DIALECT);
 		ConnectionProvider connectionProvider = persistenceContext.getConnectionProvider();
 		// mapping building thanks to fluent API
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
@@ -193,7 +190,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		// test case : we out of sync the entity by loading it from database while another process will update it
 		Country dummyCountryClone = countryPersister.select(dummyCountry.getId());
 		// another process updates it (dumb update)
-		connectionProvider.getCurrentConnection().createStatement().executeUpdate(
+		connectionProvider.giveConnection().createStatement().executeUpdate(
 				"update Country set version = version + 1 where id = " + dummyCountry.getId().getSurrogate());
 		
 		// the update must fail because the updated object is out of sync
@@ -208,11 +205,11 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		// version is not reverted because rollback wasn't invoked 
 		assertThat(dummyCountryClone.getVersion()).isEqualTo(2);
 		// ... but it is when we rollback
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		assertThat(dummyCountryClone.getVersion()).isEqualTo(1);
 		
 		// check that version is robust to multiple rollback
-		connectionProvider.getCurrentConnection().rollback();
+		connectionProvider.giveConnection().rollback();
 		assertThat(dummyCountryClone.getVersion()).isEqualTo(1);
 	}
 }
