@@ -9,6 +9,7 @@ public class DerbyTypeMapping extends DefaultTypeMapping {
 
     public DerbyTypeMapping() {
         super();
-        // nothing to overwrite yet from DefaultTypeMapping
-    }
+		// to prevent syntax error while creating columns : Derby needs varchar length
+		put(String.class, "varchar(255)");
+	}
 }
