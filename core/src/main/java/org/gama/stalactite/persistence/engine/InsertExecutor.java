@@ -5,5 +5,5 @@ package org.gama.stalactite.persistence.engine;
  */
 public interface InsertExecutor<C> {
 	
-	int insert(Iterable<? extends C> entities);
+	void insert(Iterable<? extends C> entities);
 }

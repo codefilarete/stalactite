@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.sql.Savepoint;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -15,13 +16,13 @@ import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.RollbackListener;
 import org.gama.stalactite.sql.RollbackObserver;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
@@ -61,33 +62,31 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		this.operationListener = listener;
 	}
 	
-	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, CurrentConnectionProvider currentConnectionProvider) {
-		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, identifierInsertionManager::prepareStatement);
-		writeOperation.setListener(this.operationListener);
-		return writeOperation;
-	}
-	
 	@Override
-	public int insert(Iterable<? extends C> entities) {
+	public void insert(Iterable<? extends C> entities) {
 		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
 		ColumnParameterizedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
-		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(insertStatement, new CurrentConnectionProvider());
-		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entities, writeOperation, getBatchSize());
+		List<? extends C> entitiesCopy = Iterables.copy(entities);
+		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
 		
-		jdbcBatchingIterator.forEachRemaining(c -> {
+		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory()
+				.createInstance(insertStatement, new CurrentConnectionProvider(), identifierInsertionManager::prepareStatement, expectedBatchedRowCountsSupplier);
+		writeOperation.setListener(this.operationListener);
+		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entitiesCopy, writeOperation, getBatchSize());
+		
+		jdbcBatchingIterator.forEachRemaining(entity -> {
 			try {
-				addToBatch(c, writeOperation);
+				addToBatch(entity, writeOperation);
 			} catch (RuntimeException e) {
-				throw new RuntimeException("Error while inserting values for " + c, e);
+				throw new RuntimeException("Error while inserting values for " + entity, e);
 			}
 		});
-		return jdbcBatchingIterator.getUpdatedRowCount();
 	}
 	
-	private void addToBatch(C c, WriteOperation<Column<T, Object>> writeOperation) {
-		Map<Column<T, Object>, Object> insertValues = getMappingStrategy().getInsertValues(c);
+	private void addToBatch(C entity, WriteOperation<Column<T, Object>> writeOperation) {
+		Map<Column<T, Object>, Object> insertValues = getMappingStrategy().getInsertValues(entity);
 		assertMandatoryColumnsHaveNonNullValues(insertValues);
-		optimisticLockManager.manageLock(c, insertValues);
+		optimisticLockManager.manageLock(entity, insertValues);
 		writeOperation.addBatch(insertValues);
 	}
 	

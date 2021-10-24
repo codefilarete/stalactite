@@ -100,11 +100,10 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	 * 
 	 * @param id key of entity to be modified 
 	 * @param entityConsumer businness code expected to modify its given entity
-	 * @return number of root entities updated (1 or 0)
 	 */
 	@Experimental
 	@Override
-	public int update(I id, Consumer<C> entityConsumer) {
+	public void update(I id, Consumer<C> entityConsumer) {
 		Holder<C> referenceEntity = new Holder<>();
 		Holder<C> entityToModify = new Holder<>();
 		ThreadLocals.doWithThreadLocal(QUERY_CACHE, HashMap::new, (Runnable) () -> {
@@ -114,7 +113,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 			entityToModify.set(select(id));
 		});
 		entityConsumer.accept(entityToModify.get());
-		return update(entityToModify.get(), referenceEntity.get(), true);
+		update(entityToModify.get(), referenceEntity.get(), true);
 	}
 	
 	/**

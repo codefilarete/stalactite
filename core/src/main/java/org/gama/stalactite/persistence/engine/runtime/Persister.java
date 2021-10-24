@@ -14,7 +14,7 @@ import org.gama.lang.exception.NotImplementedException;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
-import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
+import org.gama.stalactite.persistence.engine.StaleStateObjectException;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -204,8 +204,8 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	 * @return number of rows inserted and updated (relation-less counter) (maximum is argument size, may be 0 if no modifications were found between memory and database)
 	 */
 	@Override
-	public int persist(Iterable<? extends C> entities) {
-		return EntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
+	public void persist(Iterable<? extends C> entities) {
+		EntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
 	}
 	
 	@Override
@@ -258,16 +258,14 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	 * @return number of rows inserted (relation-less counter) (maximum is argument size)
 	 */
 	@Override
-	public int insert(Iterable<? extends C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
-		} else {
-			return getPersisterListener().doWithInsertListener(entities, () -> doInsert(entities));
+	public void insert(Iterable<? extends C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			getPersisterListener().doWithInsertListener(entities, () -> doInsert(entities));
 		}
 	}
 	
-	protected int doInsert(Iterable<? extends C> entities) {
-		return insertExecutor.insert(entities);
+	protected void doInsert(Iterable<? extends C> entities) {
+		insertExecutor.insert(entities);
 	}
 	
 	/**
@@ -277,17 +275,14 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if rows weren't found in database)
 	 */
 	@Override
-	public int updateById(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			// nothing to update => we return immediatly without any call to listeners
-			return 0;
-		} else {
-			return getPersisterListener().doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
+	public void updateById(Iterable<C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			getPersisterListener().doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
 		}
 	}
 	
-	protected int doUpdateById(Iterable<C> entities) {
-		return updateExecutor.updateById(entities);
+	protected void doUpdateById(Iterable<C> entities) {
+		updateExecutor.updateById(entities);
 	}
 	
 	/**
@@ -300,17 +295,14 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if row wasn't found in database)
 	 */
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		if (Iterables.isEmpty(differencesIterable)) {
-			// nothing to update => we return immediatly without any call to listeners
-			return 0;
-		} else {
-			return getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement, this::doUpdate);
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		if (!Iterables.isEmpty(differencesIterable)) {
+			getPersisterListener().doWithUpdateListener(differencesIterable, allColumnsStatement, this::doUpdate);
 		}
 	}
 	
-	protected int doUpdate(Iterable<? extends Duo<C, C>> entities, boolean allColumnsStatement) {
-		return updateExecutor.update(entities, allColumnsStatement);
+	protected void doUpdate(Iterable<? extends Duo<C, C>> entities, boolean allColumnsStatement) {
+		updateExecutor.update(entities, allColumnsStatement);
 	}
 	
 	/**
@@ -319,18 +311,17 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	 *
 	 * @param entities entites to be deleted
 	 * @return deleted row count
-	 * @throws StaleObjectExcepion if deleted row count differs from entities count
+	 * @throws StaleStateObjectException if deleted row count differs from entities count
 	 */
 	@Override
-	public int delete(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
+	public void delete(Iterable<C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			getPersisterListener().doWithDeleteListener(entities, () -> doDelete(entities));
 		}
-		return getPersisterListener().doWithDeleteListener(entities, () -> doDelete(entities));
 	}
 	
-	protected int doDelete(Iterable<C> entities) {
-		return deleteExecutor.delete(entities);
+	protected void doDelete(Iterable<C> entities) {
+		deleteExecutor.delete(entities);
 	}
 	
 	/**
@@ -338,18 +329,16 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
 	 * @param entities entites to be deleted
-	 * @return deleted row count
 	 */
 	@Override
-	public int deleteById(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
+	public void deleteById(Iterable<C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			getPersisterListener().doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
 		}
-		return getPersisterListener().doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
 	}
 	
-	protected int doDeleteById(Iterable<C> entities) {
-		return deleteExecutor.deleteById(entities);
+	protected void doDeleteById(Iterable<C> entities) {
+		deleteExecutor.deleteById(entities);
 	}
 	
 	/**

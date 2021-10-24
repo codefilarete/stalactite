@@ -232,6 +232,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
+				// We don't know how many relations is contained in the table, so we don't check for deletion row count
 				try (WriteOperation<Integer> writeOperation = writeOperationFactory.createInstance(deleteStatement, associationPersister.getConnectionProvider())) {
 					writeOperation.setValues(deleteStatement.getValues());
 					writeOperation.execute();

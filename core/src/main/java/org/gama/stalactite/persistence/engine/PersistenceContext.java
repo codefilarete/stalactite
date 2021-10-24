@@ -556,14 +556,12 @@ public class PersistenceContext implements PersisterRegistry {
 		
 		/**
 		 * Executes this update statement with given values
-		 * 
-		 * @return the updated row count
 		 */
-		public int execute() {
+		public void execute() {
 			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
-				return writeOperation.execute();
+				writeOperation.execute();
 			}
 		}
 		
@@ -601,14 +599,12 @@ public class PersistenceContext implements PersisterRegistry {
 		
 		/**
 		 * Executes this insert statement.
-		 *
-		 * @return the inserted row count
 		 */
-		public int execute() {
+		public void execute() {
 			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
-				return writeOperation.execute();
+				writeOperation.execute();
 			}
 		}
 	}
@@ -621,14 +617,12 @@ public class PersistenceContext implements PersisterRegistry {
 		
 		/**
 		 * Executes this delete statement with given values.
-		 *
-		 * @return the deleted row count
 		 */
-		public int execute() {
+		public void execute() {
 			PreparedSQL deleteStatement = new DeleteCommandBuilder<T>(this).toStatement(getDialect().getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
-				return writeOperation.execute();
+				writeOperation.execute();
 			}
 		}
 		
@@ -653,7 +647,7 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	public interface ExecutableSQL {
 		
-		int execute();
+		void execute();
 	}
 	
 	public interface ExecutableCriteria extends CriteriaChain<ExecutableCriteria>, ExecutableSQL {

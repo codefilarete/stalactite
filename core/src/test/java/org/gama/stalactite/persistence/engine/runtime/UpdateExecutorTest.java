@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -11,8 +10,7 @@ import org.gama.lang.collection.Maps;
 import org.gama.lang.collection.PairIterator;
 import org.gama.reflection.AccessorByField;
 import org.gama.reflection.Accessors;
-import org.gama.stalactite.persistence.engine.RowCountManager;
-import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
+import org.gama.stalactite.persistence.engine.StaleStateObjectException;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
@@ -37,6 +35,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.gama.lang.collection.Arrays.asList;
 import static org.mockito.Mockito.mock;
@@ -46,7 +45,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Guillaume Mary
  */
-public class UpdateExecutorTest extends AbstractDMLExecutorTest {
+class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
@@ -54,19 +53,19 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	private UpdateExecutor<Toto, Integer, Table> testInstance;
 	
 	@BeforeEach
-	public void setUp() throws SQLException {
+	void setUp() {
 		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new UpdateExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 	}
 	
 	@Test
-	public void testUpdateById() throws Exception {
+	void updateById() throws Exception {
 		testInstance.updateById(asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		
 		verify(jdbcMock.preparedStatement, times(4)).addBatch();
-		verify(jdbcMock.preparedStatement, times(2)).executeBatch();
+		verify(jdbcMock.preparedStatement, times(2)).executeLargeBatch();
 		verify(jdbcMock.preparedStatement, times(12)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		assertThat(jdbcMock.sqlCaptor.getValue()).isEqualTo("update Toto set b = ?, c = ? where a = ?");
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -78,7 +77,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void update_mandatoryColumn() {
+	void update_mandatoryColumn() {
 		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMappingStrategy().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
@@ -92,7 +91,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public void listenerIsCalled() {
+	void listenerIsCalled() {
 		SQLOperationListener<UpwhereColumn<Table>> listenerMock = mock(SQLOperationListener.class);
 		testInstance.setOperationListener(listenerMock);
 		
@@ -101,7 +100,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		
 		try {
 			testInstance.updateById(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31)));
-		} catch (StaleObjectExcepion e) {
+		} catch (StaleStateObjectException e) {
 			// we don't care about any existing data in the database, listener must be called, so we continue whenever there are some stale objects
 		}
 		
@@ -120,7 +119,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public <T extends Table<T>> void testUpdateById_noColumnToUpdate() {
+	<T extends Table<T>> void updateById_noColumnToUpdate() {
 		T table = (T) new Table<>("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
@@ -129,7 +128,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
 				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), new WriteOperationFactory(), 4);
 		
-		assertThat(testInstance.updateById(Arrays.asList(new SimpleEntity()))).isEqualTo(0);
+		assertThatCode(() -> testInstance.updateById(Arrays.asList(new SimpleEntity()))).doesNotThrowAnyException();
 	}
 	
 	public static Object[][] testUpdate_diff_data() {
@@ -204,36 +203,34 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	
 	@ParameterizedTest
 	@MethodSource("testUpdate_diff_data")
-	public void testUpdate_diff(List<Toto> originalInstances, List<Toto> modifiedInstances, ExpectedResult_TestUpdate_diff expectedResult) throws Exception {
-		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
+	void update_diff(List<Toto> originalInstances, List<Toto> modifiedInstances, ExpectedResult_TestUpdate_diff expectedResult) throws Exception {
 		// variable introduced to bypass generics problem
 		UpdateExecutor<Toto, Integer, Table> localTestInstance = testInstance;
 		localTestInstance.updateVariousColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
 				false, localTestInstance.getMappingStrategy()));
 		
 		verify(jdbcMock.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
-		verify(jdbcMock.preparedStatement, times(expectedResult.executeBatchCallCount)).executeBatch();
+		verify(jdbcMock.preparedStatement, times(expectedResult.executeBatchCallCount)).executeLargeBatch();
 		verify(jdbcMock.preparedStatement, times(expectedResult.setIntCallCount)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(expectedResult.updateStatements);
 		assertCapturedPairsEqual(jdbcMock, expectedResult.statementValues);
 	}
 	
 	@Test
-	public void testUpdate_diff_allColumns() throws Exception {
+	void update_diff_allColumns() throws Exception {
 		List<Toto> originalInstances = asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
 				new Toto(4, 43, 53), new Toto(5, -1, -2));
 		List<Toto> modifiedInstances = asList(
 				new Toto(1, 17, 123), new Toto(2, 129, 31), new Toto(3, 137, 141),
 				new Toto(4, 143, 153), new Toto(5, -1, -2));
-		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		// variable introduced to bypass generics problem
 		UpdateExecutor<Toto, Integer, Table> localTestInstance = testInstance;
 		localTestInstance.updateMappedColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
 				true, localTestInstance.getMappingStrategy()));
 		
 		verify(jdbcMock.preparedStatement, times(4)).addBatch();
-		verify(jdbcMock.preparedStatement, times(2)).executeBatch();
+		verify(jdbcMock.preparedStatement, times(2)).executeLargeBatch();
 		verify(jdbcMock.preparedStatement, times(12)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(asList("update Toto set b = ?, c = ? where a = ?"));
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -245,7 +242,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 	}
 	
 	@Test
-	public <T extends Table<T>> void testUpdate_noColumnToUpdate() {
+	<T extends Table<T>> void update_noColumnToUpdate() {
 		T table = (T) new Table<>("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
@@ -257,7 +254,7 @@ public class UpdateExecutorTest extends AbstractDMLExecutorTest {
 		
 		Iterable<UpdatePayload<SimpleEntity, T>> updatePayloads = UpdateListener.computePayloads(Arrays.asList(new Duo<>(new SimpleEntity(), 
 				new SimpleEntity())), true, testInstance.getMappingStrategy());
-		assertThat(testInstance.updateMappedColumns(updatePayloads)).isEqualTo(0);
+		assertThatCode(() -> testInstance.updateMappedColumns(updatePayloads)).doesNotThrowAnyException();
 	}
 	
 	private static class SimpleEntity {

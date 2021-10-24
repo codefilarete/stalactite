@@ -32,27 +32,26 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * {@link org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
 	 *
 	 * @param entity an entity to be persisted
-	 * @return persisted + updated rows count
-	 * @throws StaleObjectExcepion if updated row count differs from entities count
+	 * @throws StaleStateObjectException if updated row count differs from entities count
 	 * @see #insert(Iterable)
 	 * @see #update(Iterable, boolean)
 	 */
-	default int persist(C entity) {
+	default void persist(C entity) {
 		// determine insert or update operation
-		return persist(Collections.singleton(entity));
+		persist(Collections.singleton(entity));
 	}
 	
-	int persist(Iterable<? extends C> entities);
+	void persist(Iterable<? extends C> entities);
 	
 	
-	static <C, I> int persist(Iterable<? extends C> entities,
+	static <C, I> void persist(Iterable<? extends C> entities,
 							   Predicate<C> isNewProvider,
 							   SelectExecutor<C, I> selector,
 							   UpdateExecutor<C> updater,
 							   InsertExecutor<C> inserter,
 							   Function<C, I> idProvider) {
 		if (Iterables.isEmpty(entities)) {
-			return 0;
+			return;
 		}
 		// determine insert or update operation
 		List<C> toInsert = new ArrayList<>(20);
@@ -64,9 +63,8 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 				toUpdate.add(c);
 			}
 		}
-		int writtenRowCount = 0;
 		if (!toInsert.isEmpty()) {
-			writtenRowCount += inserter.insert(toInsert);
+			inserter.insert(toInsert);
 		}
 		if (!toUpdate.isEmpty()) {
 			// creating couple of modified and unmodified entities
@@ -76,13 +74,12 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 			Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, loadedEntitiesPerId);
 			List<Duo<C, C>> updateArg = new ArrayList<>();
 			modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k , v)));
-			writtenRowCount += updater.update(updateArg, true);
+			updater.update(updateArg, true);
 		}
-		return writtenRowCount;
 	}
 	
-	default int insert(C entity) {
-		return insert(Collections.singletonList(entity));
+	default void insert(C entity) {
+		insert(Collections.singletonList(entity));
 	}
 	
 	/**
@@ -93,10 +90,9 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * @param modified the supposing entity that has differences againt {@code unmodified} entity
 	 * @param unmodified the "original" (freshly loaded from database ?) entity
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
-	 * @return number of rows updated (relation-less counter) (maximum is 1, may be 0 if row wasn't found in database)
 	 */
-	default int update(C modified, C unmodified, boolean allColumnsStatement) {
-		return update(Collections.singletonList(new Duo<>(modified, unmodified)), allColumnsStatement);
+	default void update(C modified, C unmodified, boolean allColumnsStatement) {
+		update(Collections.singletonList(new Duo<>(modified, unmodified)), allColumnsStatement);
 	}
 	
 	/**
@@ -104,11 +100,10 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * entity in memory, and then updates database if necessary (nothing if no change was made).
 	 *
 	 * @param entity the entity to be updated
-	 * @return the number of updated rows : 1 if entity needed to be updated, 0 if not
 	 */
 	@Experimental
-	default int update(C entity) {
-		return update(entity, select(getId(entity)), true);
+	default void update(C entity) {
+		update(entity, select(getId(entity)), true);
 	}
 	
 	/**
@@ -117,12 +112,11 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * To be used for CRUD use case.
 	 *
 	 * @param entities the entities to be updated
-	 * @return the number of updated rows : 0 if no entities were updated, maximum is number of given entities 
 	 */
 	@Experimental
-	default int update(Iterable<C> entities) {
+	default void update(Iterable<C> entities) {
 		List<I> ids = Iterables.collect(entities, this::getId, ArrayList::new);
-		return update(() -> new PairIterator<C, C>(entities, select(ids)), true);
+		update(() -> new PairIterator<C, C>(entities, select(ids)), true);
 	}
 	
 	/**
@@ -132,14 +126,13 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * 
 	 * @param id key of entity to be modified 
 	 * @param entityConsumer businness code expected to modify its given entity
-	 * @return number of root entities updated (1 or 0)
 	 */
 	@Experimental
-	default int update(I id, Consumer<C> entityConsumer) {
+	default void update(I id, Consumer<C> entityConsumer) {
 		C unmodified = select(id);
 		C modified = select(id);
 		entityConsumer.accept(modified);
-		return update(modified, unmodified, true);
+		update(modified, unmodified, true);
 	}
 	
 	/**
@@ -147,11 +140,10 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * Takes optimistic lock into account.
 	 *
 	 * @param entity entity to be deleted
-	 * @return deleted row count
-	 * @throws StaleObjectExcepion if deleted row count differs from entities count
+	 * @throws StaleStateObjectException if deleted row count differs from entities count
 	 */
-	default int delete(C entity) {
-		return delete(Collections.singletonList(entity));
+	default void delete(C entity) {
+		delete(Collections.singletonList(entity));
 	}
 	
 	/**
@@ -159,10 +151,9 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
 	 * @param entity entity to be deleted
-	 * @return deleted row count
 	 */
-	default int deleteById(C entity) {
-		return deleteById(Collections.singletonList(entity));
+	default void deleteById(C entity) {
+		deleteById(Collections.singletonList(entity));
 	}
 	
 	default C select(I id) {

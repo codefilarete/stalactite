@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +22,8 @@ import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
@@ -63,14 +62,12 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doInsert(Iterable entities) {
-				return ((Collection) entities).size();
+			protected void doInsert(Iterable entities) {
 			}
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdateById(Iterable<Toto> entities) {
-				return ((Collection) entities).size();
+			protected void doUpdateById(Iterable<Toto> entities) {
 			}
 		};
 		
@@ -80,7 +77,7 @@ class PersisterTest {
 	}
 	
 	@Test
-	void testPersist() {
+	void persist() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
 		ReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
@@ -99,14 +96,12 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doInsert(Iterable entities) {
-				return ((Collection) entities).size();
+			protected void doInsert(Iterable entities) {
 			}
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
-				return ((Collection) entities).size();
+			protected void doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 			}
 			
 			@Override
@@ -121,8 +116,7 @@ class PersisterTest {
 		UpdateListener updateListener = mock(UpdateListener.class);
 		testInstance.getPersisterListener().addUpdateListener(updateListener);
 		
-		int rowCount = testInstance.persist(Arrays.asList());
-		assertThat(rowCount).isEqualTo(0);
+		testInstance.persist(Arrays.asList());
 		verifyNoMoreInteractions(insertListener);
 		verifyNoMoreInteractions(updateListener);
 		verifyNoMoreInteractions(identifierManagerInsertListenerMock);
@@ -133,8 +127,7 @@ class PersisterTest {
 		Toto persisted = new Toto(1, 2, 3);
 		mockedSelectAnswer.set(persisted);	// filling mock
 		
-		rowCount = testInstance.persist(unPersisted);
-		assertThat(rowCount).isEqualTo(1);
+		testInstance.persist(unPersisted);
 		verify(insertListener).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
@@ -144,8 +137,7 @@ class PersisterTest {
 		verify(identifierManagerSelectListenerMock, never()).afterSelect(anyIterable());
 		
 		// On persist of a already persisted instance (with id), "rough update" chain must be invoked
-		rowCount = testInstance.persist(persisted);
-		assertThat(rowCount).isEqualTo(1);
+		testInstance.persist(persisted);
 		ArgumentCaptor<Iterable<Duo>> updateArgCaptor = ArgumentCaptor.forClass(Iterable.class);
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
 		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(persisted, persisted));
@@ -158,8 +150,7 @@ class PersisterTest {
 		mockedSelectAnswer.set(totoInDatabase);	// filling mock
 		Toto totoModifiedFromDatabase = new Toto(1, 2, 4);
 		
-		rowCount = testInstance.persist(Arrays.asList(unPersisted, totoModifiedFromDatabase));
-		assertThat(rowCount).isEqualTo(2);
+		testInstance.persist(Arrays.asList(unPersisted, totoModifiedFromDatabase));
 		verify(insertListener).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
@@ -173,7 +164,7 @@ class PersisterTest {
 	}
 	
 	@Test
-	void testInsert() {
+	void insert() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		ReversibleAccessor<Toto, Long> identifier = Accessors.accessorByField(Toto.class, "a");
@@ -190,8 +181,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doInsert(Iterable entities) {
-				return ((Collection) entities).size();
+			protected void doInsert(Iterable entities) {
 			}
 		};
 		
@@ -199,15 +189,13 @@ class PersisterTest {
 		InsertListener insertListener = mock(InsertListener.class);
 		testInstance.getPersisterListener().addInsertListener(insertListener);
 		
-		int rowCount = testInstance.insert(Arrays.asList());
-		assertThat(rowCount).isEqualTo(0);
+		testInstance.insert(Arrays.asList());
 		verifyNoMoreInteractions(insertListener);
 		verifyNoMoreInteractions(identifierManagerInsertListenerMock);
 		
 		// On persist of a never persisted instance (no id), insertion chain must be invoked 
 		Toto toBeInserted = new Toto(1, 2, 3);
-		rowCount = testInstance.insert(toBeInserted);
-		assertThat(rowCount).isEqualTo(1);
+		testInstance.insert(toBeInserted);
 		verify(insertListener).beforeInsert(eq(Arrays.asList(toBeInserted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(toBeInserted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(toBeInserted)));
@@ -215,7 +203,7 @@ class PersisterTest {
 	}
 	
 	@Test
-	void testUpdate() {
+	void update() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
@@ -232,8 +220,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
-				return ((Collection) entities).size();
+			protected void doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 			}
 		};
 		
@@ -260,7 +247,7 @@ class PersisterTest {
 	}
 	
 	@Test
-	void testUpdateById() {
+	void updateById() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
@@ -277,8 +264,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdateById(Iterable entities) {
-				return ((Collection) entities).size();
+			protected void doUpdateById(Iterable entities) {
 			}
 		};
 		
@@ -300,7 +286,7 @@ class PersisterTest {
 	}
 	
 	@Test
-	void testDelete() {
+	void delete() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
@@ -317,8 +303,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doDelete(Iterable entities) {
-				return ((Collection) entities).size();
+			protected void doDelete(Iterable entities) {
 			}
 		};
 		
@@ -327,19 +312,17 @@ class PersisterTest {
 		testInstance.getPersisterListener().addDeleteListener(deleteListener);
 		
 		// when nothing to be deleted, listener is not invoked
-		int rowCount = testInstance.delete(Arrays.asList());
-		assertThat(rowCount).isEqualTo(0);
+		testInstance.delete(Arrays.asList());
 		verifyNoMoreInteractions(deleteListener);
 		
 		Toto toBeDeleted = new Toto(1, 2, 3);
-		rowCount = testInstance.delete(toBeDeleted);
-		assertThat(rowCount).isEqualTo(1);
+		testInstance.delete(toBeDeleted);
 		verify(deleteListener).beforeDelete(eq(Arrays.asList(toBeDeleted)));
 		verify(deleteListener).afterDelete(eq(Arrays.asList(toBeDeleted)));
 	}
 	
 	@Test
-	void testDeleteById() {
+	void deleteById() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Long> primaryKey = totoTable.addColumn("a", Long.class).primaryKey();
 		Column<TotoTable, Long> columnB = totoTable.addColumn("b", Long.class);
@@ -356,8 +339,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doDeleteById(Iterable entities) {
-				return ((Collection) entities).size();
+			protected void doDeleteById(Iterable entities) {
 			}
 		};
 		
@@ -365,19 +347,17 @@ class PersisterTest {
 		testInstance.getPersisterListener().addDeleteByIdListener(deleteListener);
 		
 		// when nothing to be deleted, listener is not invoked
-		int rowCount = testInstance.deleteById(Arrays.asList());
-		assertThat(rowCount).isEqualTo(0);
+		testInstance.deleteById(Arrays.asList());
 		verifyNoMoreInteractions(deleteListener);
 		Toto toBeDeleted = new Toto(1, 2, 3);
 		
-		rowCount = testInstance.deleteById(toBeDeleted);
-		assertThat(rowCount).isEqualTo(1);
+		testInstance.deleteById(toBeDeleted);
 		verify(deleteListener).beforeDeleteById(eq(Arrays.asList(toBeDeleted)));
 		verify(deleteListener).afterDeleteById(eq(Arrays.asList(toBeDeleted)));
 	}
 	
 	@Test
-	void testSelect() {
+	void select() {
 		TotoTable totoTable = new TotoTable("TotoTable");
 		Column<TotoTable, Integer> primaryKey = totoTable.addColumn("a", Integer.class).primaryKey();
 		ReversibleAccessor<Toto, Integer> identifier = Accessors.accessorByField(Toto.class, "a");
@@ -395,14 +375,12 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doInsert(Iterable entities) {
-				return ((Collection) entities).size();
+			protected void doInsert(Iterable entities) {
 			}
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected int doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
-				return ((Collection) entities).size();
+			protected void doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 			}
 			
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */

@@ -41,7 +41,7 @@ class GeneratedKeysReaderTest {
 				return Collections.emptyList();
 			}
 		};
-		WriteOperation<String> dummySQL = new WriteOperation<>(new StringParamedSQL("dummySQL", new HashMap<>()), mock(ConnectionProvider.class));
+		WriteOperation<String> dummySQL = new WriteOperation<>(new StringParamedSQL("dummySQL", new HashMap<>()), mock(ConnectionProvider.class), writeCount -> {});
 		dummySQL.preparedStatement = mock(PreparedStatement.class);
 		testInstance.read(dummySQL);
 		Mockito.verify(dummySQL.preparedStatement).getGeneratedKeys();

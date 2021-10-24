@@ -7,6 +7,7 @@ import java.util.function.BiFunction;
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.ThrowingExecutable;
+import org.gama.lang.function.ThrowingRunnable;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
@@ -51,6 +52,17 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return result;
 	}
 	
+	public void doWithInsertListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		insertListener.beforeInsert(entities);
+		try {
+			delegate.run();
+		} catch (RuntimeException e) {
+			insertListener.onError(entities, e);
+			throw e;
+		}
+		insertListener.afterInsert(entities);
+	}
+	
 	public UpdateByIdListenerCollection<C> getUpdateByIdListener() {
 		return updateByIdListener;
 	}
@@ -65,6 +77,12 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		R result = execute(delegate, entities, updateByIdListener::onError);
 		updateByIdListener.afterUpdateById(entities);
 		return result;
+	}
+	
+	public void doWithUpdateByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		updateByIdListener.beforeUpdateById(entities);
+		execute(delegate, entities, updateByIdListener::onError);
+		updateByIdListener.afterUpdateById(entities);
 	}
 	
 	public UpdateListenerCollection<C> getUpdateListener() {
@@ -90,6 +108,18 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return result;
 	}
 	
+	public <T extends Table<T>> void doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
+														  BiConsumer<Iterable<? extends Duo<C, C>>, Boolean> delegate) {
+		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
+		try {
+			delegate.accept(differencesIterable, allColumnsStatement);
+		} catch (RuntimeException e) {
+			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
+			throw e;
+		}
+		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
+	}
+	
 	public DeleteListenerCollection<C> getDeleteListener() {
 		return deleteListener;
 	}
@@ -110,6 +140,12 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return result;
 	}
 	
+	public void doWithDeleteListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		deleteListener.beforeDelete(entities);
+		execute(delegate, entities, deleteListener::onError);
+		deleteListener.afterDelete(entities);
+	}
+	
 	@Override
 	public void addDeleteByIdListener(DeleteByIdListener<C> deleteByIdListener) {
 		this.deleteByIdListener.add(deleteByIdListener);
@@ -120,6 +156,12 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		R result = execute(delegate, entities, deleteByIdListener::onError);
 		deleteByIdListener.afterDeleteById(entities);
 		return result;
+	}
+	
+	public void doWithDeleteByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		deleteByIdListener.beforeDeleteById(entities);
+		execute(delegate, entities, deleteByIdListener::onError);
+		deleteByIdListener.afterDeleteById(entities);
 	}
 	
 	public SelectListenerCollection<C, I> getSelectListener() {
@@ -142,6 +184,16 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 								 BiConsumer<Iterable<X>, RuntimeException> errorHandler) {
 		try {
 			return delegate.execute();
+		} catch (RuntimeException e) {
+			errorHandler.accept(entities, e);
+			throw e;
+		}
+	}
+	
+	private <X> void execute(ThrowingRunnable<RuntimeException> delegate, Iterable<X> entities,
+								 BiConsumer<Iterable<X>, RuntimeException> errorHandler) {
+		try {
+			delegate.run();
 		} catch (RuntimeException e) {
 			errorHandler.accept(entities, e);
 			throw e;

@@ -31,6 +31,7 @@ import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
+import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
 import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Identification;
@@ -44,7 +45,7 @@ import org.gama.stalactite.persistence.engine.model.Vehicle;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
@@ -54,13 +55,13 @@ import org.gama.stalactite.sql.DataSourceConnectionProvider;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -86,8 +87,7 @@ import static org.mockito.Mockito.withSettings;
  */
 public class PersisterBuilderImplTest {
 	
-	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
+	private static final Dialect DIALECT = new Dialect();
 	
 	@BeforeAll
 	static void initBinders() {
@@ -112,7 +112,7 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void build_connectionProviderIsNotRollbackObserver_throwsException() {
-		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		DataSource dataSource = mock(DataSource.class);
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -121,8 +121,9 @@ public class PersisterBuilderImplTest {
 				.add(Country::getName)
 				.add(Country::getDescription));
 		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 10);
-		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, persistenceContext, null))
-				.isInstanceOf(UnsupportedOperationException.class);
+		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, Mockito.mock(PersisterRegistry.class), null))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Version control is only supported with o.g.s.s.ConnectionProvider that also implements o.g.s.s.RollbackObserver");
 	}
 	
 	@Test
@@ -534,7 +535,7 @@ public class PersisterBuilderImplTest {
 		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
+		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
@@ -567,7 +568,7 @@ public class PersisterBuilderImplTest {
 		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
+		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		Car entity = new Car(1L);
 		entity.setModel("Renault");
@@ -600,7 +601,7 @@ public class PersisterBuilderImplTest {
 		ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
+		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptyIterator()));
 		
 		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
@@ -652,7 +653,7 @@ public class PersisterBuilderImplTest {
 		ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeBatch()).thenReturn(new int[] { 1 });
+		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Arrays.asList(Maps.forHashMap(String.class, Object.class)
 				.add("Car_id", 1L)
 				.add("Car_model", "Renault"))));

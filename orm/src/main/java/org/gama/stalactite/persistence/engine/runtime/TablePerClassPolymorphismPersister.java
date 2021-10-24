@@ -20,17 +20,18 @@ import org.gama.lang.bean.Objects;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderMap;
 import org.gama.lang.function.Functions;
-import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
+import org.gama.stalactite.persistence.engine.DeleteExecutor;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.InsertExecutor;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
@@ -127,41 +128,30 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public int insert(Iterable<? extends C> entities) {
+	public void insert(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		ModifiableInt insertCount = new ModifiableInt();
-		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> insertCount.increment(deleteExecutor.insert(adhocEntities)));
-		
-		return insertCount.getValue();
+		entitiesPerType.forEach(InsertExecutor::insert);
 	}
 	
 	@Override
-	public int updateById(Iterable<C> entities) {
+	public void updateById(Iterable<C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		ModifiableInt updateCount = new ModifiableInt();
-		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> updateCount.increment(deleteExecutor.updateById(adhocEntities)));
-		
-		return updateCount.getValue();
+		entitiesPerType.forEach(UpdateExecutor::updateById);
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		Map<Class, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload -> {
 			C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
 			entitiesPerType.computeIfAbsent(entity.getClass(), k -> new HashSet<>()).add(payload);
 		});
-		ModifiableInt updateCount = new ModifiableInt();
 		subclassUpdateExecutors.forEach((subclass, updateExecutor) -> {
 			Set<Duo<C, C>> entitiesToUpdate = entitiesPerType.get(subclass);
 			if (entitiesToUpdate != null) {
-				updateCount.increment(updateExecutor.update(entitiesToUpdate, allColumnsStatement));
+				updateExecutor.update(entitiesToUpdate, allColumnsStatement);
 			}
 		});
-		
-		return updateCount.getValue();
 	}
 	
 	@Override
@@ -170,33 +160,21 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public int delete(Iterable<C> entities) {
+	public void delete(Iterable<C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		ModifiableInt deleteCount = new ModifiableInt();
-		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> deleteCount.increment(deleteExecutor.delete(adhocEntities)));
-		
-		return deleteCount.getValue();
+		entitiesPerType.forEach(DeleteExecutor::delete);
 	}
 	
 	@Override
-	public int deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		ModifiableInt deleteCount = new ModifiableInt();
-		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> deleteCount.increment(deleteExecutor.deleteById(adhocEntities)));
-		
-		return deleteCount.getValue();
+		entitiesPerType.forEach(DeleteExecutor::deleteById);
 	}
 	
 	@Override
-	public int persist(Iterable<? extends C> entities) {
+	public void persist(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		ModifiableInt insertCount = new ModifiableInt();
-		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> insertCount.increment(deleteExecutor.persist(adhocEntities)));
-		
-		return insertCount.getValue();
+		entitiesPerType.forEach(EntityPersister::persist);
 	}
 	
 	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {

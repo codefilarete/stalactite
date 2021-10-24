@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.listening;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
@@ -108,7 +109,7 @@ public class PersisterListenerCollectionTest {
 		
 		ArrayList<Duo> entities = new ArrayList<>();
 		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
-		assertThatThrownBy(() -> testInstance.doWithUpdateListener(entities, true, (p, b) -> {
+		assertThatThrownBy(() -> testInstance.doWithUpdateListener(entities, true, (BiConsumer<Iterable<? extends Duo>, Boolean>) (p, b) -> {
 			throw error;
 		})).isSameAs(error);
 		

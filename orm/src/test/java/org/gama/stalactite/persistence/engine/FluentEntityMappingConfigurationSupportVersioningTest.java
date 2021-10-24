@@ -197,11 +197,11 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 		dummyCountryClone.setName("Tata");
 		// the following should go wrong since version is not up to date on the clone and the original
 		assertThatThrownBy(() -> countryPersister.update(dummyCountryClone, dummyCountry, true))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, StaleObjectExcepion.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("1 rows were expected to be hit but only 0 were effectively");
+				.extracting(t -> Exceptions.findExceptionInCauses(t, StaleStateObjectException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("1 rows were expected to be hit but 0 were effectively");
 		assertThatThrownBy(() -> countryPersister.delete(dummyCountry))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, StaleObjectExcepion.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("1 rows were expected to be hit but only 0 were effectively");
+				.extracting(t -> Exceptions.findExceptionInCauses(t, StaleStateObjectException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("1 rows were expected to be hit but 0 were effectively");
 		// version is not reverted because rollback wasn't invoked 
 		assertThat(dummyCountryClone.getVersion()).isEqualTo(2);
 		// ... but it is when we rollback

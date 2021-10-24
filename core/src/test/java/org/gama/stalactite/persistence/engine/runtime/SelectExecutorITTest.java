@@ -43,7 +43,7 @@ abstract class SelectExecutorITTest extends AbstractDMLExecutorTest {
 		connection.setAutoCommit(false);
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(connection);
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
-		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.targetTable);
+		ddlDeployer.getDdlGenerator().addTables(persistenceConfiguration.classMappingStrategy.getTargetTable());
 		ddlDeployer.deployDDL();
 		connection.prepareStatement("insert into Toto(a, b, c) values (1, 10, 100)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (2, 20, 200)").execute();

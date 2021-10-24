@@ -50,6 +50,7 @@ import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;
 import org.gama.stalactite.persistence.id.PersistedIdentifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
@@ -82,8 +83,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	// NB: dialect is made non static because we register binder for the same column several times in these tests
 	// and this is not supported : the very first one takes priority  
-	private HSQLDBDialect dialect = new HSQLDBDialect();
-	private DataSource dataSource = new HSQLDBInMemoryDataSource();
+	private final HSQLDBDialect dialect = new HSQLDBDialect();
+	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
@@ -538,6 +539,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		Connection connectionMock = mock(Connection.class);
 		
+		// since we mock connection, we use a non-specific Dialect to avoid specific behavior on a generic connection
+		Dialect dialect = new Dialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 		
 		EntityConfiguredPersister<Country, Identifier<Long>> persister = mappingBuilder.build(
 				new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), countryTable);
@@ -574,7 +579,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		// preparing JDBC mocks and values capture
 		PreparedStatement statementMock = mock(PreparedStatement.class);
-		when(statementMock.executeBatch()).thenReturn(new int[] { 1 });
+		when(statementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		Map<Column<Table, Object>, Object> capturedValues = new HashMap<>();
 		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
 		
@@ -633,6 +638,11 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		Connection connectionMock = mock(Connection.class);
 		
+		// since we mock connection, we use a non-specific Dialect to avoid specific behavior on a generic connection
+		Dialect dialect = new Dialect();
+		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
+		
 		EntityConfiguredPersister<Country, Identifier<Long>> persister = mappingBuilder.build(
 				new PersistenceContext(new SimpleConnectionProvider(connectionMock), dialect), countryTable);
 		
@@ -662,7 +672,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		// preparing JDBC mocks and values capture
 		PreparedStatement statementMock = mock(PreparedStatement.class);
-		when(statementMock.executeBatch()).thenReturn(new int[] { 1 });
+		when(statementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		Map<Column<Table, Object>, Object> capturedValues = new HashMap<>();
 		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
 		
@@ -1268,8 +1278,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		PersonWithGender updatedPerson = new PersonWithGender(person.getId());
-		int updatedRowCount = personPersister.update(updatedPerson, person, true);
-		assertThat(updatedRowCount).isEqualTo(1);
+		personPersister.update(updatedPerson, person, true);
 		PersonWithGender loadedPerson = personPersister.select(person.getId());
 		assertThat(loadedPerson.getGender()).isEqualTo(null);
 	}

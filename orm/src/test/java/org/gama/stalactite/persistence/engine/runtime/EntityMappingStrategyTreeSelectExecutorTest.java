@@ -360,7 +360,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		protected JdbcArgCaptor() throws SQLException {
 			
 			preparedStatement = mock(PreparedStatement.class);
-			when(preparedStatement.executeBatch()).thenReturn(new int[] { 1 });
+			when(preparedStatement.executeLargeBatch()).thenReturn(new long[] { 1 });
 			
 			connection = mock(Connection.class);
 			// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks

@@ -1,19 +1,29 @@
 package org.gama.stalactite.persistence.sql;
 
 import javax.annotation.Nonnull;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
+import org.gama.lang.function.ThrowingBiFunction;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.HSQLDBTypeMapping;
+import org.gama.stalactite.sql.dml.HSQLDBWriteOperation;
+import org.gama.stalactite.sql.dml.SQLStatement;
+import org.gama.stalactite.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.dml.WriteOperation.RowCountListener;
 
 /**
  * @author Guillaume Mary
@@ -53,6 +63,27 @@ public class HSQLDBDialect extends Dialect {
 		}
 	}
 	
+	@Override
+	protected WriteOperationFactory newWriteOperationFactory() {
+		return new HSQLDBWriteOperationFactory();
+	}
+	
+	static class HSQLDBWriteOperationFactory extends WriteOperationFactory {
+		
+		@Override
+		protected <ParamType> WriteOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator,
+																	   ConnectionProvider connectionProvider,
+																	   ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider,
+																	   RowCountListener rowCountListener) {
+			return new HSQLDBWriteOperation<ParamType>(sqlGenerator, connectionProvider, rowCountListener) {
+				@Override
+				protected void prepareStatement(Connection connection) throws SQLException {
+					this.preparedStatement = statementProvider.apply(connection, getSQL());
+				}
+			};
+		}
+		
+	} 
 	
 	public static class HSQLDBDMLNameProvier extends DMLNameProvider {
 		

@@ -1,13 +1,22 @@
 package org.gama.stalactite.persistence.sql;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.stream.LongStream;
+
+import org.gama.lang.function.ThrowingBiFunction;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.dml.ReadOperationFactory;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.DerbyTypeMapping;
 import org.gama.stalactite.sql.dml.DerbyReadOperation;
 import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 import org.gama.stalactite.sql.dml.ReadOperation;
 import org.gama.stalactite.sql.dml.SQLStatement;
+import org.gama.stalactite.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.dml.WriteOperation.RowCountListener;
 
 /**
  * @author Guillaume Mary
@@ -37,11 +46,56 @@ public class DerbyDialect extends Dialect {
 		return new DerbyReadOperationFactory();
 	}
 	
+	@Override
+	protected WriteOperationFactory newWriteOperationFactory() {
+		return new DerbyWriteOperationFactory();
+	}
+	
 	public static class DerbyReadOperationFactory extends ReadOperationFactory {
 		
 		@Override
 		public <ParamType> ReadOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
 			return new DerbyReadOperation<>(sqlGenerator, connectionProvider);
+		}
+	}
+	
+	public static class DerbyWriteOperationFactory extends WriteOperationFactory {
+		
+		@Override
+		protected <ParamType> WriteOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator,
+																	   ConnectionProvider connectionProvider,
+																	   ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider,
+																	   RowCountListener rowCountListener) {
+			return new DerbyWriteOperation<ParamType>(sqlGenerator, connectionProvider, rowCountListener) {
+				@Override
+				protected void prepareStatement(Connection connection) throws SQLException {
+					this.preparedStatement = statementProvider.apply(connection, getSQL());
+				}
+			};
+		}
+	}
+	
+	/**
+	 * Made package-private to be visible by {@link DerbyGeneratedKeysReader}
+	 * @param <ParamType>
+	 */
+	static class DerbyWriteOperation<ParamType> extends WriteOperation<ParamType> {
+		
+		/** Updated row count of the last executed batch statement */
+		private long updatedRowCount = 0;
+		
+		public DerbyWriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, RowCountListener rowCountListener) {
+			super(sqlGenerator, connectionProvider, rowCountListener);
+		}
+		
+		public long getUpdatedRowCount() {
+			return updatedRowCount;
+		}
+		
+		protected long[] doExecuteBatch() throws SQLException {
+			long[] rowCounts = super.doExecuteBatch();
+			this.updatedRowCount = LongStream.of(rowCounts).sum();
+			return rowCounts;
 		}
 	}
 }

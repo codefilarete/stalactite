@@ -6,14 +6,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.LongSupplier;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.ArrayIterator;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.lang.function.Predicates;
-import org.gama.stalactite.persistence.engine.RowCountManager;
-import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
@@ -25,6 +24,7 @@ import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
 import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -32,8 +32,6 @@ import org.gama.stalactite.sql.RollbackObserver;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.WriteOperation;
-
-import static org.gama.stalactite.persistence.engine.RowCountManager.THROWING_ROW_COUNT_MANAGER;
 
 /**
  * Class dedicated to update statement execution
@@ -45,8 +43,6 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
 	
-	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
-	
 	private SQLOperationListener<UpwhereColumn<T>> operationListener;
 	
 	public UpdateExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
@@ -55,16 +51,11 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
 	}
 	
-	public void setRowCountManager(RowCountManager rowCountManager) {
-		this.rowCountManager = rowCountManager;
-	}
-	
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
 		Column<T, Object> versionColumn = getMappingStrategy().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
-		setRowCountManager(THROWING_ROW_COUNT_MANAGER);
 	}
 	
 	public void setOptimisticLockManager(OptimisticLockManager<T> optimisticLockManager) {
@@ -75,8 +66,14 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		this.operationListener = listener;
 	}
 	
-	private WriteOperation<UpwhereColumn<T>> newWriteOperation(SQLStatement<UpwhereColumn<T>> statement, CurrentConnectionProvider currentConnectionProvider) {
-		WriteOperation<UpwhereColumn<T>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider);
+	private WriteOperation<UpwhereColumn<T>> newWriteOperation(SQLStatement<UpwhereColumn<T>> statement, ConnectionProvider currentConnectionProvider, LongSupplier expectedRowCount) {
+		WriteOperation<UpwhereColumn<T>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
+		writeOperation.setListener(this.operationListener);
+		return writeOperation;
+	}
+	
+	private WriteOperation<UpwhereColumn<T>> newWriteOperation(SQLStatement<UpwhereColumn<T>> statement, ConnectionProvider currentConnectionProvider, long expectedRowCount) {
+		WriteOperation<UpwhereColumn<T>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
 		writeOperation.setListener(this.operationListener);
 		return writeOperation;
 	}
@@ -88,14 +85,13 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param entities iterable of entities
 	 */
 	@Override
-	public int updateById(Iterable<C> entities) {
+	public void updateById(Iterable<C> entities) {
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
-		if (columnsToUpdate.isEmpty()) {
-			// nothing to update, this prevent a NPE in buildUpdate due to lack of any (first) element
-			return 0;
-		} else {
+		if (!columnsToUpdate.isEmpty()) {
 			PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider());
+			List<C> entitiesCopy = Iterables.copy(entities);
+			ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
+			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider(), expectedBatchedRowCountsSupplier);
 			
 			JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 			while (jdbcBatchingIterator.hasNext()) {
@@ -103,20 +99,15 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 				Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(c, null, true);
 				writeOperation.addBatch(updateValues);
 			}
-			return jdbcBatchingIterator.getUpdatedRowCount();
 		}
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		Iterable<UpdatePayload<C, T>> updatePayloads = computePayloads(differencesIterable, allColumnsStatement);
-		if (Iterables.isEmpty(updatePayloads)) {
-			// nothing to update => we return immediatly without any call to listeners
-			return 0;
-		} else {
-			return updateDifferences(updatePayloads, allColumnsStatement);
+		if (!Iterables.isEmpty(updatePayloads)) {
+			updateDifferences(updatePayloads, allColumnsStatement);
 		}
-		
 	}
 	
 	/**
@@ -130,11 +121,11 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	// can't be named "update" due to naming conflict with the one with Iterable<Duo>
-	public int updateDifferences(Iterable<UpdatePayload<C, T>> updatePayloads, boolean allColumnsStatement) {
+	public void updateDifferences(Iterable<UpdatePayload<C, T>> updatePayloads, boolean allColumnsStatement) {
 		if (allColumnsStatement) {
-			return updateMappedColumns(updatePayloads);
+			updateMappedColumns(updatePayloads);
 		} else {
-			return updateVariousColumns(updatePayloads);
+			updateVariousColumns(updatePayloads);
 		}
 	}
 	
@@ -150,14 +141,12 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param updatePayloads data for SQL order
 	 * @see #updateMappedColumns(Iterable) 
 	 */
-	public int updateVariousColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
+	public void updateVariousColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we update only entities that have values to be modified
-		Iterable<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
+		List<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 		if (!Iterables.isEmpty(toUpdate)) {
 			CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
-			return executeUpdate(toUpdate, new JDBCBatchingOperationCache(currentConnectionProvider));
-		} else {
-			return 0;
+			executeUpdate(toUpdate, new JDBCBatchingOperationCache(currentConnectionProvider, toUpdate.size()));
 		}
 	}
 	
@@ -171,31 +160,26 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param updatePayloads data for SQL order
 	 * @see #updateVariousColumns(Iterable)
 	 */
-	public int updateMappedColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
+	public void updateMappedColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
 		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
-		if (columnsToUpdate.isEmpty()) {
-			// nothing to update, this prevent from a NPE in buildUpdate(..) due to lack of any element
-			return 0;
-		} else {
+		if (!columnsToUpdate.isEmpty()) {	// we don't execute code below with empty columns to avoid a NPE in buildUpdate(..) due to lack of any element
 			// we update only entities that have values to be modified
-			Iterable<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
+			List<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 			if (!Iterables.isEmpty(toUpdate)) {
 				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider());
+				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider(), toUpdate.size());
 				// Since all columns are updated we can benefit from JDBC batch
 				JDBCBatchingOperation<T> jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
-				return executeUpdate(toUpdate, new SingleJDBCBatchingOperation(jdbcBatchingOperation));
-			} else {
-				return 0;
+				executeUpdate(toUpdate, new SingleJDBCBatchingOperation(jdbcBatchingOperation));
 			}
 		}
 	}
 	
-	private int executeUpdate(Iterable<UpdatePayload<C, T>> entitiesPayloads, JDBCBatchingOperationProvider<T> batchingOperationProvider) {
+	private void executeUpdate(Iterable<UpdatePayload<C, T>> entitiesPayloads, JDBCBatchingOperationProvider<T> batchingOperationProvider) {
 		try {
 			DifferenceUpdater differenceUpdater = new DifferenceUpdater(batchingOperationProvider);
-			return differenceUpdater.update(entitiesPayloads);
+			differenceUpdater.update(entitiesPayloads);
 		} catch (RuntimeException e) {
 			throw new RuntimeException("Error while updating values", e);
 		}
@@ -209,7 +193,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @return a copy of the argument, without those which values are empty
 	 * @throws IllegalArgumentException
 	 */
-	private Iterable<UpdatePayload<C, T>> collectAndAssertNonNullValues(ReadOnlyIterator<UpdatePayload<C, T>> updatePayloads) {
+	private List<UpdatePayload<C, T>> collectAndAssertNonNullValues(ReadOnlyIterator<UpdatePayload<C, T>> updatePayloads) {
 		List<UpdatePayload<C, T>> result = new ArrayList<>(getBatchSize());	// we set a list size as a small performance improvement to prevent too many list extend
 		updatePayloads.forEachRemaining(payload -> {
 			if (!payload.getValues().isEmpty()) {
@@ -235,7 +219,6 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		private final WriteOperation<UpwhereColumn<T>> writeOperation;
 		private final int batchSize;
 		private long stepCounter = 0;
-		private int updatedRowCount;
 		
 		private JDBCBatchingOperation(WriteOperation<UpwhereColumn<T>> writeOperation, int batchSize) {
 			this.writeOperation = writeOperation;
@@ -256,11 +239,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		}
 		
 		private void executeBatch() {
-			this.updatedRowCount += writeOperation.executeBatch();
-		}
-		
-		public int getUpdatedRowCount() {
-			return updatedRowCount;
+			writeOperation.executeBatch();
 		}
 	}
 	
@@ -303,17 +282,19 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		
 		/** cache for WriteOperation instances (key is Columns to be updated) for batch use */
 		private final Map<Set<UpwhereColumn<T>>, JDBCBatchingOperation<T>> updateOperationCache = new HashMap<>();
-		private final DMLExecutor<C, I, T>.CurrentConnectionProvider currentConnectionProvider;
+		private final ConnectionProvider connectionProvider;
+		private final int expectedRowCount;
 		
-		private JDBCBatchingOperationCache(CurrentConnectionProvider currentConnectionProvider) {
-			this.currentConnectionProvider = currentConnectionProvider;
+		private JDBCBatchingOperationCache(ConnectionProvider connectionProvider, int expectedRowCount) {
+			this.connectionProvider = connectionProvider;
+			this.expectedRowCount = expectedRowCount;
 		}
 		
 		@Override
 		public JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns) {
 			return updateOperationCache.computeIfAbsent(upwhereColumns, input -> {
 				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(UpwhereColumn.getUpdateColumns(input), getMappingStrategy().getVersionedKeys());
-				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, currentConnectionProvider), getBatchSize());
+				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, connectionProvider, expectedRowCount), getBatchSize());
 			});
 		}
 		
@@ -335,29 +316,21 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			this.batchingOperationProvider = batchingOperationProvider;
 		}
 		
-		private int update(Iterable<UpdatePayload<C, T>> toUpdate) {
-			RowCounter rowCounter = new RowCounter();
+		private void update(Iterable<UpdatePayload<C, T>> toUpdate) {
 			// building UpdateOperations and update values
 			toUpdate.forEach(p -> {
 				Map<UpwhereColumn<T>, Object> updateValues = p.getValues();
 				optimisticLockManager.manageLock(p.getEntities().getLeft(), p.getEntities().getRight(), updateValues);
 				JDBCBatchingOperation<T> writeOperation = batchingOperationProvider.getJdbcBatchingOperation(updateValues.keySet());
 				writeOperation.setValues(updateValues);
-				// we keep the updated values for row count, not glad with it but not found any way to do differently
-				rowCounter.add(updateValues);
 			});
 			// treating remaining values not yet executed
-			int updatedRowCount = 0;
 			for (JDBCBatchingOperation jdbcBatchingOperation : batchingOperationProvider.getJdbcBatchingOperations()) {
 				if (jdbcBatchingOperation.stepCounter != 0) {
 					jdbcBatchingOperation.executeBatch();
 				}
-				updatedRowCount += jdbcBatchingOperation.getUpdatedRowCount();
 			}
-			rowCountManager.checkRowCount(rowCounter, updatedRowCount);
-			return updatedRowCount;
 		}
-		
 	}
 	
 	/**

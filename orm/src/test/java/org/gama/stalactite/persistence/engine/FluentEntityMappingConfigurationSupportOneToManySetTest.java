@@ -351,8 +351,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				.get(0)).isEqualTo("touched France");
 		
 		// testing delete
-		int rowCount = countryPersister.delete(loadedCountry);
-		assertThat(rowCount).isEqualTo(1);
+		countryPersister.delete(loadedCountry);
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey("name", String.class)

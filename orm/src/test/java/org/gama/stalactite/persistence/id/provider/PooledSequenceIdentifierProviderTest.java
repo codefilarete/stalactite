@@ -17,9 +17,8 @@ import org.gama.stalactite.persistence.engine.TransactionalConnectionProvider;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
 import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
-import org.gama.stalactite.persistence.sql.Dialect;
+import org.gama.stalactite.persistence.sql.HSQLDBDialect;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,15 +33,10 @@ public class PooledSequenceIdentifierProviderTest {
 	
 	private PooledHiLoSequence sequenceIdentifierGenerator;
 	private PersistenceContext persistenceContext;
-	private JavaTypeToSqlTypeMapping simpleTypeMapping;
 	
 	@BeforeEach
 	public void setUp() {
-		simpleTypeMapping = new JavaTypeToSqlTypeMapping()
-				.with(long.class, "int")
-				.with(String.class, "VARCHAR(255)");
-		
-		persistenceContext = new PersistenceContext(new TransactionalConnectionProvider(new HSQLDBInMemoryDataSource()), new Dialect(simpleTypeMapping));
+		persistenceContext = new PersistenceContext(new TransactionalConnectionProvider(new HSQLDBInMemoryDataSource()), new HSQLDBDialect());
 	}
 	
 	@Test
@@ -79,7 +73,7 @@ public class PooledSequenceIdentifierProviderTest {
 		// we create a PersistenceContext that doesn't have a SeparateTransactionExecutor as connection provider,
 		// it will cause error later
 		PersistenceContext persistenceContext = new PersistenceContext(new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource()),
-				new Dialect(simpleTypeMapping));
+				new HSQLDBDialect());
 		// Creation of an in-memory database pooled sequence generator
 		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT),
 				persistenceContext.getDialect(),

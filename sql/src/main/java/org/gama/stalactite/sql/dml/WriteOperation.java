@@ -2,7 +2,6 @@ package org.gama.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,95 +16,61 @@ import org.gama.stalactite.sql.ConnectionProvider;
  */
 public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	
-	/** Updated row count of the last executed batch statement */
-	private int updatedRowCount = 0;
-	
 	/** JDBC Batch statement count, for logging */
 	private int batchedStatementCount = 0;
 	
 	/** Batched values, mainly for logging, filled when debug is required */
 	private final Map<Integer /* batch count */, Map<ParamType, ?>> batchedValues = new HashMap<>();
 	
-	public WriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider) {
-		super(sqlGenerator, connectionProvider);
-	}
+	private final RowCountListener rowCountListener;
 	
-	public int getUpdatedRowCount() {
-		return updatedRowCount;
+	public WriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, RowCountListener rowCountListener) {
+		super(sqlGenerator, connectionProvider);
+		this.rowCountListener = rowCountListener;
 	}
 	
 	/**
-	 * Executes the statement, wraps {@link PreparedStatement#executeUpdate()}.
-	 * To be used if you didn't use {@link #addBatch(Map)}
+	 * Executes the statement, wraps {@link PreparedStatement#executeLargeUpdate()}.
+	 * To be used if you used {@link #setValue(Object, Object)} or {@link #setValues(Map)}
 	 *
-	 * @return the same as {@link PreparedStatement#executeUpdate()}
 	 * @see #setValue(Object, Object)
 	 * @see #setValues(Map)
 	 */
-	public int execute() {
+	public void execute() {
 		prepareExecute();
-		return executeUpdate();
-	}
-	
-	/**
-	 * Executes the statement, wraps {@link PreparedStatement#executeBatch()}.
-	 * To be used if you used {@link #addBatch(Map)}
-	 *
-	 * @return {@link Statement#SUCCESS_NO_INFO} or {@link Statement#EXECUTE_FAILED} if one {@link PreparedStatement#executeBatch()}
-	 * @see #addBatch(Map)
-	 */
-	public int executeBatch() {
-		LOGGER.debug("Batching statement {} times", batchedStatementCount);
+		long writeCount;
 		try {
-			getListener().onExecute(getSqlStatement());
-			int[] insertedRowCount = doWithLogManagement(this::doExecuteBatch);
-			updatedRowCount = computeUpdatedRowCount(insertedRowCount);
-			return updatedRowCount;
-		} finally {
-			batchedStatementCount = 0;
-		}
-	}
-	
-	protected int[] doExecuteBatch() throws SQLException {
-		return preparedStatement.executeBatch();
-	}
-	
-	protected int executeUpdate() {
-		try {
-			return this.doExecuteUpdate();
+			writeCount = doExecuteUpdate();
 		} catch (SQLException e) {
 			throw new SQLExecutionException(getSQL(), e);
 		}
-	}
-	
-	protected int doExecuteUpdate() throws SQLException {
-		return preparedStatement.executeUpdate();
+		rowCountListener.onRowCount(writeCount);
 	}
 	
 	/**
-	 * Tries to simplify values returned by {@link Statement#executeBatch()}: returns only one int instead of an array.
-	 * Main purpose is to return the sum of all updated rows count, but it takes into account drivers that conform
-	 * to the {@link Statement#executeBatch()} specifications: it returns {@link Statement#SUCCESS_NO_INFO} if one of
-	 * the updates did, same for {@link Statement#EXECUTE_FAILED}.
-	 * This operation is only here to make {@link #executeBatch()} looks like {@link #execute()}, added that I don't
-	 * see interest for upper layer to have fine grained result as int[]. 
-	 * 
-	 * @return {@link Statement#SUCCESS_NO_INFO}, {@link Statement#EXECUTE_FAILED}, or the sum of all ints
+	 * Executes the statement, wraps {@link PreparedStatement#executeLargeBatch()}.
+	 * To be used if you used {@link #addBatch(Map)}
+	 *
+	 * @see #addBatch(Map)
 	 */
-	protected int computeUpdatedRowCount(int[] rowCounts) {
-		int updatedRowCountSum = 0;
-		for (int rowCount : rowCounts) {
-			switch (rowCount) {
-				// first two cases are for drivers that conform to Statement.executeBatch specification
-				case Statement.SUCCESS_NO_INFO:
-					return Statement.SUCCESS_NO_INFO;
-				case Statement.EXECUTE_FAILED:
-					return Statement.EXECUTE_FAILED;
-				default:	// 0 or really updated row count
-					updatedRowCountSum += rowCount;
-			}
+	public void executeBatch() {
+		LOGGER.debug("Batching statement {} times", batchedStatementCount);
+		long[] updatedRowCounts;
+		try {
+			getListener().onExecute(getSqlStatement());
+			updatedRowCounts = doWithLogManagement(this::doExecuteBatch);
+		} finally {
+			batchedStatementCount = 0;
 		}
-		return updatedRowCountSum;
+		rowCountListener.onRowCounts(updatedRowCounts);
+	}
+	
+	protected long[] doExecuteBatch() throws SQLException {
+		return preparedStatement.executeLargeBatch();
+	}
+	
+	protected long doExecuteUpdate() throws SQLException {
+		return preparedStatement.executeLargeUpdate();
 	}
 	
 	private <T, E extends SQLException> T doWithLogManagement(ThrowingExecutable<T, E> delegateWithResult) {
@@ -146,5 +111,30 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
 		}
+	}
+	
+	/**
+	 * Listener for updated row counts : its methods are called after statement execution, either for batched or not, with number of updated row counts.
+	 */
+	public interface RowCountListener {
+		
+		/**
+		 * Method invoked after statement execution as batch.
+		 * This implementation calls {@link #onRowCount(long)} for each value of the array. 
+		 *
+		 * @param writeCounts values returned by JDBC {@link PreparedStatement#executeLargeBatch()}
+		 */
+		default void onRowCounts(long[] writeCounts) {
+			for (long writeCount : writeCounts) {
+				onRowCount(writeCount);
+			}
+		}
+		
+		/**
+		 * Method invoked after statement execution (not batched).
+		 *
+		 * @param writeCount value returned by JDBC {@link PreparedStatement#execute()}
+		 */
+		void onRowCount(long writeCount);
 	}
 }

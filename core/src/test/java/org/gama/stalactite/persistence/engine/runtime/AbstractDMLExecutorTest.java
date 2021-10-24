@@ -16,6 +16,7 @@ import org.gama.lang.Duo;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.Exceptions;
 import org.gama.lang.function.Sequence;
+import org.gama.lang.function.ThrowingBiFunction;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
@@ -28,10 +29,14 @@ import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
 import org.gama.stalactite.persistence.mapping.IdAccessor;
 import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;
+import org.gama.stalactite.sql.dml.SQLStatement;
+import org.gama.stalactite.sql.dml.WriteOperation;
+import org.gama.stalactite.sql.dml.WriteOperation.RowCountListener;
 import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
@@ -48,13 +53,31 @@ abstract class AbstractDMLExecutorTest {
 	
 	protected JdbcMock jdbcMock;
 	private Sequence<Integer> sequence;
-
+	protected WriteOperationFactory noRowCountCheckWriteOperationFactory;
+	
 	@BeforeEach
 	void init() {
 		this.jdbcMock = new JdbcMock();
 		// the sequence is initialized before each test to make it restart from 0 else some assertion will fail
 		// in particular insertion ones
 		this.sequence = new InMemoryCounterIdentifierGenerator();
+		
+		noRowCountCheckWriteOperationFactory = new WriteOperationFactory() {
+			
+			@Override
+			protected <ParamType> WriteOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator,
+																		   ConnectionProvider connectionProvider,
+																		   ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider,
+																		   RowCountListener rowCountListener) {
+				// we d'ont care about row count checker in thoses tests, so every statement will be created without it
+				return new WriteOperation<ParamType>(sqlGenerator, connectionProvider, NOOP_COUNT_CHECKER) {
+					@Override
+					protected void prepareStatement(Connection connection) throws SQLException {
+						this.preparedStatement = statementProvider.apply(connection, getSQL());
+					}
+				};
+			}
+		};
 	}
 	
 	protected PersistenceConfiguration<Toto, Integer, Table> giveDefaultPersistenceConfiguration() {
@@ -103,7 +126,7 @@ abstract class AbstractDMLExecutorTest {
 		ComposedIdentifierAssembler<Toto> composedIdentifierAssembler = new ComposedIdentifierAssembler<Toto>(targetTable.getPrimaryKey().getColumns()) {
 			@Override
 			protected Toto assemble(Map<Column, Object> primaryKeyElements) {
-				// No need to be implemented id because we're on a delete test case, but it may be something 
+				// No need to be implemented because we're on a delete test case, but it may be something 
 				// like this :
 				return new Toto((Integer) primaryKeyElements.get(colA), (Integer) primaryKeyElements.get(colB), null);
 			}
@@ -155,7 +178,7 @@ abstract class AbstractDMLExecutorTest {
 		ComposedIdentifierAssembler<ComposedId> composedIdentifierAssembler = new ComposedIdentifierAssembler<ComposedId>(targetTable.getPrimaryKey().getColumns()) {
 			@Override
 			protected ComposedId assemble(Map<Column, Object> primaryKeyElements) {
-				// No need to be implemented id because we're on a delete test case, but it may be something 
+				// No need to be implemented because we're on a delete test case, but it may be something 
 				// like this :
 				return new ComposedId((Integer) primaryKeyElements.get(colA), (Integer) primaryKeyElements.get(colB));
 			}
@@ -195,7 +218,7 @@ abstract class AbstractDMLExecutorTest {
 		protected JdbcMock() {
 			try {
 				preparedStatement = mock(PreparedStatement.class);
-				when(preparedStatement.executeBatch()).thenReturn(new int[]{1});
+				when(preparedStatement.executeLargeBatch()).thenReturn(new long[]{1});
 
 				connection = mock(Connection.class);
 				// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
@@ -229,6 +252,7 @@ abstract class AbstractDMLExecutorTest {
 		List<Duo<Integer, Integer>> obtainedPairs = PairSetList.toPairs(jdbcMock.indexCaptor.getAllValues(), jdbcMock.valueCaptor.getAllValues());
 		List<Set<Duo<Integer, Integer>>> obtained = new ArrayList<>();
 		int startIndex = 0;
+		// rearranging obtainedPairs into some packets, as those of expectedPairs
 		for (Set<Duo<Integer, Integer>> expectedPair : expectedPairs.asList()) {
 			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
 		}

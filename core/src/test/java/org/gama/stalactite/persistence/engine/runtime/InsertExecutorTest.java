@@ -66,7 +66,7 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
-			new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
+			new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 	}
 	
 	@Test
@@ -74,7 +74,7 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 		testInstance.insert(Arrays.asList(new Toto(17, 23), new Toto(29, 31), new Toto(37, 41), new Toto(43, 53)));
 		
 		verify(jdbcMock.preparedStatement, times(4)).addBatch();
-		verify(jdbcMock.preparedStatement, times(2)).executeBatch();
+		verify(jdbcMock.preparedStatement, times(2)).executeLargeBatch();
 		verify(jdbcMock.preparedStatement, times(12)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		assertThat(jdbcMock.sqlCaptor.getValue()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -126,7 +126,7 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		PreparedStatement preparedStatement = mock(PreparedStatement.class);
-		when(preparedStatement.executeBatch()).thenReturn(new int[] { 1 });
+		when(preparedStatement.executeLargeBatch()).thenReturn(new long[] { 1 });
 		Connection connection = mock(Connection.class);
 		when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
 		when(connection.prepareStatement(anyString(), anyInt())).thenReturn(preparedStatement);
@@ -215,12 +215,12 @@ class InsertExecutorTest extends AbstractDMLExecutorTest {
 			
 			DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 			InsertExecutor<Toto, Integer, Table> testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
-					new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
+					new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 			List<Toto> totoList = Arrays.asList(new Toto(17, 23), new Toto(29, 31), new Toto(37, 41), new Toto(43, 53));
 			testInstance.insert(totoList);
 			
 			verify(jdbcMock.preparedStatement, times(4)).addBatch();
-			verify(jdbcMock.preparedStatement, times(2)).executeBatch();
+			verify(jdbcMock.preparedStatement, times(2)).executeLargeBatch();
 			verify(jdbcMock.preparedStatement, times(8)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 			assertThat(jdbcMock.sqlCaptor.getValue()).isEqualTo("insert into Toto(a, b, c) values (default, ?, ?)");
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()

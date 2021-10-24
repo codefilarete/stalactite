@@ -2,6 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import org.gama.lang.Duo;
 import org.gama.lang.collection.Iterables;
@@ -58,27 +59,19 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public int delete(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
-		}
-		return persisterListener.doWithDeleteListener(entities, () -> surrogate.delete(entities));
+	public void delete(Iterable<C> entities) {
+		persisterListener.doWithDeleteListener(entities, () -> surrogate.delete(entities));
 	}
 	
 	@Override
-	public int deleteById(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
-		}
-		return persisterListener.doWithDeleteByIdListener(entities, () -> surrogate.deleteById(entities));
+	public void deleteById(Iterable<C> entities) {
+		persisterListener.doWithDeleteByIdListener(entities, () -> surrogate.deleteById(entities));
 	}
 	
 	@Override
-	public int insert(Iterable<? extends C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			return 0;
-		} else {
-			return persisterListener.doWithInsertListener(entities, () -> surrogate.insert(entities));
+	public void insert(Iterable<? extends C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			persisterListener.doWithInsertListener(entities, () -> surrogate.insert(entities));
 		}
 	}
 	
@@ -92,22 +85,16 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public int updateById(Iterable<C> entities) {
-		if (Iterables.isEmpty(entities)) {
-			// nothing to update => we return immediatly without any call to listeners
-			return 0;
-		} else {
-			return persisterListener.doWithUpdateByIdListener(entities, () -> surrogate.updateById(entities));
+	public void updateById(Iterable<C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			persisterListener.doWithUpdateByIdListener(entities, () -> surrogate.updateById(entities));
 		}
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		if (Iterables.isEmpty(differencesIterable)) {
-			// nothing to update => we return immediatly without any call to listeners
-			return 0;
-		} else {
-			return persisterListener.doWithUpdateListener(differencesIterable, allColumnsStatement, surrogate::update);
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		if (!Iterables.isEmpty(differencesIterable)) {
+			persisterListener.doWithUpdateListener(differencesIterable, allColumnsStatement, (BiConsumer<Iterable<? extends Duo<C, C>>, Boolean>) surrogate::update);
 		}
 	}
 }

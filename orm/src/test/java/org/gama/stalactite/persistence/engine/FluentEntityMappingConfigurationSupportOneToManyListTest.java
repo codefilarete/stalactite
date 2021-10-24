@@ -537,9 +537,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.usingRecursiveComparison()
 					.isEqualTo(Arrays.asList(new AnswerChoice(choice1), new AnswerChoice(choice2), new AnswerChoice(choice3)));
 			
-			int deletedAnswerCount = answerPersister.delete(answer);
-			
-			assertThat(deletedAnswerCount).isEqualTo(1);
+			answerPersister.delete(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable), Long.class)
@@ -576,9 +574,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answer.takeChoices(Arrays.asList(choice1, choice2, choice2, choice3));
 			answerPersister.insert(answer);
 			
-			int deletedAnswerCount = answerPersister.deleteById(answer);
-			
-			assertThat(deletedAnswerCount).isEqualTo(1);
+			answerPersister.deleteById(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
 			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable).getQuery(), Long.class)

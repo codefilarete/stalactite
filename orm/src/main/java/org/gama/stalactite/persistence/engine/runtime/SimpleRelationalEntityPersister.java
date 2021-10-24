@@ -168,8 +168,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	}
 	
 	@Override
-	public int persist(Iterable<? extends C> entities) {
-		return persister.persist(entities);
+	public void persist(Iterable<? extends C> entities) {
+		persister.persist(entities);
 	}
 	
 	/**
@@ -311,28 +311,28 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	}
 	
 	@Override
-	public int delete(Iterable<C> entities) {
-		return persister.delete(entities);
+	public void delete(Iterable<C> entities) {
+		persister.delete(entities);
 	}
 	
 	@Override
-	public int deleteById(Iterable<C> entities) {
-		return persister.deleteById(entities);
+	public void deleteById(Iterable<C> entities) {
+		persister.deleteById(entities);
 	}
 	
 	@Override
-	public int insert(Iterable<? extends C> entities) {
-		return persister.insert(entities);
+	public void insert(Iterable<? extends C> entities) {
+		persister.insert(entities);
 	}
 	
 	@Override
-	public int updateById(Iterable<C> entities) {
-		return persister.updateById(entities);
+	public void updateById(Iterable<C> entities) {
+		persister.updateById(entities);
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		return persister.update(differencesIterable, allColumnsStatement);
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		persister.update(differencesIterable, allColumnsStatement);
 	}
 	
 	@Override

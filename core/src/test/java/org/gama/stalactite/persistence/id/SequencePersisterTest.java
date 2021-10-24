@@ -81,15 +81,13 @@ public class SequencePersisterTest {
 			}
 
 			@Override
-			public int insert(Sequence entity) {
+			public void insert(Sequence entity) {
 				insertedSequence.add(entity);
-				return 1;
 			}
 
 			@Override
-			public int updateById(Sequence entity) {
+			public void updateById(Sequence entity) {
 				updatedSequence.add(entity);
-				return 1;
 			}
 		};
 		long identifier = testInstance.reservePool("toto", 10);
@@ -122,15 +120,13 @@ public class SequencePersisterTest {
 			}
 
 			@Override
-			public int insert(Sequence entity) {
+			public void insert(Sequence entity) {
 				insertedSequence.add(entity);
-				return 1;
 			}
 
 			@Override
-			public int updateById(Sequence entity) {
+			public void updateById(Sequence entity) {
 				updatedSequence.add(entity);
-				return 1;
 			}
 		};
 		long identifier = testInstance.reservePool("toto", 10);

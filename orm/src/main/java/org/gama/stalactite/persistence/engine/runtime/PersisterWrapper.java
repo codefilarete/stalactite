@@ -56,8 +56,8 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public int persist(Iterable<? extends C> entities) {
-		return EntityPersister.persist(entities, this::isNew, this, this, this, this::getId);
+	public void persist(Iterable<? extends C> entities) {
+		EntityPersister.persist(entities, this::isNew, this, this, this, this::getId);
 	}
 	
 	@Override
@@ -81,8 +81,8 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public int update(I id, Consumer<C> entityConsumer) {
-		return surrogate.update(id, entityConsumer);
+	public void update(I id, Consumer<C> entityConsumer) {
+		surrogate.update(id, entityConsumer);
 	}
 	
 	@Override
@@ -131,18 +131,18 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public int delete(Iterable<C> entities) {
-		return surrogate.delete(entities);
+	public void delete(Iterable<C> entities) {
+		surrogate.delete(entities);
 	}
 	
 	@Override
-	public int deleteById(Iterable<C> entities) {
-		return surrogate.deleteById(entities);
+	public void deleteById(Iterable<C> entities) {
+		surrogate.deleteById(entities);
 	}
 	
 	@Override
-	public int insert(Iterable<? extends C> entities) {
-		return surrogate.insert(entities);
+	public void insert(Iterable<? extends C> entities) {
+		surrogate.insert(entities);
 	}
 	
 	@Override
@@ -151,13 +151,13 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public int updateById(Iterable<C> entities) {
-		return surrogate.updateById(entities);
+	public void updateById(Iterable<C> entities) {
+		surrogate.updateById(entities);
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		return surrogate.update(differencesIterable, allColumnsStatement);
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		surrogate.update(differencesIterable, allColumnsStatement);
 	}
 	
 	@Override

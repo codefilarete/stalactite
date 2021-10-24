@@ -1,15 +1,18 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
+import org.gama.lang.Duo;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
-import org.gama.stalactite.persistence.engine.RowCountManager;
-import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
+import org.gama.stalactite.persistence.engine.StaleStateObjectException;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -38,7 +41,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
+											new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 	}
 	
 	@Test
@@ -46,8 +49,8 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		testInstance.delete(Arrays.asList(new Toto(7, 17, 23)));
 		
 		verify(jdbcMock.preparedStatement, times(1)).addBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(0)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(0)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(1)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		assertThat(jdbcMock.sqlCaptor.getValue()).isEqualTo("delete from Toto where a = ?");
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
@@ -64,7 +67,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		
 		try {
 			testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31)));
-		} catch (StaleObjectExcepion e) {
+		} catch (StaleStateObjectException e) {
 			// we don't care about any existing data in the database, listener must be called, so we continue even if there are some stale objects
 		}
 		
@@ -83,12 +86,11 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 	
 	@Test
 	void delete_multiple() throws Exception {
-		testInstance.setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
 		testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41), new Toto(4, 43, 53)));
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a = ?"));
 		verify(jdbcMock.preparedStatement, times(4)).addBatch();
-		verify(jdbcMock.preparedStatement, times(2)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(0)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(2)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(0)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(4)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 1).add(1, 2).add(1, 3).newRow(1, 4);
 		assertCapturedPairsEqual(jdbcMock, expectedPairs);
@@ -99,8 +101,8 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		testInstance.deleteById(Arrays.asList(new Toto(7, 17, 23)));
 		
 		verify(jdbcMock.preparedStatement, times(0)).addBatch();
-		verify(jdbcMock.preparedStatement, times(0)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(0)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(1)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		assertThat(jdbcMock.sqlCaptor.getValue()).isEqualTo("delete from Toto where a in (?)");
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 7);
@@ -116,8 +118,8 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto " 
 				+ "where a in (?)"));
 		verify(jdbcMock.preparedStatement, times(1)).addBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(4)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 1).add(2, 2).add(3, 3).newRow(1, 4);
 		assertCapturedPairsEqual(jdbcMock, expectedPairs);
@@ -132,8 +134,8 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a in (?, ?, ?)", "delete from Toto " 
 				+ "where a in (?, ?)"));
 		verify(jdbcMock.preparedStatement, times(1)).addBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(5)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = pairSetList(1, 1).add(2, 2).add(3, 3).newRow(1, 4).add(2, 5);
 		assertCapturedPairsEqual(jdbcMock, expectedPairs);
@@ -147,8 +149,8 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where a in (?, ?, ?)"));
 		verify(jdbcMock.preparedStatement, times(2)).addBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(0)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(0)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(6)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 1).add(2, 2).add(3, 3)
@@ -161,7 +163,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
@@ -170,21 +172,24 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", 
 				"delete from Toto where (a, b) in ((?, ?))"));
 		verify(jdbcMock.preparedStatement, times(1)).addBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(8)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.add(1, 1).add(2, 17).add(3, 2).add(4, 29).add(5, 3).add(6, 37)
-				.newRow(1, 4).add(2, 43);
-		assertCapturedPairsEqual(jdbcMock, expectedPairs);
+		
+		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
+		assertThat(actualValuePairs).containsExactlyInAnyOrder(new Duo<>(1, 17),
+															   new Duo<>(2, 29),
+															   new Duo<>(3, 37),
+															   new Duo<>(4, 43));
+		
 	}
 	
 	@Test
 	void deleteById_composedId_multiple_lastBlockContainsMultipleValue() throws Exception {
 		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
+		DeleteExecutor<Toto, Toto, Table> testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
@@ -193,13 +198,17 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))", 
 				"delete from Toto where (a, b) in ((?, ?), (?, ?))"));
 		verify(jdbcMock.preparedStatement, times(1)).addBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(10)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.add(1, 1).add(2, 17).add(3, 2).add(4, 29).add(5, 3).add(6, 37)
-				.newRow(1, 4).add(2, 43).add(3, 5).add(4, 59);
-		assertCapturedPairsEqual(jdbcMock, expectedPairs);
+		
+		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
+		assertThat(actualValuePairs).containsExactlyInAnyOrder(new Duo<>(1, 17),
+															   new Duo<>(2, 29),
+															   new Duo<>(3, 37),
+															   new Duo<>(4, 43),
+															   new Duo<>(5, 59));
+		
 	}
 	
 	@Test
@@ -207,7 +216,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
-				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, new WriteOperationFactory(), 3);
+				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23), new Toto(2, 29, 31), new Toto(3, 37, 41),
@@ -215,12 +224,58 @@ class DeleteExecutorTest extends AbstractDMLExecutorTest {
 		// 2 statements because in operator is bounded to 3 values (see testInstance creation)
 		assertThat(jdbcMock.sqlCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where (a, b) in ((?, ?), (?, ?), (?, ?))"));
 		verify(jdbcMock.preparedStatement, times(2)).addBatch();
-		verify(jdbcMock.preparedStatement, times(1)).executeBatch();
-		verify(jdbcMock.preparedStatement, times(0)).executeUpdate();
+		verify(jdbcMock.preparedStatement, times(1)).executeLargeBatch();
+		verify(jdbcMock.preparedStatement, times(0)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(12)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
-		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-				.add(1, 1).add(2, 17).add(3, 2).add(4, 29).add(5, 3).add(6, 37)
-				.newRow(1, 4).add(2, 43).add(3, 5).add(4, 59).add(5, 6).add(6, 67);
-		assertCapturedPairsEqual(jdbcMock, expectedPairs);
+		
+		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
+		assertThat(actualValuePairs).containsExactlyInAnyOrder(new Duo<>(1, 17),
+															   new Duo<>(2, 29),
+															   new Duo<>(3, 37),
+															   new Duo<>(4, 43),
+															   new Duo<>(5, 59),
+															   new Duo<>(6, 67));
+	}
+	
+	static List<Duo<Integer, Integer>> arrangeValues(List<Integer> capturedValues, int batchSize) {
+		// Captured values is a list of values such as :
+		// - col A values for block #1 (3 values),
+		// - col B values for block #1 (3 values),
+		// - col A values for block #2 (3 values),
+		// - col B values for block #2 (3 values),
+		// - col A values for block #3 (2 values),
+		// - col B values for block #3 (2 values)
+		// the algorithm below unpacks it to get pairs of (colA, colB)
+		
+		// computing blocks sizes
+		int colCount = 2;
+		int columnsBlockCount = capturedValues.size() / colCount;
+		int blockCount = columnsBlockCount / batchSize;
+		int lastBlockSize = columnsBlockCount % batchSize;
+		int[] blocksSizes = new int[blockCount + (lastBlockSize == 0 ? 0 : 1)];
+		java.util.Arrays.fill(blocksSizes, batchSize);
+		if (lastBlockSize != 0) {
+			blocksSizes[blocksSizes.length-1] = lastBlockSize;
+		}
+		
+		IntStream blocksSizeStream = IntStream.of(blocksSizes);
+		List<Integer> colAValues = new ArrayList<>();
+		List<Integer> colBValues = new ArrayList<>();
+		
+		// Dispatching values in column values lists
+		Iterator<Integer> valuesIterator = capturedValues.iterator();
+		blocksSizeStream.forEach(blockSize -> {
+			List<Integer> listToFill;
+			for (int colNumber = 0; colNumber < colCount; colNumber++) {
+				// Note: columns are stored in a Map or Set in DeleteExecutor algorithm, so setting even column numbers to B values and odd ones to A
+				// is only based on debug experience of this test. But since Column implements equals + hashCode, this is steady and may not be a matter of concern.
+				listToFill = colNumber % colCount == 0 ? colBValues : colAValues;
+				for (int i = 0; i < blockSize; i++) {
+					listToFill.add(valuesIterator.next());
+				}
+			}
+		});
+		
+		return PairSetList.toPairs(colAValues, colBValues);
 	}
 }

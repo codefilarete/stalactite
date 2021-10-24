@@ -1,9 +1,10 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
+import org.gama.lang.Reflections;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
+import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.RollbackObserver;
-import org.gama.stalactite.persistence.structure.Column;
 
 /**
  * Some code mutualisation around optimistic lock manager.
@@ -44,8 +45,8 @@ abstract class AbstractRevertOnRollbackMVCC {
 		this.versioningStrategy = versioningStrategy;
 		this.versionColumn = versionColumn;
 		if (!(rollbackObserver instanceof RollbackObserver)) {
-			throw new UnsupportedOperationException("Version control is only supported with " + ConnectionProvider.class.getName()
-					+ " that also implements " + RollbackObserver.class.getName());
+			throw new UnsupportedOperationException("Version control is only supported with " + Reflections.toString(ConnectionProvider.class)
+					+ " that also implements " + Reflections.toString(RollbackObserver.class));
 		}
 		this.rollbackObserver = (RollbackObserver) rollbackObserver;
 	}

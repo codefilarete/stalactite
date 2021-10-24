@@ -71,42 +71,42 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	 */
 	
 	@Override
-	public int persist(C entity) {
+	public void persist(C entity) {
 		assertPersisterManagesEntity(entity);
-		return super.persist(entity);
+		super.persist(entity);
 	}
 	
 	@Override
-	public int insert(Iterable<? extends C> entities) {
+	public void insert(Iterable<? extends C> entities) {
 		assertPersisterManagesEntities(entities);
-		return super.insert(entities);
+		super.insert(entities);
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
 		// we clear asserter input from null because it doesn't support it, and it may happen in update cases of nullified one-to-one relation
 		List<C> nonNullEntities = Iterables.stream(differencesIterable).map(Duo::getLeft).filter(Objects::nonNull).collect(Collectors.toList());
 		assertPersisterManagesEntities(nonNullEntities);
-		return super.update(differencesIterable, allColumnsStatement);
+		super.update(differencesIterable, allColumnsStatement);
 	}
 	
 	@Override
-	public int updateById(Iterable<C> entities) {
+	public void updateById(Iterable<C> entities) {
 		assertPersisterManagesEntities(entities);
-		return super.updateById(entities);
+		super.updateById(entities);
 	}
 	
 	@Override
-	public int delete(Iterable<C> entities) {
+	public void delete(Iterable<C> entities) {
 		// we clear asserter input from null because it doesn't support it, and it may happen in update cases of nullified one-to-one relation
 		List<C> nonNullEntities = Iterables.stream(entities).filter(Objects::nonNull).collect(Collectors.toList());
 		assertPersisterManagesEntities(nonNullEntities);
-		return super.delete(nonNullEntities);
+		super.delete(nonNullEntities);
 	}
 	
 	@Override
-	public int deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<C> entities) {
 		assertPersisterManagesEntities(entities);
-		return super.deleteById(entities);
+		super.deleteById(entities);
 	}
 }

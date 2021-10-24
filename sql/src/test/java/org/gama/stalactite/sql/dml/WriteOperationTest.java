@@ -50,13 +50,14 @@ class WriteOperationTest {
 		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(
 				new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.setValue(1, 1L);
 		testInstance.setValue(2, "tata");
 		testInstance.execute();
 		verify(preparedStatementMock).setLong(1, 1L);
 		verify(preparedStatementMock).setString(2, "tata");
-		verify(preparedStatementMock).executeUpdate();
+		verify(preparedStatementMock).executeLargeUpdate();
 	}
 	
 	@Test
@@ -64,16 +65,16 @@ class WriteOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		List<Integer> batchRowCounter = new ArrayList<>();
+		List<Long> batchRowCounter = new ArrayList<>();
 		doAnswer(invocation -> {
-			batchRowCounter.add(1);
+			batchRowCounter.add(1L);
 			return null;
 		}).when(preparedStatementMock).addBatch();
 		doAnswer(invocation -> {
-			int[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Integer[0]));
+			long[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Long[0]));
 			batchRowCounter.clear();
 			return batchCount;
-		}).when(preparedStatementMock).executeBatch();
+		}).when(preparedStatementMock).executeLargeBatch();
 		
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
@@ -81,28 +82,26 @@ class WriteOperationTest {
 		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(
 				new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.addBatch(Maps.asMap(1, (Object) 1L).add(2, "Tata"));
-		int executeMultiple = testInstance.executeBatch();
+		testInstance.executeBatch();
 
 		verify(preparedStatementMock).setLong(1, 1L);
 		verify(preparedStatementMock).setString(2, "Tata");
-		verify(preparedStatementMock).executeBatch();
-		assertThat(executeMultiple).isEqualTo(1);
+		verify(preparedStatementMock).executeLargeBatch();
 
 		clearInvocations(preparedStatementMock);
 		
 		testInstance.addBatch(Maps.asMap(1, (Object) 2L).add(2, "Tata"));
 		testInstance.addBatch(Maps.asMap(1, (Object) 3L).add(2, "Toto"));
-		executeMultiple = testInstance.executeBatch();
+		testInstance.executeBatch();
 
 		verify(preparedStatementMock).setLong(1, 2L);
 		verify(preparedStatementMock).setLong(1, 3L);
 		verify(preparedStatementMock).setString(2, "Tata");
 		verify(preparedStatementMock).setString(2, "Toto");
-		verify(preparedStatementMock).executeBatch();
-
-		assertThat(executeMultiple).isEqualTo(2);
+		verify(preparedStatementMock).executeLargeBatch();
 	}
 	
 	@Test
@@ -110,17 +109,17 @@ class WriteOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		List<Integer> batchRowCounter = new ArrayList<>();
+		List<Long> batchRowCounter = new ArrayList<>();
 		doAnswer(invocation -> {
-			batchRowCounter.add(1);
+			batchRowCounter.add(1L);
 			return null;
 		}).when(preparedStatementMock).addBatch();
 		doAnswer(invocation -> {
-			int[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Integer[0]));
+			long[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Long[0]));
 			batchRowCounter.clear();
 			return batchCount;
-		}).when(preparedStatementMock).executeBatch();
-		doAnswer(invocation -> 1).when(preparedStatementMock).executeUpdate();
+		}).when(preparedStatementMock).executeLargeBatch();
+		doAnswer(invocation -> 1L).when(preparedStatementMock).executeLargeUpdate();
 
 
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
@@ -129,15 +128,15 @@ class WriteOperationTest {
 		
 		WriteOperation<String> testInstance = new WriteOperation<>(
 				new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.setValue("id", 1L);
 		testInstance.setValue("name", "tata");
-		int executeOne = testInstance.execute();
+		testInstance.execute();
 
 		verify(preparedStatementMock).setLong(1, 1L);
 		verify(preparedStatementMock).setString(2, "tata");
-		verify(preparedStatementMock).executeUpdate();
-		assertThat(executeOne).isEqualTo(1);
+		verify(preparedStatementMock).executeLargeUpdate();
 
 		clearInvocations(preparedStatementMock);
 		
@@ -145,14 +144,14 @@ class WriteOperationTest {
 		parameterBinders.put("ids", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		WriteOperation<String> testInstanceForDelete = new WriteOperation<>(
 				new StringParamedSQL("delete from Toto where id in (:ids)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstanceForDelete.addBatch(Maps.asMap("ids", Arrays.asList(1L, 2L, 3L)));
-		int executeMultiple = testInstanceForDelete.executeBatch();
+		testInstanceForDelete.executeBatch();
 		verify(preparedStatementMock).setLong(1, 1L);
 		verify(preparedStatementMock).setLong(2, 2L);
 		verify(preparedStatementMock).setLong(3, 3L);
-		verify(preparedStatementMock).executeBatch();
-		assertThat(executeMultiple).isEqualTo(1);
+		verify(preparedStatementMock).executeLargeBatch();
 	}
 	
 	@Test
@@ -160,16 +159,16 @@ class WriteOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		List<Integer> batchRowCounter = new ArrayList<>();
+		List<Long> batchRowCounter = new ArrayList<>();
 		doAnswer(invocation -> {
-			batchRowCounter.add(1);
+			batchRowCounter.add(1L);
 			return null;
 		}).when(preparedStatementMock).addBatch();
 		doAnswer(invocation -> {
-			int[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Integer[0]));
+			long[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Long[0]));
 			batchRowCounter.clear();
 			return batchCount;
-		}).when(preparedStatementMock).executeBatch();
+		}).when(preparedStatementMock).executeLargeBatch();
 		
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
@@ -177,25 +176,24 @@ class WriteOperationTest {
 		
 		WriteOperation<String> testInstance = new WriteOperation<>(
 				new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.addBatch(Maps.asMap("id", (Object) 1L).add("name", "Tata"));
-		int executeMultiple = testInstance.executeBatch();
+		testInstance.executeBatch();
 		verify(preparedStatementMock).setLong(1, 1L);
 		verify(preparedStatementMock).setString(2, "Tata");
-		verify(preparedStatementMock).executeBatch();
-		assertThat(executeMultiple).isEqualTo(1);
+		verify(preparedStatementMock).executeLargeBatch();
 		
 		clearInvocations(preparedStatementMock);
 		
 		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
-		executeMultiple = testInstance.executeBatch();
+		testInstance.executeBatch();
 		verify(preparedStatementMock).setLong(1, 2L);
 		verify(preparedStatementMock).setLong(1, 3L);
 		verify(preparedStatementMock).setString(2, "Tata");
 		verify(preparedStatementMock).setString(2, "Toto");
-		verify(preparedStatementMock).executeBatch();
-		assertThat(executeMultiple).isEqualTo(2);
+		verify(preparedStatementMock).executeLargeBatch();
 	}
 	
 	@Test
@@ -203,16 +201,16 @@ class WriteOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		List<Integer> batchRowCounter = new ArrayList<>();
+		List<Long> batchRowCounter = new ArrayList<>();
 		doAnswer(invocation -> {
-			batchRowCounter.add(1);
+			batchRowCounter.add(1L);
 			return null;
 		}).when(preparedStatementMock).addBatch();
 		doAnswer(invocation -> {
-			int[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Integer[0]));
+			long[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Long[0]));
 			batchRowCounter.clear();
 			return batchCount;
-		}).when(preparedStatementMock).executeBatch();
+		}).when(preparedStatementMock).executeLargeBatch();
 		
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
@@ -228,17 +226,17 @@ class WriteOperationTest {
 		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(
 				new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.addBatch(Maps.asMap(1, (Object) 1L).add(2, "tata"));
 		testInstance.addBatch(Maps.asMap(1, (Object) 2L).add(2, "toto"));
 		
-		int writeCount = testInstance.executeBatch();
+		testInstance.executeBatch();
 		verify(preparedStatementMock).setLong(1, 1L);
 		verify(preparedStatementMock).setLong(1, 2L);
 		verify(preparedStatementMock).setString(2, "tata");
 		verify(preparedStatementMock).setString(2, "toto");
-		verify(preparedStatementMock).executeBatch();
-		assertThat(writeCount).isEqualTo(2);
+		verify(preparedStatementMock).executeLargeBatch();
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(?, ?) | {1={1=1, 2=tata}, 2={1=2, 2=toto}}", null));
@@ -252,16 +250,16 @@ class WriteOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		List<Integer> batchRowCounter = new ArrayList<>();
+		List<Long> batchRowCounter = new ArrayList<>();
 		doAnswer(invocation -> {
-			batchRowCounter.add(1);
+			batchRowCounter.add(1L);
 			return null;
 		}).when(preparedStatementMock).addBatch();
 		doAnswer(invocation -> {
-			int[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Integer[0]));
+			long[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Long[0]));
 			batchRowCounter.clear();
 			return batchCount;
-		}).when(preparedStatementMock).executeBatch();
+		}).when(preparedStatementMock).executeLargeBatch();
 		
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
@@ -277,17 +275,17 @@ class WriteOperationTest {
 		
 		WriteOperation<String> testInstance = new WriteOperation<>(
 				new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
 		
-		int writeCount = testInstance.executeBatch();
+		testInstance.executeBatch();
 		verify(preparedStatementMock).setLong(1, 2L);
 		verify(preparedStatementMock).setLong(1, 3L);
 		verify(preparedStatementMock).setString(2, "Tata");
 		verify(preparedStatementMock).setString(2, "Toto");
-		verify(preparedStatementMock).executeBatch();
-		assertThat(writeCount).isEqualTo(2);
+		verify(preparedStatementMock).executeLargeBatch();
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(:id, :name) | {1={name=Tata, id=2}, 2={name=Toto, id=3}}", null));
@@ -301,7 +299,7 @@ class WriteOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		doAnswer(invocation -> 1).when(preparedStatementMock).executeUpdate();
+		doAnswer(invocation -> 1L).when(preparedStatementMock).executeLargeUpdate();
 		
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put(1, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
@@ -317,16 +315,16 @@ class WriteOperationTest {
 		
 		WriteOperation<Integer> testInstance = new WriteOperation<>(
 				new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.setNotLoggedParams(Arrays.asSet(2));
 		testInstance.setValue(1, 1L);
 		testInstance.setValue(2, "tata");
-		int writeCount = testInstance.execute();
+		testInstance.execute();
 		
 		verify(preparedStatementMock).setLong(1, 1L);
 		verify(preparedStatementMock).setString(2, "tata");
-		verify(preparedStatementMock).executeUpdate();
-		assertThat(writeCount).isEqualTo(1);
+		verify(preparedStatementMock).executeLargeUpdate();
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(?, ?) | {1=1, 2=X-masked value-X}", null));
@@ -340,16 +338,16 @@ class WriteOperationTest {
 		Connection connectionMock = mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		when(connectionMock.prepareStatement(anyString())).thenReturn(preparedStatementMock);
-		List<Integer> batchRowCounter = new ArrayList<>();
+		List<Long> batchRowCounter = new ArrayList<>();
 		doAnswer(invocation -> {
-			batchRowCounter.add(1);
+			batchRowCounter.add(1L);
 			return null;
 		}).when(preparedStatementMock).addBatch();
 		doAnswer(invocation -> {
-			int[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Integer[0]));
+			long[] batchCount = Arrays.toPrimitive(batchRowCounter.toArray(new Long[0]));
 			batchRowCounter.clear();
 			return batchCount;
-		}).when(preparedStatementMock).executeBatch();
+		}).when(preparedStatementMock).executeLargeBatch();
 		
 		Map<String, ParameterBinder> parameterBinders = new HashMap<>();
 		parameterBinders.put("id", DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
@@ -365,18 +363,18 @@ class WriteOperationTest {
 		
 		WriteOperation<String> testInstance = new WriteOperation<>(
 				new StringParamedSQL("insert into Toto(id, name) values(:id, :name)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.setNotLoggedParams(Arrays.asSet("name"));
 		testInstance.addBatch(Maps.asMap("id", (Object) 2L).add("name", "Tata"));
 		testInstance.addBatch(Maps.asMap("id", (Object) 3L).add("name", "Toto"));
-		int writeCount = testInstance.executeBatch();
+		testInstance.executeBatch();
 
 		verify(preparedStatementMock).setLong(1, 2L);
 		verify(preparedStatementMock).setLong(1, 3L);
 		verify(preparedStatementMock).setString(2, "Tata");
 		verify(preparedStatementMock).setString(2, "Toto");
-		verify(preparedStatementMock).executeBatch();
-		assertThat(writeCount).isEqualTo(2);
+		verify(preparedStatementMock).executeLargeBatch();
 		
 		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
 				"insert into Toto(id, name) values(:id, :name) | {1={name=X-masked value-X, id=2}, 2={name=X-masked value-X, id=3}}", null));
@@ -398,7 +396,8 @@ class WriteOperationTest {
 		Map<Integer, Object> capturedValues = new HashMap<>(); 
 		WriteOperation<Integer> testInstance = new WriteOperation<>(
 				new PreparedSQL("insert into Toto(id, name) values(?, ?)", parameterBinders),
-				new SimpleConnectionProvider(connectionMock));
+				new SimpleConnectionProvider(connectionMock),
+				writeCount -> {});
 		testInstance.setListener(new SQLOperationListener<Integer>() {
 			@Override
 			public void onValuesSet(Map<Integer, ?> values) {

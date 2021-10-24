@@ -19,7 +19,9 @@ public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C
 	private final WriteOperationFactory writeOperationFactory;
 	
 	public WriteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
-						 ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
+						 ConnectionConfiguration connectionConfiguration,
+						 DMLGenerator dmlGenerator,
+						 WriteOperationFactory writeOperationFactory,
 						 int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration.getConnectionProvider(), dmlGenerator, inOperatorMaxSize);
 		this.batchSize = connectionConfiguration.getBatchSize();
@@ -40,7 +42,6 @@ public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C
 	 */
 	public static class JDBCBatchingIterator<E> extends SteppingIterator<E> {
 		private final WriteOperation writeOperation;
-		private int updatedRowCount;
 		
 		public JDBCBatchingIterator(Iterable<? extends E> entities, WriteOperation writeOperation, int batchSize) {
 			super(entities, batchSize);
@@ -49,15 +50,11 @@ public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C
 		
 		@Override
 		protected void onStep() {
-			this.updatedRowCount += writeOperation.executeBatch();
+			writeOperation.executeBatch();
 		}
 		
 		public WriteOperation getWriteOperation() {
 			return writeOperation;
-		}
-		
-		public int getUpdatedRowCount() {
-			return this.updatedRowCount;
 		}
 	}
 }

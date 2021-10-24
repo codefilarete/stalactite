@@ -10,18 +10,16 @@ public interface DeleteExecutor<C, I> {
 	 * This method will take optimisic lock (versioned entity) into account.
 	 *
 	 * @param entities entites to be deleted
-	 * @return deleted row count
 	 */
-	int delete(Iterable<C> entities);
+	void delete(Iterable<C> entities);
 	
 	/**
 	 * Will delete instances only by their identifier.
 	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
 	 * @param entities entites to be deleted
-	 * @return deleted row count
 	 */
-	int deleteById(Iterable<C> entities);
+	void deleteById(Iterable<C> entities);
 	
 	/**
 	 * Will delete entities only from their identifier.

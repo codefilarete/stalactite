@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.gama.lang.collection.Iterables;
+import org.gama.stalactite.persistence.sql.DerbyDialect.DerbyWriteOperation;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 import org.gama.stalactite.sql.dml.WriteOperation;
@@ -28,7 +29,7 @@ public class DerbyGeneratedKeysReader extends GeneratedKeysReader<Integer> {
 		// Derby only returns one row: the highest generated key
 		int first = Iterables.first(rows);
 		// we append the missing values in incrementing order, assuming that's a one by one increment
-		for (int i = 0; i < writeOperation.getUpdatedRowCount(); i++) {
+		for (int i = 0; i < ((DerbyWriteOperation) writeOperation).getUpdatedRowCount(); i++) {
 			rows.add(0, first - i);
 		}
 		return rows;

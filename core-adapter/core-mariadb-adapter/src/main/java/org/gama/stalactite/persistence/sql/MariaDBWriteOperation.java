@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.gama.lang.Retryer;
 import org.gama.lang.Retryer.RetryException;
 import org.gama.lang.function.ThrowingBiFunction;
 import org.gama.stalactite.sql.ConnectionProvider;
@@ -19,19 +18,19 @@ import org.gama.stalactite.sql.dml.WriteOperation;
  */
 public class MariaDBWriteOperation<ParamType> extends WriteOperation<ParamType> {
 	
-	private final Retryer retryer;
+	private final InnoDBLockRetryer retryer;
 	
 	private final ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider;
 	
-	public MariaDBWriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, Retryer retryer,
-								 ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider) {
-		super(sqlGenerator, connectionProvider);
+	public MariaDBWriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, RowCountListener rowCountListener,
+								 InnoDBLockRetryer retryer, ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider) {
+		super(sqlGenerator, connectionProvider, rowCountListener);
 		this.retryer = retryer;
 		this.statementProvider = statementProvider;
 	}
 	
-	public MariaDBWriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, Retryer retryer) {
-		this(sqlGenerator, connectionProvider, retryer, Connection::prepareStatement);
+	public MariaDBWriteOperation(SQLStatement<ParamType> sqlGenerator, ConnectionProvider connectionProvider, RowCountListener rowCountListener, InnoDBLockRetryer retryer) {
+		this(sqlGenerator, connectionProvider, rowCountListener, retryer, Connection::prepareStatement);
 	}
 	
 	@Override
@@ -39,21 +38,37 @@ public class MariaDBWriteOperation<ParamType> extends WriteOperation<ParamType> 
 		this.preparedStatement = statementProvider.apply(connection, getSQL());
 	}
 	
+	/**
+	 * Overriden to :
+	 * - call executeUpdate() instead of executeLargeUpdate() because MariaDB client 1.3.4 doesn't support it
+	 * - call retryer to prevent exception due to key lock on insert
+	 */
 	@Override
-	protected int[] doExecuteBatch() throws SQLException {
+	protected long doExecuteUpdate() throws SQLException {
 		try {
-			return retryer.execute(preparedStatement::executeBatch, getSQL());
+			return (long) retryer.execute(preparedStatement::executeUpdate, getSQL());
 		} catch (RetryException e) {
 			throw new SQLExecutionException(getSQL(), e);
 		}
 	}
 	
+	/**
+	 * Overriden to :
+	 * - call executeBatch() instead of executeLargeBatch() because MariaDB client 1.3.4 doesn't support it
+	 * - call retryer to prevent exception due to key lock on insert
+	 */
 	@Override
-	protected int doExecuteUpdate() throws SQLException {
+	protected long[] doExecuteBatch() throws SQLException {
+		int[] updatedRowCounts;
 		try {
-			return retryer.execute(preparedStatement::executeUpdate, getSQL());
+			updatedRowCounts = retryer.execute(preparedStatement::executeBatch, getSQL());
 		} catch (RetryException e) {
 			throw new SQLExecutionException(getSQL(), e);
 		}
+		long[] updatedRowCountsAsLong = new long[updatedRowCounts.length];
+		for (int i = 0; i < updatedRowCounts.length; i++) {
+			updatedRowCountsAsLong[i] = updatedRowCounts[i];
+		}
+		return updatedRowCountsAsLong;
 	}
 }

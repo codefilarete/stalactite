@@ -13,10 +13,9 @@ public interface UpdateExecutor<C> {
 	 * Updates roughly given entity: no differences are computed, only update statements (full column) are applied.
 	 *
 	 * @param entity an entity
-	 * @return number of rows updated (relation-less counter) (maximum is 1, may be 0 if row wasn't found in database)
 	 */
-	default int updateById(C entity) {
-		return updateById(Collections.singletonList(entity));
+	default void updateById(C entity) {
+		updateById(Collections.singletonList(entity));
 	}
 	
 	/**
@@ -28,7 +27,7 @@ public interface UpdateExecutor<C> {
 	 * {@link org.gama.stalactite.persistence.engine.runtime.CollectionUpdater#onRemovedTarget(org.gama.stalactite.persistence.engine.runtime.CollectionUpdater.UpdateContext,
 	 * org.gama.stalactite.persistence.id.diff.AbstractDiff)}
 	 */
-	int updateById(Iterable<C> entities);
+	void updateById(Iterable<C> entities);
 	
-	int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement);
+	void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement);
 }

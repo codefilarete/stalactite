@@ -1,24 +1,27 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.LongSupplier;
 
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.RowCountManager;
-import org.gama.stalactite.persistence.engine.RowCountManager.RowCounter;
-import org.gama.stalactite.persistence.engine.StaleObjectExcepion;
+import org.gama.stalactite.persistence.engine.StaleStateObjectException;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
+import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.WriteOperation;
@@ -30,8 +33,6 @@ import org.gama.stalactite.sql.dml.WriteOperation;
  */
 public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.gama.stalactite.persistence.engine.DeleteExecutor<C, I> {
 	
-	private RowCountManager rowCountManager = RowCountManager.THROWING_ROW_COUNT_MANAGER;
-	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
 	public DeleteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
@@ -40,18 +41,8 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
 	}
 	
-	public void setRowCountManager(RowCountManager rowCountManager) {
-		this.rowCountManager = rowCountManager;
-	}
-	
 	public void setOperationListener(SQLOperationListener<Column<T, Object>> listener) {
 		this.operationListener = listener;
-	}
-	
-	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, CurrentConnectionProvider currentConnectionProvider) {
-		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider);
-		writeOperation.setListener(operationListener);
-		return writeOperation;
 	}
 	
 	/**
@@ -59,24 +50,28 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * Takes optimistic lock into account.
 	 * 
 	 * @param entities entites to be deleted
-	 * @return deleted row count
-	 * @throws StaleObjectExcepion if deleted row count differs from entities count
+	 * @throws StaleStateObjectException if deleted row count differs from entities count
 	 */
 	@Override
-	public int delete(Iterable<C> entities) {
+	public void delete(Iterable<C> entities) {
 		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
-		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider());
-		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
-		RowCounter rowCounter = new RowCounter();
-		while(jdbcBatchingIterator.hasNext()) {
-			C c = jdbcBatchingIterator.next();
-			Map<Column<T, Object>, Object> versionedKeyValues = getMappingStrategy().getVersionedKeyValues(c);
-			writeOperation.addBatch(versionedKeyValues);
-			rowCounter.add(versionedKeyValues);
-		}
-		int updatedRowCount = jdbcBatchingIterator.getUpdatedRowCount();
-		rowCountManager.checkRowCount(rowCounter, updatedRowCount);
-		return updatedRowCount;
+		List<? extends C> entitiesCopy = Iterables.copy(entities);
+		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
+		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider(), expectedBatchedRowCountsSupplier);
+		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entitiesCopy, writeOperation, getBatchSize());
+		jdbcBatchingIterator.forEachRemaining(c -> writeOperation.addBatch(getMappingStrategy().getVersionedKeyValues(c)));
+	}
+	
+	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, ConnectionProvider currentConnectionProvider, LongSupplier expectedRowCount) {
+		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
+		writeOperation.setListener(operationListener);
+		return writeOperation;
+	}
+	
+	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, ConnectionProvider currentConnectionProvider, long expectedRowCount) {
+		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory().createInstance(statement, currentConnectionProvider, expectedRowCount);
+		writeOperation.setListener(operationListener);
+		return writeOperation;
 	}
 	
 	/**
@@ -84,16 +79,12 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
 	 * @param entities entites to be deleted
-	 * @return deleted row count
 	 */
 	@Override
-	public int deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<C> entities) {
 		// get ids before passing them to deleteFromId
-		List<I> ids = new ArrayList<>();
-		for (C c : entities) {
-			ids.add(getMappingStrategy().getId(c));
-		}
-		return deleteFromId(ids);
+		Set<I> ids = Iterables.collect(entities, getMappingStrategy()::getId, HashSet::new);
+		deleteFromId(ids);
 	}
 	
 	/**
@@ -103,10 +94,9 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * Can't be named "deleteById" due to generics type erasure that generates same signature as {@link #deleteById(Iterable)}
 	 * 
 	 * @param ids entities identifiers
-	 * @return deleted row count
 	 */
 //	@Override
-	public int deleteFromId(Iterable<I> ids) {
+	public void deleteFromId(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<I> lastBlock = Iterables.last(parcels, java.util.Collections.emptyList());
@@ -122,29 +112,27 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		ColumnParameterizedSQL<T> deleteStatement;
 		T targetTable = getMappingStrategy().getTargetTable();
 		
-		int updatedRowCounter = 0;
 		Set<Column<T, Object>> pkColumns = targetTable.getPrimaryKey().getColumns();
 		IdentifierAssembler<I> identifierAssembler = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler();
 		if (!parcels.isEmpty()) {
+			// creating the eventually tupled order "where (?, ?) in (?, ?)"  
 			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, blockSize);
-			WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider);
+			WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, blockSize);
 			JDBCBatchingIterator<List<I>> jdbcBatchingIterator = new JDBCBatchingIterator<>(parcels, writeOperation, getBatchSize());
-			while(jdbcBatchingIterator.hasNext()) {
-				List<I> updateValues = jdbcBatchingIterator.next();
-				Map<Column<T, Object>, List<Object>> pkValues = new HashMap<>();
-				updateValues.forEach(id -> {
-					Map<Column<T, Object>, Object> localPkValues = identifierAssembler.getColumnValues(id);
-					pkColumns.forEach(pkColumn -> pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
-				});
+			// This should stay a List to maintain order between column values and then keep tuple homogeneous for composed id cases
+			Map<Column<T, Object>, List<Object>> pkValues = new HashMap<>();
+			pkColumns.forEach(c -> pkValues.put(c, new ArrayList<>()));
+			// merging all entity ids in a single Map<Column, List> which is given to delete order
+			jdbcBatchingIterator.forEachRemaining(deleteKeys -> {
+				pkValues.values().forEach(Collection::clear);
+				deleteKeys.forEach(id -> identifierAssembler.getColumnValues(id).forEach((c, v) -> pkValues.get(c).add(v)));
 				writeOperation.addBatch(pkValues);
-			}
-			updatedRowCounter = jdbcBatchingIterator.getUpdatedRowCount();
+			});
 		}
 		// remaining block treatment
 		if (!lastBlock.isEmpty()) {
 			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, lastBlock.size());
-			int updatedRowCount;
-			try (WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider)) {
+			try (WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, currentConnectionProvider, lastBlock.size())) {
 				// we must pass a single value when expected, else ExpandableStatement may be confused when applying them
 				Object updateValues = lastBlock.size() == 1 ? lastBlock.get(0) : lastBlock;
 				if (updateValues instanceof List) {
@@ -154,15 +142,12 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 						pkColumns.forEach(pkColumn -> pkValues.computeIfAbsent(pkColumn, k -> new ArrayList<>()).add(localPkValues.get(pkColumn)));
 					});
 					writeOperation.setValues(pkValues);
-					updatedRowCount = writeOperation.execute();
 				} else {
 					Map<Column<T, Object>, Object> pkValues = identifierAssembler.getColumnValues((I) updateValues);
 					writeOperation.setValues(pkValues);
-					updatedRowCount = writeOperation.execute();
 				}
+				writeOperation.execute();
 			}
-			updatedRowCounter += updatedRowCount;
 		}
-		return updatedRowCounter;
 	}
 }

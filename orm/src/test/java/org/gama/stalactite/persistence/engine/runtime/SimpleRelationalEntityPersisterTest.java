@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,10 +19,11 @@ import org.gama.lang.Duo;
 import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Maps;
+import org.gama.lang.function.Hanger.Holder;
+import org.gama.lang.function.Sequence;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
-import org.gama.stalactite.persistence.engine.RowCountManager;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
@@ -50,6 +52,7 @@ import org.gama.stalactite.test.PairSetList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.anyInt;
@@ -61,7 +64,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class SimpleRelationalEntityPersisterTest {
+class SimpleRelationalEntityPersisterTest {
 	
 	private SimpleRelationalEntityPersister<Toto, StatefullIdentifier<Integer>, ?> testInstance;
 	private PreparedStatement preparedStatement;
@@ -75,9 +78,26 @@ public class SimpleRelationalEntityPersisterTest {
 	private Column leftJoinColumn;
 	private Column rightJoinColumn;
 	private Persister<Toto, StatefullIdentifier<Integer>, ?> persister2;
+	private final EffectiveBatchedRowCount effectiveBatchedRowCount = new EffectiveBatchedRowCount();
+	private final Holder<Long> expectedRowCountForUpdate = new Holder<>();
+	
+	private static class EffectiveBatchedRowCount implements Sequence<long[]> {
+		
+		private Iterator<long[]> rowCounts;
+		
+		public void setRowCounts(List<long[]> rowCounts) {
+			this.rowCounts = rowCounts.iterator();
+		}
+		
+		@Override
+		public long[] next() {
+			return rowCounts.next();
+		}
+	}
+	
 	
 	@BeforeEach
-	public void setUp() throws SQLException {
+	void setUp() throws SQLException {
 		initData();
 		initTest();
 	}
@@ -153,7 +173,9 @@ public class SimpleRelationalEntityPersisterTest {
 		identifierGenerator.reset();
 		
 		preparedStatement = mock(PreparedStatement.class);
-		when(preparedStatement.executeBatch()).thenReturn(new int[] { 1 });
+		// we set row count else it will throw exception
+		when(preparedStatement.executeLargeBatch()).thenAnswer((Answer<long[]>) invocation -> effectiveBatchedRowCount.next());
+		when(preparedStatement.executeLargeUpdate()).thenAnswer((Answer<Long>) invocation -> expectedRowCountForUpdate.get());
 		
 		Connection connection = mock(Connection.class);
 		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
@@ -168,7 +190,8 @@ public class SimpleRelationalEntityPersisterTest {
 		
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
-		testInstance = new SimpleRelationalEntityPersister<>(totoClassMappingStrategy_ontoTable1, dialect, new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 3));
+		testInstance = new SimpleRelationalEntityPersister<>(totoClassMappingStrategy_ontoTable1, dialect,
+															 new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 3));
 		// we add a copier onto a another table
 		persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 		testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
@@ -204,7 +227,7 @@ public class SimpleRelationalEntityPersisterTest {
 		});
 	}
 	
-	public void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
+	void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
 		// NB: even if Integer can't be inherited, PairIterator is a Iterator<? extends X, ? extends X>
 		List<Duo<Integer, Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
 		List<Set<Duo<Integer, Integer>>> obtained = new ArrayList<>();
@@ -216,7 +239,8 @@ public class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Test
-	public void testInsert() throws SQLException {
+	void insert() throws SQLException {
+		effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 1, 1, 1 }, new long[] { 1 }, new long[] { 1, 1, 1 }, new long[] { 1 }));
 		testInstance.insert(Arrays.asList(
 				new Toto(17, 23, 117, 123, -117),
 				new Toto(29, 31, 129, 131, -129),
@@ -225,7 +249,7 @@ public class SimpleRelationalEntityPersisterTest {
 		));
 		
 		verify(preparedStatement, times(8)).addBatch();
-		verify(preparedStatement, times(4)).executeBatch();
+		verify(preparedStatement, times(4)).executeLargeBatch();
 		verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)", "insert into Toto2(id," 
 				+ " x, y, z) values (?, ?, ?, ?)"));
@@ -243,7 +267,8 @@ public class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Test
-	public void testUpdateById() throws SQLException {
+	void updateById() throws SQLException {
+		effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 3 }, new long[] { 1 }, new long[] { 3 }, new long[] { 1 }));
 		testInstance.updateById(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
@@ -252,7 +277,7 @@ public class SimpleRelationalEntityPersisterTest {
 		));
 		
 		verify(preparedStatement, times(8)).addBatch();
-		verify(preparedStatement, times(4)).executeBatch();
+		verify(preparedStatement, times(4)).executeLargeBatch();
 		verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?", "update Toto2 set x = ?," 
 				+ " y = ?, z = ? where id = ?"));
@@ -270,12 +295,13 @@ public class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Test
-	public void testDelete() throws SQLException {
+	void delete() throws SQLException {
+		effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 1 }, new long[] { 1 }));
 		testInstance.delete(Arrays.asList(new Toto(7, 17, 23, 117, 123, -117)));
 		
 		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"));
 		verify(preparedStatement, times(2)).addBatch();
-		verify(preparedStatement, times(2)).executeBatch();
+		verify(preparedStatement, times(2)).executeLargeBatch();
 		verify(preparedStatement, times(0)).executeUpdate();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -285,19 +311,18 @@ public class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Test
-	public void testDelete_multiple() throws SQLException {
-		testInstance.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
-		persister2.getDeleteExecutor().setRowCountManager(RowCountManager.NOOP_ROW_COUNT_MANAGER);
+	void delete_multiple() throws SQLException {
+		effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 3 }, new long[] { 1 }, new long[] { 3 }, new long[] { 1 }));
 		testInstance.delete(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
 				new Toto(3, 37, 41, 137, 141, -137),
 				new Toto(4, 43, 53, 143, 153, -143)
 		));
-		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
+		
 		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"));
 		verify(preparedStatement, times(8)).addBatch();
-		verify(preparedStatement, times(4)).executeBatch();
+		verify(preparedStatement, times(4)).executeLargeBatch();
 		verify(preparedStatement, times(0)).executeUpdate();
 		verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -309,13 +334,14 @@ public class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Test
-	public void testDeleteById() throws SQLException {
+	void deleteById() throws SQLException {
+		expectedRowCountForUpdate.set(1L);
 		testInstance.deleteById(Arrays.asList(
 				new Toto(7, 17, 23, 117, 123, -117)
 		));
 		
 		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?)", "delete from Toto1 where id in (?)"));
-		verify(preparedStatement, times(2)).executeUpdate();
+		verify(preparedStatement, times(2)).executeLargeUpdate();
 		verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 7);
@@ -323,7 +349,9 @@ public class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Test
-	public void testDeleteById_multiple() throws SQLException {
+	void deleteById_multiple() throws SQLException {
+		effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 3 }, new long[] { 3 }, new long[] { 1 }, new long[] { 1 }));
+		expectedRowCountForUpdate.set(1L);
 		testInstance.deleteById(Arrays.asList(
 				new Toto(1, 17, 23, 117, 123, -117),
 				new Toto(2, 29, 31, 129, 131, -129),
@@ -331,12 +359,13 @@ public class SimpleRelationalEntityPersisterTest {
 				new Toto(4, 43, 53, 143, 153, -143)
 		));
 		// 4 statements because in operator is bounded to 3 values (see testInstance creation)
-		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?, ?, ?)", "delete from Toto2 where id" 
-						+ " in (?)",
-				"delete from Toto1 where id in (?, ?, ?)", "delete from Toto1 where id in (?)"));
+		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?, ?, ?)",
+																			  "delete from Toto2 where id in (?)",
+																			  "delete from Toto1 where id in (?, ?, ?)",
+																			  "delete from Toto1 where id in (?)"));
 		verify(preparedStatement, times(2)).addBatch();
-		verify(preparedStatement, times(2)).executeBatch();
-		verify(preparedStatement, times(2)).executeUpdate();
+		verify(preparedStatement, times(2)).executeLargeBatch();
+		verify(preparedStatement, times(2)).executeLargeUpdate();
 		verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
 		PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 				.newRow(1, 1).add(2, 2).add(3, 3)
@@ -347,7 +376,7 @@ public class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Test
-	public void testSelect() throws SQLException {
+	void select() throws SQLException {
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		String totoIdAlias = "Toto1_id";
 		String totoAAlias = "Toto1_a";
@@ -438,7 +467,7 @@ public class SimpleRelationalEntityPersisterTest {
 		 * 
 		 * @param another a bean coming from the persister2
 		 */
-		public void merge(Toto another) {
+		void merge(Toto another) {
 			this.x = another.x;
 			this.y = another.y;
 			this.z = another.z;

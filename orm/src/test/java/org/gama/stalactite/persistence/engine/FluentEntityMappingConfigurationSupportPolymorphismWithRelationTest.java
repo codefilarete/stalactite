@@ -166,11 +166,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.giveConnection().commit();
-		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
-		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
+		persister.delete(dummyCarModfied);
+		persister.delete(dummyTrukModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
@@ -362,11 +362,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.giveConnection().commit();
-		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
-		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
+		persister.delete(dummyCarModfied);
+		persister.delete(dummyTrukModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
@@ -543,11 +543,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.giveConnection().commit();
-		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
-		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
+		persister.delete(dummyCarModfied);
+		persister.delete(dummyTrukModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
@@ -633,13 +633,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		persister.update(dummyTrukModfied, dummyTruk, true);
 		
 		connectionProvider.giveConnection().commit();
-		assertThat(persister.delete(dummyCarModfied)).isEqualTo(1);
+		persister.delete(dummyCarModfied);
 		// nothing to delete because all was deleted by cascade
 		assertThat(connectionProvider.giveConnection().prepareStatement("delete from Car_plates").executeUpdate()).isEqualTo(0);
-		assertThat(persister.delete(dummyTrukModfied)).isEqualTo(1);
+		persister.delete(dummyTrukModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied))).isEqualTo(2);
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
@@ -857,8 +857,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
-			int updatedRowCount = abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
-			assertThat(updatedRowCount).isEqualTo(1);
+			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruk);
@@ -1188,8 +1187,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			// update test by modifying only parent property
 			dummyCar.setColor(new Color(256));
-			int updatedRowCount = abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
-			assertThat(updatedRowCount).isEqualTo(1);
+			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruk);

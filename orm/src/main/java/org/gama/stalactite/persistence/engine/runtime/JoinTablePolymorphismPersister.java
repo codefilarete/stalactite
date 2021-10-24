@@ -21,16 +21,17 @@ import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderMap;
 import org.gama.lang.exception.NotImplementedException;
-import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceDispatcher;
+import org.gama.stalactite.persistence.engine.DeleteExecutor;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
+import org.gama.stalactite.persistence.engine.InsertExecutor;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.UpdateExecutor;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
+import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
@@ -39,8 +40,8 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
+import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.query.EntityCriteriaSupport;
 import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
 import org.gama.stalactite.persistence.sql.Dialect;
@@ -142,47 +143,23 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	}
 	
 	@Override
-	public int insert(Iterable<? extends C> entities) {
+	public void insert(Iterable<? extends C> entities) {
 		mainPersister.insert(entities);
-		
-		ModifiableInt insertCount = new ModifiableInt();
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister((Iterable) entities);
-		
-		entitiesPerType.forEach((insertExecutor, adhocEntities) -> insertCount.increment(insertExecutor.insert(adhocEntities)));
-		
-		return insertCount.getValue();
+		entitiesPerType.forEach(InsertExecutor::insert);
 	}
 	
 	@Override
-	public int updateById(Iterable<C> entities) {
-		ModifiableInt mainUpdateCount = new ModifiableInt();
-		int mainRowCount = mainPersister.updateById(entities);
-		mainUpdateCount.increment(mainRowCount);
-		
-		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
+	public void updateById(Iterable<C> entities) {
+		mainPersister.updateById(entities);
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		entitiesPerType.forEach((updateExecutor, adhocEntities) -> subEntitiesUpdateCount.increment(updateExecutor.updateById(adhocEntities)));
-		
-		// RowCount is either 0 or number of rows updated. In the first case result might be number of rows updated by sub entities.
-		// In second case we don't need to change it because sub entities updated row count will also be either 0 or total entities count  
-		int rowCount;
-		if (mainUpdateCount.getValue() != 0) {
-			rowCount = mainUpdateCount.getValue();
-		} else {
-			rowCount = subEntitiesUpdateCount.getValue();
-		}
-		
-		return rowCount;
+		entitiesPerType.forEach(UpdateExecutor::updateById);
 	}
 	
 	@Override
-	public int update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		ModifiableInt mainUpdateCount = new ModifiableInt();
-		int mainRowCount = mainPersister.update(differencesIterable, allColumnsStatement);
-		mainUpdateCount.increment(mainRowCount);
+	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+		mainPersister.update(differencesIterable, allColumnsStatement);
 		
-		ModifiableInt subEntitiesUpdateCount = new ModifiableInt();
 		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
@@ -193,20 +170,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 				})
 		);
 		
-		entitiesPerType.forEach((updateExecutor, adhocEntities) ->
-				subEntitiesUpdateCount.increment(updateExecutor.update(adhocEntities, allColumnsStatement))
-		);
-		
-		// RowCount is either 0 or number of rows updated. In the first case result might be number of rows updated by sub entities.
-		// In second case we don't need to change it because sub entities updated row count will also be either 0 or total entities count  
-		int rowCount;
-		if (mainUpdateCount.getValue() != 0) {
-			rowCount = mainUpdateCount.getValue();
-		} else {
-			rowCount = subEntitiesUpdateCount.getValue();
-		}
-		
-		return rowCount;
+		entitiesPerType.forEach((updateExecutor, adhocEntities) -> updateExecutor.update(adhocEntities, allColumnsStatement));
 	}
 	
 	@Override
@@ -234,31 +198,21 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	}
 	
 	@Override
-	public int delete(Iterable<C> entities) {
-		ModifiableInt deleteCount = new ModifiableInt();
+	public void delete(Iterable<C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		entitiesPerType.forEach((deleteExecutor, adhocEntities) ->
-				deleteCount.increment(deleteExecutor.delete(adhocEntities))
-		);
-		
-		return mainPersister.delete(entities);
+		entitiesPerType.forEach(DeleteExecutor::delete);
+		mainPersister.delete(entities);
 	}
 	
 	@Override
-	public int deleteById(Iterable<C> entities) {
-		ModifiableInt deleteCount = new ModifiableInt();
+	public void deleteById(Iterable<C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		
-		entitiesPerType.forEach((deleteExecutor, adhocEntities) -> 
-				deleteCount.increment(deleteExecutor.deleteById(adhocEntities))
-		);
-		
-		return mainPersister.deleteById(entities);
+		entitiesPerType.forEach(DeleteExecutor::deleteById);
+		mainPersister.deleteById(entities);
 	}
 	
 	@Override
-	public int persist(Iterable<? extends C> entities) {
+	public void persist(Iterable<? extends C> entities) {
 		// This class doesn't need to implement this method because it is better handled by wrapper, especially in triggering event
 		throw new NotImplementedException("This class doesn't need to implement this method because it is handled by wrapper");
 	}
