@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
 import org.gama.lang.Nullable;
@@ -46,6 +48,20 @@ public final class DerbyParameterBinders {
 	 */
 	public static final ParameterBinder<Blob> BLOB_BINDER = new LambdaParameterBinder<>((resultSet, columnName) ->
 			Nullable.nullable(resultSet.getBlob(columnName)).mapThrower(blob -> new InMemoryBlobSupport(blob.getBytes(1, (int) blob.length()))).get(), BLOB_WRITER);
+	
+	/**
+	 * Dedicated {@link LocalDateTime} {@link ParameterBinder} for Derby because its TIMESTAMP SQL type stores all 9 nanosecond digits (at least
+	 * in 10.5, wasn't the case in some previous versions), therefore it defers from other databases and SQL-92 standard that stores 6 digits by
+	 * default. Furthermore, Derby TIMESTAMP can't be configured for precision. So, to keep a homogeneous behavior between databases it was choosen
+	 * to store only 6 firsts digits of given {@link LocalDateTime} nanos : this binder does it.
+	 */
+	public static final ParameterBinder<LocalDateTime> LOCALDATETIME_BINDER = new NullAwareParameterBinder<>(
+			new NullAwareResultSetReader<>(DefaultParameterBinders.LOCALDATETIME_BINDER),
+			new NullAwarePreparedStatementWriter<>((preparedStatement, valueIndex, localDateTime) -> {
+				localDateTime = localDateTime.minusNanos(localDateTime.getNano() % 1000);	// 3 last digits are erased (input is not changed)
+				Timestamp timestamp = Timestamp.valueOf(localDateTime);
+				preparedStatement.setTimestamp(valueIndex, timestamp);
+			}));
 	
 	private DerbyParameterBinders() {
 	}

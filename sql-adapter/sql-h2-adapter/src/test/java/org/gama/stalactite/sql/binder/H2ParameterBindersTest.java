@@ -1,9 +1,18 @@
 package org.gama.stalactite.sql.binder;
 
+import java.sql.SQLException;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.Set;
+
 import binder.H2ParameterBinderRegistry;
 import binder.H2TypeMapping;
+import org.gama.lang.collection.Arrays;
 import org.gama.stalactite.sql.test.H2InMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author Guillaume Mary
@@ -26,5 +35,17 @@ class H2ParameterBindersTest extends AbstractParameterBindersITTest {
 	@BeforeEach
 	void createJavaTypeToSqlTypeMapping() {
 		super.javaTypeToSqlTypeMapping = new H2TypeMapping();
+	}
+	
+	/**
+	 * Overriden to take into account rounding made by H2 on stored nanos
+	 */
+	@Test
+	void localDateTimeBinder() throws SQLException {
+		LocalDateTime initialTime = LocalDateTime.of(2021, Month.JULY, 12, 4, 23, 35, 123456789);
+		// H2 rounds nanos to upper one when necessary, so it must be compared to 123457000, not 123456000
+		LocalDateTime comparisonTime = LocalDateTime.of(2021, Month.JULY, 12, 4, 23, 35, 123457000);
+		Set<LocalDateTime> databaseContent = insertAndSelect(LocalDateTime.class, Arrays.asSet(null, initialTime));
+		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
 	}
 }

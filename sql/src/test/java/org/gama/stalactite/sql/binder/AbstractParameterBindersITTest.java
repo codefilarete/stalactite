@@ -15,6 +15,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -189,7 +190,16 @@ public abstract class AbstractParameterBindersITTest {
 
     @Test
     void localDateTimeBinder() throws SQLException {
-        testParameterBinder(LocalDateTime.class, Arrays.asSet(null, LocalDateTime.now()));
+		// Since Java 9 LocalDateTime.now() changed its precision : when available by OS it takes nanosecond precision,
+		// (https://bugs.openjdk.java.net/browse/JDK-8068730)
+		// this implies a comparison failure because many databases don't store nanosecond by default (with SQL TIMESTAMP type, which is the default
+		// in DefaultTypeMapping), therefore the LocalDateTime read by binder doesn't contain nanoseconds, so when it is compared to original value
+		// (which contains nanos) it fails. To overcome this problem we consider not using LocalDateTime.now(), and taking the loss of precision
+		// in the test
+		LocalDateTime initialTime = LocalDateTime.of(2021, Month.JULY, 12, 4, 23, 35, 123456789);
+		LocalDateTime comparisonTime = LocalDateTime.of(2021, Month.JULY, 12, 4, 23, 35, 123456000);
+		Set<LocalDateTime> databaseContent = insertAndSelect(LocalDateTime.class, Arrays.asSet(null, initialTime));
+		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
     }
 
     @Test
@@ -219,7 +229,7 @@ public abstract class AbstractParameterBindersITTest {
         assertThat(convertBlobToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
     }
 
-    private <T> void testParameterBinder(Class<T> typeToTest, Set<T> valuesToInsert) throws SQLException {
+    protected <T> void testParameterBinder(Class<T> typeToTest, Set<T> valuesToInsert) throws SQLException {
         Set<T> databaseContent = insertAndSelect(typeToTest, valuesToInsert);
         assertThat(databaseContent).isEqualTo(valuesToInsert);
     }
