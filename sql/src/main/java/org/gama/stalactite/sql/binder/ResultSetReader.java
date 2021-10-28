@@ -19,7 +19,7 @@ public interface ResultSetReader<I> {
 	 * Reads column <t>columnName</t> returned by <t>resultSet</t>.
 	 * This implementation wraps any exception in a {@link BindingException} and in particular wraps {@link ClassCastException} for better message
 	 * handling.
-	 * Sub classes are expected to implement {@link #doGet(ResultSet, String)}
+	 * Subclasses are expected to implement {@link #doGet(ResultSet, String)}
 	 *
 	 * @param resultSet the {@link ResultSet} to read
 	 * @param columnName the column to be read from the given {@link ResultSet}

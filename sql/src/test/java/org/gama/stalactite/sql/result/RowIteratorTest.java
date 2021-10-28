@@ -11,10 +11,10 @@ import static org.gama.lang.collection.Arrays.asList;
 /**
  * @author Guillaume Mary
  */
-public class RowIteratorTest {
+class RowIteratorTest {
 	
 	@Test
-	public void testConvert() {
+	void convert_columnReaderIsNotCompatibleWithColumnContent_throwsException() {
 		RowIterator testInstance = new RowIterator(null,
 				Maps.asMap("toto", DefaultResultSetReaders.INTEGER_READER));
 		assertThatThrownBy(() -> {
