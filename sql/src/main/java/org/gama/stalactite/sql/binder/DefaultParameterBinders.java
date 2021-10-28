@@ -2,7 +2,6 @@ package org.gama.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URL;
 import java.sql.Blob;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -26,7 +25,6 @@ import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.INT
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.LONG_PRIMITIVE_WRITER;
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.STRING_WRITER;
 import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.TIMESTAMP_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.URL_WRITER;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BIGDECIMAL_READER;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BINARYSTREAM_READER;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BLOB_READER;
@@ -40,7 +38,6 @@ import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_PRI
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.LONG_PRIMITIVE_READER;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
 import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.TIMESTAMP_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.URL_READER;
 
 /**
  * Default {@link ParameterBinder}s mapped to methods of {@link ResultSet} and {@link PreparedStatement} 
@@ -152,11 +149,6 @@ public interface DefaultParameterBinders {
 	 * @see #BLOB_BINDER
 	 */
 	ParameterBinder<InputStream> BINARYSTREAM_BINDER = new LambdaParameterBinder<>(BINARYSTREAM_READER, BINARYSTREAM_WRITER);
-	
-	/**
-	 * {@link ParameterBinder} for {@link ResultSet#getURL(String)} and {@link PreparedStatement#setURL(int, URL)}.
-	 */
-	ParameterBinder<URL> URL_BINDER = new LambdaParameterBinder<>(URL_READER, URL_WRITER);
 	
 	/**
 	 * {@link ParameterBinder} for {@link ResultSet#getBlob(String)} and {@link PreparedStatement#setBlob(int, Blob)}.

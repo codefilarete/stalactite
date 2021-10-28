@@ -2,7 +2,6 @@ package org.gama.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URL;
 import java.sql.Blob;
 import java.sql.Date;
 import java.sql.ResultSet;
@@ -120,11 +119,6 @@ public interface DefaultResultSetReaders {
 	 * @see HSQLDBParameterBinders#BINARYSTREAM_BINDER
 	 */
 	ResultSetReader<InputStream> BINARYSTREAM_READER = ResultSet::getBinaryStream;
-	
-	/**
-	 * {@link ResultSetReader} for {@link ResultSet#getURL(String)}.
-	 */
-	ResultSetReader<URL> URL_READER = ResultSet::getURL;
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getBlob(String)}.

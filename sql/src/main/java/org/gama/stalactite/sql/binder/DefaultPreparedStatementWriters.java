@@ -2,7 +2,6 @@ package org.gama.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URL;
 import java.sql.Blob;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -137,11 +136,6 @@ public final class DefaultPreparedStatementWriters {
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setBinaryStream(int, InputStream)}.
 	 */
 	public static final PreparedStatementWriter<InputStream> BINARYSTREAM_WRITER = new NullAwarePreparedStatementWriter<>(PreparedStatement::setBinaryStream);
-	
-	/**
-	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setURL(int, URL)}.
-	 */
-	public static final PreparedStatementWriter<URL> URL_WRITER = new NullAwarePreparedStatementWriter<>(PreparedStatement::setURL);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setBlob(int, Blob)}.

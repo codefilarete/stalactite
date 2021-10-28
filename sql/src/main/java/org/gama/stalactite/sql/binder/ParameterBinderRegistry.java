@@ -2,7 +2,6 @@ package org.gama.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URL;
 import java.sql.Blob;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -88,7 +87,6 @@ public class ParameterBinderRegistry {
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
 		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);
 		register(Blob.class, DefaultParameterBinders.BLOB_BINDER);
-		register(URL.class, DefaultParameterBinders.URL_BINDER);
 		register(ZoneId.class, DefaultParameterBinders.ZONEID_BINDER);
 		// Note that enum types are registered dynamically
 	}
