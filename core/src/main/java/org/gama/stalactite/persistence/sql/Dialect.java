@@ -7,6 +7,7 @@ import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
 import org.gama.stalactite.persistence.sql.dml.ReadOperationFactory;
 import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.gama.stalactite.sql.ddl.DefaultTypeMapping;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 
