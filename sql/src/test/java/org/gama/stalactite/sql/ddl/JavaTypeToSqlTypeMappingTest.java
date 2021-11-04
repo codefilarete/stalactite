@@ -1,5 +1,6 @@
 package org.gama.stalactite.sql.ddl;
 
+import java.time.Month;
 import java.util.concurrent.TimeUnit;
 
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
@@ -35,14 +36,18 @@ class JavaTypeToSqlTypeMappingTest {
 	static Object[][] getTypeName() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
 		testInstance.put(CharSequence.class, "VARCHAR");
-		testInstance.put(String.class, "VARCHAR(255)");
+		testInstance.put(String.class, "TEXT");
 		testInstance.put(String.class, 10, "CHAR($l)");
+		testInstance.put(String.class, 100, "VARCHAR($l)");
 		testInstance.put(Enum.class, "myEnumType");	// a entry for Enum must be registered for make enum types work 
+		testInstance.put(Month.class, "monthType");	// a entry for Enum must be registered for make enum types work 
 		return new Object[][] {
-				{ testInstance, String.class, null, "VARCHAR(255)" },
+				{ testInstance, String.class, null, "TEXT" },
 				{ testInstance, String.class, 5, "CHAR(5)" },
 				{ testInstance, String.class, 10, "CHAR(10)" },
-				{ testInstance, String.class, 20, "VARCHAR(255)" },
+				{ testInstance, String.class, 50, "VARCHAR(50)" },
+				{ testInstance, String.class, 100, "VARCHAR(100)" },
+				{ testInstance, String.class, 101, "TEXT" },
 				{ testInstance, CharSequence.class, null, "VARCHAR" },
 				{ testInstance, CharSequence.class, 20, "VARCHAR" },
 				// testing interface inheritance
@@ -50,6 +55,7 @@ class JavaTypeToSqlTypeMappingTest {
 				{ testInstance, StringBuilder.class, 20, "VARCHAR" },
 				// testing enum
 				{ testInstance, TimeUnit.class, null, "myEnumType" },
+				{ testInstance, Month.class, null, "monthType" },
 		};
 	}
 	
