@@ -2,12 +2,14 @@ package org.gama.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Default {@link ResultSetReader}s mapped to methods of {@link ResultSet}
@@ -128,22 +130,32 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link java.util.Date}
 	 */
-	public static final ResultSetReader<java.util.Date> DATE_READER = new NullAwareResultSetReader<>(new DateBinder());
+	public static final NullAwareResultSetReader<java.util.Date> DATE_READER = new NullAwareResultSetReader<>(new DateBinder());
 	
 	/**
 	 * {@link ResultSetReader} for {@link java.time.LocalDate}
 	 */
-	public static final ResultSetReader<LocalDate> LOCALDATE_READER = new NullAwareResultSetReader<>(new LocalDateBinder());
+	public static final NullAwareResultSetReader<LocalDate> LOCALDATE_READER = new NullAwareResultSetReader<>(new LocalDateBinder());
 	
 	/**
 	 * {@link ResultSetReader} for {@link java.time.LocalDateTime}
 	 */
-	public static final ResultSetReader<LocalDateTime> LOCALDATETIME_READER = new NullAwareResultSetReader<>(new LocalDateTimeBinder());
+	public static final NullAwareResultSetReader<LocalDateTime> LOCALDATETIME_READER = new NullAwareResultSetReader<>(new LocalDateTimeBinder());
 	
 	/**
 	 * {@link ResultSetReader} for {@link Object}
 	 */
 	public static final ResultSetReader<Object> OBJECT_READER = ResultSet::getObject;
+	
+	/**
+	 * {@link ResultSetReader} for {@link UUID}
+	 */
+	public static final NullAwareResultSetReader<UUID> UUID_READER = new NullAwareResultSetReader<>(new UUIDParameterBinder());
+	
+	/**
+	 * {@link ResultSetReader} for {@link Path}
+	 */
+	public static final NullAwareResultSetReader<Path> PATH_READER = new NullAwareResultSetReader<>(new PathBinder());
 	
 	private DefaultResultSetReaders() {
 		// Class for constants

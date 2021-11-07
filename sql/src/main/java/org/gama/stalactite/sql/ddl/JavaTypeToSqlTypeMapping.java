@@ -46,7 +46,7 @@ public class JavaTypeToSqlTypeMapping {
 	 * Register a Java class to a SQL type mapping
 	 *
 	 * @param clazz the Java class to bind
-	 * @param size the minimal size from which the SQL type will be used
+	 * @param size the maximum size until which the SQL type will be used
 	 * @param sqlType the SQL type to map on the Java type
 	 * @see #with(Class, int, String)
 	 */

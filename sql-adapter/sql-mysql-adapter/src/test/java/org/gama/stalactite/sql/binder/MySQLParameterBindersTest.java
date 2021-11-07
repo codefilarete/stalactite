@@ -25,12 +25,4 @@ public class MySQLParameterBindersTest extends AbstractParameterBindersITTest {
 	void createJavaTypeToSqlTypeMapping() {
 		javaTypeToSqlTypeMapping = new MySQLTypeMapping();
 	}
-
-//	@Test
-//	@Override
-//	void localDateTimeBinder() throws SQLException {
-//		LocalDateTime now = LocalDateTime.now();
-//		LocalDateTime comparisonInstant = now.minusNanos(now.getNano());
-//		testParameterBinder(LocalDateTime.class, Arrays.asSet(null, comparisonInstant));
-//	}
 }

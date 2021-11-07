@@ -3,6 +3,7 @@ package org.gama.stalactite.sql.binder;
 import java.io.InputStream;
 import java.sql.Blob;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * @author Guillaume Mary
@@ -17,5 +18,6 @@ public class DerbyParameterBinderRegistry extends ParameterBinderRegistry {
 		register(Blob.class, DerbyParameterBinders.BLOB_BINDER);
 		// specialized version for LocalDateTime to keep only 6 firsts nanosecond digits, see LOCALDATETIME_BINDER documentation
 		register(LocalDateTime.class, DerbyParameterBinders.LOCALDATETIME_BINDER);
+		register(LocalTime.class, DerbyParameterBinders.LOCALTIME_BINDER);
 	}
 }

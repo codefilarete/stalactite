@@ -2,12 +2,14 @@ package org.gama.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Default {@link PreparedStatementWriter}s mapped to methods of {@link PreparedStatement}
@@ -162,6 +164,15 @@ public final class DefaultPreparedStatementWriters {
 	 */
 	public static final PreparedStatementWriter<LocalDateTime> LOCALDATETIME_WRITER = new NullAwarePreparedStatementWriter<>(new LocalDateTimeBinder());
 	
+	/**
+	 * {@link PreparedStatementWriter} for {@link UUID}
+	 */
+	public static final PreparedStatementWriter<UUID> UUID_WRITER = new NullAwarePreparedStatementWriter<>(new UUIDParameterBinder());
+	
+	/**
+	 * {@link PreparedStatementWriter} for {@link Path}
+	 */
+	public static final PreparedStatementWriter<Path> PATH_WRITER = new NullAwarePreparedStatementWriter<>(new PathBinder());
 	
 	private DefaultPreparedStatementWriters() {
 		// Class for constants

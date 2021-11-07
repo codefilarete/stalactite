@@ -1,13 +1,17 @@
 package org.gama.stalactite.sql.ddl;
 
+import java.io.File;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  * A default mapping between Java types and SQL type names.
@@ -57,11 +61,17 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(java.sql.Date.class, "timestamp");
 		put(LocalDate.class, "timestamp");
 		put(LocalDateTime.class, "timestamp");
+		put(LocalTime.class, "timestamp");
 		put(String.class, "varchar");
 		put(String.class, 16383, "varchar($l)");
 		// 35 chars because the largest timezone found is "America/Argentina/ComodRivadavia" (with ZoneId.getAvailableZoneIds())
 		put(ZoneId.class, "varchar(35)");
 		// necessary entry for Enum, "integer" because Enum are stored by their ordinal by default, see ParameterBinderRegistry.lookupForBinder(Class)
 		put(Enum.class, "integer");
+		put(UUID.class, "varchar(36)");	// 36 because it UUID length as String
+		put(Path.class, "varchar");
+		put(Path.class, Integer.MAX_VALUE, "varchar($l)");
+		put(File.class, "varchar");
+		put(File.class, Integer.MAX_VALUE, "varchar($l)");
 	}
 }

@@ -1,16 +1,20 @@
 package org.gama.stalactite.sql.binder;
 
+import java.io.File;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.file.Path;
 import java.sql.Blob;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.function.Function;
 
@@ -65,6 +69,7 @@ public class ParameterBinderRegistry {
 	}
 	
 	protected void registerParameterBinders() {
+		// Note that enum types are registered dynamically
 		register(String.class, DefaultParameterBinders.STRING_BINDER);
 		register(Double.class, DefaultParameterBinders.DOUBLE_BINDER);
 		register(Double.TYPE, DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER);
@@ -82,13 +87,16 @@ public class ParameterBinderRegistry {
 		register(java.sql.Date.class, DefaultParameterBinders.DATE_SQL_BINDER);
 		register(LocalDate.class, DefaultParameterBinders.LOCALDATE_BINDER);
 		register(LocalDateTime.class, DefaultParameterBinders.LOCALDATETIME_BINDER);
+		register(LocalTime.class, DefaultParameterBinders.LOCALTIME_BINDER);
 		register(java.sql.Timestamp.class, DefaultParameterBinders.TIMESTAMP_BINDER);
 		register(Boolean.class, DefaultParameterBinders.BOOLEAN_BINDER);
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);
 		register(InputStream.class, DefaultParameterBinders.BINARYSTREAM_BINDER);
 		register(Blob.class, DefaultParameterBinders.BLOB_BINDER);
 		register(ZoneId.class, DefaultParameterBinders.ZONEID_BINDER);
-		// Note that enum types are registered dynamically
+		register(UUID.class, DefaultParameterBinders.UUID_BINDER);
+		register(Path.class, DefaultParameterBinders.PATH_BINDER);
+		register(File.class, DefaultParameterBinders.FILE_BINDER);
 	}
 	
 	/**

@@ -2,10 +2,13 @@ package org.gama.stalactite.sql.binder;
 
 import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.Date;
@@ -15,10 +18,12 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Month;
 import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.gama.lang.Nullable;
@@ -67,7 +72,7 @@ public abstract class AbstractParameterBindersITTest {
     }
 
     @Test
-    void longPrimitiveBinder_nullValuePassed_NPEThrown() throws SQLException {
+    void longPrimitiveBinder_nullValuePassed_NPEThrown() {
         assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Long.TYPE, Arrays.asSet(null)));
     }
 
@@ -82,7 +87,7 @@ public abstract class AbstractParameterBindersITTest {
     }
 
     @Test
-    void integerPrimitiveBinder_nullValuePassed_NPEThrown() throws SQLException {
+    void integerPrimitiveBinder_nullValuePassed_NPEThrown() {
         assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Integer.TYPE, Arrays.asSet(null)));
     }
 
@@ -97,7 +102,7 @@ public abstract class AbstractParameterBindersITTest {
     }
 
     @Test
-    void bytePrimitiveBinder_nullValuePassed_NPEThrown() throws SQLException {
+    void bytePrimitiveBinder_nullValuePassed_NPEThrown() {
         assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Byte.TYPE, Arrays.asSet(null)));
     }
 
@@ -124,7 +129,7 @@ public abstract class AbstractParameterBindersITTest {
     }
 
     @Test
-    void doublePrimitiveBinder_nullValuePassed_NPEThrown() throws SQLException {
+    void doublePrimitiveBinder_nullValuePassed_NPEThrown() {
         assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Double.TYPE, Arrays.asSet(null)));
     }
 
@@ -139,7 +144,7 @@ public abstract class AbstractParameterBindersITTest {
     }
 
     @Test
-    void floatPrimitiveBinder_nullValuePassed_NPEThrown() throws SQLException {
+    void floatPrimitiveBinder_nullValuePassed_NPEThrown() {
         assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Float.TYPE, Arrays.asSet(null)));
     }
 
@@ -159,7 +164,7 @@ public abstract class AbstractParameterBindersITTest {
     }
 
     @Test
-    void booleanPrimitiveBinder_nullValuePassed_NPEThrown() throws SQLException {
+    void booleanPrimitiveBinder_nullValuePassed_NPEThrown() {
         assertThatExceptionOfType(NullPointerException.class).isThrownBy(() -> testParameterBinder(Boolean.TYPE, Arrays.asSet(null)));
     }
 
@@ -203,6 +208,20 @@ public abstract class AbstractParameterBindersITTest {
     }
 
     @Test
+    void localTimeBinder() throws SQLException {
+		// Since Java 9 LocalDateTime.now() changed its precision : when available by OS it takes nanosecond precision,
+		// (https://bugs.openjdk.java.net/browse/JDK-8068730)
+		// this implies a comparison failure because many databases don't store nanosecond by default (with SQL TIMESTAMP type, which is the default
+		// in DefaultTypeMapping), therefore the LocalDateTime read by binder doesn't contain nanoseconds, so when it is compared to original value
+		// (which contains nanos) it fails. To overcome this problem we consider not using LocalDateTime.now(), and taking the loss of precision
+		// in the test
+		LocalTime initialTime = LocalTime.of(4, 23, 35, 123456789);
+		LocalTime comparisonTime = LocalTime.of(4, 23, 35, 123456000);
+		Set<LocalTime> databaseContent = insertAndSelect(LocalTime.class, Arrays.asSet(null, initialTime));
+		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
+    }
+
+    @Test
     void timestampBinder() throws SQLException {
         testParameterBinder(Timestamp.class, Arrays.asSet(null, new Timestamp(System.currentTimeMillis())));
     }
@@ -219,8 +238,7 @@ public abstract class AbstractParameterBindersITTest {
         Set<InputStream> databaseContent = insertAndSelect(InputStream.class, valuesToInsert);
         assertThat(convertInputStreamToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
     }
-
-
+	
     @Test
     void blobBinder() throws SQLException {
         Blob blob = new InMemoryBlobSupport("Hello world !".getBytes());
@@ -228,6 +246,21 @@ public abstract class AbstractParameterBindersITTest {
         Set<Blob> databaseContent = insertAndSelect(Blob.class, valuesToInsert);
         assertThat(convertBlobToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
     }
+	
+	@Test
+	void uuidBinder() throws SQLException {
+		testParameterBinder(UUID.class, Arrays.asSet(null, UUID.randomUUID()));
+	}
+	
+	@Test
+	void pathBinder() throws SQLException {
+		testParameterBinder(Path.class, Arrays.asSet(null, Paths.get("/path/to/my/file")));
+	}
+
+	@Test
+	void fileBinder() throws SQLException {
+		testParameterBinder(File.class, Arrays.asSet(null, new File("/path/to/my/file")));
+	}
 
     protected <T> void testParameterBinder(Class<T> typeToTest, Set<T> valuesToInsert) throws SQLException {
         Set<T> databaseContent = insertAndSelect(typeToTest, valuesToInsert);

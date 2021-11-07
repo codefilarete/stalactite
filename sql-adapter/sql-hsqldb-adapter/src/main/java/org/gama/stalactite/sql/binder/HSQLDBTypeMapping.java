@@ -1,5 +1,8 @@
 package org.gama.stalactite.sql.binder;
 
+import java.io.File;
+import java.nio.file.Path;
+
 import org.gama.stalactite.sql.ddl.DefaultTypeMapping;
 
 /**
@@ -11,5 +14,9 @@ public class HSQLDBTypeMapping extends DefaultTypeMapping {
         super();
         // to prevent "length must be specified in type definition: VARCHAR"
         put(String.class, "varchar(255)");
+		put(Path.class, "varchar(255)");
+		put(Path.class, Integer.MAX_VALUE, "varchar($l)");
+		put(File.class, "varchar(255)");
+		put(File.class, Integer.MAX_VALUE, "varchar($l)");
     }
 }
