@@ -123,7 +123,7 @@ public class PersistenceContextTest {
 	}
 	
 	@Test
-	void singleResult() throws SQLException {
+	void newQuery_singleResult() throws SQLException {
 		Connection connectionMock = Mockito.mock(Connection.class);
 		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 		ArgumentCaptor<String> sqlStatementCaptor = ArgumentCaptor.forClass(String.class);
@@ -136,9 +136,6 @@ public class PersistenceContextTest {
 		)));
 		
 		PersistenceContext testInstance = new PersistenceContext(new SimpleConnectionProvider(connectionMock), new Dialect());
-		Table totoTable = new Table("toto");
-		Column<Table, Long> id = totoTable.addColumn("id", long.class);
-		Column<Table, String> name = totoTable.addColumn("name", String.class);
 		
 		// test select
 		Integer count = testInstance.newQuery("select count(*) as count from Toto", Integer.class)

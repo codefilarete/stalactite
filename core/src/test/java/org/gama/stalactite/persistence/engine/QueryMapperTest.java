@@ -123,7 +123,7 @@ class QueryMapperTest {
 								.map("active", Toto::setActive), expected },
 				{	// no-arg constructor
 						new QueryMapper<>(TotoWithNoArgConstructor.class, dummySql, columnBinderRegistry)
-								.mapKey(TotoWithNoArgConstructor::new, "id", long.class)
+								.mapKey(TotoWithNoArgConstructor::new)
 								.map("id", Toto::setId, long.class)
 								.map("name", Toto::setName, String.class)
 								.map("active", Toto::setActive), expected },

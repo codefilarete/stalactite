@@ -1,5 +1,7 @@
 package org.gama.stalactite.persistence.engine;
 
+import java.sql.ResultSet;
+
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
@@ -10,15 +12,14 @@ import org.gama.stalactite.query.model.Query;
 
 /**
  * Methods that define root bean creation when creating an SQL query through {@link PersistenceContext#newQuery(Query, Class)}.
- * All methods return a {@link BeanKeyQueryMapper} to disallow chaining mapKey() several times since it doesn't seem relevant. Doing so also
- * clarifies the API on the {@link BeanPropertyQueryMapper} part: it avoids too many "no purpose" methods.
+ * All methods return a {@link BeanKeyQueryMapper} to disallow chaining mapKey() several times since it doesn't seem relevant.
  * 
  * @author Guillaume Mary
  */
 public interface BeanKeyQueryMapper<C> {
 	
 	/**
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}. Column type will be deduced from given constructor.
+	 * Declares a 1-arg root bean constructor and its key from the {@link ResultSet}. Column type will be deduced from given constructor.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column value as parameter
 	 * @param columnName column containing identifier value
@@ -28,7 +29,7 @@ public interface BeanKeyQueryMapper<C> {
 	<I> BeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName);
 	
 	/**
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}. Column type will be deduced from given constructor.
+	 * Declares a 2-args root bean constructor and its composed key from the {@link ResultSet}. Column type will be deduced from given constructor.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column value as parameter
 	 * @param columnName1 column containing first identifier value
@@ -39,7 +40,7 @@ public interface BeanKeyQueryMapper<C> {
 	<I, J> BeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, String columnName1, String columnName2);
 	
 	/**
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}. Column type will be deduced from given constructor.
+	 * Declares a 3-args root bean constructor and its composed key from the {@link ResultSet}. Column type will be deduced from given constructor.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column value as parameter
 	 * @param columnName1 column containing first identifier value
@@ -51,20 +52,17 @@ public interface BeanKeyQueryMapper<C> {
 	<I, J, K> BeanPropertyQueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor, String columnName1, String columnName2, String columnName3);
 	
 	/**
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}.
-	 * Doesn't have same name as other key definer due to conflict with {@link #mapKey(SerializableFunction, String, Class)} and entities that have
-	 * both a no-arg constructor and a one-arg constructor.
-	 *
+	 * Declares a no-arg root bean constructor.
+	 * Please note that this constructor mapping implies that an instance per {@link ResultSet} row will be created : since no data key is given
+	 * each row is considered different from another. 
+	 * 
 	 * @param javaBeanCtor no-arg bean constructor
-	 * @param columnName column containing identifier value
-	 * @param columnType identifier type
-	 * @param <I> identifier type
 	 * @return an instance that allows method chaining
 	 */
-	<I> BeanPropertyQueryMapper<C> mapKey(SerializableSupplier<C> javaBeanCtor, String columnName, Class<I> columnType);
+	BeanPropertyQueryMapper<C> mapKey(SerializableSupplier<C> javaBeanCtor);
 	
 	/**
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}.
+	 * Declares a 1-arg root bean constructor and its key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column value as parameter
 	 * @param columnName column containing identifier value
@@ -75,8 +73,8 @@ public interface BeanKeyQueryMapper<C> {
 	<I> BeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, String columnName, Class<I> columnType);
 	
 	/**
-	 * Equivalent of {@link #mapKey(SerializableFunction, String, Class)} with a 2-args constructor
-	 * Declares root bean constructor and a composed-key of {@link java.sql.ResultSet}
+	 * Equivalent of {@link #mapKey(SerializableFunction, String, Class)} with a 2-args constructor.
+	 * Declares a 2-args root bean constructor and its composed key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column values as parameters
 	 * @param column1Name column containing first identifier value
@@ -92,8 +90,8 @@ public interface BeanKeyQueryMapper<C> {
 											 String column2Name, Class<J> column2Type);
 	
 	/**
-	 * Equivalent of {@link #mapKey(SerializableFunction, String, Class)} with a 3-args constructor
-	 * Declares root bean constructor and a composed-key of {@link java.sql.ResultSet}
+	 * Equivalent of {@link #mapKey(SerializableFunction, String, Class)} with a 3-args constructor.
+	 * Declares a 3-args root bean constructor and its composed key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column values as parameters
 	 * @param column1Name column containing first identifier value
@@ -114,7 +112,7 @@ public interface BeanKeyQueryMapper<C> {
 	
 	/**
 	 * Equivalent of {@link #mapKey(SerializableFunction, String, Class)} with a column argument.
-	 * Declares root bean constructor and key of {@link java.sql.ResultSet}
+	 * Declares a 1-arg root bean constructor and its key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column values as parameters
 	 * @param column column containing identifier value
@@ -125,7 +123,7 @@ public interface BeanKeyQueryMapper<C> {
 	
 	/**
 	 * Equivalent of {@link #mapKey(SerializableFunction, Column)} with 2 columns argument.
-	 * Declares root bean constructor and a composed-key of {@link java.sql.ResultSet}
+	 * Declares a 2-args root bean constructor and its composed key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column values as parameters
 	 * @param column1 column containing first identifier value
@@ -138,7 +136,7 @@ public interface BeanKeyQueryMapper<C> {
 	
 	/**
 	 * Equivalent of {@link #mapKey(SerializableFunction, Column)} with 3 columns argument.
-	 * Declares root bean constructor and a composed-key of {@link java.sql.ResultSet}
+	 * Declares a 3-args root bean constructor and its composed key from the {@link ResultSet}.
 	 *
 	 * @param javaBeanCtor bean constructor that will take column values as parameters
 	 * @param column1 column containing first identifier value

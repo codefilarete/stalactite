@@ -12,7 +12,7 @@ import org.gama.stalactite.query.model.Query.FluentSelect;
  */
 public class QueryEase {
 	
-	public static FluentSelect select(Iterable<Object> selectables) {
+	public static FluentSelect select(Iterable<?> selectables) {
 		return new Query().select(selectables);
 	}
 	

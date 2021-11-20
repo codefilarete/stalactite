@@ -130,8 +130,9 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 		return limitSurrogate;
 	}
 	
-	public FluentSelect select(Iterable<Object> selectables) {
-		return this.select.add(selectables);
+	public FluentSelect select(Iterable<?> selectables) {
+		selectables.forEach(this.select::add);
+		return this.select;
 	}
 	
 	public FluentSelect select(Object selectable, Object... selectables) {

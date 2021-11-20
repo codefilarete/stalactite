@@ -46,7 +46,10 @@ public abstract class PersistenceContextITTest {
 		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
 		
-		List<Toto> records = testInstance.select(Toto::new, id);
+		List<Toto> records = testInstance.select(Toto::new, selectMapping -> selectMapping.add(name, Toto::setName));
+		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(-1, "Hello"), new Toto(-1, "World")).toString());
+		
+		records = testInstance.select(Toto::new, id);
 		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1), new Toto(2)).toString());
 		
 		records = testInstance.select(Toto::new, id, name);
@@ -181,6 +184,10 @@ public abstract class PersistenceContextITTest {
 		private String name2;
 		private Wrapper dummyWrappedProp;
 		private Tata tata;
+		
+		public Toto() {
+			this(-1);
+		}
 		
 		public Toto(int id) {
 			this(id, (String) null);

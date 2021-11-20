@@ -129,8 +129,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	@Override
-	public <I> QueryMapper<C> mapKey(SerializableSupplier<C> factory, String columnName, Class<I> columnType) {
-		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), i -> factory.get());
+	public QueryMapper<C> mapKey(SerializableSupplier<C> factory) {
+		this.rootTransformer = new WholeResultSetTransformer<>(rootBeanType, factory);
 		return this;
 	}
 	
