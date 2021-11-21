@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -208,7 +209,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				.mapKey(i -> i, "countryId", Long.class)
 				.execute();
 		
-		assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate(), country.getId().getSurrogate());
+		assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate());
 		
 		// testing select
 		Country loadedCountry = persister.select(country.getId());
@@ -233,7 +234,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
 				.execute();
-		assertThat(cityCountryIds).containsExactlyInAnyOrder(null, null);
+		ArrayList<Object> expectedResult = new ArrayList<>();
+		expectedResult.add(null);
+		assertThat(cityCountryIds).isEqualTo(expectedResult);
 	}
 	
 	@Test

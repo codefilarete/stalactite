@@ -3,7 +3,10 @@ package org.gama.stalactite.persistence.engine;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Arrays;
@@ -146,7 +149,7 @@ public abstract class PersistenceContextITTest {
 	}
 	
 	@Test
-	void newQuery_withRelation() throws SQLException {
+	void newQuery_withToOneRelation() throws SQLException {
 		PersistenceContext testInstance = new PersistenceContext(createDataSource(), createDialect());
 		Table totoTable = new Table("toto");
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
@@ -177,6 +180,46 @@ public abstract class PersistenceContextITTest {
 		assertThat(records.toString()).isEqualTo(Arrays.asList(expectedToto1, expectedToto2).toString());
 	}
 	
+	@Test
+	void newQuery_withToManyRelation() throws SQLException {
+		PersistenceContext testInstance = new PersistenceContext(createDataSource(), createDialect());
+		Table totoTable = new Table("toto");
+		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
+		Column<Table, String> name = totoTable.addColumn("name", String.class);
+		Table tataTable = new Table("tata");
+		Column<Table, String> tataName = tataTable.addColumn("name", String.class);
+		Column<Table, Integer> totoId = tataTable.addColumn("totoId", int.class);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(testInstance);
+		ddlDeployer.getDdlGenerator().addTables(totoTable, tataTable);
+		ddlDeployer.deployDDL();
+		
+		Connection connection = testInstance.getConnectionProvider().giveConnection();
+		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
+		connection.prepareStatement("insert into Tata(totoId, name) values (1, 'World')").execute();
+		connection.prepareStatement("insert into Tata(totoId, name) values (1, 'Tout le monde')").execute();
+		connection.prepareStatement("insert into Toto(id, name) values (2, 'Bonjour')").execute();
+		
+		BiConsumer<Toto, Tata> tataCombiner = (toto, tata) -> {
+			if (tata != null) {
+				if (toto.getTatas() == null) {
+					toto.setTatas(new LinkedHashSet<>());
+				}
+				toto.getTatas().add(tata);
+			}
+		};
+		
+		List<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).leftOuterJoin(id, totoId),
+												   Toto.class)
+				.mapKey(Toto::new, id, name)
+				.map(tataCombiner, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
+				.execute();
+		Toto expectedToto1 = new Toto(1, "Hello");
+		expectedToto1.setTatas(Arrays.asSet(new Tata("World"), new Tata("Tout le monde")));
+		Toto expectedToto2 = new Toto(2, "Bonjour");
+		assertThat(records.toString()).isEqualTo(Arrays.asList(expectedToto1, expectedToto2).toString());
+	}
+	
 	private static class Toto {
 		
 		private final int id;
@@ -184,6 +227,7 @@ public abstract class PersistenceContextITTest {
 		private String name2;
 		private Wrapper dummyWrappedProp;
 		private Tata tata;
+		private Set<Tata> tatas;
 		
 		public Toto() {
 			this(-1);
@@ -232,10 +276,19 @@ public abstract class PersistenceContextITTest {
 			return this;
 		}
 		
+		public Set<Tata> getTatas() {
+			return tatas;
+		}
+		
+		public Toto setTatas(Set<Tata> tatas) {
+			this.tatas = tatas;
+			return this;
+		}
+		
 		/** Implemented to ease debug and represention of failing test cases */
 		@Override
 		public String toString() {
-			return Strings.footPrint(this, Toto::getId, Toto::getName, Toto::getDummyWrappedProp, Toto::getTata);
+			return Strings.footPrint(this, Toto::getId, Toto::getName, Toto::getDummyWrappedProp, Toto::getTata, Toto::getTatas);
 		}
 		
 		public Wrapper getDummyWrappedProp() {

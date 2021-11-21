@@ -4,8 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.gama.lang.Strings;
 import org.gama.lang.bean.Objects;
@@ -30,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.gama.lang.Nullable.nullable;
+import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -306,8 +310,7 @@ class QueryMapperTest {
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "ghoeihvoih3", false),	// counter is expected to be run on each row : last overwrites previous
-				new Toto(43, "oziuoie2", false),
-				new Toto(42, "ghoeihvoih3", false)
+				new Toto(43, "oziuoie2", false)
 		);
 		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
@@ -330,14 +333,13 @@ class QueryMapperTest {
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "ghoeihvoih1", false),	// counter is expected to be run once per bean : first survives to next
-				new Toto(43, "oziuoie2", false),
-				new Toto(42, "ghoeihvoih1", false)
+				new Toto(43, "oziuoie2", false)
 		);
 		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
 	
 	@Test
-	void execute_instanceHasRelation() {
+	void execute_instanceHasToOneRelation() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
@@ -354,17 +356,44 @@ class QueryMapperTest {
 		
 		List<Toto> expected = Arrays.asList(
 				new Toto(42, "John", false).setTata(new Tata("you")),
-				new Toto(43, "Bob", false).setTata(new Tata("me")),
-				new Toto(42, "John", false).setTata(new Tata("you"))
+				new Toto(43, "Bob", false).setTata(new Tata("me"))
 		);
 		// Checking content by values
 		assertThat(result.toString()).isEqualTo(expected.toString());
+	}
+	
+	@Test
+	void execute_instanceHasToManyRelation() {
+		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+		BiConsumer<Tata, Titi> titiCombiner = (tata, titi) -> {
+			if (titi != null) {
+				if (tata.getTitis() == null) {
+					tata.setTitis(new HashSet<>());
+				}
+				tata.getTitis().add(titi);
+			}
+		};
 		
-		// Checking content by object reference to ensure bean cache usage
-		assertThat(result.get(2)).isSameAs(result.get(0));
-		assertThat(result.get(2).getTata()).isSameAs(result.get(0).getTata());
-		assertThat(result.get(2)).isNotSameAs(result.get(1));
-		assertThat(result.get(2).getTata()).isNotSameAs(result.get(1).getTata());
+		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
+				.mapKey(Toto::new, "id", long.class)
+				.map("name", Toto::setName)
+				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new)
+						.add(titiCombiner, new ResultSetRowTransformer<>(Titi.class, "titiName", STRING_READER, Titi::new)));
+		
+		List<Map<String, Object>> resultSetData = Arrays.asList(
+				newRow().add("id", 42L).add("name", "John").add("tataName", "you").add("titiName", "titi"),
+				newRow().add("id", 43L).add("name", "Bob").add("tataName", "me").add("titiName", null),
+				newRow().add("id", 42L).add("name", "John").add("tataName", "you").add("titiName", "titi")
+				);
+		
+		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		
+		List<Toto> expected = Arrays.asList(
+				new Toto(42, "John", false).setTata(new Tata("you").setTitis(Arrays.asHashSet(new Titi("titi")))),
+				new Toto(43, "Bob", false).setTata(new Tata("me"))
+		);
+		// Checking content by values
+		assertThat(result.toString()).isEqualTo(expected.toString());
 	}
 	
 	@Test
@@ -507,7 +536,9 @@ class QueryMapperTest {
 		 */
 		@Override
 		public String toString() {
-			return Strings.footPrint(this, t -> t.id, t -> t.name, t -> t.active, t -> nullable(t.tata).map(Tata::getName).get());
+			return Strings.footPrint(this, t -> t.id, t -> t.name, t -> t.active,
+									 t -> nullable(t.tata).map(Tata::getName).get(),
+									 t -> nullable(t.tata).map(Tata::getTitis).get());
 		}
 	}
 	
@@ -549,12 +580,55 @@ class QueryMapperTest {
 		
 		private final String name;
 		
+		private Set<Titi> titis;
+		
 		public Tata(String name) {
 			this.name = name;
 		}
 		
 		public String getName() {
 			return name;
+		}
+		
+		public Set<Titi> getTitis() {
+			return titis;
+		}
+		
+		public Tata setTitis(Set<Titi> titis) {
+			this.titis = titis;
+			return this;
+		}
+		
+		/**
+		 * Implemented to ease debug and represention of failing test cases
+		 * @return a chain containing attributes foot print
+		 */
+		@Override
+		public String toString() {
+			return Strings.footPrint(this, t -> "Tata", t -> t.name);
+		}
+	}
+	
+	
+	private static class Titi {
+		
+		private final String name;
+		
+		public Titi(String name) {
+			this.name = name;
+		}
+		
+		public String getName() {
+			return name;
+		}
+		
+		/**
+		 * Implemented to ease debug and represention of failing test cases
+		 * @return a chain containing attributes foot print
+		 */
+		@Override
+		public String toString() {
+			return Strings.footPrint(this, t -> "Titi", t -> t.name);
 		}
 	}
 	

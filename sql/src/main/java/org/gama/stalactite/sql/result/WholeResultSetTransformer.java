@@ -5,8 +5,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -19,6 +21,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.ThreadLocals;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
+import org.gama.lang.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;
@@ -32,14 +35,15 @@ import static org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyP
  * Graph creation is declared through {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)}, be aware that relations will be
  * unstacked/applied in order of declaration.
  * Instances of this class can be reused over multiple {@link ResultSet} (supposed to have same columns) and are thread-safe for iteration.
- * They can also be adapt to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
- * Moreover they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, SerializableFunction)}.
+ * They can also be adapted to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
+ * Moreover, they can also be cloned to another type of bean which uses the same column names with {@link #copyFor(Class, SerializableFunction)}.
  * 
  * @param <C> assembled bean type
  * @param <I> bean identifier type
  * @author Guillaume Mary
  * @see #add(String, ResultSetReader, BiConsumer)
  * @see #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)
+ * @see #transformAll(ResultSet) 
  */
 public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, C> {
 	
@@ -280,7 +284,12 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 				return transform(resultSet);
 			}
 		};
-		return doWithBeanCache(() -> Iterables.stream(resultSetIterator).collect(Collectors.toList()));
+		// Note that we first collect result in a List then treat it to clean it from its duplicates
+		List<C> convertedResult = doWithBeanCache(() -> Iterables.stream(resultSetIterator).collect(Collectors.toList()));
+		Map<C, Integer> resultWithoutDuplicates = new IdentityHashMap<>(convertedResult.size());	// we use identity to avoid relying on equals() implementation
+		ModifiableInt index = new ModifiableInt();
+		convertedResult.forEach(c -> resultWithoutDuplicates.putIfAbsent(c, index.increment()));
+		return resultWithoutDuplicates.entrySet().stream().sorted(Entry.comparingByValue()).map(Entry::getKey).collect(Collectors.toList());
 	}
 	
 	/**

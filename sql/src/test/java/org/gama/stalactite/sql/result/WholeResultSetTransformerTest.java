@@ -213,11 +213,7 @@ public class WholeResultSetTransformerTest {
 		));
 		
 		List<Chicken> result = testInstance.transformAll(resultSet);
-		// 3 chickens because of 3 rows in ResultSet
-		assertThat(result.size()).isEqualTo(3);
-		// ... but they should be all the same
-		assertThat(result.get(1)).isSameAs(result.get(0));
-		assertThat(result.get(2)).isSameAs(result.get(0));
+		assertThat(result.size()).isEqualTo(1);
 		
 		Chicken rooster = result.get(0);
 		assertThat(rooster.getName()).isEqualTo("rooster");
@@ -308,11 +304,7 @@ public class WholeResultSetTransformerTest {
 		));
 		
 		List<Chicken> result = testInstance.transformAll(resultSet);
-		// 3 chickens because of 3 rows in ResultSet
-		assertThat(result.size()).isEqualTo(3);
-		// ... but they should be all the same
-		assertThat(result.get(1)).isSameAs(result.get(0));
-		assertThat(result.get(2)).isSameAs(result.get(0));
+		assertThat(result.size()).isEqualTo(1);
 		
 		Chicken rooster = result.get(0);
 		assertThat(rooster.getName()).isEqualTo("rooster");
@@ -372,11 +364,7 @@ public class WholeResultSetTransformerTest {
 		));
 		
 		List<Rooster> result = testInstanceCopy.transformAll(resultSet);
-		// 3 chickens because of 3 rows in ResultSet
-		assertThat(result.size()).isEqualTo(3);
-		// ... but they should be all the same
-		assertThat(result.get(1)).isSameAs(result.get(0));
-		assertThat(result.get(2)).isSameAs(result.get(0));
+		assertThat(result.size()).isEqualTo(1);
 		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
 		Rooster rooster = result.get(0);
@@ -421,11 +409,7 @@ public class WholeResultSetTransformerTest {
 		));
 		
 		List<Chicken> result = testInstance.transformAll(resultSet);
-		// 3 chickens because of 3 rows in ResultSet
-		assertThat(result.size()).isEqualTo(3);
-		// ... but they should be all the same
-		assertThat(result.get(1)).isSameAs(result.get(0));
-		assertThat(result.get(2)).isSameAs(result.get(0));
+		assertThat(result.size()).isEqualTo(1);
 		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
 		Chicken rooster = result.get(0);
