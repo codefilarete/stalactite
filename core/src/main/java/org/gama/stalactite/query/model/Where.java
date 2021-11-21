@@ -5,7 +5,7 @@ import org.gama.stalactite.persistence.structure.Column;
 /**
  * @author Guillaume Mary
  */
-public class Where<C extends Where<C>> extends Criteria<C> {
+public class Where<SELF extends Where<SELF>> extends Criteria<SELF> {
 
 	public Where() {
 	}

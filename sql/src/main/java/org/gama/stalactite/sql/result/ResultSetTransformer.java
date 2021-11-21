@@ -42,7 +42,8 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	
 	/**
 	 * Specialized version of add(..) for a collection-typed property : will instanciate and set the collection before adding the
-	 * {@link ResultSet} value.
+	 * {@link ResultSet} value. Be aware that this method focuses on filling a simple-typed {@link Collection} (Integer, String, ...), not
+	 * complex-typed ones because {@link ResultSetReader} is only capable of reading one column. 
 	 * 
 	 * @param columnName the column name of the property source
 	 * @param reader the object that helps to read the column

@@ -295,7 +295,7 @@ public class DMLGenerator {
 			sql.catIf(isComposedKey, "(").cat(keyMarks);
 			sql.catIf(isComposedKey, ")").cat(", ");
 			// because statement indexes start at 0, we must decrement index of 1
-			final int startKeyMarkIndex = i-1;
+			int startKeyMarkIndex = i-1;
 			ModifiableInt pkIndex = new ModifiableInt();
 			conditionColumns.forEach(keyColumn -> {
 				int pkColumnIndex = startKeyMarkIndex * conditionColumns.size() + pkIndex.increment();

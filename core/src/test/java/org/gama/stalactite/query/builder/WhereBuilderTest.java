@@ -33,7 +33,7 @@ import static org.gama.stalactite.query.model.QueryEase.where;
  */
 public class WhereBuilderTest {
 	
-	public static Object[][] testToSQL_data() {
+	public static Object[][] toSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colA = tableToto.addColumn("a", String.class);
 		Column colB = tableToto.addColumn("b", String.class);
@@ -71,8 +71,8 @@ public class WhereBuilderTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testToSQL_data")
-	public void testToSQL(CriteriaChain where, Map<Table, String> tableAliases, String expected) {
+	@MethodSource("toSQL_data")
+	public void toSQL(CriteriaChain where, Map<Table, String> tableAliases, String expected) {
 		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}

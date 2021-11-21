@@ -104,7 +104,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 		ModifiableInt placeholderColumnCount = new ModifiableInt();
 		insert.getColumns().forEach(c -> {
 			// only non column value must be adapted (see catUpdateObject(..))
-			if (!Column.class.isInstance(c.getValue())) {
+			if (!(c.getValue() instanceof Column)) {
 				// NB: prepared statement indexes start at 1 which will be given at first increment
 				int index = placeholderColumnCount.increment();
 				if (values.get(index).equals(UpdateColumn.PLACEHOLDER)) {

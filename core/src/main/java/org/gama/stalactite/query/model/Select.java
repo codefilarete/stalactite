@@ -17,8 +17,8 @@ import org.gama.stalactite.persistence.structure.Column;
  */
 public class Select implements Iterable<Object /* String, Column or AliasedColumn */>, SelectChain<Select> {
 	
-	/** String, Column or AliasedColumn */
-	private List<Object> columns = new ArrayList<>(5);
+	/** String, Column or {@link AliasedColumn} */
+	private final List<Object> columns = new ArrayList<>(5);
 	
 	private boolean distinct = false;
 	

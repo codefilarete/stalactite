@@ -18,8 +18,8 @@ public class GroupBy implements Iterable<Object /* String, Column */>, GroupByCh
 		// default constructor, properties are already assigned
 	}
 	
-	private GroupBy add(Object table) {
-		this.groups.add(table);
+	private GroupBy add(Object column) {
+		this.groups.add(column);
 		return this;
 	}
 	

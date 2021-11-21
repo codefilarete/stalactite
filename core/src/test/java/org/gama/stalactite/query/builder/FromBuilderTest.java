@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class FromBuilderTest {
 	
-	public static Object[][] testToSQL_data() {
+	public static Object[][] toSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.addColumn("a", String.class);
 		Column colTotoB = tableToto.addColumn("b", String.class);
@@ -110,8 +110,8 @@ public class FromBuilderTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testToSQL_data")
-	public void testToSQL(From from, String expected) {
+	@MethodSource("toSQL_data")
+	public void toSQL(From from, String expected) {
 		FromBuilder testInstance = new FromBuilder(from);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}

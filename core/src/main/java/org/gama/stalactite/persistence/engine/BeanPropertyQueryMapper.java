@@ -47,7 +47,7 @@ public interface BeanPropertyQueryMapper<C> {
 	
 	/**
 	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class)} without ensuring column type argument : it will be deduced from setter.
-	 * Prefer {@link #map(String, SerializableBiConsumer, Class)} to ensure value reading from {@link java.sql.ResultSet}
+	 * Prefer {@link #map(String, SerializableBiConsumer, Class)} to ensure value reading from {@link ResultSet}
 	 *
 	 * @param columnName column name that will fill the property
 	 * @param setter property setter
@@ -58,7 +58,7 @@ public interface BeanPropertyQueryMapper<C> {
 	
 	/**
 	 * Equivalent of {@link #map(String, SerializableBiConsumer, Class, Converter)} without ensuring column type argument : it will be deduced from setter.
-	 * Prefer {@link #map(String, SerializableBiConsumer, Class, Converter)} to ensure value reading from {@link java.sql.ResultSet}
+	 * Prefer {@link #map(String, SerializableBiConsumer, Class, Converter)} to ensure value reading from {@link ResultSet}
 	 *
 	 * @param columnName column name that will fill the property
 	 * @param setter property setter
@@ -93,17 +93,17 @@ public interface BeanPropertyQueryMapper<C> {
 	 * This allows to create bean graphs.
 	 *
 	 * @param combiner setter (on beans created by this instance) to fix beans created by given converter
-	 * @param relatedBeanCreator creator of other beans from a {@link java.sql.ResultSet}
+	 * @param relatedBeanCreator creator of other beans from a {@link ResultSet}
 	 * @param <V> type of beans created by given converter
 	 * @return this
 	 */
 	<K, V> BeanPropertyQueryMapper<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 	
 	/**
-	 * Adds a low level {@link java.sql.ResultSet} transfomer, for cases where mapping methods are unsufficient.
+	 * Adds a low level {@link ResultSet} transfomer, for cases where mapping methods are unsufficient.
 	 * Assembly will occurs on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
 	 *
-	 * @param assembler a low-level {@link java.sql.ResultSet} transformer
+	 * @param assembler a low-level {@link ResultSet} transformer
 	 * @return this
 	 */
 	default BeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
@@ -111,11 +111,11 @@ public interface BeanPropertyQueryMapper<C> {
 	}
 	
 	/**
-	 * Adds a low level {@link java.sql.ResultSet} transfomer, for cases where mapping methods are unsufficient.
+	 * Adds a low level {@link ResultSet} transfomer, for cases where mapping methods are unsufficient.
 	 * Be aware that any bean created by given assembler won't participate in cache, if this is required then one should implement
 	 * its own cache.
 	 *
-	 * @param assembler a generic combiner of a root bean and each {@link java.sql.ResultSet} row
+	 * @param assembler a generic combiner of a root bean and each {@link ResultSet} row
 	 * @param assemblyPolicy policy to decide if given assemble shall be invoked on each row or not
 	 * @return this
 	 */

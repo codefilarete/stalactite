@@ -21,8 +21,8 @@ public class Between<O> extends AbstractRelationalOperator<O> {
 	}
 	
 	/**
-	 * Overriden to return null when both {@link Interval} boundaries are null.
-	 * Done to help managing "is null" case in {@link org.gama.stalactite.query.builder.WhereBuilder} (else we have to add a if there)
+	 * Returns boundaries of this instance, null when both {@link Interval} boundaries are null (done as such to simplify a bit "is null"
+	 * code in {@link org.gama.stalactite.query.builder.WhereBuilder})
 	 * 
 	 * @return null if value boundaries are both null.
 	 */

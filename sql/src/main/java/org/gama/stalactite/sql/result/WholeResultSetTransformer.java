@@ -250,7 +250,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	private <T extends C> WholeResultSetTransformer<I, T> copy(ResultSetRowTransformer<I, T> newRootConverter) {
 		// Making the copy
 		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(newRootConverter);
-		// Note: combiners can't be copied except if they were ResultSetRowTransfomer which they are not, at least by their type, but 
+		// Note: combiners can't be copied except if they were ResultSetRowTransformer which they are not, at least by their type, but 
 		result.assemblers.addAll((Collection) this.assemblers);
 		result.consumers.addAll((Collection) this.consumers);
 		return result;
