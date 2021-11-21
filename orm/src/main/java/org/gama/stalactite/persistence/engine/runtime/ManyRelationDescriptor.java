@@ -7,6 +7,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.gama.lang.bean.Objects;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 
 /**
  * Container to store information of a one-to-many relation

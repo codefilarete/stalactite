@@ -6,10 +6,10 @@ import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import org.gama.lang.Strings;
 import org.gama.lang.collection.Arrays;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -200,14 +200,7 @@ public abstract class PersistenceContextITTest {
 		connection.prepareStatement("insert into Tata(totoId, name) values (1, 'Tout le monde')").execute();
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'Bonjour')").execute();
 		
-		BiConsumer<Toto, Tata> tataCombiner = (toto, tata) -> {
-			if (tata != null) {
-				if (toto.getTatas() == null) {
-					toto.setTatas(new LinkedHashSet<>());
-				}
-				toto.getTatas().add(tata);
-			}
-		};
+		BeanRelationFixer<Toto, Tata> tataCombiner = BeanRelationFixer.of(Toto::setTatas, Toto::getTatas, LinkedHashSet::new);
 		
 		List<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).leftOuterJoin(id, totoId),
 												   Toto.class)

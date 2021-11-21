@@ -44,6 +44,7 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.sql.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
 import org.gama.stalactite.sql.dml.ReadOperation;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.sql.result.Row;
 
 /**

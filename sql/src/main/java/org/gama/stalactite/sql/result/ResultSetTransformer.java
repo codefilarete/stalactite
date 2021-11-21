@@ -106,12 +106,12 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 * Will combine bean created by this instance with the one created by relatedBeanCreator thanks to given combiner.
 	 *
 	 * @param combiner the assciative function between bean created by this instance and the one created by given transformer
-	 * @param relatedBeanCreator creattor of another type of bean that will be combine with the one creted by this instance
+	 * @param relatedBeanCreator creator of another type of bean that will be combined with the one created by this instance
 	 * @param <K> other bean type
 	 * @param <V> other bean key type
 	 * @return this
 	 */
-	<K, V> ResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+	<K, V> ResultSetTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 	
 	/**
 	 * Overriden for return type cast.

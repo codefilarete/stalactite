@@ -12,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -35,6 +34,7 @@ import org.gama.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.command.model.Insert;
 import org.gama.stalactite.command.model.Update;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
@@ -783,30 +783,42 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	public interface ExecutableBeanPropertyQueryMapper<C> extends ExecutableQuery<C>, BeanPropertyQueryMapper<C> {
 		
+		@Override
 		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
 		
+		@Override
 		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
 		
+		@Override
 		<I> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter);
 		
+		@Override
 		<I, J> ExecutableBeanPropertyQueryMapper<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
+		@Override
 		<I> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
 		
+		@Override
 		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
-		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+		@Override
+		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 		
+		@Override
 		default ExecutableBeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
 			return add(assembler, AssemblyPolicy.ON_EACH_ROW);
 		}
 		
+		@Override
 		ExecutableBeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
 		
+		@Override
 		ExecutableBeanPropertyQueryMapper<C> set(String paramName, Object value);
 		
+		@Override
 		<O> ExecutableBeanPropertyQueryMapper<C> set(String paramName, O value, Class<? super O> valueType);
 		
+		@Override
 		<O> ExecutableBeanPropertyQueryMapper<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
 		
 		/**
@@ -841,7 +853,7 @@ public class PersistenceContext implements PersisterRegistry {
 		<I, J> SingleResultExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
-		<K, V> SingleResultExecutableSelect<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+		<K, V> SingleResultExecutableSelect<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 		
 		@Override
 		default SingleResultExecutableSelect<C> add(ResultSetRowAssembler<C> assembler) {

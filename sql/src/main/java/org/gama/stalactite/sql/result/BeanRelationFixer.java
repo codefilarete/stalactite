@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.gama.stalactite.sql.result;
 
 import java.util.ArrayList;
 import java.util.Collection;

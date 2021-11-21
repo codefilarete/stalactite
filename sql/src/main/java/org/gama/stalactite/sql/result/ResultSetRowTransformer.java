@@ -7,7 +7,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -38,7 +37,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	
 	private final Set<ColumnConsumer<C, Object>> consumers = new HashSet<>();
 	
-	private final Map<BiConsumer<C, Object>, ResultSetRowTransformer<Object, Object>> relations = new HashMap<>();
+	private final Map<BeanRelationFixer<C, Object>, ResultSetRowTransformer<Object, Object>> relations = new HashMap<>();
 	
 	/**
 	 * Constructor focused on simple cases where beans are built only from one column key.
@@ -102,7 +101,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		return consumers;
 	}
 	
-	public Map<BiConsumer<C, Object>, ResultSetRowTransformer<Object, Object>> getRelations() {
+	public Map<BeanRelationFixer<C, Object>, ResultSetRowTransformer<Object, Object>> getRelations() {
 		return relations;
 	}
 	
@@ -120,8 +119,8 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	}
 	
 	@Override
-	public <K, V> ResultSetRowTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
-		this.relations.put((BiConsumer) combiner, (ResultSetRowTransformer) relatedBeanCreator);
+	public <K, V> ResultSetRowTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+		this.relations.put((BeanRelationFixer) combiner, (ResultSetRowTransformer) relatedBeanCreator);
 		return this;
 	}
 	
@@ -133,7 +132,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, ((IdentifierArgBeanFactory) this.beanFactory).copyFor(beanFactory));
 		result.consumers.addAll((Set) this.consumers);
 		this.relations.forEach((consumer, transformer) -> {
-			result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, ((SerializableFunction) transformer.getBeanFactory().getFactory())));
+			result.relations.put((BeanRelationFixer) consumer, transformer.copyFor(transformer.beanType, ((SerializableFunction) transformer.getBeanFactory().getFactory())));
 		});
 		return result;
 	}
@@ -146,7 +145,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, ((NoIdentifierBeanFactory) this.beanFactory).copyFor(beanFactory));
 		result.consumers.addAll((Set) this.consumers);
 		this.relations.forEach((consumer, transformer) -> {
-				result.relations.put((BiConsumer) consumer, transformer.copyFor(transformer.beanType, ((SerializableSupplier) transformer.getBeanFactory().getFactory())));
+				result.relations.put((BeanRelationFixer) consumer, transformer.copyFor(transformer.beanType, ((SerializableSupplier) transformer.getBeanFactory().getFactory())));
 		});
 		return result;
 	}
@@ -195,9 +194,11 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 		}
 		
 		// we set related beans
-		for (Entry<BiConsumer<C, Object>, ResultSetRowTransformer<Object, Object>> entry : relations.entrySet()) {
+		for (Entry<BeanRelationFixer<C, Object>, ResultSetRowTransformer<Object, Object>> entry : relations.entrySet()) {
 			Object relatedBean = entry.getValue().transform(input);
-			entry.getKey().accept(rootBean, relatedBean);
+			if (relatedBean != null) {	// null related bean is considered as no relation
+				entry.getKey().apply(rootBean, relatedBean);
+			}
 		}
 	}
 	

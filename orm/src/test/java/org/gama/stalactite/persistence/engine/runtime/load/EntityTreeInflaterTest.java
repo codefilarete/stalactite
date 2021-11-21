@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.ConsumerNode;

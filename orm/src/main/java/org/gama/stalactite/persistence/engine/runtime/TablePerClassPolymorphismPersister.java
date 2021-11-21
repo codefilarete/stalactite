@@ -50,6 +50,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 import org.gama.stalactite.sql.ConnectionProvider;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.sql.result.Row;
 
 /**

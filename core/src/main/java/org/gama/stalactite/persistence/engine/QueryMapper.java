@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -23,6 +22,7 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.function.Converter;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.MethodReferenceCapturer;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Table;
@@ -418,8 +418,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	@Override
-	public <K, V> QueryMapper<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
-		mapping.add((BiConsumer) combiner, relatedBeanCreator);
+	public <K, V> QueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+		mapping.add((BeanRelationFixer) combiner, relatedBeanCreator);
 		return this;
 	}
 	
@@ -656,7 +656,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			mappings.add(new AssemblerMapping(assembler, assemblyPolicy));
 		}
 		
-		public <K, V> void add(BiConsumer<K, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+		public <K, V> void add(BeanRelationFixer<K, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
 			mappings.add(new RelationMapping(combiner, relatedBeanCreator));
 		}
 		
@@ -674,7 +674,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 					target.add(assemblerMapping.assembler, assemblerMapping.policy);
 				} else if (m instanceof RelationMapping) {
 					RelationMapping relationMapping = (RelationMapping) m;
-					target.add(relationMapping.combiner, relationMapping.relatedBeanCreator);
+					target.add((BeanRelationFixer<C, Object>) relationMapping.combiner::apply, relationMapping.relatedBeanCreator);
 				}
 			});
 		}
@@ -709,10 +709,10 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		
 		/** Simple store for relation mapping */
 		private static class RelationMapping implements Mapping {
-			private final BiConsumer combiner;
+			private final BeanRelationFixer combiner;
 			private final ResultSetRowTransformer relatedBeanCreator;
 			
-			private RelationMapping(BiConsumer combiner, ResultSetRowTransformer relatedBeanCreator) {
+			private RelationMapping(BeanRelationFixer combiner, ResultSetRowTransformer relatedBeanCreator) {
 				this.combiner = combiner;
 				this.relatedBeanCreator = relatedBeanCreator;
 			}

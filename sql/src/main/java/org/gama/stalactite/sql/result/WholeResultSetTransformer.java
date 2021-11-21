@@ -32,7 +32,7 @@ import static org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyP
 
 /**
  * A class aimed at transforming a whole {@link ResultSet} into a graph of objects.
- * Graph creation is declared through {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)}, be aware that relations will be
+ * Graph creation is declared through {@link #add(String, ResultSetReader, Class, SerializableFunction, BeanRelationFixer)}, be aware that relations will be
  * unstacked/applied in order of declaration.
  * Instances of this class can be reused over multiple {@link ResultSet} (supposed to have same columns) and are thread-safe for iteration.
  * They can also be adapted to other {@link ResultSet}s that haven't the exact same column names by duplicating them with {@link #copyWithAliases(Function)}.
@@ -42,7 +42,7 @@ import static org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyP
  * @param <I> bean identifier type
  * @author Guillaume Mary
  * @see #add(String, ResultSetReader, BiConsumer)
- * @see #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)
+ * @see #add(String, ResultSetReader, Class, SerializableFunction, BeanRelationFixer)
  * @see #transformAll(ResultSet) 
  */
 public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, C> {
@@ -53,7 +53,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * first approach was to use an instance variable and initialize it on all instances before {@link ResultSet} iteration and release it after,
 	 * but this design had several drawbacks:
 	 * - non-thread-safe usage of instances (implying synchronization during whole iteration !)
-	 * - instances piped with {@link #add(BiConsumer, ResultSetRowTransformer)} were impossible to wire to the bean cache without cloning them to a
+	 * - instances piped with {@link #add(BeanRelationFixer, ResultSetRowTransformer)} were impossible to wire to the bean cache without cloning them to a
 	 * {@link WholeResultSetTransformer}
 	 */
 	static final ThreadLocal<SimpleBeanCache> CURRENT_BEAN_CACHE = new ThreadLocal<>();
@@ -143,10 +143,10 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param <V> new bean type
 	 * 
 	 * @return this
-	 * @see #add(String, ResultSetReader, Class, BiConsumer) 
+	 * @see #add(String, ResultSetReader, Class, BeanRelationFixer) 
 	 */
 	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType,
-													  SerializableFunction<K, V> beanFactory, BiConsumer<C, V> combiner) {
+													  SerializableFunction<K, V> beanFactory, BeanRelationFixer<C, V> combiner) {
 		ResultSetRowTransformer<K, V> relatedBeanCreator = new ResultSetRowTransformer<>(beanType, columnName, reader, beanFactory);
 		add(combiner, relatedBeanCreator);
 		return this;
@@ -154,10 +154,10 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	/**
 	 * Adds a bean relation to the main/root object.
-	 * It is a simplified version of {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)} where the factory is the
+	 * It is a simplified version of {@link #add(String, ResultSetReader, Class, SerializableFunction, BeanRelationFixer)} where the factory is the
 	 * default constructor of the given type.
 	 * Be aware that the factory doesn't take the column (bean key) value as a parameter, if no default constructor exists please prefer
-	 * {@link #add(String, ResultSetReader, Class, SerializableFunction, BiConsumer)} or {@link #add(String, ResultSetReader, BiConsumer)}
+	 * {@link #add(String, ResultSetReader, Class, SerializableFunction, BeanRelationFixer)} or {@link #add(String, ResultSetReader, BiConsumer)}
 	 * 
 	 * @param columnName the column name to read the bean key
 	 * @param reader a reader for reading the bean key
@@ -168,7 +168,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * 
 	 * @return this
 	 */
-	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BiConsumer<C, V> combiner) {
+	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BeanRelationFixer<C, V> combiner) {
 		add(columnName, reader, beanType, v -> Reflections.newInstance(beanType), combiner);
 		return this;
 	}
@@ -185,7 +185,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @return this
 	 */
 	@Override
-	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+	public <K, V> WholeResultSetTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
 		return add(combiner, relatedBeanCreator, ON_EACH_ROW);
 	}
 	
@@ -200,7 +200,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param relatedBeanCreator the manager of the other beans
 	 * @return this
 	 */
-	public <K, V> WholeResultSetTransformer<I, C> add(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator, AssemblyPolicy assemblyPolicy) {
+	public <K, V> WholeResultSetTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator, AssemblyPolicy assemblyPolicy) {
 		CachingResultSetRowTransformer<K, V> relatedBeanCreatorCopy = new CachingResultSetRowTransformer<>(relatedBeanCreator);
 		return add(new Relation<>(combiner, relatedBeanCreatorCopy), assemblyPolicy);
 	}
@@ -348,11 +348,11 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 */
 	public static class Relation<K, V> implements ResultSetRowAssembler<K> {
 		
-		private final BiConsumer<K, V> relationFixer;
+		private final BeanRelationFixer<K, V> relationFixer;
 		
 		private final CachingResultSetRowTransformer<?, V> transformer;
 		
-		public Relation(BiConsumer<K, V> relationFixer, CachingResultSetRowTransformer<?, V> transformer) {
+		public Relation(BeanRelationFixer<K, V> relationFixer, CachingResultSetRowTransformer<?, V> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}
@@ -362,7 +362,9 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 			// getting the bean
 			V value = transformer.transform(resultSet);
 			// applying it to the setter
-			relationFixer.accept(bean, value);
+			if (value != null) {
+				relationFixer.apply(bean, value);
+			}
 		}
 
 		@Override

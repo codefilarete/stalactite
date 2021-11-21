@@ -10,7 +10,7 @@ import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
 import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader;
 
 /**

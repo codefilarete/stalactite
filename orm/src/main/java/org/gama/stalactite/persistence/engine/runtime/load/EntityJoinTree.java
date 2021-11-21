@@ -19,7 +19,7 @@ import org.gama.lang.bean.Randomizer;
 import org.gama.lang.collection.Collections;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.ReadOnlyList;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;

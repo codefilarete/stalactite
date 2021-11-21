@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import org.gama.lang.Strings;
 import org.gama.lang.bean.Objects;
@@ -23,6 +22,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
@@ -365,14 +365,7 @@ class QueryMapperTest {
 	@Test
 	void execute_instanceHasToManyRelation() {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		BiConsumer<Tata, Titi> titiCombiner = (tata, titi) -> {
-			if (titi != null) {
-				if (tata.getTitis() == null) {
-					tata.setTitis(new HashSet<>());
-				}
-				tata.getTitis().add(titi);
-			}
-		};
+		BeanRelationFixer<Tata, Titi> titiCombiner = BeanRelationFixer.of(Tata::setTitis, Tata::getTitis, HashSet::new);
 		
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)

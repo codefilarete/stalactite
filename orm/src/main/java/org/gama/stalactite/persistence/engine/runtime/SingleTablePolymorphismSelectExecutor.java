@@ -29,6 +29,7 @@ import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.ReadOperation;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.sql.result.RowIterator;
 
 /**

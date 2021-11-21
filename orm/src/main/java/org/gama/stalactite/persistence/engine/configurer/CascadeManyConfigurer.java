@@ -37,7 +37,7 @@ import org.gama.stalactite.persistence.engine.runtime.AbstractOneToManyWithAssoc
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecordPersister;
 import org.gama.stalactite.persistence.engine.runtime.AssociationTable;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.ConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.gama.stalactite.persistence.engine.runtime.IndexedAssociationRecord;

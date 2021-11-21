@@ -21,7 +21,7 @@ import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;

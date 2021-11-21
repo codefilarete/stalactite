@@ -5,6 +5,7 @@ import java.util.function.BiConsumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.function.Converter;
+import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Query;
@@ -97,7 +98,7 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param <V> type of beans created by given converter
 	 * @return this
 	 */
-	<K, V> BeanPropertyQueryMapper<C> map(BiConsumer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+	<K, V> BeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 	
 	/**
 	 * Adds a low level {@link ResultSet} transfomer, for cases where mapping methods are unsufficient.

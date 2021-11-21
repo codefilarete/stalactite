@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -245,15 +244,11 @@ public class WholeResultSetTransformerTest {
 		String rightFeatherColorColumnName = "rightFeatherColor";
 		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
 		
-		BiConsumer<Chicken, FeatherColor> leftChickenFeatherColorCombiner = (chicken, color) -> {
-			if (color != null) {    // prevent addition of Feather with a null color
-				chicken.getLeftWing().add(new Feather(color));
-			}
+		BeanRelationFixer<Chicken, FeatherColor> leftChickenFeatherColorCombiner = (chicken, color) -> {
+			chicken.getLeftWing().add(new Feather(color));
 		};
-		BiConsumer<Chicken, FeatherColor> rightChickenFeatherColorCombiner = (chicken, color) -> {
-			if (color != null) {    // prevent addition of Feather with a null color
-				chicken.getRightWing().add(new Feather(color));
-			}
+		BeanRelationFixer<Chicken, FeatherColor> rightChickenFeatherColorCombiner = (chicken, color) -> {
+			chicken.getRightWing().add(new Feather(color));
 		};
 		
 		Map<String, String> leftColumnMapping = Maps.forHashMap(String.class, String.class)

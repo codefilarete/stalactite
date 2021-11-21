@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.gama.stalactite.sql.result;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -8,7 +8,6 @@ import java.util.Set;
 
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
-import org.gama.stalactite.persistence.engine.runtime.BeanRelationFixer;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
