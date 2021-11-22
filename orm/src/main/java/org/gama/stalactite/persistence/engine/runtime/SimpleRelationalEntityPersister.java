@@ -173,16 +173,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 		persister.persist(entities);
 	}
 	
-	/**
-	 * Creates a query which criteria target mapped properties.
-	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
-	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
-	 * 
-	 * @param <O> value type returned by property accessor
-	 * @param getter a property accessor
-	 * @param operator criteria for the property
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
-	 */
 	@Override
 	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
@@ -190,16 +180,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
-	/**
-	 * Creates a query which criteria target mapped properties
-	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
-	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
-	 *
-	 * @param setter a property accessor
-	 * @param operator criteria for the property
-	 * @param <O> value type returned by property accessor
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
-	 */
 	@Override
 	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();

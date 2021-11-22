@@ -74,13 +74,6 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 		this.mainTable = mainTable;
 	}
 	
-	
-	
-	@Override
-	public List<C> loadSelection(CriteriaChain where) {
-		return null;
-	}
-	
 	@Override
 	public List<C> loadGraph(CriteriaChain where) {
 		Set<PreparedSQL> queries = new HashSet<>();

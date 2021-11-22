@@ -162,8 +162,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
-	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
+	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
 	 *
 	 * @param getter a property accessor
 	 * @param operator criteria for the property
@@ -173,9 +172,8 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
 	
 	/**
-	 * Creates a query which criteria target mapped properties
-	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
-	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
+	 * Creates a query which criteria target mapped properties.
+	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
 	 *
 	 * @param setter a property accessor
 	 * @param operator criteria for the property

@@ -34,7 +34,6 @@ import static org.gama.stalactite.query.model.Operators.in;
  * 
  * @author Guillaume Mary
  * @see #loadGraph(CriteriaChain)
- * @see #loadSelection(CriteriaChain)
  */
 public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
@@ -55,26 +54,9 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 	}
 	
 	/**
-	 * Loads beans selected by the given criteria.
-	 * <strong>Please note that as a difference from {@link #loadGraph(CriteriaChain)} only beans present in the selection will be loaded,
-	 * which means that collections may be partial if criteria contain any criterion on their entity properties</strong>
-	 * 
-	 * @param where some criteria for graph selection
-	 * @return beans loaded from rows selected by given criteria
-	 */
-	@Override
-	public List<C> loadSelection(CriteriaChain where) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
-		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, entityTreeQuery.getQuery());
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
-		return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
-	}
-	
-	/**
 	 * Loads a bean graph that matches given criteria.
 	 * 
-	 * <strong>Please note that as a difference from {@link #loadSelection(CriteriaChain)} all beans under aggregate root will be loaded
-	 * (aggregate that matches criteria will be fully loaded)</strong>
+	 * <strong>Please note that all beans under aggregate root will be loaded (aggregate that matches criteria will be fully loaded)</strong>
 	 * 
 	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
 	 *

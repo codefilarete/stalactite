@@ -57,11 +57,6 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	}
 	
 	@Override
-	public List<C> loadSelection(CriteriaChain where) {
-		return null;
-	}
-	
-	@Override
 	public List<C> loadGraph(CriteriaChain where) {
 		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
 		

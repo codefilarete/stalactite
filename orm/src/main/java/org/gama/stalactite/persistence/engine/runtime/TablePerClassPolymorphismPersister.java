@@ -197,6 +197,13 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(setter, operator);
+		return wrapIntoExecutable(localCriteriaSupport);
+	}
+	
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
@@ -210,14 +217,6 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private EntityCriteriaSupport<C> newWhere() {
 		// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
 		return new EntityCriteriaSupport<>(criteriaSupport);
-	}
-	
-	
-	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(setter, operator);
-		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
 	@Override

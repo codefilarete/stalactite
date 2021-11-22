@@ -11,8 +11,6 @@ import org.gama.stalactite.query.model.Query;
  */
 public interface EntitySelectExecutor<C> {
 	
-	List<C> loadSelection(CriteriaChain where);
-	
 	List<C> loadGraph(CriteriaChain where);
 	
 	static SQLQueryBuilder createQueryBuilder(CriteriaChain where, Query query) {
