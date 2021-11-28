@@ -67,7 +67,7 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		return surrogate.selectWhere(setter, operator);
 	}
 	
@@ -84,6 +84,11 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	@Override
 	public void update(I id, Consumer<C> entityConsumer) {
 		surrogate.update(id, entityConsumer);
+	}
+	
+	@Override
+	public void update(Iterable<I> ids, Consumer<C> entityConsumer) {
+		surrogate.update(ids, entityConsumer);
 	}
 	
 	@Override

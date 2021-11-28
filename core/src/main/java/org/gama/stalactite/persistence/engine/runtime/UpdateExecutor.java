@@ -168,7 +168,8 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			List<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 			if (!Iterables.isEmpty(toUpdate)) {
 				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
-				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider(), toUpdate.size());
+				ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(toUpdate.size(), getBatchSize());
+				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider(), expectedBatchedRowCountsSupplier);
 				// Since all columns are updated we can benefit from JDBC batch
 				JDBCBatchingOperation<T> jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
 				executeUpdate(toUpdate, new SingleJDBCBatchingOperation(jdbcBatchingOperation));

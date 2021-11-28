@@ -18,6 +18,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.gama.lang.VisibleForTesting;
 import org.gama.lang.bean.ClassIterator;
 import org.gama.lang.bean.InterfaceIterator;
 import org.gama.lang.collection.Iterables;
+import org.gama.lang.collection.PairIterator;
 import org.gama.lang.function.Hanger.Holder;
 import org.gama.lang.function.ThrowingTriConsumer;
 import org.gama.lang.sql.ConnectionWrapper;
@@ -92,11 +94,11 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	/**
-	 * Implementation that doesn't require an effetive select for loading the entity to be modified.
-	 * One may ask why not using any cloning algorithm / framework for such a use case. The answer is compounded in two reasons:
-	 * - because Stalactite allows to build an entity from constructor with arguments, which hardly allows a cloning framwork (actually not found any)
-	 * - because Stalactite configuration is mainly made by method reference with even reduces cloning-framework choice, meaning being closely tied
-	 * to one for bugs and features  
+	 * Implementation that optimizes second entity loading by caching {@link ResultSet} and reuses it to create a clone of first entity.
+	 * One may ask why not simply use any cloning algorithm / framework for such a use case. The answer is compounded in two reasons:
+	 * - because Stalactite allows to build an entity from constructor with arguments, which hardly allows a cloning framework (actually not found any)
+	 * - because Stalactite configuration is mainly made by method reference which even more reduces cloning-framework choice, meaning being closely
+	 * tied to one for bugs and features  
 	 * 
 	 * @param id key of entity to be modified 
 	 * @param entityConsumer businness code expected to modify its given entity
@@ -104,16 +106,32 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	@Experimental
 	@Override
 	public void update(I id, Consumer<C> entityConsumer) {
-		Holder<C> referenceEntity = new Holder<>();
-		Holder<C> entityToModify = new Holder<>();
+		update(Collections.singleton(id), entityConsumer);
+	}
+	
+	/**
+	 * Implementation that optimizes entity loading by caching {@link ResultSet} and reuses it to create clones.
+	 * One may ask why not simply use any cloning algorithm / framework for such a use case. The answer is compounded in two reasons:
+	 * - because Stalactite allows to build an entity from constructor with arguments, which hardly allows a cloning framework (actually not found any)
+	 * - because Stalactite configuration is mainly made by method reference which even more reduces cloning-framework choice, meaning being closely
+	 * tied to one for bugs and features  
+	 *
+	 * @param ids keys of entities to be modified 
+	 * @param entityConsumer businness code expected to modify its given entity
+	 */
+	@Experimental
+	@Override
+	public void update(Iterable<I> ids, Consumer<C> entityConsumer) {
+		Holder<List<C>> referenceEntity = new Holder<>();
+		Holder<List<C>> entityToModify = new Holder<>();
 		ThreadLocals.doWithThreadLocal(QUERY_CACHE, HashMap::new, (Runnable) () -> {
 			// Thanks to query cache this first select will be executed and its result put into QUERY_CACHE
-			referenceEntity.set(select(id));
+			referenceEntity.set(select(ids));
 			// Thanks to query cache, this second (and same) select won't be executed and it allows to get a copy of first entity 
-			entityToModify.set(select(id));
+			entityToModify.set(select(ids));
 		});
-		entityConsumer.accept(entityToModify.get());
-		update(entityToModify.get(), referenceEntity.get(), true);
+		entityToModify.get().forEach(entityConsumer);
+		update(() -> new PairIterator<>(entityToModify.get(), referenceEntity.get()), true);
 	}
 	
 	/**

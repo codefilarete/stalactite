@@ -101,9 +101,19 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 *
 	 * @param entity the entity to be updated
 	 */
-	@Experimental
 	default void update(C entity) {
-		update(entity, select(getId(entity)), true);
+		update(entity, true);
+	}
+	
+	/**
+	 * Updates given entity in database according to following mecanism : it selects the existing data in database, then compares it with given
+	 * entity in memory, and then updates database if necessary (nothing if no change was made).
+	 *
+	 * @param entity the entity to be updated
+	 * @param allColumnsStatement true to include all columns in statement even if only a part of them are touched, false to target only modified ones
+	 */
+	default void update(C entity, boolean allColumnsStatement) {
+		update(entity, select(getId(entity)), allColumnsStatement);
 	}
 	
 	/**
@@ -113,15 +123,20 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 *
 	 * @param entities the entities to be updated
 	 */
-	@Experimental
 	default void update(Iterable<C> entities) {
 		List<I> ids = Iterables.collect(entities, this::getId, ArrayList::new);
-		update(() -> new PairIterator<C, C>(entities, select(ids)), true);
+		List<C> entitiesFromDb = select(ids);
+		// Given entities may not be in same order than loaded ones from DB, whereas order is required for comparison (else everything is different !)
+		// so we join them by their id to make them match
+		Map<C, I> idPerEntity = Iterables.map(entities, Function.identity(), this::getId);
+		Map<I, C> entityFromDbPerId = Iterables.map(entitiesFromDb, this::getId, Function.identity());
+		Map<C, C> modifiedVsUnmodifiedEntities = Maps.innerJoinOnValuesAndKeys(idPerEntity, entityFromDbPerId);
+		update(() -> new PairIterator<>(modifiedVsUnmodifiedEntities.keySet(), modifiedVsUnmodifiedEntities.values()), true);
 	}
 	
 	/**
 	 * Helping method for "Command Design Pattern" so one can apply modifications to the entity loaded by its id without any concern of loading it.
-	 * This implementation will load twice same entity and call {@link #update(Object, Object, boolean)} afterward.
+	 * This implementation will load twice the entity, invoke given {@link Consumer} with one of them, and then call {@link #update(Object, Object, boolean)} afterward.
 	 * Subclasses may override this behavior to enhance loading or change its algorithm (by using {@link #updateById(Iterable)} for instance)
 	 * 
 	 * @param id key of entity to be modified 
@@ -129,10 +144,21 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 */
 	@Experimental
 	default void update(I id, Consumer<C> entityConsumer) {
-		C unmodified = select(id);
-		C modified = select(id);
-		entityConsumer.accept(modified);
-		update(modified, unmodified, true);
+		update(Collections.singleton(id), entityConsumer);
+	}
+	
+	/**
+	 * Massive version of {@link #update(Object, Consumer)}. {@link Consumer} will be called for each found entities.
+	 * 
+	 * @param ids keys of entities to be modified
+	 * @param entityConsumer businness code expected to modify its given entity
+	 */
+	@Experimental
+	default void update(Iterable<I> ids, Consumer<C> entityConsumer) {
+		List<C> unmodified = select(ids);
+		List<C> modified = select(ids);
+		modified.forEach(entityConsumer);
+		update(() -> new PairIterator<>(modified, unmodified), true);
 	}
 	
 	/**
