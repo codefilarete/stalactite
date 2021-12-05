@@ -34,12 +34,16 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		/**
 		 * Policy for entities that have their id given by database after insert, such as increment column.
 		 * This implies that generated values can be read through {@link PreparedStatement#getGeneratedKeys()}
+		 * 
+		 * @return a new policy that will be used to get the identifier value
 		 */
-		IdentifierPolicy AFTER_INSERT = new IdentifierPolicy() {};
+		static <I> AfterInsertIndentifierPolicy<I> afterInsert() {
+			return new AfterInsertIndentifierPolicySupport<>();
+		}
 		
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
-		 * Reader may be interested by {@link org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence}.
+		 * Reader may be interested in {@link org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence}.
 		 * 
 		 * @param sequence the {@link Sequence} to ask for identifier value
 		 * @param <I> identifier type
@@ -65,6 +69,22 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		}
 	}
 	
+	/**
+	 * Contract for after-insert identifier generation policy. Since nothing needs to be configured for it, not method is added.
+	 * @param <I> identifier type
+	 */
+	interface AfterInsertIndentifierPolicy<I> extends IdentifierPolicy {
+		
+	}
+	
+	class AfterInsertIndentifierPolicySupport<I> implements AfterInsertIndentifierPolicy<I> {
+		
+	}
+	
+	/**
+	 * Contract for before-insert identifier generation policy. Requires the {@link Sequence} that generates the id, and that will be invoked before insertion.
+	 * @param <I> identifier type
+	 */
 	interface BeforeInsertIdentifierPolicy<I> extends IdentifierPolicy {
 		
 		Sequence<I> getIdentifierProvider();
@@ -84,6 +104,10 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		}
 	}
 	
+	/**
+	 * Contract for already-assigned identifier policy. Requires the methods that store entities persistence state.
+	 * @param <I> identifier type
+	 */
 	interface AlreadyAssignedIdentifierPolicy<C, I> extends IdentifierPolicy {
 		
 		Consumer<C> getMarkAsPersistedFunction();

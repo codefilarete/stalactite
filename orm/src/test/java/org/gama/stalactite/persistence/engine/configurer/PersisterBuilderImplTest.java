@@ -402,7 +402,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void addIdentifyingPrimarykey_afterInsertPolicy() {
 		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
-				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.AFTER_INSERT)
+				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.afterInsert())
 				.getConfiguration();
 		
 		Table mainTable = new Table("AbstractVehicle");
@@ -426,7 +426,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void propagatePrimarykey() {
 		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
-				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.AFTER_INSERT)
+				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.afterInsert())
 				.getConfiguration();
 		
 		Table mainTable = new Table("AbstractVehicle");
@@ -467,7 +467,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void applyForeignKeys() {
 		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
-				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.AFTER_INSERT)
+				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.afterInsert())
 				.getConfiguration();
 		
 		Table mainTable = new Table("AbstractVehicle");

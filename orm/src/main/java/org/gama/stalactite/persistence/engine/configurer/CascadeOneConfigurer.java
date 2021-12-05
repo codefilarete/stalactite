@@ -494,7 +494,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					
 					/**
 					 * Implemented to update target owning column after insert. Made AFTER insert to benefit from id when set by database with
-					 * IdentifierPolicy is AFTER_INSERT
+					 * IdentifierPolicy is {@link org.gama.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
 					 */
 					@Override
 					public void afterInsert(Iterable<? extends SRC> entities) {
@@ -621,7 +621,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			sourcePersister.addInsertListener(new InsertListener<SRC>() {
 				/**
 				 * Implemented to persist target instance after insert. Made AFTER insert to benefit from id when set by database with
-				 * IdentifierPolicy is AFTER_INSERT
+				 * IdentifierPolicy is {@link org.gama.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
 				 */
 				@Override
 				public void afterInsert(Iterable<? extends SRC> entities) {
