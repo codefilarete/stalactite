@@ -166,7 +166,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
 		List<C> result = new ArrayList<>(parcels.size() * blockSize);
 		if (!parcels.isEmpty()) {
-			EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree).buildSelectQuery(this.parameterBinderProvider);
+			EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
 			Query query = entityTreeQuery.getQuery();
 			
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
