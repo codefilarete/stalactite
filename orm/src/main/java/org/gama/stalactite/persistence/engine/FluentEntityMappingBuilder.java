@@ -66,23 +66,23 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	FluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
 	
 	/**
-	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
-	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
-	 * <br/><br/>
-	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
+	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
+	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * <br/>
+	 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
 	 * that the property is already set by constructor so there's no reason to set it again.
 	 * 
 	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 	 * @param input the column to read in {@link java.sql.ResultSet} and make its value given as factory first argument
 	 * @param <X> constructor first argument type
 	 */
-	<X> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<? extends Table, X> input);
+	<X, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<T, X> input);
 	
 	/**
-	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
-	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
-	 * <br/><br/>
-	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
+	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
+	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * <br/>
+	 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
 	 * that the property is already set by constructor so there's no reason to set it again.
 	 *
 	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
@@ -91,13 +91,13 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <X> constructor first argument type
 	 * @param <Y> constructor second argument type
 	 */
-	<X, Y> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
-														   Column<? extends Table, X> input1,
-														   Column<? extends Table, Y> input2);
-	
+	<X, Y, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
+																			   Column<T, X> input1,
+																			   Column<T, Y> input2);
+
 	/**
-	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
-	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
+	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
 	 * <br/><br/>
 	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
 	 * that the property is already set by constructor so there's no reason to set it again.
@@ -110,25 +110,58 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <Y> constructor second argument type
 	 * @param <Z> constructor third argument type
 	 */
-	<X, Y, Z> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
-															  Column<? extends Table, X> input1,
-															  Column<? extends Table, Y> input2,
-															  Column<? extends Table, Z> input3);
+	<X, Y, Z, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
+																				  Column<T, X> input1,
+																				  Column<T, Y> input2,
+																				  Column<T, Z> input3);
+
+	/**
+	 * Variant of {@link #useConstructor(Function, Column)} with only column name.
+	 *
+	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
+	 * @param columnName column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
+	 * @param <X> constructor first argument type
+	 */
+	<X> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, String columnName);
 	
 	/**
-	 * Indicates a constructor to used instead of a default no-arg one (for Select feature).
-	 * Can by necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
+	 * Variant of {@link #useConstructor(BiFunction, Column, Column)} with only column names.
+	 *
+	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
+	 * @param columnName1 column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
+	 * @param columnName2 column name to read in {@link java.sql.ResultSet} and make its value given as factory second argument
+	 * @param <X> constructor first argument type
+	 */
+	<X, Y> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory, String columnName1, String columnName2);
+	
+	/**
+	 * Variant of {@link #useConstructor(TriFunction, Column, Column, Column)} with only column names.
+	 *
+	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
+	 * @param columnName1 column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
+	 * @param columnName2 column name to read in {@link java.sql.ResultSet} and make its value given as factory second argument
+	 * @param columnName3 column name to read in {@link java.sql.ResultSet} and make its value given as factory third argument
+	 * @param <X> constructor first argument type
+	 */
+	<X, Y, Z> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
+															  String columnName1,
+															  String columnName2,
+															  String columnName3);
+	
+	/**
+	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
+	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
 	 * This method is an extended version of {@link #useConstructor(TriFunction, Column, Column, Column)}
 	 * where factory must accept a <pre>Function<? extends Column, ? extends Object></pre> as unique argument (be aware that as a consequence its
 	 * code will depend on {@link Column}) which represent a kind of {@link java.sql.ResultSet} so one can fulfill any property of its instance
 	 * as one wants.
-	 * <br/><br/>
-	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
+	 * <br/>
+	 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
 	 * that the property is already set by constructor so there's no reason to set it again.
 	 *
 	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 	 */
-	FluentEntityMappingBuilder<C, I> useConstructor(Function<? extends Function<? extends Column, ? extends Object>, C> factory);
+	<T extends Table<T>, O> FluentEntityMappingBuilder<C, I> useConstructor(Function<Function<Column<T, O>, O>, C> factory);
 	
 	/**
 	 * Declares the inherited mapping.

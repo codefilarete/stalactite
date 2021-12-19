@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -16,6 +17,7 @@ import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Nullable;
 import org.gama.lang.Reflections;
+import org.gama.lang.collection.Iterables;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.SerializableTriFunction;
 import org.gama.lang.function.Serie;
@@ -25,12 +27,12 @@ import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointByMethodReference;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -44,9 +46,9 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.EnumOptions;
 import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
 import org.gama.stalactite.persistence.engine.ImportedEmbedWithColumnOptions;
 import org.gama.stalactite.persistence.engine.IndexableCollectionOptions;
 import org.gama.stalactite.persistence.engine.InheritanceOptions;
@@ -105,7 +107,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private PolymorphismPolicy<C> polymorphismPolicy;
 	
-	private Function<Function<Column, Object>, C> entityFactory;
+	private EntityFactoryProvider<C> entityFactoryConfiguration;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -127,8 +129,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public Function<Function<Column, Object>, C> getEntityFactory() {
-		return this.entityFactory;
+	public EntityFactoryProvider<C> getEntityFactoryConfiguration() {
+		return entityFactoryConfiguration;
 	}
 	
 	@Override
@@ -288,8 +290,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	private FluentMappingBuilderEnumOptions<C, I> handleEnumOptions(FluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler) {
-		// we redirect all of the EnumOptions method to the instance that can handle them, returning the dispatcher on this methods so one can chain
-		// with some other methods, other methods are redirected to this instance because it can handle them.
+		// we redirect all EnumOptions methods to the instance that can handle them, returning the dispatcher on these methods so one can chain
+		// with some other methods, any methods out of EnumOptions are redirected to "this" because it can handle them.
 		return new MethodDispatcher()
 				.redirect(EnumOptions.class, enumOptionsHandler, true)
 				.fallbackOn(this)
@@ -646,31 +648,103 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <X> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<? extends Table, X> input) {
-		this.entityFactory = row -> factory.apply((X) row.apply(input));
+	public <X, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<T, X> input) {
+		this.<T, Object>useConstructor(row -> factory.apply((X) row.apply((Column<T, Object>) input)));
+		return this;
+	}
+	
+	@Override
+	public <X, Y, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
+																					  Column<T, X> input1,
+																					  Column<T, Y> input2) {
+		this.<T, Object>useConstructor(row -> factory.apply(
+			(X) row.apply((Column<T, Object>) input1),
+			(Y) row.apply((Column<T, Object>) input2)
+		));
+		return this;
+	}
+	
+	@Override
+	public <X, Y, Z, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
+																						 Column<T, X> input1,
+																						 Column<T, Y> input2,
+																						 Column<T, Z> input3) {
+		this.<T, Object>useConstructor(row -> factory.apply(
+			(X) row.apply((Column<T, Object>) input1),
+			(Y) row.apply((Column<T, Object>) input2),
+			(Z) row.apply((Column<T, Object>) input3)));
+		return this;
+	}
+	
+	@Override
+	public <X> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, String columnName) {
+		this.entityFactoryConfiguration = table -> {
+			Column<Table, Object> column1 = table.getColumn(columnName);
+			if (column1 == null) {
+				throw new IllegalArgumentException("Unknown column " + columnName + " in table " + table.getAbsoluteName()
+					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
+			}
+			return row -> factory.apply((X) row.apply(column1));
+		};
 		return this;
 	}
 	
 	@Override
 	public <X, Y> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
-																  Column<? extends Table, X> input1,
-																  Column<? extends Table, Y> input2) {
-		this.entityFactory = row -> factory.apply((X) row.apply(input1), (Y) row.apply(input2));
+																  String columnName1,
+																  String columnName2) {
+		this.entityFactoryConfiguration = table -> {
+			Column<Table, Object> column1 = table.getColumn(columnName1);
+			if (column1 == null) {
+				throw new IllegalArgumentException("Unknown column " + columnName1 + " in table " + table.getAbsoluteName()
+					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
+			}
+			Column<Table, Object> column2 = table.getColumn(columnName2);
+			if (column2 == null) {
+				throw new IllegalArgumentException("Unknown column " + columnName2 + " in table " + table.getAbsoluteName()
+					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
+			}
+			return row -> factory.apply(
+				(X) row.apply(column1),
+				(Y) row.apply(column2)
+			);
+		};
 		return this;
 	}
 	
 	@Override
 	public <X, Y, Z> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
-																	 Column<? extends Table, X> input1,
-																	 Column<? extends Table, Y> input2,
-																	 Column<? extends Table, Z> input3) {
-		this.entityFactory = row -> factory.apply((X) row.apply(input1), (Y) row.apply(input2), (Z) row.apply(input3));
+																  String columnName1,
+																  String columnName2,
+																  String columnName3) {
+		this.entityFactoryConfiguration = table -> {
+			Column<Table, Object> column1 = table.getColumn(columnName1);
+			if (column1 == null) {
+				throw new IllegalArgumentException("Unknown column " + columnName1 + " in table " + table.getAbsoluteName()
+					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
+			}
+			Column<Table, Object> column2 = table.getColumn(columnName2);
+			if (column2 == null) {
+				throw new IllegalArgumentException("Unknown column " + columnName2 + " in table " + table.getAbsoluteName()
+					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
+			}
+			Column<Table, Object> column3 = table.getColumn(columnName3);
+			if (column3 == null) {
+				throw new IllegalArgumentException("Unknown column " + columnName3 + " in table " + table.getAbsoluteName()
+					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
+			}
+			return row -> factory.apply(
+				(X) row.apply(column1),
+				(Y) row.apply(column2),
+				(Z) row.apply(column3)
+			);
+		};
 		return this;
 	}
 	
 	@Override
-	public FluentEntityMappingBuilder<C, I> useConstructor(Function<? extends Function<? extends Column, ? extends Object>, C> factory) {
-		this.entityFactory = (SerializableFunction<Function<Column, Object>, C>) factory;
+	public <T extends Table<T>, O> FluentEntityMappingBuilder<C, I> useConstructor(Function<Function<Column<T, O>, O>, C> factory) {
+		this.entityFactoryConfiguration = new EntityFactoryConfiguration<>((Function) factory);
 		return this;
 	}
 	
@@ -950,6 +1024,20 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		@Override
 		public Table getTable() {
 			return this.table;
+		}
+	}
+	
+	private static class EntityFactoryConfiguration<C> implements EntityFactoryProvider<C> {
+
+		private final Function<Function<Column, Object>, C> entityFactory;
+		
+		private EntityFactoryConfiguration(Function<Function<Column, Object>, C> entityFactory) {
+			this.entityFactory = entityFactory;
+		}
+
+		@Override
+		public Function<Function<Column, Object>, C> giveEntityFactory(Table table) {
+			return this.entityFactory;
 		}
 	}
 }

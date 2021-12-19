@@ -146,7 +146,7 @@ public class PersisterBuilderImplTest {
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
-		MappingPerTable map = testInstance.collectEmbeddedMappingFromInheritance();
+		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
 		
 		// NB: containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
@@ -191,7 +191,7 @@ public class PersisterBuilderImplTest {
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
-		MappingPerTable map = testInstance.collectEmbeddedMappingFromInheritance();
+		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
 		
 		// NB: AssertJ containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
@@ -248,7 +248,7 @@ public class PersisterBuilderImplTest {
 				.setTableNamingStrategy(TableNamingStrategy.DEFAULT)
 				.mapEntityConfigurationPerTable();
 		
-		MappingPerTable map = testInstance.collectEmbeddedMappingFromInheritance();
+		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
 		
 		assertThat(map.giveTables())
 				.usingElementComparator(Comparator.comparing(Table::getAbsoluteName))
@@ -325,7 +325,7 @@ public class PersisterBuilderImplTest {
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
-		MappingPerTable map = testInstance.collectEmbeddedMappingFromInheritance();
+		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
 		
 		// NB: containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
@@ -362,7 +362,7 @@ public class PersisterBuilderImplTest {
 				.setTable(mainTable)
 				.setColumnNamingStrategy(accessorDefinition -> "myId");
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration), testInstance.collectPropertiesMappingFromInheritance());
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -386,7 +386,7 @@ public class PersisterBuilderImplTest {
 				.setTable(mainTable)
 				.setColumnNamingStrategy(accessorDefinition -> "myId");
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration), testInstance.collectPropertiesMappingFromInheritance());
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -410,7 +410,7 @@ public class PersisterBuilderImplTest {
 				.setTable(mainTable)
 				.setColumnNamingStrategy(accessorDefinition -> "myId");
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration), testInstance.collectPropertiesMappingFromInheritance());
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -435,11 +435,11 @@ public class PersisterBuilderImplTest {
 				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setForeignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT);
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration), testInstance.collectPropertiesMappingFromInheritance());
 		
 		Table tableB = new Table("Vehicle");
 		Table tableC = new Table("Car");
-		testInstance.propagatePrimarykey(mainTable.getPrimaryKey(), Arrays.asSet(tableB, tableC));
+		PersisterBuilderImpl.propagatePrimarykey(mainTable.getPrimaryKey(), Arrays.asSet(tableB, tableC));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -479,8 +479,8 @@ public class PersisterBuilderImplTest {
 		
 		Table tableB = new Table("Vehicle");
 		Table tableC = new Table("Car");
-		PrimaryKey primaryKey = testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration));
-		testInstance.propagatePrimarykey(primaryKey, Arrays.asSet(tableB, tableC));
+		PrimaryKey primaryKey = testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration), testInstance.collectPropertiesMappingFromInheritance());
+		PersisterBuilderImpl.propagatePrimarykey(primaryKey, Arrays.asSet(tableB, tableC));
 		testInstance.applyForeignKeys(primaryKey, Arrays.asSet(tableB, tableC));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",

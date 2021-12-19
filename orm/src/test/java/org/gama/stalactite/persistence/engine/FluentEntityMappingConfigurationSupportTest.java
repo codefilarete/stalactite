@@ -60,6 +60,7 @@ import org.gama.stalactite.sql.SimpleConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
+import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.gama.stalactite.sql.dml.SQLStatement;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
@@ -140,7 +141,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		@Test
 		void withConstructorSpecified_constructorIsInvoked() {
 			Table totoTable = new Table("Toto");
-			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
+			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -148,7 +149,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			EntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
 					.add(Toto::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(Toto::getName)
-					.useConstructor(Toto::new, idColumn)
+					.<PersistedIdentifier<UUID>, Table>useConstructor(Toto::new, (Column) idColumn)
 					.build(persistenceContext, totoTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -163,9 +164,33 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void withConstructorSpecified_constructorIsInvoked_setterIsCalled() {
+		void withConstructorSpecified_byColumnName_constructorIsInvoked() {
 			Table totoTable = new Table("Toto");
-			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
+
+			ParameterBinder<Identifier<UUID>> statefullIdentifierParameterBinder = (ParameterBinder) Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER);
+			dialect.getColumnBinderRegistry().register((Class<Identifier<UUID>>) (Class) Identifier.class, statefullIdentifierParameterBinder);
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			EntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.add(Toto::getId, "identifier").identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.add(Toto::getName, "label")
+					.<PersistedIdentifier<UUID>>useConstructor(Toto::new, "identifier")
+					.build(persistenceContext, totoTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Toto entity = new Toto();
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was not called").isTrue();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
+		}
+		
+		@Test
+		void setByConstructor_constructorIsInvoked_setterIsCalled() {
+			Table totoTable = new Table("Toto");
+			Column<Table, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -188,10 +213,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void withConstructorSpecified_withSeveralArguments() {
+		void setByConstructor_withSeveralArguments() {
 			Table totoTable = new Table("Toto");
-			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
-			Column<Table<?>, String> nameColumn = totoTable.addColumn("name", String.class);
+			Column<Table, PersistedIdentifier> idColumn = totoTable.addColumn("id", Identifier.class);
+			Column<Table, String> nameColumn = totoTable.addColumn("name", String.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");

@@ -228,9 +228,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		Identification identification = determineIdentification();
 		
 		// collecting mapping from inheritance
-		MappingPerTable inheritanceMappingPerTable = collectEmbeddedMappingFromInheritance();
+		MappingPerTable inheritanceMappingPerTable = collectPropertiesMappingFromInheritance();
 		// add primary key and foreign key to all tables
-		PrimaryKey primaryKey = addIdentifyingPrimarykey(identification);
+		PrimaryKey primaryKey = addIdentifyingPrimarykey(identification, inheritanceMappingPerTable);
 		Set<Table> inheritanceTables = inheritanceMappingPerTable.giveTables();
 		inheritanceTables.remove(primaryKey.getTable());	// not necessary thanks to addColumn & addPrimaryKey tolerance to duplicates, left for clarity
 		propagatePrimarykey(primaryKey, inheritanceTables);
@@ -396,7 +396,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				mapping.propertiesSetByConstructor,
 				identification,
 				mappingConfiguration.getEntityType(),
-				mappingConfiguration.getEntityFactory());
+				mappingConfiguration.getEntityFactoryConfiguration());
 		return new SimpleRelationalEntityPersister<>(parentMappingStrategy, dialect, connectionConfiguration);
 	}
 	
@@ -599,10 +599,14 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return the created {@link PrimaryKey}
 	 */
 	@VisibleForTesting
-	PrimaryKey addIdentifyingPrimarykey(Identification identification) {
+	PrimaryKey addIdentifyingPrimarykey(Identification identification, MappingPerTable inheritanceMappingPerTable) {
 		Table pkTable = this.tableMap.get(identification.identificationDefiner);
-		AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
-		Column primaryKey = pkTable.addColumn(columnNamingStrategy.giveName(accessorDefinition), accessorDefinition.getMemberType());
+		Column identifierColumn = inheritanceMappingPerTable.giveMapping(pkTable).get(identification.getIdAccessor());
+		Column primaryKey = nullable(identifierColumn)
+			.getOr(() -> {
+				AccessorDefinition identifierDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
+				return pkTable.addColumn(columnNamingStrategy.giveName(identifierDefinition), identifierDefinition.getMemberType());
+			});
 		primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
 		primaryKey.primaryKey();
 		if (identification.getIdentifierPolicy() instanceof ColumnOptions.AfterInsertIndentifierPolicy) {
@@ -629,7 +633,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return the mapping between property accessor and their column in target tables, never null
 	 */
 	@VisibleForTesting
-	MappingPerTable collectEmbeddedMappingFromInheritance() {
+	MappingPerTable collectPropertiesMappingFromInheritance() {
 		MappingPerTable result = new MappingPerTable();
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		
@@ -840,17 +844,17 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	/**
 	 * 
-	 * @param isIdentifyingConfiguration
-	 * @param targetTable
-	 * @param mapping
-	 * @param propertiesSetByConstructor
-	 * @param identification
-	 * @param beanType
-	 * @param beanFactory optional, if null default beantype constructor will be used
-	 * @param <X>
-	 * @param <I>
-	 * @param <T>
-	 * @return
+	 * @param isIdentifyingConfiguration true for a root mapping (will use {@link Identification#insertionManager}), false for inheritance case (will use {@link Identification#identificationDefiner}) 
+	 * @param targetTable {@link Table} to use by created {@link ClassMappingStrategy}
+	 * @param mapping properties to be managed by created {@link ClassMappingStrategy}
+	 * @param propertiesSetByConstructor properties set by contructor ;), to avoid re-setting them (and even look for a setter for them) 
+	 * @param identification {@link Identification} to use (see isIdentifyingConfiguration)
+	 * @param beanType entity type to be managed by created {@link ClassMappingStrategy}
+	 * @param entityFactoryProvider optional, if null default bean type constructor will be used
+	 * @param <X> entity type
+	 * @param <I> identifier type
+	 * @param <T> {@link Table} type
+	 * @return a new {@link ClassMappingStrategy} built from all arguments
 	 */
 	static <X, I, T extends Table> ClassMappingStrategy<X, I, T> createClassMappingStrategy(
 			boolean isIdentifyingConfiguration,
@@ -859,7 +863,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			ValueAccessPointSet propertiesSetByConstructor,
 			Identification identification,
 			Class<X> beanType,
-			@Nullable Function<Function<Column, Object>, X> beanFactory) {
+			@Nullable EntityMappingConfiguration.EntityFactoryProvider<X> entityFactoryProvider) {
 
 		Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
 		ReversibleAccessor idAccessor = identification.getIdAccessor();
@@ -871,7 +875,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		SimpleIdMappingStrategy<X, I> simpleIdMappingStrategy = new SimpleIdMappingStrategy<>(idAccessor, identifierInsertionManager,
 				new SimpleIdentifierAssembler<>(primaryKey));
 		
-		if (beanFactory == null) {
+		Function<Function<Column, Object>, X> beanFactory;
+		if (entityFactoryProvider == null) {
 			Constructor<X> constructorById = Reflections.findConstructor(beanType, idDefinition.getMemberType());
 			if (constructorById == null) {
 				Constructor<X> defaultConstructor = Reflections.findConstructor(beanType);
@@ -889,6 +894,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			} else {
 				beanFactory = c -> Reflections.newInstance(constructorById, c.apply(simpleIdMappingStrategy.getIdentifierAssembler().getColumn()));
 			}
+		} else {
+			beanFactory = entityFactoryProvider.giveEntityFactory(targetTable);
 		}
 		
 		ClassMappingStrategy<X, I, T> result = new ClassMappingStrategy<X, I, T>(beanType, targetTable, (Map) mapping, simpleIdMappingStrategy, beanFactory);

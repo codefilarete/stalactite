@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.gama.lang.Reflections;
 import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Arrays;
@@ -26,7 +25,6 @@ import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
 import org.gama.lang.exception.NotImplementedException;
 import org.gama.lang.function.Hanger.Holder;
-import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorDefinition;
@@ -39,15 +37,11 @@ import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingConfiguration.FluentEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
 import static org.gama.lang.Nullable.nullable;
 import static org.gama.lang.collection.Iterables.stream;
@@ -186,17 +180,6 @@ class BeanMappingBuilder {
 		// assert that column binder is registered : it will throw en exception if the binder is not found
 		if (linkage.getParameterBinder() != null) {
 			columnBinderRegistry.register(column, linkage.getParameterBinder());
-		} else {
-			try {
-				columnBinderRegistry.getBinder(column);
-			} catch (BindingException e) {
-				throw new MappingConfigurationException(column.getAbsoluteName() + " has no matching binder,"
-						+ " please consider adding one to dialect binder registry or use one of the "
-						+ toMethodReferenceString(
-						(SerializableTriFunction<FluentEmbeddableMappingConfiguration, SerializableFunction, EmbeddableMappingConfigurationProvider, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-								FluentEmbeddableMappingConfiguration::embed) + " methods"
-				);
-			}
 		}
 	}
 	

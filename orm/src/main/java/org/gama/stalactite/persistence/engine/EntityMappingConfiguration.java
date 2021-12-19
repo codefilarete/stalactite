@@ -9,8 +9,8 @@ import org.gama.lang.collection.ReadOnlyIterator;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.configurer.CascadeMany;
-import org.gama.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.engine.configurer.CascadeOne;
+import org.gama.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -23,8 +23,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	Class<C> getEntityType();
 	
-	@SuppressWarnings("squid:S1452")
-	Function<Function<Column, Object>, C> getEntityFactory();
+	EntityFactoryProvider<C> getEntityFactoryConfiguration();
 	
 	TableNamingStrategy getTableNamingStrategy();
 	
@@ -84,6 +83,11 @@ public interface EntityMappingConfiguration<C, I> {
 				return result;
 			}
 		};
+	}
+
+	interface EntityFactoryProvider<C> {
+
+		Function<Function<Column, Object>, C> giveEntityFactory(Table table);
 	}
 	
 	interface InheritanceConfiguration<E, I> {
