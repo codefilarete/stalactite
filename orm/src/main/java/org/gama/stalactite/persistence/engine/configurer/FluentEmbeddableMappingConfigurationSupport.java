@@ -142,22 +142,22 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter) {
 		return addPropertyOptions(addMapping(setter, null));
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter) {
 		return addPropertyOptions(addMapping(getter, null));
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter, String columnName) {
 		return addPropertyOptions(addMapping(setter, columnName));
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName) {
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter, String columnName) {
 		return addPropertyOptions(addMapping(getter, columnName));
 	}
 	
@@ -197,25 +197,25 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter) {
 		LinkageSupport<C> linkage = addMapping(setter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter) {
 		LinkageSupport<C> linkage = addMapping(getter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName) {
 		LinkageSupport<C> linkage = addMapping(setter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName) {
 		LinkageSupport<C> linkage = addMapping(getter, columnName);
 		return addEnumOptions(linkage);
 	}

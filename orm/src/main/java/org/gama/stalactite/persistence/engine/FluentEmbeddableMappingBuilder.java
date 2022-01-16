@@ -14,21 +14,21 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter);
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter);
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter);
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName);
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter, String columnName);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName);
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName);
 	
 	FluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
 	

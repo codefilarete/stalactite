@@ -84,11 +84,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 						.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 								.addSubClass(subentityBuilder(Car.class)
-										.add(Car::getId)
-										.add(Car::getModel), "CAR")
+										.map(Car::getId)
+										.map(Car::getModel), "CAR")
 								.addSubClass(subentityBuilder(Truk.class)
-										.add(Truk::getId)
-										.add(Truk::getColor), "TRUK"))
+										.map(Truk::getId)
+										.map(Truk::getColor), "TRUK"))
 						.build(persistenceContext1),
 						persistenceContext1.getConnectionProvider() },
 				{	"joined tables",
@@ -96,11 +96,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 						.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 								.addSubClass(subentityBuilder(Car.class)
-										.add(Car::getId)
-										.add(Car::getModel))
+										.map(Car::getId)
+										.map(Car::getModel))
 								.addSubClass(subentityBuilder(Truk.class)
-										.add(Truk::getId)
-										.add(Truk::getColor)))
+										.map(Truk::getId)
+										.map(Truk::getColor)))
 						.build(persistenceContext2),
 						persistenceContext2.getConnectionProvider() },
 				{	"table per class",
@@ -108,11 +108,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 						.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 								.addSubClass(subentityBuilder(Car.class)
-										.add(Car::getId)
-										.add(Car::getModel))
+										.map(Car::getId)
+										.map(Car::getModel))
 								.addSubClass(subentityBuilder(Truk.class)
-										.add(Truk::getId)
-										.add(Truk::getColor)))
+										.map(Truk::getId)
+										.map(Truk::getColor)))
 						.build(persistenceContext3),
 						persistenceContext3.getConnectionProvider() },
 		};
@@ -168,9 +168,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
-								.add(Car::getId)
-								.add(Car::getModel)
-								.add(Car::getColor), "CAR"))
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor), "CAR"))
 					.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
@@ -222,12 +222,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 							.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 									.addSubClass(subentityBuilder(Car.class)
-											.add(Car::getId)
-											.add(Car::getModel)
-											.add(Car::getColor), "CAR")
+											.map(Car::getId)
+											.map(Car::getModel)
+											.map(Car::getColor), "CAR")
 									.addSubClass(subentityBuilder(Truk.class)
-											.add(Truk::getId)
-											.add(Truk::getColor), "TRUK"))
+											.map(Truk::getId)
+											.map(Truk::getColor), "TRUK"))
 							.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
@@ -290,13 +290,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
-					.add(Vehicle::getColor)
+					.map(Vehicle::getColor)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
-									.add(Car::getModel), "CAR")
+									.map(Car::getId)
+									.map(Car::getModel), "CAR")
 							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getId), "TRUK"))
+									.map(Truk::getId), "TRUK"))
 					.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
@@ -379,9 +379,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
-									.add(Car::getModel)
-									.add(Car::getColor), "CAR"))
+									.map(Car::getId)
+									.map(Car::getModel)
+									.map(Car::getColor), "CAR"))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -434,9 +434,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
-									.add(Car::getModel)
-									.add(Car::getColor)))
+									.map(Car::getId)
+									.map(Car::getModel)
+									.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
@@ -488,12 +488,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
-									.add(Car::getModel)
-									.add(Car::getColor))
+									.map(Car::getId)
+									.map(Car::getModel)
+									.map(Car::getColor))
 							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getId)
-									.add(Truk::getColor)))
+									.map(Truk::getId)
+									.map(Truk::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
@@ -581,13 +581,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
-					.add(Vehicle::getColor)
+					.map(Vehicle::getColor)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
-									.add(Car::getModel))
+									.map(Car::getId)
+									.map(Car::getModel))
 							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getId)))
+									.map(Truk::getId)))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
@@ -676,9 +676,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
-									.add(Car::getModel)
-									.add(Car::getColor)))
+									.map(Car::getId)
+									.map(Car::getModel)
+									.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// DML tests
@@ -731,8 +731,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getModel)
-									.add(Car::getColor)))
+									.map(Car::getModel)
+									.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains children tables
@@ -784,10 +784,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getModel)
-									.add(Car::getColor))
+									.map(Car::getModel)
+									.map(Car::getColor))
 							.addSubClass(subentityBuilder(Truk.class)
-									.add(Truk::getColor)))
+									.map(Truk::getColor)))
 					.build(persistenceContext);
 
 			// Schema contains children tables
@@ -860,10 +860,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
 					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
-					.add(Vehicle::getColor)
+					.map(Vehicle::getColor)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getModel))
+									.map(Car::getModel))
 							.addSubClass(subentityBuilder(Truk.class)
 									))
 					.build(persistenceContext);
@@ -943,9 +943,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 					.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
-									.add(Car::getId)
-									.add(Car::getModel)
-									.add(Car::getColor)))
+									.map(Car::getId)
+									.map(Car::getModel)
+									.map(Car::getColor)))
 					.build(persistenceContext);
 			
 			// DML tests

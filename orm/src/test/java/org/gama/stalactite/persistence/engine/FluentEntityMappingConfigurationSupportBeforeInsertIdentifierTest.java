@@ -50,7 +50,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	void insert_basic() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
-				.add(Car::getModel)
+				.map(Car::getModel)
 				.build(persistenceContext);
 		
 		// DML tests
@@ -78,10 +78,10 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	void insert_oneToOne() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
-				.add(Car::getModel)
-				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
+				.map(Car::getModel)
+				.mapOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
 						.mapKey(Engine::getId, IdentifierPolicy.beforeInsert(longSequence))
-						.add(Engine::getModel))
+						.map(Engine::getModel))
 				.build(persistenceContext);
 		
 		// DML tests
@@ -112,10 +112,10 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	void insert_oneToOne_ownedByReverseSide() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
-				.add(Car::getModel)
-				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
+				.map(Car::getModel)
+				.mapOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
 						.mapKey(Engine::getId, IdentifierPolicy.beforeInsert(longSequence))
-						.add(Engine::getModel))
+						.map(Engine::getModel))
 				.mappedBy(Engine::getCar)
 				.build(persistenceContext);
 		
@@ -156,7 +156,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.add(Car::getModel)
+				.map(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
@@ -195,7 +195,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.add(Car::getModel)
+				.map(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		

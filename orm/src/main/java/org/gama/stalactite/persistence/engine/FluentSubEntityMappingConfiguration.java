@@ -22,38 +22,38 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, String columnName);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, String columnName);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType,
 																															EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
-	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
 																															EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
 	FluentSubEntityMappingConfiguration<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
@@ -67,7 +67,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -78,7 +78,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -90,7 +90,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -102,7 +102,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Set}.
@@ -115,19 +115,19 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Set} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Set<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	<O, J, S extends Set<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends Set<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
@@ -140,19 +140,19 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @param <J> type of identifier of {@code O} (target entities)
 	 * @param <S> refined {@link List} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends List<O>>
 	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
+	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration);
 	
 	<O, J, S extends List<O>, T extends Table>
 	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends List<O>, T extends Table>
 	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter,
 																							  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);

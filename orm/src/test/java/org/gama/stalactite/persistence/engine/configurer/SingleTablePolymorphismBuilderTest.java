@@ -46,9 +46,9 @@ class SingleTablePolymorphismBuilderTest {
 				.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(subentityBuilder(Car.class)
-								.add(Car::getModel)
+								.map(Car::getModel)
 								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
-										.add(Color::getRgb)).override(Color::getRgb, colorTable), "CAR"));
+										.map(Color::getRgb)).override(Color::getRgb, colorTable), "CAR"));
 		
 		
 		assertThatThrownBy(() -> configuration.build(persistenceContext, new Table("TargetTable")))

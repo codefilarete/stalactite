@@ -27,7 +27,7 @@ class BeanMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Vehicle, Object> vehicleObjectFluentEntityMappingConfigurationSupport =
 				new FluentEntityMappingConfigurationSupport<>(Vehicle.class);
 		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getColor, embeddableBuilder(Color.class)
-				.add(Color::getRgb))
+				.map(Color::getRgb))
 				.override(Color::getRgb, colorTable);
 		Table result = BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
 		assertThat(result).isSameAs(expectedResult);
@@ -42,8 +42,8 @@ class BeanMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Vehicle, Object> vehicleObjectFluentEntityMappingConfigurationSupport =
 				new FluentEntityMappingConfigurationSupport<>(Vehicle.class);
 		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getOwner, embeddableBuilder(Person.class)
-						.add(Person::getName)
-						.add(Person::getVersion))
+						.map(Person::getName)
+						.map(Person::getVersion))
 				.override(Person::getName, nameColumn)
 				.override(Person::getVersion, versionColumn);
 		assertThatThrownBy(() -> BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()))
@@ -58,7 +58,7 @@ class BeanMappingBuilderTest {
 		FluentEntityMappingConfigurationSupport<Vehicle, Object> vehicleObjectFluentEntityMappingConfigurationSupport =
 				new FluentEntityMappingConfigurationSupport<>(Vehicle.class);
 		vehicleObjectFluentEntityMappingConfigurationSupport.embed(Vehicle::getOwner, MappingEase.embeddableBuilder(Person.class)
-				.add(Person::getName))
+				.map(Person::getName))
 				.override(Person::getName, nameColumn);
 		Table result = BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping());
 		assertThat(result).isSameAs(expectedResult);

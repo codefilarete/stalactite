@@ -46,9 +46,9 @@ class JoinTablePolymorphismBuilderTest {
 				.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(subentityBuilder(Car.class)
-								.add(Car::getModel)
+								.map(Car::getModel)
 								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
-										.add(Color::getRgb))
+										.map(Color::getRgb))
 								.override(Color::getRgb, colorTable), new Table("TargetTable")));
 		
 		

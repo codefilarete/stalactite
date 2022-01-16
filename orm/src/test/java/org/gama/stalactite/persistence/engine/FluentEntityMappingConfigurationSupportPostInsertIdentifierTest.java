@@ -38,7 +38,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	void insert_basic() {
 		EntityPersister<Car, Long> carPersister = MappingEase.entityBuilder(Car.class, long.class)
 				.mapKey(Car::getId, IdentifierPolicy.afterInsert())
-				.add(Car::getModel)
+				.map(Car::getModel)
 				.build(persistenceContext);
 		
 		// DML tests
@@ -66,10 +66,10 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 	void insert_oneToOne() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.mapKey(Car::getId, IdentifierPolicy.afterInsert())
-				.add(Car::getModel)
-				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
+				.map(Car::getModel)
+				.mapOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
 						.mapKey(Engine::getId, IdentifierPolicy.afterInsert())
-						.add(Engine::getModel))
+						.map(Engine::getModel))
 				.build(persistenceContext);
 		
 		// DML tests
@@ -110,7 +110,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		
 		EntityPersister<Car, Long> carPersister = MappingEase
 				.entityBuilder(Car.class, long.class)
-				.add(Car::getModel)
+				.map(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
@@ -152,7 +152,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		
 		EntityPersister<Car, Long> carPersister = MappingEase
 				.entityBuilder(Car.class, long.class)
-				.add(Car::getModel)
+				.map(Car::getModel)
 				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		

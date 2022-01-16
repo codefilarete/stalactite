@@ -133,7 +133,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * Variant of {@link #usingConstructor(Function, Column)} with 2 {@link Column}s : first one is expected to be primary key,
 		 * while second one is an extra data.
 		 * About extra data : if it has an equivalent property, then it should be marked as set by constructor to avoid a superfluous
-		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, its mapping declaration ({@link #add(SerializableFunction, Column)})
+		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, its mapping declaration ({@link #map(SerializableFunction, Column)})
 		 * should use this column as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 2-args constructor to use (can also be a method factory, not a pure class constructor)
@@ -159,7 +159,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * Variant of {@link #usingConstructor(BiFunction, Column, Column)} with 3 {@link Column}s : first one is expected to be primary key,
 		 * while second and third one are extra data.
 		 * About extra data : if they have equivalent properties, then they should be marked as set by constructor to avoid a superfluous
-		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, their mapping declarations ({@link #add(SerializableFunction, Column)})
+		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, their mapping declarations ({@link #map(SerializableFunction, Column)})
 		 * should use the columns as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 3-args constructor to use (can also be a method factory, not a pure class constructor)
@@ -192,7 +192,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * code will depend on {@link Column}) which represent a kind of {@link java.sql.ResultSet} so one can fulfill any property of its instance
 		 * the way he wants.
 		 * <br/>
-		 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} and {@link #add(SerializableFunction, Column)}.
+		 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} and {@link #map(SerializableFunction, Column)}.
 		 *
 		 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 		 */
@@ -242,141 +242,43 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingFactory(Function<Function<Column<T, ?>, ?>, C> factory);
 	}
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter);
+	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter);
+	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, String columnName);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName);
+	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, String columnName);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
+	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
+	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, String columnName);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, String columnName);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
+	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType,
 																												   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
-	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
+	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
 																												   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
 	FluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	FluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
-	
-	/**
-	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
-	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
-	 * <br/>
-	 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
-	 * that the property is already set by constructor so there's no reason to set it again.
-	 * 
-	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-	 * @param input the column to read in {@link java.sql.ResultSet} and make its value given as factory first argument
-	 * @param <X> constructor first argument type
-	 */
-	<X, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<T, X> input);
-	
-	/**
-	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
-	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
-	 * <br/>
-	 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
-	 * that the property is already set by constructor so there's no reason to set it again.
-	 *
-	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-	 * @param input1 the column to read in {@link java.sql.ResultSet} and make its value given as factory first argument
-	 * @param input2 the column to read in {@link java.sql.ResultSet} and make its value given as factory second argument
-	 * @param <X> constructor first argument type
-	 * @param <Y> constructor second argument type
-	 */
-	<X, Y, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
-																			   Column<T, X> input1,
-																			   Column<T, Y> input2);
-
-	/**
-	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
-	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
-	 * <br/><br/>
-	 * this method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
-	 * that the property is already set by constructor so there's no reason to set it again.
-	 *
-	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-	 * @param input1 the column to read in {@link java.sql.ResultSet} and make its value given as factory first argument
-	 * @param input2 the column to read in {@link java.sql.ResultSet} and make its value given as factory second argument
-	 * @param input3 the column to read in {@link java.sql.ResultSet} and make its value given as factory third argument
-	 * @param <X> constructor first argument type
-	 * @param <Y> constructor second argument type
-	 * @param <Z> constructor third argument type
-	 */
-	<X, Y, Z, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
-																				  Column<T, X> input1,
-																				  Column<T, Y> input2,
-																				  Column<T, Z> input3);
-
-	/**
-	 * Variant of {@link #useConstructor(Function, Column)} with only column name.
-	 *
-	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-	 * @param columnName column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
-	 * @param <X> constructor first argument type
-	 */
-	<X> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, String columnName);
-	
-	/**
-	 * Variant of {@link #useConstructor(BiFunction, Column, Column)} with only column names.
-	 *
-	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-	 * @param columnName1 column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
-	 * @param columnName2 column name to read in {@link java.sql.ResultSet} and make its value given as factory second argument
-	 * @param <X> constructor first argument type
-	 */
-	<X, Y> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory, String columnName1, String columnName2);
-	
-	/**
-	 * Variant of {@link #useConstructor(TriFunction, Column, Column, Column)} with only column names.
-	 *
-	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-	 * @param columnName1 column name to read in {@link java.sql.ResultSet} and make its value given as factory first argument
-	 * @param columnName2 column name to read in {@link java.sql.ResultSet} and make its value given as factory second argument
-	 * @param columnName3 column name to read in {@link java.sql.ResultSet} and make its value given as factory third argument
-	 * @param <X> constructor first argument type
-	 */
-	<X, Y, Z> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
-															  String columnName1,
-															  String columnName2,
-															  String columnName3);
-	
-	/**
-	 * Indicates a constructor to use instead of a default no-arg one (for Select feature).
-	 * Can be necessary for some entities that doesn't expose their default constructor to fulfill some business rules.
-	 * This method is an extended version of {@link #useConstructor(TriFunction, Column, Column, Column)}
-	 * where factory must accept a <pre>Function<? extends Column, ? extends Object></pre> as unique argument (be aware that as a consequence its
-	 * code will depend on {@link Column}) which represent a kind of {@link java.sql.ResultSet} so one can fulfill any property of its instance
-	 * as one wants.
-	 * <br/>
-	 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} which declares
-	 * that the property is already set by constructor so there's no reason to set it again.
-	 *
-	 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-	 */
-	<T extends Table<T>, O> FluentEntityMappingBuilder<C, I> useConstructor(Function<Function<Column<T, O>, O>, C> factory);
 	
 	/**
 	 * Declares the inherited mapping.
@@ -409,7 +311,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -420,7 +322,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -432,7 +334,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -444,7 +346,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Set}.
@@ -457,19 +359,19 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Set} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Set<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends Set<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	addOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends Set<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
@@ -482,19 +384,19 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O} (target entities)
 	 * @param <S> refined {@link List} type
 	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #addOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends List<O>>
 	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends List<O>, T extends Table>
 	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends List<O>, T extends Table>
 	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	addOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	

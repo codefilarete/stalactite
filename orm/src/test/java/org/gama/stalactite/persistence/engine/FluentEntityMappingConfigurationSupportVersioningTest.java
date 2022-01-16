@@ -58,8 +58,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getName)
 				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
+				.map(Country::getName)
+				.map(Country::getDescription)
 				.build(persistenceContext));
 	}
 	
@@ -73,8 +73,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
+				.map(Country::getName)
+				.map(Country::getDescription)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -125,8 +125,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 					}
 				})
 				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
+				.map(Country::getName)
+				.map(Country::getDescription)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -169,8 +169,8 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription)
+				.map(Country::getName)
+				.map(Country::getDescription)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

@@ -23,7 +23,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy) 
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableBiConsumer<C, O> setter);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
 	
 	/**
 	 * Adds a property to be mapped. Column name will be extracted from getter according to the Java Bean convention naming.
@@ -33,7 +33,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy)
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableFunction<C, O> getter);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableFunction<C, O> getter);
 	
 	/**
 	 * Adds a property to be mapped and overrides its default column name.
@@ -42,7 +42,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @param <O> setter return type / property type to be mapped
 	 * @return this
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableBiConsumer<C, O> setter, String columnName);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableBiConsumer<C, O> setter, String columnName);
 	
 	/**
 	 * Adds a property to be mapped and overrides its default column name.
@@ -51,15 +51,15 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @param <O> getter input type / property type to be mapped
 	 * @return this
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> add(SerializableFunction<C, O> getter, String columnName);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableFunction<C, O> getter, String columnName);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName);
 	
 	/**
 	 * Please note that we can't create a generic type for {@code ? super C} by prefixing the method signature with {@code <X super C>}

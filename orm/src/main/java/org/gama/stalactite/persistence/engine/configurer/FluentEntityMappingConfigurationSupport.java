@@ -4,7 +4,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -260,69 +259,69 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter) {
-		return add(setter, (String) null);
+	public <O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter) {
+		return map(setter, (String) null);
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter) {
-		return add(getter, (String) null);
+	public <O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter) {
+		return map(getter, (String) null);
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
+	public <O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, String columnName) {
 		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
+	public <O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, String columnName) {
 		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column) {
+	public <O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column) {
 		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <O> FluentMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<? extends Table, O> column) {
+	public <O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, Column<? extends Table, O> column) {
 		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter) {
-		return addEnum(setter, (String) null);
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter) {
+		return mapEnum(setter, (String) null);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter) {
-		return addEnum(getter, (String) null);
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter) {
+		return mapEnum(getter, (String) null);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, @javax.annotation.Nullable String columnName) {
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, @javax.annotation.Nullable String columnName) {
 		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, @javax.annotation.Nullable String columnName) {
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, @javax.annotation.Nullable String columnName) {
 		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column) {
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column) {
 		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column) {
+	public <E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column) {
 		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
@@ -337,7 +336,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter,
+	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,
 																											   Class<O> componentType) {
 		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
 				propertiesMappingConfigurationSurrogate, null);
@@ -352,7 +351,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter,
+	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
 																											   Class<O> componentType) {
 		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(setter, componentType, null);
 		elementCollections.add(elementCollectionLinkage);
@@ -366,7 +365,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableFunction<C, S> getter,
+	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,
 																														  Class<O> componentType,
 																														  EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
 		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
@@ -383,7 +382,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> addCollection(SerializableBiConsumer<C, S> setter,
+	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
 																														  Class<O> componentType,
 																														  EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
 		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(setter, componentType, embeddableConfiguration);
@@ -445,21 +444,21 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(
 			SerializableFunction<C, O> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return addOneToOne(getter, mappingConfiguration, null);
+		return mapOneToOne(getter, mappingConfiguration, null);
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return addOneToOne(setter, mappingConfiguration, null);
+		return mapOneToOne(setter, mappingConfiguration, null);
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			T table) {
@@ -475,7 +474,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(
+	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(
 			SerializableFunction<C, O> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			T table) {
@@ -529,14 +528,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, S extends Set<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
+	public <O, J, S extends Set<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return addOneToManySet(getter, mappingConfiguration, null);
+		return mapOneToManySet(getter, mappingConfiguration, null);
 	}
 		
 	@Override
-	public <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
+	public <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -547,11 +546,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, S>(captureMethod(getter)).toMutator());
-		return addOneToManySet(propertyAccessor, getterReference, mappingConfiguration, table);
+		return mapOneToManySet(propertyAccessor, getterReference, mappingConfiguration, table);
 	}
 	
 	@Override
-	public <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
+	public <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
 			SerializableBiConsumer<C, S> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -561,10 +560,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
-		return addOneToManySet(propertyAccessor, setterReference, mappingConfiguration, table);
+		return mapOneToManySet(propertyAccessor, setterReference, mappingConfiguration, table);
 	}
 	
-	private <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> addOneToManySet(
+	private <O, J, S extends Set<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
@@ -578,14 +577,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, S extends List<O>> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
+	public <O, J, S extends List<O>> FluentMappingBuilderOneToManyListOptions<C, I, O, S> mapOneToManyList(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return addOneToManyList(getter, mappingConfiguration, null);
+		return mapOneToManyList(getter, mappingConfiguration, null);
 	}
 		
 	@Override
-	public <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
+	public <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> mapOneToManyList(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -596,11 +595,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, S>(captureMethod(getter)).toMutator());
-		return addOneToManyList(propertyAccessor, getterReference, mappingConfiguration, table);
+		return mapOneToManyList(propertyAccessor, getterReference, mappingConfiguration, table);
 	}
 	
 	@Override
-	public <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
+	public <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> mapOneToManyList(
 			SerializableBiConsumer<C, S> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -610,10 +609,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
-		return addOneToManyList(propertyAccessor, setterReference, mappingConfiguration, table);
+		return mapOneToManyList(propertyAccessor, setterReference, mappingConfiguration, table);
 	}
 	
-	private <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> addOneToManyList(
+	private <O, J, S extends List<O>, T extends Table> FluentMappingBuilderOneToManyListOptions<C, I, O, S> mapOneToManyList(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
@@ -683,107 +682,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				}, true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O>>) (Class) FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions.class);
-	}
-	
-	@Override
-	public <X, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, Column<T, X> input) {
-		this.<T, Object>useConstructor(row -> factory.apply((X) row.apply((Column<T, Object>) input)));
-		return this;
-	}
-	
-	@Override
-	public <X, Y, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
-																					  Column<T, X> input1,
-																					  Column<T, Y> input2) {
-		this.<T, Object>useConstructor(row -> factory.apply(
-			(X) row.apply((Column<T, Object>) input1),
-			(Y) row.apply((Column<T, Object>) input2)
-		));
-		return this;
-	}
-	
-	@Override
-	public <X, Y, Z, T extends Table<T>> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
-																						 Column<T, X> input1,
-																						 Column<T, Y> input2,
-																						 Column<T, Z> input3) {
-		this.<T, Object>useConstructor(row -> factory.apply(
-			(X) row.apply((Column<T, Object>) input1),
-			(Y) row.apply((Column<T, Object>) input2),
-			(Z) row.apply((Column<T, Object>) input3)));
-		return this;
-	}
-	
-	@Override
-	public <X> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, String columnName) {
-		this.entityFactoryProvider = table -> {
-			Column<Table, Object> column1 = table.getColumn(columnName);
-			if (column1 == null) {
-				throw new IllegalArgumentException("Unknown column " + columnName + " in table " + table.getAbsoluteName()
-					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
-			}
-			return row -> factory.apply((X) row.apply(column1));
-		};
-		return this;
-	}
-	
-	@Override
-	public <X, Y> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
-																  String columnName1,
-																  String columnName2) {
-		this.entityFactoryProvider = table -> {
-			Column<Table, Object> column1 = table.getColumn(columnName1);
-			if (column1 == null) {
-				throw new IllegalArgumentException("Unknown column " + columnName1 + " in table " + table.getAbsoluteName()
-					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
-			}
-			Column<Table, Object> column2 = table.getColumn(columnName2);
-			if (column2 == null) {
-				throw new IllegalArgumentException("Unknown column " + columnName2 + " in table " + table.getAbsoluteName()
-					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
-			}
-			return row -> factory.apply(
-				(X) row.apply(column1),
-				(Y) row.apply(column2)
-			);
-		};
-		return this;
-	}
-	
-	@Override
-	public <X, Y, Z> FluentEntityMappingBuilder<C, I> useConstructor(TriFunction<X, Y, Z, C> factory,
-																  String columnName1,
-																  String columnName2,
-																  String columnName3) {
-		this.entityFactoryProvider = table -> {
-			Column<Table, Object> column1 = table.getColumn(columnName1);
-			if (column1 == null) {
-				throw new IllegalArgumentException("Unknown column " + columnName1 + " in table " + table.getAbsoluteName()
-					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
-			}
-			Column<Table, Object> column2 = table.getColumn(columnName2);
-			if (column2 == null) {
-				throw new IllegalArgumentException("Unknown column " + columnName2 + " in table " + table.getAbsoluteName()
-					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
-			}
-			Column<Table, Object> column3 = table.getColumn(columnName3);
-			if (column3 == null) {
-				throw new IllegalArgumentException("Unknown column " + columnName3 + " in table " + table.getAbsoluteName()
-					+ " among " + Iterables.collect(table.getColumns(), Column<Table, Object>::getName, HashSet::new));
-			}
-			return row -> factory.apply(
-				(X) row.apply(column1),
-				(Y) row.apply(column2),
-				(Z) row.apply(column3)
-			);
-		};
-		return this;
-	}
-	
-	@Override
-	public <T extends Table<T>, O> FluentEntityMappingBuilder<C, I> useConstructor(Function<Function<Column<T, O>, O>, C> factory) {
-		this.entityFactoryProvider = new EntityFactoryConfiguration<>((Function) factory);
-		return this;
 	}
 	
 	@Override
@@ -860,7 +758,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private <V> FluentEntityMappingBuilder<C, I> versionedBy(SerializableFunction<C, V> getter, AccessorByMethodReference methodReference, Serie<V> serie) {
 		optimisticLockOption = new OptimisticLockOption<>(methodReference, serie);
-		add(getter);
+		map(getter);
 		return this;
 	}
 	

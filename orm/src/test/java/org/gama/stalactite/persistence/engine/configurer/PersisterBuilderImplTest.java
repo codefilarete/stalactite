@@ -118,8 +118,8 @@ public class PersisterBuilderImplTest {
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
 				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Country::getName)
-				.add(Country::getDescription));
+				.map(Country::getName)
+				.map(Country::getDescription));
 		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 10);
 		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, Mockito.mock(PersisterRegistry.class), null))
 				.isInstanceOf(UnsupportedOperationException.class)
@@ -131,11 +131,11 @@ public class PersisterBuilderImplTest {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
 						.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.add(Car::getModel)
+						.map(Car::getModel)
 						.mapSuperClass(embeddableBuilder(AbstractVehicle.class)
 								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-										.add(Timestamp::getCreationDate)
-										.add(Timestamp::getModificationDate)
+										.map(Timestamp::getCreationDate)
+										.map(Timestamp::getModificationDate)
 								)
 						)
 		);
@@ -176,12 +176,12 @@ public class PersisterBuilderImplTest {
 	void collectEmbeddedMappingFromInheritance_fromInheritedClasses() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getModel)
+						.map(Car::getModel)
 						.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 								.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-										.add(Timestamp::getCreationDate)
-										.add(Timestamp::getModificationDate))
+										.map(Timestamp::getCreationDate)
+										.map(Timestamp::getModificationDate))
 						)
 		);
 		
@@ -227,15 +227,15 @@ public class PersisterBuilderImplTest {
 		Table abstractVehicleTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getModel)
+						.map(Car::getModel)
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
 								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
-										.add(Color::getRgb))
+										.map(Color::getRgb))
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 										.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-												.add(Timestamp::getCreationDate)
-												.add(Timestamp::getModificationDate)))
+												.map(Timestamp::getCreationDate)
+												.map(Timestamp::getModificationDate)))
 								// AbstractVehicle class doesn't get a Table, for testing purpose
 								.withJoinedTable())
 						// Vehicle class does get a Table, for testing purpose
@@ -313,10 +313,10 @@ public class PersisterBuilderImplTest {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
 						.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.add(Car::getModel)
+						.map(Car::getModel)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.add(Timestamp::getCreationDate)
-								.add(Timestamp::getModificationDate))
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate))
 						);
 		
 		Table dummyTable = new Table("Car");
@@ -504,12 +504,12 @@ public class PersisterBuilderImplTest {
 	void build_returnsAlreadyExisintgPersister() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getModel)
-						.add(Vehicle::getColor)
+						.map(Car::getModel)
+						.map(Vehicle::getColor)
 						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.add(Timestamp::getCreationDate)
-								.add(Timestamp::getModificationDate))
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate))
 		);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -521,12 +521,12 @@ public class PersisterBuilderImplTest {
 	void build_singleTable_singleClass() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getModel)
-						.add(Vehicle::getColor)
+						.map(Car::getModel)
+						.map(Vehicle::getColor)
 						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.add(Timestamp::getCreationDate)
-								.add(Timestamp::getModificationDate))
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate))
 		);
 		
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -550,14 +550,14 @@ public class PersisterBuilderImplTest {
 	void build_singleTable_withInheritance() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getModel)
+						.map(Car::getModel)
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
-								.add(Vehicle::getColor)
+								.map(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 										.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-												.add(Timestamp::getCreationDate)
-												.add(Timestamp::getModificationDate))
+												.map(Timestamp::getCreationDate)
+												.map(Timestamp::getModificationDate))
 								)
 						)
 		);
@@ -583,14 +583,14 @@ public class PersisterBuilderImplTest {
 	void build_joinedTables() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.add(Car::getModel)
+						.map(Car::getModel)
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
-								.add(Vehicle::getColor)
+								.map(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
 										.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-												.add(Timestamp::getCreationDate)
-												.add(Timestamp::getModificationDate))
+												.map(Timestamp::getCreationDate)
+												.map(Timestamp::getModificationDate))
 								).withJoinedTable()
 						).withJoinedTable()
 		);
@@ -646,7 +646,7 @@ public class PersisterBuilderImplTest {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
 				.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.add(Car::getModel));
+				.map(Car::getModel));
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);
 		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
@@ -690,8 +690,8 @@ public class PersisterBuilderImplTest {
 				entityBuilder(AbstractVehicle.class, Identifier.class)
 						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.add(Timestamp::getCreationDate)
-								.add(Timestamp::getModificationDate))
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
@@ -721,8 +721,8 @@ public class PersisterBuilderImplTest {
 				entityBuilder(AbstractVehicle.class, Identifier.class)
 						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.add(Timestamp::getCreationDate)
-								.add(Timestamp::getModificationDate))
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 							.addSubClass(subentityBuilder(Vehicle.class, Identifier.class)))
 		);
@@ -754,8 +754,8 @@ public class PersisterBuilderImplTest {
 				entityBuilder(AbstractVehicle.class, Identifier.class)
 						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.add(Timestamp::getCreationDate)
-								.add(Timestamp::getModificationDate))
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 								.addSubClass(subentityBuilder(Vehicle.class, Identifier.class), "Vehicle"))
 		);

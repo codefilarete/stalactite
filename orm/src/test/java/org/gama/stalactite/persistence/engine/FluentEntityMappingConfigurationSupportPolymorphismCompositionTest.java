@@ -70,13 +70,13 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(subentityBuilder(Car.class)
-								.add(Car::getId)
-								.add(Car::getModel)
-								.add(Car::getColor)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
 								// A second level of polymorphism
 								.mapPolymorphism(PolymorphismPolicy.<Car>joinTable()
 										.addSubClass(subentityBuilder(ElectricCar.class)
-												.add(ElectricCar::getPlug)))
+												.map(ElectricCar::getPlug)))
 						))
 				.build(persistenceContext);
 		
@@ -131,13 +131,13 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
-								.add(Car::getId)
-								.add(Car::getModel)
-								.add(Car::getColor)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
 								// A second level of polymorphism
 								.mapPolymorphism(PolymorphismPolicy.<Car>singleTable()
 										.addSubClass(subentityBuilder(ElectricCar.class)
-												.add(ElectricCar::getPlug), "CAR")))
+												.map(ElectricCar::getPlug), "CAR")))
 				)
 				.build(persistenceContext);
 		
@@ -191,13 +191,13 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
-								.add(Car::getId)
-								.add(Car::getModel)
-								.add(Car::getColor)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
 								// A second level of polymorphism
 								.mapPolymorphism(PolymorphismPolicy.<Car>tablePerClass()
 										.addSubClass(subentityBuilder(ElectricCar.class)
-												.add(ElectricCar::getPlug))))
+												.map(ElectricCar::getPlug))))
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
@@ -211,13 +211,13 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
-										.add(Car::getId)
-										.add(Car::getModel)
-										.add(Car::getColor)
+										.map(Car::getId)
+										.map(Car::getModel)
+										.map(Car::getColor)
 										// A second level of polymorphism
 										.mapPolymorphism(PolymorphismPolicy.<Car>joinTable()
 												.addSubClass(subentityBuilder(ElectricCar.class)
-														.add(ElectricCar::getPlug)))
+														.map(ElectricCar::getPlug)))
 								, "CAR"))
 				.build(persistenceContext);
 		
@@ -271,13 +271,13 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
-								.add(Car::getId)
-								.add(Car::getModel)
-								.add(Car::getColor)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
 								// A second level of polymorphism
 								.mapPolymorphism(PolymorphismPolicy.<Car>singleTable()
 										.addSubClass(subentityBuilder(ElectricCar.class)
-												.add(ElectricCar::getPlug), "ELECTRIC_CAR")), "CAR")
+												.map(ElectricCar::getPlug), "ELECTRIC_CAR")), "CAR")
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
@@ -291,13 +291,13 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
-								.add(Car::getId)
-								.add(Car::getModel)
-								.add(Car::getColor)
+								.map(Car::getId)
+								.map(Car::getModel)
+								.map(Car::getColor)
 								// A second level of polymorphism
 								.mapPolymorphism(PolymorphismPolicy.<Car>tablePerClass()
 										.addSubClass(subentityBuilder(ElectricCar.class)
-												.add(ElectricCar::getPlug))), "CAR")
+												.map(ElectricCar::getPlug))), "CAR")
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
