@@ -89,10 +89,10 @@ class EntityGraphSelectExecutorTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
 		OptimizedUpdatePersister<Country, Identifier> persister = (OptimizedUpdatePersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
-			.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+			.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 			.add(Country::getName)
 			.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
-					.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.add(City::getName))
 					.mappedBy(City::getCountry)
 			.build(persistenceContext);
@@ -150,10 +150,10 @@ class EntityGraphSelectExecutorTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
 		EntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (EntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
-				.add(Country::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.add(Country::getName)
 				.addOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
-						.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName))
 				.mappedBy(City::getCountry)
 				.build(persistenceContext);

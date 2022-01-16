@@ -42,7 +42,7 @@ class TablePerClassPolymorphismBuilderTest {
 		Column colorTable = expectedResult.addColumn("myOverridingColumn", Integer.class);
 		
 		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
-				.add(Vehicle::getId).identifier(ALREADY_ASSIGNED)
+				.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getModel)

@@ -67,7 +67,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	void joinedTables_joinedTables() {
 		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
-				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(subentityBuilder(Car.class)
 								.add(Car::getId)
@@ -128,7 +128,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	void joinedTables_singleTable() {
 		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
-				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.add(Car::getId)
@@ -188,7 +188,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	void joinedTables_tablePerClass_isNotSupported() {
 		FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> builder = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
-				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.add(Car::getId)
@@ -208,7 +208,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	void singleTable_joinedTables() {
 		EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
-				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
 										.add(Car::getId)
@@ -268,7 +268,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	void singleTable_singleTable_isNotSupported() {
 		FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> builder = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
-				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.add(Car::getId)
@@ -288,7 +288,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	void singleTable_tablePerClass_isNotSupported() {
 		FluentEntityMappingBuilder<AbstractVehicle, Identifier<Long>> builder = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 				// mapped super class defines id
-				.add(AbstractVehicle::getId).identifier(ALREADY_ASSIGNED)
+				.mapKey(AbstractVehicle::getId, ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(MappingEase.<Car, Identifier<Long>>subentityBuilder(Car.class)
 								.add(Car::getId)

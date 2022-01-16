@@ -14,13 +14,14 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.gama.lang.Reflections;
 import org.gama.lang.VisibleForTesting;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.KeepOrderSet;
 import org.gama.lang.function.Functions;
 import org.gama.lang.function.Hanger.Holder;
+import org.gama.lang.function.SerializableTriFunction;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.ReversibleAccessor;
@@ -38,6 +39,8 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.gama.stalactite.persistence.engine.EntityPersister;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder;
+import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentEntityMappingBuilderKeyOptions;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
@@ -836,7 +839,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	private UnsupportedOperationException newMissingIdentificationException() {
-		SerializableBiFunction<ColumnOptions, IdentifierPolicy, ColumnOptions> identifierMethodReference = ColumnOptions::identifier;
+		SerializableTriFunction<FluentEntityMappingBuilder, SerializableBiConsumer<C, I>, IdentifierPolicy, FluentEntityMappingBuilderKeyOptions<C, I>>
+				identifierMethodReference = FluentEntityMappingBuilder::mapKey;
 		Method identifierSetter = this.methodSpy.findMethod(identifierMethodReference);
 		return new UnsupportedOperationException("Identifier is not defined for " + Reflections.toString(entityMappingConfiguration.getEntityType())
 				+ ", please add one through " + Reflections.toString(identifierSetter));

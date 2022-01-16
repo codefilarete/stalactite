@@ -74,12 +74,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		void crud_cycleWithIntermediary_ownedBySource() {
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(ALREADY_ASSIGNED)
+							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(ALREADY_ASSIGNED)
+									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -131,12 +131,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(ALREADY_ASSIGNED)
+							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(ALREADY_ASSIGNED)
+									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reverseGardenerId)
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -186,7 +186,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()));
 			
@@ -216,7 +216,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId));
 			
@@ -246,13 +246,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration())
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(ALREADY_ASSIGNED)
+							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(ALREADY_ASSIGNED)
+									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -311,13 +311,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(ALREADY_ASSIGNED)
+							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(ALREADY_ASSIGNED)
+									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -374,13 +374,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration())
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(ALREADY_ASSIGNED)
+							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(ALREADY_ASSIGNED)
+									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -425,13 +425,13 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
 					.addOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-							.add(House::getId).identifier(ALREADY_ASSIGNED)
+							.mapKey(House::getId, ALREADY_ASSIGNED)
 							.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-									.add(Address::getId).identifier(ALREADY_ASSIGNED)
+									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.add(Address::getLocation))
 							.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -474,13 +474,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			FluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class,
-					Identifier.LONG_TYPE)
-					.add(House::getId).identifier(ALREADY_ASSIGNED)
+			FluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
+					.mapKey(House::getId, ALREADY_ASSIGNED)
 					.add(House::getName);
 			EntityMappingConfiguration<House, Identifier<Long>> houseMappingConfiguration = houseMapping.getConfiguration();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getHouse, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.addOneToOne(Person::getHouse1, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -525,14 +524,14 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			// we need a holder to skip final variable problem 
 			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
 			FluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
-					.add(House::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(House::getId, ALREADY_ASSIGNED)
 					.addOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
-							.add(Address::getId).identifier(ALREADY_ASSIGNED)
+							.mapKey(Address::getId, ALREADY_ASSIGNED)
 							.add(Address::getLocation))
 					.addOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
 					.cascading(RelationMode.ALL_ORPHAN_REMOVAL);
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToOne(Person::getPartner, () -> personMappingConfiguration.get().getConfiguration()).mappedBy(reversePartnerId)
 					.addOneToOne(Person::getHouse, houseMapping).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
@@ -601,7 +600,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			persistenceContext = new PersistenceContext(dataSource, DIALECT);
 			
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration());
 		}
@@ -657,7 +656,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		@Test
 		void insertSelect_cycleIsDirect_ownedByReverseSide_1Parent_2Children() {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::getFather);
@@ -692,7 +691,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		void insertSelect_sibling_withAssociationTable() {
 			// we need a holder to skip final variable problem 
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 						.reverselySetBy(Person::setFather)
@@ -801,7 +800,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		void insertSelect_sibling_ownedByTarget() {
 			// we need a holder to skip final variable problem 
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 						.mappedBy(Person::setFather)
@@ -910,7 +909,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		void insertSelect_cycleIsDirect_withAssociationTable() {
 			// we need a holder to skip final variable problem 
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-					.add(Person::getId).identifier(ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.add(Person::getName)
 					.addOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::setFather)

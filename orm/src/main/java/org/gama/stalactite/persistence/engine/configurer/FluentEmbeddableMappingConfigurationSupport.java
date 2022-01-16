@@ -161,7 +161,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		return addPropertyOptions(addMapping(getter, columnName));
 	}
 	
-	FluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(AbstractLinkage<C> linkage) {
+	FluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(LinkageSupport<C> linkage) {
 		return new MethodReferenceDispatcher()
 				.redirect(PropertyOptions.class, new PropertyOptions() {
 					@Override
@@ -180,51 +180,47 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
 	}
 	
-	<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
-		ReversibleAccessor<C, E> mutator = Accessors.mutator(setter);
-		return addMapping(mutator, AccessorDefinition.giveDefinition(mutator), columnName);
+	<E> LinkageSupport<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
+		return addMapping(Accessors.mutator(setter), columnName);
 	}
 	
-	<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
-		ReversibleAccessor<C, E> accessor = Accessors.accessor(getter);
-		return addMapping(accessor, AccessorDefinition.giveDefinition(accessor), columnName);
+	<E> LinkageSupport<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
+		return addMapping(Accessors.accessor(getter), columnName);
 	}
 	
-	AbstractLinkage<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, AccessorDefinition accessorDefinition, @Nullable String columnName) {
-		AbstractLinkage<C> linkage = newLinkage(propertyAccessor, accessorDefinition.getMemberType(), columnName);
+	LinkageSupport<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, @Nullable String columnName) {
+		LinkageSupport<C> linkage1 = new LinkageSupport<>(propertyAccessor);
+		linkage1.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
+		LinkageSupport<C> linkage = linkage1;
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
-	protected <O> LinkageByColumnName<C> newLinkage(ReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
-		return new LinkageByColumnName<>(accessor, returnType, linkName);
-	}
-	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter) {
-		AbstractLinkage<C> linkage = addMapping(setter, null);
+		LinkageSupport<C> linkage = addMapping(setter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter) {
-		AbstractLinkage<C> linkage = addMapping(getter, null);
+		LinkageSupport<C> linkage = addMapping(getter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableBiConsumer<C, E> setter, String columnName) {
-		AbstractLinkage<C> linkage = addMapping(setter, columnName);
+		LinkageSupport<C> linkage = addMapping(setter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> addEnum(SerializableFunction<C, E> getter, String columnName) {
-		AbstractLinkage<C> linkage = addMapping(getter, columnName);
+		LinkageSupport<C> linkage = addMapping(getter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
-	FluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(AbstractLinkage<C> linkage) {
+	FluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(LinkageSupport<C> linkage) {
 		return new MethodReferenceDispatcher()
 				.redirect(EnumOptions.class, new EnumOptions() {
 					
@@ -326,8 +322,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 * 
 	 * @param <T> property owner type
 	 */
-	// TODO: rename as LinkageSupport, or even replace interface Linkage by this class: leave interface Linkage since we have setters here
-	protected static class AbstractLinkage<T> implements Linkage<T> {
+	protected static class LinkageSupport<T> implements Linkage<T> {
 		
 		/** Optional binder for this mapping */
 		private ParameterBinder parameterBinder;
@@ -341,7 +336,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		private final ReversibleAccessor<T, ?> function;
 		
-		public AbstractLinkage(ReversibleAccessor<T, ?> function) {
+		public LinkageSupport(ReversibleAccessor<T, ?> function) {
 			this.function = function;
 		}
 		
@@ -394,7 +389,9 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		@Override
 		public Class<?> getColumnType() {
-			return org.gama.lang.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnType).getOr(() -> AccessorDefinition.giveDefinition(this.function).getMemberType());
+			return this.columnOptions instanceof ColumnLinkageOptionsByColumn
+					? ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
+					: AccessorDefinition.giveDefinition(this.function).getMemberType();
 			
 		}
 	}
@@ -404,23 +401,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Nullable
 		String getColumnName();
 		
-		Class<?> getColumnType();
-		
-		void primaryKey();
-		
 	}
 	
 	static class ColumnLinkageOptionsByName implements ColumnLinkageOptions {
 		
 		private final String columnName;
 		
-		private final Class<?> columnType;
-		
-		private boolean primaryKey;
-		
-		ColumnLinkageOptionsByName(@Nullable String columnName, Class<?> columnType) {
+		ColumnLinkageOptionsByName(@Nullable String columnName) {
 			this.columnName = columnName;
-			this.columnType = columnType;
 		}
 		
 		@Nullable
@@ -429,15 +417,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return this.columnName;
 		}
 		
-		@Override
-		public Class<?> getColumnType() {
-			return this.columnType;
-		}
-		
-		@Override
-		public void primaryKey() {
-			this.primaryKey = true;
-		}
 	}
 	
 	static class ColumnLinkageOptionsByColumn implements ColumnLinkageOptions {
@@ -457,60 +436,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return this.column.getName();
 		}
 		
-		@Override
 		public Class<?> getColumnType() {
 			return this.column.getJavaType();
-		}
-		
-		@Override
-		public void primaryKey() {
-			if (!this.column.isPrimaryKey()){
-				// safeguard about misconfiguration, even if mapping would work it smells bad configuration
-				throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
-			}
-		}
-	}
-	
-	/**
-	 * Simple support for {@link Linkage}
-	 * 
-	 * @param <T> property owner type
-	 */
-	public static class LinkageByColumnName<T> extends AbstractLinkage<T> {
-		
-//		private final ReversibleAccessor<T, ?> function;
-		private final Class<?> columnType;
-		/** Column name override if not default */
-		@Nullable
-		private final String columnName;
-		
-		/**
-		 * Constructor by {@link ReversibleAccessor}
-		 *
-		 * @param accessor a {@link ReversibleAccessor}
-		 * @param columnType the Java type of the column, will be converted to sql type thanks to {@link org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry}
-		 * @param columnName an override of the default name that will be generated
-		 */
-		public <O> LinkageByColumnName(ReversibleAccessor<T, O> accessor, Class<O> columnType, @Nullable String columnName) {
-			super(accessor);
-			this.columnType = columnType;
-			this.columnName = columnName;
-		}
-		
-//		@Override
-//		public <O> ReversibleAccessor<T, O> getAccessor() {
-//			return (ReversibleAccessor<T, O>) function;
-//		}
-		
-		@Override
-		@Nullable
-		public String getColumnName() {
-			return columnName;
-		}
-		
-		@Override
-		public Class<?> getColumnType() {
-			return columnType;
 		}
 	}
 	

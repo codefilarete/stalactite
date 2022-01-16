@@ -49,7 +49,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void insert_basic() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.add(Car::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
 				.add(Car::getModel)
 				.build(persistenceContext);
 		
@@ -77,11 +77,11 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void insert_oneToOne() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.add(Car::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
-					.add(Engine::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
-					.add(Engine::getModel))
+						.mapKey(Engine::getId, IdentifierPolicy.beforeInsert(longSequence))
+						.add(Engine::getModel))
 				.build(persistenceContext);
 		
 		// DML tests
@@ -111,11 +111,11 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void insert_oneToOne_ownedByReverseSide() {
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
-				.add(Car::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(Car::getId, IdentifierPolicy.beforeInsert(longSequence))
 				.add(Car::getModel)
 				.addOneToOne(Car::getEngine, entityBuilder(Engine.class, long.class)
-					.add(Engine::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
-					.add(Engine::getModel))
+						.mapKey(Engine::getId, IdentifierPolicy.beforeInsert(longSequence))
+						.add(Engine::getModel))
 				.mappedBy(Engine::getCar)
 				.build(persistenceContext);
 		
@@ -148,7 +148,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void multipleInheritance() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, long.class)
-				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.beforeInsert(longSequence))
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
@@ -187,7 +187,7 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 	@Test
 	void multipleInheritance_joinedTables() {
 		EntityMappingConfiguration<AbstractVehicle, Long> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, long.class)
-				.add(AbstractVehicle::getId).identifier(IdentifierPolicy.beforeInsert(longSequence))
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.beforeInsert(longSequence))
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)

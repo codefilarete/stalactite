@@ -38,6 +38,58 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy);
 	
 	/**
+	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
+	 * By default, the entity no-arg constructor is used to instanciate them, but you may change this behavior thanks to one of the
+	 * {@link FluentEntityMappingBuilderKeyOptions#usingConstructor(Function)} methods
+	 *
+	 * @param getter getter of the property to be used as key
+	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
+	 * @return an object for configuration chaining
+	 */
+	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy, Column<T, I> column);
+	
+	/**
+	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
+	 * By default, the entity no-arg constructor is used to instanciate them, but you may change this behavior thanks to one of the
+	 * {@link FluentEntityMappingBuilderKeyOptions#usingConstructor(Function)} methods
+	 *
+	 * @param getter getter of the property to be used as key
+	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
+	 * @return an object for configuration chaining
+	 */
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy, String columnName);
+	
+	/**
+	 * Maps given property as identifier, using given {@link IdentifierPolicy}.
+	 * By default, the entity no-arg constructor is used to instanciate them.
+	 *
+	 * @param setter setter of the property to be used as key
+	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
+	 * @return an object for configuration chaining
+	 */
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy);
+	
+	/**
+	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
+	 * By default, the entity no-arg constructor is used to instanciate them.
+	 *
+	 * @param setter setter of the property to be used as key
+	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
+	 * @return an object for configuration chaining
+	 */
+	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy, Column<T, I> column);
+	
+	/**
+	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
+	 * By default, the entity no-arg constructor is used to instanciate them.
+	 *
+	 * @param setter setter of the property to be used as key
+	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
+	 * @return an object for configuration chaining
+	 */
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy, String columnName);
+	
+	/**
 	 * Interface for {@link #mapKey(SerializableFunction, IdentifierPolicy)} family methods return. Aimed at chaining to configure entity key mapping. 
 	 * @param <C> entity type
 	 * @param <I> identifier type
@@ -468,9 +520,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	FluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
 	interface FluentMappingBuilderPropertyOptions<C, I> extends FluentEntityMappingBuilder<C, I>, ColumnOptions<C, I> {
-		
-		@Override
-		FluentMappingBuilderPropertyOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
 		
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> mandatory();

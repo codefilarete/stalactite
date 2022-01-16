@@ -42,11 +42,11 @@ class EntityCriteriaSupportTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
-		EntityConfiguredPersister<Country, Long> persister = MappingEase.entityBuilder(Country.class, long.class)
-				.add(Country::getId).identifier(IdentifierPolicy.afterInsert())
+		EntityConfiguredPersister<Country, Identifier<Long>> persister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.add(Country::getName)
-				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, long.class)
-						.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
@@ -89,8 +89,8 @@ class EntityCriteriaSupportTest {
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
 		Column nameColumn = countryTable.addColumn("name", String.class);
-		EntityMappingStrategy<Country, Long, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
-				.add(Country::getId).identifier(IdentifierPolicy.afterInsert())
+		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.add(Country::getName)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
@@ -109,11 +109,11 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		EntityMappingStrategy<Country, Long, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
-				.add(Country::getId).identifier(IdentifierPolicy.afterInsert())
+		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.add(Country::getName)
-				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, long.class)
-						.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName), cityTable)
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
@@ -134,11 +134,11 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		EntityMappingStrategy<Country, Long, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
-				.add(Country::getId).identifier(IdentifierPolicy.afterInsert())
+		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.add(Country::getName)
-				.addOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, long.class)
-						.add(City::getId).identifier(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.addOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.add(City::getName), cityTable
 				)
 				.build(dummyPersistenceContext, countryTable)
@@ -158,8 +158,8 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		EntityMappingStrategy<Country, Long, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
-				.add(Country::getId).identifier(IdentifierPolicy.afterInsert())
+		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
 		
@@ -176,8 +176,8 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		EntityMappingStrategy<Country, Long, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, long.class)
-				.add(Country::getId).identifier(IdentifierPolicy.afterInsert())
+		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.build(dummyPersistenceContext, countryTable)
 				.getMappingStrategy();
 		

@@ -42,7 +42,7 @@ import org.gama.stalactite.persistence.engine.OneToManyOptions;
 import org.gama.stalactite.persistence.engine.OneToOneOptions;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
 import org.gama.stalactite.persistence.engine.PropertyOptions;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.AbstractLinkage;
+import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport.OneToManyOptionsSupport;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
@@ -140,25 +140,25 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, String columnName) {
-		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
+		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, String columnName) {
-		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
+		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column) {
-		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
+		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> add(SerializableFunction<C, O> getter, Column<? extends Table, O> column) {
-		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
+		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
@@ -174,25 +174,25 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, @javax.annotation.Nullable String columnName) {
-		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
+		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, @javax.annotation.Nullable String columnName) {
-		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
+		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column) {
-		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
+		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> addEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column) {
-		AbstractLinkage<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
+		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
@@ -568,16 +568,11 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			this.entityConfigurationSupport = entityConfigurationSupport;
 		}
 		
-		@Override
-		protected <O> EntityLinkageByColumnName<C> newLinkage(ReversibleAccessor<C, O> accessor, Class<O> returnType, String linkName) {
-			return new EntityLinkageByColumnName<>(accessor, returnType, linkName);
-		}
-		
-		<E> AbstractLinkage<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
+		<E> LinkageSupport<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
 			return addMapping(Accessors.mutator(setter), column);
 		}
 		
-		<E> AbstractLinkage<C> addMapping(SerializableFunction<C, E> getter, Column column) {
+		<E> LinkageSupport<C> addMapping(SerializableFunction<C, E> getter, Column column) {
 			return addMapping(Accessors.accessor(getter), column);
 		}
 		
@@ -586,13 +581,14 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
-		AbstractLinkage<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, Column column) {
-			EntityLinkageByColumn<C> newLinkage = new EntityLinkageByColumn<>(propertyAccessor, column);
+		LinkageSupport<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, Column column) {
+			LinkageSupport<C> newLinkage = new LinkageSupport<>(propertyAccessor);
+			newLinkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 			mapping.add(newLinkage);
 			return newLinkage;
 		}
 		
-		private FluentSubEntityMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(AbstractLinkage<C> newMapping) {
+		private FluentSubEntityMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(LinkageSupport<C> newMapping) {
 			return new MethodDispatcher()
 					.redirect(PropertyOptions.class, new PropertyOptions() {
 						@Override

@@ -165,9 +165,6 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	interface FluentSubEntityMappingBuilderPropertyOptions<C, I> extends FluentSubEntityMappingConfiguration<C, I>, ColumnOptions<C, I> {
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
-		
-		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I> mandatory();
 		
 		@Override

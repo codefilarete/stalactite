@@ -20,6 +20,8 @@ import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.engine.PersisterRegistry;
 import org.gama.stalactite.persistence.engine.TableNamingStrategy;
+import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
+import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ColumnLinkageOptionsByName;
 import org.gama.stalactite.persistence.engine.model.City;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
@@ -74,17 +76,14 @@ class CascadeOneConfigurerTest {
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
-		EntityLinkageByColumnName identifierLinkage = new EntityLinkageByColumnName<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id")),
-				Identifier.class,
-				"id"
+		LinkageSupport<City> identifierLinkage = new LinkageSupport<>(
+				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
 		);
-		identifierLinkage.primaryKey();
-		EntityLinkageByColumnName nameLinkage = new EntityLinkageByColumnName<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name")),
-				String.class,
-				"name"
+		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
+		LinkageSupport<City> nameLinkage = new LinkageSupport<>(
+				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name"))
 		);
+		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));
 		
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
@@ -188,17 +187,14 @@ class CascadeOneConfigurerTest {
 		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
 		
-		EntityLinkageByColumnName identifierLinkage = new EntityLinkageByColumnName<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id")),
-				Identifier.class,
-				"id"
+		LinkageSupport<City> identifierLinkage = new LinkageSupport<>(
+				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
 		);
-		identifierLinkage.primaryKey();
-		EntityLinkageByColumnName nameLinkage = new EntityLinkageByColumnName<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name")),
-				String.class,
-				"name"
+		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
+		LinkageSupport<City> nameLinkage = new LinkageSupport<>(
+				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name"))
 		);
+		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));
 		
 		EmbeddableMappingConfiguration<City> cityPropertiesMapping = mock(EmbeddableMappingConfiguration.class);
 		// declaring mapping

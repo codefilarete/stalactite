@@ -12,14 +12,6 @@ import org.gama.lang.function.Sequence;
 public interface ColumnOptions<C, I> extends PropertyOptions {
 	
 	/**
-	 * Defines the column as the identifier of the entity.
-	 * 
-	 * @param identifierPolicy an {@link IdentifierPolicy}
-	 * @return the enclosing {@link FluentEntityMappingBuilder}
-	 */
-	ColumnOptions<C, I> identifier(IdentifierPolicy identifierPolicy);
-	
-	/**
 	 * Marks the property as mandatory, which makes the mapped column not nullable : does not make a null checking at runtime.
 	 * Note that using this method on an identifier one as no purpose because identifiers are already madatory.
 	 */
