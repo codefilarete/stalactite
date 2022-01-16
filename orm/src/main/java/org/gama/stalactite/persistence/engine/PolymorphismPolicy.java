@@ -52,7 +52,7 @@ public interface PolymorphismPolicy<C> {
 		}
 		
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>((SubEntityMappingConfiguration<? extends C>) entityMappingConfigurationProvider, table));
+			subClasses.add(new Duo<>(entityMappingConfigurationProvider, table));
 			return this;
 		}
 		

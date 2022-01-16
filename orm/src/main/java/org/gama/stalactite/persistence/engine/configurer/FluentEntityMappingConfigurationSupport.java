@@ -67,7 +67,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import static org.gama.lang.Reflections.propertyName;
 
 /**
- * A class that stores configuration made throught a {@link FluentEntityMappingBuilder}
+ * A class that stores configuration made through a {@link FluentEntityMappingBuilder}
  * 
  * @author Guillaume Mary
  */

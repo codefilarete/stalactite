@@ -27,8 +27,9 @@ import org.gama.stalactite.persistence.structure.Table;
 public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>, EntityMappingConfigurationProvider<C, I> {
 	
 	/**
-	 * Maps given property as identifier, using given {@link IdentifierPolicy}
-	 * No-arg contructor is used to instanciate entities
+	 * Maps given property as identifier, using given {@link IdentifierPolicy}.
+	 * By default, the entity no-arg constructor is used to instanciate them, but you may change this behavior thanks to one of the
+	 * {@link FluentEntityMappingBuilderKeyOptions#usingConstructor(Function)} methods
 	 *
 	 * @param getter getter of the property to be used as key
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
@@ -394,7 +395,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} throught a {@link Set}.
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Set}.
 	 * This method is dedicated to {@link Set} because generic types are erased so you can't defined a generic type extending {@link Set} and refine
 	 * return type or arguments in order to distinct it from a {@link List} version.
 	 *
@@ -419,7 +420,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} throught a {@link List}.
+	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
 	 * This method is dedicated to {@link List} because generic types are erased so you can't defined a generic type extending {@link List} and refine
 	 * return type or arguments in order to distinct it from a {@link Set} version.
 	 * 

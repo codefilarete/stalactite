@@ -105,7 +105,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> addOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} throught a {@link Set}.
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Set}.
 	 * This method is dedicated to {@link Set} because generic types are erased so you can't defined a generic type extending {@link Set} and refine
 	 * return type or arguments in order to distinct it from a {@link List} version.
 	 *
@@ -130,7 +130,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	addOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<? super O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} throught a {@link List}.
+	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
 	 * This method is dedicated to {@link List} because generic types are erased so you can't defined a generic type extending {@link List} and refine
 	 * return type or arguments in order to distinct it from a {@link Set} version.
 	 *

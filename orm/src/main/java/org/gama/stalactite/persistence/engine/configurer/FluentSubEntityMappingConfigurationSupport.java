@@ -50,7 +50,7 @@ import org.gama.stalactite.persistence.structure.Table;
 import static org.gama.lang.Reflections.propertyName;
 
 /**
- * A class that stores configuration made throught a {@link FluentSubEntityMappingConfiguration}
+ * A class that stores configuration made through a {@link FluentSubEntityMappingConfiguration}
  * 
  * @author Guillaume Mary
  */

@@ -144,7 +144,7 @@ class CascadeOneConfigurerTest {
 		assertThat(cityTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "name"));
 		assertThat(cityTable.getForeignKeys()).extracting(ForeignKey::getName).isEmpty();
 		
-		// Additional checking on foreign key binder : it must have a binder due to relation owned by source throught Country::getCapital
+		// Additional checking on foreign key binder : it must have a binder due to relation owned by source through Country::getCapital
 		ParameterBinder<Identifier> cityParameterBinder = dialect.getColumnBinderRegistry().getBinder(countryTableCapitalColumn);
 		assertThat(cityParameterBinder).isNotNull();
 		

@@ -91,7 +91,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		
-		Column<T, D> discriminatorColumn = createDiscriminatorToSelect();
+		Column<T, D> discriminatorColumn = ensureDiscriminatorColumn();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
 		SingleTablePolymorphismPersister<C, I, ?, ?> surrogate = new SingleTablePolymorphismPersister<>(
@@ -114,7 +114,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 		}
 	}
 	
-	private Column<T, D> createDiscriminatorToSelect() {
+	private Column<T, D> ensureDiscriminatorColumn() {
 		Column<T, D> result = mainPersister.getMappingStrategy().getTargetTable().addColumn(
 				polymorphismPolicy.getDiscriminatorColumn(),
 				polymorphismPolicy.getDiscrimintorType());

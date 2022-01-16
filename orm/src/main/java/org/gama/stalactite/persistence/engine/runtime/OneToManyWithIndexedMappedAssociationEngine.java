@@ -101,7 +101,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	private void addIndexSelection(String joinNodeName, Column<Table, TRGTID> primaryKey) {
 		// Implementation note: 2 possiblities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
-		// - keep object indexes and sort the target List throught a comparator of indexes
+		// - keep object indexes and sort the target List through a comparator of indexes
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
 		// May be changed if any performance issue is noticed

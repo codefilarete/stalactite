@@ -6,7 +6,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**
- * Adds the possibility to override a property throught its {@link Column} to an {@link EmbedOptions}.
+ * Adds the possibility to override a property through its {@link Column} to an {@link EmbedOptions}.
  * Only available on entity configurations (those inheriting from {@link FluentEntityMappingBuilder}), not on embeddable ones (those inherting from
  * {@link FluentEmbeddableMappingBuilder}) because the latter can be reused on different tables, hence letting the possibilty to override a
  * {@link Column} doesn't make sense.

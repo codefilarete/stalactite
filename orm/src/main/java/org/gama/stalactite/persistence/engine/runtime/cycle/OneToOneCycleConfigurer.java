@@ -10,7 +10,7 @@ import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.Po
 import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 
 /**
- * Container of {@link CascadeOneConfigurer}s of same entity type and their relation name (throught {@link RelationConfigurer}).
+ * Container of {@link CascadeOneConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link CascadeOneConfigurer}

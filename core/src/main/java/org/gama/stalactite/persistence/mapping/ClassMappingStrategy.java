@@ -73,7 +73,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	/**
 	 * Main constructor
 	 * Oriented for single column identifier / primary key. Prefer {@link #ClassMappingStrategy(Class, Table, Map, IdMappingStrategy)} for composed id.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined throught {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}
+	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}
 	 * 
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
@@ -112,7 +112,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	/**
 	 * Secondary constructor, for composed id because one can precisely define the {@link IdMappingStrategy} by giving a {@link ComposedIdMappingStrategy}
 	 * for instance.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined throught {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}
+	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}
 	 *
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table

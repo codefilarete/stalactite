@@ -6,7 +6,7 @@ Schema can be enhanced by defining [ForeignKeys](ForeignKey.java) and [Indexes](
  [schema generation](../sql/ddl/DDLSchemaGenerator.java).
 
 # Table (re)usage
-It's encouraged to reuse table instances throught treatments by declaring it once instead of duplicating declaration.
+It's encouraged to reuse table instances through treatments by declaring it once instead of duplicating declaration.
 One can do such a thing:
 <pre>
 public class PersonTable extends Table {

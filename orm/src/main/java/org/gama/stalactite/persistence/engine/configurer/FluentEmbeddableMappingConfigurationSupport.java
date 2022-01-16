@@ -541,7 +541,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			this.accessor = new PropertyAccessor<>(
 					new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
 					new MutatorByMethodReference<>(targetSetter));
-			// looking for the target type because its necessary to find its persister (and other objects)
+			// looking for the target type because it's necessary to find its persister (and other objects)
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 			this.beanMappingBuilder = beanMappingBuilder;
 		}
@@ -553,7 +553,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			this.accessor = new PropertyAccessor<>(
 					new AccessorByMethodReference<>(targetGetter),
 					new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator());
-			// looking for the target type because its necessary to find its persister (and other objects)
+			// looking for the target type because it's necessary to find its persister (and other objects)
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 			this.beanMappingBuilder = beanMappingBuilder;
 		}

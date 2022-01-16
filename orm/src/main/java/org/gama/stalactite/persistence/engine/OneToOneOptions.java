@@ -18,7 +18,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * Defines the bidirectional relationship.
 	 * No need to additionally call {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(Column)}.
 	 *
-	 * If the relationship is already defined throught {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
+	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (setter)
@@ -31,7 +31,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * Defines the bidirectional relationship.
 	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)} or {@link #mappedBy(Column)}.
 	 *
-	 * If the relationship is already defined throught {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (getter)
@@ -45,7 +45,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * Note that defining it this way will not allow relation to be fixed in memory (after select in database), prefer {@link #mappedBy(SerializableBiConsumer)}.
 	 * Use this method to define unidirectional relationship.
 	 *
-	 * If the relationship is already defined throught {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
+	 * If the relationship is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation

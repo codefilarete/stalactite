@@ -75,7 +75,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	public static ConnectionConfiguration wrapWithQueryCache(ConnectionConfiguration connectionConfiguration) {
 		ConnectionProvider delegate = connectionConfiguration.getConnectionProvider();
 		CachingQueryConnectionProvider cachingQueryConnectionProvider = new CachingQueryConnectionProvider(delegate);
-		// We created a proxy that will redirect ConnectionProvider#giveConnection to the caching one (then queries will be cached) and
+		// We create a proxy that will redirect ConnectionProvider#giveConnection to the caching one (then queries will be cached) and
 		// leave other methods invoked on original provider 
 		// NB : we use a Set to avoid error thrown by Proxy.newProxyInstance when an interface is present several time
 		Set<Class> interfaces = new HashSet<>(Iterables.copy(new InterfaceIterator(new ClassIterator(delegate.getClass(), null))));

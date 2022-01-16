@@ -16,7 +16,7 @@ import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 /**
  * Class for wrapping calls to {@link EntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into
  * {@link InsertListener#beforeInsert(Iterable)} and {@link InsertListener#afterInsert(Iterable)} (and corresponding methods for other methods),
- * this is made throught an internal {@link PersisterListenerCollection}.
+ * this is made through an internal {@link PersisterListenerCollection}.
  * 
  * @author Guillaume Mary
  */

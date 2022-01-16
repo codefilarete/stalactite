@@ -768,8 +768,9 @@ public class PersistenceContext implements PersisterRegistry {
 		
 		<I> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableFunction<I, C> javaBeanCtor, Column<? extends Table, I> column);
 		
-		<I, J> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor, Column<? extends Table, I> column1, Column<
-			? extends Table, J> column2);
+		<I, J> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableBiFunction<I, J, C> javaBeanCtor,
+														   Column<? extends Table, I> column1,
+														   Column<? extends Table, J> column2);
 		
 		<I, J, K> ExecutableBeanPropertyQueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> javaBeanCtor,
 															  Column<? extends Table, I> column1,
@@ -903,7 +904,7 @@ public class PersistenceContext implements PersisterRegistry {
 		@Override
 		public ConnectionProvider getConnectionProvider() {
 			// because we gave delegate instance at construction time we return ourselves, hence returning instance we'll benefit from transaction
-			// management throught TransactionObserver
+			// management through TransactionObserver
 			return this;
 		}
 		

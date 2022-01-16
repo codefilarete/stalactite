@@ -59,7 +59,7 @@ public class DDLDeployer {
 	
 	/**
 	 * Basic constructor that will create id own default {@link DDLGenerator}
-	 * Tables to deploy must be added throught {@link #getDdlGenerator()}.addTables(..)
+	 * Tables to deploy must be added through {@link #getDdlGenerator()}.addTables(..)
 	 * 
 	 * @param sqlTypeRegistry the SQL types per Column or Java type provider
 	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts
@@ -70,7 +70,7 @@ public class DDLDeployer {
 	
 	/**
 	 * Main constructor with mandatory objects for its work.
-	 * Tables to deploy must be added throught {@link #getDdlGenerator()}.addTables(..)
+	 * Tables to deploy must be added through {@link #getDdlGenerator()}.addTables(..)
 	 * 
 	 * @param ddlTableGenerator the SQL scripts provider
 	 * @param connectionProvider the {@link Connection} provider for executing SQL scripts

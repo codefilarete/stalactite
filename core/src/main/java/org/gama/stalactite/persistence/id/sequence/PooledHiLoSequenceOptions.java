@@ -1,9 +1,10 @@
 package org.gama.stalactite.persistence.id.sequence;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
-import org.gama.lang.function.ConverterRegistry;
 import org.gama.lang.bean.Objects;
+import org.gama.lang.function.ConverterRegistry;
 
 /**
  * Classe de stockage de la configuration de {@link PooledHiLoSequence}
@@ -25,8 +26,36 @@ public class PooledHiLoSequenceOptions {
 	private final SequenceStorageOptions storageOptions;
 	private final long initialValue;
 	
+	/**
+	 * Simple constructor.
+	 * Pool size will be set to default, and storage options will be those of {@link SequenceStorageOptions#DEFAULT}
+	 *
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
+	 */
+	public PooledHiLoSequenceOptions(String sequenceName) {
+		this(50, sequenceName);
+	}
+	
+	/**
+	 * Simple constructor.
+	 * Storage options will be those of {@link SequenceStorageOptions#DEFAULT}
+	 *
+	 * @param poolSize the size of the pool
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
+	 */
+	public PooledHiLoSequenceOptions(int poolSize, String sequenceName) {
+		this(poolSize, sequenceName, SequenceStorageOptions.DEFAULT, 0);
+	}
+	
+	/**
+	 * Simple constructor.
+	 *
+	 * @param poolSize the size of the pool
+	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
+	 * @param storageOptions options for storing the sequence in the database
+	 */
 	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequenceStorageOptions storageOptions) {
-		this(poolSize, sequenceName, Objects.preventNull(storageOptions, SequenceStorageOptions.DEFAULT), 0);
+		this(poolSize, sequenceName, storageOptions, 0);
 	}
 	
 	/**
@@ -34,10 +63,10 @@ public class PooledHiLoSequenceOptions {
 	 * 
 	 * @param poolSize the size of the pool
 	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
-	 * @param storageOptions options for storing the sequence in the database
+	 * @param storageOptions options for storing the sequence in the database, if null {@link SequenceStorageOptions#DEFAULT} will be used
 	 * @param initialValue the initial value for the very first insertion, never used again
 	 */
-	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequenceStorageOptions storageOptions, long initialValue) {
+	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, @Nullable SequenceStorageOptions storageOptions, long initialValue) {
 		this.poolSize = poolSize;
 		this.sequenceName = sequenceName;
 		this.storageOptions = Objects.preventNull(storageOptions, SequenceStorageOptions.DEFAULT);
