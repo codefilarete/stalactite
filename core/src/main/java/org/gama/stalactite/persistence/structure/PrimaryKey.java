@@ -42,7 +42,7 @@ public class PrimaryKey<T extends Table> {
 		this.columns.add((Column<T, Object>) column);
 	}
 	
-	public Set<Column<T, Object>> getColumns() {
-		return Collections.unmodifiableSet(columns);
+	public <O> Set<Column<T, O>> getColumns() {
+		return (Set) Collections.unmodifiableSet(columns);
 	}
 }

@@ -396,7 +396,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				mapping.propertiesSetByConstructor,
 				identification,
 				mappingConfiguration.getEntityType(),
-				mappingConfiguration.getEntityFactoryConfiguration());
+				mappingConfiguration.getEntityFactoryProvider());
 		return new SimpleRelationalEntityPersister<>(parentMappingStrategy, dialect, connectionConfiguration);
 	}
 	

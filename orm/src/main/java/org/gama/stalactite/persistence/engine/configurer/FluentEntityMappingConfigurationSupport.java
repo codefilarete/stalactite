@@ -107,7 +107,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private PolymorphismPolicy<C> polymorphismPolicy;
 	
-	private EntityFactoryProvider<C> entityFactoryConfiguration;
+	private EntityFactoryProvider<C> entityFactoryProvider;
 	
 	/**
 	 * Creates a builder to map the given class for persistence
@@ -129,8 +129,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public EntityFactoryProvider<C> getEntityFactoryConfiguration() {
-		return entityFactoryConfiguration;
+	public EntityFactoryProvider<C> getEntityFactoryProvider() {
+		return entityFactoryProvider;
 	}
 	
 	@Override
@@ -219,6 +219,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public PolymorphismPolicy<C> getPolymorphismPolicy() {
 		return polymorphismPolicy;
+	}
+	
+	@Override
+	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy) {
+		AbstractLinkage<C> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy);
+		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
@@ -678,7 +684,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public <X> FluentEntityMappingBuilder<C, I> useConstructor(Function<X, C> factory, String columnName) {
-		this.entityFactoryConfiguration = table -> {
+		this.entityFactoryProvider = table -> {
 			Column<Table, Object> column1 = table.getColumn(columnName);
 			if (column1 == null) {
 				throw new IllegalArgumentException("Unknown column " + columnName + " in table " + table.getAbsoluteName()
@@ -693,7 +699,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	public <X, Y> FluentEntityMappingBuilder<C, I> useConstructor(BiFunction<X, Y, C> factory,
 																  String columnName1,
 																  String columnName2) {
-		this.entityFactoryConfiguration = table -> {
+		this.entityFactoryProvider = table -> {
 			Column<Table, Object> column1 = table.getColumn(columnName1);
 			if (column1 == null) {
 				throw new IllegalArgumentException("Unknown column " + columnName1 + " in table " + table.getAbsoluteName()
@@ -717,7 +723,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 																  String columnName1,
 																  String columnName2,
 																  String columnName3) {
-		this.entityFactoryConfiguration = table -> {
+		this.entityFactoryProvider = table -> {
 			Column<Table, Object> column1 = table.getColumn(columnName1);
 			if (column1 == null) {
 				throw new IllegalArgumentException("Unknown column " + columnName1 + " in table " + table.getAbsoluteName()
@@ -744,7 +750,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public <T extends Table<T>, O> FluentEntityMappingBuilder<C, I> useConstructor(Function<Function<Column<T, O>, O>, C> factory) {
-		this.entityFactoryConfiguration = new EntityFactoryConfiguration<>((Function) factory);
+		this.entityFactoryProvider = new EntityFactoryConfiguration<>((Function) factory);
 		return this;
 	}
 	
@@ -900,7 +906,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 								// we force primary key
 								((EntityLinkageByColumnName) newMapping).primaryKey();
 							} else if (newMapping instanceof EntityLinkageByColumn) {
-								if (!((EntityLinkageByColumn) newMapping).isPrimaryKey()){
+								if (!((EntityLinkageByColumn) newMapping).isPrimaryKey()) {
 									// safeguard about misconfiguration, even if mapping would work it smells bad configuration
 									throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
 								}
@@ -925,6 +931,129 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
 					.build((Class<FluentMappingBuilderPropertyOptions<C, I>>) (Class) FluentMappingBuilderPropertyOptions.class);
+		}
+		
+		<E> AbstractLinkage<C> addKeyMapping(SerializableBiConsumer<C, E> setter, IdentifierPolicy identifierPolicy) {
+			return addKeyMapping(Accessors.mutator(setter), identifierPolicy);
+		}
+		
+		<E> AbstractLinkage<C> addKeyMapping(SerializableFunction<C, E> getter, IdentifierPolicy identifierPolicy) {
+			return addKeyMapping(Accessors.accessor(getter), identifierPolicy);
+		}
+		
+		/**
+		 * 
+		 * @param propertyAccessor
+		 * @param identifierPolicy
+		 * @return
+		 */
+		AbstractLinkage<C> addKeyMapping(ReversibleAccessor<C, ?> propertyAccessor, IdentifierPolicy identifierPolicy) {
+			
+			// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
+			if (entityConfigurationSupport.identifierAccessor != null) {
+				throw new IllegalArgumentException("Identifier is already defined by " + AccessorDefinition.toString(entityConfigurationSupport.identifierAccessor));
+			}
+			AbstractLinkage<C> newLinkage = new AbstractLinkage<>(propertyAccessor);
+			entityConfigurationSupport.identifierAccessor = newLinkage.getAccessor();
+			mapping.add(newLinkage);
+			entityConfigurationSupport.identifierPolicy = identifierPolicy;
+			return newLinkage;
+		}
+		
+		private FluentEntityMappingBuilderKeyOptions<C, I> wrapForKeyOptions(AbstractLinkage<C> keyMapping) {
+			return new MethodDispatcher()
+					.redirect(KeyOptions.class, new KeyOptions<C, I>() {
+						
+						@Override
+						public KeyOptions<C, I> usingConstructor(Supplier<C> factory) {
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> factory.get();
+							return null;
+						}
+						
+						@Override
+						public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory) {
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> {
+								Column<?, I> primaryKey = Iterables.first(((Table<?>)table) .getPrimaryKey().getColumns());
+								return row -> factory.apply((I) row.apply(primaryKey));
+							};
+							return null;
+						}
+						
+						@Override
+						public <T extends Table> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input) {
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input));
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> factory.apply((I) row.apply(input));
+							return null;
+						}
+						
+						@Override
+						public KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName) {
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsByName(columnName, keyMapping.getColumnType()));
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> factory.apply((I) row.apply(table.getColumn(columnName)));
+							return null;
+						}
+						
+						@Override
+						public <X, T extends Table> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+																					  Column<T, I> input1,
+																					  Column<T, X> input2) {
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input1));
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> factory.apply((I) row.apply(input1),
+																											 (X) row.apply(input2));
+							return null;
+						}
+						
+						@Override
+						public <X> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+																	 String columnName1,
+																	 String columnName2) {
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsByName(columnName1, keyMapping.getColumnType()));
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> factory.apply((I) row.apply(table.getColumn(columnName1)),
+																											 (X) row.apply(table.getColumn(columnName2)));
+							return null;
+						}
+						
+						
+						@Override
+						public <X, Y, T extends Table> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+																												   Column<T, I> input1,
+																												   Column<T, X> input2,
+																												   Column<T, Y> input3) {
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(input1));
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> factory.apply((I) row.apply(input1),
+																											 (X) row.apply(input2),
+																											 (Y) row.apply(input3));
+							return null;
+						}
+						
+						@Override
+						public <X, Y> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+																		String columnName1,
+																		String columnName2,
+																		String columnName3) {
+							keyMapping.setColumnOptions(new ColumnLinkageOptionsByName(columnName1, keyMapping.getColumnType()));
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> factory.apply((I) row.apply(table.getColumn(columnName1)),
+																											 (X) row.apply(table.getColumn(columnName2)),
+																											 (Y) row.apply(table.getColumn(columnName3)));
+							return null;
+						}
+						
+						@Override
+						public <T extends Table> KeyOptions<C, I> usingFactory(Function<Function<Column<T, ?>, ?>, C> factory) {
+							keyMapping.setByConstructor();
+							entityConfigurationSupport.entityFactoryProvider = table -> row -> (C) factory.apply((Function) row);
+							return null;
+						}
+					}, true)
+					.fallbackOn(entityConfigurationSupport)
+					.build((Class<FluentEntityMappingBuilderKeyOptions<C, I>>) (Class) FluentEntityMappingBuilderKeyOptions.class);
 		}
 	}
 	

@@ -23,7 +23,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	Class<C> getEntityType();
 	
-	EntityFactoryProvider<C> getEntityFactoryConfiguration();
+	EntityFactoryProvider<C> getEntityFactoryProvider();
 	
 	TableNamingStrategy getTableNamingStrategy();
 	

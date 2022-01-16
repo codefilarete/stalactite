@@ -19,7 +19,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -30,6 +32,7 @@ import org.gama.lang.Reflections;
 import org.gama.lang.collection.Arrays;
 import org.gama.lang.collection.Iterables;
 import org.gama.lang.collection.Maps;
+import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
@@ -112,12 +115,214 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Nested
+	class MapKey {
+		
+		@Test
+		void calledTwice_throwsException() {
+			assertThatThrownBy(() -> {
+				MappingEase.entityBuilder(Toto.class, String.class)
+						.mapKey(Toto::getName, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.mapKey(Toto::getFirstName, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.add(Toto::getName)
+						.build(persistenceContext);
+			}).hasMessage("Identifier is already defined by Toto::getName");
+		}
+		
+		@Test
+		void byDefault_defaultConstructorIsInvoked_setterIsCalled() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class);
+			
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			EntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+					.add(Toto::getName)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto();
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isTrue();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isFalse();
+		}
+		
+		@Test
+		void usingConstructor_supplier_supplierIsCalled() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class);
+			
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			Supplier<Toto> constructor = Toto::newInstance;
+			EntityConfiguredPersister<Toto, Identifier> persister = MappingEase.entityBuilder(Toto.class, Identifier.class)
+					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.usingConstructor(constructor)
+					.add(Toto::getName)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto();
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isTrue();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isFalse();
+			assertThat(loadedInstance.getFirstName()).isEqualTo("set by static factory");
+		}
+		
+		@Test
+		void usingConstructor_constructorIsInvoked_setterIsNotCalled() {
+			Table totoTable = new Table("Toto");
+
+			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
+			EntityConfiguredPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) Identifier.class)
+					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.usingConstructor(constructor)
+					.add(Toto::getName)
+					.build(persistenceContext, totoTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto();
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
+		}
+		
+		@Test
+		void usingConstructor_1Arg_constructorIsInvoked_setterIsNotCalled() {
+			Table totoTable = new Table("Toto");
+			Column<Table<?>, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class).primaryKey();
+
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
+			EntityConfiguredPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) Identifier.class)
+					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.usingConstructor(constructor, idColumn)
+					.add(Toto::getName)
+					.build(persistenceContext, totoTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto();
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
+		}
+		
+		@Test
+		void usingConstructor_1ArgColumnName_constructorIsInvoked_setterIsNotCalled() {
+			Table totoTable = new Table("Toto");
+			
+			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			Function<Identifier<UUID>, Toto> constructor = (Function<Identifier<UUID>, Toto>) (Function) (Function<PersistedIdentifier<UUID>, Toto>) Toto::new;
+			EntityConfiguredPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) Identifier.class)
+					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.usingConstructor(constructor, "myId")
+					.add(Toto::getName)
+					.build(persistenceContext, totoTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto();
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
+		}
+		
+		@Test
+		void usingConstructor_2Args_constructorIsInvoked_setterIsNotCalled() {
+			Table totoTable = new Table("Toto");
+			Column<Table<?>, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class).primaryKey();
+			Column<Table<?>, String> nameColumn = totoTable.addColumn("name", String.class);
+			
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			BiFunction<Identifier<UUID>, String, Toto> constructor = (BiFunction<Identifier<UUID>, String, Toto>) (BiFunction) (BiFunction<PersistedIdentifier<UUID>, String, Toto>) Toto::new;
+			EntityConfiguredPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) Identifier.class)
+					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+						.usingConstructor(constructor, idColumn, nameColumn)
+					.add(Toto::getName).setByConstructor()	// avoiding superfluous property setting
+					.build(persistenceContext, totoTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto();
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
+			assertThat(loadedInstance.isConstructorWith2ArgsWasCalled()).as("constructor with Id was called").isTrue();
+			// Checking that property is not overriden by setter access (because we used setByContructor)
+			assertThat(loadedInstance.getName()).isEqualTo("Tutu by constructor");
+		}
+		
+		@Test
+		void usingFactory_constructorIsInvoked_setterIsNotCalled() {
+			Table totoTable = new Table("Toto");
+			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class).primaryKey();
+			Column<Table, String> nameColumn = totoTable.addColumn("name", String.class);
+			
+			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+			
+			EntityConfiguredPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, (Class<Identifier<UUID>>) (Class) Identifier.class)
+					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
+					.usingFactory(row ->
+						new Toto((PersistedIdentifier<UUID>) row.apply(idColumn), (String) row.apply(nameColumn))
+					)
+					.add(Toto::getName).setByConstructor()	// avoiding superfluous property setting
+					.build(persistenceContext, totoTable);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto entity = new Toto();
+			entity.setName("Tutu");
+			persister.insert(entity);
+			Toto loadedInstance = persister.select(entity.getId());
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
+			assertThat(loadedInstance.isConstructorWith2ArgsWasCalled()).as("constructor with Id was called").isTrue();
+			// Checking that property is not overriden by setter access (because we used setByContructor)
+			assertThat(loadedInstance.getName()).isEqualTo("Tutu by constructor");
+		}
+		
+	}
+	
+	@Nested
 	class UseConstructor {
 		
 		@Test
-		void byDefault_constructorIsNotInvoked_setterIsCalled() {
+		void byDefault_defaultConstructorIsInvoked_setterIsCalled() {
 			Table totoTable = new Table("Toto");
-			Column<Table<?>, PersistedIdentifier> idColumn = totoTable.addColumn("id", PersistedIdentifier.class);
+			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -134,12 +339,12 @@ class FluentEntityMappingConfigurationSupportTest {
 			entity.setName("Tutu");
 			persister.insert(entity);
 			Toto loadedInstance = persister.select(entity.getId());
-			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was not called").isTrue();
-			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was not called").isFalse();
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isTrue();
+			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isFalse();
 		}
 		
 		@Test
-		void withConstructorSpecified_constructorIsInvoked() {
+		void withConstructorSpecified_constructorIsInvoked_setterIsNotCalled() {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class);
 			
@@ -159,7 +364,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			entity.setName("Tutu");
 			persister.insert(entity);
 			Toto loadedInstance = persister.select(entity.getId());
-			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was not called").isTrue();
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isTrue();
 			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
 		}
 		
@@ -183,7 +388,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Toto entity = new Toto();
 			persister.insert(entity);
 			Toto loadedInstance = persister.select(entity.getId());
-			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was not called").isTrue();
+			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isTrue();
 			assertThat(loadedInstance.isConstructorWithIdWasCalled()).as("constructor with Id was called").isTrue();
 		}
 		
@@ -1842,6 +2047,12 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	protected static class Toto implements Identified<UUID> {
 		
+		public static Toto newInstance() {
+			Toto newInstance = new Toto();
+			newInstance.firstName = "set by static factory";
+			return newInstance;
+		}
+		
 		private final Identifier<UUID> id;
 		
 		private Identifier<UUID> identifier;
@@ -1858,6 +2069,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		private boolean setIdWasCalled;
 		private boolean constructorWithIdWasCalled;
+		private boolean constructorWith2ArgsWasCalled;
 		
 		public Toto() {
 			id = new PersistableIdentifier<>(UUID.randomUUID());
@@ -1871,6 +2083,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		public Toto(PersistedIdentifier<UUID> id, String name) {
 			this.id = id;
 			this.name = name + " by constructor";
+			this.constructorWith2ArgsWasCalled = true;
 		}
 		
 		public String getName() {
@@ -1882,7 +2095,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		public String getFirstName() {
-			return name;
+			return firstName;
 		}
 		
 		public Identifier<UUID> getIdentifier() {
@@ -1923,6 +2136,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		public boolean isConstructorWithIdWasCalled() {
 			return constructorWithIdWasCalled;
+		}
+		
+		public boolean isConstructorWith2ArgsWasCalled() {
+			return constructorWith2ArgsWasCalled;
 		}
 		
 		public Timestamp getTimestamp() {

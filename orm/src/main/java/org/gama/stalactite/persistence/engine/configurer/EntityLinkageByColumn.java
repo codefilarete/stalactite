@@ -9,7 +9,6 @@ import org.gama.stalactite.persistence.structure.Column;
  */
 class EntityLinkageByColumn<T> extends AbstractLinkage<T> implements EntityLinkage<T> {
 	
-	private final ReversibleAccessor<T, ?> function;
 	private final Column column;
 	
 	/**
@@ -19,13 +18,8 @@ class EntityLinkageByColumn<T> extends AbstractLinkage<T> implements EntityLinka
 	 * @param column an override of the default column that would have been generated
 	 */
 	EntityLinkageByColumn(ReversibleAccessor<T, ?> propertyAccessor, Column column) {
-		this.function = propertyAccessor;
+		super(propertyAccessor);
 		this.column = column;
-	}
-	
-	@Override
-	public <I> ReversibleAccessor<T, I> getAccessor() {
-		return (ReversibleAccessor<T, I>) function;
 	}
 	
 	@Override

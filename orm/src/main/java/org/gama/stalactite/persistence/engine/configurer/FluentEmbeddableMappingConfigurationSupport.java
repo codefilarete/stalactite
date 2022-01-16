@@ -16,12 +16,12 @@ import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.Accessors;
-import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.reflection.MutatorByMethod;
 import org.gama.reflection.MutatorByMethodReference;
 import org.gama.reflection.PropertyAccessor;
+import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointMap;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
@@ -326,7 +326,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 * 
 	 * @param <T> property owner type
 	 */
-	protected abstract static class AbstractLinkage<T> implements Linkage<T> {
+	// TODO: rename as LinkageSupport, or even replace interface Linkage by this class: leave interface Linkage since we have setters here
+	protected static class AbstractLinkage<T> implements Linkage<T> {
 		
 		/** Optional binder for this mapping */
 		private ParameterBinder parameterBinder;
@@ -334,6 +335,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		private boolean nullable = true;
 		
 		private boolean setByConstructor = false;
+		
+		@Nullable
+		private ColumnLinkageOptions columnOptions;
+		
+		private final ReversibleAccessor<T, ?> function;
+		
+		public AbstractLinkage(ReversibleAccessor<T, ?> function) {
+			this.function = function;
+		}
 		
 		public void setParameterBinder(ParameterBinder parameterBinder) {
 			this.parameterBinder = parameterBinder;
@@ -361,6 +371,104 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		public boolean isSetByConstructor() {
 			return setByConstructor;
 		}
+		
+		@Nullable
+		public ColumnLinkageOptions getColumnOptions() {
+			return columnOptions;
+		}
+		
+		public void setColumnOptions(ColumnLinkageOptions columnOptions) {
+			this.columnOptions = columnOptions;
+		}
+		
+		@Override
+		public <O> ReversibleAccessor<T, O> getAccessor() {
+			return (ReversibleAccessor<T, O>) function;
+		}
+		
+		@Nullable
+		@Override
+		public String getColumnName() {
+			return org.gama.lang.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
+		}
+		
+		@Override
+		public Class<?> getColumnType() {
+			return org.gama.lang.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnType).getOr(() -> AccessorDefinition.giveDefinition(this.function).getMemberType());
+			
+		}
+	}
+	
+	interface ColumnLinkageOptions {
+		
+		@Nullable
+		String getColumnName();
+		
+		Class<?> getColumnType();
+		
+		void primaryKey();
+		
+	}
+	
+	static class ColumnLinkageOptionsByName implements ColumnLinkageOptions {
+		
+		private final String columnName;
+		
+		private final Class<?> columnType;
+		
+		private boolean primaryKey;
+		
+		ColumnLinkageOptionsByName(@Nullable String columnName, Class<?> columnType) {
+			this.columnName = columnName;
+			this.columnType = columnType;
+		}
+		
+		@Nullable
+		@Override
+		public String getColumnName() {
+			return this.columnName;
+		}
+		
+		@Override
+		public Class<?> getColumnType() {
+			return this.columnType;
+		}
+		
+		@Override
+		public void primaryKey() {
+			this.primaryKey = true;
+		}
+	}
+	
+	static class ColumnLinkageOptionsByColumn implements ColumnLinkageOptions {
+		
+		private final Column column;
+		
+		ColumnLinkageOptionsByColumn(Column column) {
+			this.column = column;
+		}
+		
+		public Column getColumn() {
+			return column;
+		}
+		
+		@Override
+		public String getColumnName() {
+			return this.column.getName();
+		}
+		
+		@Override
+		public Class<?> getColumnType() {
+			return this.column.getJavaType();
+		}
+		
+		@Override
+		public void primaryKey() {
+			if (!this.column.isPrimaryKey()){
+				// safeguard about misconfiguration, even if mapping would work it smells bad configuration
+				throw new IllegalArgumentException("Identifier policy is assigned to a non primary key column");
+			}
+		}
 	}
 	
 	/**
@@ -370,7 +478,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 */
 	public static class LinkageByColumnName<T> extends AbstractLinkage<T> {
 		
-		private final ReversibleAccessor<T, ?> function;
+//		private final ReversibleAccessor<T, ?> function;
 		private final Class<?> columnType;
 		/** Column name override if not default */
 		@Nullable
@@ -384,15 +492,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		 * @param columnName an override of the default name that will be generated
 		 */
 		public <O> LinkageByColumnName(ReversibleAccessor<T, O> accessor, Class<O> columnType, @Nullable String columnName) {
-			this.function = accessor;
+			super(accessor);
 			this.columnType = columnType;
 			this.columnName = columnName;
 		}
 		
-		@Override
-		public <O> ReversibleAccessor<T, O> getAccessor() {
-			return (ReversibleAccessor<T, O>) function;
-		}
+//		@Override
+//		public <O> ReversibleAccessor<T, O> getAccessor() {
+//			return (ReversibleAccessor<T, O>) function;
+//		}
 		
 		@Override
 		@Nullable
