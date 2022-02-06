@@ -107,8 +107,8 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param assembler a low-level {@link ResultSet} transformer
 	 * @return this
 	 */
-	default BeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
-		return add(assembler, AssemblyPolicy.ON_EACH_ROW);
+	default BeanPropertyQueryMapper<C> map(ResultSetRowAssembler<C> assembler) {
+		return map(assembler, AssemblyPolicy.ON_EACH_ROW);
 	}
 	
 	/**
@@ -120,7 +120,7 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param assemblyPolicy policy to decide if given assemble shall be invoked on each row or not
 	 * @return this
 	 */
-	BeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
+	BeanPropertyQueryMapper<C> map(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
 	
 	/**
 	 * Sets a value for the given parameter

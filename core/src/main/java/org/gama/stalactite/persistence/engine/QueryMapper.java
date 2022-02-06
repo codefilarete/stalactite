@@ -315,7 +315,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I> QueryMapper<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType) {
-		add(new ColumnMapping<>(columnName, setter, columnType));
+		map(new ColumnMapping<>(columnName, setter, columnType));
 		return this;
 	}
 	
@@ -379,7 +379,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I> QueryMapper<C> map(org.gama.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter) {
-		add(new ColumnMapping<>(column, setter));
+		map(new ColumnMapping<>(column, setter));
 		return this;
 	}
 	
@@ -401,18 +401,18 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		return map(column, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.convert(i)));
 	}
 	
-	private <I> void add(ColumnMapping<C, I> columnMapping) {
+	private <I> void map(ColumnMapping<C, I> columnMapping) {
 		mapping.add((ColumnMapping) columnMapping);
 	}
 	
 	/** Overriden to adapt return type */
 	@Override
-	public QueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
-		return add(assembler, AssemblyPolicy.ON_EACH_ROW);
+	public QueryMapper<C> map(ResultSetRowAssembler<C> assembler) {
+		return map(assembler, AssemblyPolicy.ON_EACH_ROW);
 	}
 	
 	@Override
-	public QueryMapper<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
+	public QueryMapper<C> map(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
 		mapping.add(assembler, assemblyPolicy);
 		return this;
 	}

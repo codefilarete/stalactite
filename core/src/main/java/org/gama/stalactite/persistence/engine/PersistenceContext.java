@@ -806,12 +806,12 @@ public class PersistenceContext implements PersisterRegistry {
 		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 		
 		@Override
-		default ExecutableBeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler) {
-			return add(assembler, AssemblyPolicy.ON_EACH_ROW);
+		default ExecutableBeanPropertyQueryMapper<C> map(ResultSetRowAssembler<C> assembler) {
+			return map(assembler, AssemblyPolicy.ON_EACH_ROW);
 		}
 		
 		@Override
-		ExecutableBeanPropertyQueryMapper<C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
+		ExecutableBeanPropertyQueryMapper<C> map(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy);
 		
 		@Override
 		ExecutableBeanPropertyQueryMapper<C> set(String paramName, Object value);
@@ -857,8 +857,8 @@ public class PersistenceContext implements PersisterRegistry {
 		<K, V> SingleResultExecutableSelect<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 		
 		@Override
-		default SingleResultExecutableSelect<C> add(ResultSetRowAssembler<C> assembler) {
-			return (SingleResultExecutableSelect<C>) add(assembler, AssemblyPolicy.ON_EACH_ROW);
+		default SingleResultExecutableSelect<C> map(ResultSetRowAssembler<C> assembler) {
+			return (SingleResultExecutableSelect<C>) map(assembler, AssemblyPolicy.ON_EACH_ROW);
 		}
 		
 		@Override

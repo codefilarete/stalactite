@@ -298,7 +298,7 @@ class QueryMapperTest {
 		ModifiableInt assemblerCounter = new ModifiableInt();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
-				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()));
+				.map((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()));
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				newRow().add("id", 42L).add("name", "ghoeihvoih"),
@@ -321,7 +321,7 @@ class QueryMapperTest {
 		ModifiableInt assemblerCounter = new ModifiableInt();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 				.mapKey(Toto::new, "id", long.class)
-				.add((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()), AssemblyPolicy.ONCE_PER_BEAN);
+				.map((rootBean, resultSet) -> rootBean.setName(resultSet.getString("name") + assemblerCounter.increment()), AssemblyPolicy.ONCE_PER_BEAN);
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				newRow().add("id", 42L).add("name", "ghoeihvoih"),
@@ -413,8 +413,8 @@ class QueryMapperTest {
 		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
 		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
 			.mapKey(Toto::new, "id", long.class)
-			.add((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name1")))
-			.add((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name2")))
+			.map((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name1")))
+			.map((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name2")))
 			;
 		
 		List<Map<String, Object>> resultSetData = Arrays.asList(

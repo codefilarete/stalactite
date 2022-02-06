@@ -1,6 +1,5 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.structure.Table;
 
@@ -13,7 +12,7 @@ import org.gama.stalactite.persistence.structure.Table;
  */
 public interface PersisterBuilder<C, I>  {
 	
-	EntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext);
+	EntityPersister<C, I> build(PersistenceContext persistenceContext);
 	
-	EntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, Table table);
+	EntityPersister<C, I> build(PersistenceContext persistenceContext, Table table);
 }

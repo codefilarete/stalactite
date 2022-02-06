@@ -64,8 +64,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	@Test
 	void foreignKeyIsCreated() throws SQLException {
 		// mapping building thanks to fluent API
-		ConfiguredPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class,
-				Identifier.LONG_TYPE)
+		ConfiguredPersister<Country, Identifier<Long>> countryPersister =
+				(ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
