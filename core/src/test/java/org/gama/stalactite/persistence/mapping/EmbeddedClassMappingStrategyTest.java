@@ -6,8 +6,8 @@ import java.util.Map;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.reflection.AccessorChainMutator;
-import org.gama.reflection.PropertyAccessor;
+import org.codefilarete.reflection.AccessorChainMutator;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
@@ -19,7 +19,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.reflection.Accessors.*;
+import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
+import static org.codefilarete.reflection.Accessors.mutatorByField;
+import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
+import static org.codefilarete.reflection.Accessors.propertyAccessor;
 import static org.gama.stalactite.persistence.mapping.EmbeddedClassMappingStrategy.*;
 
 /**

@@ -25,15 +25,15 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
-import org.gama.reflection.Accessor;
-import org.gama.reflection.AccessorChain;
-import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.ReversibleAccessor;
-import org.gama.reflection.ReversibleMutator;
-import org.gama.reflection.ValueAccessPoint;
-import org.gama.reflection.ValueAccessPointComparator;
-import org.gama.reflection.ValueAccessPointMap;
-import org.gama.reflection.ValueAccessPointSet;
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleMutator;
+import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointComparator;
+import org.codefilarete.reflection.ValueAccessPointMap;
+import org.codefilarete.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
@@ -45,7 +45,7 @@ import org.gama.stalactite.persistence.structure.Table;
 
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.stream;
-import static org.gama.reflection.MethodReferences.toMethodReferenceString;
+import static org.codefilarete.reflection.MethodReferences.toMethodReferenceString;
 
 /**
  * Engine that converts mapping definition of a {@link EmbeddableMappingConfiguration} to a simple {@link Map}.

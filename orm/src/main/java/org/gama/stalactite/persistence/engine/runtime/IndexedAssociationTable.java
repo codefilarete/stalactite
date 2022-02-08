@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.reflection.AccessorDefinition;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
 import org.gama.stalactite.persistence.structure.Column;

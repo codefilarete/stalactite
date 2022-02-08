@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 
 /**
  * @author Guillaume Mary

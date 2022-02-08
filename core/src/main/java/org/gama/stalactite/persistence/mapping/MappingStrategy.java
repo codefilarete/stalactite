@@ -8,8 +8,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.reflection.ReversibleAccessor;
-import org.gama.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

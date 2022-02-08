@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.configurer.CascadeMany;
 import org.gama.stalactite.persistence.engine.configurer.CascadeOne;

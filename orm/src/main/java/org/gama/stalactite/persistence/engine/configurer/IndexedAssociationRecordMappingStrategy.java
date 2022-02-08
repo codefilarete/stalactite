@@ -6,7 +6,7 @@ import java.util.Set;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.IndexedAssociationTable;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;

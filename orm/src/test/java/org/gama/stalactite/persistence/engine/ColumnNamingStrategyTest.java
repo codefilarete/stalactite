@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.reflection.AccessorDefinition;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -21,7 +21,7 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.exception.NotImplementedException;
-import org.gama.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.DeleteExecutor;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;

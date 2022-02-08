@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.id.sequence;
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.reflection.PropertyAccessor;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;

@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;

@@ -2,8 +2,8 @@ package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.List;
 
-import org.gama.reflection.ReversibleAccessor;
-import org.gama.reflection.ValueAccessPointByMethodReference;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

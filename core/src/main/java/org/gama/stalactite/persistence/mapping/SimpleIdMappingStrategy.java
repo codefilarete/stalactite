@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import javax.annotation.Nonnull;
 import java.util.function.Function;
 
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;

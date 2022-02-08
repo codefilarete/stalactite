@@ -1,9 +1,9 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
 import org.codefilarete.tool.function.Serie;
-import org.gama.reflection.Mutator;
-import org.gama.reflection.ReversibleAccessor;
-import org.gama.reflection.PropertyAccessor;
+import org.codefilarete.reflection.Mutator;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 
 /**

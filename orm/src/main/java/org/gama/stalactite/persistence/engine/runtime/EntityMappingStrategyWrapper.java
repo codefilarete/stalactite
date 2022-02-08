@@ -4,8 +4,8 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.reflection.ReversibleAccessor;
-import org.gama.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;

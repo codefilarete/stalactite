@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.AssociationTable;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;

@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine;
 import org.assertj.core.presentation.Representation;
 import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.tool.StringAppender;
-import org.gama.trace.ObjectPrinterBuilder.ObjectPrinter;
+import org.codefilarete.trace.ObjectPrinterBuilder.ObjectPrinter;
 
 /**
  * An AssertJ representation that uses {@link ObjectPrinter} to print objects

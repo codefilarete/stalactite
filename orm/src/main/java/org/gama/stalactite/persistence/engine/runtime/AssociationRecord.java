@@ -2,9 +2,9 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import java.util.Objects;
 
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 
-import static org.gama.reflection.Accessors.accessorByMethodReference;
+import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 
 /**
  * A container to store association table rows.

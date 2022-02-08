@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorByMethodReference;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.MappingEase;

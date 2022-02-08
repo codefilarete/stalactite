@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 
 /**
  * An {@link IdAccessor} dedicated to single-property id.

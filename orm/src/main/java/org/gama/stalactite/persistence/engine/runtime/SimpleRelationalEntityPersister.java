@@ -11,7 +11,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;

@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.reflection.Accessors;
-import org.gama.reflection.PropertyAccessor;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.persistence.structure.Column;
 

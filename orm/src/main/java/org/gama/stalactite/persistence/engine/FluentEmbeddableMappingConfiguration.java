@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorChain;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class as an embedded bean.

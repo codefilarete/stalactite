@@ -13,13 +13,14 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.tool.Reflections;
-import org.gama.reflection.AccessorChain;
-import org.gama.reflection.AccessorDefinition;
-import org.gama.reflection.ReversibleAccessor;
-import org.gama.reflection.ReversibleMutator;
-import org.gama.reflection.PropertyAccessor;
-import org.gama.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleMutator;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
@@ -44,7 +45,7 @@ import org.gama.stalactite.sql.result.Row;
  * </p>
  *
  * <p>
- * Mapping definition can be eased thanks to {@link PersistentFieldHarverster} or {@link org.gama.reflection.Accessors}
+ * Mapping definition can be eased thanks to {@link PersistentFieldHarverster} or {@link Accessors}
  * </p>
  * 
  * <br/>

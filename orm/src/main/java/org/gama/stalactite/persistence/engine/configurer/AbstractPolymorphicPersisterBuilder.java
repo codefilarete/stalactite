@@ -8,7 +8,7 @@ import java.util.Set;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.reflection.AccessorDefinition;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;

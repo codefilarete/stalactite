@@ -21,7 +21,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.gama.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;

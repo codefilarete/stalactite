@@ -40,7 +40,7 @@
 			<version>${tools.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.gama</groupId>
+			<groupId>org.codefilarete</groupId>
 			<artifactId>reflection</artifactId>
 			<version>${reflection.version}</version>
 		</dependency>

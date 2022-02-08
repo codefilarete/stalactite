@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.mapping;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.Persister;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

@@ -5,8 +5,8 @@ import java.util.Map;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.NotImplementedException;
-import org.gama.reflection.ReversibleAccessor;
-import org.gama.reflection.ValueAccessPointSet;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
 import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;

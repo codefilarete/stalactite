@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
-import org.gama.reflection.AccessorDefinition;
+import org.codefilarete.reflection.AccessorDefinition;
 
 import static org.codefilarete.tool.Reflections.GET_SET_PREFIX_REMOVER;
 import static org.codefilarete.tool.Reflections.IS_PREFIX_REMOVER;

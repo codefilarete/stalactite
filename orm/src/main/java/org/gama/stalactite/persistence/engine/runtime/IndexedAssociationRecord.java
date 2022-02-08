@@ -1,8 +1,8 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 
-import static org.gama.reflection.Accessors.accessorByMethodReference;
+import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 
 /**
  * Same as {@link AssociationRecord} but with an index field to store indexed collection such as {@link java.util.List} or {@link java.util.LinkedHashSet}

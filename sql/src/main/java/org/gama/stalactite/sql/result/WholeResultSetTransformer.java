@@ -22,7 +22,7 @@ import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer.IdentifierArgBeanFactory;
