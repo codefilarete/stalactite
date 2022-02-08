@@ -10,10 +10,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorChain.ValueInitializerOnNullValue;
@@ -54,8 +54,8 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.result.Row;
 
-import static org.gama.lang.Nullable.nullable;
-import static org.gama.lang.bean.Objects.preventNull;
+import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
  * Class that configures element-collection mapping

@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.junit.jupiter.api.Test;
 

@@ -5,8 +5,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.exception.Exceptions;
-import org.gama.lang.function.ThrowingExecutable;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.function.ThrowingExecutable;
 import org.gama.stalactite.sql.ConnectionProvider;
 
 /**

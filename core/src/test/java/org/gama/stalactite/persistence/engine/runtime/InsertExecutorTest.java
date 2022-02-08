@@ -8,9 +8,9 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.reflection.ReversibleAccessor;

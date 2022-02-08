@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.engine.configurer;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.PersistenceContext;

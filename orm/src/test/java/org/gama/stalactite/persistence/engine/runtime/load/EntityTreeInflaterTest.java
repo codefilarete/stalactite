@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;

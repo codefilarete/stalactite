@@ -14,14 +14,14 @@ import java.util.function.Supplier;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Nullable;
-import org.gama.lang.Reflections;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.NotImplementedException;
-import org.gama.lang.function.SerializableTriFunction;
-import org.gama.lang.function.Serie;
-import org.gama.lang.function.TriFunction;
-import org.gama.lang.reflect.MethodDispatcher;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.SerializableTriFunction;
+import org.codefilarete.tool.function.Serie;
+import org.codefilarete.tool.function.TriFunction;
+import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
@@ -63,7 +63,7 @@ import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.lang.Reflections.propertyName;
+import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
  * A class that stores configuration made through a {@link FluentEntityMappingBuilder}

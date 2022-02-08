@@ -6,10 +6,10 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.Exceptions;
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
 import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;

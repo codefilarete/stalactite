@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 
-import static org.gama.lang.collection.Iterables.stream;
+import static org.codefilarete.tool.collection.Iterables.stream;
 
 /**
  * @author Guillaume Mary

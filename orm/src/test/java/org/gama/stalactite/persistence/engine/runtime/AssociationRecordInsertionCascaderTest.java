@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.id.Identified;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.PersistableIdentifier;

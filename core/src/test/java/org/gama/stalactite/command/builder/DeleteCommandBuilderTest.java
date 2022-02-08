@@ -3,7 +3,7 @@ package org.gama.stalactite.command.builder;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.command.model.Delete;

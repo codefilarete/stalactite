@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 
-import org.gama.lang.collection.ReadOnlyIterator;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.gama.stalactite.sql.binder.ParameterBinder;

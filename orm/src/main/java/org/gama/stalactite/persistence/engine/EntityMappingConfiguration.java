@@ -4,8 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-import org.gama.lang.Nullable;
-import org.gama.lang.collection.ReadOnlyIterator;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.configurer.CascadeMany;

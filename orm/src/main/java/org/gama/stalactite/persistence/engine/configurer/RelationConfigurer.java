@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.Collection;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;

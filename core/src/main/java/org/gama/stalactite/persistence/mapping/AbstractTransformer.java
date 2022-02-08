@@ -5,7 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Function;
 
-import org.gama.lang.Reflections;
+import org.codefilarete.tool.Reflections;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.sql.result.Row;
 

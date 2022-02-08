@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.lang.Reflections;
+import org.codefilarete.tool.Reflections;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.sql.ConnectionProvider;

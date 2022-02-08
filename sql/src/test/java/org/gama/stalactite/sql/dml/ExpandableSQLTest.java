@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter;
 import org.gama.stalactite.sql.dml.SQLParameterParser.Parameter;
 import org.gama.stalactite.sql.dml.SQLParameterParser.ParsedSQL;

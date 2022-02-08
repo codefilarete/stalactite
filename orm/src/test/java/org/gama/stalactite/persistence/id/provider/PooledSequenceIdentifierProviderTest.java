@@ -8,8 +8,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;

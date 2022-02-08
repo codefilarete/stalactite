@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.stream.LongStream;
 
-import org.gama.lang.function.ThrowingBiFunction;
+import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.dml.ReadOperationFactory;
 import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;

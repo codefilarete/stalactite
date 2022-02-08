@@ -4,9 +4,9 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.InvocationHandlerSupport;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.InvocationHandlerSupport;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.PreparedStatementWriter;
 import org.junit.jupiter.params.ParameterizedTest;

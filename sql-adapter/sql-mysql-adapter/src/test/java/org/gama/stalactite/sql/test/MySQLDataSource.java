@@ -6,8 +6,8 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
-import org.gama.lang.bean.Objects;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.sql.UrlAwareDataSource;
 
 /**

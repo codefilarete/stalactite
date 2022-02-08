@@ -10,10 +10,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Nullable;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.command.builder.DeleteCommandBuilder;
 import org.gama.stalactite.command.model.Delete;
 import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
@@ -35,7 +35,7 @@ import org.gama.stalactite.query.model.Operators;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
-import static org.gama.lang.collection.Iterables.collect;
+import static org.codefilarete.tool.collection.Iterables.collect;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**

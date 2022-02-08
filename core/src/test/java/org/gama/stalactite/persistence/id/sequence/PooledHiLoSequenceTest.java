@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.id.sequence;
 
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;

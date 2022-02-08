@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
 
-import org.gama.lang.Duo;
+import org.codefilarete.tool.Duo;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;

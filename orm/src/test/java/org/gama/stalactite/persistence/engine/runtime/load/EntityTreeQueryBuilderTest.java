@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;

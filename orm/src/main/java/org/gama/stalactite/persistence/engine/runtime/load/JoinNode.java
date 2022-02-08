@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import org.gama.lang.collection.ReadOnlyList;
+import org.codefilarete.tool.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

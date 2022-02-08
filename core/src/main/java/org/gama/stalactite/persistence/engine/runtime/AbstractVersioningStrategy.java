@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.lang.function.Serie;
+import org.codefilarete.tool.function.Serie;
 import org.gama.reflection.Mutator;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.PropertyAccessor;

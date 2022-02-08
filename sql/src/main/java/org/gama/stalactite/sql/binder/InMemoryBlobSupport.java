@@ -7,7 +7,7 @@ import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 
 /**
  * Implementation of {@link Blob} based on in-memory storage which is far from optimized. Far from perfect :

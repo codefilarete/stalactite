@@ -2,7 +2,7 @@ package org.gama.stalactite.sql;
 
 import javax.sql.DataSource;
 
-import org.gama.lang.sql.DataSourceWrapper;
+import org.codefilarete.tool.sql.DataSourceWrapper;
 
 /**
  * @author Guillaume Mary

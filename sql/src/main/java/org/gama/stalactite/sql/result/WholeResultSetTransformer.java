@@ -17,11 +17,11 @@ import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.gama.lang.Reflections;
-import org.gama.lang.ThreadLocals;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.ThreadLocals;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 import org.gama.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;

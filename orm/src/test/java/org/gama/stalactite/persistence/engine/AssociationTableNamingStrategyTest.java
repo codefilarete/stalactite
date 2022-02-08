@@ -4,8 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.Duo;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;

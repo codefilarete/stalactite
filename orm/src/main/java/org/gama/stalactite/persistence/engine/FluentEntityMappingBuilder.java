@@ -9,8 +9,8 @@ import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.function.Serie;
-import org.gama.lang.function.TriFunction;
+import org.codefilarete.tool.function.Serie;
+import org.codefilarete.tool.function.TriFunction;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

@@ -7,7 +7,7 @@ import java.io.Writer;
 
 import org.apache.derby.iapi.reference.Property;
 import org.apache.derby.jdbc.EmbeddedDataSource;
-import org.gama.lang.bean.Randomizer;
+import org.codefilarete.tool.bean.Randomizer;
 import org.gama.stalactite.sql.UrlAwareDataSource;
 
 /**

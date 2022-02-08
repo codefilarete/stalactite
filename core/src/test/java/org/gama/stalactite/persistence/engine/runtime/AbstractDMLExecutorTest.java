@@ -12,11 +12,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.exception.Exceptions;
-import org.gama.lang.function.Sequence;
-import org.gama.lang.function.ThrowingBiFunction;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.function.Sequence;
+import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;

@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.gama.lang.bean.Objects;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

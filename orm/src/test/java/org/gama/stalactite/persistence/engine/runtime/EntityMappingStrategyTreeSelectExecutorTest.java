@@ -17,12 +17,12 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.collection.PairIterator;
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.PairIterator;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.DDLDeployer;

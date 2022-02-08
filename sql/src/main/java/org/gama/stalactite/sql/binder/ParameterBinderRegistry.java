@@ -18,13 +18,13 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.function.Function;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.bean.InterfaceIterator;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.bean.InterfaceIterator;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
 import static java.util.stream.Collectors.toSet;
-import static org.gama.lang.collection.Iterables.first;
+import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * Registry of {@link ParameterBinder}s according to their binding class.

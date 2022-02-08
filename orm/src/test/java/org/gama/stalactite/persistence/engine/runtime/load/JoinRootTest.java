@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine.runtime.load;
 
 import java.util.Collections;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;

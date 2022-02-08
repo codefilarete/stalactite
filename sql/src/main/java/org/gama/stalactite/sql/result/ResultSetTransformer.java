@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 
 /**

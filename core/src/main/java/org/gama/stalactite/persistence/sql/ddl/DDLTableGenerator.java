@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Set;
 
-import org.gama.lang.StringAppender;
+import org.codefilarete.tool.StringAppender;
 import org.gama.stalactite.persistence.structure.*;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 

@@ -9,8 +9,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.function.TriConsumer;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.function.TriConsumer;
 
 /**
  * An interface aimed at abstracting the way how relations between 2 beans are filled : implementation should handle one-to-one relationship

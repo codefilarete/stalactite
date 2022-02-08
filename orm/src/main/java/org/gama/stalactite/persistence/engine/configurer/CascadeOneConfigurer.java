@@ -14,12 +14,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import org.gama.lang.Duo;
-import org.gama.lang.ThreadLocals;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.Functions.NullProofFunction;
-import org.gama.lang.function.Predicates;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.ThreadLocals;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.Functions.NullProofFunction;
+import org.codefilarete.tool.function.Predicates;
 import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
@@ -61,8 +61,8 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.WriteOperation;
 
-import static org.gama.lang.Nullable.nullable;
-import static org.gama.lang.function.Predicates.not;
+import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.function.Predicates.not;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
@@ -610,7 +610,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			// Please note that we collect entities in a Set to avoid persisting duplicates twice which may produce constraint exception if some source
 			// entities points to same target entity. In details the Set is an identity Set to avoid basing our comparison on implemented
 			// equals/hashCode although this could be sufficent, identity seems safer and match our logic.
-			Collector<TRGT, ?, Set<TRGT>> identitySetProvider = Collectors.toCollection(org.gama.lang.collection.Collections::newIdentitySet);
+			Collector<TRGT, ?, Set<TRGT>> identitySetProvider = Collectors.toCollection(org.codefilarete.tool.collection.Collections::newIdentitySet);
 			Consumer<Iterable<? extends SRC>> persistTargetCascader = entities -> {
 				targetPersister.persist(Iterables.stream(entities).map(cascadeOne.getTargetProvider()::get).filter(Objects::nonNull).collect(identitySetProvider));
 			};

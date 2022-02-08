@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSelect;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;

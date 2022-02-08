@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.bean.Objects;
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.JoinableSelectExecutor;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;

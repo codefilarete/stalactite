@@ -1,12 +1,12 @@
 package org.gama.stalactite.sql.result;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gama.lang.collection.Arrays.asList;
+import static org.codefilarete.tool.collection.Arrays.asList;
 
 /**
  * @author Guillaume Mary

@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.gama.lang.bean.Objects;
+import org.codefilarete.tool.bean.Objects;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.slf4j.Logger;

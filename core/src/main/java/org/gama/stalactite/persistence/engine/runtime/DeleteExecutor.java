@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.StaleStateObjectException;
 import org.gama.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;

@@ -9,9 +9,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.bean.InterfaceIterator;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.bean.InterfaceIterator;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.sql.binder.ParameterBinderRegistry;

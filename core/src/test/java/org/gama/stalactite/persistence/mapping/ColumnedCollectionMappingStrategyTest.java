@@ -5,9 +5,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.collection.Maps.ChainingMap;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.Maps.ChainingMap;
 import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;

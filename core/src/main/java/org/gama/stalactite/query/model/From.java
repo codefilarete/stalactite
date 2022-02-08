@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.gama.lang.Strings;
+import org.codefilarete.tool.Strings;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.IdentityMap;

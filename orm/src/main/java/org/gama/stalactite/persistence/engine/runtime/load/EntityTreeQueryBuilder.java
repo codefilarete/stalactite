@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.Strings;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.persistence.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.ConsumerNode;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;

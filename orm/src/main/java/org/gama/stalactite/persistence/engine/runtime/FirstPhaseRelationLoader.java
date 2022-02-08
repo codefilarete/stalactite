@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.runtime;
 import java.util.Queue;
 import java.util.Set;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
 import org.gama.stalactite.persistence.mapping.AbstractTransformer;

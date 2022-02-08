@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

@@ -8,9 +8,9 @@ import java.util.Set;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.PersistenceContext;
 import org.gama.stalactite.persistence.engine.SelectExecutor;

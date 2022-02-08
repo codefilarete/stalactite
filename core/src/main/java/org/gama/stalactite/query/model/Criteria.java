@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.structure.Column;
 
 import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.AND;

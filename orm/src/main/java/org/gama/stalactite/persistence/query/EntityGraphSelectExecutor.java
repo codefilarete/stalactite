@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.persistence.engine.runtime.EntityMappingStrategyTreeSelectExecutor;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;

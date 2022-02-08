@@ -9,10 +9,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Nullable;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.EntityPersister;
@@ -27,8 +27,8 @@ import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinTy
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.lang.bean.Objects.not;
-import static org.gama.lang.collection.Iterables.stream;
+import static org.codefilarete.tool.bean.Objects.not;
+import static org.codefilarete.tool.collection.Iterables.stream;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**

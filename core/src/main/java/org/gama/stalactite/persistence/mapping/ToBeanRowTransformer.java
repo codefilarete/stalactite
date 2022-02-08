@@ -6,9 +6,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.bean.FieldIterator;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.bean.FieldIterator;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.Mutator;
 import org.gama.stalactite.persistence.structure.Column;

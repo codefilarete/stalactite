@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Table;
 

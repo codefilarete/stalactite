@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.exception.NotImplementedException;
 
 /**
  * Basic contract to complete a bean from a {@link ResultSet} row.

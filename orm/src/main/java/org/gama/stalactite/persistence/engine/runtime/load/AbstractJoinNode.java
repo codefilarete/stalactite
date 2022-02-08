@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.gama.lang.collection.ReadOnlyList;
+import org.codefilarete.tool.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
 import org.gama.stalactite.persistence.structure.Column;

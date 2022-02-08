@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.mapping;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.Mutator;
 import org.gama.stalactite.sql.result.Row;

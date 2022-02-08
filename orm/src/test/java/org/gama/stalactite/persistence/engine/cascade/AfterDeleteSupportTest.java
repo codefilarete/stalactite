@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 

@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.gama.lang.Strings;
+import org.codefilarete.tool.Strings;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 

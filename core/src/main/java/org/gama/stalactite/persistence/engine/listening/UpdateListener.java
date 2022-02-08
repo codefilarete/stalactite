@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.Duo;
+import org.codefilarete.tool.Duo;
 import org.gama.stalactite.persistence.mapping.MappingStrategy;
 import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Table;

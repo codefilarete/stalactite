@@ -11,16 +11,16 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Reflections;
-import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
-import org.gama.lang.function.Predicates;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Predicates;
 import org.gama.stalactite.persistence.structure.Database.Schema;
 
-import static org.gama.lang.Nullable.nullable;
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Representation of a database Table, not exhaustive but sufficient for our need.
@@ -79,7 +79,7 @@ public class Table<SELF extends Table<SELF>> {
 	
 	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
 		LinkedHashSet<Column<SELF, Object>> result = this.columns.asSet();
-		result.removeAll(org.gama.lang.Nullable.nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(Collections.emptySet()));
+		result.removeAll(org.codefilarete.tool.Nullable.nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(Collections.emptySet()));
 		return result;
 	}
 	

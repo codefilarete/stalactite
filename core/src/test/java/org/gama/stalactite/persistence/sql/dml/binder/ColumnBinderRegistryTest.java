@@ -1,7 +1,7 @@
 package org.gama.stalactite.persistence.sql.dml.binder;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;

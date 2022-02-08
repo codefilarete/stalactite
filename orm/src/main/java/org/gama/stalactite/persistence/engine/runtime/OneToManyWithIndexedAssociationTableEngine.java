@@ -9,11 +9,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Nullable;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.PairIterator;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.PairIterator;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
@@ -24,8 +24,8 @@ import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.persistence.structure.Column;
 
-import static org.gama.lang.collection.Iterables.first;
-import static org.gama.lang.collection.Iterables.minus;
+import static org.codefilarete.tool.collection.Iterables.first;
+import static org.codefilarete.tool.collection.Iterables.minus;
 import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**

@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.gama.lang.function.SerializableTriFunction;
+import org.codefilarete.tool.function.SerializableTriFunction;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.Query;

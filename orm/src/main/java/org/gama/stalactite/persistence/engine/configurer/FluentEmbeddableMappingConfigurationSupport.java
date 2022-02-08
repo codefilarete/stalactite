@@ -9,8 +9,8 @@ import java.util.function.BiConsumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Reflections;
-import org.gama.lang.function.SerializableTriFunction;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.function.SerializableTriFunction;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorChain;
@@ -384,7 +384,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Nullable
 		@Override
 		public String getColumnName() {
-			return org.gama.lang.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
+			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
 		}
 		
 		@Override

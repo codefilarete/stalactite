@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.persistence.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;

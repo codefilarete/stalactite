@@ -1,6 +1,6 @@
 package org.gama.stalactite.persistence.engine.runtime;
 
-import org.gama.lang.collection.SteppingIterator;
+import org.codefilarete.tool.collection.SteppingIterator;
 import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
 import org.gama.stalactite.persistence.sql.dml.DMLGenerator;

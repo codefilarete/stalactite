@@ -3,7 +3,7 @@ package org.gama.stalactite.command.builder;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 
-import org.gama.lang.trace.ModifiableBoolean;
+import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.query.builder.DMLNameProvider;
 

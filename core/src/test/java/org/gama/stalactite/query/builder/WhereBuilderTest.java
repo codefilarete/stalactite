@@ -2,8 +2,8 @@ package org.gama.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;

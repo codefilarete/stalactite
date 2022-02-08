@@ -3,11 +3,11 @@ package org.gama.stalactite.persistence.engine;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.function.Hanger.Holder;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.PersisterITTest.Toto;

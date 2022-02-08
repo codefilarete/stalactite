@@ -8,9 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.PairIterator;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.PairIterator;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;

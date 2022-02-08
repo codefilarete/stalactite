@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.sql.ddl;
 
 import java.util.List;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;

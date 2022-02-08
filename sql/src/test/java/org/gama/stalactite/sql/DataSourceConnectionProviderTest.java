@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.gama.lang.function.Hanger.Holder;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;

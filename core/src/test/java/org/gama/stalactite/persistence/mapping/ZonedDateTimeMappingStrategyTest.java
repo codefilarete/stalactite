@@ -6,7 +6,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.id.sequence;
 
 import java.util.Map;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.engine.runtime.Persister;

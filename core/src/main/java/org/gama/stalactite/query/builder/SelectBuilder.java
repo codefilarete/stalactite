@@ -2,9 +2,9 @@ package org.gama.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.StringAppender;
-import org.gama.lang.Strings;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.Strings;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;

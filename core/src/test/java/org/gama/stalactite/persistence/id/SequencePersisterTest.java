@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.id;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.gama.stalactite.persistence.id.sequence.SequencePersister;
 import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;

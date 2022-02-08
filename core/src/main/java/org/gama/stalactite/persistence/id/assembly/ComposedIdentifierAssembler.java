@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.sql.result.Row;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.structure.Column;

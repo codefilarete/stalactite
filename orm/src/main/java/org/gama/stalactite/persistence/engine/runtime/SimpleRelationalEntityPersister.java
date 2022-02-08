@@ -9,8 +9,8 @@ import java.util.function.BiFunction;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.reflection.MethodReferenceDispatcher;
 import org.gama.stalactite.persistence.engine.ExecutableQuery;
 import org.gama.stalactite.persistence.engine.PersistenceContext;

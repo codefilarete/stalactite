@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 import javax.annotation.Nonnull;
 import java.util.Map;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.AssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.AssociationTable;

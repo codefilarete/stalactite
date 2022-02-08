@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Reader of several columns (by their name) from a {@link java.sql.ResultSet}.

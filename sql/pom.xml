@@ -35,8 +35,8 @@
 	
 	<dependencies>
 		<dependency>
-			<groupId>org.gama</groupId>
-			<artifactId>tools</artifactId>
+			<groupId>org.codefilarete</groupId>
+			<artifactId>tool</artifactId>
 			<version>${tools.version}</version>
 		</dependency>
 		<dependency>

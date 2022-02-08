@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.id;
 
 import javax.annotation.Nonnull;
 
-import org.gama.lang.Reflections;
+import org.codefilarete.tool.Reflections;
 
 /**
  * A decorator for already persisted bean identifier.

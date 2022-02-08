@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
 
 /**
  * Parser for SQL String with named parameters.

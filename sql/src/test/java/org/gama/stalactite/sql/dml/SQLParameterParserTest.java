@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.sql.dml.SQLParameterParser.CollectionParameter;
 import org.gama.stalactite.sql.dml.SQLParameterParser.Parameter;
 import org.gama.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.gama.lang.collection.Arrays.asList;
+import static org.codefilarete.tool.collection.Arrays.asList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

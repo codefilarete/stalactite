@@ -13,12 +13,12 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.bean.Randomizer;
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.ReadOnlyList;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.bean.Randomizer;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.ReadOnlyList;
 import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;

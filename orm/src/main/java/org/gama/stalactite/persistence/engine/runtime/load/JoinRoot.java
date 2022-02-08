@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.gama.lang.collection.ReadOnlyList;
+import org.codefilarete.tool.collection.ReadOnlyList;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;
 import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;

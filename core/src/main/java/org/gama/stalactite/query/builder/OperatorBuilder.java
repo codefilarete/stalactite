@@ -4,9 +4,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.StringAppender;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;

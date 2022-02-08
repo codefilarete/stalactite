@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.listening;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.gama.lang.Duo;
+import org.codefilarete.tool.Duo;
 
 /**
  * @author Guillaume Mary

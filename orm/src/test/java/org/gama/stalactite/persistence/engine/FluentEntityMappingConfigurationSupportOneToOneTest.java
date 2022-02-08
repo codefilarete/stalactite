@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToOneOptions;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;

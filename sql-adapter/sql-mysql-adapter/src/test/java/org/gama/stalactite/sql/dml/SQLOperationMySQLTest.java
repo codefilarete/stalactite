@@ -3,7 +3,7 @@ package org.gama.stalactite.sql.dml;
 import java.util.function.Predicate;
 
 import com.mysql.jdbc.exceptions.MySQLStatementCancelledException;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.sql.test.MySQLEmbeddableDataSource;
 import org.junit.jupiter.api.BeforeEach;
 

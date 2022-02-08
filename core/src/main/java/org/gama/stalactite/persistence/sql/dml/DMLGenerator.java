@@ -7,11 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.gama.lang.Strings;
-import org.gama.lang.bean.Objects;
-import org.gama.lang.collection.ISorter;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.ISorter;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinderIndex;
 import org.gama.stalactite.persistence.engine.runtime.DMLExecutor;

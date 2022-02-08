@@ -2,9 +2,9 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.annotation.Nonnull;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Reflections;
-import org.gama.lang.Strings;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.Strings;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.stalactite.persistence.structure.Column;
 

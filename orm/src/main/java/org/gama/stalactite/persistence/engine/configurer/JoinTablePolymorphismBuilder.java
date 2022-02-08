@@ -3,10 +3,10 @@ package org.gama.stalactite.persistence.engine.configurer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
@@ -34,7 +34,7 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.lang.Nullable.nullable;
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * @author Guillaume Mary

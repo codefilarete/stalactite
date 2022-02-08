@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
-import org.gama.lang.Strings;
+import org.codefilarete.tool.Strings;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
 /**

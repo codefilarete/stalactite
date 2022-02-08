@@ -7,10 +7,10 @@ import java.util.Map;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Nullable;
-import org.gama.lang.Reflections;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;

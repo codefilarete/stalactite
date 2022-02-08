@@ -6,9 +6,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.persistence.engine.StaleStateObjectException;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.persistence.sql.Dialect;

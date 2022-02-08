@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.gama.lang.function.Sequence;
+import org.codefilarete.tool.function.Sequence;
 
 /**
  * Simple id gnerator for our tests : increments a in-memory counter.

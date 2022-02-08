@@ -4,8 +4,8 @@ import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.runtime.IndexedAssociationRecord;
 import org.gama.stalactite.persistence.engine.runtime.IndexedAssociationTable;

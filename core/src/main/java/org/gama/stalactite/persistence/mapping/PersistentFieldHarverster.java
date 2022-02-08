@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.gama.lang.bean.FieldIterator;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.bean.FieldIterator;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.structure.Table;

@@ -26,10 +26,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.gama.lang.Nullable;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.io.IOs;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.io.IOs;
 import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.gama.stalactite.sql.dml.SQLExecutionException;
 import org.gama.stalactite.sql.result.ResultSetIterator;

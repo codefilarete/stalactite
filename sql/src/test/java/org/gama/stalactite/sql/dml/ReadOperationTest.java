@@ -6,8 +6,8 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.collection.Maps;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.sql.SimpleConnectionProvider;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.binder.ParameterBinder;

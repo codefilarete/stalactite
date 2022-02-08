@@ -3,7 +3,7 @@ package org.gama.stalactite.sql.spring;
 import javax.annotation.Nonnull;
 import java.sql.Connection;
 
-import org.gama.lang.VisibleForTesting;
+import org.codefilarete.tool.VisibleForTesting;
 import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;

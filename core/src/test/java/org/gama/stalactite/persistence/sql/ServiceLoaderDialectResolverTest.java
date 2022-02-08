@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.sql;
 
 import java.util.Set;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

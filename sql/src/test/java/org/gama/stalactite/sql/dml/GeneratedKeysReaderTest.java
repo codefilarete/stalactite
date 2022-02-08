@@ -7,14 +7,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.lang.collection.Maps.asMap;
+import static org.codefilarete.tool.collection.Maps.asMap;
 import static org.mockito.Mockito.mock;
 
 /**

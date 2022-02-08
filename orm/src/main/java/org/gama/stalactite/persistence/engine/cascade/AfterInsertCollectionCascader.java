@@ -5,8 +5,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.listening.InsertListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;

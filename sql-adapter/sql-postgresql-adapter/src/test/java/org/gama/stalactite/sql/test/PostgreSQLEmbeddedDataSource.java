@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.sql.UrlAwareDataSource;
 import org.postgresql.ds.PGSimpleDataSource;
 import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;

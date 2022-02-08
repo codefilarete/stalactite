@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 
-import org.gama.lang.sql.ConnectionWrapper;
+import org.codefilarete.tool.sql.ConnectionWrapper;
 
 /**
  * A {@link ConnectionWrapper} that aims at notifying {@link TransactionListener}, {@link CommitListener} or {@link RollbackListener}

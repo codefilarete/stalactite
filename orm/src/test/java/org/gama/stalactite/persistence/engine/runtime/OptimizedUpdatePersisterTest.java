@@ -10,9 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.collection.Maps.ChainingHashMap;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.Maps.ChainingHashMap;
 import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;

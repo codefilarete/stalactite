@@ -5,9 +5,9 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.reflection.Accessors;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.persistence.engine.DDLDeployer;

@@ -2,7 +2,7 @@ package org.gama.stalactite.query.builder;
 
 import java.util.Collections;
 
-import org.gama.lang.StringAppender;
+import org.codefilarete.tool.StringAppender;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;

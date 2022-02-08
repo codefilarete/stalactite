@@ -2,8 +2,8 @@ package org.gama.stalactite.persistence.sql;
 
 import java.sql.SQLException;
 
-import org.gama.lang.Retryer;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.Retryer;
+import org.codefilarete.tool.exception.Exceptions;
 
 /**
  * Retryer for InnoDB false "lock wait timeout exceeded" that appears on heavy load.

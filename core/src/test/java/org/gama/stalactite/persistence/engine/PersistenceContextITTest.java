@@ -7,8 +7,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.gama.lang.Strings;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.persistence.structure.Column;
@@ -23,7 +23,7 @@ import org.gama.stalactite.sql.result.ResultSetRowTransformer;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.lang.function.Functions.chain;
+import static org.codefilarete.tool.function.Functions.chain;
 
 /**
  * @author Guillaume Mary

@@ -4,11 +4,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map.Entry;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
-import static org.gama.lang.collection.Iterables.pair;
+import static org.codefilarete.tool.collection.Iterables.pair;
 
 /**
  * Foreign key between tables

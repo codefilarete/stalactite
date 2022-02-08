@@ -15,13 +15,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.gama.lang.Reflections;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
-import org.gama.lang.function.Functions;
-import org.gama.lang.function.Hanger.Holder;
-import org.gama.lang.function.SerializableTriFunction;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Functions;
+import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.function.SerializableTriFunction;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.MethodReferenceCapturer;
 import org.gama.reflection.ReversibleAccessor;
@@ -80,7 +80,7 @@ import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.sql.dml.GeneratedKeysReader;
 
-import static org.gama.lang.Nullable.nullable;
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * @author Guillaume Mary
@@ -495,7 +495,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	<T extends Table> void init(ColumnBinderRegistry columnBinderRegistry, @Nullable T table) {
 		this.columnBinderRegistry = columnBinderRegistry;
 		
-		org.gama.lang.Nullable<TableNamingStrategy> optionalTableNamingStrategy = org.gama.lang.Nullable.empty();
+		org.codefilarete.tool.Nullable<TableNamingStrategy> optionalTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getTableNamingStrategy() != null && !optionalTableNamingStrategy.isPresent()) {
 				optionalTableNamingStrategy.set(configuration.getTableNamingStrategy());
@@ -506,7 +506,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		this.table = nullable(table).getOr(() -> (T) new Table(tableNamingStrategy.giveName(this.entityMappingConfiguration.getEntityType())));
 		
 		// When a ColumnNamingStrategy is defined on mapping, it must be applied to super classes too
-		org.gama.lang.Nullable<ColumnNamingStrategy> optionalColumnNamingStrategy = org.gama.lang.Nullable.empty();
+		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		class ColumnNamingStrategyCollector implements Consumer<EmbeddableMappingConfiguration> {
 			@Override
 			public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
@@ -520,7 +520,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				columnNamingStrategyCollector.accept(entityConfigurationConsumer.getPropertiesMapping()), columnNamingStrategyCollector);
 		setColumnNamingStrategy(optionalColumnNamingStrategy.getOr(ColumnNamingStrategy.DEFAULT));
 		
-		org.gama.lang.Nullable<ForeignKeyNamingStrategy> optionalForeignKeyNamingStrategy = org.gama.lang.Nullable.empty();
+		org.codefilarete.tool.Nullable<ForeignKeyNamingStrategy> optionalForeignKeyNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getForeignKeyNamingStrategy() != null && !optionalForeignKeyNamingStrategy.isPresent()) {
 				optionalForeignKeyNamingStrategy.set(configuration.getForeignKeyNamingStrategy());
@@ -528,7 +528,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 		this.foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
 		
-		org.gama.lang.Nullable<ColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.gama.lang.Nullable.empty();
+		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getJoinColumnNamingStrategy() != null && !optionalJoinColumnNamingStrategy.isPresent()) {
 				optionalJoinColumnNamingStrategy.set(configuration.getJoinColumnNamingStrategy());
@@ -536,7 +536,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 		this.joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(ColumnNamingStrategy.JOIN_DEFAULT);
 		
-		org.gama.lang.Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = org.gama.lang.Nullable.empty();
+		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getIndexColumnNamingStrategy() != null && !optionalIndexColumnNamingStrategy.isPresent()) {
 				optionalIndexColumnNamingStrategy.set(configuration.getIndexColumnNamingStrategy());
@@ -544,7 +544,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 		this.indexColumnNamingStrategy = optionalIndexColumnNamingStrategy.getOr(ColumnNamingStrategy.INDEX_DEFAULT);
 		
-		org.gama.lang.Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = org.gama.lang.Nullable.empty();
+		org.codefilarete.tool.Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getAssociationTableNamingStrategy() != null && !optionalAssociationTableNamingStrategy.isPresent()) {
 				optionalAssociationTableNamingStrategy.set(configuration.getAssociationTableNamingStrategy());
@@ -552,7 +552,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 		this.associationTableNamingStrategy = optionalAssociationTableNamingStrategy.getOr(AssociationTableNamingStrategy.DEFAULT);
 		
-		org.gama.lang.Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = org.gama.lang.Nullable.empty();
+		org.codefilarete.tool.Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getElementCollectionTableNamingStrategy() != null && !optionalElementCollectionTableNamingStrategy.isPresent()) {
 				optionalElementCollectionTableNamingStrategy.set(configuration.getElementCollectionTableNamingStrategy());

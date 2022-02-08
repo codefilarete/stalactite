@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.gama.lang.function.Sequence;
+import org.codefilarete.tool.function.Sequence;
 
 /**
  * @author Guillaume Mary

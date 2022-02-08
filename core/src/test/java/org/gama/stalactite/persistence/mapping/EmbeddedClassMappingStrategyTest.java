@@ -3,9 +3,9 @@ package org.gama.stalactite.persistence.mapping;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.PropertyAccessor;
 import org.gama.stalactite.sql.result.Row;

@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
  * Keep track of relations and entity ids to be loaded during the resolution of a circular bean graph loading.

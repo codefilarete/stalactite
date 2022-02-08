@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.sql;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.sql.DerbyDialect.DerbyWriteOperation;
 import org.gama.stalactite.sql.binder.DefaultParameterBinders;
 import org.gama.stalactite.sql.dml.GeneratedKeysReader;

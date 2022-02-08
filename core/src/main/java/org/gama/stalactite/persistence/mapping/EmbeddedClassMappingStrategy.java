@@ -13,10 +13,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Reflections;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.Predicates;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.Predicates;
 import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorChainMutator;
 import org.gama.reflection.Accessors;

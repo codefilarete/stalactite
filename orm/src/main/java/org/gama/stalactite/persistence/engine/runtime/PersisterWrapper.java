@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Duo;
+import org.codefilarete.tool.Duo;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;

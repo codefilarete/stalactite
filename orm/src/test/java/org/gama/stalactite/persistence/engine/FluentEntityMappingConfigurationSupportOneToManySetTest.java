@@ -13,12 +13,12 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.exception.Exceptions;
-import org.gama.lang.function.ThrowingSupplier;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.function.ThrowingSupplier;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.gama.stalactite.persistence.engine.model.City;

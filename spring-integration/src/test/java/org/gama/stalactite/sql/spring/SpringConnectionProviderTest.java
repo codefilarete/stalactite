@@ -5,7 +5,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;

@@ -3,7 +3,7 @@ package org.gama.stalactite.sql.binder;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.gama.lang.trace.ModifiableBoolean;
+import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

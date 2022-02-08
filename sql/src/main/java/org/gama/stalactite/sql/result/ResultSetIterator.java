@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import org.gama.lang.function.ThrowingConverter;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.function.ThrowingConverter;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
+import org.codefilarete.tool.exception.Exceptions;
 
 /**
  * Turns a {@link ResultSet} into an {@link java.util.Iterator} with row conversion support.

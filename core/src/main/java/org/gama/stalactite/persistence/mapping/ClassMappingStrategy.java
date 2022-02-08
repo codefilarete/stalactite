@@ -13,7 +13,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.lang.Reflections;
+import org.codefilarete.tool.Reflections;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorDefinition;
 import org.gama.reflection.ReversibleAccessor;

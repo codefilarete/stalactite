@@ -1,6 +1,6 @@
 package org.gama.stalactite.query.model.operator;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 
 /**

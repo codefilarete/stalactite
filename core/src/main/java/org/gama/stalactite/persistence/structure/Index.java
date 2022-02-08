@@ -3,9 +3,9 @@ package org.gama.stalactite.persistence.structure;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Index on some columns

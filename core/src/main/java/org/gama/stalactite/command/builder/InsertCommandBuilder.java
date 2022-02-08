@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.command.model.Insert;

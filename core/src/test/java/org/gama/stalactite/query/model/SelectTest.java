@@ -1,6 +1,6 @@
 package org.gama.stalactite.query.model;
 
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;

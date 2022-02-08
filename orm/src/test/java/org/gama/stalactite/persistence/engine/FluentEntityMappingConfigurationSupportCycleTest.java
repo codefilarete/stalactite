@@ -12,10 +12,10 @@ import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.function.Hanger.Holder;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
 import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;

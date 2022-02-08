@@ -11,10 +11,10 @@ import java.util.function.Function;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.gama.lang.bean.Factory;
+import org.codefilarete.tool.bean.Factory;
 import org.gama.stalactite.sql.binder.ResultSetReader;
 
-import static org.gama.lang.Nullable.nullable;
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * A class aimed at creating flat (no graph) beans from a {@link ResultSet} row.

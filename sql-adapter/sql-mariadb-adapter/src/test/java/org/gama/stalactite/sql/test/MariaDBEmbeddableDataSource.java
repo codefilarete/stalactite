@@ -10,7 +10,7 @@ import java.util.Random;
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.sql.UrlAwareDataSource;
 import org.mariadb.jdbc.MariaDbDataSource;
 

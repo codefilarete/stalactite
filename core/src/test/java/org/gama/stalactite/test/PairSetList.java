@@ -1,8 +1,8 @@
 package org.gama.stalactite.test;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.PairIterator;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.PairIterator;
 
 import java.util.ArrayList;
 import java.util.HashSet;

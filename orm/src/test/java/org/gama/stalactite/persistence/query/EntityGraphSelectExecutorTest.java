@@ -8,9 +8,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.persistence.engine.DDLDeployer;
 import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.gama.stalactite.persistence.engine.EntityPersister.ExecutableEntityQuery;
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.lang.function.Functions.chain;
+import static org.codefilarete.tool.function.Functions.chain;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 import static org.gama.stalactite.query.model.Operators.eq;
 import static org.mockito.ArgumentMatchers.any;

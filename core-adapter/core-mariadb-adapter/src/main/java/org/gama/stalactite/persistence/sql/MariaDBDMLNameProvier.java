@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.builder.DMLNameProvider;

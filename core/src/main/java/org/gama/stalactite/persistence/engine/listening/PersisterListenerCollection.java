@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.ThrowingExecutable;
-import org.gama.lang.function.ThrowingRunnable;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.ThrowingExecutable;
+import org.codefilarete.tool.function.ThrowingRunnable;
 import org.gama.stalactite.persistence.structure.Table;
 
 /**

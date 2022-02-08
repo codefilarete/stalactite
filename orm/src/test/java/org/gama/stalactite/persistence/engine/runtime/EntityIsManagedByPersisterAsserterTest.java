@@ -3,8 +3,8 @@ package org.gama.stalactite.persistence.engine.runtime;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Vehicle;

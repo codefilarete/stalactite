@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.engine.cascade;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.EntityPersister;
 import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
 import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;

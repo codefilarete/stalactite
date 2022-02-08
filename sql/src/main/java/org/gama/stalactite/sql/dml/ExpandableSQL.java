@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.gama.lang.Strings;
+import org.codefilarete.tool.Strings;
 import org.gama.stalactite.sql.dml.SQLParameterParser.Parameter;
 import org.gama.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
 

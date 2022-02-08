@@ -4,7 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 

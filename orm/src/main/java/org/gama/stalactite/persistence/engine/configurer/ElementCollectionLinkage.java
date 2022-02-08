@@ -17,7 +17,7 @@ import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProv
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.lang.Reflections.propertyName;
+import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
  * Support for element-collection configuration

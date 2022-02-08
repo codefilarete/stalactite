@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.gama.lang.function.ThrowingConverter;
+import org.codefilarete.tool.function.ThrowingConverter;
 import org.gama.stalactite.sql.binder.LambdaParameterBinder;
 import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
 import org.gama.stalactite.sql.binder.ParameterBinder;

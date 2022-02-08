@@ -5,11 +5,11 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.lang.collection.Maps.asMap;
+import static org.codefilarete.tool.collection.Maps.asMap;
 
 /**
  * @author Guillaume Mary

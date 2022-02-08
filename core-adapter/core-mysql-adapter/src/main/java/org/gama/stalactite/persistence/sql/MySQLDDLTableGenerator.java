@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.sql;
 
 import java.util.Collections;
 
-import org.gama.lang.StringAppender;
+import org.codefilarete.tool.StringAppender;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.gama.stalactite.persistence.structure.Column;

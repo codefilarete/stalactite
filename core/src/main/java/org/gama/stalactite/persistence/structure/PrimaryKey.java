@@ -4,8 +4,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderSet;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * A definition of a primary key

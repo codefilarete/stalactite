@@ -2,12 +2,12 @@ package org.gama.stalactite.persistence.engine;
 
 import javax.annotation.Nonnull;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.Strings;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.Strings;
 import org.gama.reflection.AccessorDefinition;
 
-import static org.gama.lang.Reflections.GET_SET_PREFIX_REMOVER;
-import static org.gama.lang.Reflections.IS_PREFIX_REMOVER;
+import static org.codefilarete.tool.Reflections.GET_SET_PREFIX_REMOVER;
+import static org.codefilarete.tool.Reflections.IS_PREFIX_REMOVER;
 
 /**
  * Table naming strategy contract for element collection table

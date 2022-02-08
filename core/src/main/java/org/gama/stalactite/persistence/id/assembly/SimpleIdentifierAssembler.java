@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.mapping.ColumnedRow;
 import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
 import org.gama.stalactite.persistence.structure.Column;

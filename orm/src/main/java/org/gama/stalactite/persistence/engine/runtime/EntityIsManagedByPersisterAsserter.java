@@ -6,10 +6,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Reflections;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Persister which checks that given instances can be persisted by itself, throws exception if that's not the case.

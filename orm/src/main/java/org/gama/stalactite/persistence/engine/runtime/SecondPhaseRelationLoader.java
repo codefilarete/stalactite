@@ -9,9 +9,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.gama.lang.Nullable;
-import org.gama.lang.Reflections;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.sql.result.BeanRelationFixer;

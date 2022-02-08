@@ -12,9 +12,9 @@ import java.util.function.Supplier;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Reflections;
-import org.gama.lang.function.SerializableTriFunction;
-import org.gama.lang.reflect.MethodDispatcher;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.function.SerializableTriFunction;
+import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.reflection.AccessorDefinition;
@@ -47,7 +47,7 @@ import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConf
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.lang.Reflections.propertyName;
+import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
  * A class that stores configuration made through a {@link FluentSubEntityMappingConfiguration}

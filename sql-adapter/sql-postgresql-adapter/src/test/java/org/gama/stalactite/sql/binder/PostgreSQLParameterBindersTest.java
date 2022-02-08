@@ -8,7 +8,7 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.util.Set;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

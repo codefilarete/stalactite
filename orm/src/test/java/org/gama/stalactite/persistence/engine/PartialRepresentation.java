@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import org.assertj.core.presentation.Representation;
 import org.assertj.core.presentation.StandardRepresentation;
-import org.gama.lang.StringAppender;
+import org.codefilarete.tool.StringAppender;
 import org.gama.trace.ObjectPrinterBuilder.ObjectPrinter;
 
 /**

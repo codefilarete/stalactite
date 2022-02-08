@@ -18,13 +18,13 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.exception.NotImplementedException;
-import org.gama.lang.function.Hanger.Holder;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.gama.reflection.Accessor;
 import org.gama.reflection.AccessorChain;
 import org.gama.reflection.AccessorDefinition;
@@ -43,8 +43,8 @@ import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.lang.Nullable.nullable;
-import static org.gama.lang.collection.Iterables.stream;
+import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.collection.Iterables.stream;
 import static org.gama.reflection.MethodReferences.toMethodReferenceString;
 
 /**

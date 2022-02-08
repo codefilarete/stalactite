@@ -7,10 +7,10 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.dml.PreparedSQL;
 import org.gama.stalactite.command.model.Update;

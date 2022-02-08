@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 
-import org.gama.lang.Reflections;
+import org.codefilarete.tool.Reflections;
 import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
 import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
 

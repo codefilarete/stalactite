@@ -7,9 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.exception.Exceptions;
-import org.gama.lang.function.Serie.IntegerSerie;
-import org.gama.lang.function.Serie.NowSerie;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.function.Serie.IntegerSerie;
+import org.codefilarete.tool.function.Serie.NowSerie;
 import org.gama.stalactite.persistence.engine.model.Country;
 import org.gama.stalactite.persistence.id.Identifier;
 import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;

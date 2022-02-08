@@ -4,8 +4,8 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.collection.Maps;
-import org.gama.lang.collection.Maps.ChainingMap;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.Maps.ChainingMap;
 import org.gama.stalactite.sql.binder.PreparedStatementWriter;
 import org.junit.jupiter.api.Test;
 

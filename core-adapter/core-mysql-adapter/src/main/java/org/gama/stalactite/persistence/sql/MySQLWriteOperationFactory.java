@@ -4,7 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.gama.lang.function.ThrowingBiFunction;
+import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.dml.SQLStatement;

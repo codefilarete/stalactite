@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.exception.Exceptions;
-import org.gama.lang.io.IOs;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.io.IOs;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -11,10 +11,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.exception.NotImplementedException;
-import org.gama.lang.function.Predicates;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Predicates;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPoint;
 import org.gama.stalactite.persistence.structure.Column;

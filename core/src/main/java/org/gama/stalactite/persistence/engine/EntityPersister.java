@@ -11,11 +11,11 @@ import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Duo;
-import org.gama.lang.Experimental;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.Maps;
-import org.gama.lang.collection.PairIterator;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Experimental;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.PairIterator;
 import org.gama.stalactite.persistence.engine.listening.PersisterListener;
 import org.gama.stalactite.query.model.AbstractRelationalOperator;
 

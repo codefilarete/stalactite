@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.sql.binder.ParameterBinder;
 import org.gama.stalactite.sql.binder.PreparedStatementWriter;
 import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;

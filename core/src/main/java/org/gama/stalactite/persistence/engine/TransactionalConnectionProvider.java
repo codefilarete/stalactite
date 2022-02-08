@@ -6,7 +6,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.stalactite.sql.ConnectionProvider;
 import org.gama.stalactite.sql.DataSourceConnectionProvider;
 

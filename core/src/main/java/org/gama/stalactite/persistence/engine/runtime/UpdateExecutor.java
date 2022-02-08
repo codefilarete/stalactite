@@ -8,11 +8,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.ArrayIterator;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.ReadOnlyIterator;
-import org.gama.lang.function.Predicates;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.ArrayIterator;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
+import org.codefilarete.tool.function.Predicates;
 import org.gama.stalactite.persistence.engine.VersioningStrategy;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener;
 import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;

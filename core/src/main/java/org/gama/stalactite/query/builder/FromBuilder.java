@@ -2,8 +2,8 @@ package org.gama.stalactite.query.builder;
 
 import java.util.Iterator;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.Strings;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.Strings;
 import org.gama.stalactite.persistence.structure.Table;
 import org.gama.stalactite.query.model.From;
 import org.gama.stalactite.query.model.From.AbstractJoin;

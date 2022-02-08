@@ -3,8 +3,8 @@ package org.gama.stalactite.persistence.engine.configurer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.reflection.ValueAccessPointSet;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;

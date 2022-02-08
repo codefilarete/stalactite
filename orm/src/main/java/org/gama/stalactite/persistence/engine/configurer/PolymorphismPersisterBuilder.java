@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine.configurer;
 
 import java.util.Map;
 
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.gama.reflection.ReversibleAccessor;
 import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;

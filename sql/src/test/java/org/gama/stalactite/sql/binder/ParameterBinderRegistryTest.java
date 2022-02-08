@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Maps;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 import org.gama.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;

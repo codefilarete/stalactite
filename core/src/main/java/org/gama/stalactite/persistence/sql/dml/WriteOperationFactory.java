@@ -6,7 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.function.LongSupplier;
 
-import org.gama.lang.function.ThrowingBiFunction;
+import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.gama.stalactite.persistence.engine.StaleStateObjectException;
 import org.gama.stalactite.persistence.sql.Dialect;
 import org.gama.stalactite.sql.ConnectionProvider;

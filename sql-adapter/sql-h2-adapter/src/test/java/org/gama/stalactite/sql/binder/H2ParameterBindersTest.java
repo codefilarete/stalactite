@@ -8,7 +8,7 @@ import java.util.Set;
 
 import binder.H2ParameterBinderRegistry;
 import binder.H2TypeMapping;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.sql.test.H2InMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

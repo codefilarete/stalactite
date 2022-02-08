@@ -6,7 +6,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.model.Timestamp;
 import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.lang.Nullable.nullable;
+import static org.codefilarete.tool.Nullable.nullable;
 import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
 
 /**

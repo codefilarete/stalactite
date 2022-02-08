@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.sql.ddl;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Index;

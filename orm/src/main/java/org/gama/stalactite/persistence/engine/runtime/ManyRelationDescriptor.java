@@ -6,7 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.gama.lang.bean.Objects;
+import org.codefilarete.tool.bean.Objects;
 import org.gama.stalactite.sql.result.BeanRelationFixer;
 
 /**

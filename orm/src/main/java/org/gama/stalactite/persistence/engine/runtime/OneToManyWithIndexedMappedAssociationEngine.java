@@ -13,11 +13,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.gama.lang.Duo;
-import org.gama.lang.Reflections;
-import org.gama.lang.ThreadLocals;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.ThreadLocals;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.RuntimeMappingException;
 import org.gama.stalactite.persistence.engine.listening.SelectListener;
 import org.gama.stalactite.persistence.engine.runtime.load.AbstractJoinNode;
@@ -83,7 +83,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 			@Override
 			public void afterSelect(Iterable<? extends SRC> result) {
-				Iterable collect = Iterables.stream(result).flatMap(src -> org.gama.lang.Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+				Iterable collect = Iterables.stream(result).flatMap(src -> org.codefilarete.tool.Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());

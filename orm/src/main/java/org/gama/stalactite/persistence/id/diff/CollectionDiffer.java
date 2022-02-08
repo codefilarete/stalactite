@@ -11,13 +11,13 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 
-import org.gama.lang.Duo;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.collection.KeepOrderMap;
-import org.gama.lang.collection.KeepOrderSet;
-import org.gama.lang.collection.PairIterator.UntilBothIterator;
-import org.gama.lang.function.Predicates;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.collection.PairIterator.UntilBothIterator;
+import org.codefilarete.tool.function.Predicates;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.persistence.id.Identified;
 
 import static org.gama.stalactite.persistence.id.diff.State.ADDED;

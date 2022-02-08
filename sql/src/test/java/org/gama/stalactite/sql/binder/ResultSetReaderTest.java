@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.assertj.core.api.Assertions;
-import org.gama.lang.function.Hanger.Holder;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

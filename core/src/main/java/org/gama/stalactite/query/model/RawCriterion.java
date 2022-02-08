@@ -2,7 +2,7 @@ package org.gama.stalactite.query.model;
 
 import java.util.List;
 
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 
 /**
  * Class aimed at designing criteria that can't be expressed with {@link ColumnCriterion}, for example criteria with function, exists, etc.

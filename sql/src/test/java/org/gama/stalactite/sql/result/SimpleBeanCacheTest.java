@@ -2,7 +2,7 @@ package org.gama.stalactite.sql.result;
 
 import java.util.function.Function;
 
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

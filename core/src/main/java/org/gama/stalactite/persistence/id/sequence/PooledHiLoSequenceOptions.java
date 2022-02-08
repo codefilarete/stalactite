@@ -3,8 +3,8 @@ package org.gama.stalactite.persistence.id.sequence;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-import org.gama.lang.bean.Objects;
-import org.gama.lang.function.ConverterRegistry;
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.function.ConverterRegistry;
 
 /**
  * Classe de stockage de la configuration de {@link PooledHiLoSequence}

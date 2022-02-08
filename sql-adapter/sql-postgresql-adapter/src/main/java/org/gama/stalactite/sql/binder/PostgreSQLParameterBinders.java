@@ -6,7 +6,7 @@ import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
 
-import org.gama.lang.io.IOs;
+import org.codefilarete.tool.io.IOs;
 import org.postgresql.PGConnection;
 import org.postgresql.largeobject.LargeObject;
 import org.postgresql.largeobject.LargeObjectManager;

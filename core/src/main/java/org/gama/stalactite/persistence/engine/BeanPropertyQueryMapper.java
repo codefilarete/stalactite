@@ -4,7 +4,7 @@ import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.gama.lang.function.Converter;
+import org.codefilarete.tool.function.Converter;
 import org.gama.stalactite.sql.result.BeanRelationFixer;
 import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.Table;

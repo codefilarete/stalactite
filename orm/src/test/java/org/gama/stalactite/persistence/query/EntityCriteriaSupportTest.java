@@ -3,7 +3,7 @@ package org.gama.stalactite.persistence.query;
 import java.util.HashMap;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.exception.Exceptions;
 import org.gama.reflection.AccessorByMethodReference;
 import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;

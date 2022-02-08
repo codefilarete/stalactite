@@ -10,11 +10,11 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.gama.lang.Nullable;
-import org.gama.lang.Reflections;
-import org.gama.lang.ThreadLocals;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Collections;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.ThreadLocals;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Collections;
 import org.gama.stalactite.persistence.engine.MappingConfigurationException;
 import org.gama.stalactite.persistence.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
 import org.gama.stalactite.persistence.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;

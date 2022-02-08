@@ -12,10 +12,10 @@ import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.Reflections;
-import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.reflection.AccessorByMember;
 import org.gama.reflection.AccessorByMethod;
 import org.gama.reflection.AccessorDefinition;
@@ -58,8 +58,8 @@ import org.gama.stalactite.persistence.structure.Column;
 import org.gama.stalactite.persistence.structure.PrimaryKey;
 import org.gama.stalactite.persistence.structure.Table;
 
-import static org.gama.lang.Nullable.nullable;
-import static org.gama.lang.collection.Iterables.first;
+import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.collection.Iterables.first;
 import static org.gama.reflection.Accessors.accessor;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;

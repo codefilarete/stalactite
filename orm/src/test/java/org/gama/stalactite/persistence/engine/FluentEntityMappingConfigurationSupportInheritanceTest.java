@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.lang.collection.Arrays;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
 import org.gama.stalactite.persistence.engine.model.Car;
 import org.gama.stalactite.persistence.engine.model.Color;

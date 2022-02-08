@@ -10,11 +10,11 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import org.gama.lang.Nullable;
-import org.gama.lang.Strings;
-import org.gama.lang.VisibleForTesting;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.exception.Exceptions;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.Exceptions;
 
 /**
  * Implementation of {@link DialectResolver} that gets its registered {@link Dialect}s through JVM Service Provider and looks for the most compatible

@@ -5,8 +5,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.Predicates;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.Predicates;
 import org.gama.stalactite.persistence.engine.listening.DeleteListener;
 
 /**

@@ -7,8 +7,8 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
-import org.gama.lang.bean.InterfaceIterator;
-import org.gama.lang.collection.Iterables;
+import org.codefilarete.tool.bean.InterfaceIterator;
+import org.codefilarete.tool.collection.Iterables;
 import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
 
 /**

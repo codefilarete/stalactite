@@ -4,8 +4,8 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
 
-import org.gama.lang.Reflections;
-import org.gama.lang.bean.MethodIterator;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.bean.MethodIterator;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

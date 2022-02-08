@@ -3,7 +3,7 @@ package org.gama.stalactite.sql.result;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.gama.lang.exception.NotImplementedException;
+import org.codefilarete.tool.exception.NotImplementedException;
 
 /**
  * @author Guillaume Mary

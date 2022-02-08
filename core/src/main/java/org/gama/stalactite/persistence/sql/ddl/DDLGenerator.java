@@ -2,8 +2,8 @@ package org.gama.stalactite.persistence.sql.ddl;
 
 import java.util.*;
 
-import org.gama.lang.collection.Collections;
-import org.gama.lang.collection.KeepOrderSet;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.gama.stalactite.persistence.structure.ForeignKey;
 import org.gama.stalactite.persistence.structure.Index;
 import org.gama.stalactite.persistence.structure.Table;

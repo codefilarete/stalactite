@@ -2,7 +2,7 @@ package org.gama.stalactite.persistence.engine;
 
 import java.util.Collections;
 
-import org.gama.lang.Duo;
+import org.codefilarete.tool.Duo;
 
 /**
  * @author Guillaume Mary

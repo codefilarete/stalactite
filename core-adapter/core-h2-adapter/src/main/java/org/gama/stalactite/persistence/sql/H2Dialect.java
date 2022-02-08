@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import binder.H2TypeMapping;
-import org.gama.lang.collection.Arrays;
+import org.codefilarete.tool.collection.Arrays;
 import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
 import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;

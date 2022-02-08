@@ -5,8 +5,8 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.gama.lang.Retryer;
-import org.gama.lang.Retryer.RetryException;
+import org.codefilarete.tool.Retryer;
+import org.codefilarete.tool.Retryer.RetryException;
 
 /**
  * Implementation that gives connections from an underlying {@link DataSource}.

@@ -36,8 +36,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.gama</groupId>
-			<artifactId>tools</artifactId>
+			<groupId>org.codefilarete</groupId>
+			<artifactId>tool</artifactId>
 			<type>test-jar</type>
 			<version>1.0-SNAPSHOT</version>
 			<scope>test</scope>

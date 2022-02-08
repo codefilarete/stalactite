@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.gama.lang.StringAppender;
-import org.gama.lang.collection.Iterables;
-import org.gama.lang.function.Functions;
-import org.gama.lang.trace.ModifiableInt;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.Functions;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.gama.stalactite.persistence.engine.SelectExecutor;
 import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
 import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
