@@ -111,8 +111,8 @@ class FluentEntityMappingConfigurationSupportTest {
 		// column should be correctly created
 		assertThatThrownBy(() -> mappingStrategy.build(persistenceContext))
 				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessage("Identifier is not defined for o.g.s.p.e.FluentEntityMappingConfigurationSupportTest$Toto,"
-						+ " please add one through o.g.s.p.e.FluentEntityMappingBuilder.mapKey(o.d.j.u.f.s.SerializableBiConsumer, o.g.s.p.e.ColumnOptions$IdentifierPolicy)");
+				.hasMessage("Identifier is not defined for o.c.s.p.e.FluentEntityMappingConfigurationSupportTest$Toto,"
+						+ " please add one through o.c.s.p.e.FluentEntityMappingBuilder.mapKey(o.d.j.u.f.s.SerializableBiConsumer, o.c.s.p.e.ColumnOptions$IdentifierPolicy)");
 	}
 	
 	@Nested
@@ -947,7 +947,7 @@ class FluentEntityMappingConfigurationSupportTest {
 						.map(Timestamp::getModificationDate));
 		assertThatThrownBy(() -> mappingBuilder.build(persistenceContext, countryTable))
 				.isInstanceOf(MappingConfigurationException.class)
-				.hasMessage("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				.hasMessage("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.c.s.p.e.m.Timestamp" +
 						", column names should be overriden : Timestamp::getCreationDate, Timestamp::getModificationDate");
 		
 		// we add an override, exception must still be thrown, with different message
@@ -955,7 +955,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
 				.isInstanceOf(MappingConfigurationException.class)
-				.hasMessage("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.g.s.p.e.m.Timestamp" +
+				.hasMessage("Person::getTimestamp conflicts with Country::getTimestamp while embedding a o.c.s.p.e.m.Timestamp" +
 						", column names should be overriden : Timestamp::getCreationDate");
 		
 		// we override the last field, no exception is thrown

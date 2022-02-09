@@ -90,6 +90,6 @@ public class PooledSequenceIdentifierProviderTest {
 				sequenceIdentifierGenerator);
 		assertThatThrownBy(testInstance::giveNewIdentifier)
 				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Can't execute operation in separate transaction because connection provider doesn't implement o.g.s.p.e.SeparateTransactionExecutor");
+				.hasMessage("Can't execute operation in separate transaction because connection provider doesn't implement o.c.s.p.e.SeparateTransactionExecutor");
 	}
 }

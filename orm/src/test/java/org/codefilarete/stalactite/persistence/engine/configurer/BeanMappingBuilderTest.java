@@ -48,7 +48,7 @@ class BeanMappingBuilderTest {
 				.override(Person::getVersion, versionColumn);
 		assertThatThrownBy(() -> BeanMappingBuilder.giveTargetTable(vehicleObjectFluentEntityMappingConfigurationSupport.getPropertiesMapping()))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Property override doesn't target main table : o.g.s.p.e.m.Person::getName");
+				.hasMessage("Property override doesn't target main table : o.c.s.p.e.m.Person::getName");
 	}
 	
 	@Test

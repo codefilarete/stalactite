@@ -913,8 +913,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				LongProvider countryIdProvider = new LongProvider();
 				Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 				dummyCountry.setName("France");
-				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m" 
-						+ ".Country.getPresident() on object org.codefilarete.stalactite.persistence.engine.model.Country@0").isThrownBy(() -> countryPersister.insert(dummyCountry));
+				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.c.s.p.e.m.Person o.c.s.p.e.m" 
+						+ ".Country.getPresident() on object Country@0").isThrownBy(() -> countryPersister.insert(dummyCountry));
 			}
 			
 			@Test
@@ -1237,8 +1237,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// Changing president's name to see what happens when we save it to the database
 				Country persistedCountry = countryPersister.select(dummyCountry.getId());
 				persistedCountry.setPresident(null);
-				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m" 
-						+ ".Country.getPresident() on object org.codefilarete.stalactite.persistence.engine.model.Country@0").isThrownBy(() -> countryPersister.update(persistedCountry, dummyCountry, true));
+				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.c.s.p.e.m.Person o.c.s.p.e.m" 
+						+ ".Country.getPresident() on object Country@0").isThrownBy(() -> countryPersister.update(persistedCountry, dummyCountry, true));
 			}
 			
 		}

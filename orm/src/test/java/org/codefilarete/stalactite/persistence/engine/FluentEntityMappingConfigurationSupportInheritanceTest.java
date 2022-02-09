@@ -263,8 +263,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 								.map(Vehicle::getColor))
 						.build(persistenceContext))
 					.isInstanceOf(UnsupportedOperationException.class)
-					.hasMessage("Identifier is not defined for o.g.s.p.e.m.Car,"
-							+ " please add one through o.g.s.p.e.FluentEntityMappingBuilder.mapKey(o.d.j.u.f.s.SerializableBiConsumer, o.g.s.p.e.ColumnOptions$IdentifierPolicy)");
+					.hasMessage("Identifier is not defined for o.c.s.p.e.m.Car,"
+							+ " please add one through o.c.s.p.e.FluentEntityMappingBuilder.mapKey(o.d.j.u.f.s.SerializableBiConsumer, o.c.s.p.e.ColumnOptions$IdentifierPolicy)");
 		}
 		
 		@Test
@@ -359,8 +359,8 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 							.build(persistenceContext))
 					.isInstanceOf(MappingConfigurationException.class)
 					.hasMessage("Defining an identifier while inheritance is used is not supported"
-							+ " : o.g.s.p.e.m.Vehicle defines identifier AbstractVehicle::getId"
-							+ " while it inherits from o.g.s.p.e.m.AbstractVehicle");
+							+ " : o.c.s.p.e.m.Vehicle defines identifier AbstractVehicle::getId"
+							+ " while it inherits from o.c.s.p.e.m.AbstractVehicle");
 		}
 		
 		@Test

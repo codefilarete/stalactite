@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportInheritanceTest;
 import org.codefilarete.stalactite.persistence.id.Identified;
 import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;

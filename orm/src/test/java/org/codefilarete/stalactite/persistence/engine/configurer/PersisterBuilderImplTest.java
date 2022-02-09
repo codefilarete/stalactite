@@ -123,7 +123,7 @@ public class PersisterBuilderImplTest {
 		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 10);
 		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, Mockito.mock(PersisterRegistry.class), null))
 				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessage("Version control is only supported with o.g.s.s.ConnectionProvider that also implements o.g.s.s.RollbackObserver");
+				.hasMessage("Version control is only supported with o.c.s.s.ConnectionProvider that also implements o.c.s.s.RollbackObserver");
 	}
 	
 	@Test
@@ -697,22 +697,22 @@ public class PersisterBuilderImplTest {
 		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		assertThatThrownBy(() -> result.persist(new Vehicle(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Vehicle");
 		assertThatThrownBy(() -> result.insert(new Vehicle(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Vehicle");
 		assertThatThrownBy(() -> result.update(new Vehicle(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Vehicle");
 		assertThatThrownBy(() -> result.updateById(new Vehicle(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Vehicle");
 		assertThatThrownBy(() -> result.delete(new Vehicle(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Vehicle");
 		assertThatThrownBy(() -> result.deleteById(new Vehicle(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Vehicle");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Vehicle");
 	}
 	
 	@Test
@@ -730,22 +730,22 @@ public class PersisterBuilderImplTest {
 		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		assertThatThrownBy(() -> result.persist(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.insert(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.update(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.updateById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.delete(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.deleteById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 	}
 	
 	@Test
@@ -763,22 +763,22 @@ public class PersisterBuilderImplTest {
 		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 		assertThatThrownBy(() -> result.persist(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.insert(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.update(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.updateById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.delete(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 		assertThatThrownBy(() -> result.deleteById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.g.s.p.e.m.AbstractVehicle is not configured to persist o.g.s.p.e.m.Car");
+				.hasMessage("Persister of o.c.s.p.e.m.AbstractVehicle is not configured to persist o.c.s.p.e.m.Car");
 	}
 	
 	public static class ToStringBuilder<E> {

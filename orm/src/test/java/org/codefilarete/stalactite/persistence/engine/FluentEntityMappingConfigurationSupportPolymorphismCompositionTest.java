@@ -201,7 +201,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism");
+				.hasMessage("Combining joined-tables polymorphism policy with o.c.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism");
 	}
 	
 	@Test
@@ -281,7 +281,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$SingleTablePolymorphism");
+				.hasMessage("Combining joined-tables polymorphism policy with o.c.s.p.e.PolymorphismPolicy$SingleTablePolymorphism");
 	}
 	
 	@Test
@@ -301,6 +301,6 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 				);
 		assertThatThrownBy(() -> builder.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, NotImplementedException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Combining joined-tables polymorphism policy with o.g.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism");
+				.hasMessage("Combining joined-tables polymorphism policy with o.c.s.p.e.PolymorphismPolicy$TablePerClassPolymorphism");
 	}
 }

@@ -349,9 +349,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		assertThatThrownBy(() -> persisterWithNonExistingSetter.insert(question))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeMappingException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
+				.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.c.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
 				+ "accessor for field" +
-				" o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.questionWithNoGetter returned null");
+				" o.c.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.questionWithNoGetter returned null");
 	}
 		
 	@Test
@@ -380,8 +380,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		assertThatThrownBy(() -> persister.insert(question))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeMappingException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
-						+ "o.g.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() returned null");
+				.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.c.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
+						+ "o.c.s.p.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() returned null");
 	}
 		
 	@Test

@@ -71,7 +71,7 @@ class AssociationTableNamingStrategyTest {
 			assertThatThrownBy(() -> testInstance.giveColumnNames(accessorDefinition, cyclingModelIdColumn, cyclingModelIdColumn))
 					.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
 					.hasMessage("Identical column names in association table of collection" 
-							+ " o.g.s.p.e.keyColumnNames_primaryKeysTargetSameEntity_keyColumnNamesAreDifferent$CyclingModel.cyclingModels");
+							+ " o.c.s.p.e.keyColumnNames_primaryKeysTargetSameEntity_keyColumnNamesAreDifferent$CyclingModel.cyclingModels");
 		}
 		
 		private class CyclingModel {
