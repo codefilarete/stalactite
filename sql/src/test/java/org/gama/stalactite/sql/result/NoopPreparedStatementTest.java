@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Method;

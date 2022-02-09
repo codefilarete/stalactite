@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.model;
+package org.codefilarete.stalactite.persistence.engine.model;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -9,9 +9,9 @@ import java.util.function.Supplier;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.codefilarete.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
 
 /**
  * @author Guillaume Mary
@@ -28,7 +28,7 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private City capital;
 	
-	/** Country cities, lazily initialized to test initialization by Stalactite with {@link org.gama.stalactite.persistence.engine.OneToManyOptions#initializeWith(Supplier)} */
+	/** Country cities, lazily initialized to test initialization by Stalactite with {@link org.codefilarete.stalactite.persistence.engine.OneToManyOptions#initializeWith(Supplier)} */
 	private Set<City> cities;
 	
 	// anything that is a List with a reverse relation-owning column

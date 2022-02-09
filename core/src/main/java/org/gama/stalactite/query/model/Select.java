@@ -1,4 +1,4 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * A support for the select part of a SQL query

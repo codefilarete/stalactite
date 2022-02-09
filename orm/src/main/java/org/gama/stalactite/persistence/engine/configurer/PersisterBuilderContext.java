@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
-import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.PersisterRegistry;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.PersisterRegistry;
+import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Running context of {@link PersisterBuilderImpl}. Allows to share some information during configuraiton of the whole entity graph.

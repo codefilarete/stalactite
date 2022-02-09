@@ -1,8 +1,8 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * The interface defining what's possible to do (fluent point of view) on a select

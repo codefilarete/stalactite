@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.codefilarete.stalactite.persistence.engine.cascade;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,17 +12,17 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.gama.stalactite.persistence.engine.runtime.Persister;
-import org.gama.stalactite.persistence.engine.runtime.UpdateExecutor;
-import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.engine.runtime.UpdateExecutor;
+import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

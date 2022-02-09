@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -8,12 +8,12 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * 

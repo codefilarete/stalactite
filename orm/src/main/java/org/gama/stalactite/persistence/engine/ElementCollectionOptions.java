@@ -1,9 +1,9 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary

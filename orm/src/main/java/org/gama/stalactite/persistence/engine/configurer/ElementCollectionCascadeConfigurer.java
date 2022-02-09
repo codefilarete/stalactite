@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
@@ -20,39 +20,39 @@ import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
-import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
-import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.RelationalEntityPersister;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
-import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.gama.stalactite.persistence.engine.runtime.CollectionUpdater;
-import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
-import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
-import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
-import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
-import org.gama.stalactite.persistence.mapping.EmbeddedClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IdAccessor;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.RelationalEntityPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.persistence.engine.runtime.CollectionUpdater;
+import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
+import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
+import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
+import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
+import org.codefilarete.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
+import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.EmbeddedClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.bean.Objects.preventNull;
@@ -243,7 +243,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	}
 	
 	/**
-	 * Mapping strategy dedicated to {@link ElementRecord}. Very close to {@link org.gama.stalactite.persistence.engine.AssociationRecordMappingStrategy}
+	 * Mapping strategy dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.persistence.engine.AssociationRecordMappingStrategy}
 	 * in its principle.
 	 * 
 	 */
@@ -265,7 +265,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		}
 		
 		/**
-		 * {@link org.gama.stalactite.persistence.mapping.IdMappingStrategy} for {@link ElementRecord} : a composed id made of
+		 * {@link org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy} for {@link ElementRecord} : a composed id made of
 		 * {@link ElementRecord#getIdentifier()} and {@link ElementRecord#getElement()}
 		 */
 		private static class ElementRecordIdMappingStrategy extends ComposedIdMappingStrategy<ElementRecord, ElementRecord> {
@@ -425,10 +425,10 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		}
 		
 		/**
-		 * Identifier for {@link org.gama.stalactite.persistence.id.diff.CollectionDiffer} support (update use case), because it compares beans
+		 * Identifier for {@link org.codefilarete.stalactite.persistence.id.diff.CollectionDiffer} support (update use case), because it compares beans
 		 * through their "foot print" which is their id in default/entity case, but since we are value type, we must provide a dedicated foot print.
 		 * Could be hashCode() if it was implemented on identifier + element, but implementing it would require to implement equals() (to comply
-		 * with best pratices) which is not our case nor required by {@link org.gama.stalactite.persistence.id.diff.CollectionDiffer}.
+		 * with best pratices) which is not our case nor required by {@link org.codefilarete.stalactite.persistence.id.diff.CollectionDiffer}.
 		 * Note : name of this method is not important
 		 */
 		public int footprint() {

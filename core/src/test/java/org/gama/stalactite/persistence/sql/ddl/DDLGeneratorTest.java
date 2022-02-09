@@ -1,11 +1,11 @@
-package org.gama.stalactite.persistence.sql.ddl;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import java.util.List;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

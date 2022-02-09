@@ -1,6 +1,6 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
-import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

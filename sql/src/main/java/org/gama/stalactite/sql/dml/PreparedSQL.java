@@ -1,11 +1,11 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.util.Map;
 
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.PreparedStatementWriter;
-import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriterIndex;
 
 /**
  * Class that applies values to {@link PreparedStatement} according to SQL that contains indexed parameters.

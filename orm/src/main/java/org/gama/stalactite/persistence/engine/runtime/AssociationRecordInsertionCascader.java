@@ -1,11 +1,11 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 
 import static org.codefilarete.tool.collection.Iterables.stream;
 

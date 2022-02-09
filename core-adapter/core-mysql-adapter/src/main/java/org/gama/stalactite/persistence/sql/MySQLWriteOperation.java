@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -6,10 +6,10 @@ import java.sql.SQLException;
 
 import org.codefilarete.tool.Retryer.RetryException;
 import org.codefilarete.tool.function.ThrowingBiFunction;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
+import org.codefilarete.stalactite.sql.dml.SQLStatement;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
 
 /**
  * MySQL's implementation of {@link WriteOperation} to retry statement execution because MySQL InnoDB has a poor behavior of insertion concurrency

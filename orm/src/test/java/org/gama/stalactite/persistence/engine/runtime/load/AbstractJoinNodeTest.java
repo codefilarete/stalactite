@@ -1,6 +1,6 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

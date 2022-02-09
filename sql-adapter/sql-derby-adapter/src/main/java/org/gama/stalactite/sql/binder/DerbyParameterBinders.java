@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,9 +12,9 @@ import java.util.Arrays;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.io.IOs;
 
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BLOB_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BYTES_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BLOB_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BYTES_WRITER;
 
 /**
  * @author Guillaume Mary

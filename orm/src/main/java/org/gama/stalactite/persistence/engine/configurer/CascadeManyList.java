@@ -1,12 +1,12 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import java.util.List;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
-import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * A {@link CascadeMany} dedicated to {@link List} to configure indexation.

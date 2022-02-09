@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import javax.annotation.Nonnull;
 import java.sql.ResultSet;

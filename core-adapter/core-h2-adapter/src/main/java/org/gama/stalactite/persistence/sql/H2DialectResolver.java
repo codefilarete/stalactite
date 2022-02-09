@@ -1,7 +1,7 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
-import org.gama.stalactite.persistence.sql.DialectResolver.DialectResolverEntry;
-import org.gama.stalactite.persistence.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+import org.codefilarete.stalactite.persistence.sql.DialectResolver.DialectResolverEntry;
+import org.codefilarete.stalactite.persistence.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 
 /**
  * @author Guillaume Mary

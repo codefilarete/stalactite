@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,47 +26,47 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
-import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.MappingConfigurationException;
-import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
-import org.gama.stalactite.persistence.engine.PersisterRegistry;
-import org.gama.stalactite.persistence.engine.RuntimeMappingException;
-import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
-import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdSupport;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
-import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
-import org.gama.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
-import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.runtime.ConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.gama.stalactite.persistence.engine.runtime.load.PassiveJoinNode;
-import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
-import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.dml.PreparedUpdate;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.persistence.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.persistence.engine.NotYetSupportedOperationException;
+import org.codefilarete.stalactite.persistence.engine.PersisterRegistry;
+import org.codefilarete.stalactite.persistence.engine.RuntimeMappingException;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterDeleteSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteByIdSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.BeforeInsertSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
+import org.codefilarete.stalactite.persistence.engine.listening.DeleteListener;
+import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.PassiveJoinNode;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.dml.PreparedUpdate;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
 
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.function.Predicates.not;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
+import static org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -494,7 +494,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					
 					/**
 					 * Implemented to update target owning column after insert. Made AFTER insert to benefit from id when set by database with
-					 * IdentifierPolicy is {@link org.gama.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
+					 * IdentifierPolicy is {@link org.codefilarete.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
 					 */
 					@Override
 					public void afterInsert(Iterable<? extends SRC> entities) {
@@ -621,7 +621,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			sourcePersister.addInsertListener(new InsertListener<SRC>() {
 				/**
 				 * Implemented to persist target instance after insert. Made AFTER insert to benefit from id when set by database with
-				 * IdentifierPolicy is {@link org.gama.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
+				 * IdentifierPolicy is {@link org.codefilarete.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
 				 */
 				@Override
 				public void afterInsert(Iterable<? extends SRC> entities) {

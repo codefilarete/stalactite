@@ -1,11 +1,11 @@
-package org.gama.stalactite.persistence.sql.ddl;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 
 /**
  * A registry to specify SQL types for Java types and {@link Column}s.

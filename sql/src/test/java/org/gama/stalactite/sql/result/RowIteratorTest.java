@@ -1,8 +1,8 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

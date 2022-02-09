@@ -1,9 +1,9 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import org.gama.stalactite.sql.test.DerbyInMemoryDataSource;
+import org.codefilarete.stalactite.sql.test.DerbyInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

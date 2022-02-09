@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 
 /**
  * CRUD Persistent features dedicated to an entity class. Kind of sliding door of {@link Persister} aimed at running

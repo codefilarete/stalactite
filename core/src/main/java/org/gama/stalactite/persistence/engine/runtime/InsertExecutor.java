@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.sql.Savepoint;
 import java.util.HashSet;
@@ -9,29 +9,29 @@ import java.util.Set;
 
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.VersioningStrategy;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.RollbackListener;
-import org.gama.stalactite.sql.RollbackObserver;
-import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.persistence.engine.VersioningStrategy;
+import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
+import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.RollbackListener;
+import org.codefilarete.stalactite.sql.RollbackObserver;
+import org.codefilarete.stalactite.sql.dml.SQLOperation.SQLOperationListener;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
 
 /**
  * Dedicated class to insert statement execution
  *
  * @author Guillaume Mary
  */
-public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.gama.stalactite.persistence.engine.InsertExecutor<C> {
+public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.persistence.engine.InsertExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.id.diff;
 
 import java.util.Comparator;
 import java.util.List;
@@ -10,11 +10,11 @@ import java.util.stream.Collectors;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;
-import org.gama.stalactite.persistence.engine.model.City;
-import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.id.provider.LongProvider;
+import org.codefilarete.stalactite.persistence.engine.model.City;
+import org.codefilarete.stalactite.persistence.engine.model.Country;
+import org.codefilarete.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
+import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -23,9 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.tool.collection.Arrays.asHashSet;
 import static org.codefilarete.tool.collection.Arrays.asList;
 import static org.codefilarete.tool.collection.Arrays.asSet;
-import static org.gama.stalactite.persistence.id.diff.State.ADDED;
-import static org.gama.stalactite.persistence.id.diff.State.HELD;
-import static org.gama.stalactite.persistence.id.diff.State.REMOVED;
+import static org.codefilarete.stalactite.persistence.id.diff.State.ADDED;
+import static org.codefilarete.stalactite.persistence.id.diff.State.HELD;
+import static org.codefilarete.stalactite.persistence.id.diff.State.REMOVED;
 
 /**
  * @author Guillaume Mary

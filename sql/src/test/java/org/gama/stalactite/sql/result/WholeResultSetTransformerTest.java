@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,16 +15,16 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.ThrowingRunnable;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.sql.result.ResultSetRowTransformerTest.Person;
-import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
-import org.gama.stalactite.sql.result.WholeResultSetTransformerTest.WingInner.FeatherInner;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformerTest.Person;
+import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.sql.result.WholeResultSetTransformerTest.WingInner.FeatherInner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
 
 /**
  * @author Guillaume Mary

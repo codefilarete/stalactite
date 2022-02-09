@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
 
 /**
  * @author Guillaume Mary

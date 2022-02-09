@@ -1,13 +1,13 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.sql.SQLException;
 import java.util.List;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.sql.DerbyDialect.DerbyWriteOperation;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.dml.GeneratedKeysReader;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.persistence.sql.DerbyDialect.DerbyWriteOperation;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
 
 /**
  * @author Guillaume Mary

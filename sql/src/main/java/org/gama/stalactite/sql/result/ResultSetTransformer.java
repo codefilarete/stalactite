@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.codefilarete.tool.exception.NotImplementedException;
-import org.gama.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
 
 /**
  * @param <I> the type of bean keys (input)

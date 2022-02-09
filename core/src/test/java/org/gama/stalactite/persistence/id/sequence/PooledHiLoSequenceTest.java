@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.id.sequence;
 
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

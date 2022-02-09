@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.sql.dml;
+package org.codefilarete.stalactite.persistence.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.util.Map;
 
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.PreparedStatementWriter;
-import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriterIndex;
+import org.codefilarete.stalactite.sql.dml.SQLStatement;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Statement dedicated to updates: a parameter can be in the where clause and the update one with different values.

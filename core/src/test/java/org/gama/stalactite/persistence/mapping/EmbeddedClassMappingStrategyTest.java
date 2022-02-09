@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,10 +8,10 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.gama.stalactite.sql.result.Row;
-import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 import static org.codefilarete.reflection.Accessors.mutatorByField;
 import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
 import static org.codefilarete.reflection.Accessors.propertyAccessor;
-import static org.gama.stalactite.persistence.mapping.EmbeddedClassMappingStrategy.*;
+import static org.codefilarete.stalactite.persistence.mapping.EmbeddedClassMappingStrategy.*;
 
 /**
  * @author Guillaume Mary

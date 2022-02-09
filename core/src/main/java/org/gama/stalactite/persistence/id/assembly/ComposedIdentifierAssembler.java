@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.assembly;
+package org.codefilarete.stalactite.persistence.id.assembly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -9,10 +9,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.sql.result.Row;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Describes the way a composed identifier is read and written to a database.

@@ -1,23 +1,23 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.query.model.Operators.eq;
-import static org.gama.stalactite.query.model.Operators.gt;
-import static org.gama.stalactite.query.model.Operators.sum;
-import static org.gama.stalactite.query.model.OrderByChain.Order.ASC;
-import static org.gama.stalactite.query.model.OrderByChain.Order.DESC;
-import static org.gama.stalactite.query.model.QueryEase.select;
+import static org.codefilarete.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.gt;
+import static org.codefilarete.stalactite.query.model.Operators.sum;
+import static org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC;
+import static org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC;
+import static org.codefilarete.stalactite.query.model.QueryEase.select;
 
 /**
  * @author Guillaume Mary

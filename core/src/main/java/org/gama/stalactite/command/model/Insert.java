@@ -1,17 +1,17 @@
-package org.gama.stalactite.command.model;
+package org.codefilarete.stalactite.command.model;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.gama.stalactite.command.model.Update.UpdateColumn;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.command.model.Update.UpdateColumn;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * A simple representation of a SQL insert clause, and a way to build it easily/fluently
  * 
  * @author Guillaume Mary
- * @see org.gama.stalactite.command.builder.InsertCommandBuilder
+ * @see org.codefilarete.stalactite.command.builder.InsertCommandBuilder
  */
 public class Insert<T extends Table> {
 	

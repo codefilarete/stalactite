@@ -1,8 +1,8 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Contract to define options when reusing a configuration of an embeddable, very close to {@link EmbedWithColumnOptions}

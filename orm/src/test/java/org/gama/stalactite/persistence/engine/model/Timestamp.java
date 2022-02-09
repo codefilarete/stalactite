@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.model;
+package org.codefilarete.stalactite.persistence.engine.model;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;

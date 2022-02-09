@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.PostgreSQLDialect;
-import org.gama.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.PostgreSQLDialect;
+import org.codefilarete.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
 
 /**
  * @author Guillaume Mary

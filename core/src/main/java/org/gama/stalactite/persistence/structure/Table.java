@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.structure;
+package org.codefilarete.stalactite.persistence.structure;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -18,7 +18,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
-import org.gama.stalactite.persistence.structure.Database.Schema;
+import org.codefilarete.stalactite.persistence.structure.Database.Schema;
 
 import static org.codefilarete.tool.Nullable.nullable;
 

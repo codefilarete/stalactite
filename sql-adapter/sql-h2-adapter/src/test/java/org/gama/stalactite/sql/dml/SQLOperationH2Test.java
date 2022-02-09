@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.function.Predicate;
 
-import org.gama.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 import org.h2.engine.ConnectionInfo;
 import org.h2.engine.Engine;
 import org.h2.engine.Session;

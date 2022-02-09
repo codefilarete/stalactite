@@ -1,7 +1,7 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

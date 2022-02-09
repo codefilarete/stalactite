@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Method;
@@ -24,16 +24,16 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
-import org.gama.stalactite.persistence.engine.EnumOptions;
-import org.gama.stalactite.persistence.engine.FluentEmbeddableMappingBuilder;
-import org.gama.stalactite.persistence.engine.ImportedEmbedOptions;
-import org.gama.stalactite.persistence.engine.PropertyOptions;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
+import org.codefilarete.stalactite.persistence.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.persistence.engine.EnumOptions;
+import org.codefilarete.stalactite.persistence.engine.FluentEmbeddableMappingBuilder;
+import org.codefilarete.stalactite.persistence.engine.ImportedEmbedOptions;
+import org.codefilarete.stalactite.persistence.engine.PropertyOptions;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
 
 /**
  * @author Guillaume Mary

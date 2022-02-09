@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.provider;
+package org.codefilarete.stalactite.persistence.id.provider;
 
 /**
  * Interface for giving an identifier that is not already used (a unique value), and so can be inserted in database without

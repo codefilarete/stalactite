@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.id.diff;
 
 /**
  * Abstract contract for a change of place in a {@link java.util.Collection}.

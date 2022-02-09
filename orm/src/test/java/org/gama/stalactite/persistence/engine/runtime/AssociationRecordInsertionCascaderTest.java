@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,15 +6,15 @@ import java.util.List;
 
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
+import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 

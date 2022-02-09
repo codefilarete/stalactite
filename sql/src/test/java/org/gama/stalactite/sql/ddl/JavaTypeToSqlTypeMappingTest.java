@@ -1,9 +1,9 @@
-package org.gama.stalactite.sql.ddl;
+package org.codefilarete.stalactite.sql.ddl;
 
 import java.time.Month;
 import java.util.concurrent.TimeUnit;
 
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -13,22 +13,22 @@ import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.persistence.engine.SelectExecutor;
-import org.gama.stalactite.persistence.engine.SubEntityMappingConfiguration;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.SQLQueryBuilder;
-import org.gama.stalactite.query.model.Operators;
-import org.gama.stalactite.query.model.Query;
-import org.gama.stalactite.query.model.QueryEase;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.PreparedStatementWriter;
-import org.gama.stalactite.sql.binder.ResultSetReader;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.sql.dml.ReadOperation;
-import org.gama.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.persistence.engine.SelectExecutor;
+import org.codefilarete.stalactite.persistence.engine.SubEntityMappingConfiguration;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.sql.dml.ReadOperation;
+import org.codefilarete.stalactite.sql.result.RowIterator;
 
 /**
  * @author Guillaume Mary

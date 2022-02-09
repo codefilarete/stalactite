@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -13,9 +13,9 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 

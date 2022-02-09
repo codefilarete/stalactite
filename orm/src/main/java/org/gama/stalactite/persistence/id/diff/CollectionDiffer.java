@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.id.diff;
 
 import javax.annotation.Nonnull;
 import java.util.Collection;
@@ -18,11 +18,11 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.PairIterator.UntilBothIterator;
 import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.Identified;
 
-import static org.gama.stalactite.persistence.id.diff.State.ADDED;
-import static org.gama.stalactite.persistence.id.diff.State.HELD;
-import static org.gama.stalactite.persistence.id.diff.State.REMOVED;
+import static org.codefilarete.stalactite.persistence.id.diff.State.ADDED;
+import static org.codefilarete.stalactite.persistence.id.diff.State.HELD;
+import static org.codefilarete.stalactite.persistence.id.diff.State.REMOVED;
 
 /**
  * A class to compute the differences between 2 collections of objects: addition, removal or held

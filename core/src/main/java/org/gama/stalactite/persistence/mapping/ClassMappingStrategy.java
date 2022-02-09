@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
@@ -21,12 +21,12 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * <p>
@@ -50,10 +50,10 @@ import org.gama.stalactite.sql.result.Row;
  * 
  * <br/>
  * <b>THIS CLASS DOESN'T ADDRESS RELATION MAPPING</b>, because it's not the purpose of Stalactite 'core' module, see 'orm' module.
- * Meanwhile one can use {@link org.gama.stalactite.query.model.Query} to construct complex type.
+ * Meanwhile one can use {@link org.codefilarete.stalactite.query.model.Query} to construct complex type.
  * 
  * @author Guillaume Mary
- * @see org.gama.stalactite.query.model.Query
+ * @see org.codefilarete.stalactite.query.model.Query
  */
 public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappingStrategy<C, I, T> {
 	

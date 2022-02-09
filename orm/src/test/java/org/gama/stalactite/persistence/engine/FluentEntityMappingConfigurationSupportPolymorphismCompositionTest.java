@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.util.Collections;
@@ -10,34 +10,34 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.exception.NotImplementedException;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
-import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
-import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
-import org.gama.stalactite.persistence.engine.model.Car;
-import org.gama.stalactite.persistence.engine.model.Color;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.binder.LambdaParameterBinder;
-import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricPlug;
+import org.codefilarete.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
+import org.codefilarete.stalactite.persistence.engine.model.AbstractVehicle;
+import org.codefilarete.stalactite.persistence.engine.model.Car;
+import org.codefilarete.stalactite.persistence.engine.model.Color;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
+import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
-import static org.gama.stalactite.persistence.engine.MappingEase.subentityBuilder;
-import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
-import static org.gama.stalactite.persistence.id.Identifier.identifierBinder;
-import static org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
-import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
-import static org.gama.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
+import static org.codefilarete.stalactite.persistence.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.persistence.engine.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.persistence.id.Identifier.LONG_TYPE;
+import static org.codefilarete.stalactite.persistence.id.Identifier.identifierBinder;
+import static org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
+import static org.codefilarete.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
+import static org.codefilarete.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 
 /**
  * @author Guillaume Mary

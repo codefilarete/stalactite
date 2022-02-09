@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.util.ArrayList;
 import java.util.Collections;

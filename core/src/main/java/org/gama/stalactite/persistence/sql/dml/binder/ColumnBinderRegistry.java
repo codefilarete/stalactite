@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.dml.binder;
+package org.codefilarete.stalactite.persistence.sql.dml.binder;
 
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
@@ -12,11 +12,11 @@ import java.util.stream.Stream;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.sql.binder.ParameterBinderRegistry;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinderIndex;
+import org.codefilarete.stalactite.sql.binder.ParameterBinderRegistry;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * Registry of {@link ParameterBinder}s per {@link Column} to simplify access to method of {@link PreparedStatement} for {@link Column}s.

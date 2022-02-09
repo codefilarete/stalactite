@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.sql.SQLException;
 

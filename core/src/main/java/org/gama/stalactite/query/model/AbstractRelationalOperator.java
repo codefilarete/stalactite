@@ -1,4 +1,4 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 /**
  * General contract for SQL operator such as in, =, <, >, like, between, etc. 

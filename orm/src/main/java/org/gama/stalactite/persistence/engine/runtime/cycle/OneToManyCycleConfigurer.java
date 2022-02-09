@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.engine.runtime.cycle;
+package org.codefilarete.stalactite.persistence.engine.runtime.cycle;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 
 /**
  * Container of {@link CascadeManyConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).

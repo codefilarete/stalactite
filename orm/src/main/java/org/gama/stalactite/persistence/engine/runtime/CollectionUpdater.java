@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -11,10 +11,10 @@ import java.util.function.Function;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
-import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.id.diff.CollectionDiffer;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
+import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
+import org.codefilarete.stalactite.persistence.id.diff.CollectionDiffer;
 
 /**
  * Class aimed at making the difference of entities of an {@link UpdatePayload} and updating, inserting or deleting them according to difference
@@ -50,7 +50,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	/**
 	 * Constructor that lets one defines id policy : in some cases default policy (based on
-	 * {@link org.gama.stalactite.persistence.mapping.IdAccessor#getId(Object)}) is not sufficient, such as when {@link Collection} contains "value type".
+	 * {@link org.codefilarete.stalactite.persistence.mapping.IdAccessor#getId(Object)}) is not sufficient, such as when {@link Collection} contains "value type".
 	 * 
 	 * @param collectionGetter getter for collection from source entity
 	 * @param targetPersister target entities persister

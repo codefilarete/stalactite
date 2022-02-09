@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.id.manager;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
+import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
 
 /**
  * Identifier manager to be used when identifier is already specified on entity, therefore this requires :
@@ -20,7 +20,7 @@ import org.gama.stalactite.sql.dml.WriteOperation;
  * A way o managing it can be to create a wrapper around identifier.
  * 
  * @author Guillaume Mary
- * @see org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy.IsNewDeterminer#isNew(Object) 
+ * @see org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy.IsNewDeterminer#isNew(Object) 
  */
 public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInsertionManager<C, I> {
 	

@@ -1,12 +1,12 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.util.Collections;
 
-import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.DMLNameProvider;
-import org.gama.stalactite.sql.binder.PostgreSQLTypeMapping;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.binder.PostgreSQLTypeMapping;
 
 /**
  * @author Guillaume Mary

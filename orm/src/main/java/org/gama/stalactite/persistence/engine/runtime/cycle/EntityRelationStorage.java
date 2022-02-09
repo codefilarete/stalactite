@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.cycle;
+package org.codefilarete.stalactite.persistence.engine.runtime.cycle;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
 
 /**
  * Mapping between left part of a relation and identifiers of its right part

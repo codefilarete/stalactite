@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.codefilarete.tool.function.ThrowingConverter;
-import org.gama.stalactite.sql.binder.LambdaParameterBinder;
-import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 
 /**
  * Frame for handling unexpected type (from the library) that needs to be persisted into a single column.
@@ -18,8 +18,8 @@ import org.gama.stalactite.sql.binder.ParameterBinder;
  *
  * @param <C> the mapped type
  * @author Guillaume Mary
- * @see org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry
- * @see org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry
+ * @see org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry
+ * @see org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry
  */
 public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	
@@ -27,8 +27,8 @@ public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	
 	/**
 	 * Creates a binder for persisting C objects (handling eventually null values).
-	 * Instance should be registered into a {@link org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link
-	 * org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry}
+	 * Instance should be registered into a {@link org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link
+	 * org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry}
 	 * 
 	 * @param lowerBinder the binder that interacts with {@link PreparedStatement} and {@link ResultSet}
 	 * @param toObjectConverter a converter applied on read value given by lower binder when reading from a {@link ResultSet}

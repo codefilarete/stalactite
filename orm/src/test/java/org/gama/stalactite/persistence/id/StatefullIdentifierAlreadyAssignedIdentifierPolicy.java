@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.id;
+package org.codefilarete.stalactite.persistence.id;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.persistence.id.manager.StatefullIdentifier;
 
 /**
  * Policy for entities that have a {@link StatefullIdentifier}
- * <strong>Is only supported for entities that implement {@link org.gama.stalactite.persistence.id.Identified}</strong>
+ * <strong>Is only supported for entities that implement {@link org.codefilarete.stalactite.persistence.id.Identified}</strong>
  * 
  * @author Guillaume Mary
  */

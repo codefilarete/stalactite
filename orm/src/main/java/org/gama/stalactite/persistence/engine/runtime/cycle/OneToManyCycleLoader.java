@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.cycle;
+package org.codefilarete.stalactite.persistence.engine.runtime.cycle;
 
 import java.util.HashMap;
 import java.util.List;
@@ -6,12 +6,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader;
 
 /**
  * Loader in case of same entity type present in entity graph as child of itself : A.b -> B.c -> C.a

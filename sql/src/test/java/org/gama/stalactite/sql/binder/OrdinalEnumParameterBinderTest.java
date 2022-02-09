@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,7 +7,7 @@ import java.time.Month;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

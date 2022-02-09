@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -9,9 +9,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 
 /**
  * Defines elements needed to configure a mapping of an embeddable class

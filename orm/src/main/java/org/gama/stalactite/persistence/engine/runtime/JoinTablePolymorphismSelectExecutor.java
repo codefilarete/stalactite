@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
@@ -11,22 +11,22 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.SelectExecutor;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.SQLQueryBuilder;
-import org.gama.stalactite.query.model.Operators;
-import org.gama.stalactite.query.model.Query;
-import org.gama.stalactite.query.model.QueryEase;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.ResultSetReader;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.sql.dml.ReadOperation;
-import org.gama.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.persistence.engine.SelectExecutor;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.sql.dml.ReadOperation;
+import org.codefilarete.stalactite.sql.result.RowIterator;
 
-import static org.gama.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader.isDefaultValue;
+import static org.codefilarete.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader.isDefaultValue;
 
 /**
  * @author Guillaume Mary

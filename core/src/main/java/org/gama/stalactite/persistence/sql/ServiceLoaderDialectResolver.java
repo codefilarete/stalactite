@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -21,7 +21,7 @@ import org.codefilarete.tool.exception.Exceptions;
  * one thanks to a compatibility algorithm.
  * 
  * This class will get available dialects and their compatibility as instances of {@link DialectResolverEntry}, themselves declared by JVM Service
- * Provider. Hence, it is expected that dialect implementors declare them through META-INF/services/org.gama.stalactite.persistence.sql.DialectResolver.DialectResolverEntry
+ * Provider. Hence, it is expected that dialect implementors declare them through META-INF/services/org.codefilarete.stalactite.persistence.sql.DialectResolver.DialectResolverEntry
  * file. Then when {@link #determineDialect(Connection)} is invoked, database metadata are compared to compatibility given by entries: only entries
  * whom product name exactly matches database one are kept, then comparing version, the highest dialect among smaller than database one is selected.
  * For example, if database is "A wonderfull database 3.8", and 3 dialects for "A wonderfull database" are present with "3.1", "3.5" and "4.0" versions,

@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.sql.Blob;
 import java.sql.Connection;
@@ -9,7 +9,7 @@ import java.time.Month;
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
+import org.codefilarete.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

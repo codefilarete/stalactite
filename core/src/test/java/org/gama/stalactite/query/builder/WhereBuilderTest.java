@@ -1,32 +1,32 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static java.util.Collections.EMPTY_MAP;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.query.model.Operators.between;
-import static org.gama.stalactite.query.model.Operators.endsWith;
-import static org.gama.stalactite.query.model.Operators.eq;
-import static org.gama.stalactite.query.model.Operators.gt;
-import static org.gama.stalactite.query.model.Operators.gteq;
-import static org.gama.stalactite.query.model.Operators.in;
-import static org.gama.stalactite.query.model.Operators.like;
-import static org.gama.stalactite.query.model.Operators.lt;
-import static org.gama.stalactite.query.model.Operators.lteq;
-import static org.gama.stalactite.query.model.Operators.not;
-import static org.gama.stalactite.query.model.Operators.startsWith;
-import static org.gama.stalactite.query.model.QueryEase.filter;
-import static org.gama.stalactite.query.model.QueryEase.where;
+import static org.codefilarete.stalactite.query.model.Operators.between;
+import static org.codefilarete.stalactite.query.model.Operators.endsWith;
+import static org.codefilarete.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.gt;
+import static org.codefilarete.stalactite.query.model.Operators.gteq;
+import static org.codefilarete.stalactite.query.model.Operators.in;
+import static org.codefilarete.stalactite.query.model.Operators.like;
+import static org.codefilarete.stalactite.query.model.Operators.lt;
+import static org.codefilarete.stalactite.query.model.Operators.lteq;
+import static org.codefilarete.stalactite.query.model.Operators.not;
+import static org.codefilarete.stalactite.query.model.Operators.startsWith;
+import static org.codefilarete.stalactite.query.model.QueryEase.filter;
+import static org.codefilarete.stalactite.query.model.QueryEase.where;
 
 /**
  * @author Guillaume Mary

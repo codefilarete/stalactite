@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -12,18 +12,18 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.runtime.Persister;
-import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
-import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Database.Schema;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.PersistentFieldHarverster;
+import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Database.Schema;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -1,9 +1,9 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+import org.codefilarete.stalactite.persistence.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

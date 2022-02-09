@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import java.lang.reflect.Field;
 import java.util.Iterator;

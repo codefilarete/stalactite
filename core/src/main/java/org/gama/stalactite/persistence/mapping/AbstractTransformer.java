@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,8 +6,8 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.codefilarete.tool.Reflections;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * A very general frame to transform {@link Row}s

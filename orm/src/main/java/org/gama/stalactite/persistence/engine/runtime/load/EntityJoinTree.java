@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
@@ -19,15 +19,15 @@ import org.codefilarete.tool.bean.Randomizer;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.ReadOnlyList;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.RowTransformer;
-import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.RowTransformer;
+import org.codefilarete.stalactite.persistence.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
@@ -109,7 +109,7 @@ public class EntityJoinTree<C, I> {
 	 * parameter : an optional function which computes an identifier of a relation between 2 entities, this is required to prevent from fulfilling
 	 * twice the relation when SQL returns several times same identifier (when at least 2 collections are implied). By default this function is
 	 * made of parentEntityId + childEntityId and can be overwritten here (in particular when relation is a List, entity index is added to computation).
-	 * See {@link org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)} for usage.
+	 * See {@link org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)} for usage.
 	 *
 	 * @param <U> type of bean mapped by the given strategy
 	 * @param <T1> joined left table
@@ -126,7 +126,7 @@ public class EntityJoinTree<C, I> {
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 * 
-	 * @see org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)
+	 * @see org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
 																					  EntityInflater<U, ID, T2> inflater,
@@ -173,7 +173,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * Adds a merge join to this select : no bean will be created by given {@link EntityInflater}, only its
-	 * {@link org.gama.stalactite.persistence.mapping.AbstractTransformer#applyRowToBean(Row, Object)} will be used during bean graph loading process.
+	 * {@link org.codefilarete.stalactite.persistence.mapping.AbstractTransformer#applyRowToBean(Row, Object)} will be used during bean graph loading process.
 	 *
 	 * @param <T1> left table type
 	 * @param <T2> right table type

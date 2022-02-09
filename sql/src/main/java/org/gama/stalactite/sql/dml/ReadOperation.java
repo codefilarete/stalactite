@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
  * {@link SQLOperation} dedicated to Selects ... so these operations return a {@link ResultSet}.

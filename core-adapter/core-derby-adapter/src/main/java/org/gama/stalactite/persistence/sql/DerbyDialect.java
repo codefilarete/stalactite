@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -6,17 +6,17 @@ import java.sql.SQLException;
 import java.util.stream.LongStream;
 
 import org.codefilarete.tool.function.ThrowingBiFunction;
-import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.gama.stalactite.persistence.sql.dml.ReadOperationFactory;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.binder.DerbyTypeMapping;
-import org.gama.stalactite.sql.dml.DerbyReadOperation;
-import org.gama.stalactite.sql.dml.GeneratedKeysReader;
-import org.gama.stalactite.sql.dml.ReadOperation;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.sql.dml.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.persistence.sql.dml.ReadOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.DerbyTypeMapping;
+import org.codefilarete.stalactite.sql.dml.DerbyReadOperation;
+import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.dml.ReadOperation;
+import org.codefilarete.stalactite.sql.dml.SQLStatement;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
 
 /**
  * @author Guillaume Mary

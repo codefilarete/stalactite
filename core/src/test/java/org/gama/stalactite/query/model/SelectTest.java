@@ -1,8 +1,8 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

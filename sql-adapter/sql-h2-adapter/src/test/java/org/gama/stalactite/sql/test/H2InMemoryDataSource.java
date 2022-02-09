@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.test;
+package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Random;
 
-import org.gama.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 import org.h2.jdbcx.JdbcDataSource;
 
 /**

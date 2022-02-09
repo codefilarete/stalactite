@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -11,9 +11,9 @@ import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Class for transforming columns into a bean.

@@ -1,13 +1,13 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.dml.SQLParameterParser.CollectionParameter;
-import org.gama.stalactite.sql.dml.SQLParameterParser.Parameter;
-import org.gama.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
+import org.codefilarete.stalactite.sql.dml.SQLParameterParser.CollectionParameter;
+import org.codefilarete.stalactite.sql.dml.SQLParameterParser.Parameter;
+import org.codefilarete.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;

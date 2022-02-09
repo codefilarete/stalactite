@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,10 +8,10 @@ import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.sql.SimpleConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.dml.SQLOperation.SQLOperationListener;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

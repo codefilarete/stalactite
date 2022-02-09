@@ -1,16 +1,16 @@
-package org.gama.stalactite.command.builder;
+package org.codefilarete.stalactite.command.builder;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
-import org.gama.stalactite.command.model.Update;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
+import org.codefilarete.stalactite.command.model.Update;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.Operators;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

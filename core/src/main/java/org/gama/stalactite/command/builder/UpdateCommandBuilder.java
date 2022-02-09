@@ -1,4 +1,4 @@
-package org.gama.stalactite.command.builder;
+package org.codefilarete.stalactite.command.builder;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,20 +11,20 @@ import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.command.model.Update;
-import org.gama.stalactite.command.model.Update.UpdateColumn;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.builder.SQLBuilder;
-import org.gama.stalactite.query.builder.WhereBuilder;
-import org.gama.stalactite.query.model.ColumnCriterion;
-import org.gama.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.command.model.Update;
+import org.codefilarete.stalactite.command.model.Update.UpdateColumn;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.builder.WhereBuilder;
+import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
  * A SQL builder for {@link Update} objects

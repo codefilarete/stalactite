@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -10,16 +10,16 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.function.Serie.IntegerSerie;
 import org.codefilarete.tool.function.Serie.NowSerie;
-import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.id.provider.LongProvider;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.model.Country;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
+import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gama.stalactite.persistence.id.Identifier.LONG_TYPE;
+import static org.codefilarete.stalactite.persistence.id.Identifier.LONG_TYPE;
 
 /**
  * @author Guillaume Mary

@@ -1,22 +1,22 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.model.AbstractCriterion;
-import org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.ColumnCriterion;
-import org.gama.stalactite.query.model.CriteriaChain;
-import org.gama.stalactite.query.model.RawCriterion;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.model.AbstractCriterion;
+import org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.RawCriterion;
 
 /**
  * A class made to print a where clause (widened to {@link CriteriaChain})

@@ -1,12 +1,12 @@
-package org.gama.stalactite.persistence.sql.dml;
+package org.codefilarete.stalactite.persistence.sql.dml;
 
 import java.util.Map;
 
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinderIndex;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriterIndex;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Specialization of {@link ColumnParameterizedSQL} for select statement: gives access to selected columns through {@link #getSelectParameterBinders()}

@@ -1,15 +1,15 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.ReadOperationFactory;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.sql.ddl.DefaultTypeMapping;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.dml.ReadOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
 
 /**
  * Class that keeps objects necessary for "communication" with a Database at the SQL language level:

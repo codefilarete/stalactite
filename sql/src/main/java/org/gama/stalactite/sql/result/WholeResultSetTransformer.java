@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import javax.annotation.Nonnull;
 import java.sql.ResultSet;
@@ -23,12 +23,12 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.gama.stalactite.sql.binder.ResultSetReader;
-import org.gama.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;
-import org.gama.stalactite.sql.result.ResultSetRowTransformer.IdentifierArgBeanFactory;
-import org.gama.stalactite.sql.result.ResultSetRowTransformer.NoIdentifierBeanFactory;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.IdentifierArgBeanFactory;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.NoIdentifierBeanFactory;
 
-import static org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy.ON_EACH_ROW;
+import static org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy.ON_EACH_ROW;
 
 /**
  * A class aimed at transforming a whole {@link ResultSet} into a graph of objects.

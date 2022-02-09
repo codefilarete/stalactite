@@ -1,6 +1,6 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
  * An abstraction for current JDBC connection configuration 

@@ -1,9 +1,9 @@
-package org.gama.stalactite.persistence.sql.ddl;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import org.codefilarete.tool.StringAppender;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 
 /**
  * A {@link StringAppender} that automatically appends {@link Table} and {@link Column} names

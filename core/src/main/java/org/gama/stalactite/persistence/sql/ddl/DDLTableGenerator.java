@@ -1,12 +1,12 @@
-package org.gama.stalactite.persistence.sql.ddl;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Set;
 
 import org.codefilarete.tool.StringAppender;
-import org.gama.stalactite.persistence.structure.*;
-import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.persistence.structure.*;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 
 /**
  * @author Guillaume Mary

@@ -1,13 +1,13 @@
-package org.gama.stalactite.persistence.engine.listening;
+package org.codefilarete.stalactite.persistence.engine.listening;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.codefilarete.tool.Duo;
-import org.gama.stalactite.persistence.mapping.MappingStrategy;
-import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary

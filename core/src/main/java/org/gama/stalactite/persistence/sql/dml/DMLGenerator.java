@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.dml;
+package org.codefilarete.stalactite.persistence.sql.dml;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -12,20 +12,20 @@ import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.ISorter;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.persistence.engine.runtime.DMLExecutor;
-import org.gama.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
-import org.gama.stalactite.persistence.sql.ddl.DDLAppender;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinderIndex;
+import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutor;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLAppender;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 
-import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK;
-import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
-import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_10;
-import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_100;
-import static org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_SEPARATOR;
+import static org.codefilarete.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK;
+import static org.codefilarete.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_1;
+import static org.codefilarete.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_10;
+import static org.codefilarete.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_MARK_100;
+import static org.codefilarete.stalactite.sql.dml.ExpandableSQL.ExpandableParameter.SQL_PARAMETER_SEPARATOR;
 
 /**
  * Class for DML generation dedicated to {@link DMLExecutor}. Not expected to be used elsewhere.

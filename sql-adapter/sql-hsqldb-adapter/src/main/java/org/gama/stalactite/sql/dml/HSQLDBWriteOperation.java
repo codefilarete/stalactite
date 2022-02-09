@@ -1,8 +1,8 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.SQLException;
 
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
  * @author Guillaume Mary

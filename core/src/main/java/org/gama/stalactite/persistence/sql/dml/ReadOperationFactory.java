@@ -1,8 +1,8 @@
-package org.gama.stalactite.persistence.sql.dml;
+package org.codefilarete.stalactite.persistence.sql.dml;
 
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.ReadOperation;
-import org.gama.stalactite.sql.dml.SQLStatement;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.dml.ReadOperation;
+import org.codefilarete.stalactite.sql.dml.SQLStatement;
 
 /**
  * As its name mention it, this class is a factory for {@link ReadOperation}, introduced to be overriden for database specific behavior

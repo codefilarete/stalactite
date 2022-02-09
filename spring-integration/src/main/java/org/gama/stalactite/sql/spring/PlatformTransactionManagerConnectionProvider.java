@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring;
 
 import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 import org.codefilarete.tool.VisibleForTesting;
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.orm.hibernate5.HibernateTransactionManager;

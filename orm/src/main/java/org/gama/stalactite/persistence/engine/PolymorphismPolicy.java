@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -8,7 +8,7 @@ import java.util.Set;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary

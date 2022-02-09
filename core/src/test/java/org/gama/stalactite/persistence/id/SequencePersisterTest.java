@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.id;
+package org.codefilarete.stalactite.persistence.id;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.SequencePersister;
-import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.id.sequence.SequencePersister;
+import org.codefilarete.stalactite.persistence.id.sequence.SequenceStorageOptions;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;

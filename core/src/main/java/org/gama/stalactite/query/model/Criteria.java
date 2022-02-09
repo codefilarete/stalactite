@@ -1,14 +1,14 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.AND;
-import static org.gama.stalactite.query.model.AbstractCriterion.LogicalOperator.OR;
+import static org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator.AND;
+import static org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator.OR;
 
 /**
  * A basic implementation of {@link CriteriaChain}.

@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import javax.annotation.Nonnull;
 import java.sql.ResultSet;
@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 /**
  * Small contract for {@link ResultSet} reading.
- * May seem a duplicate of {@link org.gama.stalactite.sql.binder.ResultSetReader} but this class expect to be more tied to some columns, or autonomous
+ * May seem a duplicate of {@link org.codefilarete.stalactite.sql.binder.ResultSetReader} but this class expect to be more tied to some columns, or autonomous
  * to compose a bean, because its main method {@link #read(ResultSet)} doesn't get any column name as argument : caller doesn't force it to read
  * any particular column.
  * 

@@ -1,16 +1,16 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.gama.stalactite.persistence.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.RowTransformer;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.mapping.RowTransformer;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Join node that fulfill some bean properties from a database row.

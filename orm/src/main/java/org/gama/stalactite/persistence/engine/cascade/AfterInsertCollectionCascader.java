@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.codefilarete.stalactite.persistence.engine.cascade;
 
 import java.util.Collection;
 import java.util.Set;
@@ -7,9 +7,9 @@ import java.util.stream.Stream;
 
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
 
 /**
  * Cascader for insert, written for one-to-many style of cascade where Target owns the relationship to Trigger

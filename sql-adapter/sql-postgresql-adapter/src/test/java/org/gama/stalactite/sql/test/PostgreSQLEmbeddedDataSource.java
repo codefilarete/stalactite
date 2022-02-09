@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.test;
+package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 import org.postgresql.ds.PGSimpleDataSource;
 import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
 

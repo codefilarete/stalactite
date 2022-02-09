@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import org.codefilarete.tool.Reflections;
-import org.gama.stalactite.persistence.engine.VersioningStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.RollbackObserver;
+import org.codefilarete.stalactite.persistence.engine.VersioningStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.RollbackObserver;
 
 /**
  * Some code mutualisation around optimistic lock manager.

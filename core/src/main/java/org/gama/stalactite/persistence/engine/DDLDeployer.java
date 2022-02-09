@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -7,14 +7,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
+import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLGenerator;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

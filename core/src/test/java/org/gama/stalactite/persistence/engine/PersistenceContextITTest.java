@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -9,17 +9,17 @@ import java.util.Set;
 
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Operators;
-import org.gama.stalactite.query.model.QueryEase;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
-import org.gama.stalactite.sql.binder.LambdaParameterBinder;
-import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
-import org.gama.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders;
+import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

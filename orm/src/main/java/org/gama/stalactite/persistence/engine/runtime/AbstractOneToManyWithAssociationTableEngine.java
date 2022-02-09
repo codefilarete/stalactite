@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,29 +14,29 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.command.builder.DeleteCommandBuilder;
-import org.gama.stalactite.command.model.Delete;
-import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
-import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
-import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
-import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
-import org.gama.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.query.model.Operators;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.command.builder.DeleteCommandBuilder;
+import org.codefilarete.stalactite.command.model.Delete;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.codefilarete.stalactite.persistence.engine.listening.DeleteListener;
+import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
+import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
+import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
+import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
 
 import static org.codefilarete.tool.collection.Iterables.collect;
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
  * @author Guillaume Mary
@@ -196,7 +196,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	 * In case of {@link Persister#deleteById}, association records will be deleted only by source entity keys.
 	 * 
 	 * @param deleteTargetEntities true to delete many-side entities, false to onlly delete association records
-	 * @param columnBinderRegistry should come from a {@link org.gama.stalactite.persistence.sql.Dialect}, necessary for deleteById action
+	 * @param columnBinderRegistry should come from a {@link org.codefilarete.stalactite.persistence.sql.Dialect}, necessary for deleteById action
 	 */
 	public void addDeleteCascade(boolean deleteTargetEntities, ColumnBinderRegistry columnBinderRegistry) {
 		// we delete association records

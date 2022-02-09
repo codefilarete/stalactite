@@ -1,12 +1,12 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
-import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
 
 /**
  * Entry point for single value (hence single-column primary key), as opposed to composed, about entity identifier mapping.

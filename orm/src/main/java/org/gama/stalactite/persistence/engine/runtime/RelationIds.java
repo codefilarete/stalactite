@@ -1,9 +1,9 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.SelectExecutor;
+import org.codefilarete.stalactite.persistence.engine.SelectExecutor;
 
 /**
  * @author Guillaume Mary

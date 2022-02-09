@@ -1,8 +1,8 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.OrderByChain.Order;
-import org.gama.stalactite.query.model.Query.FluentOrderBy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.model.OrderByChain.Order;
+import org.codefilarete.stalactite.query.model.Query.FluentOrderBy;
 
 /**
  * @author Guillaume Mary

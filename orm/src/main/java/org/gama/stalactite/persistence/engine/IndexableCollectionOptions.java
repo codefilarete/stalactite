@@ -1,6 +1,6 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary

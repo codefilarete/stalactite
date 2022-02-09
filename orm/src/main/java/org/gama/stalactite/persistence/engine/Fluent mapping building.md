@@ -1,7 +1,7 @@
 # Basics
 
 * Only [Identified](../id/Identified.java) entities can be mapped
-* Only entities with a [StatefullIdentifier](../../../../../../../../../core/src/main/java/org/gama/stalactite/persistence/id/manager/StatefullIdentifier.java) identifier can be mapped
+* Only entities with a [StatefullIdentifier](../../../../../../../../../core/src/main/java/org/codefilarete/stalactite/persistence/id/manager/StatefullIdentifier.java) identifier can be mapped
 * a [PersistenceContext](PersistenceContext.java) is necessary
 
 ## Mapping a POJO to a table
@@ -39,9 +39,9 @@ Persister<City, Identifier<Long>, ?> countryPersister = FluentMappingBuilder.fro
 	.build(persistenceContext);
 </pre>
 
-With this configuration one shall give a [StatefullIdentifier](../../../../../../../../../core/src/main/java/org/gama/stalactite/persistence/id/manager/StatefullIdentifier.java) to its POJOs
+With this configuration one shall give a [StatefullIdentifier](../../../../../../../../../core/src/main/java/org/codefilarete/stalactite/persistence/id/manager/StatefullIdentifier.java) to its POJOs
 before persisting them with the [PersistenceContext](PersistenceContext.java) due to the IdentifierPolicy.
-Reader may have a look to [identifier generation policies](../../../../../../../../../core/src/main/java/org/gama/stalactite/persistence/id/manager/Identifier%20generation%20policies.md)
+Reader may have a look to [identifier generation policies](../../../../../../../../../core/src/main/java/org/codefilarete/stalactite/persistence/id/manager/Identifier%20generation%20policies.md)
 
 ## Naming table, columns, foreign keys
 

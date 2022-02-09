@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.test;
+package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import java.io.Writer;
 import org.apache.derby.iapi.reference.Property;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import org.codefilarete.tool.bean.Randomizer;
-import org.gama.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 
 /**
  * Simple Derby DataSource for tests

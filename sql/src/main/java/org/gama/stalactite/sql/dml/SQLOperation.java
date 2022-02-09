@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -12,8 +12,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.codefilarete.tool.bean.Objects;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

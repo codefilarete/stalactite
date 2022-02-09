@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.structure;
+package org.codefilarete.stalactite.persistence.structure;
 
 import java.util.Collection;
 import java.util.Collections;

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.id.sequence;
 
 /**
  * Options for storing a sequence in the database.

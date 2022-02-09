@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.gama.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
 
 /**
  * A simple wire between a (or more) column name of a {@link ResultSet} and a function (setter) of a bean through a {@link BiConsumer}.

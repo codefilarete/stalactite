@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.codefilarete.stalactite.persistence.engine.cascade;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;

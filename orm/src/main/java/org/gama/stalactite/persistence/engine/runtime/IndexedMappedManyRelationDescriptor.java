@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -7,7 +7,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * Container to store information of a one-to-many indexed mapped relation (by a column on the reverse side)

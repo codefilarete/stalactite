@@ -1,19 +1,19 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.MappingConfigurationException;
-import org.gama.stalactite.persistence.engine.MappingEase;
-import org.gama.stalactite.persistence.engine.model.Color;
-import org.gama.stalactite.persistence.engine.model.Person;
-import org.gama.stalactite.persistence.engine.model.Vehicle;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.persistence.engine.MappingEase;
+import org.codefilarete.stalactite.persistence.engine.model.Color;
+import org.codefilarete.stalactite.persistence.engine.model.Person;
+import org.codefilarete.stalactite.persistence.engine.model.Vehicle;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gama.stalactite.persistence.engine.MappingEase.embeddableBuilder;
+import static org.codefilarete.stalactite.persistence.engine.MappingEase.embeddableBuilder;
 
 /**
  * @author Guillaume Mary

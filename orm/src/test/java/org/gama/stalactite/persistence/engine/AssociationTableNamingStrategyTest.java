@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -8,10 +8,10 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.model.City;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.model.City;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

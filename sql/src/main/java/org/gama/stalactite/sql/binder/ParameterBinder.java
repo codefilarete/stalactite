@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 /**
  * Merge of {@link ResultSetReader} et {@link PreparedStatementWriter}

@@ -1,9 +1,9 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.Query.FluentSelect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.model.Query.FluentSelect;
 
 /**
  * A simple class to avoid "new Query()" syntax chained with {@link Query#select(Column, String)}
@@ -46,7 +46,7 @@ public class QueryEase {
 	
 	/**
 	 * Shortcut to create a {@link Criteria}.
-	 * Combined with {@link org.gama.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 * Combined with {@link org.codefilarete.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
 	 * 
 	 * @param column a {@link Column}
 	 * @param condition the criteria on the {@link Column}
@@ -58,7 +58,7 @@ public class QueryEase {
 	
 	/**
 	 * Shortcut to create a {@link Criteria}.
-	 * Combined with {@link org.gama.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 * Combined with {@link org.codefilarete.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
 	 *
 	 * @param column a {@link Column}
 	 * @param condition the criteria on the {@link Column}
@@ -70,7 +70,7 @@ public class QueryEase {
 	
 	/**
 	 * Shortcut to create a {@link Criteria}.
-	 * Combined with {@link org.gama.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 * Combined with {@link org.codefilarete.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
 	 *
 	 * @param columns a combination of objects describing the criteria
 	 * @return a new {@link Criteria}

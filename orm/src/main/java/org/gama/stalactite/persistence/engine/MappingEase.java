@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
-import org.gama.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport;
-import org.gama.stalactite.persistence.engine.configurer.FluentSubEntityMappingConfigurationSupport;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
-import org.gama.stalactite.persistence.mapping.EmbeddedClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport;
+import org.codefilarete.stalactite.persistence.engine.configurer.FluentSubEntityMappingConfigurationSupport;
+import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.persistence.mapping.EmbeddedClassMappingStrategy;
 
 /**
  * Declares a simple entry point to start configuring a persistence mapping.

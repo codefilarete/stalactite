@@ -1,15 +1,15 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.tool.function.ThrowingBiFunction;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.sql.dml.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.dml.SQLStatement;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
 
 /**
  * {@link WriteOperationFactory} dedicated to MariaDB. In particular adds a {@link InnoDBLockRetryer} to created {@link WriteOperation}s

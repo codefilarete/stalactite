@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 
 import org.codefilarete.tool.Reflections;
-import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
 
 /**
  * Entry point for composed value (hence composed primary key), about entity identifier mapping.

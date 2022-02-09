@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,8 +16,8 @@ import org.codefilarete.tool.Experimental;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
-import org.gama.stalactite.persistence.engine.listening.PersisterListener;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.persistence.engine.listening.PersisterListener;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * @author Guillaume Mary
@@ -28,8 +28,8 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * Persists an instance either it is already persisted or not (insert or update).
 	 *
 	 * Check between insert or update is determined by id state which itself depends on identifier policy,
-	 * see {@link org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy#IsNewDeterminer} implementations and
-	 * {@link org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
+	 * see {@link org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy#IsNewDeterminer} implementations and
+	 * {@link org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
 	 *
 	 * @param entity an entity to be persisted
 	 * @throws StaleStateObjectException if updated row count differs from entities count

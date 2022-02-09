@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -6,9 +6,9 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.gama.stalactite.sql.binder.ParameterBinderIndex;
-import org.gama.stalactite.sql.binder.ResultSetReader;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.binder.ParameterBinderIndex;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 
 /**
  * {@link ResultSetIterator} specialized in {@link Row} building for each {@link ResultSet} line.

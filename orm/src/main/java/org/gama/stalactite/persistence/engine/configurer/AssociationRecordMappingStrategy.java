@@ -1,18 +1,18 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.gama.stalactite.persistence.engine.runtime.AssociationRecord;
-import org.gama.stalactite.persistence.engine.runtime.AssociationTable;
-import org.gama.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
-import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IdAccessor;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.engine.runtime.AssociationRecord;
+import org.codefilarete.stalactite.persistence.engine.runtime.AssociationTable;
+import org.codefilarete.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary

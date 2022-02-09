@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.query;
+package org.codefilarete.stalactite.persistence.query;
 
 import java.util.Collection;
 
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * @author Guillaume Mary

@@ -1,15 +1,15 @@
-package org.gama.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.id.manager;
 
 import java.util.function.Consumer;
 
 import org.codefilarete.tool.function.Sequence;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.mapping.IdAccessor;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
+import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Identifier manager to be used when identifier must be fixed just before insertion.

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.provider;
+package org.codefilarete.stalactite.persistence.id.provider;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -6,10 +6,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
-import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
-import org.gama.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence;
+import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
 
 /**
  * Provider which will get its values from a database sequence-like (not a real SQL sequence): HiLo algorithm is used

@@ -1,4 +1,4 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 /**
  * Parent class for operators that don't need a comparison value

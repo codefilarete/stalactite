@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring;
 
 import javax.sql.DataSource;
 

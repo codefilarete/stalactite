@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.sql.PreparedStatement;
 import java.util.function.Consumer;
@@ -23,7 +23,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	
 	/**
 	 * Available identifier policies for entities.
-	 * @see org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager
+	 * @see org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager
 	 */
 	interface IdentifierPolicy {
 		/**
@@ -38,7 +38,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
-		 * Reader may be interested in {@link org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence}.
+		 * Reader may be interested in {@link org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence}.
 		 * 
 		 * @param sequence the {@link Sequence} to ask for identifier value
 		 * @param <I> identifier type

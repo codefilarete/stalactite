@@ -1,12 +1,12 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
 import org.codefilarete.tool.reflect.MethodDispatcher;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.SQLQueryBuilder;
-import org.gama.stalactite.query.model.OrderByChain.Order;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 
 /**
  * A support for a SQL query, trying to be closest as possible to a real select query syntax and implementing the most simple/common usage. 

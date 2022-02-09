@@ -1,17 +1,17 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Iterator;
 
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.From;
-import org.gama.stalactite.query.model.From.AbstractJoin;
-import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
-import org.gama.stalactite.query.model.From.ColumnJoin;
-import org.gama.stalactite.query.model.From.CrossJoin;
-import org.gama.stalactite.query.model.From.Join;
-import org.gama.stalactite.query.model.From.RawTableJoin;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.query.model.From.AbstractJoin;
+import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
+import org.codefilarete.stalactite.query.model.From.ColumnJoin;
+import org.codefilarete.stalactite.query.model.From.CrossJoin;
+import org.codefilarete.stalactite.query.model.From.Join;
+import org.codefilarete.stalactite.query.model.From.RawTableJoin;
 
 /**
  * @author Guillaume Mary

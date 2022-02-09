@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -8,29 +8,29 @@ import java.util.List;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
-import org.gama.stalactite.persistence.engine.model.City;
-import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.engine.model.Person;
-import org.gama.stalactite.persistence.engine.model.State;
-import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.id.provider.LongProvider;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.result.ResultSetIterator;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
+import org.codefilarete.stalactite.persistence.engine.model.City;
+import org.codefilarete.stalactite.persistence.engine.model.Country;
+import org.codefilarete.stalactite.persistence.engine.model.Person;
+import org.codefilarete.stalactite.persistence.engine.model.State;
+import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
+import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
+import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
+import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 
 /**
  * @author Guillaume Mary

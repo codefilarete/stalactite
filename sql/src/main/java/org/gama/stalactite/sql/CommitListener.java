@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql;
+package org.codefilarete.stalactite.sql;
 
 /**
  * Default contract for listening to transaction commit

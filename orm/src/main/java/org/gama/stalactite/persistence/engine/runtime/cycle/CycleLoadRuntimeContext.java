@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.cycle;
+package org.codefilarete.stalactite.persistence.engine.runtime.cycle;
 
 import java.util.HashMap;
 import java.util.Map;

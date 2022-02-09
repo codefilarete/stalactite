@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,17 +15,17 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
-import org.gama.stalactite.persistence.engine.MappingConfigurationException;
-import org.gama.stalactite.persistence.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
-import org.gama.stalactite.persistence.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
-import org.gama.stalactite.persistence.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
-import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.BasicEntityCache;
-import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.EntityCache;
-import org.gama.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.IdentityMap;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.BasicEntityCache;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.EntityCache;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Bean graph creator from database rows. Based on a tree of {@link ConsumerNode}s which wraps some {@link JoinRowConsumer}.

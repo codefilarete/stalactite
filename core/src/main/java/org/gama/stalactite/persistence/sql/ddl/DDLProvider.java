@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.ddl;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import java.util.List;
 

@@ -1,8 +1,8 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
-import org.gama.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary

@@ -1,11 +1,11 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
 import org.codefilarete.tool.Strings;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 
 /**
  * An interface that allows to use {@link ResultSet#getXXX(...)} method to be used as method reference.

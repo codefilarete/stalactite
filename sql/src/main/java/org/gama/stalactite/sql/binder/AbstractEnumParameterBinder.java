@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 /**
  * Base class to {@link ParameterBinder}s that maps Enum types

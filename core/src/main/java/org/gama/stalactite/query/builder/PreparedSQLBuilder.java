@@ -1,7 +1,7 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 
 /**
  * @author Guillaume Mary

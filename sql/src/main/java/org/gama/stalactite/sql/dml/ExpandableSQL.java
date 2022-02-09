@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.codefilarete.tool.Strings;
-import org.gama.stalactite.sql.dml.SQLParameterParser.Parameter;
-import org.gama.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
+import org.codefilarete.stalactite.sql.dml.SQLParameterParser.Parameter;
+import org.codefilarete.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
 
 /**
  * Class that helps to adapt an SQL String with named parameters to a prepared statement, according to the values of those parameters :

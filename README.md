@@ -23,12 +23,12 @@ FluentMappingBuilder.from(MyEntity.class, StatefullIdentifier.class)
 	.build(persistenceContext);
 </pre>
 
-It's mainly based on a model of your RDBMS tables : the [core](core/README.md) module provides the [structure package](core/src/main/java/org/gama/stalactite/persistence/structure/README.md)
+It's mainly based on a model of your RDBMS tables : the [core](core/README.md) module provides the [structure package](core/src/main/java/org/codefilarete/stalactite/persistence/structure/README.md)
 with the idea to create a meta-model of your database schema.
 
 # Approach
 
-Whereas some principles were kept from Hibernate such as [Dialects](core/src/main/java/org/gama/stalactite/persistence/sql/Dialects.md),
+Whereas some principles were kept from Hibernate such as [Dialects](core/src/main/java/org/codefilarete/stalactite/persistence/sql/Dialects.md),
 it doesn't have merge/attach notion, so it doesn't use any bytecode enhancement of your beans (for now and hope for a while).
 The idea behind this is to let persist any bean that has no annotation, coming from "nowhere" such as a WebService DTO.
 
@@ -39,8 +39,8 @@ boilerplate code (or dedicated framework).
 # Features
 
 ## orm
-- entities must implement [Identified](orm/src/main/java/org/gama/stalactite/persistence/id/Identified.java) which means that there id
-must be a [Identifier](orm/src/main/java/org/gama/stalactite/persistence/id/Identifier.java), see foot note
+- entities must implement [Identified](orm/src/main/java/org/codefilarete/stalactite/persistence/id/Identified.java) which means that there id
+must be a [Identifier](orm/src/main/java/org/codefilarete/stalactite/persistence/id/Identifier.java), see foot note
 - only supports single column primary key, see foot note
 - only supports already-assigned identifier, see foot note
 - one-to-one mapping
@@ -58,12 +58,12 @@ must be a [Identifier](orm/src/main/java/org/gama/stalactite/persistence/id/Iden
 - Single column, because it was simpler at beginning ;)
 
 ## core
-- [CRUD persistence](core/src/main/java/org/gama/stalactite/persistence/mapping/mapping.md)
-- Listeners for persist actions on beans (before & after) : see [PersisterListener](core/src/main/java/org/gama/stalactite/persistence/engine/listening/PersisterListener.java),
+- [CRUD persistence](core/src/main/java/org/codefilarete/stalactite/persistence/mapping/mapping.md)
+- Listeners for persist actions on beans (before & after) : see [PersisterListener](core/src/main/java/org/codefilarete/stalactite/persistence/engine/listening/PersisterListener.java),
 accessible through `PersistenceContext.getPersisterListener()`
-- SQL Query writing through [a fluent API](core/src/main/java/org/gama/stalactite/query/model/QueryEase.java)
+- SQL Query writing through [a fluent API](core/src/main/java/org/codefilarete/stalactite/query/model/QueryEase.java)
 
 ## sql
-- Transaction management thanks to [TransactionListener](sql/src/main/java/org/gama/sql/TransactionListener.java) which can be used
-through a [TransactionAdapter](sql/src/main/java/org/gama/sql/TransactionAdapter.java)
-- ResultSet iteration and transformation, see [ResultSet handling](sql/src/main/java/org/gama/sql/result/ResultSet%20handling.md)
+- Transaction management thanks to [TransactionListener](sql/src/main/java/org/codefilarete/sql/TransactionListener.java) which can be used
+through a [TransactionAdapter](sql/src/main/java/org/codefilarete/sql/TransactionAdapter.java)
+- ResultSet iteration and transformation, see [ResultSet handling](sql/src/main/java/org/codefilarete/sql/result/ResultSet%20handling.md)

@@ -1,9 +1,9 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.sql.PreparedStatement;
 
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.*;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.*;
 
 /**
  * Specialized {@link ParameterBinder}s for HSQLDB.

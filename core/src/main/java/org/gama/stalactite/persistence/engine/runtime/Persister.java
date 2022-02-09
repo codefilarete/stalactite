@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -11,26 +11,26 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.NotImplementedException;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.SelectExecutor;
-import org.gama.stalactite.persistence.engine.StaleStateObjectException;
-import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.DeleteListener;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.DMLGenerator;
-import org.gama.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.PersistenceContext;
+import org.codefilarete.stalactite.persistence.engine.SelectExecutor;
+import org.codefilarete.stalactite.persistence.engine.StaleStateObjectException;
+import org.codefilarete.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.codefilarete.stalactite.persistence.engine.listening.DeleteListener;
+import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
  * CRUD Persistent features dedicated to an entity class. Entry point for persistent operations on entities.
@@ -120,7 +120,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	protected SelectExecutor<C, I> newSelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
 													 ConnectionProvider connectionProvider,
 													 Dialect dialect) {
-		return new org.gama.stalactite.persistence.engine.runtime.SelectExecutor(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
+		return new org.codefilarete.stalactite.persistence.engine.runtime.SelectExecutor(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 	}
 	
 	public ConnectionProvider getConnectionProvider() {

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -6,18 +6,18 @@ import java.sql.SQLException;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.SimpleConnectionProvider;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.internal.matchers.CapturingMatcher;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.eq;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;

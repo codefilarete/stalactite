@@ -1,9 +1,9 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.util.function.Predicate;
 
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
+import org.codefilarete.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.postgresql.util.PSQLException;
 

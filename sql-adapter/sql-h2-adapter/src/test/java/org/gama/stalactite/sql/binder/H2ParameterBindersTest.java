@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -9,7 +9,7 @@ import java.util.Set;
 import binder.H2ParameterBinderRegistry;
 import binder.H2TypeMapping;
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.sql.test.H2InMemoryDataSource;
+import org.codefilarete.stalactite.sql.test.H2InMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

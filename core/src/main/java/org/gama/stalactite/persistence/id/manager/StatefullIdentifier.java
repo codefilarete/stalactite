@@ -1,8 +1,8 @@
-package org.gama.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.id.manager;
 
 import javax.annotation.Nonnull;
 
-import org.gama.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
 
 /**
  * A marker for identifier that are wrapped into a simple class.

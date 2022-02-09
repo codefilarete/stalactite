@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -32,43 +32,43 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
-import org.gama.stalactite.persistence.engine.model.AbstractCountry;
-import org.gama.stalactite.persistence.engine.model.City;
-import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.engine.model.Gender;
-import org.gama.stalactite.persistence.engine.model.Person;
-import org.gama.stalactite.persistence.engine.model.PersonWithGender;
-import org.gama.stalactite.persistence.engine.model.Timestamp;
-import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.PersisterWrapper;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.ForeignKey;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.SimpleConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.binder.LambdaParameterBinder;
-import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
+import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
+import org.codefilarete.stalactite.persistence.engine.model.AbstractCountry;
+import org.codefilarete.stalactite.persistence.engine.model.City;
+import org.codefilarete.stalactite.persistence.engine.model.Country;
+import org.codefilarete.stalactite.persistence.engine.model.Gender;
+import org.codefilarete.stalactite.persistence.engine.model.Person;
+import org.codefilarete.stalactite.persistence.engine.model.PersonWithGender;
+import org.codefilarete.stalactite.persistence.engine.model.Timestamp;
+import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.PersisterWrapper;
+import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
+import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
+import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.dml.SQLOperation.SQLOperationListener;
+import org.codefilarete.stalactite.sql.dml.SQLStatement;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -1904,7 +1904,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	 * Test to check that the API returns right Object which means:
 	 * - interfaces are well written to return right types, so one can chain others methods
 	 * - at runtime instance of the right type is also returned
-	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.gama.stalactite.persistence.engine
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.persistence.engine
 	 * .FluentEmbeddableMappingBuilder")
 	 * <p>
 	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be

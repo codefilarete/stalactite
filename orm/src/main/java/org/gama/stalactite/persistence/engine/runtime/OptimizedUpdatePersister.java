@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
 import java.io.InputStream;
@@ -38,15 +38,15 @@ import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.ThrowingTriConsumer;
 import org.codefilarete.tool.sql.ConnectionWrapper;
 import org.codefilarete.tool.sql.ResultSetWrapper;
-import org.gama.stalactite.persistence.engine.NotYetSupportedOperationException;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.RollbackObserver;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
-import org.gama.stalactite.sql.dml.SQLOperation;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
-import org.gama.stalactite.sql.result.NoopPreparedStatement;
+import org.codefilarete.stalactite.persistence.engine.NotYetSupportedOperationException;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.RollbackObserver;
+import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
+import org.codefilarete.stalactite.sql.dml.SQLOperation;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
 
 /**
  * Persister with optimized {@link #update(Object, Consumer)} method by leveraging an internal cache so only one select is really executed. 
@@ -54,7 +54,7 @@ import org.gama.stalactite.sql.result.NoopPreparedStatement;
  * method.
  * <strong>
  * It requires that given {@link EntityConfiguredJoinedTablesPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
- * ({@link org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl}) by calling {@link #wrapWithQueryCache(ConnectionConfiguration)}.
+ * ({@link org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl}) by calling {@link #wrapWithQueryCache(ConnectionConfiguration)}.
  * </strong>
  * 
  * @author Guillaume Mary
@@ -188,10 +188,10 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	
 	/**
 	 * {@link ConnectionProvider} that proxies {@link Connection} of a delegate {@link ConnectionProvider} to add caching algorithm on select queries.
-	 * Spied method is {@link Connection#prepareStatement(String)} and {@link PreparedStatement#executeQuery()} to match {@link org.gama.stalactite.sql.dml.ReadOperation}
+	 * Spied method is {@link Connection#prepareStatement(String)} and {@link PreparedStatement#executeQuery()} to match {@link org.codefilarete.stalactite.sql.dml.ReadOperation}
 	 * algorithm.
 	 * 
-	 * It implements {@link RollbackObserver} to match contract expected by {@link org.gama.stalactite.persistence.engine.AbstractRevertOnRollbackMVCC}
+	 * It implements {@link RollbackObserver} to match contract expected by {@link org.codefilarete.stalactite.persistence.engine.AbstractRevertOnRollbackMVCC}
 	 */
 	private static class CachingQueryConnectionProvider implements ConnectionProvider {
 		

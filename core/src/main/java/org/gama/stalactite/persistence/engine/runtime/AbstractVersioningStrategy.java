@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import org.codefilarete.tool.function.Serie;
 import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.VersioningStrategy;
+import org.codefilarete.stalactite.persistence.engine.VersioningStrategy;
 
 /**
  * A template for implementing a {@link VersioningStrategy} that let user defines type of the versioning attribute and its sequence.

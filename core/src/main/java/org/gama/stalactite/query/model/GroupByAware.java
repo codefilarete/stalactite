@@ -1,7 +1,7 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.Query.FluentGroupBy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.model.Query.FluentGroupBy;
 
 /**
  * @author Guillaume Mary

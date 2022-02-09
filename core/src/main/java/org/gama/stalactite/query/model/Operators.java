@@ -1,18 +1,18 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.OperatorBuilder;
-import org.gama.stalactite.query.model.operator.Between;
-import org.gama.stalactite.query.model.operator.Count;
-import org.gama.stalactite.query.model.operator.Equals;
-import org.gama.stalactite.query.model.operator.Greater;
-import org.gama.stalactite.query.model.operator.In;
-import org.gama.stalactite.query.model.operator.IsNull;
-import org.gama.stalactite.query.model.operator.Like;
-import org.gama.stalactite.query.model.operator.Lower;
-import org.gama.stalactite.query.model.operator.Max;
-import org.gama.stalactite.query.model.operator.Min;
-import org.gama.stalactite.query.model.operator.Sum;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder;
+import org.codefilarete.stalactite.query.model.operator.Between;
+import org.codefilarete.stalactite.query.model.operator.Count;
+import org.codefilarete.stalactite.query.model.operator.Equals;
+import org.codefilarete.stalactite.query.model.operator.Greater;
+import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.IsNull;
+import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.query.model.operator.Lower;
+import org.codefilarete.stalactite.query.model.operator.Max;
+import org.codefilarete.stalactite.query.model.operator.Min;
+import org.codefilarete.stalactite.query.model.operator.Sum;
 
 /**
  * General contract for operators such as <code>in, like, =, <, >, ... </code>.

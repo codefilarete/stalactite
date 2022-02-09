@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -12,16 +12,16 @@ import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.persistence.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.ConsumerNode;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.IdentityMap;
-import org.gama.stalactite.query.model.From;
-import org.gama.stalactite.query.model.Query;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinderProvider;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInflater.ConsumerNode;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinderProvider;
 
 /**
  * Builder of a {@link Query} from an {@link EntityJoinTree}

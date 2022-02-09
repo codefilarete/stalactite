@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.sql.ddl;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.ForeignKey;
-import org.gama.stalactite.persistence.structure.Index;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.structure.Index;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

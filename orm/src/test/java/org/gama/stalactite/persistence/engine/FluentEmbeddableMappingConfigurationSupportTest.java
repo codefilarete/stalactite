@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
-import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.engine.model.Person;
-import org.gama.stalactite.persistence.engine.model.PersonWithGender;
-import org.gama.stalactite.persistence.engine.model.Timestamp;
+import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
+import org.codefilarete.stalactite.persistence.engine.model.Country;
+import org.codefilarete.stalactite.persistence.engine.model.Person;
+import org.codefilarete.stalactite.persistence.engine.model.PersonWithGender;
+import org.codefilarete.stalactite.persistence.engine.model.Timestamp;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -15,7 +15,7 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	 * Test to check that the API returns right Object which means:
 	 * - interfaces are well written to return right types, so one can chain others methods
 	 * - at runtime instance of the right type is also returned
-	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.gama.stalactite.persistence.engine
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.persistence.engine
 	 * .FluentEmbeddableMappingBuilder")
 	 * <p>
 	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be

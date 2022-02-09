@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,8 +8,8 @@ import java.util.List;
 
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.sql.binder.ResultSetReader;
-import org.gama.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 
 /**
  * Default implementation of a {@link ResultSet} returned by {@link Statement#getGeneratedKeys()}.

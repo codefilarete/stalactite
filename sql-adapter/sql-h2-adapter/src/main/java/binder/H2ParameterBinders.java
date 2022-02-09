@@ -1,6 +1,6 @@
 package binder;
 
-import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 
 /**
  * Specialized {@link ParameterBinder}s for HSQLDB.

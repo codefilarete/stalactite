@@ -1,4 +1,4 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Collection;
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.io.File;
 import java.io.InputStream;
@@ -21,7 +21,7 @@ import java.util.function.Function;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 
 import static java.util.stream.Collectors.toSet;
 import static org.codefilarete.tool.collection.Iterables.first;

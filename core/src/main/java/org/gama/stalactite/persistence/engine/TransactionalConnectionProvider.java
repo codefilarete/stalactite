@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.annotation.Nonnull;
 import javax.sql.DataSource;
@@ -7,8 +7,8 @@ import java.sql.SQLException;
 import java.sql.Savepoint;
 
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
 
 /**
  * 

@@ -1,6 +1,6 @@
 package binder;
 
-import org.gama.stalactite.sql.ddl.DefaultTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 
 /**
  * @author Guillaume Mary

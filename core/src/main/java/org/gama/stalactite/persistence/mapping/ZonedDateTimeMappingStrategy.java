@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -17,9 +17,9 @@ import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * A mapping strategy to persist a {@link ZonedDateTime} : requires 2 columns, one for the date-time part, another for the timezone.
@@ -28,8 +28,8 @@ import org.gama.stalactite.sql.result.Row;
  * <li>{@link LocalDateTime}</li>
  * <li>{@link ZoneId}</li>
  * </ul>
- * Thus, the {@link org.gama.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link org.gama.stalactite.sql.binder.ParameterBinderRegistry}
- * of your {@link org.gama.stalactite.persistence.sql.Dialect} must have them registered (which is done by default).
+ * Thus, the {@link org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link org.codefilarete.stalactite.sql.binder.ParameterBinderRegistry}
+ * of your {@link org.codefilarete.stalactite.persistence.sql.Dialect} must have them registered (which is done by default).
  * 
  * @author Guillaume Mary
  */

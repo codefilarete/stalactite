@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.io.File;
 import java.io.InputStream;
@@ -15,32 +15,32 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.UUID;
 
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BIGDECIMAL_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BLOB_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BOOLEAN_PRIMITIVE_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BYTES_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.BYTE_PRIMITIVE_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.DATE_SQL_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.DOUBLE_PRIMITIVE_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.FLOAT_PRIMITIVE_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.INTEGER_PRIMITIVE_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.LONG_PRIMITIVE_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.STRING_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultPreparedStatementWriters.TIMESTAMP_WRITER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BIGDECIMAL_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BINARYSTREAM_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BLOB_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BOOLEAN_PRIMITIVE_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BYTES_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.BYTE_PRIMITIVE_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.DATE_SQL_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.DOUBLE_PRIMITIVE_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.FLOAT_PRIMITIVE_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.LONG_PRIMITIVE_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.TIMESTAMP_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BIGDECIMAL_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BLOB_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BOOLEAN_PRIMITIVE_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BYTES_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.BYTE_PRIMITIVE_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.DATE_SQL_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.DOUBLE_PRIMITIVE_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.FLOAT_PRIMITIVE_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.INTEGER_PRIMITIVE_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.LONG_PRIMITIVE_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.STRING_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultPreparedStatementWriters.TIMESTAMP_WRITER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.BIGDECIMAL_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.BINARYSTREAM_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.BLOB_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.BOOLEAN_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.BYTES_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.BYTE_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.DATE_SQL_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.DOUBLE_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.FLOAT_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.LONG_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.TIMESTAMP_READER;
 
 /**
  * Default {@link ParameterBinder}s mapped to methods of {@link ResultSet} and {@link PreparedStatement} 

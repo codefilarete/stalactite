@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.codefilarete.stalactite.persistence.engine.cascade;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -6,8 +6,8 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
 
 /**
  * Cascader for update, written for one-to-many style of cascade where Trigger owns the relationship to Target.

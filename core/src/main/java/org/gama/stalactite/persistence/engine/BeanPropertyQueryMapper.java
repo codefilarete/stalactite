@@ -1,17 +1,17 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.sql.ResultSet;
 import java.util.function.BiConsumer;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.codefilarete.tool.function.Converter;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Query;
-import org.gama.stalactite.sql.result.ResultSetRowAssembler;
-import org.gama.stalactite.sql.result.ResultSetRowTransformer;
-import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 
 /**
  * Methods that define bean property mapping when creating an SQL query through {@link PersistenceContext#newQuery(Query, Class)}.

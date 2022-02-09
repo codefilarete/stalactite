@@ -1,7 +1,7 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.gama.stalactite.persistence.sql.H2Dialect;
-import org.gama.stalactite.sql.test.H2InMemoryDataSource;
+import org.codefilarete.stalactite.persistence.sql.H2Dialect;
+import org.codefilarete.stalactite.sql.test.H2InMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

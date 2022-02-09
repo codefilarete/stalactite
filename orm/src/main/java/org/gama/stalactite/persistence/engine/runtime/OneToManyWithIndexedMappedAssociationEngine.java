@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -18,17 +18,17 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.RuntimeMappingException;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.runtime.load.AbstractJoinNode;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
-import org.gama.stalactite.persistence.id.diff.AbstractDiff;
-import org.gama.stalactite.persistence.id.diff.IndexedDiff;
-import org.gama.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.persistence.engine.RuntimeMappingException;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.AbstractJoinNode;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInflater;
+import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
+import org.codefilarete.stalactite.persistence.id.diff.IndexedDiff;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
 
 /**
  * @author Guillaume Mary

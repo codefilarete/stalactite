@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql;
+package org.codefilarete.stalactite.sql;
 
 import java.sql.Savepoint;
 import java.util.Collection;

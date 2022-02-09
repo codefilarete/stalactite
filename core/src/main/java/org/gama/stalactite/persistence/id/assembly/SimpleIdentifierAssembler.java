@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.assembly;
+package org.codefilarete.stalactite.persistence.id.assembly;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.ComposedIdMappingStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Describes the way a simple (single column) identifier is read and written to a database.

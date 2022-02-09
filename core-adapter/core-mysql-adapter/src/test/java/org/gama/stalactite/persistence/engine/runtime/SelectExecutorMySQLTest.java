@@ -1,6 +1,6 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.gama.stalactite.sql.test.MySQLEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.test.MySQLEmbeddableDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

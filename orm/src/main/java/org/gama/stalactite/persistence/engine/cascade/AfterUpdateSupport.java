@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.codefilarete.stalactite.persistence.engine.cascade;
 
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Predicates;
-import org.gama.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
 
 /**
  * @author Guillaume Mary

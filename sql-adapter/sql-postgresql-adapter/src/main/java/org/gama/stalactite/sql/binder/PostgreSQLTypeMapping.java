@@ -1,9 +1,9 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.io.InputStream;
 import java.sql.Blob;
 
-import org.gama.stalactite.sql.ddl.DefaultTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 
 public class PostgreSQLTypeMapping extends DefaultTypeMapping {
 

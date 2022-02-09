@@ -1,32 +1,32 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Collections;
 
 import org.codefilarete.tool.StringAppender;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.operator.IsNull;
-import org.gama.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.operator.IsNull;
+import org.codefilarete.stalactite.query.model.operator.Like;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.query.model.Operators.between;
-import static org.gama.stalactite.query.model.Operators.contains;
-import static org.gama.stalactite.query.model.Operators.count;
-import static org.gama.stalactite.query.model.Operators.endsWith;
-import static org.gama.stalactite.query.model.Operators.eq;
-import static org.gama.stalactite.query.model.Operators.gt;
-import static org.gama.stalactite.query.model.Operators.gteq;
-import static org.gama.stalactite.query.model.Operators.in;
-import static org.gama.stalactite.query.model.Operators.lt;
-import static org.gama.stalactite.query.model.Operators.lteq;
-import static org.gama.stalactite.query.model.Operators.max;
-import static org.gama.stalactite.query.model.Operators.min;
-import static org.gama.stalactite.query.model.Operators.not;
-import static org.gama.stalactite.query.model.Operators.startsWith;
-import static org.gama.stalactite.query.model.Operators.sum;
+import static org.codefilarete.stalactite.query.model.Operators.between;
+import static org.codefilarete.stalactite.query.model.Operators.contains;
+import static org.codefilarete.stalactite.query.model.Operators.count;
+import static org.codefilarete.stalactite.query.model.Operators.endsWith;
+import static org.codefilarete.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.gt;
+import static org.codefilarete.stalactite.query.model.Operators.gteq;
+import static org.codefilarete.stalactite.query.model.Operators.in;
+import static org.codefilarete.stalactite.query.model.Operators.lt;
+import static org.codefilarete.stalactite.query.model.Operators.lteq;
+import static org.codefilarete.stalactite.query.model.Operators.max;
+import static org.codefilarete.stalactite.query.model.Operators.min;
+import static org.codefilarete.stalactite.query.model.Operators.not;
+import static org.codefilarete.stalactite.query.model.Operators.startsWith;
+import static org.codefilarete.stalactite.query.model.Operators.sum;
 
 /**
  * @author Guillaume Mary

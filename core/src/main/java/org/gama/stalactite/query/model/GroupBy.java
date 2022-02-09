@@ -1,10 +1,10 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary

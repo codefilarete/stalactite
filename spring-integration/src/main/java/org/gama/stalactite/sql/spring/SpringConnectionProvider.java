@@ -1,9 +1,9 @@
-package org.gama.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring;
 
 import javax.annotation.Nonnull;
 import java.sql.Connection;
 
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.TransactionDefinition;
@@ -13,7 +13,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * A {@link org.gama.stalactite.sql.ConnectionProvider} for Spring framework
+ * A {@link org.codefilarete.stalactite.sql.ConnectionProvider} for Spring framework
  * 
  * @author Guillaume Mary
  */

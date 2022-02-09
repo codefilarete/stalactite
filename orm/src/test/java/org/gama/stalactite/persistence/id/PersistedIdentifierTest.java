@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id;
+package org.codefilarete.stalactite.persistence.id;
 
 import org.junit.jupiter.api.Test;
 

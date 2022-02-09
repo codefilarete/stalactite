@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;

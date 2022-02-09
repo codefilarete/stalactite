@@ -1,12 +1,12 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.function.Function;
 
 import org.codefilarete.tool.Strings;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * A simple wrapper for methods that can give some necessary names during DML generation.

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql.dml;
+package org.codefilarete.stalactite.persistence.sql.dml;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -7,12 +7,12 @@ import java.sql.Statement;
 import java.util.function.LongSupplier;
 
 import org.codefilarete.tool.function.ThrowingBiFunction;
-import org.gama.stalactite.persistence.engine.StaleStateObjectException;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.dml.SQLStatement;
-import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.sql.dml.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.persistence.engine.StaleStateObjectException;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.dml.SQLStatement;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
 
 /**
  * As its name mentions it, this class is a factory for {@link WriteOperation}, introduced to be overriden for database specific behavior.

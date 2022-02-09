@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 
 /**
  * @author Guillaume Mary

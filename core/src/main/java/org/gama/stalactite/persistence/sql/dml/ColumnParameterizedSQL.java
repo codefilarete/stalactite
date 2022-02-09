@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.sql.dml;
+package org.codefilarete.stalactite.persistence.sql.dml;
 
 import java.util.Map;
 
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.PreparedStatementWriter;
-import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
-import org.gama.stalactite.sql.dml.ExpandableStatement;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriterIndex;
+import org.codefilarete.stalactite.sql.dml.ExpandableStatement;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Equivalent to {@link PreparedSQL} but with Column as index identifier.
@@ -42,13 +42,13 @@ public class ColumnParameterizedSQL<T extends Table> extends ExpandableStatement
 	}
 	
 	/**
-	 * Hides {@link org.gama.stalactite.sql.dml.SQLStatement#getParameterBinder(Object)} due to class generic type erasure, but this signature allows
+	 * Hides {@link org.codefilarete.stalactite.sql.dml.SQLStatement#getParameterBinder(Object)} due to class generic type erasure, but this signature allows
 	 * to get the writer type that matched column's one
 	 * 
 	 * @param parameter any non null column
 	 * @param <O> column value type
 	 * @return super.getParameterBinder(parameter)
-	 * @see org.gama.stalactite.sql.dml.SQLStatement#getParameterBinder(Object) 
+	 * @see org.codefilarete.stalactite.sql.dml.SQLStatement#getParameterBinder(Object) 
 	 */
 	public <O> PreparedStatementWriter<O> getParameterBinder(Column<T, O> parameter) {
 		return super.getParameterBinder((Column) parameter);

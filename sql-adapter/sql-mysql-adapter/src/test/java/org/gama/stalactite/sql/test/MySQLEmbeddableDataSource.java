@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.test;
+package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.Random;
 import com.wix.mysql.EmbeddedMysql;
 import com.wix.mysql.config.MysqldConfig;
 import com.wix.mysql.config.SchemaConfig;
-import org.gama.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 
 import static com.wix.mysql.config.Charset.UTF8;
 import static com.wix.mysql.distribution.Version.v5_6_latest;

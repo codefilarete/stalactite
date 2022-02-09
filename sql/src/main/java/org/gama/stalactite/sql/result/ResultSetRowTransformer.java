@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.io.Serializable;
 import java.sql.ResultSet;
@@ -12,7 +12,7 @@ import java.util.function.Function;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 import org.codefilarete.tool.bean.Factory;
-import org.gama.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
 
 import static org.codefilarete.tool.Nullable.nullable;
 

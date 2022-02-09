@@ -1,6 +1,6 @@
-package org.gama.stalactite.query.model.operator;
+package org.codefilarete.stalactite.query.model.operator;
 
-import org.gama.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
  * Represents a greater (< or <=) comparison

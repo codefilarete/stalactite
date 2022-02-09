@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.SQLException;
 
 import org.apache.derby.impl.jdbc.EmbedConnection;
 import org.apache.derby.impl.jdbc.EmbedStatement;
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
  * {@link ReadOperation} dedicated to Derby for cancel operation particularity

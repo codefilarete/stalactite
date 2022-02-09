@@ -1,16 +1,16 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import java.sql.SQLException;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gama.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_READER;
+import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_READER;
 
 /**
  * @author Guillaume Mary

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.id.manager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -11,14 +11,14 @@ import java.util.function.BiConsumer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.PairIterator;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.mapping.IdAccessor;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.dml.GeneratedKeysReader;
-import org.gama.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
+import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
 
 /**
  * Identifier manager that gets its values from {@link PreparedStatement#getGeneratedKeys()} (available after insert SQL statement). 

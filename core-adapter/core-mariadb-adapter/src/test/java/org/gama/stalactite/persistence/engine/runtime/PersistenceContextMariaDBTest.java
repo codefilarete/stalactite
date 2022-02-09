@@ -1,11 +1,11 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.gama.stalactite.persistence.engine.PersistenceContextITTest;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.MariaDBDialect;
-import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
+import org.codefilarete.stalactite.persistence.engine.PersistenceContextITTest;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.MariaDBDialect;
+import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
 
 /**
  * @author Guillaume Mary

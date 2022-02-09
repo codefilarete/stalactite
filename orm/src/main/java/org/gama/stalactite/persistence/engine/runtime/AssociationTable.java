@@ -1,15 +1,15 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Database.Schema;
-import org.gama.stalactite.persistence.structure.PrimaryKey;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Database.Schema;
+import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary

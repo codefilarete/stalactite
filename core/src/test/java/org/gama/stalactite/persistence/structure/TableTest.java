@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.structure;
+package org.codefilarete.stalactite.persistence.structure;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;

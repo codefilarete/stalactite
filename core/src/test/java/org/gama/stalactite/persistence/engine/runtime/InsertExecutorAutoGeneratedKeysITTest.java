@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -10,19 +10,19 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.DDLDeployer;
-import org.gama.stalactite.persistence.engine.runtime.AbstractDMLExecutorTest.Toto;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.PersistentFieldHarverster;
-import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.persistence.engine.DDLDeployer;
+import org.codefilarete.stalactite.persistence.engine.runtime.AbstractDMLExecutorTest.Toto;
+import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.PersistentFieldHarverster;
+import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

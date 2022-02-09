@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

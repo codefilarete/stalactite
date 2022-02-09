@@ -1,8 +1,8 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import java.sql.Connection;
 
-import org.gama.stalactite.persistence.sql.ServiceLoaderDialectResolver.DatabaseSignet;
+import org.codefilarete.stalactite.persistence.sql.ServiceLoaderDialectResolver.DatabaseSignet;
 
 /**
  * Simple contract to determine the {@link Dialect} to be used with a database

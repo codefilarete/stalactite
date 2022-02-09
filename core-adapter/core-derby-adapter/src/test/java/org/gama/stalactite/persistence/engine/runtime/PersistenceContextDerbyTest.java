@@ -1,11 +1,11 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.sql.DataSource;
 
-import org.gama.stalactite.persistence.engine.PersistenceContextITTest;
-import org.gama.stalactite.persistence.sql.DerbyDialect;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.sql.test.DerbyInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.PersistenceContextITTest;
+import org.codefilarete.stalactite.persistence.sql.DerbyDialect;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.sql.test.DerbyInMemoryDataSource;
 
 /**
  * @author Guillaume Mary

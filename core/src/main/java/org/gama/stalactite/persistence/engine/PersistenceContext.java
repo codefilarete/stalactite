@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
@@ -26,39 +26,39 @@ import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.gama.stalactite.command.builder.DeleteCommandBuilder;
-import org.gama.stalactite.command.builder.InsertCommandBuilder;
-import org.gama.stalactite.command.builder.InsertCommandBuilder.InsertStatement;
-import org.gama.stalactite.command.builder.UpdateCommandBuilder;
-import org.gama.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
-import org.gama.stalactite.command.model.Delete;
-import org.gama.stalactite.command.model.Insert;
-import org.gama.stalactite.command.model.Update;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.runtime.Persister;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.DialectResolver;
-import org.gama.stalactite.persistence.sql.ServiceLoaderDialectResolver;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.SQLBuilder;
-import org.gama.stalactite.query.builder.SQLQueryBuilder;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.CriteriaChain;
-import org.gama.stalactite.query.model.Query;
-import org.gama.stalactite.query.model.QueryEase;
-import org.gama.stalactite.query.model.QueryProvider;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.sql.result.ResultSetRowAssembler;
-import org.gama.stalactite.sql.result.ResultSetRowTransformer;
-import org.gama.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.command.builder.DeleteCommandBuilder;
+import org.codefilarete.stalactite.command.builder.InsertCommandBuilder;
+import org.codefilarete.stalactite.command.builder.InsertCommandBuilder.InsertStatement;
+import org.codefilarete.stalactite.command.builder.UpdateCommandBuilder;
+import org.codefilarete.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
+import org.codefilarete.stalactite.command.model.Delete;
+import org.codefilarete.stalactite.command.model.Insert;
+import org.codefilarete.stalactite.command.model.Update;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.DialectResolver;
+import org.codefilarete.stalactite.persistence.sql.ServiceLoaderDialectResolver;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
@@ -239,7 +239,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param beanType type of created beans, used for returned type marker
 	 * @param <C> type of created beans
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
-	 * @see org.gama.stalactite.query.model.QueryEase
+	 * @see org.codefilarete.stalactite.query.model.QueryEase
 	 */
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
 		return newQuery(new SQLQueryBuilder(queryProvider), beanType);
@@ -874,7 +874,7 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	/**
-	 * Bridge between {@link ConnectionProvider}, {@link ConnectionConfiguration}, {@link org.gama.stalactite.sql.TransactionObserver}
+	 * Bridge between {@link ConnectionProvider}, {@link ConnectionConfiguration}, {@link org.codefilarete.stalactite.sql.TransactionObserver}
 	 * and {@link SeparateTransactionExecutor} so one can notify {@link PersistenceContext} from commit and rollback as well as maintain internal
 	 * mecanisms such as :
 	 * - creating a separate transaction to manage HiLo Sequence
@@ -882,7 +882,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 */
 	private static class TransactionAwareConnectionConfiguration extends TransactionAwareConnectionProvider
 			implements ConnectionConfiguration,
-			SeparateTransactionExecutor	// for org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence
+			SeparateTransactionExecutor	// for org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence
 	{
 		
 		private final ConnectionConfiguration connectionConfiguration;

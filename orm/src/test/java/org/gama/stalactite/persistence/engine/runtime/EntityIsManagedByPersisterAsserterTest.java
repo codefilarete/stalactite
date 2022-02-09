@@ -1,14 +1,14 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.model.AbstractVehicle;
-import org.gama.stalactite.persistence.engine.model.Vehicle;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.model.AbstractVehicle;
+import org.codefilarete.stalactite.persistence.engine.model.Vehicle;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;

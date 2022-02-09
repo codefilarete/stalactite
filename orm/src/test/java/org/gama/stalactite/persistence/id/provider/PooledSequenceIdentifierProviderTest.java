@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.provider;
+package org.codefilarete.stalactite.persistence.id.provider;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -10,16 +10,16 @@ import java.util.concurrent.Executors;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.DDLDeployer;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.engine.TransactionalConnectionProvider;
-import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequence;
-import org.gama.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
-import org.gama.stalactite.persistence.id.sequence.SequenceStorageOptions;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.DDLDeployer;
+import org.codefilarete.stalactite.persistence.engine.PersistenceContext;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.engine.TransactionalConnectionProvider;
+import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence;
+import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.persistence.id.sequence.SequenceStorageOptions;
+import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

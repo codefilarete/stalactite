@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine.model;
+package org.codefilarete.stalactite.persistence.engine.model;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.Identifier;
 
 /**
  * @author Guillaume Mary

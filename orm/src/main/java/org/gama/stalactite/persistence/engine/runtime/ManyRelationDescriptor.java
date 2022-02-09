@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -7,7 +7,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.tool.bean.Objects;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 /**
  * Container to store information of a one-to-many relation

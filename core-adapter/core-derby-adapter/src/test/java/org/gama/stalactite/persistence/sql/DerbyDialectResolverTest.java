@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
 
 import org.assertj.core.api.Assertions;
-import org.gama.stalactite.sql.test.DerbyInMemoryDataSource;
+import org.codefilarete.stalactite.sql.test.DerbyInMemoryDataSource;
 import org.junit.jupiter.api.Test;
 
 /**

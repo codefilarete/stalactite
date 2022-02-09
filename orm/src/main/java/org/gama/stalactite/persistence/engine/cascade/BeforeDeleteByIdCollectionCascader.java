@@ -1,12 +1,12 @@
-package org.gama.stalactite.persistence.engine.cascade;
+package org.codefilarete.stalactite.persistence.engine.cascade;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.listening.DeleteByIdListener;
-import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
 
 /**
  * Cascader for delete, written for one-to-many style of cascade where Target owns the relationship to Trigger

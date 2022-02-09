@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.sql;
+package org.codefilarete.stalactite.persistence.sql;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
@@ -6,9 +6,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 
 /**
  * @author Guillaume Mary

@@ -1,4 +1,4 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,23 +7,23 @@ import java.util.Map;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.operator.Between;
-import org.gama.stalactite.query.model.operator.Between.Interval;
-import org.gama.stalactite.query.model.operator.Count;
-import org.gama.stalactite.query.model.operator.Equals;
-import org.gama.stalactite.query.model.operator.Greater;
-import org.gama.stalactite.query.model.operator.In;
-import org.gama.stalactite.query.model.operator.IsNull;
-import org.gama.stalactite.query.model.operator.Like;
-import org.gama.stalactite.query.model.operator.Lower;
-import org.gama.stalactite.query.model.operator.Max;
-import org.gama.stalactite.query.model.operator.Min;
-import org.gama.stalactite.query.model.operator.Sum;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.operator.Between;
+import org.codefilarete.stalactite.query.model.operator.Between.Interval;
+import org.codefilarete.stalactite.query.model.operator.Count;
+import org.codefilarete.stalactite.query.model.operator.Equals;
+import org.codefilarete.stalactite.query.model.operator.Greater;
+import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.IsNull;
+import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.query.model.operator.Lower;
+import org.codefilarete.stalactite.query.model.operator.Max;
+import org.codefilarete.stalactite.query.model.operator.Min;
+import org.codefilarete.stalactite.query.model.operator.Sum;
 
 /**
  * A class made to print a {@link AbstractRelationalOperator}
@@ -253,7 +253,7 @@ public class OperatorBuilder {
 	}
 	
 	/**
-	 * An appender to a {@link org.gama.stalactite.sql.dml.PreparedSQL}
+	 * An appender to a {@link org.codefilarete.stalactite.sql.dml.PreparedSQL}
 	 */
 	public static class PreparedSQLWrapper implements SQLAppender {
 		

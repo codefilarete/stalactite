@@ -1,8 +1,8 @@
-package org.gama.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.id.sequence;
 
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
-import org.gama.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.id.sequence.SequencePersister.Sequence;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
 
 /**
  * Long identifier generator for an entity class.

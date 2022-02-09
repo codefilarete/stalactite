@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.util.HashMap;
 import java.util.List;
@@ -6,9 +6,9 @@ import java.util.Map;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.dml.ExpandableSQL.ExpandableParameter;
-import org.gama.stalactite.sql.dml.SQLParameterParser.Parameter;
-import org.gama.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
+import org.codefilarete.stalactite.sql.dml.ExpandableSQL.ExpandableParameter;
+import org.codefilarete.stalactite.sql.dml.SQLParameterParser.Parameter;
+import org.codefilarete.stalactite.sql.dml.SQLParameterParser.ParsedSQL;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 

@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
 import javax.annotation.Nonnull;
 import java.sql.ResultSet;
 import java.util.function.Function;
 
-import org.gama.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
 
 /**
  * Reader of a particular column (by its name) from a {@link java.sql.ResultSet}

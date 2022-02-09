@@ -1,17 +1,17 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.Select;
-import org.gama.stalactite.query.model.Select.AliasedColumn;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.Select.AliasedColumn;
 
 /**
  * @author Guillaume Mary

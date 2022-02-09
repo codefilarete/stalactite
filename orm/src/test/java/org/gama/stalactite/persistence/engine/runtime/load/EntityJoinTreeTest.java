@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,14 +11,14 @@ import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Predicates;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
+import static org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
 
 /**
  * Contract for {@link Persister} registry.
- * Made to avoid passing {@link PersistenceContext} to {@link org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl}
+ * Made to avoid passing {@link PersistenceContext} to {@link org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl}
  * 
  * @author Guillaume Mary
  */

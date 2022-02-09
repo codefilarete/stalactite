@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.id.provider;
+package org.codefilarete.stalactite.persistence.id.provider;
 
 import java.util.function.Supplier;
 

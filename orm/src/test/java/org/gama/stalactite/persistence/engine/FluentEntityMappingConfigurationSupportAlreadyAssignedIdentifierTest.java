@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.util.List;
@@ -8,18 +8,18 @@ import java.util.stream.Collectors;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.model.Timestamp;
-import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.persistence.engine.model.Timestamp;
+import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.tool.Nullable.nullable;
-import static org.gama.stalactite.persistence.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.persistence.engine.MappingEase.entityBuilder;
 
 /**
  * @author Guillaume Mary

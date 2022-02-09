@@ -1,15 +1,15 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.codefilarete.tool.Strings;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.IdentityMap;
-import org.gama.stalactite.query.model.From.AbstractJoin.JoinDirection;
-import org.gama.stalactite.query.model.From.Join;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
+import org.codefilarete.stalactite.query.model.From.Join;
 
 /**
  * Class to ease From clause creation in a Select SQL statement.

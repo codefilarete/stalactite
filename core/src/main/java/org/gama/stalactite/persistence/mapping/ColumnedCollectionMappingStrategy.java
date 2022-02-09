@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -22,9 +22,9 @@ import org.codefilarete.tool.collection.PairIterator.UntilBothIterator;
 import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * A class that "roughly" persists a {@link Collection} to some {@link Column}s : {@link Collection} values are written to given {@link Column}s.
@@ -132,7 +132,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	/**
 	 * Gives the database (JDBC) value of the argument.
 	 * This implementation returns the given argument without transformation.
-	 * This may duplicate behavior of {@link org.gama.stalactite.sql.binder.PreparedStatementWriter} in some way, but is located to this strategy so can be
+	 * This may duplicate behavior of {@link org.codefilarete.stalactite.sql.binder.PreparedStatementWriter} in some way, but is located to this strategy so can be
 	 * more accurate.
 	 * 
 	 * @param object any object took from a pesistent collection
@@ -145,7 +145,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	/**
 	 * Opposit of {@link #toDatabaseValue(Object)}: converts the database value for the collection value
 	 * This implementation returns the given argument without transformation.
-	 * This may duplicate behavior of {@link org.gama.stalactite.sql.binder.ResultSetReader} in some way, but is located to this strategy so can be
+	 * This may duplicate behavior of {@link org.codefilarete.stalactite.sql.binder.ResultSetReader} in some way, but is located to this strategy so can be
 	 * more accurate.
 	 * 
 	 * @param object the value coming from the database {@link java.sql.ResultSet}

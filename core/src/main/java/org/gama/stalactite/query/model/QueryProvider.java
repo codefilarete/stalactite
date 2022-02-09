@@ -1,4 +1,4 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 /**
  * Implementing classes should return the whole query being created

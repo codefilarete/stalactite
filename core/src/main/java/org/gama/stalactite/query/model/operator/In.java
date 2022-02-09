@@ -1,7 +1,7 @@
-package org.gama.stalactite.query.model.operator;
+package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 
 /**
  * Represents a "in" comparison

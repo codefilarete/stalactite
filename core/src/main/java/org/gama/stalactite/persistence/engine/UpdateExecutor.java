@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.Collections;
 
@@ -24,8 +24,8 @@ public interface UpdateExecutor<C> {
 	 *
 	 * @param entities iterable of entities
 	 * @apiNote used internally by
-	 * {@link org.gama.stalactite.persistence.engine.runtime.CollectionUpdater#onRemovedTarget(org.gama.stalactite.persistence.engine.runtime.CollectionUpdater.UpdateContext,
-	 * org.gama.stalactite.persistence.id.diff.AbstractDiff)}
+	 * {@link org.codefilarete.stalactite.persistence.engine.runtime.CollectionUpdater#onRemovedTarget(org.codefilarete.stalactite.persistence.engine.runtime.CollectionUpdater.UpdateContext,
+	 * org.codefilarete.stalactite.persistence.id.diff.AbstractDiff)}
 	 */
 	void updateById(Iterable<C> entities);
 	

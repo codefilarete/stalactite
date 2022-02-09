@@ -1,7 +1,7 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
-import org.gama.stalactite.persistence.engine.runtime.Persister;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Builder of an {@link Persister}

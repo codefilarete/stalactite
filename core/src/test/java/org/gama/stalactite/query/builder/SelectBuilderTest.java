@@ -1,19 +1,19 @@
-package org.gama.stalactite.query.builder;
+package org.codefilarete.stalactite.query.builder;
 
 import java.util.Collections;
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.Select;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.Select;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.query.model.Operators.max;
-import static org.gama.stalactite.query.model.Operators.min;
+import static org.codefilarete.stalactite.query.model.Operators.max;
+import static org.codefilarete.stalactite.query.model.Operators.min;
 
 /**
  * @author Guillaume Mary

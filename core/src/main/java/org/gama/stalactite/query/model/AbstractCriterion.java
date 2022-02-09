@@ -1,4 +1,4 @@
-package org.gama.stalactite.query.model;
+package org.codefilarete.stalactite.query.model;
 
 /**
  * @author Guillaume Mary

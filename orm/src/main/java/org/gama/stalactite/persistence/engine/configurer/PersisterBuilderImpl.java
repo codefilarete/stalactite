@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
@@ -26,59 +26,59 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
-import org.gama.stalactite.persistence.engine.ColumnOptions;
-import org.gama.stalactite.persistence.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration;
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
-import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
-import org.gama.stalactite.persistence.engine.EntityMappingConfigurationProvider;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentEntityMappingBuilderKeyOptions;
-import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.MappingConfigurationException;
-import org.gama.stalactite.persistence.engine.PersistenceContext;
-import org.gama.stalactite.persistence.engine.PersisterBuilder;
-import org.gama.stalactite.persistence.engine.PersisterRegistry;
-import org.gama.stalactite.persistence.engine.PolymorphismPolicy;
-import org.gama.stalactite.persistence.engine.TableNamingStrategy;
-import org.gama.stalactite.persistence.engine.VersioningStrategy;
-import org.gama.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
-import org.gama.stalactite.persistence.engine.cascade.AfterDeleteSupport;
-import org.gama.stalactite.persistence.engine.cascade.AfterUpdateSupport;
-import org.gama.stalactite.persistence.engine.cascade.BeforeInsertSupport;
-import org.gama.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.gama.stalactite.persistence.engine.listening.PersisterListenerCollection;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.listening.UpdateByIdListener;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
-import org.gama.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;
-import org.gama.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
-import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
-import org.gama.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.gama.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
-import org.gama.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.PrimaryKey;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.persistence.engine.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration.InheritanceConfiguration;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentEntityMappingBuilderKeyOptions;
+import org.codefilarete.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.persistence.engine.PersistenceContext;
+import org.codefilarete.stalactite.persistence.engine.PersisterBuilder;
+import org.codefilarete.stalactite.persistence.engine.PersisterRegistry;
+import org.codefilarete.stalactite.persistence.engine.PolymorphismPolicy;
+import org.codefilarete.stalactite.persistence.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.VersioningStrategy;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterDeleteByIdSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterDeleteSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterUpdateSupport;
+import org.codefilarete.stalactite.persistence.engine.cascade.BeforeInsertSupport;
+import org.codefilarete.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
+import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listening.UpdateByIdListener;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;
+import org.codefilarete.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -786,7 +786,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param identification given to know expected policy, and to set result in it
 	 * @param mappingPerTable necessary to get table and primary key to be read in after-insert policy
 	 * @param idAccessor id accessor to get and set identifier on entity (except for already-assigned strategy)
-	 * @param generatedKeysReaderBuilder reader for {@link org.gama.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
+	 * @param generatedKeysReaderBuilder reader for {@link org.codefilarete.stalactite.persistence.engine.ColumnOptions.AfterInsertIndentifierPolicy}
 	 * @param <X> entity type that defines identifier manager, used as internal, may be C or one of its ancestor
 	 */
 	private <X> void determineIdentifierManager(

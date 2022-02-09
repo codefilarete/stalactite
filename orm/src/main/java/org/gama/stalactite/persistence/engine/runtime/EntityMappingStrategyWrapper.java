@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
@@ -6,15 +6,15 @@ import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.gama.stalactite.persistence.mapping.AbstractTransformer;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
-import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.mapping.AbstractTransformer;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.mapping.EmbeddedBeanMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * {@link EntityMappingStrategy} that wraps another one and delegates all its methods to it without any additionnal feature.

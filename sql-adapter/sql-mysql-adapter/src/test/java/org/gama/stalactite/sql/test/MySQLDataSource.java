@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.test;
+package org.codefilarete.stalactite.sql.test;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -8,7 +8,7 @@ import java.util.Map;
 import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 
 /**
  * A {@link DataSource} that wraps MySQL one to ease configuration.

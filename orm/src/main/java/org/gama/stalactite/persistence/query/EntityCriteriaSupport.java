@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.query;
+package org.codefilarete.stalactite.persistence.query;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -20,17 +20,17 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.reflection.ValueAccessPointMap;
-import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
-import org.gama.stalactite.persistence.engine.RuntimeMappingException;
-import org.gama.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
-import org.gama.stalactite.persistence.mapping.SimpleIdMappingStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.query.model.Criteria;
-import org.gama.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.persistence.engine.RuntimeMappingException;
+import org.codefilarete.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.Criteria;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
 
 /**
  * Implementation of {@link EntityCriteria}

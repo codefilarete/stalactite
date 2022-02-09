@@ -1,7 +1,7 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.gama.stalactite.persistence.sql.DerbyDialect;
-import org.gama.stalactite.sql.test.DerbyInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.sql.DerbyDialect;
+import org.codefilarete.stalactite.sql.test.DerbyInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

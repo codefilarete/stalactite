@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.Collection;
 import java.util.List;
@@ -7,12 +7,12 @@ import java.util.function.Function;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.gama.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.gama.stalactite.persistence.engine.configurer.CascadeMany;
-import org.gama.stalactite.persistence.engine.configurer.CascadeOne;
-import org.gama.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeMany;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeOne;
+import org.codefilarete.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Defines elements needed to configure a mapping of an entity class

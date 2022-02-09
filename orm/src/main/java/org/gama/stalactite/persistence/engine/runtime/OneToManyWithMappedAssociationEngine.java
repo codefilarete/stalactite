@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -15,21 +15,21 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.gama.stalactite.persistence.engine.EntityPersister;
-import org.gama.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
-import org.gama.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
-import org.gama.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterInsertCollectionCascader;
+import org.codefilarete.stalactite.persistence.engine.cascade.AfterUpdateCollectionCascader;
+import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
+import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 import static org.codefilarete.tool.bean.Objects.not;
 import static org.codefilarete.tool.collection.Iterables.stream;
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
  * @author Guillaume Mary

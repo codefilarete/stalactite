@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.SQLTransientException;
 import java.util.function.Predicate;
 
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

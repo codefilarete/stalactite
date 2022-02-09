@@ -1,19 +1,19 @@
-package org.gama.stalactite.persistence.sql.ddl;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import java.util.*;
 
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.gama.stalactite.persistence.structure.ForeignKey;
-import org.gama.stalactite.persistence.structure.Index;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.structure.Index;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * A class to collect multiple DDL sources. Main purpose is multiple table creation scripts so they can be played against a database to deploy
  * a schema. Use cases are tests and installation of a new application.
  * 
  * @author Guillaume Mary
- * @see org.gama.stalactite.persistence.engine.DDLDeployer
+ * @see org.codefilarete.stalactite.persistence.engine.DDLDeployer
  */
 public class DDLGenerator implements DDLProvider {
 	
@@ -25,7 +25,7 @@ public class DDLGenerator implements DDLProvider {
 	
 	/**
 	 * Simple generator where column SQL types are took from given Java-SQL type mapping.
-	 * Name of tables and columns are given by a default {@link org.gama.stalactite.query.builder.DMLNameProvider}
+	 * Name of tables and columns are given by a default {@link org.codefilarete.stalactite.query.builder.DMLNameProvider}
 	 * 
 	 * @param sqlTypeRegistry the mapping to be used to get SQL type of columns
 	 */

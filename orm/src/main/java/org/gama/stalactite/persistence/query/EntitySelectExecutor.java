@@ -1,10 +1,10 @@
-package org.gama.stalactite.persistence.query;
+package org.codefilarete.stalactite.persistence.query;
 
 import java.util.List;
 
-import org.gama.stalactite.query.builder.SQLQueryBuilder;
-import org.gama.stalactite.query.model.CriteriaChain;
-import org.gama.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Query;
 
 /**
  * @author Guillaume Mary

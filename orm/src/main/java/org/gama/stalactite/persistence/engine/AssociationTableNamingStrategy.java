@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.annotation.Nonnull;
 
@@ -6,7 +6,7 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * Contract for giving a name to an association table (one-to-many cases)

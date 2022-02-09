@@ -1,9 +1,9 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Interface for classes capable of transforming a ResultSet row (represented by {@link Row} into any "more Object" instance.

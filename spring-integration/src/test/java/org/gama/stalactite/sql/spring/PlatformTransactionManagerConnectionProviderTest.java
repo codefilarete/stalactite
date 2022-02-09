@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring;
 
 import javax.sql.DataSource;
 
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor.JdbcOperation;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor.JdbcOperation;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.internal.stubbing.answers.ThrowsException;

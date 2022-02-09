@@ -1,17 +1,17 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import java.util.Queue;
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.gama.stalactite.persistence.engine.SelectExecutor;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
-import org.gama.stalactite.persistence.mapping.AbstractTransformer;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.IdMappingStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.engine.SelectExecutor;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityMerger;
+import org.codefilarete.stalactite.persistence.mapping.AbstractTransformer;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * @author Guillaume Mary

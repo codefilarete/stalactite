@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.function.Function;
 
@@ -14,7 +14,7 @@ public interface PropertyOptions {
 	
 	/**
 	 * Marks this property as set by constructor, meaning it won't be set by any associated setter (method or field access).
-	 * Should be used in conjonction with {@link org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.KeyOptions#usingConstructor(Function)}
+	 * Should be used in conjonction with {@link org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.KeyOptions#usingConstructor(Function)}
 	 * and other equivalent methods.
 	 */
 	PropertyOptions setByConstructor();

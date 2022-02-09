@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -10,10 +10,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.binder.PreparedStatementWriter;
-import org.gama.stalactite.sql.binder.PreparedStatementWriterIndex;
-import org.gama.stalactite.sql.binder.PreparedStatementWriterProvider;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriterIndex;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriterProvider;
 
 /**
  * Parent class that defines methods for applying values to {@link PreparedStatement} that is supposed to be built

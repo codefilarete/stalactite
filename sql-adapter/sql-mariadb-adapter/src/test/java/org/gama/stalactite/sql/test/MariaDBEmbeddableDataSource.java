@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.test;
+package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -11,7 +11,7 @@ import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 import org.mariadb.jdbc.MariaDbDataSource;
 
 /**

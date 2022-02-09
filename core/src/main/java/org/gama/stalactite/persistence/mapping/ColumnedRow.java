@@ -1,11 +1,11 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import javax.annotation.Nullable;
 import java.util.function.Function;
 
-import org.gama.stalactite.sql.result.Row;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Class aimed at giving values of a {@link Row} from a {@link Column}, see {@link #getValue(Column, Row)}.

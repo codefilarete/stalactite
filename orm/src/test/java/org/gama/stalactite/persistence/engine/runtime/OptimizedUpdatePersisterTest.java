@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -13,16 +13,16 @@ import java.util.Map;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingHashMap;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.sql.ConnectionProvider;
-import org.gama.stalactite.sql.DataSourceConnectionProvider;
-import org.gama.stalactite.sql.RollbackListener;
-import org.gama.stalactite.sql.RollbackObserver;
-import org.gama.stalactite.sql.TransactionAwareConnectionProvider;
-import org.gama.stalactite.sql.binder.DefaultResultSetReaders;
-import org.gama.stalactite.sql.binder.ResultSetReader;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
-import org.gama.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.RollbackListener;
+import org.codefilarete.stalactite.sql.RollbackObserver;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
+import org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders;
+import org.codefilarete.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

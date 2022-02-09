@@ -1,25 +1,25 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
 import java.util.Collection;
 
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.gama.stalactite.persistence.engine.AssociationTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.ColumnNamingStrategy;
-import org.gama.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
-import org.gama.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.gama.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
-import org.gama.stalactite.persistence.engine.PersisterRegistry;
-import org.gama.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.gama.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
-import org.gama.stalactite.persistence.engine.runtime.cycle.OneToManyCycleConfigurer;
-import org.gama.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.persistence.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.persistence.engine.PersisterRegistry;
+import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.persistence.engine.runtime.cycle.OneToManyCycleConfigurer;
+import org.codefilarete.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * @author Guillaume Mary

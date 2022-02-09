@@ -1,11 +1,11 @@
-package org.gama.stalactite.command.builder;
+package org.codefilarete.stalactite.command.builder;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
 
 import org.codefilarete.tool.trace.ModifiableBoolean;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 
 /**
  * A name provider that doesn't add table prefix to columns in case of single table.

@@ -1,20 +1,20 @@
-package org.gama.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.id.sequence;
 
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.gama.stalactite.persistence.engine.runtime.Persister;
-import org.gama.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.gama.stalactite.persistence.id.sequence.SequencePersister.Sequence;
-import org.gama.stalactite.persistence.id.sequence.SequencePersister.SequenceTable;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.gama.stalactite.persistence.sql.Dialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Database.Schema;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.id.sequence.SequencePersister.Sequence;
+import org.codefilarete.stalactite.persistence.id.sequence.SequencePersister.SequenceTable;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Database.Schema;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Persister dedicated to {@link Sequence}.

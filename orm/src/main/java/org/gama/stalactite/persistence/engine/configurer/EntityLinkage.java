@@ -1,6 +1,6 @@
-package org.gama.stalactite.persistence.engine.configurer;
+package org.codefilarete.stalactite.persistence.engine.configurer;
 
-import org.gama.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfiguration.Linkage;
 
 /**
  * Specialized version of {@link Linkage} for entity use case

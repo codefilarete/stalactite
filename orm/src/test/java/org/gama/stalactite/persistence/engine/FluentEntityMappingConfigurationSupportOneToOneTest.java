@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import javax.sql.DataSource;
 import java.sql.BatchUpdateException;
@@ -13,28 +13,28 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToOneOptions;
-import org.gama.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
-import org.gama.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
-import org.gama.stalactite.persistence.engine.model.City;
-import org.gama.stalactite.persistence.engine.model.Country;
-import org.gama.stalactite.persistence.engine.model.Person;
-import org.gama.stalactite.persistence.engine.runtime.ConfiguredPersister;
-import org.gama.stalactite.persistence.id.Identified;
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
-import org.gama.stalactite.persistence.id.PersistedIdentifier;
-import org.gama.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.gama.stalactite.persistence.id.provider.LongProvider;
-import org.gama.stalactite.persistence.sql.HSQLDBDialect;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.ForeignKey;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.binder.DefaultParameterBinders;
-import org.gama.stalactite.sql.result.ResultSetIterator;
-import org.gama.stalactite.sql.result.RowIterator;
-import org.gama.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToOneOptions;
+import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
+import org.codefilarete.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
+import org.codefilarete.stalactite.persistence.engine.model.City;
+import org.codefilarete.stalactite.persistence.engine.model.Country;
+import org.codefilarete.stalactite.persistence.engine.model.Person;
+import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
+import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
+import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
+import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,10 +42,10 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
-import static org.gama.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
 
 /**
  * @author Guillaume Mary
@@ -914,7 +914,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 				dummyCountry.setName("France");
 				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m" 
-						+ ".Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0").isThrownBy(() -> countryPersister.insert(dummyCountry));
+						+ ".Country.getPresident() on object org.codefilarete.stalactite.persistence.engine.model.Country@0").isThrownBy(() -> countryPersister.insert(dummyCountry));
 			}
 			
 			@Test
@@ -1238,7 +1238,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country persistedCountry = countryPersister.select(dummyCountry.getId());
 				persistedCountry.setPresident(null);
 				assertThatExceptionOfType(RuntimeMappingException.class).as("Non null value expected for relation o.g.s.p.e.m.Person o.g.s.p.e.m" 
-						+ ".Country.getPresident() on object org.gama.stalactite.persistence.engine.model.Country@0").isThrownBy(() -> countryPersister.update(persistedCountry, dummyCountry, true));
+						+ ".Country.getPresident() on object org.codefilarete.stalactite.persistence.engine.model.Country@0").isThrownBy(() -> countryPersister.update(persistedCountry, dummyCountry, true));
 			}
 			
 		}

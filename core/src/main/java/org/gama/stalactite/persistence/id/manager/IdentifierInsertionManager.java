@@ -1,15 +1,15 @@
-package org.gama.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.id.manager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.gama.stalactite.persistence.engine.listening.SelectListener;
-import org.gama.stalactite.sql.dml.WriteOperation;
-import org.gama.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.gama.stalactite.persistence.engine.listening.InsertListener;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
+import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
  * Contract for entity identifier "management" at insertion time.

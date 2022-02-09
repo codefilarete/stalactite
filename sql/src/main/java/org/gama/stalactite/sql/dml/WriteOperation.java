@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -7,7 +7,7 @@ import java.util.Map;
 
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.function.ThrowingExecutable;
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
  * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so theses operations return number of affected rows

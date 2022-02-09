@@ -1,7 +1,7 @@
-package org.gama.stalactite.persistence.engine.model;
+package org.codefilarete.stalactite.persistence.engine.model;
 
-import org.gama.stalactite.persistence.id.Identifier;
-import org.gama.stalactite.persistence.id.PersistableIdentifier;
+import org.codefilarete.stalactite.persistence.id.Identifier;
+import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
 
 /**
  * @author Guillaume Mary

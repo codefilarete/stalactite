@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -8,17 +8,17 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import org.codefilarete.tool.bean.Objects;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.mapping.RowTransformer;
-import org.gama.stalactite.persistence.mapping.RowTransformer.TransformerListener;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.mapping.RowTransformer;
+import org.codefilarete.stalactite.persistence.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Join node for filling a relation between beans such as one-to-one or one-to-many

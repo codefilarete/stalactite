@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
@@ -30,9 +30,9 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.io.IOs;
-import org.gama.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.gama.stalactite.sql.dml.SQLExecutionException;
-import org.gama.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

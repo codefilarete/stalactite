@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.io.Serializable;
 import java.sql.SQLException;
@@ -6,8 +6,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
-import org.gama.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

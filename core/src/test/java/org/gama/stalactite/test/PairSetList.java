@@ -1,4 +1,4 @@
-package org.gama.stalactite.test;
+package org.codefilarete.stalactite.test;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;

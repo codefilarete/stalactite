@@ -1,6 +1,6 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.gama.stalactite.persistence.engine.EntityPersister;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister;
 
 /**
  * @author Guillaume Mary

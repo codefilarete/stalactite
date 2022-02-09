@@ -1,4 +1,4 @@
-package org.gama.stalactite.command.builder;
+package org.codefilarete.stalactite.command.builder;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -6,18 +6,18 @@ import java.util.Map;
 
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.gama.stalactite.sql.binder.ParameterBinder;
-import org.gama.stalactite.sql.dml.PreparedSQL;
-import org.gama.stalactite.command.model.Insert;
-import org.gama.stalactite.command.model.Update.UpdateColumn;
-import org.gama.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.DMLNameProvider;
-import org.gama.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.gama.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.gama.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
-import org.gama.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.dml.PreparedSQL;
+import org.codefilarete.stalactite.command.model.Insert;
+import org.codefilarete.stalactite.command.model.Update.UpdateColumn;
+import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
 
 /**
  * A SQL builder for {@link Insert} objects

@@ -1,7 +1,7 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.gama.stalactite.persistence.sql.MariaDBDialect;
-import org.gama.stalactite.sql.test.MariaDBEmbeddableDataSource;
+import org.codefilarete.stalactite.persistence.sql.MariaDBDialect;
+import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

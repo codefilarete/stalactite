@@ -1,10 +1,10 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.util.function.Predicate;
 
 import com.mysql.jdbc.exceptions.MySQLStatementCancelledException;
 import org.codefilarete.tool.exception.Exceptions;
-import org.gama.stalactite.sql.test.MySQLEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.test.MySQLEmbeddableDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

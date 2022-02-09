@@ -1,8 +1,8 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.util.Map;
 
-import org.gama.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
 
 /**
  * Simple contract for giving a {@link ParameterBinder} thanks to a certain kind of key.

@@ -1,6 +1,6 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
-import org.gama.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
  * A special {@link ConnectionProvider} that is capable of executing a SQL operation in a different (new) transaction than the one returned by

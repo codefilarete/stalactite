@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.dml;
+package org.codefilarete.stalactite.sql.dml;
 
 import java.sql.PreparedStatement;
 import java.util.HashMap;
@@ -6,12 +6,12 @@ import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingMap;
-import org.gama.stalactite.sql.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.binder.PreparedStatementWriter;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.gama.stalactite.sql.binder.DefaultParameterBinders.INTEGER_BINDER;
+import static org.codefilarete.stalactite.sql.binder.DefaultParameterBinders.INTEGER_BINDER;
 import static org.mockito.Mockito.mock;
 
 /**

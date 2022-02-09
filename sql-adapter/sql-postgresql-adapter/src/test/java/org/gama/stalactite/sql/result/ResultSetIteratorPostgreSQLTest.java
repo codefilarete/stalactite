@@ -1,6 +1,6 @@
-package org.gama.stalactite.sql.result;
+package org.codefilarete.stalactite.sql.result;
 
-import org.gama.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
+import org.codefilarete.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
 /**

@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime;
+package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -8,18 +8,18 @@ import java.util.function.BiFunction;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.gama.stalactite.persistence.engine.ExecutableQuery;
-import org.gama.stalactite.persistence.engine.EntityPersister.EntityCriteria;
-import org.gama.stalactite.persistence.engine.EntityPersister.ExecutableEntityQuery;
-import org.gama.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.gama.stalactite.persistence.mapping.ColumnedRow;
-import org.gama.stalactite.persistence.query.RelationalEntityCriteria;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.model.AbstractRelationalOperator;
-import org.gama.stalactite.sql.result.BeanRelationFixer;
-import org.gama.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.persistence.engine.ExecutableQuery;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.persistence.engine.EntityPersister.ExecutableEntityQuery;
+import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
+import org.codefilarete.stalactite.persistence.query.RelationalEntityCriteria;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Contract to allow joining a persister with another for entities with relation.

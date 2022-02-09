@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.engine.runtime.load;
+package org.codefilarete.stalactite.persistence.engine.runtime.load;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -6,21 +6,21 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.codefilarete.tool.collection.Maps;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
-import org.gama.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.gama.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.gama.stalactite.persistence.structure.Column;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.query.builder.IdentityMap;
-import org.gama.stalactite.query.builder.SQLQueryBuilder;
-import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
-import static org.gama.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
+import static org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.INNER;
+import static org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType.OUTER;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Date;
 
-import org.gama.stalactite.sql.ddl.DefaultTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 
 /**
  * @author Guillaume Mary

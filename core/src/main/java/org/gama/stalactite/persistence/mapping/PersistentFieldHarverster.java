@@ -1,4 +1,4 @@
-package org.gama.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.mapping;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -13,8 +13,8 @@ import org.codefilarete.tool.bean.FieldIterator;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.gama.stalactite.persistence.structure.Table;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * @author Guillaume Mary

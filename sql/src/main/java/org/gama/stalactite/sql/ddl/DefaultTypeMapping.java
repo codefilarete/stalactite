@@ -1,4 +1,4 @@
-package org.gama.stalactite.sql.ddl;
+package org.codefilarete.stalactite.sql.ddl;
 
 import java.io.File;
 import java.io.InputStream;

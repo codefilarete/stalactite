@@ -1,9 +1,9 @@
-package org.gama.stalactite.persistence.id;
+package org.codefilarete.stalactite.persistence.id;
 
-import org.gama.stalactite.persistence.id.manager.StatefullIdentifier;
-import org.gama.stalactite.sql.binder.LambdaParameterBinder;
-import org.gama.stalactite.sql.binder.NullAwareParameterBinder;
-import org.gama.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 
 /**
  * Equivalent of {@link StatefullIdentifier} for a more end-user usage.
@@ -24,7 +24,7 @@ public interface Identifier<T> extends StatefullIdentifier<T> {
 	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
 	 * @param <I> the type of the surrogate {@link Identifier}
 	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of parameterBinder
-	 * @see org.gama.stalactite.sql.binder.DefaultParameterBinders
+	 * @see org.codefilarete.stalactite.sql.binder.DefaultParameterBinders
 	 */
 	static <I> ParameterBinder<StatefullIdentifier<I>> identifierBinder(ParameterBinder<I> parameterBinder) {
 		return new NullAwareParameterBinder<>(new LambdaParameterBinder<>(parameterBinder, PersistedIdentifier::new, StatefullIdentifier::getSurrogate));

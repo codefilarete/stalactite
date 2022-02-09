@@ -1,13 +1,13 @@
-package org.gama.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-import org.gama.stalactite.persistence.engine.configurer.CascadeMany;
-import org.gama.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
-import org.gama.stalactite.persistence.engine.configurer.CascadeOne;
-import org.gama.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeMany;
+import org.codefilarete.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeOne;
+import org.codefilarete.stalactite.persistence.structure.Column;
 
 /**
  * Configuration dedicated to polymorphism : in such cases sub-entities don't define identifier policy because it is done by the polymorphic
