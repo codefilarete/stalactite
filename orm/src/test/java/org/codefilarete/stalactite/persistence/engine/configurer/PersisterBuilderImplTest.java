@@ -13,14 +13,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.tool.function.Serie.IntegerSerie;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -55,6 +47,14 @@ import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.function.Serie.IntegerSerie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,8 +65,6 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.tool.function.Functions.chain;
-import static org.codefilarete.tool.function.Functions.link;
 import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 import static org.codefilarete.reflection.Accessors.mutatorByField;
 import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
@@ -76,6 +74,8 @@ import static org.codefilarete.stalactite.persistence.engine.MappingEase.subenti
 import static org.codefilarete.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
+import static org.codefilarete.tool.function.Functions.chain;
+import static org.codefilarete.tool.function.Functions.link;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -631,8 +631,8 @@ public class PersisterBuilderImplTest {
 				"select"
 						+ " Car.model as Car_model,"
 						+ " Car.id as Car_id,"
-						+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
 						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
+						+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
 						+ " AbstractVehicle.id as AbstractVehicle_id,"
 						+ " Vehicle.color as Vehicle_color,"
 						+ " Vehicle.id as Vehicle_id"

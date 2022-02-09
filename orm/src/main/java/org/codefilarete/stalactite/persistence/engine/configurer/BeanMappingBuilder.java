@@ -251,6 +251,7 @@ class BeanMappingBuilder {
 		// debuggable) and allows to manage inheritance of several mappedSuperClass 
 		Map<ReversibleAccessor, Column> superMapping = new BeanMappingBuilder().build(superClassConfiguration, targetTable,
 				this.columnBinderRegistry, this.columnNameProvider);
+		Class<?> insetBeanType = inset.getBeanMappingBuilder().getConfiguration().getBeanType();
 		superMapping.forEach((accessor, column) -> {
 			AccessorChain prefix;
 			List<Accessor> accessors;
@@ -260,7 +261,12 @@ class BeanMappingBuilder {
 				accessors = new ArrayList<>(accessorPath);
 				accessors.add(accessor);
 			}
-			prefix = AccessorChain.forModel(accessors);
+			prefix = AccessorChain.forModel(
+				accessors,
+				// this can look superfluous but fills the gap of instanciating right bean when configuration is a subtype of inset accessor,
+				// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
+				// (where T is type returned by accessor, or expected as input of mutator)
+				(localAccessor, accessorInputType) -> insetBeanType);
 			
 			// Computing definitive column because it may be overriden by inset declaration
 			Column finalColumn;

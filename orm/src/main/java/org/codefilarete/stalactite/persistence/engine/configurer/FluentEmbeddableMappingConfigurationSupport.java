@@ -7,10 +7,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
@@ -34,6 +30,10 @@ import org.codefilarete.stalactite.persistence.engine.PropertyOptions;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.binder.ParameterBinderRegistry.EnumBindType;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.function.SerializableTriFunction;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary
