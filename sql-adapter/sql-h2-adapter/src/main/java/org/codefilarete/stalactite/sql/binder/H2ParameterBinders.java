@@ -1,4 +1,4 @@
-package binder;
+package org.codefilarete.stalactite.sql.binder;
 
 import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 

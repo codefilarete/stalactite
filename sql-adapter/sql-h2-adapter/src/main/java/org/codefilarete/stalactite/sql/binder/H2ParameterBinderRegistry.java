@@ -1,6 +1,4 @@
-package binder;
-
-import org.codefilarete.stalactite.sql.binder.ParameterBinderRegistry;
+package org.codefilarete.stalactite.sql.binder;
 
 /**
  * @author Guillaume Mary

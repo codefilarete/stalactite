@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import binder.H2TypeMapping;
+import org.codefilarete.stalactite.sql.binder.H2TypeMapping;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
