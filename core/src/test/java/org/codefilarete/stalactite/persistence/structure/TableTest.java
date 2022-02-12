@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.persistence.structure;
 
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,10 +10,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * @author Guillaume Mary
  */
-public class TableTest {
+class TableTest {
 	
 	@Test
-	public void addColumn_alreadyExists_returnsExistingOne() {
+	void addColumn_alreadyExists_returnsExistingOne() {
 		Table testInstance = new Table("toto");
 		// empty table shouldn't throw any exception nor found anything
 		Column xxColumn = testInstance.addColumn("xx", String.class);
@@ -23,7 +24,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void addColumn_alreadyExistsWithDifferentType_throwsException() {
+	void addColumn_alreadyExistsWithDifferentType_throwsException() {
 		Table testInstance = new Table("toto");
 		// empty table shouldn't throw any exception nor found anything
 		testInstance.addColumn("xx", String.class);
@@ -41,7 +42,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void addForeignKey_alreadyExists_returnsExistingOne() {
+	void addForeignKey_alreadyExists_returnsExistingOne() {
 		Table testInstance = new Table("toto");
 		Column xColumn = testInstance.addColumn("x", String.class);
 		Table referencedInstance = new Table("tata");
@@ -55,7 +56,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void addForeignKey_alreadyExistsWithDifferentType_throwsException() {
+	void addForeignKey_alreadyExistsWithDifferentType_throwsException() {
 		Table testInstance = new Table("toto");
 		Column xColumn = testInstance.addColumn("x", String.class);
 		Column xxColumn = testInstance.addColumn("xx", String.class);
@@ -72,7 +73,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void findColumn() {
+	void findColumn() {
 		Table testInstance = new Table("toto");
 		// empty columns should throw any exception nor found anything
 		assertThat(testInstance.findColumn("xx")).isNull();
@@ -85,21 +86,21 @@ public class TableTest {
 	}
 	
 	@Test
-	public void getAbsoluteName() {
+	void getAbsoluteName() {
 		Table testInstance = new Table("toto");
 		Column nameColumn = testInstance.addColumn("name", String.class);
 		assertThat(nameColumn.getAbsoluteName()).isEqualTo("toto.name");
 	}
 	
 	@Test
-	public void getAlias() {
+	void getAlias() {
 		Table testInstance = new Table("toto");
 		Column nameColumn = testInstance.addColumn("name", String.class);
 		assertThat(nameColumn.getAlias()).isEqualTo("toto_name");
 	}
 	
 	@Test
-	public void getPrimaryKey() {
+	void getPrimaryKey() {
 		Table testInstance = new Table("toto");
 		assertThat(testInstance.getPrimaryKey()).isNull();
 		
@@ -115,7 +116,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void getColumnsPrimaryKey() {
+	void getColumnsPrimaryKey() {
 		Table testInstance = new Table("toto");
 		assertThat(testInstance.getPrimaryKey()).isNull();
 		
@@ -126,7 +127,7 @@ public class TableTest {
 	}
 	
 	@Test
-	public void addForeignKey() {
+	void addForeignKey() {
 		Table testInstance1 = new Table("toto");
 		Column tataId = testInstance1.addColumn("tataId", Integer.class);
 		Table testInstance2 = new Table("tata");
@@ -135,14 +136,14 @@ public class TableTest {
 		ForeignKey createdFK = testInstance1.addForeignKey("XX", tataId, id);
 		
 		assertThat(createdFK.getName()).isEqualTo("XX");
-		assertThat(createdFK.getColumns()).isEqualTo(Arrays.asSet(tataId));
+		assertThat(createdFK.getColumns()).isEqualTo(new KeepOrderSet<>(tataId));
 		assertThat(createdFK.getTable()).isEqualTo(testInstance1);
-		assertThat(createdFK.getTargetColumns()).isEqualTo(Arrays.asSet(id));
+		assertThat(createdFK.getTargetColumns()).isEqualTo(new KeepOrderSet<>(id));
 		assertThat(createdFK.getTargetTable()).isEqualTo(testInstance2);
 	}
 	
 	@Test
-	public void addForeignKey_withNamingFunction() {
+	void addForeignKey_withNamingFunction() {
 		Table<?> testInstance1 = new Table("toto");
 		Column tataId = testInstance1.addColumn("tataId", Integer.class);
 		Table testInstance2 = new Table("tata");
@@ -151,9 +152,9 @@ public class TableTest {
 		ForeignKey createdFK = testInstance1.addForeignKey((c1, c2) -> c1.getName() + "_" + c2.getName(), tataId, id);
 		
 		assertThat(createdFK.getName()).isEqualTo("tataId_id");
-		assertThat(createdFK.getColumns()).isEqualTo(Arrays.asSet(tataId));
+		assertThat(createdFK.getColumns()).isEqualTo(new KeepOrderSet<>(tataId));
 		assertThat(createdFK.getTable()).isEqualTo(testInstance1);
-		assertThat(createdFK.getTargetColumns()).isEqualTo(Arrays.asSet(id));
+		assertThat(createdFK.getTargetColumns()).isEqualTo(new KeepOrderSet<>(id));
 		assertThat(createdFK.getTargetTable()).isEqualTo(testInstance2);
 	}
 }

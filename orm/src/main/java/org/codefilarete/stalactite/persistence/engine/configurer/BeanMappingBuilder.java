@@ -139,14 +139,14 @@ class BeanMappingBuilder {
 						overridenColumns.get(linkage.getAccessor())));
 	}
 	
-	protected void includeMapping(Linkage linkage,
+	protected <C, O> void includeMapping(Linkage<C, O> linkage,
 								  EmbeddableMappingConfiguration<?> mappingConfiguration,
 								  @Nullable ValueAccessPoint accessorPrefix,
 								  @Nullable String overridenColumnName,
-								  @Nullable Column overridenColumn) {
+								  @Nullable Column<Table, O> overridenColumn) {
 		String columnName = nullable(overridenColumn).map(Column::getName).getOr(() -> determineColumnName(linkage, overridenColumnName));
 		assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-		Column column = nullable(overridenColumn).getOr(() -> addColumnToTable(linkage, columnName));
+		Column<Table, O> column = nullable(overridenColumn).getOr(() -> addColumnToTable(linkage, columnName));
 		ensureColumnBindingInRegistry(linkage, column);
 		ReversibleAccessor accessor;
 		if (accessorPrefix != null) {
@@ -157,7 +157,7 @@ class BeanMappingBuilder {
 		result.put(accessor, column);
 	}
 	
-	protected void assertMappingIsNotAlreadyDefinedByInheritance(Linkage linkage, String columnNameToCheck, EmbeddableMappingConfiguration<?> mappingConfiguration) {
+	protected <C, O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, EmbeddableMappingConfiguration<?> mappingConfiguration) {
 		DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(linkage.getAccessor(), columnNameToCheck, columnNameProvider);
 		stream(mappingConfiguration.inheritanceIterable())
 				.flatMap(configuration -> (Stream<Linkage>) configuration.getPropertiesMapping().stream())
@@ -166,17 +166,17 @@ class BeanMappingBuilder {
 				.forEach(duplicateDefinitionChecker);
 	}
 	
-	protected Column addColumnToTable(Linkage linkage, String columnName) {
-		Column addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
+	protected <C, O> Column<Table, O> addColumnToTable(Linkage<C, O> linkage, String columnName) {
+		Column<Table, O> addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
 		addedColumn.setNullable(linkage.isNullable());
 		return addedColumn;
 	}
 	
-	private String determineColumnName(Linkage linkage, @Nullable String overridenColumName) {
+	private <C, O> String determineColumnName(Linkage<C, O> linkage, @Nullable String overridenColumName) {
 		return nullable(overridenColumName).elseSet(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
 	}
 	
-	protected void ensureColumnBindingInRegistry(Linkage linkage, Column column) {
+	protected <C, O> void ensureColumnBindingInRegistry(Linkage<C, O> linkage, Column<?, O> column) {
 		// assert that column binder is registered : it will throw en exception if the binder is not found
 		if (linkage.getParameterBinder() != null) {
 			columnBinderRegistry.register(column, linkage.getParameterBinder());

@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.persistence.engine;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -44,6 +45,10 @@ public interface EmbeddableMappingConfiguration<C> {
 			
 			@Override
 			public EmbeddableMappingConfiguration next() {
+				if (!hasNext()) {
+					// comply with next() method contract
+					throw new NoSuchElementException();
+				}
 				EmbeddableMappingConfiguration result = this.next;
 				this.next = this.next.getMappedSuperClassConfiguration();
 				return result;
@@ -55,17 +60,18 @@ public interface EmbeddableMappingConfiguration<C> {
 	 * Small contract for defining property configuration storage
 	 * 
 	 * @param <C> property owner type
+	 * @param <O> property type
 	 */
-	interface Linkage<C> {
+	interface Linkage<C, O> {
 		
-		<I> ReversibleAccessor<C, I> getAccessor();
+		ReversibleAccessor<C, O> getAccessor();
 		
 		@Nullable
 		String getColumnName();
 		
-		Class<?> getColumnType();
+		Class<O> getColumnType();
 		
-		ParameterBinder getParameterBinder();
+		ParameterBinder<O> getParameterBinder();
 		
 		boolean isNullable();
 		

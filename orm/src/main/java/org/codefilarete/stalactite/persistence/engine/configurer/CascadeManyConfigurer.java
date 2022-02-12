@@ -10,21 +10,15 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode;
@@ -37,8 +31,6 @@ import org.codefilarete.stalactite.persistence.engine.runtime.AbstractOneToManyW
 import org.codefilarete.stalactite.persistence.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.persistence.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.persistence.engine.runtime.IndexedAssociationTable;
@@ -50,20 +42,27 @@ import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithIndex
 import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithIndexedMappedAssociationEngine;
 import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
-import org.codefilarete.stalactite.persistence.sql.Dialect;
+import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
 import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
-import static org.codefilarete.tool.Nullable.nullable;
-import static org.codefilarete.tool.collection.Iterables.first;
 import static org.codefilarete.reflection.Accessors.accessor;
 import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
 import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode.READ_ONLY;
+import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * @param <SRC> type of input (left/source entities)
@@ -149,9 +148,9 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 				associationTableNamingStrategy, targetPersister);
 	}
 	
-	public ConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(String tableAlias,
-																		  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																		  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+	public CascadeConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(String tableAlias,
+																				 EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																				 FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		return this.configurer.appendCascadesWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 	}
 	
@@ -302,7 +301,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		abstract void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister);
 		
-		public abstract ConfigurationResult<SRC,TRGT> appendCascadesWithSelectIn2Phases(String tableAlias, EntityConfiguredJoinedTablesPersister<TRGT,
+		public abstract CascadeConfigurationResult<SRC,TRGT> appendCascadesWithSelectIn2Phases(String tableAlias, EntityConfiguredJoinedTablesPersister<TRGT,
 						TRGTID> targetPersister, FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
 	}
 	
@@ -357,13 +356,13 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		
 		@Override
-		public ConfigurationResult<SRC,TRGT> appendCascadesWithSelectIn2Phases(String tableAlias,
-																			   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																			   FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+		public CascadeConfigurationResult<SRC,TRGT> appendCascadesWithSelectIn2Phases(String tableAlias,
+																					  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																					  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			prepare(targetPersister);
 			associationTableEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
 			addWriteCascades(associationTableEngine);
-			return new ConfigurationResult<>(associationTableEngine.getManyRelationDescriptor().getRelationFixer(), manyAssociationConfiguration.srcPersister);
+			return new CascadeConfigurationResult<>(associationTableEngine.getManyRelationDescriptor().getRelationFixer(), manyAssociationConfiguration.srcPersister);
 		}
 		
 		private void addWriteCascades(AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ? extends AssociationTable> oneToManyWithAssociationTableEngine) {
@@ -585,15 +584,15 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		
 		@Override
-		public ConfigurationResult<SRC, TRGT> appendCascadesWithSelectIn2Phases(String tableAlias, EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+		public CascadeConfigurationResult<SRC, TRGT> appendCascadesWithSelectIn2Phases(String tableAlias, EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																					   FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			prepare(targetPersister);
 			mappedAssociationEngine.addSelectCascadeIn2Phases(manyAssociationConfiguration.leftPrimaryKey,
 					mappedAssociationEngine.getManyRelationDescriptor().getReverseColumn(),
 					manyAssociationConfiguration.collectionGetter,
 					firstPhaseCycleLoadListener);
 			addWriteCascades(mappedAssociationEngine);
-			return new ConfigurationResult<>(mappedAssociationEngine.getManyRelationDescriptor().getRelationFixer(), manyAssociationConfiguration.srcPersister);
+			return new CascadeConfigurationResult<>(mappedAssociationEngine.getManyRelationDescriptor().getRelationFixer(), manyAssociationConfiguration.srcPersister);
 		}
 		
 		private void addWriteCascades(OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine) {
@@ -648,25 +647,5 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		void onFirstPhaseRowRead(SRC src, TRGTID targetId);
 		
-	}
-	
-	public static class ConfigurationResult<SRC, TRGT> {
-		
-		private BeanRelationFixer<SRC, TRGT> beanRelationFixer;
-		private ConfiguredJoinedTablesPersister<SRC, ?> sourcePersister;
-		
-		public ConfigurationResult(BeanRelationFixer<SRC, TRGT> beanRelationFixer,
-								   ConfiguredJoinedTablesPersister<SRC, ?> sourcePersister) {
-			this.beanRelationFixer = beanRelationFixer;
-			this.sourcePersister = sourcePersister;
-		}
-		
-		public <SRCID> ConfiguredJoinedTablesPersister<SRC, SRCID> getSourcePersister() {
-			return (ConfiguredJoinedTablesPersister<SRC, SRCID>) sourcePersister;
-		}
-		
-		public BeanRelationFixer<SRC, TRGT> getBeanRelationFixer() {
-			return beanRelationFixer;
-		}
 	}
 }

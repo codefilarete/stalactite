@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.persistence.engine;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import org.codefilarete.tool.Nullable;
@@ -78,6 +79,10 @@ public interface EntityMappingConfiguration<C, I> {
 			
 			@Override
 			public EntityMappingConfiguration<? super C, I> next() {
+				if (!hasNext()) {
+					// comply with next() method contract
+					throw new NoSuchElementException();
+				}
 				EntityMappingConfiguration<? super C, I> result = this.next;
 				this.next = Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getConfiguration).get();
 				return result;

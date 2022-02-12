@@ -35,6 +35,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  */
 public class EntityTreeInflater<C> {
 	
+	@SuppressWarnings("java:S5164" /* remove() is called by ThreadLocals.AutoRemoveThreadLocal */)
 	private static final ThreadLocal<EntityTreeInflater<?>.TreeInflationContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	
 	/**

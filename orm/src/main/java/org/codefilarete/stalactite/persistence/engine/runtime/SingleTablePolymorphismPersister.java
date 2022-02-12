@@ -60,6 +60,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  */
 public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
+	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
 	private final SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor;

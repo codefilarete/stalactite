@@ -9,15 +9,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.function.SerializableTriFunction;
-import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -46,6 +39,12 @@ import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddabl
 import org.codefilarete.stalactite.persistence.engine.configurer.FluentEntityMappingConfigurationSupport.OneToManyOptionsSupport;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.function.SerializableTriFunction;
+import org.codefilarete.tool.reflect.MethodDispatcher;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 
@@ -140,25 +139,25 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, String columnName) {
-		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, String columnName) {
-		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column) {
-		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
 	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, Column<? extends Table, O> column) {
-		LinkageSupport<C> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
+		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
@@ -174,25 +173,25 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, @javax.annotation.Nullable String columnName) {
-		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, columnName);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, @javax.annotation.Nullable String columnName) {
-		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, columnName);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column) {
-		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column) {
-		LinkageSupport<C> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
+		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter, column);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.addEnumOptions(linkage));
 	}
 	
@@ -568,27 +567,25 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			this.entityConfigurationSupport = entityConfigurationSupport;
 		}
 		
-		<E> LinkageSupport<C> addMapping(SerializableBiConsumer<C, E> setter, Column column) {
+		<O> LinkageSupport<C, O> addMapping(SerializableBiConsumer<C, O> setter, Column<?, O> column) {
 			return addMapping(Accessors.mutator(setter), column);
 		}
 		
-		<E> LinkageSupport<C> addMapping(SerializableFunction<C, E> getter, Column column) {
+		<O> LinkageSupport<C, O> addMapping(SerializableFunction<C, O> getter, Column<?, O> column) {
 			return addMapping(Accessors.accessor(getter), column);
 		}
 		
 		/**
-		 * Equivalent of {@link #addMapping(ReversibleAccessor, AccessorDefinition, String)} with a {@link Column}
-		 * 
 		 * @return a new Column added to the target table, throws an exception if already mapped
 		 */
-		LinkageSupport<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, Column column) {
-			LinkageSupport<C> newLinkage = new LinkageSupport<>(propertyAccessor);
+		<O> LinkageSupport<C, O> addMapping(ReversibleAccessor<C, O> propertyAccessor, Column<?, O> column) {
+			LinkageSupport<C, O> newLinkage = new LinkageSupport<>(propertyAccessor);
 			newLinkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 			mapping.add(newLinkage);
 			return newLinkage;
 		}
 		
-		private FluentSubEntityMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(LinkageSupport<C> newMapping) {
+		private <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(LinkageSupport<C, O> newMapping) {
 			return new MethodDispatcher()
 					.redirect(PropertyOptions.class, new PropertyOptions() {
 						@Override
