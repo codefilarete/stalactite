@@ -22,13 +22,13 @@ public class DerbyInMemoryDataSource extends UrlAwareDataSource implements Close
 	
 	public DerbyInMemoryDataSource() {
 		// random URL to avoid conflict between tests
-		this("memory:"+Randomizer.INSTANCE.randomHexString(8));
+		this(Randomizer.INSTANCE.randomHexString(8));
 	}
 	
 	private DerbyInMemoryDataSource(String databaseName) {
-		super("jdbc:derby:" + databaseName);
+		super("jdbc:derby:memory:"+ databaseName);
 		EmbeddedDataSource delegate = new EmbeddedDataSource();
-		delegate.setDatabaseName(databaseName);
+		delegate.setDatabaseName("memory:" + databaseName);
 		// we enable the creation of the schema
 		delegate.setCreateDatabase("create");
 		fixDerbyLogger();

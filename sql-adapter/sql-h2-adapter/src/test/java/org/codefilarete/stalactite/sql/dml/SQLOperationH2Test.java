@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.dml;
 
+import javax.sql.DataSource;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
@@ -10,6 +11,8 @@ import java.util.Random;
 import java.util.function.Predicate;
 
 import org.codefilarete.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.H2DatabaseHelper;
 import org.h2.engine.ConnectionInfo;
 import org.h2.engine.Engine;
 import org.h2.engine.Session;
@@ -17,7 +20,6 @@ import org.h2.jdbc.JdbcConnection;
 import org.h2.jdbcx.JdbcDataSource;
 import org.h2.schema.Schema;
 import org.h2.table.Table;
-import org.junit.jupiter.api.BeforeEach;
 
 /**
  * @author Guillaume Mary
@@ -25,14 +27,18 @@ import org.junit.jupiter.api.BeforeEach;
 class SQLOperationH2Test extends SQLOperationITTest {
     
     @Override
-    @BeforeEach
-    void createDataSource() {
-        super.dataSource = new ConcurrentH2InMemoryDataSource();
-    }
+	public DataSource giveDataSource() {
+        return new ConcurrentH2InMemoryDataSource();
+	}
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new H2DatabaseHelper();
+	}
 	
     @Override
 	protected void lockTable(Connection lockingConnection) {
-		Session session = null;
+		Session session;
 		try {
 			session = (Session) lockingConnection.unwrap(JdbcConnection.class).getSession();
 		} catch (SQLException e) {

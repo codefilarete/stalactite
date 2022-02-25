@@ -47,7 +47,7 @@ import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
@@ -167,7 +167,7 @@ class SimpleRelationalEntityPersisterTest {
 		DataSource dataSource = mock(DataSource.class);
 		when(dataSource.getConnection()).thenReturn(connection);
 		testInstance = new SimpleRelationalEntityPersister<>(totoClassMappingStrategy_ontoTable1, dialect,
-															 new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 3));
+															 new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 3));
 	}
 	
 	void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {

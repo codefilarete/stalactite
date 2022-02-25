@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.sql.ConnectionWrapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -18,24 +19,24 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-class DataSourceConnectionProviderTest {
+class CurrentThreadConnectionProviderTest {
 	
 	@Test
 	void giveConnection_connectionAutoCommitIsFalse() throws SQLException {
 		DataSource dataSourceMock = mock(DataSource.class);
 		Connection connectionMock = mock(Connection.class);
 		when(dataSourceMock.getConnection()).thenReturn(connectionMock);
-		DataSourceConnectionProvider testInstance = new DataSourceConnectionProvider(dataSourceMock);
+		CurrentThreadConnectionProvider testInstance = new CurrentThreadConnectionProvider(dataSourceMock);
 		
-		Connection givenConnection = testInstance.giveConnection();
-		verify(givenConnection).setAutoCommit(false);
+		testInstance.giveConnection();
+		verify(connectionMock).setAutoCommit(false);
 	}
 	
 	@Test
 	void giveConnection_callTwice_returnSameConnection() throws SQLException {
 		DataSource dataSourceMock = mock(DataSource.class);
 		when(dataSourceMock.getConnection()).thenReturn(mock(Connection.class));
-		DataSourceConnectionProvider testInstance = new DataSourceConnectionProvider(dataSourceMock);
+		CurrentThreadConnectionProvider testInstance = new CurrentThreadConnectionProvider(dataSourceMock);
 		
 		Connection givenConnection1 = testInstance.giveConnection();
 		Connection givenConnection2 = testInstance.giveConnection();
@@ -51,7 +52,7 @@ class DataSourceConnectionProviderTest {
 		// Setting 4 dead connections
 		when(dataSourceMock.getConnection()).thenAnswer(new CloseableConnection(4));
 		// Setting 20 to retry to be sure we won't reach opening attempts
-		DataSourceConnectionProvider testInstance = new DataSourceConnectionProvider(dataSourceMock, 20);
+		CurrentThreadConnectionProvider testInstance = new CurrentThreadConnectionProvider(dataSourceMock, 20);
 		
 		Connection givenConnection = testInstance.giveConnection();
 		
@@ -64,10 +65,10 @@ class DataSourceConnectionProviderTest {
 	void giveConnection_2ThreadsAskForAConnection_2DifferentOneAreGiven() throws SQLException, InterruptedException {
 		DataSource dataSourceMock = mock(DataSource.class);
 		
-		when(dataSourceMock.getConnection()).thenReturn(mock(Connection.class));
-		DataSourceConnectionProvider testInstance = new DataSourceConnectionProvider(dataSourceMock);
+		when(dataSourceMock.getConnection()).thenAnswer((Answer<Connection>) invocation -> mock(Connection.class));
+		CurrentThreadConnectionProvider testInstance = new CurrentThreadConnectionProvider(dataSourceMock);
 		
-		Connection givenConnection1 = testInstance.giveConnection();
+		Connection connection = testInstance.giveConnection();
 		
 		Holder<Connection> connectionHolder = new Holder<>();
 		Thread thread  = new Thread(() -> {
@@ -77,7 +78,10 @@ class DataSourceConnectionProviderTest {
 		thread.join(200);
 		
 		verify(dataSourceMock, times(2)).getConnection();
-		assertThat(givenConnection1).isSameAs(connectionHolder.get());
+		assertThat(connection).isNotSameAs(connectionHolder.get());
+		if (connection instanceof ConnectionWrapper) {
+			assertThat(((ConnectionWrapper) connection).getDelegate()).isNotSameAs(((ConnectionWrapper) connectionHolder.get()).getDelegate());
+		}
 	}
 	
 	/**

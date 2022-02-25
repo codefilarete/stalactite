@@ -8,7 +8,7 @@ import java.sql.Savepoint;
 
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 
 /**
  * 
@@ -17,10 +17,10 @@ import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
  */
 public class TransactionalConnectionProvider implements ConnectionProvider, SeparateTransactionExecutor {
 	
-	private final DataSourceConnectionProvider jdbcConnectionProvider;
+	private final CurrentThreadConnectionProvider jdbcConnectionProvider;
 	
 	public TransactionalConnectionProvider(DataSource dataSource) {
-		this.jdbcConnectionProvider = new DataSourceConnectionProvider(dataSource);
+		this.jdbcConnectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	}
 	
 	@Nonnull

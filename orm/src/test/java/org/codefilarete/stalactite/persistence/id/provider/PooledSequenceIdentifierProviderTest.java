@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence;
 import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
 import org.codefilarete.stalactite.persistence.id.sequence.SequenceStorageOptions;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +72,7 @@ public class PooledSequenceIdentifierProviderTest {
 	public void testGiveNewIdentifier_persistenceContextDoesntProvideSeparateTransactionExecutor_throwsException() {
 		// we create a PersistenceContext that doesn't have a SeparateTransactionExecutor as connection provider,
 		// it will cause error later
-		PersistenceContext persistenceContext = new PersistenceContext(new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource()),
+		PersistenceContext persistenceContext = new PersistenceContext(new CurrentThreadConnectionProvider(new HSQLDBInMemoryDataSource()),
 				new HSQLDBDialect());
 		// Creation of an in-memory database pooled sequence generator
 		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT),

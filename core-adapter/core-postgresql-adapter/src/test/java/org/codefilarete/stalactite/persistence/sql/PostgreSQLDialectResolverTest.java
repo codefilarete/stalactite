@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 import org.assertj.core.api.Assertions;
-import org.codefilarete.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
+import org.codefilarete.stalactite.sql.test.PostgreSQLTestDataSourceSelector;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -17,7 +17,7 @@ class PostgreSQLDialectResolverTest {
 	 */
 	@Test
 	void resolve_9_6() throws SQLException {
-		DataSource postgresqlDataSource = new PostgreSQLEmbeddedDataSource();
+		DataSource postgresqlDataSource = new PostgreSQLTestDataSourceSelector().giveDataSource();
 		
 		ServiceLoaderDialectResolver dialectResolver = new ServiceLoaderDialectResolver();
 		Dialect dialect = dialectResolver.determineDialect(postgresqlDataSource.getConnection());

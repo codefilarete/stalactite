@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Random;
 
 import org.codefilarete.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.tool.bean.Randomizer;
 import org.hsqldb.jdbc.JDBCDataSource;
 
 /**
@@ -16,7 +16,7 @@ public class HSQLDBInMemoryDataSource extends UrlAwareDataSource implements Clos
 	
 	public HSQLDBInMemoryDataSource() {
 		// random URL to avoid conflict between tests
-		super("jdbc:hsqldb:mem:test" + Integer.toHexString(new Random().nextInt()));
+		super("jdbc:hsqldb:mem:test" + Randomizer.INSTANCE.randomHexString(8));
 		JDBCDataSource delegate = new JDBCDataSource();
 		delegate.setUrl(getUrl());
 		delegate.setUser("sa");

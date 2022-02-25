@@ -5,13 +5,15 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
-import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -22,18 +24,32 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 
  * @author Guillaume Mary
  */
-abstract class SQLOperationITTest {
-
-	protected DataSource dataSource;
+abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 	
 	protected BiFunction<PreparedSQL, ConnectionProvider, ReadOperation<Integer>> readOperationFactory;
-
-	@BeforeEach
-	abstract void createDataSource();
 	
 	abstract String giveLockStatement();
 
 	abstract Predicate<Throwable> giveCancelOperationPredicate();
+	
+	/**
+	 * Overriden to use a {@link CurrentThreadConnectionProvider}
+	 */
+	@Override
+	protected void setConnectionProvider() {
+		DataSource dataSource = giveDataSource();
+		this.connectionProvider = new CurrentThreadConnectionProvider(dataSource);
+		clearDatabaseSchema();
+	}
+	
+	@AfterEach
+	protected void cleanThreadAttachment() {
+		try {
+			this.connectionProvider.giveConnection().close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
 	
 	@BeforeEach
 	protected void createReadOperationFactory() {
@@ -42,8 +58,6 @@ abstract class SQLOperationITTest {
 	
 	@Test
 	void cancel() throws SQLException, InterruptedException {
-		ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
-		
 		// we're going to take a lock on a table that another thread wants to read
 		try (Connection lockingConnection = connectionProvider.giveConnection()) {
 			// activate manual transaction
@@ -55,8 +69,7 @@ abstract class SQLOperationITTest {
 			
 			CountDownLatch threadStartedMarker = new CountDownLatch(1);
 			AtomicBoolean isSelectExecuted = new AtomicBoolean(false);
-			Connection connection = dataSource.getConnection();
-			ReadOperation<Integer> testInstance = readOperationFactory.apply(new PreparedSQL("select * from toto", new HashMap<>()), new SimpleConnectionProvider(connection));
+			ReadOperation<Integer> testInstance = readOperationFactory.apply(new PreparedSQL("select * from Toto", new HashMap<>()), connectionProvider);
 			Throwable[] capturedException = new Throwable[1];
 			Thread selectCommandThread = new Thread(() -> {
 				try (ReadOperation<Integer> localTestInstance = testInstance) {
@@ -65,12 +78,14 @@ abstract class SQLOperationITTest {
 					isSelectExecuted.set(true);
 				} catch (Throwable t) {
 					capturedException[0] = t;
+				} finally {
+					((CurrentThreadConnectionProvider) connectionProvider).releaseConnection();
 				}
 			});
 			selectCommandThread.start();
 			
 			// we wait for the thread which is itself waiting for lock
-			threadStartedMarker.await();
+			threadStartedMarker.await(1, TimeUnit.SECONDS);
 			// we wait a bit to let select order starts 
 			selectCommandThread.join(200);
 			// really ensure that select is stuck
@@ -85,6 +100,8 @@ abstract class SQLOperationITTest {
 			
 			assertThat(giveCancelOperationPredicate().test(capturedException[0])).isTrue();
 			lockingConnection.rollback();    // release lock for clean test exit
+			
+			((CurrentThreadConnectionProvider) connectionProvider).releaseConnection();
 		}
 	}
 	

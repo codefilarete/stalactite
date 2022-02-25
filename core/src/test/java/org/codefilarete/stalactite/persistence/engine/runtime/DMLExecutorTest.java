@@ -1,22 +1,9 @@
 package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.annotation.Nonnull;
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.tool.function.Sequence;
-import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.persistence.engine.InMemoryCounterIdentifierGenerator;
@@ -29,56 +16,14 @@ import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
 import org.codefilarete.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
-import org.codefilarete.stalactite.sql.dml.SQLStatement;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
-import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
-import org.codefilarete.stalactite.test.PairSetList;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.ArgumentCaptor;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.codefilarete.tool.collection.Maps;
 
 /**
  * @author Guillaume Mary
  */
-abstract class AbstractDMLExecutorTest {
-	
-	protected JdbcMock jdbcMock;
-	private Sequence<Integer> sequence;
-	protected WriteOperationFactory noRowCountCheckWriteOperationFactory;
-	
-	@BeforeEach
-	void init() {
-		this.jdbcMock = new JdbcMock();
-		// the sequence is initialized before each test to make it restart from 0 else some assertion will fail
-		// in particular insertion ones
-		this.sequence = new InMemoryCounterIdentifierGenerator();
-		
-		noRowCountCheckWriteOperationFactory = new WriteOperationFactory() {
-			
-			@Override
-			protected <ParamType> WriteOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator,
-																		   ConnectionProvider connectionProvider,
-																		   ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider,
-																		   RowCountListener rowCountListener) {
-				// we d'ont care about row count checker in thoses tests, so every statement will be created without it
-				return new WriteOperation<ParamType>(sqlGenerator, connectionProvider, NOOP_COUNT_CHECKER) {
-					@Override
-					protected void prepareStatement(Connection connection) throws SQLException {
-						this.preparedStatement = statementProvider.apply(connection, getSQL());
-					}
-				};
-			}
-		};
-	}
+class DMLExecutorTest {
 	
 	protected PersistenceConfiguration<Toto, Integer, Table> giveDefaultPersistenceConfiguration() {
 		PersistenceConfiguration<Toto, Integer, Table> toReturn = new PersistenceConfiguration<>();
@@ -89,7 +34,7 @@ abstract class AbstractDMLExecutorTest {
 		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
 		persistentFieldHarverster.getColumn(primaryKeyAccessor).primaryKey();
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
-			new SinglePropertyIdAccessor<>(primaryKeyAccessor), sequence, Integer.class);
+			new SinglePropertyIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
 
 		toReturn.classMappingStrategy = new ClassMappingStrategy<>(
 			Toto.class,
@@ -206,57 +151,10 @@ abstract class AbstractDMLExecutorTest {
 	}
 
 
-	protected static class JdbcMock {
-		
-		protected PreparedStatement preparedStatement;
-		protected ArgumentCaptor<Integer> valueCaptor;
-		protected ArgumentCaptor<Integer> indexCaptor;
-		protected ArgumentCaptor<String> sqlCaptor;
-		protected ConnectionProvider transactionManager;
-		protected Connection connection;
-		
-		protected JdbcMock() {
-			try {
-				preparedStatement = mock(PreparedStatement.class);
-				when(preparedStatement.executeLargeBatch()).thenReturn(new long[]{1});
-
-				connection = mock(Connection.class);
-				// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
-				// weither or not it should prepare statement
-				when(preparedStatement.getConnection()).thenReturn(connection);
-				sqlCaptor = ArgumentCaptor.forClass(String.class);
-				when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatement);
-				when(connection.prepareStatement(sqlCaptor.capture(), anyInt())).thenReturn(preparedStatement);
-
-				valueCaptor = ArgumentCaptor.forClass(Integer.class);
-				indexCaptor = ArgumentCaptor.forClass(Integer.class);
-
-				DataSource dataSource = mock(DataSource.class);
-				when(dataSource.getConnection()).thenReturn(connection);
-				transactionManager = new DataSourceConnectionProvider(dataSource);
-			} catch (SQLException e) {
-				// this should not happen since every thing is mocked, left as safeguard, and avoid catching
-				// exception by caller which don't know what to do with the exception else same thing as here
-				throw Exceptions.asRuntimeException(e);
-			}
-		}
-	}
-	
 	protected static class PersistenceConfiguration<C, I, T extends Table> {
 		
 		protected ClassMappingStrategy<C, I, T> classMappingStrategy;
 		protected Table targetTable;
-	}
-	
-	public static void assertCapturedPairsEqual(JdbcMock jdbcMock, PairSetList<Integer, Integer> expectedPairs) {
-		List<Duo<Integer, Integer>> obtainedPairs = PairSetList.toPairs(jdbcMock.indexCaptor.getAllValues(), jdbcMock.valueCaptor.getAllValues());
-		List<Set<Duo<Integer, Integer>>> obtained = new ArrayList<>();
-		int startIndex = 0;
-		// rearranging obtainedPairs into some packets, as those of expectedPairs
-		for (Set<Duo<Integer, Integer>> expectedPair : expectedPairs.asList()) {
-			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
-		}
-		assertThat(obtained).isEqualTo(expectedPairs.asList());
 	}
 	
 	/**

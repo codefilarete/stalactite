@@ -1,29 +1,35 @@
 package org.codefilarete.stalactite.sql.dml;
 
+import javax.sql.DataSource;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.HSQLDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.junit.jupiter.api.BeforeEach;
 
 /**
  * @author Guillaume Mary
  */
 class SQLOperationHSQLDBTest extends SQLOperationITTest {
-    
-    @Override
-    @BeforeEach
-    void createDataSource() {
-        super.dataSource = new HSQLDBInMemoryDataSource();
-    }
-
-    @Override
-    String giveLockStatement() {
-        return "lock table Toto WRITE";
-    }
-
-    @Override
-    Predicate<Throwable> giveCancelOperationPredicate() {
-        return Objects::isNull;
-    }
+	
+	@Override
+	public DataSource giveDataSource() {
+		return new HSQLDBInMemoryDataSource();
+	}
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new HSQLDBDatabaseHelper();
+	}
+	
+	@Override
+	String giveLockStatement() {
+		return "lock table Toto WRITE";
+	}
+	
+	@Override
+	Predicate<Throwable> giveCancelOperationPredicate() {
+		return Objects::isNull;
+	}
 }
