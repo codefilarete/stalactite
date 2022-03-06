@@ -1,7 +1,7 @@
 # Overview
 A package for describing structure of a RDBMS schema.
 
-One can create [Table](Table.java) and add [column](Column.java), then they can be used in the API for querying or persisting bean.
+One can create [Table](Table.java) and add [Column](Column.java), then they can be used in the API for querying or persisting bean.
 Schema can be enhanced by defining [ForeignKeys](ForeignKey.java) and [Indexes](Index.java) so they'll be added to DDL during
  [schema generation](../sql/ddl/DDLSchemaGenerator.java).
 
@@ -19,6 +19,6 @@ public class PersonTable extends Table {
 }
 </pre>
 
-Finally you'll end up with a full meta-model of your database, which can be helpfull for refactoring phase.
+Finally, you'll end up with a full meta-model of your database, which can be helpful for refactoring phase.
 
 **Be aware that no code generation is yet provided**
