@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
 import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
 import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.codefilarete.stalactite.persistence.id.StatefulIdentifier;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.persistence.structure.Column;
@@ -286,7 +286,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
 		connectionProvider.giveConnection().commit();
-		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefullIdentifier::getSurrogate)).containsExactlyInAnyOrder(10L, 20L, 30L);
+		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getSurrogate)).containsExactlyInAnyOrder(10L, 20L, 30L);
 	}
 	
 	@Test

@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.codefilarete.stalactite.persistence.id.StatefulIdentifier;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -23,7 +24,6 @@ import org.codefilarete.stalactite.persistence.id.Identified;
 import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
 import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
-import org.codefilarete.stalactite.persistence.id.manager.StatefullIdentifier;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
@@ -776,9 +776,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefullIdentifier>) value, StatefullIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
 							} else {
-								values = ((StatefullIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getSurrogate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});
@@ -885,9 +885,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefullIdentifier>) value, StatefullIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
 							} else {
-								values = ((StatefullIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getSurrogate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});
@@ -994,9 +994,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 						map.forEach((column, value) -> {
 							Object values;
 							if (value instanceof List) {
-								values = Iterables.collect((List<StatefullIdentifier>) value, StatefullIdentifier::getSurrogate, ArrayList::new);
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
 							} else {
-								values = ((StatefullIdentifier) value).getSurrogate();
+								values = ((StatefulIdentifier) value).getSurrogate();
 							}
 							result.put(column.getAbsoluteName(), values);
 						});

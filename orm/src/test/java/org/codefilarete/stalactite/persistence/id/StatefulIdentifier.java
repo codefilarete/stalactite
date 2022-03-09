@@ -1,8 +1,9 @@
-package org.codefilarete.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.id;
 
 import javax.annotation.Nonnull;
 
 import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
+import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
 
 /**
  * A marker for identifier that are wrapped into a simple class.
@@ -14,7 +15,7 @@ import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
  * @param <T> the real type of the identifier
  * @author Guillaume Mary
  */
-public interface StatefullIdentifier<T> {
+public interface StatefulIdentifier<T> {
 	
 	/**
 	 * Returns the value to persist
