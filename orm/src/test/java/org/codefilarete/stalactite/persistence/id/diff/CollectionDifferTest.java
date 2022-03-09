@@ -7,25 +7,22 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.persistence.engine.model.Country;
+import org.codefilarete.stalactite.persistence.id.Identified;
+import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;
-import org.codefilarete.stalactite.persistence.engine.model.City;
-import org.codefilarete.stalactite.persistence.engine.model.Country;
-import org.codefilarete.stalactite.persistence.id.Identified;
-import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
-import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.tool.collection.Arrays.asHashSet;
-import static org.codefilarete.tool.collection.Arrays.asList;
-import static org.codefilarete.tool.collection.Arrays.asSet;
 import static org.codefilarete.stalactite.persistence.id.diff.State.ADDED;
 import static org.codefilarete.stalactite.persistence.id.diff.State.HELD;
 import static org.codefilarete.stalactite.persistence.id.diff.State.REMOVED;
+import static org.codefilarete.tool.collection.Arrays.asHashSet;
+import static org.codefilarete.tool.collection.Arrays.asList;
 
 /**
  * @author Guillaume Mary
@@ -264,26 +261,5 @@ public class CollectionDifferTest {
 						new IndexedDiff<>(HELD, testData.country1, country1Clone, Arrays.asHashSet(0), Arrays.asHashSet(1)),
 						new IndexedDiff<>(HELD, testData.country2, testData.country2, Arrays.asHashSet(1), Arrays.asHashSet(0)),
 						new IndexedDiff<>(HELD, testData.country3, testData.country3, Arrays.asHashSet(2), Arrays.asHashSet(2))));
-	}
-	
-	static Object[][] testLookupIndexes() {
-		City city1 = new City(new PersistedIdentifier<>(1L));
-		City city2 = new City(new PersistedIdentifier<>(2L));
-		return new Object[][] {
-				{ asList(city1, city2), city1, asSet(0) },
-				{ asList(city1, city2), city2, asSet(1) },
-				{ asList(city1, city2, city2), city2, asSet(1, 2) },
-				{ asList(city1, city2, city1, city2), city2, asSet(1, 3) },
-				{ asList(city1, city2, city1, city2), city1, asSet(0, 2) },
-				{ asList(), city1, asSet() },
-		};
-	}
-	
-	@ParameterizedTest
-	@MethodSource("testLookupIndexes")
-	void testLookupIndexes(List<City> input, City lookupElement, Set<Integer> expected) {
-		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
-		Set<Integer> result = testInstance.lookupIndexes(input, lookupElement);
-		assertThat(result).isEqualTo(expected);
 	}
 }
