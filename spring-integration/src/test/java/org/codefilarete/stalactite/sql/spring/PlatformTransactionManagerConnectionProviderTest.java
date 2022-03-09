@@ -1,17 +1,19 @@
 package org.codefilarete.stalactite.sql.spring;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.SQLException;
 
-import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.tool.trace.ModifiableInt;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor.JdbcOperation;
+import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.internal.stubbing.answers.ThrowsException;
+import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.orm.hibernate5.HibernateTransactionManager;
-import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,71 +21,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
  */
 class PlatformTransactionManagerConnectionProviderTest {
-	
-	@Test
-	void givenTransactionManagerIsNotSupported_throwException() {
-		assertThatThrownBy(() -> new PlatformTransactionManagerConnectionProvider(mock(PlatformTransactionManager.class)))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class))
-				.isNotNull();
-	}
-	
-	@Test
-	void giveConnection_givenHibernateTransactionManager_itsDataSourceIsCalled() {
-		ModifiableInt getDataSourceInvokationCounter = new ModifiableInt();
-		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new HibernateTransactionManager() {
-			@Override
-			public DataSource getDataSource() {
-				getDataSourceInvokationCounter.increment();
-				return mock(DataSource.class);	// to avoid NullPointerException
-			}
-		});
-		
-		// When
-		testInstance.giveConnection();
-		// Then
-		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
-	}
-	
-	@Test
-	void giveConnection_givenJpaTransactionManager_itsDataSourceIsCalled() {
-		ModifiableInt getDataSourceInvokationCounter = new ModifiableInt();
-		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new JpaTransactionManager() {
-			@Override
-			public DataSource getDataSource() {
-				getDataSourceInvokationCounter.increment();
-				return mock(DataSource.class);	// to avoid NullPointerException
-			}
-		});
-		
-		
-		// When
-		testInstance.giveConnection();
-		// Then
-		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
-	}
-	
-	@Test
-	void giveConnection_givenDataSourceTransactionManager_itsDataSourceIsCalled() {
-		ModifiableInt getDataSourceInvokationCounter = new ModifiableInt();
-		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new DataSourceTransactionManager() {
-			@Override
-			public DataSource getDataSource() {
-				getDataSourceInvokationCounter.increment();
-				return mock(DataSource.class);	// to avoid NullPointerException
-			}
-		});
-		
-		
-		// When
-		testInstance.giveConnection();
-		// Then
-		assertThat(getDataSourceInvokationCounter.getValue()).isEqualTo(1);
-	}
 	
 	@Test
 	void executeInNewTransaction_whenOperationSucceeds_commitIsInvoked() {
@@ -121,5 +64,43 @@ class PlatformTransactionManagerConnectionProviderTest {
 		inOrder.verify(jdbcOperationMock).execute();
 		// transaction is rolled back
 		inOrder.verify(transactionManagerMock).rollback(any());
+	}
+	
+	@Test
+	void giveConnection_returnsActiveTransactionConnection() throws SQLException {
+		DataSource dataSourceMock = mock(DataSource.class);
+		Connection expectedConnection = mock(Connection.class);
+		when(dataSourceMock.getConnection()).thenReturn(expectedConnection);
+		// we simulate Spring behavior on transaction synchronization
+		TransactionSynchronizationManager.setActualTransactionActive(true);
+		TransactionSynchronizationManager.bindResource(dataSourceMock, new ConnectionHolder(expectedConnection));
+		
+		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new DataSourceTransactionManager(dataSourceMock), () -> dataSourceMock);
+		Connection currentConnection = testInstance.giveConnection();
+		assertThat(currentConnection).isSameAs(expectedConnection);
+	}
+	
+	@Test
+	void giveConnection_transactionIsNoMoreActive_throwsException() throws SQLException {
+		DataSource dataSourceMock = mock(DataSource.class);
+		Connection expectedConnection = mock(Connection.class);
+		when(dataSourceMock.getConnection()).thenReturn(expectedConnection);
+		
+		// bounding resource but declaring transaction as not active
+		TransactionSynchronizationManager.setActualTransactionActive(false);
+		TransactionSynchronizationManager.bindResource(dataSourceMock, new ConnectionHolder(expectedConnection));
+		
+		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new DataSourceTransactionManager(dataSourceMock), () -> dataSourceMock);
+		assertThatThrownBy(testInstance::giveConnection)
+			.extracting(t -> Exceptions.findExceptionInCauses(t, IllegalStateException.class), InstanceOfAssertFactories.THROWABLE)
+			.hasMessage("No active transaction");
+	}
+	
+	@Test
+	void giveConnection_noActiveTransaction_throwsException() {
+		PlatformTransactionManagerConnectionProvider testInstance = new PlatformTransactionManagerConnectionProvider(new DataSourceTransactionManager(), () -> null);
+		assertThatThrownBy(testInstance::giveConnection)
+			.extracting(t -> Exceptions.findExceptionInCauses(t, IllegalStateException.class), InstanceOfAssertFactories.THROWABLE)
+			.hasMessage("No active transaction");
 	}
 }
