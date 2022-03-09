@@ -41,7 +41,7 @@ class PlatformTransactionManagerConnectionProviderTest {
 		InOrder inOrder = inOrder(jdbcOperationMock, transactionManagerMock);
 		// action is invoked
 		inOrder.verify(jdbcOperationMock).execute();
-		// transaction is commited
+		// transaction is committed
 		inOrder.verify(transactionManagerMock).commit(any());
 	}
 	

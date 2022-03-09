@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.sql.dml;
 
 import javax.sql.DataSource;
 import java.io.Closeable;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -61,7 +60,7 @@ class SQLOperationH2Test extends SQLOperationITTest {
     }
 	
 	/**
-	 * Dedicated H2 Datasource for concurrent access to simulaite multiple user accessing same table and lock
+	 * Dedicated H2 Datasource for concurrent access to simulate multiple user accessing same table and lock
 	 */
 	public static class ConcurrentH2InMemoryDataSource extends UrlAwareDataSource implements Closeable {
 		
@@ -70,12 +69,8 @@ class SQLOperationH2Test extends SQLOperationITTest {
 		
 		public ConcurrentH2InMemoryDataSource() {
 			// random URL to avoid conflict between tests
-			// setting DB_CLOSE_ON_EXIT=false to avoid JdbcSQLNonTransientConnectionException
-			// "The database is open in exclusive mode; can not open additional connections [90135-200]"
-//			super("jdbc:h2:mem:test" + Integer.toHexString(new Random().nextInt()) + ";DB_CLOSE_ON_EXIT=false");
 			// we need a LOCK_TIMEOUT larger than the wait we put in test code because default value makes triggering an org.h2.jdbc.JdbcSQLTimeoutException
 			// while select acquires read lock, the exception then cancels the select statement which then makes our test irelevant 
-//			super("jdbc:h2:" + Files.newTemporaryFolder() + ";AUTO_SERVER=TRUE;DB_CLOSE_ON_EXIT=true;LOCK_TIMEOUT=5000");
 			super("jdbc:h2:mem:test" + Integer.toHexString(new Random().nextInt()) + ";LOCK_TIMEOUT=5000");
 			delegate = new JdbcDataSource();
 			delegate.setUrl(getUrl());
@@ -95,7 +90,7 @@ class SQLOperationH2Test extends SQLOperationITTest {
 		}
 		
 		@Override
-		public void close() throws IOException {
+		public void close() {
 			// nothing to do because H2DataSource doesn't need to be closed
 		}
 	}

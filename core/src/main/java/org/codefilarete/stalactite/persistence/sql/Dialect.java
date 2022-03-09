@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
 
 /**
- * Class that keeps objects necessary for "communication" with a Database at the SQL language level:
+ * Class that keeps objects necessary to "communicate" with a Database at the SQL language level:
  * - column types for their creation: {@link SqlTypeRegistry} 
  * - column types for their read and write in {@link java.sql.PreparedStatement} and {@link java.sql.ResultSet}: {@link ColumnBinderRegistry}
  * - engines for SQL generation: {@link DDLGenerator} and {@link DMLGenerator}
