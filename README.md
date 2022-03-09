@@ -76,6 +76,16 @@ If you're only interested in the SQL module, you only need the sql adapter such 
 </dependency>
 ```
 
+Finally, if you use Stalactite integrated in a Spring project which manages your transactions, you’ll have to add the following dependency to make Stalactite use them:
+```xml
+<dependency>
+    <groupId>org.codefilarete.stalactite</groupId>
+    <artifactId>spring-integration</artifactId>
+    <version>${stalactite.version}</version>
+</dependency>
+```
+And then use one of the subclasses of [PlatformTransactionManagerConnectionProvider](spring-integration/src/main/java/org/codefilarete/stalactite/sql/spring/PlatformTransactionManagerConnectionProvider.java) as the datasource of your Stalactite `PersistenceContext` by giving it your Spring `PlatformTransactionManger`.
+
 # Documentation
 
-The API documentation, and more, is available [at codefilarete web site](https://www.codefilarete.org/stalactite-doc/
+The API documentation, and more, is available at [Codefilarete web site](https://www.codefilarete.org/stalactite-doc/)
