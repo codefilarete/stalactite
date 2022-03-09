@@ -248,7 +248,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	private static class ElementRecordMappingStrategy<C, I, T extends Table> extends ClassMappingStrategy<ElementRecord<C, I>, ElementRecord<C, I>, T> {
 		
 		private ElementRecordMappingStrategy(T targetTable, Column<T, I> idColumn, Column<T, C> elementColumn) {
-			super((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
+			super((Class) ElementRecord.class,
 				  targetTable,
 				  (Map) Maps.forHashMap(ReversibleAccessor.class, Column.class)
 							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn)
@@ -257,7 +257,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		}
 		
 		private ElementRecordMappingStrategy(T targetTable, Column<T, I> idColumn, EmbeddedClassMappingStrategy<ElementRecord<C, I>, T> embeddableMapping) {
-			super((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
+			super((Class) ElementRecord.class,
 				  targetTable,
 				  (Map) Maps.putAll(Maps.forHashMap(ReversibleAccessor.class, Column.class)
 							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn),
