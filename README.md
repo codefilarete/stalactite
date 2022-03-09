@@ -1,6 +1,9 @@
 
 Stalactite aims at being an ORM, but also gives some tools to ease JDBC usage.
 
+[![CI](https://app.buddy.works/codefilarete/stalactite/pipelines/pipeline/379629/badge.svg?token=da8707a12e9c02973aaeb341d953b78fc541eb297d88020a4b50f0e89232e260 "CI")](https://app.buddy.works/codefilarete/stalactite/pipelines/pipeline/379629)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=codefilarete_stalactite&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=codefilarete_stalactite)
+
 # Overview
 
 The project is layered in 3 main modules to fulfill this goal:
