@@ -1,16 +1,18 @@
 package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
-import org.junit.jupiter.api.BeforeEach;
+import javax.sql.DataSource;
+
+import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 
 /**
  * @author Guillaume Mary
  */
 class SelectExecutorMariaDBTest extends SelectExecutorITTest {
 	
+	private static final DataSource DATASOURCE = new MariaDBTestDataSourceSelector().giveDataSource();
+	
 	@Override
-	@BeforeEach
-	void createDataSource() {
-		dataSource = new MariaDBEmbeddableDataSource(3406);
+	protected DataSource giveDataSource() {
+		return DATASOURCE;
 	}
 }

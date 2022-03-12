@@ -36,7 +36,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * <li>a main strategy : an embedded one ({@link EmbeddedClassMappingStrategy}, accessible by {@link #getMainMappingStrategy()}</li>
  * <li>an id strategy : {@link SimpleIdMappingStrategy} accessible with {@link #getIdMappingStrategy()}</li>
  * <li>optional version mapping : accessible with {@link #getVersionedKeys()} for instance</li>
- * <li>additionnal mappings (for embeddable for instance) : see {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}</li>
+ * <li>additional mappings (for embeddable for instance) : see {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}</li>
  * </ul>
  * </p>
  * <p>

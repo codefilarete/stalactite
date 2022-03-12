@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.binder;
 
+import javax.sql.DataSource;
 import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -8,8 +9,10 @@ import java.time.LocalTime;
 import java.time.Month;
 import java.util.Set;
 
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.PostgreSQLDatabaseHelper;
+import org.codefilarete.stalactite.sql.test.PostgreSQLTestDataSourceSelector;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.sql.test.PostgreSQLEmbeddedDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,32 +22,42 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Guillaume Mary
  */
 class PostgreSQLParameterBindersTest extends AbstractParameterBindersITTest {
-
+	
+	private static final DataSource DATASOURCE = new PostgreSQLTestDataSourceSelector().giveDataSource();
+	
 	@Override
-	@BeforeEach
-	public void createDataSource() {
-		dataSource = new PostgreSQLEmbeddedDataSource(5431);
+	public DataSource giveDataSource() {
+		return DATASOURCE;
 	}
-
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new PostgreSQLDatabaseHelper();
+	}
+	
 	@Override
 	@BeforeEach
 	void createParameterBinderRegistry() {
 		super.parameterBinderRegistry = new PostgreSQLParameterBinderRegistry();
 	}
-
+	
 	@Override
 	@BeforeEach
 	void createJavaTypeToSqlTypeMapping() {
 		super.javaTypeToSqlTypeMapping = new PostgreSQLTypeMapping();
 	}
-
+	
 	@Test
 	@Override
 	void blobBinder() throws SQLException {
 		Blob blob = new InMemoryBlobSupport("Hello world !".getBytes());
 		Set<Blob> valuesToInsert = Arrays.asSet(blob, null);
+		Connection connection = connectionProvider.giveConnection();
+		// short hack because Large Object should not be used in auto-commit mode (PostgreSQL limitation)
+		connection.setAutoCommit(false);
 		Set<Blob> databaseContent = insertAndSelect(Blob.class, valuesToInsert);
 		assertThat(convertBlobToString(databaseContent)).isEqualTo(Arrays.asSet(null, "Hello world !"));
+		connection.rollback();	// release Transaction to avoid blocking next tests
 	}
 	
 	/**
@@ -58,7 +71,7 @@ class PostgreSQLParameterBindersTest extends AbstractParameterBindersITTest {
 		Set<LocalDateTime> databaseContent = insertAndSelect(LocalDateTime.class, Arrays.asSet(null, initialTime));
 		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
 	}
-
+	
 	/**
 	 * Overriden to take into account rounding made by PostgreSQL on stored nanos
 	 */
@@ -70,15 +83,12 @@ class PostgreSQLParameterBindersTest extends AbstractParameterBindersITTest {
 		Set<LocalTime> databaseContent = insertAndSelect(LocalTime.class, Arrays.asSet(null, initialTime));
 		assertThat(databaseContent).isEqualTo(Arrays.asSet(null, comparisonTime));
 	}
-
+	
+	@Override
 	protected <T> Set<T> insertAndSelect(Class<T> typeToTest, Set<T> valuesToInsert) throws SQLException {
 		ParameterBinder<T> testInstance = parameterBinderRegistry.getBinder(typeToTest);
 		String sqlColumnType = javaTypeToSqlTypeMapping.getTypeName(typeToTest);
-		Connection connection = dataSource.getConnection();
-		// short hack because Large Object should not be used in auto-commit mode (PostgreSQL limitation)
-		if (typeToTest == Blob.class) {
-			connection.setAutoCommit(false);
-		}
+		Connection connection = connectionProvider.giveConnection();
 		return insertAndSelect(testInstance, sqlColumnType, valuesToInsert, connection);
 	}
 }

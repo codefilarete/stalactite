@@ -1,15 +1,11 @@
 package org.codefilarete.stalactite.persistence.engine;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.tool.Strings;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
@@ -19,7 +15,11 @@ import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders;
 import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
+import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,16 +28,14 @@ import static org.codefilarete.tool.function.Functions.chain;
 /**
  * @author Guillaume Mary
  */
-public abstract class PersistenceContextITTest {
-	
-	protected abstract DataSource createDataSource();
+public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 	
 	protected abstract Dialect createDialect();
 	
 	@Test
 	void select() throws SQLException {
-		PersistenceContext testInstance = new PersistenceContext(createDataSource(), createDialect());
-		Table totoTable = new Table("toto");
+		PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
+		Table totoTable = new Table("Toto");
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
 		
@@ -76,8 +74,8 @@ public abstract class PersistenceContextITTest {
 	@Test
 	void select_columnTypeIsRegisteredInDialect() throws SQLException {
 		Dialect dialect = createDialect();
-		PersistenceContext testInstance = new PersistenceContext(createDataSource(), dialect);
-		Table totoTable = new Table("toto");
+		PersistenceContext testInstance = new PersistenceContext(connectionProvider, dialect);
+		Table totoTable = new Table("Toto");
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, Wrapper> dummyProp = totoTable.addColumn("dummyProp", Wrapper.class);
 		dialect.getColumnBinderRegistry().register(Wrapper.class, new NullAwareParameterBinder<>(
@@ -88,7 +86,7 @@ public abstract class PersistenceContextITTest {
 		ddlDeployer.getDdlGenerator().addTables(totoTable);
 		ddlDeployer.deployDDL();
 		
-		Connection connection = testInstance.getConnectionProvider().giveConnection();
+		Connection connection = connectionProvider.giveConnection();
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
 		
@@ -103,8 +101,8 @@ public abstract class PersistenceContextITTest {
 	@Test
 	void select_columnIsRegisteredInDialect_butNotItsType() throws SQLException {
 		Dialect dialect = createDialect();
-		PersistenceContext testInstance = new PersistenceContext(createDataSource(), dialect);
-		Table totoTable = new Table("toto");
+		PersistenceContext testInstance = new PersistenceContext(connectionProvider, dialect);
+		Table totoTable = new Table("Toto");
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, Wrapper> dummyProp = totoTable.addColumn("dummyProp", Wrapper.class);
 		dialect.getColumnBinderRegistry().register(dummyProp, new NullAwareParameterBinder<>(
@@ -129,8 +127,8 @@ public abstract class PersistenceContextITTest {
 	
 	@Test
 	void newQuery() throws SQLException {
-		PersistenceContext testInstance = new PersistenceContext(createDataSource(), createDialect());
-		Table totoTable = new Table("toto");
+		PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
+		Table totoTable = new Table("Toto");
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
 		
@@ -150,11 +148,11 @@ public abstract class PersistenceContextITTest {
 	
 	@Test
 	void newQuery_withToOneRelation() throws SQLException {
-		PersistenceContext testInstance = new PersistenceContext(createDataSource(), createDialect());
-		Table totoTable = new Table("toto");
+		PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
+		Table totoTable = new Table("Toto");
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
-		Table tataTable = new Table("tata");
+		Table tataTable = new Table("Tata");
 		Column<Table, String> tataName = tataTable.addColumn("name", String.class);
 		Column<Table, Integer> totoId = tataTable.addColumn("totoId", int.class);
 		
@@ -162,7 +160,7 @@ public abstract class PersistenceContextITTest {
 		ddlDeployer.getDdlGenerator().addTables(totoTable, tataTable);
 		ddlDeployer.deployDDL();
 		
-		Connection connection = testInstance.getConnectionProvider().giveConnection();
+		Connection connection = connectionProvider.giveConnection();
 		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Tata(totoId, name) values (1, 'World')").execute();
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'Bonjour')").execute();
@@ -182,11 +180,11 @@ public abstract class PersistenceContextITTest {
 	
 	@Test
 	void newQuery_withToManyRelation() throws SQLException {
-		PersistenceContext testInstance = new PersistenceContext(createDataSource(), createDialect());
-		Table totoTable = new Table("toto");
+		PersistenceContext testInstance = new PersistenceContext(connectionProvider, createDialect());
+		Table totoTable = new Table("Toto");
 		Column<Table, Integer> id = totoTable.addColumn("id", int.class);
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
-		Table tataTable = new Table("tata");
+		Table tataTable = new Table("Tata");
 		Column<Table, String> tataName = tataTable.addColumn("name", String.class);
 		Column<Table, Integer> totoId = tataTable.addColumn("totoId", int.class);
 		
@@ -194,7 +192,7 @@ public abstract class PersistenceContextITTest {
 		ddlDeployer.getDdlGenerator().addTables(totoTable, tataTable);
 		ddlDeployer.deployDDL();
 		
-		Connection connection = testInstance.getConnectionProvider().giveConnection();
+		Connection connection = connectionProvider.giveConnection();
 		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Tata(totoId, name) values (1, 'World')").execute();
 		connection.prepareStatement("insert into Tata(totoId, name) values (1, 'Tout le monde')").execute();

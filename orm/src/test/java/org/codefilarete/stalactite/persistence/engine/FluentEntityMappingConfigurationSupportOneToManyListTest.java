@@ -24,13 +24,13 @@ import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
 import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
 import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.persistence.id.manager.StatefullIdentifier;
+import org.codefilarete.stalactite.persistence.id.StatefulIdentifier;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeAll;
@@ -57,7 +57,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	
 	private static final Dialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private final ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
+	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll
@@ -286,7 +286,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		Question select = questionPersister.select(new PersistedIdentifier<>(1L));
 		connectionProvider.giveConnection().commit();
-		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefullIdentifier::getSurrogate)).containsExactlyInAnyOrder(10L, 20L, 30L);
+		assertThat(select.getChoices()).extracting(chain(Choice::getId, StatefulIdentifier::getSurrogate)).containsExactlyInAnyOrder(10L, 20L, 30L);
 	}
 	
 	@Test

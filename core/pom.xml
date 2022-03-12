@@ -18,6 +18,14 @@
 			<artifactId>sql</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<!-- To get DatabaseIntegrationTest -->
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>sql</artifactId>
+			<version>${project.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>

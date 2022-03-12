@@ -1,14 +1,13 @@
 package org.codefilarete.stalactite.sql.result;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
+import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
 import org.codefilarete.tool.collection.Arrays;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,16 +18,11 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  *
  * @author Guillaume Mary
  */
-abstract class ResultSetIteratorITTest {
-
-	protected DataSource dataSource;
-
-	@BeforeEach
-	abstract void createDataSource();
+abstract class ResultSetIteratorITTest extends DatabaseIntegrationTest {
 	
 	@Test
 	void hasNext_emptyResultSet() throws SQLException {
-		Connection connection = dataSource.getConnection();
+		Connection connection = connectionProvider.giveConnection();
 		ensureTable(connection);
 		
 		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
@@ -45,13 +39,11 @@ abstract class ResultSetIteratorITTest {
 	
 	@Test
 	void hasNext_filledResultSet() throws SQLException {
-		Connection connection = dataSource.getConnection();
-		connection.setAutoCommit(false);
+		Connection connection = connectionProvider.giveConnection();
 		ensureTable(connection);
 
 		PreparedStatement insertDataStmnt = connection.prepareStatement("insert into Toto(name) values ('a'), ('b'), ('c')");
 		insertDataStmnt.execute();
-		connection.commit();
 		
 		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
 		ResultSet selectStmntRs = selectStmnt.executeQuery();
@@ -73,13 +65,11 @@ abstract class ResultSetIteratorITTest {
 	
 	@Test
 	void next_withoutCallToHasNext_throwsNoSuchElementException() throws SQLException {
-		Connection connection = dataSource.getConnection();
-		connection.setAutoCommit(false);
+		Connection connection = connectionProvider.giveConnection();
 		ensureTable(connection);
 		
 		PreparedStatement insertDataStmnt = connection.prepareStatement("insert into Toto(name) values ('a'), ('b'), ('c')");
 		insertDataStmnt.execute();
-		connection.commit();
 		
 		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
 		ResultSet selectStmntRs = selectStmnt.executeQuery();
@@ -101,13 +91,11 @@ abstract class ResultSetIteratorITTest {
 	
 	@Test
 	void convert() throws SQLException {
-		Connection connection = dataSource.getConnection();
-		connection.setAutoCommit(false);
+		Connection connection = connectionProvider.giveConnection();
 		ensureTable(connection);
 		
 		PreparedStatement insertDataStmnt = connection.prepareStatement("insert into Toto(name) values ('a'), ('b'), ('c')");
 		insertDataStmnt.execute();
-		connection.commit();
 		
 		PreparedStatement selectStmnt = connection.prepareStatement("select name from Toto");
 		ResultSet selectStmntRs = selectStmnt.executeQuery();

@@ -45,7 +45,7 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Guillaume Mary
  */
-class UpdateExecutorTest extends AbstractDMLExecutorTest {
+class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));

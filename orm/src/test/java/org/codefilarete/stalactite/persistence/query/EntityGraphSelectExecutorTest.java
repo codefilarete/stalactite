@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -81,7 +81,7 @@ class EntityGraphSelectExecutorTest {
 	void loadGraph() throws SQLException {
 		// This test must be done with a real Database because 2 queries are executed which can hardly be mocked
 		// Hence this test is more an integration test, but since it runs fast, we don't care
-		DataSourceConnectionProvider connectionProvider = new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource());
+		CurrentThreadConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(new HSQLDBInMemoryDataSource());
 		
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
@@ -142,7 +142,7 @@ class EntityGraphSelectExecutorTest {
 	void loadGraph_emptyResult() {
 		// This test must be done with a real Database because 2 queries are executed which can hardly be mocked
 		// Hence this test is more an integration test, but since it runs fast, we don't care
-		DataSourceConnectionProvider connectionProvider = new DataSourceConnectionProvider(new HSQLDBInMemoryDataSource());
+		CurrentThreadConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(new HSQLDBInMemoryDataSource());
 		
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
