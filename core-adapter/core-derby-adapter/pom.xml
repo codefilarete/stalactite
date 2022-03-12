@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>core-adapter</artifactId>
-        <groupId>org.gama.stalactite</groupId>
+        <groupId>org.codefilarete.stalactite</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -13,13 +13,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.gama.stalactite</groupId>
+            <groupId>org.codefilarete.stalactite</groupId>
             <artifactId>sql-derby-adapter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <!-- To get DerbyInMemoryDataSource in test -->
         <dependency>
-            <groupId>org.gama.stalactite</groupId>
+            <groupId>org.codefilarete.stalactite</groupId>
             <artifactId>sql-derby-adapter</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
