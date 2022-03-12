@@ -12,7 +12,7 @@
     <artifactId>sql-h2-adapter</artifactId>
 
     <properties>
-        <h2.version>1.4.200</h2.version>
+        <h2.version>2.1.210</h2.version>
     </properties>
 
     <dependencies>
