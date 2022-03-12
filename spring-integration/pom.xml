@@ -42,7 +42,7 @@
 			 Version doesn't matter because this dependency was added to avoid NoClassDefFoundError org/hibernate/HibernateException in tests 
 			 when creating HibernateTransactionManager
 			-->
-			<version>5.3.9.Final</version>
+			<version>5.4.24.Final</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
