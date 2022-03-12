@@ -2,6 +2,8 @@ package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import javax.sql.DataSource;
 
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MySQLDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MySQLTestDataSourceSelector;
 
 /**
@@ -14,5 +16,10 @@ class SelectExecutorMySQLTest extends SelectExecutorITTest {
 	@Override
 	protected DataSource giveDataSource() {
 		return DATASOURCE;
+	}
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MySQLDatabaseHelper();
 	}
 }

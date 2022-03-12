@@ -12,7 +12,7 @@
     <artifactId>sql-mysql-adapter</artifactId>
 
     <properties>
-        <mysql-connector-java.version>5.1.38</mysql-connector-java.version>
+        <mysql-connector-java.version>8.0.28</mysql-connector-java.version>
         <wix-embedded-mysql.version>4.6.1</wix-embedded-mysql.version>
     </properties>
 

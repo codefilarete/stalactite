@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.sql.test;
 import javax.sql.DataSource;
 import java.util.Map;
 
-import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import com.mysql.cj.jdbc.MysqlDataSource;
 import org.codefilarete.tool.Nullable;
 
 /**
