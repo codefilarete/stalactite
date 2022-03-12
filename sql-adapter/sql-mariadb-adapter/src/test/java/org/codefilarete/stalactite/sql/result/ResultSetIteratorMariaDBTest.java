@@ -1,16 +1,18 @@
 package org.codefilarete.stalactite.sql.result;
 
-import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
-import org.junit.jupiter.api.BeforeEach;
+import javax.sql.DataSource;
+
+import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 
 /**
  * @author Guillaume Mary
  */
 class ResultSetIteratorMariaDBTest extends ResultSetIteratorITTest {
-    
-    @Override
-    @BeforeEach
-    void createDataSource() {
-        super.dataSource = new MariaDBEmbeddableDataSource(3406);
-    }
+	
+	private static final DataSource DATASOURCE = new MariaDBTestDataSourceSelector().giveDataSource();
+	
+	@Override
+	protected DataSource giveDataSource() {
+		return DATASOURCE;
+	}
 }

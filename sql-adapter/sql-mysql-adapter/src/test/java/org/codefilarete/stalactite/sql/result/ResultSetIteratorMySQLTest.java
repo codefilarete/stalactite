@@ -1,16 +1,25 @@
 package org.codefilarete.stalactite.sql.result;
 
-import org.codefilarete.stalactite.sql.test.MySQLEmbeddableDataSource;
-import org.junit.jupiter.api.BeforeEach;
+import javax.sql.DataSource;
+
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MySQLDatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MySQLTestDataSourceSelector;
 
 /**
  * @author Guillaume Mary
  */
 class ResultSetIteratorMySQLTest extends ResultSetIteratorITTest {
-    
-    @Override
-    @BeforeEach
-    void createDataSource() {
-        super.dataSource = new MySQLEmbeddableDataSource(3406);
-    }
+	
+	private static final DataSource DATASOURCE = new MySQLTestDataSourceSelector().giveDataSource();
+	
+	@Override
+	protected DataSource giveDataSource() {
+		return DATASOURCE;
+	}
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MySQLDatabaseHelper();
+	}
 }

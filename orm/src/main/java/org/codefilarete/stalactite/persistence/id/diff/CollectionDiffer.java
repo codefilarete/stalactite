@@ -1,14 +1,11 @@
 package org.codefilarete.stalactite.persistence.id.diff;
 
-import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.function.Function;
 
 import org.codefilarete.tool.Duo;
@@ -18,7 +15,6 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.PairIterator.UntilBothIterator;
 import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.stalactite.persistence.id.Identified;
 
 import static org.codefilarete.stalactite.persistence.id.diff.State.ADDED;
 import static org.codefilarete.stalactite.persistence.id.diff.State.HELD;
@@ -139,22 +135,4 @@ public class CollectionDiffer<I> {
 		
 		return result;
 	}
-	
-	/**
-	 * Looks up for indexes of an object into a {@link List}. Comparison is done on equals() method.
-	 * 
-	 * @param srcList the source where to lookup for searched object
-	 * @param searched the object to lookup
-	 * @param <E> type of elements (subtype of {@link Identified})
-	 * @return a Set of indexes where {@code searched} is present
-	 */
-	@Nonnull
-	<E extends Identified> SortedSet<Integer> lookupIndexes(List<E> srcList, E searched) {
-		TreeSet<Integer> indexes = new TreeSet<>();
-		// comparison is done on equals()
-		Iterables.consume(srcList, searched::equals, (e, i) -> indexes.add(i));
-		return indexes;
-	}
-	
-	
 }

@@ -42,7 +42,7 @@ import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.HSQLDBTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -242,7 +242,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		Column<Table, Long> id2 = targetTable.addColumn("id2", long.class).primaryKey();
 		Column<Table, String> name = targetTable.addColumn("name", String.class);
 		
-		ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
+		ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(new SqlTypeRegistry(new HSQLDBTypeMapping()), connectionProvider);
 		ddlDeployer.getDdlGenerator().addTables(targetTable);
 		ddlDeployer.deployDDL();

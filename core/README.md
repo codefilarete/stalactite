@@ -3,13 +3,13 @@
 This module aims at providing a simple mapping between Beans and RDBMS tables.
 **It doens't target relations management between them, except for querying**.
 
-Main entry point of this module is [ClassMappingStrategy](src/main/java/org/codefilarete/stalactite/persistence/mapping/ClassMappingStrategy.java).
-And you can persist strange things like :
+Main entry point of this module is [ClassMappingStrategy](src/main/java/org/codefilarete/stalactite/persistence/mapping/ClassMappingStrategy.java) for persisting entities.
+But you may also persist strange things like :
 - [Collection of values](src/main/java/org/codefilarete/stalactite/persistence/mapping/ColumnedCollectionMappingStrategy.java)
 - [Map of values](src/main/java/org/codefilarete/stalactite/persistence/mapping/ColumnedMapMappingStrategy.java)
 
 You can query your database creating [Querys](src/main/java/org/codefilarete/stalactite/query/model/Query.java).
-Combined with [QueryBuilder](src/main/java/org/codefilarete/stalactite/query/builder/QueryBuilder.java) you can get executable SQL.
+Combined with [QueryBuilder](src/main/java/org/codefilarete/stalactite/query/builder/SQLQueryBuilder.java) you can get executable SQL.
 Here's a simple example with a [QueryEase](src/main/java/org/codefilarete/stalactite/query/model/QueryEase.java) static import:
 <pre>
 QueryProvider q = select(personTable.firstName, personTable.birthDate).from(personTable);
@@ -27,22 +27,13 @@ Table carTable = new Table("Car");
 Column<Long> ownerId = carTable.addColumn("owner", Long.class);
 Column<String> carColor = carTable.addColumn("color", String.class);
 
-select(firstname, lastname, carColor).from(personTable, "p").innerJoin(personId, ownerId).where(lastname, like("%jo%"));
-// select p.firstname, p.lastname, c.color from Person as p inner join Car as c on p.id = c.owner where p.lastname like '%jo%'
+QueryProvider q = select(firstname, lastname, carColor).from(personTable, "p").innerJoin(personId, ownerId).where(lastname, like("%jo%"));
+System.out.println(new QueryBuilder(q).toSQL())
+// will print : select p.firstname, p.lastname, c.color from Person as p inner join Car as c on p.id = c.owner where p.lastname like '%jo%'
 </pre>
 
-Please refer to [this test](src/test/java/org/codefilarete/stalactite/query/builder/QueryBuilderTest.java) for examples.
+Please refer to [this test](src/test/java/org/codefilarete/stalactite/query/builder/SQLQueryBuilderTest.java) for examples.
 
 # Caveat
 
-Thus, using this module one must have skills in schema design, particularly for new table/bean : you won't be helped for designing
- relations between tables for one-to-many, many-to-one, etc. as would do JPA/Hibernate (it adds necessary columns, types, nullity, etc)
-
-For relation management, one may be interested in having a look at the [ORM module](../orm/README.md)
-
-# Further reading
-
-Some more documentation can be found here
-- [Dialects](src/main/java/org/codefilarete/stalactite/persistence/sql/Dialects.md)
-- [mapping](src/main/java/org/codefilarete/stalactite/persistence/mapping/mapping.md)
-- [about bean identifier](src/main/java/org/codefilarete/stalactite/persistence/id/manager/Identifier%20generation%20policies.md)
+Thus, by using this module you must have skills in schema design : you won't be helped in designing relations between tables to handle entity inheritance or entity relations : for all of this you should be interested in [ORM module](../orm/README.md).

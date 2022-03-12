@@ -76,11 +76,11 @@ class CascadeOneConfigurerTest {
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
-		LinkageSupport<City> identifierLinkage = new LinkageSupport<>(
+		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
 		);
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
-		LinkageSupport<City> nameLinkage = new LinkageSupport<>(
+		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name"))
 		);
 		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));
@@ -187,11 +187,11 @@ class CascadeOneConfigurerTest {
 		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
 		
-		LinkageSupport<City> identifierLinkage = new LinkageSupport<>(
+		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
 		);
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
-		LinkageSupport<City> nameLinkage = new LinkageSupport<>(
+		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name"))
 		);
 		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));

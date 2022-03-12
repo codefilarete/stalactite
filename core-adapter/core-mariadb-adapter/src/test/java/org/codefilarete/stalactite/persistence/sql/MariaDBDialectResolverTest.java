@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 import org.assertj.core.api.Assertions;
-import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -17,7 +17,7 @@ class MariaDBDialectResolverTest {
 	 */
 	@Test
 	void resolve_10_0() throws SQLException {
-		DataSource mariaDBDataSource = new MariaDBEmbeddableDataSource(3307);
+		DataSource mariaDBDataSource = new MariaDBTestDataSourceSelector().giveDataSource();
 		
 		ServiceLoaderDialectResolver dialectResolver = new ServiceLoaderDialectResolver();
 		Dialect dialect = dialectResolver.determineDialect(mariaDBDataSource.getConnection());

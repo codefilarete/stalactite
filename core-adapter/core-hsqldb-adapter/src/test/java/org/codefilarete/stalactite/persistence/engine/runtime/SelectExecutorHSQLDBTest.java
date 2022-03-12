@@ -1,7 +1,10 @@
 package org.codefilarete.stalactite.persistence.engine.runtime;
 
+import javax.sql.DataSource;
+
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.HSQLDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.junit.jupiter.api.BeforeEach;
 
 /**
  * @author Guillaume Mary
@@ -9,8 +12,12 @@ import org.junit.jupiter.api.BeforeEach;
 class SelectExecutorHSQLDBTest extends SelectExecutorITTest {
 	
 	@Override
-	@BeforeEach
-	void createDataSource() {
-		dataSource = new HSQLDBInMemoryDataSource();
+	protected DataSource giveDataSource() {
+		return new HSQLDBInMemoryDataSource();
+	}
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new HSQLDBDatabaseHelper();
 	}
 }

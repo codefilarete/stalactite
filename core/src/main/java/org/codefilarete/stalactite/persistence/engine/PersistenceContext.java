@@ -52,7 +52,7 @@ import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.dml.PreparedSQL;
 import org.codefilarete.stalactite.sql.dml.WriteOperation;
@@ -81,7 +81,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param dataSource a JDBC {@link Connection} provider
 	 */
 	public PersistenceContext(DataSource dataSource) {
-		this(new DataSourceConnectionProvider(dataSource));
+		this(new CurrentThreadConnectionProvider(dataSource));
 	}
 	
 	/**
@@ -92,7 +92,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param dialect dialect to be used with {@link Connection} gioven by dataSource
 	 */
 	public PersistenceContext(DataSource dataSource, Dialect dialect) {
-		this(new DataSourceConnectionProvider(dataSource), dialect);
+		this(new CurrentThreadConnectionProvider(dataSource), dialect);
 	}
 	
 	/**

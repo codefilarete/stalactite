@@ -1,69 +1,94 @@
 
-Stalactite aims at providing both a SQL library and an ORM.
+Stalactite aims at being an ORM, but also gives some tools to ease JDBC usage.
 
-Its birth comes from a misconception on a huge domain-objects application (implying the creation of more than 200 database tables) and
-exposing entities to the view. With a classical ORM this leads to a bothering fetch-all and cache-all solution.
-Stalactite tries to ease loading of DTO or any adhoc-view-object, and insert/update/delete them into the database, without creating a huge
-mapping configuration, trying to promote small object graphs in bounded context.
+[![buddy pipeline](https://app.buddy.works/guiommary-1/stalactite/pipelines/pipeline/380199/badge.svg?token=96503dbaee2d8d301dc2fc167de143813cc70ea22fe4e7fca3432b9f1063e8c5 "buddy pipeline")](https://app.buddy.works/guiommary-1/stalactite/pipelines/pipeline/380199)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=codefilarete_stalactite&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=codefilarete_stalactite)
 
 # Overview
 
-The project is layered in 3 main modules to fullfill this goal:
+The project is layered in 3 main modules to fulfill this goal:
 - [sql](sql/README.md)
 - [core](core/README.md)
 - [orm](orm/README.md)
 
-Here's an example of one can achieve with the ORM module, see [ORM module overview](orm/README.md) for detail:
-<pre>
-FluentMappingBuilder.from(MyEntity.class, StatefullIdentifier.class)
-	.add(MyEntity::getId).identifier(IdentifierPolicy.ALREADY_ASSIGNED)
-	.embed(MyEntity::getTimestamp)
-		.overrideName(Timestamp::getCreationDate, "createdAt")
-		.overrideName(Timestamp::getModificationDate, "modifiedAt")
-	.build(persistenceContext);
-</pre>
+Here's an example of one can achieve with the ORM module :
+```java
+DataSource dataSource = ... // use whatever JDBC DataSource you want
+PersistenceContext persistenceContext = new PersistenceContext(dataSource, new HSQLDBDialect());
 
-It's mainly based on a model of your RDBMS tables : the [core](core/README.md) module provides the [structure package](core/src/main/java/org/codefilarete/stalactite/persistence/structure/README.md)
-with the idea to create a meta-model of your database schema.
+EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, long.class)
+    .mapKey(Country::getId, IdentifierPolicy.afterInsert())
+    .map(Country::getName)
+    .map(Country::getDescription)
+    .mapOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, long.class)
+        .mapKey(Person::getId, IdentifierPolicy.afterInsert())
+        .map(Person::getName))
+    .build(persistenceContext);
+
+Country country = new Country(42L);
+country.setPresident(new Person(12L));
+countryPersister.persist(country);
+
+
+List<Car> allCars = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
+    .mapKey(Car::new, "id", long.class)
+    .map("model", Car::setModel)
+    .map("rgb", Car::setColor, int.class, Color::new)
+    .execute();
+```
 
 # Approach
 
-Whereas some principles were kept from Hibernate such as [Dialects](core/src/main/java/org/codefilarete/stalactite/persistence/sql/Dialects.md),
-it doesn't have merge/attach notion, so it doesn't use any bytecode enhancement of your beans (for now and hope for a while).
-The idea behind this is to let persist any bean that has no annotation, coming from "nowhere" such as a WebService DTO.
+- Stalactite doesn't use annotation nor XML for mapping : only method reference and a fluent API are used. Hence, it doesn't apply any bytecode enhancement on your beans. Defining persistence outside your beans helps you apply Clean / Hexagonal Architecture
+- It also promotes aggregate by only applying eager fetching to your bean graph (no lazy loading), thus by writing your mapping with the fluent API you have an idea of the complexity : the more you have line in your mapping, the more loading will be complex and may impact performances. As a secondary consequence, it also doesn't require merge/attach notion.
 
-Allowing such a thing let you query your database and create DTOs for a particular view and then persist them without exposing your
-rich-business-domain-model of your database (never knowing where your object graph reading have to stop), or copying it to DTOs with
-boilerplate code (or dedicated framework).
+# Quick installation
 
-# Features
+Stalactite ORM module is available from Maven will below coordinates
 
-## orm
-- entities must implement [Identified](orm/src/main/java/org/codefilarete/stalactite/persistence/id/Identified.java) which means that there id
-must be a [Identifier](orm/src/main/java/org/codefilarete/stalactite/persistence/id/Identifier.java), see foot note
-- only supports single column primary key, see foot note
-- only supports already-assigned identifier, see foot note
-- one-to-one mapping
- 	- property column owned by table owner or by reverse side
- 	- eager : not lazy, select is done with join (no secondary select to load the linked entity)
-- one-to-many mapping
-	- property column owned by reverse side table
-	- eager : not lazy, select is done with join (no secondary select to load the linked entities, prevents N+1 query)
-- embedding of value class
+```xml
+<dependency>
+    <groupId>org.codefilarete.stalactite</groupId>
+    <artifactId>orm</artifactId>
+    <version>${stalactite.version}</version>
+</dependency>
+```
 
-###### Why already-assigned-identifier single column ?
-- I prefer technical keys over domain ones because those may change over project life cycle. And overall, domain key values may change
-(human error for instance) which might create nighmare when entities must deal with HashSet or HashMap.
-- Already-assigned identifier allows to implement clean equals() & hashcode() based on it, here too it simpler when dealing with HashSet or HashMap
-- Single column, because it was simpler at beginning ;)
+Then you'll have to add Database Vendor adapter such as MariaDB one
+```xml
+<dependency>
+    <groupId>org.codefilarete.stalactite</groupId>
+    <artifactId>core-mariadb-adapter</artifactId>
+    <version>${stalactite.version}</version>
+</dependency>
+```
 
-## core
-- [CRUD persistence](core/src/main/java/org/codefilarete/stalactite/persistence/mapping/mapping.md)
-- Listeners for persist actions on beans (before & after) : see [PersisterListener](core/src/main/java/org/codefilarete/stalactite/persistence/engine/listening/PersisterListener.java),
-accessible through `PersistenceContext.getPersisterListener()`
-- SQL Query writing through [a fluent API](core/src/main/java/org/codefilarete/stalactite/query/model/QueryEase.java)
+For now, here are the supported databases and their matching adapters:
+- MariaDB : core-mariadb-adapter
+- MySQL : core-mysql-adapter
+- PostgreSQL : core-postgresql-adapter
+- HSQLDB : core-hsqldb-adapter
+- H2 : core-h2-adapter
 
-## sql
-- Transaction management thanks to [TransactionListener](sql/src/main/java/org/codefilarete/sql/TransactionListener.java) which can be used
-through a [TransactionAdapter](sql/src/main/java/org/codefilarete/sql/TransactionAdapter.java)
-- ResultSet iteration and transformation, see [ResultSet handling](sql/src/main/java/org/codefilarete/sql/result/ResultSet%20handling.md)
+If you're only interested in the SQL module, you only need the sql adapter such as MariaDB one:
+```xml
+<dependency>
+    <groupId>org.codefilarete.stalactite</groupId>
+    <artifactId>sql-mariadb-adapter</artifactId>
+    <version>${stalactite.version}</version>
+</dependency>
+```
+
+Finally, if you use Stalactite integrated in a Spring project which manages your transactions, you’ll have to add the following dependency to make Stalactite use them:
+```xml
+<dependency>
+    <groupId>org.codefilarete.stalactite</groupId>
+    <artifactId>spring-integration</artifactId>
+    <version>${stalactite.version}</version>
+</dependency>
+```
+And then use one of the subclasses of [PlatformTransactionManagerConnectionProvider](spring-integration/src/main/java/org/codefilarete/stalactite/sql/spring/PlatformTransactionManagerConnectionProvider.java) as the datasource of your Stalactite `PersistenceContext` by giving it your Spring `PlatformTransactionManger`.
+
+# Documentation
+
+The API documentation, and more, is available at [Codefilarete web site](https://www.codefilarete.org/stalactite-doc/)

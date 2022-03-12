@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.junit.jupiter.api.BeforeEach;
+import javax.sql.DataSource;
+
 import org.junit.jupiter.api.Disabled;
 
 /**
@@ -10,8 +11,7 @@ import org.junit.jupiter.api.Disabled;
 class SelectExecutorDerbyTest extends SelectExecutorITTest {
 	
 	@Override
-	@BeforeEach
-	void createDataSource() {
+	protected DataSource giveDataSource() {
 		throw new UnsupportedOperationException("Derby doesn't support tupled in");
 	}
 }

@@ -161,7 +161,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		return addPropertyOptions(addMapping(getter, columnName));
 	}
 	
-	FluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(LinkageSupport<C> linkage) {
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(LinkageSupport<C, O> linkage) {
 		return new MethodReferenceDispatcher()
 				.redirect(PropertyOptions.class, new PropertyOptions() {
 					@Override
@@ -180,47 +180,47 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
 	}
 	
-	<E> LinkageSupport<C> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
+	<E> LinkageSupport<C, E> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
 		return addMapping(Accessors.mutator(setter), columnName);
 	}
 	
-	<E> LinkageSupport<C> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
+	<E> LinkageSupport<C, E> addMapping(SerializableFunction<C, E> getter, @Nullable String columnName) {
 		return addMapping(Accessors.accessor(getter), columnName);
 	}
 	
-	LinkageSupport<C> addMapping(ReversibleAccessor<C, ?> propertyAccessor, @Nullable String columnName) {
-		LinkageSupport<C> linkage1 = new LinkageSupport<>(propertyAccessor);
+	<E> LinkageSupport<C, E> addMapping(ReversibleAccessor<C, E> propertyAccessor, @Nullable String columnName) {
+		LinkageSupport<C, E> linkage1 = new LinkageSupport<>(propertyAccessor);
 		linkage1.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
-		LinkageSupport<C> linkage = linkage1;
+		LinkageSupport<C, E> linkage = linkage1;
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter) {
-		LinkageSupport<C> linkage = addMapping(setter, null);
+		LinkageSupport<C, E> linkage = addMapping(setter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter) {
-		LinkageSupport<C> linkage = addMapping(getter, null);
+		LinkageSupport<C, E> linkage = addMapping(getter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName) {
-		LinkageSupport<C> linkage = addMapping(setter, columnName);
+		LinkageSupport<C, E> linkage = addMapping(setter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
 	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName) {
-		LinkageSupport<C> linkage = addMapping(getter, columnName);
+		LinkageSupport<C, E> linkage = addMapping(getter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
-	FluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(LinkageSupport<C> linkage) {
+	<O extends Enum> FluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(LinkageSupport<C, O> linkage) {
 		return new MethodReferenceDispatcher()
 				.redirect(EnumOptions.class, new EnumOptions() {
 					
@@ -237,7 +237,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					private void setLinkageParameterBinder(EnumBindType ordinal) {
-						linkage.setParameterBinder(ordinal.newParameterBinder((Class<Enum>) linkage.getColumnType()));
+						linkage.setParameterBinder(ordinal.newParameterBinder(linkage.getColumnType()));
 					}
 					
 					@Override
@@ -322,10 +322,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 * 
 	 * @param <T> property owner type
 	 */
-	protected static class LinkageSupport<T> implements Linkage<T> {
+	protected static class LinkageSupport<T, O> implements Linkage<T, O> {
 		
 		/** Optional binder for this mapping */
-		private ParameterBinder parameterBinder;
+		private ParameterBinder<O> parameterBinder;
 		
 		private boolean nullable = true;
 		
@@ -340,12 +340,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			this.function = function;
 		}
 		
-		public void setParameterBinder(ParameterBinder parameterBinder) {
+		public void setParameterBinder(ParameterBinder<O> parameterBinder) {
 			this.parameterBinder = parameterBinder;
 		}
 		
 		@Override
-		public ParameterBinder getParameterBinder() {
+		public ParameterBinder<O> getParameterBinder() {
 			return parameterBinder;
 		}
 		
@@ -377,7 +377,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		}
 		
 		@Override
-		public <O> ReversibleAccessor<T, O> getAccessor() {
+		public ReversibleAccessor<T, O> getAccessor() {
 			return (ReversibleAccessor<T, O>) function;
 		}
 		
@@ -388,11 +388,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		}
 		
 		@Override
-		public Class<?> getColumnType() {
+		public Class<O> getColumnType() {
 			return this.columnOptions instanceof ColumnLinkageOptionsByColumn
-					? ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
-					: AccessorDefinition.giveDefinition(this.function).getMemberType();
-			
+				? (Class<O>) ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
+				: AccessorDefinition.giveDefinition(this.function).getMemberType();
 		}
 	}
 	

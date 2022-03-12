@@ -1,5 +1,9 @@
 package org.codefilarete.stalactite.sql.binder;
 
+import javax.sql.DataSource;
+
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.HSQLDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -9,17 +13,21 @@ import org.junit.jupiter.api.BeforeEach;
 class HSQLDBParameterBindersTest extends AbstractParameterBindersITTest {
 	
 	@Override
-	@BeforeEach
-	void createDataSource() {
-		dataSource = new HSQLDBInMemoryDataSource();
+	public DataSource giveDataSource() {
+		return new HSQLDBInMemoryDataSource();
 	}
-
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new HSQLDBDatabaseHelper();
+	}
+	
 	@Override
 	@BeforeEach
 	void createParameterBinderRegistry() {
 		super.parameterBinderRegistry = new HSQLDBParameterBinderRegistry();
 	}
-
+	
 	@Override
 	@BeforeEach
 	void createJavaTypeToSqlTypeMapping() {

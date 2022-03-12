@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssi
 import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -65,7 +65,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
 	@Test
 	public void update_versionIsUpgraded_integerVersion() {
-		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new DataSourceConnectionProvider(dataSource));
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		// mapping building thanks to fluent API
 		EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, LONG_TYPE)
@@ -109,7 +109,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 	
 	@Test
 	public void update_versionIsUpgraded_dateVersion() {
-		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new DataSourceConnectionProvider(dataSource));
+		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(new CurrentThreadConnectionProvider(dataSource));
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		List<LocalDateTime> nowHistory = new ArrayList<>();

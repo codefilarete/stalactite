@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -46,7 +46,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private final ConnectionProvider connectionProvider = new DataSourceConnectionProvider(dataSource);
+	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
 	
 	@BeforeAll

@@ -1,16 +1,25 @@
 package org.codefilarete.stalactite.persistence.engine.runtime;
 
-import org.codefilarete.stalactite.sql.test.MySQLEmbeddableDataSource;
-import org.junit.jupiter.api.BeforeEach;
+import javax.sql.DataSource;
+
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MySQLDatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MySQLTestDataSourceSelector;
 
 /**
  * @author Guillaume Mary
  */
 class SelectExecutorMySQLTest extends SelectExecutorITTest {
 	
+	private static final DataSource DATASOURCE = new MySQLTestDataSourceSelector().giveDataSource();
+	
 	@Override
-	@BeforeEach
-	void createDataSource() {
-		dataSource = new MySQLEmbeddableDataSource(3406);
+	protected DataSource giveDataSource() {
+		return DATASOURCE;
+	}
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MySQLDatabaseHelper();
 	}
 }

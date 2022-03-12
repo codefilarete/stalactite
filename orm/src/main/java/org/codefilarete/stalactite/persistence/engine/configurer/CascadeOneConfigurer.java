@@ -113,7 +113,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		this.configurer.appendCascades(tableAlias, targetPersister);
 	}
 	
-	public ConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(
+	public CascadeConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(
 			String tableAlias,
 			EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
@@ -157,13 +157,13 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			addWriteCascades(targetPersister);
 		}
 		
-		public ConfigurationResult<SRC, TRGT> appendCascadesWithSelectIn2Phases(String tableAlias,
-																				EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+		public CascadeConfigurationResult<SRC, TRGT> appendCascadesWithSelectIn2Phases(String tableAlias,
+																					   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																					   FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			prepare(targetPersister);
 			addSelectCascadeIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 			addWriteCascades(targetPersister);
-			return new ConfigurationResult<>(beanRelationFixer, sourcePersister);
+			return new CascadeConfigurationResult<>(beanRelationFixer, sourcePersister);
 		}
 		
 		protected void addWriteCascades(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
@@ -860,25 +860,5 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		void onFirstPhaseRowRead(SRC src, TRGTID targetId);
 		
-	}
-	
-	public static class ConfigurationResult<SRC, TRGT> {
-		
-		private BeanRelationFixer<SRC, TRGT> beanRelationFixer;
-		private EntityConfiguredJoinedTablesPersister<SRC, ?> sourcePersister;
-		
-		public ConfigurationResult(BeanRelationFixer<SRC, TRGT> beanRelationFixer,
-								   EntityConfiguredJoinedTablesPersister<SRC, ?> sourcePersister) {
-			this.beanRelationFixer = beanRelationFixer;
-			this.sourcePersister = sourcePersister;
-		}
-		
-		public <SRCID> EntityConfiguredJoinedTablesPersister<SRC, SRCID> getSourcePersister() {
-			return (EntityConfiguredJoinedTablesPersister<SRC, SRCID>) sourcePersister;
-		}
-		
-		public BeanRelationFixer<SRC, TRGT> getBeanRelationFixer() {
-			return beanRelationFixer;
-		}
 	}
 }

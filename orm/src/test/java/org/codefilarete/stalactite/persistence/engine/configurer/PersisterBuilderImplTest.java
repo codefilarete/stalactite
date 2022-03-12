@@ -43,7 +43,7 @@ import org.codefilarete.stalactite.persistence.structure.ForeignKey;
 import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
@@ -120,7 +120,7 @@ public class PersisterBuilderImplTest {
 				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription));
-		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSource), 10);
+		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 10);
 		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, Mockito.mock(PersisterRegistry.class), null))
 				.isInstanceOf(UnsupportedOperationException.class)
 				.hasMessage("Version control is only supported with o.c.s.s.ConnectionProvider that also implements o.c.s.s.RollbackObserver");

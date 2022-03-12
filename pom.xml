@@ -37,7 +37,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.codefilarete</groupId>
-			<artifactId>tool</artifactId>
+			<artifactId>tools</artifactId>
 			<type>test-jar</type>
 			<version>1.0-SNAPSHOT</version>
 			<scope>test</scope>
@@ -82,7 +82,7 @@
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>
 				<artifactId>sonar-maven-plugin</artifactId>
-				<version>3.7.0.1746</version>
+				<version>3.9.1.2184</version>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
@@ -106,5 +106,12 @@
 			</plugin>
 		</plugins>
 	</build>
+	
+	<distributionManagement>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<url>https://codefilarete.jfrog.io/artifactory/default-maven-virtual/</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 </project>

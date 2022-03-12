@@ -1,13 +1,16 @@
 package org.codefilarete.stalactite.sql.binder;
 
+import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
 import java.util.Set;
 
-import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.H2DatabaseHelper;
 import org.codefilarete.stalactite.sql.test.H2InMemoryDataSource;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,17 +22,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 class H2ParameterBindersTest extends AbstractParameterBindersITTest {
 	
 	@Override
-	@BeforeEach
-	void createDataSource() {
-		dataSource = new H2InMemoryDataSource();
+	public DataSource giveDataSource() {
+		return new H2InMemoryDataSource();
 	}
-
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new H2DatabaseHelper();
+	}
+	
 	@Override
 	@BeforeEach
 	void createParameterBinderRegistry() {
 		super.parameterBinderRegistry = new H2ParameterBinderRegistry();
 	}
-
+	
 	@Override
 	@BeforeEach
 	void createJavaTypeToSqlTypeMapping() {

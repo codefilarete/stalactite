@@ -4,8 +4,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer;
-import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.ConfigurationResult;
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
@@ -44,7 +44,7 @@ public class OneToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 		targetPersister.addSelectListener(oneToManyCycleLoader);
 		((Set<RelationConfigurer<SRC, ?, TRGTID>>) (Set) relations).forEach(c -> {
 			String tableAlias = c.relationName.replaceAll("\\W", "_");
-			ConfigurationResult<SRC, TRGT> configurationResult = c.cascadeManyConfigurer.appendCascadesWith2PhasesSelect(
+			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.cascadeManyConfigurer.appendCascadesWith2PhasesSelect(
 					tableAlias, targetPersister, oneToManyCycleLoader.buildRowReader(c.relationName));
 			oneToManyCycleLoader.addRelation(c.relationName, configurationResult);
 		});

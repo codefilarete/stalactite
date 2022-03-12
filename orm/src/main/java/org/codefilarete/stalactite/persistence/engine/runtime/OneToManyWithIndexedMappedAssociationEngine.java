@@ -213,6 +213,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
 		 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
 		 */
+		@SuppressWarnings("java:S5164" /* remove() is called by ThreadLocals.AutoRemoveThreadLocal */)
 		private final ThreadLocal<Map<TRGT, Integer>> currentUpdatableListIndex = new ThreadLocal<>();
 		
 		/**
@@ -221,6 +222,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		 * and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
 		 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
 		 */
+		@SuppressWarnings("java:S5164" /* remove() is called by ThreadLocals.AutoRemoveThreadLocal */)
 		private final ThreadLocal<Map<TRGT, Integer>> currentInsertableListIndex = new ThreadLocal<>();
 		private final Column indexingColumn;
 		

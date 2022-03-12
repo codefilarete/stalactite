@@ -15,7 +15,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingHashMap;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.DataSourceConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.RollbackListener;
 import org.codefilarete.stalactite.sql.RollbackObserver;
 import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
@@ -45,7 +45,7 @@ class OptimizedUpdatePersisterTest {
 		assertThat(testInstance instanceof RollbackObserver).isTrue();
 		
 		testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
-				new ConnectionConfigurationSupport(new DataSourceConnectionProvider(mock(DataSource.class)), 10)).getConnectionProvider();
+				new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(mock(DataSource.class)), 10)).getConnectionProvider();
 		assertThat(testInstance instanceof RollbackObserver).isFalse();
 	}
 	
@@ -77,7 +77,7 @@ class OptimizedUpdatePersisterTest {
 		InMemoryResultSet dummyResultSet = new InMemoryResultSet(data);
 		when(preparedStatementMock.executeQuery()).thenReturn(dummyResultSet);
 		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
-				new ConnectionConfigurationSupport(new DataSourceConnectionProvider(dataSourceMock), 10)).getConnectionProvider();
+				new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSourceMock), 10)).getConnectionProvider();
 		
 		OptimizedUpdatePersister.QUERY_CACHE.set(new HashMap<>());
 		Connection currentConnection = testInstance.giveConnection();

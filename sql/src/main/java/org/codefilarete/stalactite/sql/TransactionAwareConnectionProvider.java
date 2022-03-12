@@ -13,21 +13,21 @@ public class TransactionAwareConnectionProvider implements ConnectionProvider, T
 	
 	private final TransactionAwareConnexionWrapper transactionAwareConnexionWrapper = new TransactionAwareConnexionWrapper();
 	
-	private final ConnectionProvider surrogate;
+	private final ConnectionProvider delegate;
 	
 	public TransactionAwareConnectionProvider(ConnectionProvider connectionProvider) {
-		this.surrogate = connectionProvider;
+		this.delegate = connectionProvider;
 	}
 	
-	public ConnectionProvider getSurrogate() {
-		return surrogate;
+	public ConnectionProvider getDelegate() {
+		return delegate;
 	}
 	
 	@Override
 	@Nonnull
 	public Connection giveConnection() {
-		Connection connection = surrogate.giveConnection();
-		transactionAwareConnexionWrapper.setSurrogate(connection);
+		Connection connection = delegate.giveConnection();
+		transactionAwareConnexionWrapper.setDelegate(connection);
 		return transactionAwareConnexionWrapper;
 	}
 	

@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
 /**
  * @author Guillaume Mary
  */
-class SelectExecutorTest extends AbstractDMLExecutorTest {
+class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));

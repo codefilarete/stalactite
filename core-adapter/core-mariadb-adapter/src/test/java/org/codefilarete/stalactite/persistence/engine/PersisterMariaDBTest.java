@@ -4,16 +4,18 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.MariaDBDialect;
-import org.codefilarete.stalactite.sql.test.MariaDBEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 
 /**
  * @author Guillaume Mary
  */
 public class PersisterMariaDBTest extends PersisterITTest {
 	
+	private static final DataSource DATASOURCE = new MariaDBTestDataSourceSelector().giveDataSource();
+	
     @Override
-	DataSource createDataSource() {
-        return new MariaDBEmbeddableDataSource(3307);
+	public DataSource giveDataSource() {
+        return DATASOURCE;
     }
 	
 	@Override

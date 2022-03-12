@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 import org.assertj.core.api.Assertions;
-import org.codefilarete.stalactite.sql.test.MySQLEmbeddableDataSource;
+import org.codefilarete.stalactite.sql.test.MySQLTestDataSourceSelector;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -17,7 +17,7 @@ class MySQLDialectResolverTest {
 	 */
 	@Test
 	void resolve_5_6() throws SQLException {
-		DataSource mySQLDataSource = new MySQLEmbeddableDataSource(3307);
+		DataSource mySQLDataSource = new MySQLTestDataSourceSelector().giveDataSource();
 		
 		ServiceLoaderDialectResolver dialectResolver = new ServiceLoaderDialectResolver();
 		Dialect dialect = dialectResolver.determineDialect(mySQLDataSource.getConnection());

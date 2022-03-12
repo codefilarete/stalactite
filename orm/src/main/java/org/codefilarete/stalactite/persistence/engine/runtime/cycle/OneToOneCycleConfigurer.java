@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.persistence.engine.runtime.cycle;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.persistence.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeOneConfigurer;
-import org.codefilarete.stalactite.persistence.engine.configurer.CascadeOneConfigurer.ConfigurationResult;
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeOneConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
@@ -43,7 +43,7 @@ public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 		targetPersister.addSelectListener(oneToOneCycleLoader);
 		relations.forEach((RelationConfigurer c) -> {
 			String tableAlias = c.relationName.replaceAll("\\W", "_");
-			ConfigurationResult<SRC, TRGT> configurationResult = c.cascadeOneConfigurer.appendCascadesWith2PhasesSelect(
+			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.cascadeOneConfigurer.appendCascadesWith2PhasesSelect(
 					tableAlias, targetPersister, oneToOneCycleLoader);
 			oneToOneCycleLoader.addRelation(c.relationName, configurationResult);
 		});

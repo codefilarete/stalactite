@@ -20,7 +20,7 @@ public class MariaDBTypeMapping extends DefaultTypeMapping {
 		put(Integer.class, "int");
 		put(Integer.TYPE, "int");
 		put(Date.class, "timestamp null");    // null allows nullable in MariaDB, else current time is inserted by default
-		// Tweaking types that has nanoseconds stored as TIMESTAMP:
+		// Tweaking types that have nanoseconds stored as TIMESTAMP:
 		// - null allows nullable in MariaDB, else current time is inserted by default
 		// - precision of 6 because by default MariaDB stores no digit, this allows to comply with SQL-92 and be homogeneous with other databases
 		put(LocalDateTime.class, "timestamp(6) null");
