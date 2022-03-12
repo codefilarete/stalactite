@@ -5,10 +5,10 @@ import java.sql.SQLException;
 import java.util.EnumMap;
 import java.util.Map;
 
-import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import com.mysql.cj.jdbc.MysqlDataSource;
+import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 
 /**
  * A {@link DataSource} that wraps MySQL one to ease configuration.
@@ -71,13 +71,13 @@ public class MySQLDataSource extends UrlAwareDataSource {
 					mysqlDataSource.setRewriteBatchedStatements(Objects.preventNull((Boolean) entry.getValue(), true));
 					break;
 				case cachePreparedStatements:
-					mysqlDataSource.setCachePreparedStatements(Objects.preventNull((Boolean) entry.getValue(), true));
+					mysqlDataSource.setCachePrepStmts(Objects.preventNull((Boolean) entry.getValue(), true));
 					break;
 				case preparedStatementCacheSize:
-					mysqlDataSource.setPreparedStatementCacheSize(Objects.preventNull((Integer) entry.getValue(), 100));
+					mysqlDataSource.setPrepStmtCacheSize(Objects.preventNull((Integer) entry.getValue(), 100));
 					break;
 				case preparedStatementCacheSqlLimit:
-					mysqlDataSource.setPreparedStatementCacheSqlLimit(Objects.preventNull((Integer) entry.getValue(), 2048));
+					mysqlDataSource.setPrepStmtCacheSqlLimit(Objects.preventNull((Integer) entry.getValue(), 2048));
 					break;
 			}
 		}
