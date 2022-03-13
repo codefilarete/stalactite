@@ -26,16 +26,18 @@ import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
- * A SQL builder for {@link Update} objects
+ * A SQL builder for {@link Update} objects.
+ * Can hardly be mutualized with {@link org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator} because the latter doesn't handle multi
+ * tables update.
  * 
  * @author Guillaume Mary
  */
-public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
+public class UpdateCommandBuilder implements SQLBuilder {
 	
-	private final Update<T> update;
+	private final Update update;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public UpdateCommandBuilder(Update<T> update) {
+	public UpdateCommandBuilder(Update update) {
 		this.update = update;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
 	}
@@ -57,8 +59,8 @@ public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 	private String toSQL(SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
 		result.cat("update ");
 		
-		// looking for additionnal Tables : more than the updated one, can be found in conditions
-		Set<Column<T, Object>> whereColumns = new LinkedHashSet<>();
+		// looking for additional Tables : more than the updated one, can be found in conditions
+		Set<Column<Table, Object>> whereColumns = new LinkedHashSet<>();
 		update.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion) {
 				whereColumns.add(((ColumnCriterion) c).getColumn());
@@ -68,7 +70,7 @@ public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 				}
 			}
 		});
-		Set<T> additionalTables = Iterables.minus(
+		Set<Table> additionalTables = Iterables.minus(
 				Iterables.collect(whereColumns, Column::getTable, HashSet::new),
 				Arrays.asList(this.update.getTargetTable()));
 		
@@ -78,9 +80,9 @@ public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 		result.cat(this.update.getTargetTable().getAbsoluteName())    // main table is always referenced with name (not alias)
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
-		Iterator<T> iterator = additionalTables.iterator();
+		Iterator<Table> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
-			T next = iterator.next();
+			Table next = iterator.next();
 			result.cat(next.getAbsoluteName()).catIf(iterator.hasNext(), ", ");
 		}
 		
@@ -124,14 +126,14 @@ public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 		}
 	}
 	
-	public UpdateStatement<T> toStatement(ColumnBinderRegistry columnBinderRegistry) {
+	public UpdateStatement toStatement(ColumnBinderRegistry columnBinderRegistry) {
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
 		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
 		
 		Map<Integer, Object> values = new HashMap<>(preparedSQLWrapper.getValues());
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLWrapper.getParameterBinders());
-		Map<Column<T, Object>, Integer> columnIndexes = new HashMap<>();
+		Map<Column<Table, Object>, Integer> columnIndexes = new HashMap<>();
 		
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
@@ -151,18 +153,28 @@ public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 		});
 		
 		// final assembly
-		UpdateStatement<T> result = new UpdateStatement<>(sql, parameterBinders, columnIndexes);
+		UpdateStatement result = new UpdateStatement(sql, parameterBinders, columnIndexes);
 		result.setValues(values);
 		return result;
 	}
 	
 	/**
 	 * A specialized version of {@link PreparedSQL} dedicated to {@link Update} so one can set column values of the update clause
-	 * through {@link #setValue(Column, Object)}
+	 * through {@link #setValue(Column, Object)} and make its {@link Update} "reusable".
+	 * Here is a usage example:
+	 * <pre>{@code
+	 * UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
+	 * try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, connectionProvider)) {
+	 *     writeOperation.setValues(updateStatement.getValues());
+	 *     writeOperation.execute();
+	 * }
+	 * // eventually change some values and re-execute it
+	 * updateStatement.setValue(..);
+	 * }</pre>
 	 */
-	public static class UpdateStatement<T extends Table> extends PreparedSQL {
+	public static class UpdateStatement extends PreparedSQL {
 		
-		private final Map<? extends Column<T, Object>, Integer> columnIndexes;
+		private final Map<Column<Table, Object>, Integer> columnIndexes;
 		
 		/**
 		 * Single constructor, not expected to be used elsewhere than {@link UpdateCommandBuilder}.
@@ -171,9 +183,9 @@ public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 		 * @param parameterBinders binder for prepared statement values
 		 * @param columnIndexes indexes of the updated columns
 		 */
-		private UpdateStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<T, Object>, Integer> columnIndexes) {
+		private UpdateStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<Table, Object>, Integer> columnIndexes) {
 			super(sql, parameterBinders);
-			this.columnIndexes = columnIndexes;
+			this.columnIndexes = (Map<Column<Table, Object>, Integer>) columnIndexes;
 		}
 		
 		/**
@@ -182,7 +194,7 @@ public class UpdateCommandBuilder<T extends Table> implements SQLBuilder {
 		 * @param column {@link Column} to be set
 		 * @param value value applied on Column
 		 */
-		public <C> void setValue(Column<T, C> column, C value) {
+		public <C> void setValue(Column<Table, C> column, C value) {
 			Integer index = columnIndexes.get(column);
 			if (index == null) {
 				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not declared updatable with fixed value in the update clause");

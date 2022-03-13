@@ -3,12 +3,14 @@ package org.codefilarete.stalactite.persistence.sql.order;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.persistence.sql.order.InsertCommandBuilder.InsertStatement;
 import org.codefilarete.stalactite.persistence.sql.order.Update.UpdateColumn;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 
 /**
- * A simple representation of a SQL insert clause, and a way to build it easily/fluently
+ * A fluent way of writing a SQL insert clause by leveraging {@link Column} : values can only be set through it.
  * 
  * @author Guillaume Mary
  * @see InsertCommandBuilder
@@ -18,7 +20,7 @@ public class Insert<T extends Table> {
 	/** Target of the values to insert */
 	private final T targetTable;
 	/** Target columns of the insert */
-	private final Set<UpdateColumn<T>> columns = new LinkedHashSet<>();
+	private final Set<UpdateColumn> columns = new LinkedHashSet<>();
 	
 	public Insert(T targetTable) {
 		this.targetTable = targetTable;
@@ -29,35 +31,38 @@ public class Insert<T extends Table> {
 	}
 	
 	/**
-	 * Adds a target column. Overwrites any previous value put for that column.
+	 * Adds a column to set a value for, without predefined value. Then value can be set through {@link InsertStatement#setValue(Column, Object)} if
+	 * {@link InsertCommandBuilder#toStatement(ColumnBinderRegistry)} is used to build the SQL order.
+	 *
+	 * Overwrites any previous value put for that column.
 	 * 
-	 * @param column a non null column
+	 * @param column any column
 	 * @return this
 	 */
 	public Insert<T> set(Column<T, ?> column) {
-		this.columns.add(new UpdateColumn<>((Column<T, Object>) column));
+		this.columns.add(new UpdateColumn((Column<Table, Object>) column));
 		return this;
 	}
 	
 	/**
-	 * Adds a target column and its value. Overwrites any previous value put for that column.
+	 * Adds a column to set and its value. Overwrites any previous value put for that column.
 	 * 
-	 * @param column a non null column
+	 * @param column any column
 	 * @param value value to be inserted
-	 * @param <C> colun and value type
+	 * @param <C> value type
 	 * @return this
 	 */
 	public <C> Insert<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn<>((Column<T, Object>) column, value));
+		this.columns.add(new UpdateColumn((Column<Table, Object>) column, value));
 		return this;
 	}
 	
 	/**
-	 * Gives all columns that are target of the insert
+	 * Gives all columns targeted by this insert
 	 * 
 	 * @return a non null {@link Set}
 	 */
-	public Set<UpdateColumn<T>> getColumns() {
+	public Set<UpdateColumn> getColumns() {
 		return columns;
 	}
 }

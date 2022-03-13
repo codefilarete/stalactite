@@ -227,11 +227,11 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				// We delete association records by entity keys, not their id because we don't have them (it is themselves and we don't have the full
 				// entities, only their id)
 				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !
-				Delete<AssociationTable> delete = new Delete<>(associationPersister.getMainTable());
+				Delete associationTableDelete = new Delete(associationPersister.getMainTable());
 				Set<SRCID> identifiers = collect(entities, this::castId, HashSet::new);
-				delete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
+				associationTableDelete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
 				
-				PreparedSQL deleteStatement = new DeleteCommandBuilder<>(delete).toStatement(columnBinderRegistry);
+				PreparedSQL deleteStatement = new DeleteCommandBuilder(associationTableDelete).toStatement(columnBinderRegistry);
 				// We don't know how many relations is contained in the table, so we don't check for deletion row count
 				try (WriteOperation<Integer> writeOperation = writeOperationFactory.createInstance(deleteStatement, associationPersister.getConnectionProvider())) {
 					writeOperation.setValues(deleteStatement.getValues());

@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.persistence.sql.order;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.persistence.sql.order.UpdateCommandBuilder.UpdateStatement;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
@@ -10,25 +12,28 @@ import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 
 /**
- * A simple representation of a SQL update clause, and a way to build it easily/fluently
+ * A fluent way of writing a SQL update clause by leveraging {@link Column} : update and where clauses are only made of it.
+ * It handles multi table update by allowing to add columns coming from different tables, but then it is up to caller to join them correctly as
+ * he would do for standard SQL, because no check is done by this class nor by {@link UpdateCommandBuilder}.
  * 
  * @author Guillaume Mary
  * @see UpdateCommandBuilder
  */
-public class Update<T extends Table> {
+public class Update {
 	
-	/** Target of the values to insert */
-	private final T targetTable;
-	/** Target columns of the insert */
+	/** Main table of columns to update */
+	private final Table targetTable;
+	
+	/** Target columns of the update */
 	private final Set<UpdateColumn> columns = new LinkedHashSet<>();
 	
-	private final Criteria criteriaSurrogate = new Criteria();
+	private final Criteria<?> criteriaSurrogate = new Criteria<>();
 	
-	public Update(T targetTable) {
+	public Update(Table targetTable) {
 		this.targetTable = targetTable;
 	}
 	
-	public T getTargetTable() {
+	public Table getTargetTable() {
 		return targetTable;
 	}
 	
@@ -37,30 +42,41 @@ public class Update<T extends Table> {
 	}
 	
 	/**
-	 * Adds a target column. If already added it has no consequence.
+	 * Adds a column to update without predefined value. Then value can be set through {@link UpdateStatement#setValue(Column, Object)} if
+	 * {@link UpdateCommandBuilder#toStatement(ColumnBinderRegistry)} is used to build the SQL order.
 	 * 
-	 * @param column a non null column
+	 * Overwrites any previous value put for that column.
+	 * 
+	 * @param column any column
 	 * @return this
 	 */
-	public Update<T> set(Column<T, ?> column) {
-		this.columns.add(new UpdateColumn<>((Column<T, Object>) column));
+	public Update set(Column<Table, ?> column) {
+		this.columns.add(new UpdateColumn(column));
 		return this;
 	}
 	
-	public <C> Update<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn<>((Column<T, Object>) column, value));
+	/**
+	 * Adds a column to update with its value.
+	 * 
+	 * @param column any column
+	 * @param value value for given column
+	 * @param <C> value type
+	 * @return this
+	 */
+	public <C> Update set(Column<Table, C> column, C value) {
+		this.columns.add(new UpdateColumn(column, value));
 		return this;
 	}
 	
 	/**
 	 * Adds a target column which value is took from another column
 	 *
-	 * @param column1 a non null column
-	 * @param column2 a non null column
+	 * @param column1 any column
+	 * @param column2 any column
 	 * @return this
 	 */
-	public <C> Update<T> set(Column<T, C> column1, Column<T, C> column2) {
-		this.columns.add(new UpdateColumn<>((Column<T, Object>) column1, column2));
+	public <C> Update set(Column<Table, C> column1, Column<Table, C> column2) {
+		this.columns.add(new UpdateColumn((Column<Table, Object>) column1, column2));
 		return this;
 	}
 	
@@ -94,23 +110,26 @@ public class Update<T extends Table> {
 		return criteriaSurrogate.and(column, condition);
 	}
 	
-	public static class UpdateColumn<T extends Table> {
+	/**
+	 * {@link Column} and its value to be updated
+	 */
+	public static class UpdateColumn {
 		
 		public static final Object PLACEHOLDER = new Object();
 		
-		private final Column<T, Object> column;
+		private final Column<Table, Object> column;
 		private final Object value;
 		
-		public UpdateColumn(Column<T, Object> column) {
-			this(column, PLACEHOLDER);
+		public UpdateColumn(Column<Table, ?> column) {
+			this((Column<Table, Object>) column, PLACEHOLDER);
 		}
 		
-		public UpdateColumn(Column<T, Object> column, Object value) {
-			this.column = column;
+		public <C> UpdateColumn(Column<Table, C> column, C value) {
+			this.column = (Column<Table, Object>) column;
 			this.value = value;
 		}
 		
-		public Column<T, Object> getColumn() {
+		public Column<Table, Object> getColumn() {
 			return column;
 		}
 		

@@ -20,31 +20,31 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Guillaume Mary
  */
-public class DeleteCommandBuilderTest {
+class DeleteCommandBuilderTest {
 	
 	@Test
-	public void testToSQL_singleTable() {
+	void toSQL_singleTable() {
 		Table totoTable = new Table("Toto");
 		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
 		
-		Delete<Table> delete = new Delete<Table>(totoTable);
+		Delete delete = new Delete(totoTable);
 		delete.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
 		
-		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
+		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete);
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto where a = 44 or a = b");
 		
-		delete = new Delete<Table>(totoTable);
+		delete = new Delete(totoTable);
 		
-		testInstance = new DeleteCommandBuilder<>(delete);
+		testInstance = new DeleteCommandBuilder(delete);
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto");
 		
 	}
 	
 	@Test
-	public void testToSQL_multiTable() {
+	void toSQL_multiTable() {
 		Table totoTable = new Table("Toto");
 		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
@@ -52,31 +52,31 @@ public class DeleteCommandBuilderTest {
 		Column<Table, Long> columnX = tataTable.addColumn("x", Long.class);
 		Column<Table, String> columnY = tataTable.addColumn("y", String.class);
 		
-		Delete<Table> delete = new Delete<Table>(totoTable);
+		Delete delete = new Delete(totoTable);
 		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
-		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
+		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete);
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 		
-		delete = new Delete<Table>(totoTable);
+		delete = new Delete(totoTable);
 		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
-		testInstance = new DeleteCommandBuilder<>(delete);
+		testInstance = new DeleteCommandBuilder(delete);
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 	}
 	
 	@Test
-	public void testToStatement() throws SQLException {
+	void toStatement() throws SQLException {
 		Table totoTable = new Table("Toto");
 		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
 		
-		Delete<Table> delete = new Delete<Table>(totoTable);
+		Delete delete = new Delete(totoTable);
 		delete.where(columnA,  Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
 		
-		DeleteCommandBuilder<Table> testInstance = new DeleteCommandBuilder<>(delete);
+		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
 		

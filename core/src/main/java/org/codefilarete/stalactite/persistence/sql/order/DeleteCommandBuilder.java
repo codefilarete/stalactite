@@ -22,15 +22,17 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
  * A SQL builder for {@link Delete} objects
+ * Can hardly be mutualized with {@link org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator} because the latter doesn't handle multi
+ * tables update.
  * 
  * @author Guillaume Mary
  */
-public class DeleteCommandBuilder<T extends Table> implements SQLBuilder {
+public class DeleteCommandBuilder implements SQLBuilder {
 	
-	private final Delete<T> delete;
+	private final Delete delete;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public DeleteCommandBuilder(Delete<T> delete) {
+	public DeleteCommandBuilder(Delete delete) {
 		this.delete = delete;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
 	}
@@ -43,8 +45,8 @@ public class DeleteCommandBuilder<T extends Table> implements SQLBuilder {
 	private String toSQL(SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
 		result.cat("delete from ");
 		
-		// looking for additionnal Tables : more than the updated one, can be found in conditions
-		Set<Column<T, Object>> whereColumns = new LinkedHashSet<>();
+		// looking for additional Tables : more than the updated one, can be found in conditions
+		Set<Column<Table, Object>> whereColumns = new LinkedHashSet<>();
 		delete.getCriteria().forEach(c -> {
 			if (c instanceof ColumnCriterion) {
 				whereColumns.add(((ColumnCriterion) c).getColumn());
@@ -54,7 +56,7 @@ public class DeleteCommandBuilder<T extends Table> implements SQLBuilder {
 				}
 			}
 		});
-		Set<T> additionalTables = Iterables.minus(
+		Set<Table> additionalTables = Iterables.minus(
 				Iterables.collect(whereColumns, Column::getTable, HashSet::new),
 				Arrays.asList(this.delete.getTargetTable()));
 		
@@ -64,9 +66,9 @@ public class DeleteCommandBuilder<T extends Table> implements SQLBuilder {
 		result.cat(this.delete.getTargetTable().getAbsoluteName())    // main table is always referenced with name (not alias)
 				.catIf(dmlNameProvider.isMultiTable(), ", ");
 		// additional tables (with optional alias)
-		Iterator<T> iterator = additionalTables.iterator();
+		Iterator<Table> iterator = additionalTables.iterator();
 		while (iterator.hasNext()) {
-			T next = iterator.next();
+			Table next = iterator.next();
 			result.cat(next.getAbsoluteName()).catIf(iterator.hasNext(), ", ");
 		}
 		

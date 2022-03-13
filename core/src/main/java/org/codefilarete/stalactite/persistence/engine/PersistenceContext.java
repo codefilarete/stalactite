@@ -558,16 +558,16 @@ public class PersistenceContext implements PersisterRegistry {
 		return queryProvider.executeUnique(getConnectionProvider());
 	}
 	
-	public <T extends Table> ExecutableUpdate<T> update(T table) {
-		return new ExecutableUpdate<>(table);
+	public <T extends Table> ExecutableUpdate update(T table) {
+		return new ExecutableUpdate(table);
 	}
 	
 	public <T extends Table> ExecutableInsert<T> insert(T table) {
 		return new ExecutableInsert<>(table);
 	}
 	
-	public <T extends Table> ExecutableDelete<T> delete(T table) {
-		return new ExecutableDelete<>(table);
+	public <T extends Table> ExecutableDelete delete(T table) {
+		return new ExecutableDelete(table);
 	}
 	
 	/**
@@ -615,29 +615,29 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 	}
 	
-	public class ExecutableUpdate<T extends Table> extends Update<T> {
+	public class ExecutableUpdate extends Update {
 		
-		private ExecutableUpdate(T targetTable) {
+		private ExecutableUpdate(Table targetTable) {
 			super(targetTable);
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public ExecutableUpdate<T> set(Column column) {
+		public ExecutableUpdate set(Column column) {
 			super.set(column);
 			return this;
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public <C> ExecutableUpdate<T> set(Column<T, C> column, C value) {
+		public <C> ExecutableUpdate set(Column<Table, C> column, C value) {
 			super.set(column, value);
 			return this;
 		}
 		
 		/** Overriden to adapt return type */
 		@Override
-		public <C> ExecutableUpdate<T> set(Column<T, C> column1, Column<T, C> column2) {
+		public <C> ExecutableUpdate set(Column<Table, C> column1, Column<Table, C> column2) {
 			super.set(column1, column2);
 			return this;
 		}
@@ -646,7 +646,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this update statement with given values
 		 */
 		public void execute() {
-			UpdateStatement<T> updateStatement = new UpdateCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
+			UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				writeOperation.execute();
@@ -689,7 +689,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this insert statement.
 		 */
 		public void execute() {
-			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(getDialect().getColumnBinderRegistry());
+			InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(dialect.getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, getConnectionProvider())) {
 				writeOperation.setValues(insertStatement.getValues());
 				writeOperation.execute();
@@ -697,9 +697,9 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 	}
 	
-	public class ExecutableDelete<T extends Table> extends Delete<T> {
+	public class ExecutableDelete extends Delete {
 		
-		private ExecutableDelete(T table) {
+		private ExecutableDelete(Table table) {
 			super(table);
 		}
 		
@@ -707,7 +707,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this delete statement with given values.
 		 */
 		public void execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder<T>(this).toStatement(getDialect().getColumnBinderRegistry());
+			PreparedSQL deleteStatement = new DeleteCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				writeOperation.execute();

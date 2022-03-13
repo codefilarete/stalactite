@@ -20,6 +20,8 @@ import org.codefilarete.stalactite.query.builder.SQLBuilder;
 
 /**
  * A SQL builder for {@link Insert} objects
+ * Can hardly be mutualized with {@link org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator} because this class provides
+ * {@link InsertStatement} which let caller reuse it by setting several time its value through {@link InsertStatement#setValue(Column, Object)}
  * 
  * @author Guillaume Mary
  */
@@ -49,7 +51,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 		result.cat("insert into ").cat(insert.getTargetTable().getAbsoluteName())
 		.cat("(");
 		
-		Iterator<UpdateColumn<T>> columnIterator = insert.getColumns().iterator();
+		Iterator<UpdateColumn> columnIterator = insert.getColumns().iterator();
 		while (columnIterator.hasNext()) {
 			UpdateColumn c = columnIterator.next();
 			result.cat(c.getColumn().getName());
@@ -60,7 +62,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 		
 		result.cat(") values (");
 		
-		Iterator<UpdateColumn<T>> columnIterator2 = insert.getColumns().iterator();
+		Iterator<UpdateColumn> columnIterator2 = insert.getColumns().iterator();
 		while (columnIterator2.hasNext()) {
 			UpdateColumn c = columnIterator2.next();
 			catUpdateObject(c, result);
@@ -99,7 +101,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
 		// Moreover we have to build indexes of Columns to allow usage of UpdateStatement.setValue(..)
-		// So we iterate of set Columns to remove unecessary columns and compute column indexes
+		// So we iterate of set Columns to remove unnecessary columns and compute column indexes
 		ModifiableInt placeholderColumnCount = new ModifiableInt();
 		insert.getColumns().forEach(c -> {
 			// only non column value must be adapted (see catUpdateObject(..))
@@ -109,7 +111,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 				if (values.get(index).equals(UpdateColumn.PLACEHOLDER)) {
 					values.remove(index);
 				}
-				columnIndexes.put(c.getColumn(), index);
+				columnIndexes.put((Column<T, Object>) c.getColumn(), index);
 			}
 		});
 		
@@ -121,7 +123,17 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 	
 	/**
 	 * A specialized version of {@link PreparedSQL} dedicated to {@link Insert} so one can set column values of the insert clause
-	 * through {@link #setValue(Column, Object)}
+	 * through {@link #setValue(Column, Object)}.
+	 * Here is a usage example:
+	 * <pre>{@code
+	 * InsertStatement<T> insertStatement = new InsertCommandBuilder<>(this).toStatement(dialect.getColumnBinderRegistry());
+	 * try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(insertStatement, connectionProvider)) {
+	 *     writeOperation.setValues(insertStatement.getValues());
+	 *     writeOperation.execute();
+	 * }
+	 * // eventually change some values and re-execute it
+	 * insertStatement.setValue(..);
+	 * }</pre>
 	 */
 	public static class InsertStatement<T extends Table> extends PreparedSQL {
 		
