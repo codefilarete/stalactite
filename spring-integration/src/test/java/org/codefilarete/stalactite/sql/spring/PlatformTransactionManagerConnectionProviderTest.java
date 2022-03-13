@@ -5,7 +5,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor.JdbcOperation;
+import org.codefilarete.stalactite.engine.SeparateTransactionExecutor.JdbcOperation;
 import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;

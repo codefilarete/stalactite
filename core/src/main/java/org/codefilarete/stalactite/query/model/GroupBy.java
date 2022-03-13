@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * @author Guillaume Mary

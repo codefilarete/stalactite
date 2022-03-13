@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.sql.spring;
 import javax.annotation.Nonnull;
 import java.sql.Connection;
 
-import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.PlatformTransactionManager;

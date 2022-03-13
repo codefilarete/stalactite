@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.builder.OperatorBuilder;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Count;

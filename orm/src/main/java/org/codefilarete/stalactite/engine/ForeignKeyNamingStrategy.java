@@ -1,0 +1,54 @@
+package org.codefilarete.stalactite.engine;
+
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+
+/**
+ * Contract for giving a name to a foreign key
+ *
+ * @author Guillaume Mary
+ */
+public interface ForeignKeyNamingStrategy {
+	
+	String DEFAULT_FOREIGNKEY_PREFIX = "FK_";
+	
+	String giveName(Column src, Column target);
+	
+	/**
+	 * Composed of a prefix, source table name, source column name, target column name.
+	 * Must be quite unique to prevent Database such as HSQLDB to yiel because key names unicity is over a table space, not per table.
+	 */
+	ForeignKeyNamingStrategy DEFAULT = (src, target) -> DEFAULT_FOREIGNKEY_PREFIX + src.getTable().getName() + "_" + src.getName()
+			+ "_" + target.getTable().getName() + "_" + target.getName();
+	
+	ForeignKeyNamingStrategy HASH = (src, target) -> DEFAULT_FOREIGNKEY_PREFIX
+			+ Integer.toHexString(src.getTable().getAbsoluteName().hashCode() * 31 * 31 + src.getName().hashCode() * 31 + target.getName().hashCode());
+	
+	/** Generates same name as Hibernate (4.3.7) does. From org.hibernate.mapping.Constraint#generateName(String, Table, Column... columns) */
+	ForeignKeyNamingStrategy HIBERNATE = (src, target) ->
+			"FK" + hashedName("table`" + src.getTable().getName() + "`" + "column`" + src.getName() + "`");
+	
+	/**
+	 * Same algorithm as Hibernate (4.3.7), see org.hibernate.mapping.Constraint#hashedName(String)
+	 * @param s the string to be hashed
+	 * @return a hashed (MD5) version of the given String, less than 30 characters
+	 */
+	static String hashedName(String s) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			md.update(s.getBytes());
+			byte[] digest = md.digest();
+			BigInteger bigInt = new BigInteger(1, digest);
+			// By converting to base 35 (full alphanumeric), we guarantee
+			// that the length of the name will always be smaller than the 30
+			// character identifier restriction enforced by a few dialects.
+			return bigInt.toString(35);
+		} catch (NoSuchAlgorithmException e) {
+			throw Exceptions.asRuntimeException(e);
+		}
+	}
+}

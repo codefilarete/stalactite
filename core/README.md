@@ -3,10 +3,10 @@
 This module aims at providing a simple mapping between Beans and RDBMS tables.
 **It doens't target relations management between them, except for querying**.
 
-Main entry point of this module is [ClassMappingStrategy](src/main/java/org/codefilarete/stalactite/persistence/mapping/ClassMappingStrategy.java) for persisting entities.
+Main entry point of this module is [ClassMappingStrategy](Stalactite/stalactite/core/src/main/java/org/codefilarete/stalactite/mapping/ClassMappingStrategy.java) for persisting entities.
 But you may also persist strange things like :
-- [Collection of values](src/main/java/org/codefilarete/stalactite/persistence/mapping/ColumnedCollectionMappingStrategy.java)
-- [Map of values](src/main/java/org/codefilarete/stalactite/persistence/mapping/ColumnedMapMappingStrategy.java)
+- [Collection of values](Stalactite/stalactite/core/src/main/java/org/codefilarete/stalactite/mapping/ColumnedCollectionMappingStrategy.java)
+- [Map of values](Stalactite/stalactite/core/src/main/java/org/codefilarete/stalactite/mapping/ColumnedMapMappingStrategy.java)
 
 You can query your database creating [Querys](src/main/java/org/codefilarete/stalactite/query/model/Query.java).
 Combined with [QueryBuilder](src/main/java/org/codefilarete/stalactite/query/builder/SQLQueryBuilder.java) you can get executable SQL.

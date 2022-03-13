@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.model.Query.FluentFrom;
 
 /**

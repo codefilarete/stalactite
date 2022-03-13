@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * A support for the select part of a SQL query

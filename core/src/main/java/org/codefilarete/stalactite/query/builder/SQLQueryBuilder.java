@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.builder;
 
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
 import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.model.GroupBy;

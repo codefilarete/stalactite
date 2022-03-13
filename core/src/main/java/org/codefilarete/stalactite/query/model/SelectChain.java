@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * The interface defining what's possible to do (fluent point of view) on a select
