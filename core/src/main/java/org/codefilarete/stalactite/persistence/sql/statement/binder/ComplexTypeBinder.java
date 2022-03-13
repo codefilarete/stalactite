@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.sql.statement.binder;
 
 import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;

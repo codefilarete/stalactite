@@ -1,14 +1,14 @@
-package org.codefilarete.stalactite.persistence.mapping;
+package org.codefilarete.stalactite.persistence.sql.statement.binder;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +25,7 @@ class ComplexTypeBinderTest {
 		// Creating our test instance : will persist List<String> as a String (stupid case)
 		ComplexTypeBinder<List<String>> testInstance = new ComplexTypeBinder<>(DefaultParameterBinders.STRING_BINDER,
 				s -> Arrays.asList(Strings.cutTail(Strings.cutHead(s, 1), 1).toString().split(",\\s")),
-				Object::toString);
+																			   Object::toString);
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(Maps.forHashMap(String.class, Object.class)
 			.add("listColumn", Arrays.asList("a", "b").toString())));
