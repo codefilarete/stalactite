@@ -141,7 +141,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	/**
 	 * Methods asked to give a new {@link UpdateContext}. The returned instance will be passed to methods
 	 * {@link #onAddedTarget(UpdateContext, AbstractDiff)}, {@link #onHeldTarget(UpdateContext, AbstractDiff)} and {@link #onRemovedTarget(UpdateContext, AbstractDiff)}.
-	 * Can be overriden to return a subtype and richer {@link UpdateContext}.
+	 * Can be overridden to return a subtype and richer {@link UpdateContext}.
 	 * 
 	 * @param updatePayload instance given to {@link #accept(Duo, Boolean)}
 	 * @return a new {@link UpdateContext} with given payload

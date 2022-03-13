@@ -63,7 +63,7 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		
 		List<String> actions = new ArrayList<>();
 		List<Duo<? extends Tata, ? extends Tata>> triggeredTarget = new ArrayList<>();
-		// Instance to test: overriden methods allow later checking
+		// Instance to test: overridden methods allow later checking
 		AfterUpdateCollectionCascader<Toto, Tata> testInstance = new AfterUpdateCollectionCascader<Toto, Tata>(persisterStub) {
 			
 			@Override

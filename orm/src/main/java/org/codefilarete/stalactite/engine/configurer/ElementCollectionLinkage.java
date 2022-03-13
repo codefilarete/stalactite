@@ -45,7 +45,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	private final EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider;
 	
 	/** Complex type mapping override, to be used when {@link EmbeddableMappingConfigurationProvider} is not null */
-	private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
+	private final ValueAccessPointMap<String> overriddenColumnNames = new ValueAccessPointMap<>();
 	
 	/**
 	 * @param setter collection accessor
@@ -98,15 +98,15 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	}
 
 	public ValueAccessPointMap<String> getOverridenColumnNames() {
-		return this.overridenColumnNames;
+		return this.overriddenColumnNames;
 	}
 	
 	public void overrideName(SerializableFunction methodRef, String columnName) {
-		this.overridenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+		this.overriddenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 	}
 	
 	public void overrideName(SerializableBiConsumer methodRef, String columnName) {
-		this.overridenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+		this.overriddenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
 	public Table getTargetTable() {

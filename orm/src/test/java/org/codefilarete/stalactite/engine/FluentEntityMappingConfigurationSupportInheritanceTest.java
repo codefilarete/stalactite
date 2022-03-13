@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Vehicle;
@@ -74,7 +74,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					// concrete class defines id
-					.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
@@ -112,7 +112,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					// concrete class defines id
-					.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
@@ -149,7 +149,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel)
 					.withColumnNaming(accessor -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + "_col")
 					// concrete class defines id
-					.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
 					.build(persistenceContext);
@@ -182,7 +182,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					// concrete class defines id
-					.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor)
@@ -225,7 +225,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getModel)
 					.withColumnNaming(columnNamingStrategy)
 					// concrete class defines id
-					.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
@@ -273,7 +273,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					// concrete class defines id
-					.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapSuperClass(MappingEase
 							.embeddableBuilder(Vehicle.class)
 							.embed(Vehicle::getColor, embeddableBuilder(Color.class)
@@ -314,7 +314,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
@@ -352,11 +352,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		@Test
 		void identifierIsRedefined_throwsException() {
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
-					.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).getConfiguration();
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).getConfiguration();
 			
 			assertThatThrownBy(() -> entityBuilder(Vehicle.class, LONG_TYPE)
 							.mapInheritance(inheritanceConfiguration)
-							.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.build(persistenceContext))
 					.isInstanceOf(MappingConfigurationException.class)
 					.hasMessage("Defining an identifier while inheritance is used is not supported"
@@ -369,7 +369,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
-					.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
@@ -414,7 +414,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			MappedSuperClassData mappedSuperClassData = new MappedSuperClassData();
 			
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
-					.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
@@ -456,7 +456,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		void mappedSuperClass_and_entityInheritance_throwsException() {
 			EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(AbstractVehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.getConfiguration();
 			
 			FluentEntityMappingBuilder<Car, Identifier<Long>> mappingBuilder = entityBuilder(Car.class, LONG_TYPE)
@@ -476,7 +476,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Vehicle::getColor)
 					.getConfiguration();
 			
@@ -517,7 +517,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 		@Test
 		void withEmbeddable() {
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration = entityBuilder(Vehicle.class, LONG_TYPE)
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.embed(Vehicle::getColor, embeddableBuilder(Color.class)
 							.map(Color::getRgb))
 					.getConfiguration();

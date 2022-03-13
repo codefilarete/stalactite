@@ -30,7 +30,7 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 	 *
 	 * This implementation is done with getObject(columnName) == null. Not sure that all JDBC driver supports it. Official way is to use
 	 * {@link ResultSet#wasNull()} but it needs column to be read before. Thought this is more expensive than testing getObject().
-	 * To be changed/overriden according to JDBC driver support or performance observation. 
+	 * To be changed/overridden according to JDBC driver support or performance observation. 
 	 *
 	 * @throws SQLException the possible error thrown by {@link ResultSet#getObject(String)}
 	 */

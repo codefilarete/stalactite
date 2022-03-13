@@ -18,12 +18,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tries to simplify usage of {@link PreparedStatement} in oriented scenarii like:
+ * Tries to simplify usage of {@link PreparedStatement} in oriented scenario like:
  * - set values on {@link PreparedStatement}
  * - executeBatch {@link PreparedStatement} (see {@link WriteOperation})
  * 
  * Logging of SQL execution can be activated with a logger with this class name.
- * If you want more fine grained logs, SQL statements can be logged with DEBUG level, whereas values can be logged with TRACE level.
+ * If you want more fine-grained logs, SQL statements can be logged with DEBUG level, whereas values can be logged with TRACE level.
  * <b>Despite that activation of fined grained logs defers by level, they are always logged at DEBUG level.</b> (which is not really consistent).
  * 
  * @see WriteOperation
@@ -155,7 +155,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	/**
-	 * Cancels the underlying {@link PreparedStatement} (if exists and not closed, to avoid unecessary exceptions)
+	 * Cancels the underlying {@link PreparedStatement} (if exists and not closed, to avoid unnecessary exceptions)
 	 * 
 	 * @throws SQLException this of the {@link PreparedStatement#cancel()} method
 	 */

@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -89,10 +89,10 @@ class EntityGraphSelectExecutorTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
 		OptimizedUpdatePersister<Country, Identifier> persister = (OptimizedUpdatePersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
-			.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+			.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 			.map(Country::getName)
 			.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
-					.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName))
 					.mappedBy(City::getCountry)
 			.build(persistenceContext);
@@ -150,10 +150,10 @@ class EntityGraphSelectExecutorTest {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
 		EntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (EntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
-				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
-						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName))
 				.mappedBy(City::getCountry)
 				.build(persistenceContext);

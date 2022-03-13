@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
@@ -101,9 +101,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Object[][] result = new Object[][] {
 				{	"single table",
 					entityBuilder(Vehicle.class, LONG_TYPE)
-						.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-								.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+								.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel), "CAR")
@@ -113,9 +113,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext1.getConnectionProvider() },
 				{	"joined tables",
 					entityBuilder(Vehicle.class, LONG_TYPE)
-						.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-								.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+								.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel))
@@ -125,9 +125,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext2.getConnectionProvider() },
 				{	"table per class",
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-									.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+									.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel))
@@ -186,17 +186,17 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		
 		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName);
 		
 		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-				.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(City::getName);
 		
 		Object[][] result = new Object[][] {
 				{	"single table",
 						entityBuilder(Country.class, Identifier.LONG_TYPE)
-								.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.map(Country::getName)
 								.map(Country::getDescription)
 								.mapOneToOne(Country::getPresident, personMappingBuilder)
@@ -208,7 +208,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				},
 				{	"joined tables",
 						entityBuilder(Country.class, Identifier.LONG_TYPE)
-								.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.map(Country::getName)
 								.map(Country::getDescription)
 								.mapOneToOne(Country::getPresident, personMappingBuilder)
@@ -287,9 +287,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Object[][] result = new Object[][] {
 					{	"single table / one-to-one with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-										.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+										.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -304,7 +304,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							persistenceContext1.getConnectionProvider() },
 				{	"joined tables / one-to-one with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -396,9 +396,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Object[][] result = new Object[][] {
 				{	"single table / one-to-many with association table",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-										.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+										.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -413,9 +413,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext1.getConnectionProvider() },
 				{	"single table / one-to-many with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-										.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+										.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -430,7 +430,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext2.getConnectionProvider() },
 				{	"joined tables / one-to-many with association table",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -445,7 +445,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext3.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -460,7 +460,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext4.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association / each subclass declares its association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -481,7 +481,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext5.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association / association is defined as common property",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapOneToManyList(Vehicle::getWheels, entityBuilder(Wheel.class, String.class)
 										// please note that we use an already-assigned policy because it requires entities to be mark
 										// as persisted after select, so we test also select listener of relation
@@ -579,7 +579,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 //						persistenceContext1.getConnectionProvider() },
 				{	"joined tables / one-to-many with association table",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -655,9 +655,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void oneSubClass() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -719,9 +719,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -797,10 +797,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses_withCommonProperties() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Vehicle::getColor)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -894,9 +894,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void listenersAreNotified() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -952,9 +952,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void oneSubClass() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1015,9 +1015,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1121,10 +1121,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses_withCommonProperties() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Vehicle::getColor)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1224,9 +1224,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void listenersAreNotified() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1282,9 +1282,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void oneSubClass() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1346,9 +1346,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1435,10 +1435,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses_withCommonProperties() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Vehicle::getColor)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1527,9 +1527,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void listenersAreNotified() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1592,14 +1592,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 									.addSubClass(subentityBuilder(Truk.class))
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1665,14 +1665,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 									.addSubClass(subentityBuilder(Truk.class))
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1738,7 +1738,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Vehicle::getColor)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 									.addSubClass(subentityBuilder(Truk.class), "T")
@@ -1746,7 +1746,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1840,7 +1840,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(Vehicle::getColor)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 									.addSubClass(subentityBuilder(Truk.class), "T")
@@ -1848,7 +1848,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1949,7 +1949,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>joinTable()
 									.addSubClass(subentityBuilder(Village.class)
@@ -1959,7 +1959,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-							.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.mapOneToManySet(Country::getCities, cityConfiguration)
 								.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
 								.cascading(RelationMode.ALL)
@@ -2028,7 +2028,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>joinTable()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2038,7 +2038,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 						.mappedBy(City::getCountry)
 						.cascading(RelationMode.ALL)
@@ -2134,7 +2134,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>singleTable()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2144,7 +2144,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
 						.cascading(RelationMode.ALL)
@@ -2213,7 +2213,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>singleTable()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2223,7 +2223,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
 					.cascading(RelationMode.ALL)
@@ -2315,7 +2315,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2325,7 +2325,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
 						.cascading(RelationMode.ALL)
@@ -2394,7 +2394,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2404,7 +2404,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
 					.cascading(RelationMode.ALL)
@@ -2458,7 +2458,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2468,7 +2468,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
 					.cascading(RelationMode.ALL)

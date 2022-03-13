@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport.EntityGraphNode;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -47,7 +47,7 @@ class EntityCriteriaSupportTest {
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
 				.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
@@ -116,7 +116,7 @@ class EntityCriteriaSupportTest {
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
 				.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName), cityTable)
 				.build(dummyPersistenceContext, countryTable))
 				.getMappingStrategy();
@@ -142,7 +142,7 @@ class EntityCriteriaSupportTest {
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
 				.mapOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-						.mapKey(City::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName), cityTable
 				)
 				.build(dummyPersistenceContext, countryTable))

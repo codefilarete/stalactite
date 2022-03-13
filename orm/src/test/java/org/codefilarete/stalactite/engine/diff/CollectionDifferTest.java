@@ -44,9 +44,9 @@ public class CollectionDifferTest {
 	private static final Function<AbstractDiff<? extends Identified>, State> GET_STATE = AbstractDiff::getState;
 	
 	private static final Function<AbstractDiff<? extends Identified>, Comparable> SOURCE_ID_GETTER = Functions.link(GET_SOURCE_INSTANCE, Identified::getId)
-			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
+			.andThen(statefulIdentifier -> (Comparable) statefulIdentifier.getSurrogate());
 	private static final Function<AbstractDiff<? extends Identified>, Comparable> REPLACING_ID_GETTER = Functions.link(GET_REPLACING_INSTANCE, Identified::getId)
-			.andThen(statefullIdentifier -> (Comparable) statefullIdentifier.getSurrogate());
+			.andThen(statefulIdentifier -> (Comparable) statefulIdentifier.getSurrogate());
 	private static final Comparator<AbstractDiff<? extends Identified>> STATE_COMPARATOR = Comparator.comparing(GET_STATE);
 	private static final Comparator<AbstractDiff<? extends Identified>> STATE_THEN_ID_COMPARATOR = STATE_COMPARATOR
 			.thenComparing(SOURCE_ID_GETTER, Comparator.nullsFirst(Comparator.naturalOrder()))

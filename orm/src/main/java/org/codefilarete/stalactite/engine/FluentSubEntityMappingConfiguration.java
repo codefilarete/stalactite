@@ -191,7 +191,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		/**
 		 * {@inheritDoc}
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @param <O> owner type
@@ -202,7 +202,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		/**
 		 * {@inheritDoc}
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (getter)
 		 * @param <O> owner type
@@ -213,7 +213,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		/**
 		 * {@inheritDoc}
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation
 		 * @return the global mapping configurer
@@ -228,7 +228,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentSubEntityMappingConfiguration<C, I>, OneToManyOptions<C, I, O, S> {
 		
 		/**
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer
@@ -237,7 +237,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 		
 		/**
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer
@@ -246,7 +246,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 		
 		/**
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer
@@ -276,7 +276,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	interface FluentMappingBuilderOneToManyListOptions<C, I, O, S extends List<O>>
 			extends FluentMappingBuilderOneToManyOptions<C, I, O, S>, IndexableCollectionOptions<C, I, O> {
 		/**
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer
@@ -285,7 +285,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 		
 		/**
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer
@@ -294,7 +294,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
 		
 		/**
-		 * Declaration overriden to adapt return type to this class.
+		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
 		 * @return the global mapping configurer

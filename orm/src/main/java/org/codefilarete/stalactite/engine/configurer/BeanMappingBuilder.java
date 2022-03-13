@@ -129,24 +129,24 @@ class BeanMappingBuilder {
 	
 	protected void includeDirectMapping(EmbeddableMappingConfiguration<?> givenConfiguration,
 										@Nullable ValueAccessPoint accessorPrefix,
-										ValueAccessPointMap<String> overridenColumnNames,
-										ValueAccessPointMap<Column> overridenColumns,
+										ValueAccessPointMap<String> overriddenColumnNames,
+										ValueAccessPointMap<Column> overriddenColumns,
 										ValueAccessPointSet excludedProperties) {
 		givenConfiguration.getPropertiesMapping().stream()
 				.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()))
 				.forEach(linkage -> includeMapping(linkage, givenConfiguration, accessorPrefix,
-						overridenColumnNames.get(linkage.getAccessor()),
-						overridenColumns.get(linkage.getAccessor())));
+						overriddenColumnNames.get(linkage.getAccessor()),
+						overriddenColumns.get(linkage.getAccessor())));
 	}
 	
 	protected <C, O> void includeMapping(Linkage<C, O> linkage,
 										 EmbeddableMappingConfiguration<?> mappingConfiguration,
 										 @Nullable ValueAccessPoint accessorPrefix,
-										 @Nullable String overridenColumnName,
-										 @Nullable Column<Table, O> overridenColumn) {
-		String columnName = nullable(overridenColumn).map(Column::getName).getOr(() -> determineColumnName(linkage, overridenColumnName));
+										 @Nullable String overriddenColumnName,
+										 @Nullable Column<Table, O> overriddenColumn) {
+		String columnName = nullable(overriddenColumn).map(Column::getName).getOr(() -> determineColumnName(linkage, overriddenColumnName));
 		assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-		Column<Table, O> column = nullable(overridenColumn).getOr(() -> addColumnToTable(linkage, columnName));
+		Column<Table, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName));
 		ensureColumnBindingInRegistry(linkage, column);
 		ReversibleAccessor accessor;
 		if (accessorPrefix != null) {
@@ -172,8 +172,8 @@ class BeanMappingBuilder {
 		return addedColumn;
 	}
 	
-	private <C, O> String determineColumnName(Linkage<C, O> linkage, @Nullable String overridenColumName) {
-		return nullable(overridenColumName).elseSet(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
+	private <C, O> String determineColumnName(Linkage<C, O> linkage, @Nullable String overriddenColumName) {
+		return nullable(overriddenColumName).elseSet(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
 	}
 	
 	protected <C, O> void ensureColumnBindingInRegistry(Linkage<C, O> linkage, Column<?, O> column) {
@@ -268,7 +268,7 @@ class BeanMappingBuilder {
 				// (where T is type returned by accessor, or expected as input of mutator)
 				(localAccessor, accessorInputType) -> insetBeanType);
 			
-			// Computing definitive column because it may be overriden by inset declaration
+			// Computing definitive column because it may be overridden by inset declaration
 			Column finalColumn;
 			if (inset.getOverridenColumns().containsKey(accessor)) {
 				finalColumn = inset.getOverridenColumns().get(accessor);
@@ -306,7 +306,7 @@ class BeanMappingBuilder {
 	
 	/**
 	 * Ensures that a bean is not already embedded with same accessor, because its columns would conflict with already defined ones, or checks that every property
-	 * is overriden.
+	 * is overridden.
 	 * Throws an exception if that's not the case.
 	 * 
 	 * @param inset current inset to be checked for duplicate
@@ -344,7 +344,7 @@ class BeanMappingBuilder {
 				String conflictingDeclaration = toMethodReferenceString(abstractInset.getInsetAccessor());
 				throw new MappingConfigurationException(
 						currentMethodReference + " conflicts with " + conflictingDeclaration + " while embedding a " + Reflections.toString(inset.getEmbeddedClass())
-								+ ", column names should be overriden : "
+								+ ", column names should be overridden : "
 								+ join.keySet()
 								.stream().map(AccessorDefinition::toString).collect(Collectors.joining(", ")));
 			}

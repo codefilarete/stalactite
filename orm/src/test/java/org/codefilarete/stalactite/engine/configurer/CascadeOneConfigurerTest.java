@@ -9,7 +9,7 @@ import java.util.Map;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -107,7 +107,7 @@ class CascadeOneConfigurerTest {
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
+		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
@@ -210,7 +210,7 @@ class CascadeOneConfigurerTest {
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
 		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
+		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);

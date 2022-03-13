@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Vehicle;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
@@ -43,7 +43,7 @@ class SingleTablePolymorphismBuilderTest {
 		Column colorTable = expectedResult.addColumn("myOverridingColumn", Integer.class);
 		
 		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
-				.mapKey(Vehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(subentityBuilder(Car.class)
 								.map(Car::getModel)

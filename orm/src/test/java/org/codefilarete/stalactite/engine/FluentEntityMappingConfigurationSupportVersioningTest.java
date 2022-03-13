@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -58,7 +58,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getName)
-				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
 				.build(persistenceContext));
@@ -73,7 +73,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
-				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
 				.build(persistenceContext);
@@ -125,7 +125,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 						return now;
 					}
 				})
-				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
 				.build(persistenceContext);
@@ -169,7 +169,7 @@ public class FluentEntityMappingConfigurationSupportVersioningTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
-				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
 				.build(persistenceContext);

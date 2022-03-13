@@ -36,7 +36,7 @@ class DDLGeneratorTest {
 	}
 	
 	@Test
-	void overridenColumnTypeIsTakenIntoAccount() {
+	void overriddenColumnTypeIsTakenIntoAccount() {
 		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
 		typeMapping.put(String.class, "VARCHAR");
 		SqlTypeRegistry sqlTypeRegistry = new SqlTypeRegistry(typeMapping);

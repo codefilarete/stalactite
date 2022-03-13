@@ -10,7 +10,7 @@ import org.codefilarete.tool.function.ThrowingExecutable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
- * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so theses operations return number of affected rows
+ * {@link SQLOperation} dedicated to Inserts, Updates, Deletes ... so these operations return number of affected rows
  * 
  * @author Guillaume Mary
  */

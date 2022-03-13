@@ -34,7 +34,7 @@ import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
-import org.codefilarete.stalactite.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -117,7 +117,7 @@ public class PersisterBuilderImplTest {
 				// setting a foreign key naming strategy to be tested
 				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
 				.versionedBy(Country::getVersion, new IntegerSerie())
-				.mapKey(Country::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription));
 		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 10);
@@ -130,7 +130,7 @@ public class PersisterBuilderImplTest {
 	void collectEmbeddedMappingFromInheritance_fromMappedSuperClasses() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(Car::getModel)
 						.mapSuperClass(embeddableBuilder(AbstractVehicle.class)
 								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
@@ -178,7 +178,7 @@ public class PersisterBuilderImplTest {
 				entityBuilder(Car.class, Identifier.class)
 						.map(Car::getModel)
 						.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-								.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 										.map(Timestamp::getCreationDate)
 										.map(Timestamp::getModificationDate))
@@ -232,7 +232,7 @@ public class PersisterBuilderImplTest {
 								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
 										.map(Color::getRgb))
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-										.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 												.map(Timestamp::getCreationDate)
 												.map(Timestamp::getModificationDate)))
@@ -312,7 +312,7 @@ public class PersisterBuilderImplTest {
 	void collectEmbeddedMappingFromInheritance_withoutHierarchy() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-						.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(Car::getModel)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
@@ -506,7 +506,7 @@ public class PersisterBuilderImplTest {
 				entityBuilder(Car.class, Identifier.class)
 						.map(Car::getModel)
 						.map(Vehicle::getColor)
-						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
 								.map(Timestamp::getModificationDate))
@@ -523,7 +523,7 @@ public class PersisterBuilderImplTest {
 				entityBuilder(Car.class, Identifier.class)
 						.map(Car::getModel)
 						.map(Vehicle::getColor)
-						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
 								.map(Timestamp::getModificationDate))
@@ -554,7 +554,7 @@ public class PersisterBuilderImplTest {
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
 								.map(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-										.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 												.map(Timestamp::getCreationDate)
 												.map(Timestamp::getModificationDate))
@@ -587,7 +587,7 @@ public class PersisterBuilderImplTest {
 						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
 								.map(Vehicle::getColor)
 								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
-										.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 												.map(Timestamp::getCreationDate)
 												.map(Timestamp::getModificationDate))
@@ -645,7 +645,7 @@ public class PersisterBuilderImplTest {
 	void build_createsAnInstanceThatDoesntRequiresTwoSelectsOnItsUpdateMethod() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.class)
-				.mapKey(Car::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Car::getModel));
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		Connection connectionMock = mock(Connection.class);
@@ -688,7 +688,7 @@ public class PersisterBuilderImplTest {
 	void build_resultAssertsThatPersisterManageGivenEntities() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.class)
-						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
 								.map(Timestamp::getModificationDate))
@@ -719,7 +719,7 @@ public class PersisterBuilderImplTest {
 	void build_withPolymorphismJoinedTables_resultAssertsThatPersisterManageGivenEntities() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.class)
-						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
 								.map(Timestamp::getModificationDate))
@@ -752,7 +752,7 @@ public class PersisterBuilderImplTest {
 	void build_withPolymorphismSingleTable_resultAssertsThatPersisterManageGivenEntities() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.class)
-						.mapKey(AbstractVehicle::getId, StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
 								.map(Timestamp::getModificationDate))

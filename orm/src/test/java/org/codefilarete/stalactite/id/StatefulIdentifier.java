@@ -25,8 +25,8 @@ public interface StatefulIdentifier<T> {
 	T getSurrogate();
 	
 	/**
-	 * Gives the persistence state of this identifier: true means that this identifier is used by a database row and commited in the database.
-	 * False means it's not (which means not used at all or not yet commited).
+	 * Gives the persistence state of this identifier: true means that this identifier is used by a database row and committed in the database.
+	 * False means it's not (which means not used at all or not yet committed).
 	 *
 	 * @return the persistence state of this identifier
 	 */

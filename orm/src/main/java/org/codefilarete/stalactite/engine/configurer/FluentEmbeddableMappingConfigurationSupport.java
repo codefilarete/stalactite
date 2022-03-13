@@ -454,10 +454,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final PropertyAccessor<SRC, TRGT> accessor;
-		private final ValueAccessPointMap<String> overridenColumnNames = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<String> overriddenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
 		private final EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder;
-		private final ValueAccessPointMap<Column> overridenColumns = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<Column> overriddenColumns = new ValueAccessPointMap<>();
 		
 		
 		Inset(SerializableBiConsumer<SRC, TRGT> targetSetter,
@@ -507,11 +507,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		}
 		
 		public ValueAccessPointMap<String> getOverridenColumnNames() {
-			return this.overridenColumnNames;
+			return this.overriddenColumnNames;
 		}
 		
 		public ValueAccessPointMap<Column> getOverridenColumns() {
-			return overridenColumns;
+			return overriddenColumns;
 		}
 		
 		public EmbeddableMappingConfigurationProvider<TRGT> getBeanMappingBuilder() {
@@ -519,23 +519,23 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		}
 		
 		public void overrideName(SerializableFunction methodRef, String columnName) {
-			this.overridenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+			this.overriddenColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
 		}
 		
 		public void overrideName(SerializableBiConsumer methodRef, String columnName) {
-			this.overridenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+			this.overriddenColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 		}
 		
 		public void overrideName(AccessorChain accessorChain, String columnName) {
-			this.overridenColumnNames.put(accessorChain, columnName);
+			this.overriddenColumnNames.put(accessorChain, columnName);
 		}
 		
 		public void override(SerializableFunction methodRef, Column column) {
-			this.overridenColumns.put(new AccessorByMethodReference(methodRef), column);
+			this.overriddenColumns.put(new AccessorByMethodReference(methodRef), column);
 		}
 		
 		public void override(SerializableBiConsumer methodRef, Column column) {
-			this.overridenColumns.put(new MutatorByMethodReference(methodRef), column);
+			this.overriddenColumns.put(new MutatorByMethodReference(methodRef), column);
 		}
 		
 		public void exclude(SerializableBiConsumer methodRef) {

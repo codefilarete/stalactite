@@ -37,7 +37,7 @@ public class DMLNameProvider {
 	
 	/**
 	 * Gives the column name (without table name).
-	 * Aimed at being overriden to take key words into account (and put it between quotes for instance)
+	 * Aimed at being overridden to take key words into account (and put it between quotes for instance)
 	 * 
 	 * @param column a column
 	 * @return the column name (eventually escaped)
@@ -57,7 +57,7 @@ public class DMLNameProvider {
 	
 	/**
 	 * Gives the table name.
-	 * Aimed at being overriden to take key words into account (and put it between quotes for instance)
+	 * Aimed at being overridden to take key words into account (and put it between quotes for instance)
 	 *
 	 * @param table a table
 	 * @return the table name (eventually escaped)

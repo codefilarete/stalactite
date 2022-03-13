@@ -43,7 +43,7 @@ public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	}
 	
 	/**
-	 * To be overriden to add complementary verification
+	 * To be overridden to add complementary verification
 	 * @param that another objet, not null
 	 * @return true if this surrogate equals the other surrogate
 	 */

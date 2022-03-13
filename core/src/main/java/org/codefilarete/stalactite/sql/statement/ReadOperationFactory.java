@@ -5,7 +5,7 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 
 /**
- * As its name mention it, this class is a factory for {@link ReadOperation}, introduced to be overriden for database specific behavior
+ * As its name mention it, this class is a factory for {@link ReadOperation}, introduced to be overridden for database specific behavior
  * 
  * @author Guillaume Mary
  */

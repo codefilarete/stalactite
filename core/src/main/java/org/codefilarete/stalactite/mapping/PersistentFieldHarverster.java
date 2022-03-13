@@ -71,7 +71,7 @@ public class PersistentFieldHarverster {
 	}
 	
 	/**
-	 * To be overriden to exclude unecessary Fields. Current implementation excludes static, Iterable and Map fields.
+	 * To be overridden to exclude unecessary Fields. Current implementation excludes static, Iterable and Map fields.
 	 * @return a {@link FieldFilter}
 	 */
 	protected FieldFilter getFieldVisitor() {

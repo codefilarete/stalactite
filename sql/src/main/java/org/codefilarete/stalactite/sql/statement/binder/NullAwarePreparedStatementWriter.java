@@ -28,7 +28,7 @@ public class NullAwarePreparedStatementWriter<T> implements PreparedStatementWri
 	/**
 	 * Special method for null values.
 	 * This implementation is based on {@link PreparedStatement#setObject(int, Object)} with null as 2nd argument, but not all JDBC drivers
-	 * support this way of doing and shall need usage of {@link PreparedStatement#setNull(int, int)}. So this method is here to be overriden
+	 * support this way of doing and shall need usage of {@link PreparedStatement#setNull(int, int)}. So this method is here to be overridden
 	 * according to support of setObject(int, null).
 	 *
 	 * @param valueIndex the index where to set null, first argument of setXXX(..)

@@ -11,9 +11,9 @@ import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifie
  * 
  * @author Guillaume Mary
  */
-public class StatefullIdentifierAlreadyAssignedIdentifierPolicy implements AlreadyAssignedIdentifierPolicy<Identified<Long>, StatefulIdentifier<Long>> {
+public class StatefulIdentifierAlreadyAssignedIdentifierPolicy implements AlreadyAssignedIdentifierPolicy<Identified<Long>, StatefulIdentifier<Long>> {
 	
-	public static final AlreadyAssignedIdentifierPolicy<Identified<Long>, StatefulIdentifier<Long>> ALREADY_ASSIGNED = new StatefullIdentifierAlreadyAssignedIdentifierPolicy();
+	public static final AlreadyAssignedIdentifierPolicy<Identified<Long>, StatefulIdentifier<Long>> ALREADY_ASSIGNED = new StatefulIdentifierAlreadyAssignedIdentifierPolicy();
 	
 	@Override
 	public Consumer<Identified<Long>> getMarkAsPersistedFunction() {

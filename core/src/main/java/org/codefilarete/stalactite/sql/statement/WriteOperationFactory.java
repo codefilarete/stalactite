@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 
 /**
- * As its name mentions it, this class is a factory for {@link WriteOperation}, introduced to be overriden for database specific behavior.
+ * As its name mentions it, this class is a factory for {@link WriteOperation}, introduced to be overridden for database specific behavior.
  * 
  * @author Guillaume Mary
  * @see Dialect#newWriteOperationFactory()

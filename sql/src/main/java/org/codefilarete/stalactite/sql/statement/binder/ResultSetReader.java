@@ -39,7 +39,7 @@ public interface ResultSetReader<I> {
 	}
 	
 	/**
-	 * Method expected to be overriden for really reading {@link ResultSet} value if one want to benefit from exception handling by {@link #get(ResultSet, String)}
+	 * Method expected to be overridden for really reading {@link ResultSet} value if one want to benefit from exception handling by {@link #get(ResultSet, String)}
 	 *
 	 * @param resultSet the {@link ResultSet} to read
 	 * @param columnName the column to be read from the given {@link ResultSet}
