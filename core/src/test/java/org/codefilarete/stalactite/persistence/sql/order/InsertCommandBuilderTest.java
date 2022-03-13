@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.command.builder;
+package org.codefilarete.stalactite.persistence.sql.order;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
