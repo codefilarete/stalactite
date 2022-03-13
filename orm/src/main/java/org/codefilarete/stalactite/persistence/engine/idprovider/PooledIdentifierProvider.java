@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.provider;
+package org.codefilarete.stalactite.persistence.engine.idprovider;
 
 import java.time.Duration;
 import java.util.ArrayList;

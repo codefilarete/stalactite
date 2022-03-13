@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.provider;
+package org.codefilarete.stalactite.persistence.engine.idprovider;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -8,9 +8,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.persistence.engine.PersistenceContext;
 import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.persistence.engine.TransactionalConnectionProvider;
@@ -18,8 +15,11 @@ import org.codefilarete.stalactite.persistence.mapping.id.sequence.PooledHiLoSeq
 import org.codefilarete.stalactite.persistence.mapping.id.sequence.PooledHiLoSequenceOptions;
 import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequenceStorageOptions;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -52,7 +52,7 @@ public class PooledSequenceIdentifierProviderTest {
 		List<Long> starterKit = Arrays.asList();
 		ExecutorService backgroundLoader = Executors.newSingleThreadExecutor();
 		PooledSequenceIdentifierProvider testInstance = new PooledSequenceIdentifierProvider(starterKit, 2, backgroundLoader, Duration.ofSeconds(2),
-				sequenceIdentifierGenerator);
+																							 sequenceIdentifierGenerator);
 		
 		// Test
 		List<Long> generated = new ArrayList<>();

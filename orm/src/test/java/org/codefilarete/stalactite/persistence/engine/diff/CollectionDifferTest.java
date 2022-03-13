@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.persistence.engine.model.Country;
 import org.codefilarete.stalactite.persistence.id.Identified;
-import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
+import org.codefilarete.stalactite.persistence.engine.idprovider.LongProvider;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;

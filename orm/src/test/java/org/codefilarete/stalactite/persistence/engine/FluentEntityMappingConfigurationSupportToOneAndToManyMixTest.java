@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
 import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
 import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
+import org.codefilarete.stalactite.persistence.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;

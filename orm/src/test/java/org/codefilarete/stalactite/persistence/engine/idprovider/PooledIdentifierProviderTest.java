@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.provider;
+package org.codefilarete.stalactite.persistence.engine.idprovider;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.codefilarete.stalactite.persistence.engine.idprovider.PooledIdentifierProvider;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 

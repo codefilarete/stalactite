@@ -14,7 +14,7 @@ import org.codefilarete.tool.function.Serie.NowSerie;
 import org.codefilarete.stalactite.persistence.engine.model.Country;
 import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
+import org.codefilarete.stalactite.persistence.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
