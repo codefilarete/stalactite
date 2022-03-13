@@ -70,7 +70,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
 		
 		WriteOperation<Column<T, Object>> writeOperation = getWriteOperationFactory()
-				.createInstance(insertStatement, new CurrentConnectionProvider(), identifierInsertionManager::prepareStatement, expectedBatchedRowCountsSupplier);
+				.createInstance(insertStatement, getConnectionProvider(), identifierInsertionManager::prepareStatement, expectedBatchedRowCountsSupplier);
 		writeOperation.setListener(this.operationListener);
 		JDBCBatchingIterator<C> jdbcBatchingIterator = identifierInsertionManager.buildJDBCBatchingIterator(entitiesCopy, writeOperation, getBatchSize());
 		

@@ -91,7 +91,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 			List<C> entitiesCopy = Iterables.copy(entities);
 			ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
-			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, new CurrentConnectionProvider(), expectedBatchedRowCountsSupplier);
+			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, getConnectionProvider(), expectedBatchedRowCountsSupplier);
 			
 			JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 			while (jdbcBatchingIterator.hasNext()) {
@@ -145,8 +145,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		// we update only entities that have values to be modified
 		List<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 		if (!Iterables.isEmpty(toUpdate)) {
-			CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
-			executeUpdate(toUpdate, new JDBCBatchingOperationCache(currentConnectionProvider, toUpdate.size()));
+			executeUpdate(toUpdate, new JDBCBatchingOperationCache(getConnectionProvider(), toUpdate.size()));
 		}
 	}
 	
@@ -169,7 +168,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			if (!Iterables.isEmpty(toUpdate)) {
 				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
 				ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(toUpdate.size(), getBatchSize());
-				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, new CurrentConnectionProvider(), expectedBatchedRowCountsSupplier);
+				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, getConnectionProvider(), expectedBatchedRowCountsSupplier);
 				// Since all columns are updated we can benefit from JDBC batch
 				JDBCBatchingOperation<T> jdbcBatchingOperation = new JDBCBatchingOperation<>(writeOperation, getBatchSize());
 				executeUpdate(toUpdate, new SingleJDBCBatchingOperation(jdbcBatchingOperation));

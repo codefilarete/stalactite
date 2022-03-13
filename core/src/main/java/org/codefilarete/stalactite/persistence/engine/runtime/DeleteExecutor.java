@@ -57,7 +57,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
 		List<? extends C> entitiesCopy = Iterables.copy(entities);
 		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
-		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, new CurrentConnectionProvider(), expectedBatchedRowCountsSupplier);
+		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, getConnectionProvider(), expectedBatchedRowCountsSupplier);
 		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entitiesCopy, writeOperation, getBatchSize());
 		jdbcBatchingIterator.forEachRemaining(c -> writeOperation.addBatch(getMappingStrategy().getVersionedKeyValues(c)));
 	}
@@ -107,8 +107,8 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			lastBlock = java.util.Collections.emptyList();
 		}
 		
-		// NB: CurrentConnectionProvider must provide the same connection over all blocks
-		CurrentConnectionProvider currentConnectionProvider = new CurrentConnectionProvider();
+		// NB: ConnectionProvider must provide the same connection over all blocks
+		ConnectionProvider currentConnectionProvider = getConnectionProvider();
 		ColumnParameterizedSQL<T> deleteStatement;
 		T targetTable = getMappingStrategy().getTargetTable();
 		

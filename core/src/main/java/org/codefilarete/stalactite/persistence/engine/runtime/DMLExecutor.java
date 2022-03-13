@@ -4,7 +4,6 @@ import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 
 /**
  * CRUD Persistent features dedicated to an entity class. Kind of sliding door of {@link Persister} aimed at running
@@ -43,13 +42,4 @@ public abstract class DMLExecutor<C, I, T extends Table> {
 		return inOperatorMaxSize;
 	}
 	
-	/**
-	 * Implementation that gives the {@link ConnectionProvider#giveConnection()} of instanciation time
-	 */
-	protected class CurrentConnectionProvider extends SimpleConnectionProvider {
-		
-		public CurrentConnectionProvider() {
-			super(connectionProvider.giveConnection());
-		}
-	}
 }
