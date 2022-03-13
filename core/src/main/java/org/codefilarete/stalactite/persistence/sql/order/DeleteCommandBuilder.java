@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.command.builder;
+package org.codefilarete.stalactite.persistence.sql.order;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -9,7 +9,6 @@ import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.command.model.Delete;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;

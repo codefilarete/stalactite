@@ -1,9 +1,9 @@
-package org.codefilarete.stalactite.command.model;
+package org.codefilarete.stalactite.persistence.sql.order;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.codefilarete.stalactite.command.model.Update.UpdateColumn;
+import org.codefilarete.stalactite.persistence.sql.order.Update.UpdateColumn;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 
@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.persistence.structure.Table;
  * A simple representation of a SQL insert clause, and a way to build it easily/fluently
  * 
  * @author Guillaume Mary
- * @see org.codefilarete.stalactite.command.builder.InsertCommandBuilder
+ * @see InsertCommandBuilder
  */
 public class Insert<T extends Table> {
 	

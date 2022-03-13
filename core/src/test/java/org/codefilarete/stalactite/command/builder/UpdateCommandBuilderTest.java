@@ -3,10 +3,11 @@ package org.codefilarete.stalactite.command.builder;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import org.codefilarete.stalactite.persistence.sql.order.UpdateCommandBuilder;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.command.builder.UpdateCommandBuilder.UpdateStatement;
-import org.codefilarete.stalactite.command.model.Update;
+import org.codefilarete.stalactite.persistence.sql.order.UpdateCommandBuilder.UpdateStatement;
+import org.codefilarete.stalactite.persistence.sql.order.Update;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;

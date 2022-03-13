@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.command.model;
+package org.codefilarete.stalactite.persistence.sql.order;
 
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
  * A simple representation of a SQL delete clause, and a way to build it easily/fluently.
  * 
  * @author Guillaume Mary
- * @see org.codefilarete.stalactite.command.builder.DeleteCommandBuilder
+ * @see DeleteCommandBuilder
  */
 public class Delete<T extends Table> {
 	

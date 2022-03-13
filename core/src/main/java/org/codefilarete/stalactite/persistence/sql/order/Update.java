@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.command.model;
+package org.codefilarete.stalactite.persistence.sql.order;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
  * A simple representation of a SQL update clause, and a way to build it easily/fluently
  * 
  * @author Guillaume Mary
- * @see org.codefilarete.stalactite.command.builder.UpdateCommandBuilder
+ * @see UpdateCommandBuilder
  */
 public class Update<T extends Table> {
 	
