@@ -3,6 +3,7 @@ Stalactite aims at being an ORM, but also gives some tools to ease JDBC usage.
 
 [![buddy pipeline](https://app.buddy.works/guiommary-1/stalactite/pipelines/pipeline/380199/badge.svg?token=96503dbaee2d8d301dc2fc167de143813cc70ea22fe4e7fca3432b9f1063e8c5 "buddy pipeline")](https://app.buddy.works/guiommary-1/stalactite/pipelines/pipeline/380199)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=codefilarete_stalactite&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=codefilarete_stalactite)
+[!["Buy Me A Coffee"](https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg)](https://www.buymeacoffee.com/codefilarete)
 
 # Overview
 
