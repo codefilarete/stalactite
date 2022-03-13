@@ -14,7 +14,7 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.PairIterator;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
 import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInflater;

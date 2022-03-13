@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.persistence.engine.cascade.AfterUpdateCollect
 import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.persistence.structure.Column;

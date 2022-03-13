@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.engine.listening;
+package org.codefilarete.stalactite.persistence.engine.listener;
 
 /**
  * @author Guillaume Mary

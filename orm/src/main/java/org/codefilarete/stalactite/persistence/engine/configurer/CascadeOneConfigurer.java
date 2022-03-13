@@ -39,10 +39,10 @@ import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteByIdSu
 import org.codefilarete.stalactite.persistence.engine.cascade.BeforeDeleteSupport;
 import org.codefilarete.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.persistence.engine.cascade.BeforeUpdateSupport;
-import org.codefilarete.stalactite.persistence.engine.listening.DeleteListener;
-import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
-import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.engine.listener.DeleteListener;
+import org.codefilarete.stalactite.persistence.engine.listener.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;

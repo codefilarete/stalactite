@@ -18,7 +18,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.stalactite.persistence.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.persistence.engine.PersistenceContext.ExecutableBeanPropertyKeyQueryMapper;
-import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.persistence.id.Identified;
 import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;

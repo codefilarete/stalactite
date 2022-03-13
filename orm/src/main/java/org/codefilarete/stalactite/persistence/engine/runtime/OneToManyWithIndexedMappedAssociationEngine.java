@@ -19,7 +19,7 @@ import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.engine.RuntimeMappingException;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInflater;

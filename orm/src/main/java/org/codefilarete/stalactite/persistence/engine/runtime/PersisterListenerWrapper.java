@@ -6,12 +6,12 @@ import java.util.function.BiConsumer;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.persistence.engine.listening.DeleteByIdListener;
-import org.codefilarete.stalactite.persistence.engine.listening.DeleteListener;
-import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
-import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
-import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.engine.listener.DeleteByIdListener;
+import org.codefilarete.stalactite.persistence.engine.listener.DeleteListener;
+import org.codefilarete.stalactite.persistence.engine.listener.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listener.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener;
 
 /**
  * Class for wrapping calls to {@link EntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into

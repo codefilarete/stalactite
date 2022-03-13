@@ -16,7 +16,7 @@ import org.codefilarete.tool.Experimental;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
-import org.codefilarete.stalactite.persistence.engine.listening.PersisterListener;
+import org.codefilarete.stalactite.persistence.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 
 /**

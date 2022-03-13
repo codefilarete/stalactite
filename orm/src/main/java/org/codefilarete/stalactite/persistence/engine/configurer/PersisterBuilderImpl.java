@@ -55,9 +55,9 @@ import org.codefilarete.stalactite.persistence.engine.cascade.AfterUpdateSupport
 import org.codefilarete.stalactite.persistence.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.persistence.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
-import org.codefilarete.stalactite.persistence.engine.listening.UpdateByIdListener;
+import org.codefilarete.stalactite.persistence.engine.listener.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityIsManagedByPersisterAsserter;

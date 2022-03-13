@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.persistence.engine.EntityPersister;
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.collection.Iterables;
 

@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.engine.listening;
+package org.codefilarete.stalactite.persistence.engine.listener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.function.BiConsumer;
 
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener.UpdatePayload;
+import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener.UpdatePayload;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.engine.listening;
+package org.codefilarete.stalactite.persistence.engine.listener;
 
 import java.util.List;
 import java.util.function.BiConsumer;

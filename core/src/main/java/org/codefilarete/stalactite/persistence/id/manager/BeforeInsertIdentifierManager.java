@@ -3,10 +3,10 @@ package org.codefilarete.stalactite.persistence.id.manager;
 import java.util.function.Consumer;
 
 import org.codefilarete.tool.function.Sequence;
-import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
+import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
+import org.codefilarete.stalactite.persistence.engine.listener.InsertListener;
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;

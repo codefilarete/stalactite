@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Predicates;
-import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener;
 
 /**
  * @author Guillaume Mary

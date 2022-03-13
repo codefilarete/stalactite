@@ -5,8 +5,8 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.engine.EntityPersister;
-import org.codefilarete.stalactite.persistence.engine.listening.DeleteListener;
-import org.codefilarete.stalactite.persistence.engine.listening.PersisterListenerCollection;
+import org.codefilarete.stalactite.persistence.engine.listener.DeleteListener;
+import org.codefilarete.stalactite.persistence.engine.listener.PersisterListenerCollection;
 
 /**
  * Cascader for delete, written for one-to-many style of cascade where Target owns the relationship to Trigger

@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Predicates;
-import org.codefilarete.stalactite.persistence.engine.listening.DeleteByIdListener;
+import org.codefilarete.stalactite.persistence.engine.listener.DeleteByIdListener;
 
 /**
  * @author Guillaume Mary

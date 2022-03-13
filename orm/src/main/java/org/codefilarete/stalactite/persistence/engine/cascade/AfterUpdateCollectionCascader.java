@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.engine.EntityPersister;
-import org.codefilarete.stalactite.persistence.engine.listening.UpdateListener;
+import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener;
 
 /**
  * Cascader for update, written for one-to-many style of cascade where Trigger owns the relationship to Target.
