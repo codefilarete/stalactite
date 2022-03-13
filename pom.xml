@@ -24,7 +24,7 @@
 		<encoding>UTF-8</encoding>
 		<junit.version>5.4.2</junit.version>
 		<mockito.version>2.27.0</mockito.version>
-		<slf4j-api.version>1.7.21</slf4j-api.version>
+		<slf4j-api.version>1.7.36</slf4j-api.version>
 		<assertj-core.version>3.19.0</assertj-core.version>
 	</properties>
 	
