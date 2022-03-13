@@ -9,7 +9,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.persistence.id.Identified;
 import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistableIdentifier;
-import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.Dialect;

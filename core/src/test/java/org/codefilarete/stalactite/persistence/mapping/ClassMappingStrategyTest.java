@@ -14,7 +14,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;

@@ -9,7 +9,7 @@ import java.util.Map;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.persistence.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.Dialect;

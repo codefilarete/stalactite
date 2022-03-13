@@ -22,7 +22,7 @@ import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.persistence.engine.RuntimeMappingException;
-import org.codefilarete.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;

@@ -882,7 +882,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 */
 	private static class TransactionAwareConnectionConfiguration extends TransactionAwareConnectionProvider
 			implements ConnectionConfiguration,
-			SeparateTransactionExecutor	// for org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence
+			SeparateTransactionExecutor	// for PooledHiLoSequence
 	{
 		
 		private final ConnectionConfiguration connectionConfiguration;

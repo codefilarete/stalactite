@@ -1,5 +1,9 @@
-package org.codefilarete.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.mapping.id.sequence;
 
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.PooledHiLoSequence;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequencePersister;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequenceStorageOptions;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.persistence.sql.Dialect;

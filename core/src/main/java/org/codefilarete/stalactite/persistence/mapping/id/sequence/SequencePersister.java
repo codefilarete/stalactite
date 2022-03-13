@@ -1,14 +1,14 @@
-package org.codefilarete.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.mapping.id.sequence;
 
 import java.util.Map;
 
+import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
-import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.persistence.id.sequence.SequencePersister.Sequence;
-import org.codefilarete.stalactite.persistence.id.sequence.SequencePersister.SequenceTable;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequencePersister.Sequence;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequencePersister.SequenceTable;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.persistence.sql.Dialect;

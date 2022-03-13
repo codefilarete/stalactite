@@ -12,7 +12,7 @@ import java.util.function.LongSupplier;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.engine.StaleStateObjectException;
-import org.codefilarete.stalactite.persistence.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.persistence.sql.statement.ColumnParameterizedSQL;

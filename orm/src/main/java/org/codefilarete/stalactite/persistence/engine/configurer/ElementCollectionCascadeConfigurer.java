@@ -33,9 +33,9 @@ import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappe
 import org.codefilarete.stalactite.persistence.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
-import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
 import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy;

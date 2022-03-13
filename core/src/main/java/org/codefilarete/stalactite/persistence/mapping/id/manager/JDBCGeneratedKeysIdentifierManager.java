@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.mapping.id.manager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.assembly;
+package org.codefilarete.stalactite.persistence.mapping.id.assembly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

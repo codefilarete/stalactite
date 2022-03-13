@@ -13,7 +13,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.persistence.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener.UpdatePayload;
-import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;

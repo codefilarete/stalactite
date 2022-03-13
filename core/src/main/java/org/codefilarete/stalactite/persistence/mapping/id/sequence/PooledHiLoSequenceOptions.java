@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.mapping.id.sequence;
 
 import javax.annotation.Nullable;
 import java.util.Map;

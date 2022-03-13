@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.manager;
+package org.codefilarete.stalactite.persistence.mapping.id.manager;
 
 import java.util.function.Consumer;
 import java.util.function.Function;

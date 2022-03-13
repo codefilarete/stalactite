@@ -9,7 +9,7 @@ import java.util.Map;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
-import org.codefilarete.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;

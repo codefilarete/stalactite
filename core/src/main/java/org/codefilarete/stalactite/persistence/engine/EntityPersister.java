@@ -9,6 +9,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.Duo;
@@ -29,7 +30,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 *
 	 * Check between insert or update is determined by id state which itself depends on identifier policy,
 	 * see {@link org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy#IsNewDeterminer} implementations and
-	 * {@link org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager} implementations for id value computation. 
+	 * {@link IdentifierInsertionManager} implementations for id value computation. 
 	 *
 	 * @param entity an entity to be persisted
 	 * @throws StaleStateObjectException if updated row count differs from entities count

@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.persistence.mapping;
 
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
+
 /**
  * Interface for general access to the identifier of an entity
  * 
@@ -18,7 +20,7 @@ public interface IdAccessor<C, I> {
 	
 	/**
 	 * Sets entity identifier.
-	 * Used on very first time persistence of the entity in conjonction with {@link org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager}
+	 * Used on very first time persistence of the entity in conjonction with {@link IdentifierInsertionManager}
 	 * 
 	 * @param c an entity
 	 * @param identifier the generated identifier

@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.persistence.mapping;
 import javax.annotation.Nonnull;
 
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.stalactite.persistence.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
 
 /**
  * Entry point for composed value (hence composed primary key), about entity identifier mapping.

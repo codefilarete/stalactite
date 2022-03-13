@@ -14,7 +14,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
 import org.codefilarete.stalactite.persistence.engine.runtime.UpdateExecutor;
-import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;

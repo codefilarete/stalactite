@@ -1,7 +1,7 @@
-package org.codefilarete.stalactite.persistence.id.sequence;
+package org.codefilarete.stalactite.persistence.mapping.id.sequence;
 
 import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.codefilarete.stalactite.persistence.id.sequence.SequencePersister.Sequence;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequencePersister.Sequence;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 
 /**

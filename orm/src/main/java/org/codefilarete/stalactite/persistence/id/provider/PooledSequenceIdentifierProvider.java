@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
-import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence;
-import org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.PooledHiLoSequence;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.PooledHiLoSequenceOptions;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 
 /**

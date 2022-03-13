@@ -10,7 +10,7 @@ import java.util.Set;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.engine.VersioningStrategy;
-import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.persistence.sql.statement.ColumnParameterizedSQL;

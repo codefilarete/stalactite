@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.id.sequence.PooledHiLoSequence;
 import org.codefilarete.tool.function.Sequence;
 
 /**
@@ -23,7 +25,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	
 	/**
 	 * Available identifier policies for entities.
-	 * @see org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager
+	 * @see IdentifierInsertionManager
 	 */
 	interface IdentifierPolicy {
 		/**
@@ -38,7 +40,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
-		 * Reader may be interested in {@link org.codefilarete.stalactite.persistence.id.sequence.PooledHiLoSequence}.
+		 * Reader may be interested in {@link PooledHiLoSequence}.
 		 * 
 		 * @param sequence the {@link Sequence} to ask for identifier value
 		 * @param <I> identifier type

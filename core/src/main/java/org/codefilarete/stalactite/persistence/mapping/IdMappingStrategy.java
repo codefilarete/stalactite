@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.persistence.mapping;
 
 import org.codefilarete.stalactite.persistence.engine.EntityPersister;
-import org.codefilarete.stalactite.persistence.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
 
 /**
  * Contract about entity identifier mapping.

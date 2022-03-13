@@ -64,11 +64,11 @@ import org.codefilarete.stalactite.persistence.engine.runtime.EntityIsManagedByP
 import org.codefilarete.stalactite.persistence.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.persistence.id.assembly.SimpleIdentifierAssembler;
-import org.codefilarete.stalactite.persistence.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.persistence.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.persistence.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.persistence.id.manager.JDBCGeneratedKeysIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.persistence.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
