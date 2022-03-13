@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.persistence.sql.ddl;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 

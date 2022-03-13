@@ -4,10 +4,10 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.ForeignKey;
-import org.codefilarete.stalactite.persistence.structure.Index;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Index;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.junit.jupiter.api.Test;
 

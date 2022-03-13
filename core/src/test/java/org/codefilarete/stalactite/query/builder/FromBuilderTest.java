@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.builder;
 
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.From;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

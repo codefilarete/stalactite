@@ -16,8 +16,8 @@ import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
 import org.codefilarete.stalactite.persistence.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Maps;
 
 /**

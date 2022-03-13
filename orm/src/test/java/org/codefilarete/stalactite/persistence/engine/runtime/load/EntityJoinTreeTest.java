@@ -13,8 +13,8 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

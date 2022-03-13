@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**

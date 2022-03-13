@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.engine;
+package org.codefilarete.stalactite.persistence.sql.ddl;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -7,12 +7,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.codefilarete.stalactite.persistence.engine.PersistenceContext;
 import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.sql.ddl.DDLGenerator;
-import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.slf4j.Logger;

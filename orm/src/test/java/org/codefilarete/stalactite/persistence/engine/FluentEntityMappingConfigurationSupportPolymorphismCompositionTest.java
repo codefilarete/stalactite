@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
@@ -19,7 +20,7 @@ import org.codefilarete.stalactite.persistence.engine.model.Color;
 import org.codefilarete.stalactite.persistence.id.Identifier;
 import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;

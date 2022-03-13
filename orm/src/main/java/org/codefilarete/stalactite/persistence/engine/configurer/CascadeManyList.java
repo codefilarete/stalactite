@@ -5,8 +5,8 @@ import java.util.List;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * A {@link CascadeMany} dedicated to {@link List} to configure indexation.

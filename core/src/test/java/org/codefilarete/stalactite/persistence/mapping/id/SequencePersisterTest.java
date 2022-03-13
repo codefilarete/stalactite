@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecuto
 import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequencePersister;
 import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequenceStorageOptions;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;

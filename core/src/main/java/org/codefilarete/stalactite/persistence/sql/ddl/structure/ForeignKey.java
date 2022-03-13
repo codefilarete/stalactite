@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.structure;
+package org.codefilarete.stalactite.persistence.sql.ddl.structure;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;

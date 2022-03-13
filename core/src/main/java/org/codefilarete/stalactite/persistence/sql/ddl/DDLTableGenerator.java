@@ -4,9 +4,13 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Set;
 
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.stalactite.persistence.structure.*;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Index;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.tool.StringAppender;
 
 /**
  * @author Guillaume Mary

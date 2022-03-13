@@ -60,8 +60,8 @@ import org.codefilarete.stalactite.persistence.engine.VersioningStrategy;
 import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.persistence.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.codefilarete.stalactite.persistence.engine.runtime.EntityConfiguredPersister;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 

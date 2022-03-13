@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.persistence.engine.runtime;
 
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.stalactite.persistence.engine.VersioningStrategy;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.RollbackObserver;
 

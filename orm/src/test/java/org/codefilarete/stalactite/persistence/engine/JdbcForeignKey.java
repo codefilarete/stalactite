@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.persistence.engine;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.persistence.structure.ForeignKey;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * A definition of a foreign key coming from JDBC metadata

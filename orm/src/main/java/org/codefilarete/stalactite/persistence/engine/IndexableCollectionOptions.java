@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.persistence.engine;
 
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 /**
  * @author Guillaume Mary

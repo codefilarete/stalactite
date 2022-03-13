@@ -48,8 +48,8 @@ import org.codefilarete.stalactite.persistence.mapping.RowTransformer.Transforme
 import org.codefilarete.stalactite.persistence.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.persistence.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;

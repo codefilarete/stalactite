@@ -27,7 +27,7 @@ import org.codefilarete.stalactite.persistence.engine.EnumOptions;
 import org.codefilarete.stalactite.persistence.engine.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.persistence.engine.ImportedEmbedOptions;
 import org.codefilarete.stalactite.persistence.engine.PropertyOptions;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.Reflections;

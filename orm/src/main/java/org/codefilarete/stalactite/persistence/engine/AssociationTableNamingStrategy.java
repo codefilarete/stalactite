@@ -6,7 +6,7 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 /**
  * Contract for giving a name to an association table (one-to-many cases)

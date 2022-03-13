@@ -22,7 +22,7 @@ import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
 import org.codefilarete.stalactite.persistence.id.diff.IndexedDiff;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 import static org.codefilarete.tool.collection.Iterables.first;
 import static org.codefilarete.tool.collection.Iterables.minus;

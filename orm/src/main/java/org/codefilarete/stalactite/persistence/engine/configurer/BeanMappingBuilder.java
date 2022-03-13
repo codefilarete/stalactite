@@ -40,8 +40,8 @@ import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfigura
 import org.codefilarete.stalactite.persistence.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.stream;

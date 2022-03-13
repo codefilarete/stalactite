@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.persistence.sql.statement.binder;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;

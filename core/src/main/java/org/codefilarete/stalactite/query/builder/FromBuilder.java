@@ -4,7 +4,7 @@ import java.util.Iterator;
 
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;

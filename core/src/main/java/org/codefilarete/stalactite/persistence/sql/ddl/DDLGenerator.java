@@ -4,16 +4,16 @@ import java.util.*;
 
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.stalactite.persistence.structure.ForeignKey;
-import org.codefilarete.stalactite.persistence.structure.Index;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Index;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * A class to collect multiple DDL sources. Main purpose is multiple table creation scripts so they can be played against a database to deploy
  * a schema. Use cases are tests and installation of a new application.
  * 
  * @author Guillaume Mary
- * @see org.codefilarete.stalactite.persistence.engine.DDLDeployer
+ * @see DDLDeployer
  */
 public class DDLGenerator implements DDLProvider {
 	

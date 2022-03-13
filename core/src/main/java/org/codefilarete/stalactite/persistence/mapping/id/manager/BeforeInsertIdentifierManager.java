@@ -8,8 +8,8 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
 import org.codefilarete.stalactite.persistence.engine.listener.InsertListener;
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Identifier manager to be used when identifier must be fixed just before insertion.

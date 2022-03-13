@@ -15,8 +15,8 @@ import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEn
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
 import org.codefilarete.stalactite.persistence.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;

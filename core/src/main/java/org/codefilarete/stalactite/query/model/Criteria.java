@@ -5,7 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 import static org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator.AND;
 import static org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator.OR;

@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.structure;
+package org.codefilarete.stalactite.persistence.sql.ddl.structure;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Database.Schema;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
@@ -18,7 +19,6 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
-import org.codefilarete.stalactite.persistence.structure.Database.Schema;
 
 import static org.codefilarete.tool.Nullable.nullable;
 

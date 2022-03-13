@@ -19,8 +19,8 @@ import org.codefilarete.stalactite.persistence.sql.statement.ColumnParameterized
 import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;

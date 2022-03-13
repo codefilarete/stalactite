@@ -3,14 +3,12 @@ package org.codefilarete.stalactite.persistence.sql.order;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.persistence.sql.order.InsertCommandBuilder;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.persistence.sql.order.InsertCommandBuilder.InsertStatement;
-import org.codefilarete.stalactite.persistence.sql.order.Insert;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

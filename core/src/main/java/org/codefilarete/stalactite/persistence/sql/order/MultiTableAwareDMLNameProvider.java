@@ -4,7 +4,7 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 
 import org.codefilarete.tool.trace.ModifiableBoolean;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 
 /**

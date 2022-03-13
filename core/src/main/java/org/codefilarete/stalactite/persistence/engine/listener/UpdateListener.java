@@ -7,7 +7,7 @@ import java.util.Map;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary

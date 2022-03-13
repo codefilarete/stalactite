@@ -1,5 +1,8 @@
-package org.codefilarete.stalactite.persistence.structure;
+package org.codefilarete.stalactite.persistence.sql.ddl.structure;
 
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.Test;

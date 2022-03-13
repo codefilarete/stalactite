@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssigne
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 /**
  * @author Guillaume Mary

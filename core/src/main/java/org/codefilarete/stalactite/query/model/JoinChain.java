@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.persistence.structure.Table;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 /**
  * The interface defining what's possible to do (fluent point of view) on a from (more exactly a join to take more general cases)

@@ -22,8 +22,8 @@ import org.codefilarete.stalactite.persistence.engine.runtime.load.PassiveJoinNo
 import org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.BasicEntityCache;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.sql.result.Row;
 

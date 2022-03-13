@@ -8,8 +8,8 @@ import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTre
 import org.codefilarete.stalactite.persistence.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
 import org.codefilarete.stalactite.persistence.mapping.RowTransformer;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**

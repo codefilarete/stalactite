@@ -5,9 +5,9 @@ import java.util.Collections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.ForeignKey;
-import org.codefilarete.stalactite.persistence.structure.Index;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Index;
 
 /**
  * @author Guillaume Mary

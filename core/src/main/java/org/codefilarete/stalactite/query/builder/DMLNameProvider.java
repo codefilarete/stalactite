@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.codefilarete.tool.Strings;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * A simple wrapper for methods that can give some necessary names during DML generation.

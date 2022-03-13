@@ -11,6 +11,7 @@ import java.util.Objects;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
@@ -27,8 +28,8 @@ import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssi
 import org.codefilarete.stalactite.persistence.id.StatefulIdentifier;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;

@@ -7,7 +7,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessor;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 /**
  * Container to store information of a one-to-many indexed mapped relation (by a column on the reverse side)

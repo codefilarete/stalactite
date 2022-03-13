@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.persistence.engine;
 import java.util.Collection;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary

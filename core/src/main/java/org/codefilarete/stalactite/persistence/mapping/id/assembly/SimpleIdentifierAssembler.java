@@ -10,8 +10,8 @@ import java.util.Map;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
 import org.codefilarete.stalactite.persistence.mapping.ComposedIdMappingStrategy;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**

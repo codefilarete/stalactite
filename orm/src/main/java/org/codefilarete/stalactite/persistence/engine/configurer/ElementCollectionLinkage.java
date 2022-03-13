@@ -14,8 +14,8 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.persistence.engine.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 

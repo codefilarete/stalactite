@@ -26,8 +26,8 @@ import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInf
 import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
 import org.codefilarete.stalactite.persistence.id.diff.IndexedDiff;
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.IdentityMap;
 
 /**

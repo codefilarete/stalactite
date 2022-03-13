@@ -12,8 +12,8 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.function.Serie;
 import org.codefilarete.tool.function.TriFunction;
 import org.codefilarete.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class. 

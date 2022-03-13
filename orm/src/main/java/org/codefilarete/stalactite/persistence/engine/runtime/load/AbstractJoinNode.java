@@ -10,8 +10,8 @@ import java.util.Set;
 import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.persistence.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Abstraction of relation, merge and passive joins.

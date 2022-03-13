@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.persistence.engine.runtime.cycle.OneToManyCyc
 import org.codefilarete.stalactite.persistence.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary

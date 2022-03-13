@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.function.Serie.IntegerSerie;
 import org.codefilarete.tool.function.Serie.NowSerie;

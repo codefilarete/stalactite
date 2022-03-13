@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 

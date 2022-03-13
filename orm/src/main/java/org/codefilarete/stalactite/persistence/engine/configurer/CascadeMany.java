@@ -12,8 +12,8 @@ import org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMod
 import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.persistence.engine.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.persistence.engine.PolymorphismPolicy.TablePerClassPolymorphism;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * 

@@ -32,9 +32,9 @@ import org.codefilarete.stalactite.persistence.sql.statement.ColumnParameterized
 import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator.ParameterizedWhere;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
 import org.codefilarete.stalactite.query.model.Query;

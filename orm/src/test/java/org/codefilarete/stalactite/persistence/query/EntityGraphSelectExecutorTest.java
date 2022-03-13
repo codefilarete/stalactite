@@ -11,7 +11,7 @@ import java.util.Map;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.stalactite.persistence.engine.DDLDeployer;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.persistence.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.persistence.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.persistence.engine.PersistenceContext;
@@ -26,7 +26,7 @@ import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssi
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;

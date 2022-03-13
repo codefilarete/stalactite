@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterIndex;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Statement dedicated to updates: a parameter can be in the where clause and the update one with different values.

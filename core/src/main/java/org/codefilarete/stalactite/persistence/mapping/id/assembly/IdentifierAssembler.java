@@ -6,8 +6,8 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Describes the way an identifier is read and written to a database.

@@ -10,7 +10,7 @@ import java.util.concurrent.Executors;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.stalactite.persistence.engine.DDLDeployer;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.persistence.engine.PersistenceContext;
 import org.codefilarete.stalactite.persistence.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.persistence.engine.TransactionalConnectionProvider;

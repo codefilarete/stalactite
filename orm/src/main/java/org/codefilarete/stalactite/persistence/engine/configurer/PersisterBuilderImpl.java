@@ -75,9 +75,9 @@ import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 
 import static org.codefilarete.tool.Nullable.nullable;

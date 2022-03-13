@@ -12,8 +12,8 @@ import org.codefilarete.stalactite.persistence.engine.ColumnOptions.IdentifierPo
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeMany;
 import org.codefilarete.stalactite.persistence.engine.configurer.CascadeOne;
 import org.codefilarete.stalactite.persistence.engine.configurer.ElementCollectionLinkage;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Defines elements needed to configure a mapping of an entity class

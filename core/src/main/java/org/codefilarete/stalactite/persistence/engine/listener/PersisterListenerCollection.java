@@ -8,7 +8,7 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.ThrowingExecutable;
 import org.codefilarete.tool.function.ThrowingRunnable;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Simple class that centralizes persistence event listener registration as well as execution of some code wrapped between event triggering.

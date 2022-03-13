@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.persistence.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.persistence.engine.model.Timestamp;
 import org.codefilarete.stalactite.persistence.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

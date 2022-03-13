@@ -15,8 +15,8 @@ import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBC
 import org.codefilarete.stalactite.persistence.engine.listener.InsertListener;
 import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 

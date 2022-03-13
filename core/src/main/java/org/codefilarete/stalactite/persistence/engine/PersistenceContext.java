@@ -42,8 +42,8 @@ import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.Conne
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.DialectResolver;
 import org.codefilarete.stalactite.persistence.sql.ServiceLoaderDialectResolver;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;

@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.persistence.mapping;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 
 /**
  * Class for transforming columns into a Map

@@ -26,7 +26,7 @@ import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -238,7 +238,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	/**
-	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with {@link org.codefilarete.stalactite.persistence.structure.Column} signature
+	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with {@link org.codefilarete.stalactite.persistence.sql.ddl.structure.Column} signature
 	 *
 	 * @param <I> type of the key
 	 * @param factory the factory function that will instanciate new beans (with key as single argument)
@@ -247,13 +247,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I> QueryMapper<C> mapKey(SerializableFunction<I, C> factory,
-									 org.codefilarete.stalactite.persistence.structure.Column<? extends Table, I> column) {
+									 org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, I> column) {
 		this.rootTransformer = buildSingleColumnKeyTransformer(new ColumnWrapper<>(column), factory);
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.persistence.structure.Column)} with a 2-args constructor
+	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.persistence.sql.ddl.structure.Column)} with a 2-args constructor
 	 *
 	 * @param <I> type of the key
 	 * @param factory the factory function that will instanciate new beans (with key as single argument)
@@ -263,8 +263,8 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I, J> QueryMapper<C> mapKey(SerializableBiFunction<I, J, C> factory,
-										org.codefilarete.stalactite.persistence.structure.Column<? extends Table, I> column1,
-										org.codefilarete.stalactite.persistence.structure.Column<? extends Table, J> column2
+										org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, I> column1,
+										org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, J> column2
 	) {
 		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1]);
 		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
@@ -275,7 +275,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	/**
-	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.persistence.structure.Column)} with a 3-args constructor
+	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.persistence.sql.ddl.structure.Column)} with a 3-args constructor
 	 *
 	 * @param <I> type of the key
 	 * @param factory the factory function that will instanciate new beans (with key as single argument)
@@ -286,9 +286,9 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 */
 	@Override
 	public <I, J, K> QueryMapper<C> mapKey(SerializableTriFunction<I, J, K, C> factory,
-										   org.codefilarete.stalactite.persistence.structure.Column<? extends Table, I> column1,
-										   org.codefilarete.stalactite.persistence.structure.Column<? extends Table, J> column2,
-										   org.codefilarete.stalactite.persistence.structure.Column<? extends Table, K> column3
+										   org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, I> column1,
+										   org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, J> column2,
+										   org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, K> column3
 	) {
 		SerializableFunction<Object[], C> constructorInvokation = args -> (C) factory.apply((I) args[0], (J) args[1], (K) args[2]);
 		this.rootTransformer = buildComposedKeyTransformer(Arrays.asSet(
@@ -371,7 +371,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	/**
-	 * Same as {@link #map(String, SerializableBiConsumer, Class)} but with {@link org.codefilarete.stalactite.persistence.structure.Column} signature
+	 * Same as {@link #map(String, SerializableBiConsumer, Class)} but with {@link org.codefilarete.stalactite.persistence.sql.ddl.structure.Column} signature
 	 *
 	 * @param column the mapped column
 	 * @param setter the setter function
@@ -379,13 +379,13 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I> QueryMapper<C> map(org.codefilarete.stalactite.persistence.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter) {
+	public <I> QueryMapper<C> map(org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter) {
 		map(new ColumnMapping<>(column, setter));
 		return this;
 	}
 	
 	/**
-	 * Same as {@link #map(org.codefilarete.stalactite.persistence.structure.Column, SerializableBiConsumer)}.
+	 * Same as {@link #map(org.codefilarete.stalactite.persistence.sql.ddl.structure.Column, SerializableBiConsumer)}.
 	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
 	 *
 	 * @param column the mapped column
@@ -396,7 +396,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @return this
 	 */
 	@Override
-	public <I, J> QueryMapper<C> map(org.codefilarete.stalactite.persistence.structure.Column<? extends Table, I> column,
+	public <I, J> QueryMapper<C> map(org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<? extends Table, I> column,
 									 SerializableBiConsumer<C, J> setter,
 									 Converter<I, J> converter) {
 		return map(column, (SerializableBiConsumer<C, I>) (c, i) -> setter.accept(c, converter.convert(i)));
@@ -591,9 +591,9 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	private class ColumnWrapper<T> implements QueryMapper.Column<T> {
 		
-		private final org.codefilarete.stalactite.persistence.structure.Column<?, T> column;
+		private final org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<?, T> column;
 		
-		private ColumnWrapper(org.codefilarete.stalactite.persistence.structure.Column<?, T> column) {
+		private ColumnWrapper(org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<?, T> column) {
 			this.column = column;
 		}
 		
@@ -623,7 +623,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			this.setter = setter;
 		}
 		
-		public ColumnMapping(org.codefilarete.stalactite.persistence.structure.Column<?, I> column, SerializableBiConsumer<T, I> setter) {
+		public ColumnMapping(org.codefilarete.stalactite.persistence.sql.ddl.structure.Column<?, I> column, SerializableBiConsumer<T, I> setter) {
 			this.column = new ColumnWrapper<>(column);
 			this.setter = setter;
 		}

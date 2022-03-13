@@ -7,8 +7,8 @@ import org.codefilarete.stalactite.persistence.engine.MappingEase;
 import org.codefilarete.stalactite.persistence.engine.model.Color;
 import org.codefilarete.stalactite.persistence.engine.model.Person;
 import org.codefilarete.stalactite.persistence.engine.model.Vehicle;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

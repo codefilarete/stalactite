@@ -3,8 +3,8 @@ package org.codefilarete.stalactite.persistence.mapping;
 import javax.annotation.Nonnull;
 import java.util.Set;
 
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Contract for embedding a bean in another

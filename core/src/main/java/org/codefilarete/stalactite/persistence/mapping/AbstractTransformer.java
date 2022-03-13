@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.stalactite.persistence.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**

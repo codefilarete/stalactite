@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.persistence.engine.DDLDeployer;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.Toto;
 import org.codefilarete.stalactite.persistence.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.persistence.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
@@ -15,8 +15,8 @@ import org.codefilarete.stalactite.persistence.mapping.PersistentFieldHarverster
 import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;

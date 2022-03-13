@@ -4,8 +4,8 @@ import javax.annotation.Nullable;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.sql.result.Row;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Class aimed at giving values of a {@link Row} from a {@link Column}, see {@link #getValue(Column, Row)}.

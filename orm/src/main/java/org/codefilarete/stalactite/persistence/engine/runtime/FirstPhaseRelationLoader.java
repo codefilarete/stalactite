@@ -9,8 +9,8 @@ import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTre
 import org.codefilarete.stalactite.persistence.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
 import org.codefilarete.stalactite.persistence.mapping.IdMappingStrategy;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**

@@ -18,8 +18,8 @@ import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssi
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.query.EntityCriteriaSupport.EntityGraphNode;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.WhereBuilder;
 import org.codefilarete.stalactite.query.model.Operators;

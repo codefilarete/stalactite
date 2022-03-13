@@ -12,9 +12,9 @@ import org.codefilarete.stalactite.persistence.mapping.id.sequence.SequencePersi
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Database.Schema;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Database.Schema;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Persister dedicated to {@link Sequence}.

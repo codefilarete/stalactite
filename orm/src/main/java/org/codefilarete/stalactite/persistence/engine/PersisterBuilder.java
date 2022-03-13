@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.persistence.engine;
 
 import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Builder of an {@link Persister}

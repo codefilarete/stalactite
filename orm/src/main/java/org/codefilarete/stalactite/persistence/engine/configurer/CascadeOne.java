@@ -8,8 +8,8 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.persistence.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.persistence.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.persistence.engine.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary

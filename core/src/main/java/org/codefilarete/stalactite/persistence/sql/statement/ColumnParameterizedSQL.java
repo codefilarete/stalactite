@@ -7,8 +7,8 @@ import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterIndex;
 import org.codefilarete.stalactite.sql.statement.ExpandableStatement;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Equivalent to {@link PreparedSQL} but with Column as index identifier.

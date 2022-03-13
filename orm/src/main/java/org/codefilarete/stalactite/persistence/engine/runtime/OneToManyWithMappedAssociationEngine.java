@@ -24,8 +24,8 @@ import org.codefilarete.stalactite.persistence.engine.configurer.CascadeManyConf
 import org.codefilarete.stalactite.persistence.engine.listener.SelectListener;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 import static org.codefilarete.tool.bean.Objects.not;
 import static org.codefilarete.tool.collection.Iterables.stream;

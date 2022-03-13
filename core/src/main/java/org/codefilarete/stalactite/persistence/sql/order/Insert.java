@@ -6,8 +6,8 @@ import java.util.Set;
 import org.codefilarete.stalactite.persistence.sql.order.InsertCommandBuilder.InsertStatement;
 import org.codefilarete.stalactite.persistence.sql.order.Update.UpdateColumn;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * A fluent way of writing a SQL insert clause by leveraging {@link Column} : values can only be set through it.

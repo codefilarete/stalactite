@@ -5,8 +5,8 @@ import java.util.Set;
 
 import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary

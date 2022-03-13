@@ -6,14 +6,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.stalactite.persistence.engine.DDLDeployer;
+import org.codefilarete.stalactite.persistence.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.ComposedId;
 import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.PersistenceConfiguration;
 import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.Tata;
 import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.Toto;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;

@@ -6,10 +6,10 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.persistence.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.persistence.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.persistence.structure.Column;
-import org.codefilarete.stalactite.persistence.structure.Database.Schema;
-import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Database.Schema;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary

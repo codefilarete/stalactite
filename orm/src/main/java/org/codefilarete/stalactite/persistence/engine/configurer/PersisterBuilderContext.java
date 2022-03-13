@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.persistence.engine.PersisterRegistry;
 import org.codefilarete.stalactite.persistence.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.persistence.structure.Table;
+import org.codefilarete.stalactite.persistence.sql.ddl.structure.Table;
 
 /**
  * Running context of {@link PersisterBuilderImpl}. Allows to share some information during configuraiton of the whole entity graph.
