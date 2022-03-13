@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.engine.diff;
 
 import java.util.HashSet;
 import java.util.List;
@@ -11,7 +11,7 @@ import java.util.Set;
  *
  * @author Guillaume Mary
  */
-public class IndexedDiff<I> extends AbstractDiff<I> {
+public class IndexedDiff<C> extends AbstractDiff<C> {
 	
 	private final Set<Integer> sourceIndexes;
 	
@@ -25,11 +25,11 @@ public class IndexedDiff<I> extends AbstractDiff<I> {
 	 * @param sourceInstance initial instance
 	 * @param replacingInstance replacing instance (may differ from source on attributes except id)
 	 */
-	public IndexedDiff(State state, I sourceInstance, I replacingInstance) {
+	public IndexedDiff(State state, C sourceInstance, C replacingInstance) {
 		this(state, sourceInstance, replacingInstance, new HashSet<>(), new HashSet<>());
 	}
 	
-	public IndexedDiff(State state, I sourceInstance, I replacingInstance,
+	public IndexedDiff(State state, C sourceInstance, C replacingInstance,
 					   Set<Integer> sourceIndexes, Set<Integer> replacerIndexes) {
 		super(state, sourceInstance, replacingInstance);
 		this.sourceIndexes = sourceIndexes;

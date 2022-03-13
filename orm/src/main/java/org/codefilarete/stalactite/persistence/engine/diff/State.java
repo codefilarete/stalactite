@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.engine.diff;
 
 /**
  * @author Guillaume Mary

@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.engine.diff;
 
 import java.util.Set;
 
@@ -11,7 +11,7 @@ import java.util.Set;
  * {@link #equals(Object)} method may be implemented without taking into account all entity fields so 2 of them may differ on some fields while
  * remaining equals, such other fields difference shall interest database to update modified columns.
  */
-public class Diff<I> extends AbstractDiff<I> {
+public class Diff<C> extends AbstractDiff<C> {
 	
 	/**
 	 * Constructor without given index (minimal constructor).
@@ -20,7 +20,7 @@ public class Diff<I> extends AbstractDiff<I> {
 	 * @param sourceInstance initial instance
 	 * @param replacingInstance replacing instance (may differ from source on attributes except id)
 	 */
-	public Diff(State state, I sourceInstance, I replacingInstance) {
+	public Diff(State state, C sourceInstance, C replacingInstance) {
 		super(state, sourceInstance, replacingInstance);
 	}
 }

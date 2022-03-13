@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.engine.diff;
 
 /**
  * Abstract contract for a change of place in a {@link java.util.Collection}.
@@ -7,9 +7,9 @@ package org.codefilarete.stalactite.persistence.id.diff;
  * @see Diff
  * @see IndexedDiff
  */
-public class AbstractDiff<I> {
-	private final I sourceInstance;
-	private final I replacingInstance;
+public class AbstractDiff<C> {
+	private final C sourceInstance;
+	private final C replacingInstance;
 	private final State state;
 	
 	/**
@@ -19,17 +19,17 @@ public class AbstractDiff<I> {
 	 * @param sourceInstance initial instance
 	 * @param replacingInstance replacing instance (may differ from source on attributes except id)
 	 */
-	public AbstractDiff(State state, I sourceInstance, I replacingInstance) {
+	public AbstractDiff(State state, C sourceInstance, C replacingInstance) {
 		this.state = state;
 		this.sourceInstance = sourceInstance;
 		this.replacingInstance = replacingInstance;
 	}
 	
-	public I getSourceInstance() {
+	public C getSourceInstance() {
 		return sourceInstance;
 	}
 	
-	public I getReplacingInstance() {
+	public C getReplacingInstance() {
 		return replacingInstance;
 	}
 	

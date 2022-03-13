@@ -27,7 +27,7 @@ import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappe
 import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
 import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
+import org.codefilarete.stalactite.persistence.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;

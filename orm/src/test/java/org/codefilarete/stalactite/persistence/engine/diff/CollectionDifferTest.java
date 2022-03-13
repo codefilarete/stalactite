@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.persistence.id.diff;
+package org.codefilarete.stalactite.persistence.engine.diff;
 
 import java.util.Comparator;
 import java.util.List;
@@ -18,9 +18,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.persistence.id.diff.State.ADDED;
-import static org.codefilarete.stalactite.persistence.id.diff.State.HELD;
-import static org.codefilarete.stalactite.persistence.id.diff.State.REMOVED;
+import static org.codefilarete.stalactite.persistence.engine.diff.State.ADDED;
+import static org.codefilarete.stalactite.persistence.engine.diff.State.HELD;
+import static org.codefilarete.stalactite.persistence.engine.diff.State.REMOVED;
 import static org.codefilarete.tool.collection.Arrays.asHashSet;
 import static org.codefilarete.tool.collection.Arrays.asList;
 

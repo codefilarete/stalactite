@@ -13,8 +13,8 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.engine.EntityPersister;
 import org.codefilarete.stalactite.persistence.engine.listener.UpdateListener.UpdatePayload;
-import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
-import org.codefilarete.stalactite.persistence.id.diff.CollectionDiffer;
+import org.codefilarete.stalactite.persistence.engine.diff.AbstractDiff;
+import org.codefilarete.stalactite.persistence.engine.diff.CollectionDiffer;
 
 /**
  * Class aimed at making the difference of entities of an {@link UpdatePayload} and updating, inserting or deleting them according to difference

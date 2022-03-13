@@ -34,7 +34,7 @@ import org.codefilarete.stalactite.persistence.engine.runtime.RelationalEntityPe
 import org.codefilarete.stalactite.persistence.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.persistence.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
+import org.codefilarete.stalactite.persistence.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.persistence.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.ColumnedRow;
@@ -466,10 +466,10 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		}
 		
 		/**
-		 * Identifier for {@link org.codefilarete.stalactite.persistence.id.diff.CollectionDiffer} support (update use case), because it compares beans
+		 * Identifier for {@link org.codefilarete.stalactite.persistence.engine.diff.CollectionDiffer} support (update use case), because it compares beans
 		 * through their "footprint" which is their id in default/entity case, but since we are value type, we must provide a dedicated footprint.
 		 * Could be hashCode() if it was implemented on identifier + element, but implementing it would require implementing equals() (to comply
-		 * with best practices) which is not our case nor required by {@link org.codefilarete.stalactite.persistence.id.diff.CollectionDiffer}.
+		 * with best practices) which is not our case nor required by {@link org.codefilarete.stalactite.persistence.engine.diff.CollectionDiffer}.
 		 * Note : name of this method is not important
 		 */
 		public int footprint() {
