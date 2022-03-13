@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
 import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 /**
  * Identifier manager to be used when identifier is already specified on entity, therefore this requires :

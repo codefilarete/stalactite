@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

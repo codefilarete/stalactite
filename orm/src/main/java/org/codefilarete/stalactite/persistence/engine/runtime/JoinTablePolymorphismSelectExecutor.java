@@ -21,9 +21,9 @@ import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.binder.ResultSetReader;
-import org.codefilarete.stalactite.sql.dml.PreparedSQL;
-import org.codefilarete.stalactite.sql.dml.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 
 import static org.codefilarete.stalactite.persistence.engine.runtime.SecondPhaseRelationLoader.isDefaultValue;

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -24,13 +25,13 @@ import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.persistence.engine.runtime.Persister;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.dml.ReadOperation;
-import org.codefilarete.stalactite.sql.dml.StringParamedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
 import org.codefilarete.stalactite.sql.result.MultipleColumnsReader;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
@@ -39,7 +40,7 @@ import org.codefilarete.stalactite.sql.result.SingleColumnReader;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 
-import static org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
+import static org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
 /**
  * A class aimed at querying the database and creating Java beans from it.
@@ -515,7 +516,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * @param paramName the name of the SQL parameter to be set
 	 * @param value the value of the parameter, null is authorized but since type can't be know in this case {@link java.sql.PreparedStatement#setObject(int, Object)}
 	 * 				will be used, so prefer {@link #set(String, Object, Class)} if your database driver doesn't support well setObject(..),
-	 * 			    see	{@link org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder#ALWAYS_SET_NULL_INSTANCE}
+	 * 			    see	{@link NullAwareParameterBinder#ALWAYS_SET_NULL_INSTANCE}
 	 * @return this
 	 * @see #set(String, Iterable, Class)
 	 */

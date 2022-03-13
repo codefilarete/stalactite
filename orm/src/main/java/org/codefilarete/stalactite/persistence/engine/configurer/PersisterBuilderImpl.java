@@ -74,11 +74,11 @@ import org.codefilarete.stalactite.persistence.mapping.SimpleIdMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
 import org.codefilarete.stalactite.persistence.structure.Table;
-import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 
 import static org.codefilarete.tool.Nullable.nullable;
 

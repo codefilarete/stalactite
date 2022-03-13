@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.codefilarete.tool.function.ThrowingConverter;
-import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
-import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 
 /**
  * Frame for handling unexpected type (from the library) that needs to be persisted into a single column.
@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.sql.binder.ParameterBinder;
  * @param <C> the mapped type
  * @author Guillaume Mary
  * @see org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry
- * @see org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry
+ * @see org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry
  */
 public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	
@@ -28,7 +28,7 @@ public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	/**
 	 * Creates a binder for persisting C objects (handling eventually null values).
 	 * Instance should be registered into a {@link org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link
-	 * org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry}
+	 * org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry}
 	 * 
 	 * @param lowerBinder the binder that interacts with {@link PreparedStatement} and {@link ResultSet}
 	 * @param toObjectConverter a converter applied on read value given by lower binder when reading from a {@link ResultSet}

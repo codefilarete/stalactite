@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 
 /**
  * @author Guillaume Mary

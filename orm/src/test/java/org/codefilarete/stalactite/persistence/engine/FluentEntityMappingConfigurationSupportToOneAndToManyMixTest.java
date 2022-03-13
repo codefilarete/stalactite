@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.persistence.id.PersistedIdentifier;
 import org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.persistence.id.provider.LongProvider;
 import org.codefilarete.stalactite.persistence.sql.HSQLDBDialect;
-import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.BeforeEach;

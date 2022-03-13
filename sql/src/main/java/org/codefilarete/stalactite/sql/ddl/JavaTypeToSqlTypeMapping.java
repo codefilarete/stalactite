@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 
 import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
  * A storage of mapping between Java classes and Sql Types. Aimed at generating schema, not reading nor writing to ResultSet/Statement.

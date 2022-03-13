@@ -3,10 +3,10 @@ package org.codefilarete.stalactite.persistence.engine.runtime;
 import org.codefilarete.tool.collection.SteppingIterator;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.persistence.structure.Table;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 /**
  * Parent class for insert, update or delete executor

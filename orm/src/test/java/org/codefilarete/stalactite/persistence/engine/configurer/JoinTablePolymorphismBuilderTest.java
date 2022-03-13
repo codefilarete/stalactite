@@ -25,7 +25,7 @@ import static org.codefilarete.stalactite.persistence.engine.MappingEase.subenti
 import static org.codefilarete.stalactite.persistence.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.persistence.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.persistence.id.StatefullIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
-import static org.codefilarete.stalactite.sql.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 
 /**
  * @author Guillaume Mary

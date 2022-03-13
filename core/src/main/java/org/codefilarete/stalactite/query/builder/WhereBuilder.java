@@ -4,8 +4,8 @@ import java.util.Map;
 
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
-import org.codefilarete.stalactite.sql.dml.PreparedSQL;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;

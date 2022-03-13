@@ -40,7 +40,7 @@ public interface IdentifierAssembler<I> {
 	/**
 	 * A Collection-form of {@link #getColumnValues(Object)}.
 	 * Should give, for each primary key column, all values of the given identifiers. So result should be a {@code Map<Column, List>}, but, due to
-	 * potential misunderstanding in {@link org.codefilarete.stalactite.sql.dml.ExpandableStatement}, if ids is single, result must contains single instead of {@link List}
+	 * potential misunderstanding in {@link org.codefilarete.stalactite.sql.statement.ExpandableStatement}, if ids is single, result must contains single instead of {@link List}
 	 * so result signature is {@code Map<Column, Object>}
 	 * 
 	 * @param ids identifiers

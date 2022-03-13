@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.persistence.sql;
 
-import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 
 /**
  * @author Guillaume Mary

@@ -20,8 +20,8 @@ import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.sql.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.binder.ParameterBinderProvider;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderProvider;
 
 /**
  * Builder of a {@link Query} from an {@link EntityJoinTree}

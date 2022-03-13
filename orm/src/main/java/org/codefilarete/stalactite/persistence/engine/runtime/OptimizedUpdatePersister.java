@@ -43,8 +43,8 @@ import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.RollbackObserver;
-import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
-import org.codefilarete.stalactite.sql.dml.SQLOperation;
+import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLOperation;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
 
@@ -188,7 +188,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	
 	/**
 	 * {@link ConnectionProvider} that proxies {@link Connection} of a delegate {@link ConnectionProvider} to add caching algorithm on select queries.
-	 * Spied method is {@link Connection#prepareStatement(String)} and {@link PreparedStatement#executeQuery()} to match {@link org.codefilarete.stalactite.sql.dml.ReadOperation}
+	 * Spied method is {@link Connection#prepareStatement(String)} and {@link PreparedStatement#executeQuery()} to match {@link org.codefilarete.stalactite.sql.statement.ReadOperation}
 	 * algorithm.
 	 * 
 	 * It implements {@link RollbackObserver} to match contract expected by {@link org.codefilarete.stalactite.persistence.engine.AbstractRevertOnRollbackMVCC}

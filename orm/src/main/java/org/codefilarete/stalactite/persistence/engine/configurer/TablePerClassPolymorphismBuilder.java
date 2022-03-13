@@ -26,7 +26,7 @@ import org.codefilarete.stalactite.persistence.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 

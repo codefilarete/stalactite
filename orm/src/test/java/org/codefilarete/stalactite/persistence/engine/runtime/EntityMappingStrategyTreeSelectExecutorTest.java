@@ -44,7 +44,7 @@ import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
-import org.codefilarete.stalactite.sql.binder.HSQLDBTypeMapping;
+import org.codefilarete.stalactite.sql.statement.binder.HSQLDBTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.stalactite.test.PairSetList;

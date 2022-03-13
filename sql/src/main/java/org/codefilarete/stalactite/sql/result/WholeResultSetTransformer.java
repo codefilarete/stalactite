@@ -23,7 +23,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.stalactite.sql.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.IdentifierArgBeanFactory;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.NoIdentifierBeanFactory;

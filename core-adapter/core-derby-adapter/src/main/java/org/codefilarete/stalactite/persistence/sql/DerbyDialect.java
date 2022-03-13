@@ -7,16 +7,16 @@ import java.util.stream.LongStream;
 
 import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.codefilarete.stalactite.persistence.sql.dml.ReadOperationFactory;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.ReadOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.binder.DerbyTypeMapping;
-import org.codefilarete.stalactite.sql.dml.DerbyReadOperation;
-import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
-import org.codefilarete.stalactite.sql.dml.ReadOperation;
-import org.codefilarete.stalactite.sql.dml.SQLStatement;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
-import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.sql.statement.binder.DerbyTypeMapping;
+import org.codefilarete.stalactite.sql.statement.DerbyReadOperation;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 
 /**
  * @author Guillaume Mary

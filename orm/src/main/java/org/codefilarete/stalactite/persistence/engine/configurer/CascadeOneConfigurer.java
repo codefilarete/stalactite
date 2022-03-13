@@ -56,10 +56,10 @@ import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.ShadowCol
 import org.codefilarete.stalactite.persistence.mapping.MappingStrategy.UpwhereColumn;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.persistence.sql.dml.PreparedUpdate;
+import org.codefilarete.stalactite.persistence.sql.statement.PreparedUpdate;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.function.Predicates.not;

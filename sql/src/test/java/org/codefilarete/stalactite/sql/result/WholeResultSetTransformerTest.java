@@ -23,8 +23,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
-import static org.codefilarete.stalactite.sql.binder.DefaultResultSetReaders.STRING_READER;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.STRING_READER;
 
 /**
  * @author Guillaume Mary

@@ -6,7 +6,7 @@ import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.sql.binder.PostgreSQLTypeMapping;
+import org.codefilarete.stalactite.sql.statement.binder.PostgreSQLTypeMapping;
 
 /**
  * @author Guillaume Mary

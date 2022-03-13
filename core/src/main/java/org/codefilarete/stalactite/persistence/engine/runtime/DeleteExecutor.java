@@ -15,16 +15,16 @@ import org.codefilarete.stalactite.persistence.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.persistence.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.persistence.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.persistence.sql.dml.ColumnParameterizedSQL;
-import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
+import org.codefilarete.stalactite.persistence.sql.statement.ColumnParameterizedSQL;
+import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.dml.SQLOperation.SQLOperationListener;
-import org.codefilarete.stalactite.sql.dml.SQLStatement;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 /**
  * Class dedicated to delete statement execution

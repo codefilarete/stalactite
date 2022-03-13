@@ -1,8 +1,9 @@
 package org.codefilarete.stalactite.persistence.id;
 
-import org.codefilarete.stalactite.sql.binder.LambdaParameterBinder;
-import org.codefilarete.stalactite.sql.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 
 /**
  * Equivalent of {@link StatefulIdentifier} for a more end-user usage.
@@ -23,7 +24,7 @@ public interface Identifier<T> extends StatefulIdentifier<T> {
 	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
 	 * @param <I> the type of the surrogate {@link Identifier}
 	 * @return a new {@link ParameterBinder} which will wrap/unwrap the result of parameterBinder
-	 * @see org.codefilarete.stalactite.sql.binder.DefaultParameterBinders
+	 * @see DefaultParameterBinders
 	 */
 	static <I> ParameterBinder<StatefulIdentifier<I>> identifierBinder(ParameterBinder<I> parameterBinder) {
 		return new NullAwareParameterBinder<>(new LambdaParameterBinder<>(parameterBinder, PersistedIdentifier::new, StatefulIdentifier::getSurrogate));

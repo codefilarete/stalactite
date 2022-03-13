@@ -7,9 +7,9 @@ import java.sql.SQLException;
 import org.codefilarete.tool.Retryer.RetryException;
 import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
-import org.codefilarete.stalactite.sql.dml.SQLStatement;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 /**
  * MySQL's implementation of {@link WriteOperation} to retry statement execution because MySQL InnoDB has a poor behavior of insertion concurrency

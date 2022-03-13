@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
 import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
 import org.codefilarete.stalactite.persistence.structure.Column;

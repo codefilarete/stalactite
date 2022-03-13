@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.dml.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
  * A registry to specify SQL types for Java types and {@link Column}s.

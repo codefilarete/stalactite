@@ -8,7 +8,7 @@ import java.util.NoSuchElementException;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.persistence.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.codefilarete.stalactite.sql.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 
 /**
  * Defines elements needed to configure a mapping of an embeddable class

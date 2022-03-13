@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.NotImplementedException;
@@ -28,7 +29,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * <li>{@link LocalDateTime}</li>
  * <li>{@link ZoneId}</li>
  * </ul>
- * Thus, the {@link org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link org.codefilarete.stalactite.sql.binder.ParameterBinderRegistry}
+ * Thus, the {@link org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry} and {@link ParameterBinderRegistry}
  * of your {@link org.codefilarete.stalactite.persistence.sql.Dialect} must have them registered (which is done by default).
  * 
  * @author Guillaume Mary

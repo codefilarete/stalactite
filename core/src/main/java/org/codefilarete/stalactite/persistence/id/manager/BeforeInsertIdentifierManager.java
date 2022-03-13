@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 
 import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.persistence.engine.runtime.WriteExecutor.JDBCBatchingIterator;
 import org.codefilarete.stalactite.persistence.engine.listening.InsertListener;
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;

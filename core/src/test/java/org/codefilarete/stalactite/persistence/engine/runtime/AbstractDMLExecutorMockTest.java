@@ -9,12 +9,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.dml.SQLStatement;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
-import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.exception.Exceptions;

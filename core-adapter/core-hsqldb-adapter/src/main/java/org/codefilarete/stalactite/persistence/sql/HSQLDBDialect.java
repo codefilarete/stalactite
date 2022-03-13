@@ -13,17 +13,17 @@ import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.PrimaryKey;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.binder.HSQLDBTypeMapping;
-import org.codefilarete.stalactite.sql.dml.HSQLDBWriteOperation;
-import org.codefilarete.stalactite.sql.dml.SQLStatement;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
-import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.sql.statement.binder.HSQLDBTypeMapping;
+import org.codefilarete.stalactite.sql.statement.HSQLDBWriteOperation;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 
 /**
  * @author Guillaume Mary

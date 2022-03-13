@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.Pe
 import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.Tata;
 import org.codefilarete.stalactite.persistence.engine.runtime.DMLExecutorTest.Toto;
 import org.codefilarete.stalactite.persistence.sql.Dialect;
-import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;

@@ -11,16 +11,16 @@ import org.codefilarete.stalactite.persistence.engine.runtime.EntityMappingStrat
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
 import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.dml.PreparedSQL;
-import org.codefilarete.stalactite.sql.dml.ReadOperation;
-import org.codefilarete.stalactite.sql.dml.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 

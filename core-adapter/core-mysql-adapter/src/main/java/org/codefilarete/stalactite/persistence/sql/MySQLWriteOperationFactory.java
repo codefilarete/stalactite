@@ -5,11 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 import org.codefilarete.tool.function.ThrowingBiFunction;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.dml.SQLStatement;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
-import org.codefilarete.stalactite.sql.dml.WriteOperation.RowCountListener;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
 
 /**
  * {@link WriteOperationFactory} dedicated to MySQL. In particular adds a {@link InnoDBLockRetryer} to created {@link WriteOperation}s

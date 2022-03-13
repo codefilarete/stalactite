@@ -17,8 +17,8 @@ import org.codefilarete.stalactite.persistence.engine.listening.SelectListener;
 import org.codefilarete.stalactite.persistence.mapping.IdAccessor;
 import org.codefilarete.stalactite.persistence.structure.Column;
 import org.codefilarete.stalactite.persistence.structure.Table;
-import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 /**
  * Identifier manager that gets its values from {@link PreparedStatement#getGeneratedKeys()} (available after insert SQL statement). 

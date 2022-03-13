@@ -5,9 +5,9 @@ import java.util.List;
 
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.persistence.sql.DerbyDialect.DerbyWriteOperation;
-import org.codefilarete.stalactite.sql.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 /**
  * @author Guillaume Mary

@@ -1,6 +1,6 @@
 # Adaptation layer for PostgreSQL database
 
-- Specifies adhoc PostgreSQL SQL types in [PostgreSQLTypeMapping](src/main/java/org/codefilarete/stalactite/sql/binder/PostgreSQLTypeMapping.java)
+- Specifies adhoc PostgreSQL SQL types in [PostgreSQLTypeMapping](Stalactite/stalactite/sql-adapter/sql-postgresql-adapter/src/main/java/org/codefilarete/stalactite/sql/statement/binder/PostgreSQLTypeMapping.java)
 - Redefines the way how Blobs are written to database since PostgreSQL has its own way
 
 # Limitations

@@ -29,11 +29,11 @@ import org.codefilarete.stalactite.persistence.engine.runtime.OneToManyWithMappe
 import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.sql.dml.PreparedSQL;
-import org.codefilarete.stalactite.sql.dml.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 
 import static org.codefilarete.tool.collection.Iterables.collect;
 import static org.codefilarete.stalactite.persistence.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;

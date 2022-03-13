@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Collections;
@@ -132,7 +134,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	/**
 	 * Gives the database (JDBC) value of the argument.
 	 * This implementation returns the given argument without transformation.
-	 * This may duplicate behavior of {@link org.codefilarete.stalactite.sql.binder.PreparedStatementWriter} in some way, but is located to this strategy so can be
+	 * This may duplicate behavior of {@link PreparedStatementWriter} in some way, but is located to this strategy so can be
 	 * more accurate.
 	 * 
 	 * @param object any object took from a pesistent collection
@@ -145,7 +147,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	/**
 	 * Opposit of {@link #toDatabaseValue(Object)}: converts the database value for the collection value
 	 * This implementation returns the given argument without transformation.
-	 * This may duplicate behavior of {@link org.codefilarete.stalactite.sql.binder.ResultSetReader} in some way, but is located to this strategy so can be
+	 * This may duplicate behavior of {@link ResultSetReader} in some way, but is located to this strategy so can be
 	 * more accurate.
 	 * 
 	 * @param object the value coming from the database {@link java.sql.ResultSet}

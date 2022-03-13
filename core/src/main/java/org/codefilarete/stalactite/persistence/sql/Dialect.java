@@ -3,13 +3,13 @@ package org.codefilarete.stalactite.persistence.sql;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.persistence.sql.ddl.SqlTypeRegistry;
-import org.codefilarete.stalactite.persistence.sql.dml.DMLGenerator;
-import org.codefilarete.stalactite.persistence.sql.dml.ReadOperationFactory;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.persistence.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.persistence.sql.statement.ReadOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.dml.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 
 /**
  * Class that keeps objects necessary to "communicate" with a Database at the SQL language level:

@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.persistence.sql;
 
 import org.codefilarete.stalactite.persistence.sql.ddl.DDLTableGenerator;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
-import org.codefilarete.stalactite.persistence.sql.dml.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.binder.MariaDBTypeMapping;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.MariaDBTypeMapping;
 
 /**
  * Dialect specialization for MariaDB:

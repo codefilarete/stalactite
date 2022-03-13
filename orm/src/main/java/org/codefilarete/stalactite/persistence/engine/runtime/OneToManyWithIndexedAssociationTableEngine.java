@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.persistence.engine.runtime.load.EntityTreeInf
 import org.codefilarete.stalactite.persistence.id.diff.AbstractDiff;
 import org.codefilarete.stalactite.persistence.id.diff.IndexedDiff;
 import org.codefilarete.stalactite.persistence.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.persistence.sql.dml.WriteOperationFactory;
+import org.codefilarete.stalactite.persistence.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.persistence.structure.Column;
 
 import static org.codefilarete.tool.collection.Iterables.first;
