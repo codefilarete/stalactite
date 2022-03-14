@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -15,8 +16,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.Persister;
 import org.codefilarete.stalactite.engine.runtime.UpdateExecutor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -42,14 +42,14 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 		ReversibleAccessor<Tata, Long> propName = Accessors.accessorByField(Tata.class, "name");
 		// we must add a property to let us set some differences between 2 instances and have them detected by the system
 		Map<? extends ReversibleAccessor<Tata, Object>, Column<T, Object>> mapping = (Map) Maps.asMap(identifier, (Column) primaryKey).add(propName, nameColumn);
-		ClassMappingStrategy<Tata, Long, T> mappingStrategyMock = new ClassMappingStrategy<>(Tata.class, tataTable,
-				mapping, identifier,
-				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
+		ClassMapping<Tata, Long, T> mappingStrategyMock = new ClassMapping<>(Tata.class, tataTable,
+																			 mapping, identifier,
+																			 new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		
 		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(ConnectionConfiguration.class)) {
 			
 			@Override
-			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(EntityMappingStrategy<Tata, Long, T> mappingStrategy, ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory, int inOperatorMaxSize) {
+			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(EntityMapping<Tata, Long, T> mappingStrategy, ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory, int inOperatorMaxSize) {
 				return new UpdateExecutor<Tata, Long, T>(mappingStrategy, connectionConfiguration, dmlGenerator,
 						new WriteOperationFactory(), inOperatorMaxSize) {
 					

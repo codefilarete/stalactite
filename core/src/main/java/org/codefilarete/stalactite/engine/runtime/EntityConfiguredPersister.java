@@ -9,6 +9,6 @@ public interface EntityConfiguredPersister<C, I> extends EntityPersister<C, I>, 
 	
 	@Override
 	default I getId(C entity) {
-		return getMappingStrategy().getId(entity);
+		return getMapping().getId(entity);
 	}
 }

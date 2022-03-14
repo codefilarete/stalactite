@@ -5,12 +5,12 @@ import java.util.List;
 
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordInsertionCascaderTest.Key;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordInsertionCascaderTest.Keyboard;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -29,16 +29,16 @@ class IndexedAssociationRecordInsertionCascaderTest {
 	
 	@Test
 	void testIndexedAssociationRecordInsertionCascader_getTargets() {
-		ClassMappingStrategy classMappingStrategyMock = mock(ClassMappingStrategy.class);
+		ClassMapping classMappingStrategyMock = mock(ClassMapping.class);
 		when(classMappingStrategyMock.getId(any(Keyboard.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Keyboard) invocation.getArgument(0)).getId());
 		
 		// mocking Persister action of adding identifier manager InsertListeners
-		IdMappingStrategy idMappingStrategymock = mock(IdMappingStrategy.class);
+		IdMapping idMappingStrategymock = mock(IdMapping.class);
 		when(idMappingStrategymock.getIdentifierInsertionManager()).thenReturn(mock(IdentifierInsertionManager.class));
-		when(classMappingStrategyMock.getIdMappingStrategy()).thenReturn(idMappingStrategymock);
+		when(classMappingStrategyMock.getIdMapping()).thenReturn(idMappingStrategymock);
 		
-		ClassMappingStrategy keyClassMappingStrategyMock = mock(ClassMappingStrategy.class);
+		ClassMapping keyClassMappingStrategyMock = mock(ClassMapping.class);
 		when(keyClassMappingStrategyMock.getId(any(Key.class))).thenAnswer((Answer<Identifier<Long>>) invocation ->
 				((Key) invocation.getArgument(0)).getId());
 		AssociationRecordPersister persisterStub =

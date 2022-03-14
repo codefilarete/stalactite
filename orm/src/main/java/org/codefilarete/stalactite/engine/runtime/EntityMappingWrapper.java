@@ -8,25 +8,25 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EmbeddedBeanMappingStrategy;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
- * {@link EntityMappingStrategy} that wraps another one and delegates all its methods to it without any additionnal feature.
+ * {@link EntityMapping} that wraps another one and delegates all its methods to it without any additionnal feature.
  * Made for overriding only some targeted methods.
  * 
  * @author Guillaume Mary
  */
-public class EntityMappingStrategyWrapper<C, I, T extends Table> implements EntityMappingStrategy<C, I, T> {
+public class EntityMappingWrapper<C, I, T extends Table> implements EntityMapping<C, I, T> {
 	
-	private final EntityMappingStrategy<C, I, T> surrogate;
+	private final EntityMapping<C, I, T> surrogate;
 	
-	public EntityMappingStrategyWrapper(EntityMappingStrategy<C, I, T> surrogate) {
+	public EntityMappingWrapper(EntityMapping<C, I, T> surrogate) {
 		this.surrogate = surrogate;
 	}
 	
@@ -46,8 +46,8 @@ public class EntityMappingStrategyWrapper<C, I, T extends Table> implements Enti
 	}
 	
 	@Override
-	public IdMappingStrategy<C, I> getIdMappingStrategy() {
-		return surrogate.getIdMappingStrategy();
+	public IdMapping<C, I> getIdMapping() {
+		return surrogate.getIdMapping();
 	}
 	
 	@Override
@@ -76,7 +76,7 @@ public class EntityMappingStrategyWrapper<C, I, T extends Table> implements Enti
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies() {
+	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies() {
 		return surrogate.getEmbeddedBeanStrategies();
 	}
 	

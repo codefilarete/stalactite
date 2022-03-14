@@ -34,14 +34,14 @@ import org.codefilarete.stalactite.engine.runtime.OneToManyWithMappedAssociation
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
+import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.ComposedIdMappingStrategy;
-import org.codefilarete.stalactite.mapping.EmbeddedClassMappingStrategy;
+import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -80,7 +80,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		
 		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(linkage.getCollectionProvider());
 		// schema configuration
-		Column<T, ID> sourcePK = Iterables.first((Set<Column>) sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		Column<T, ID> sourcePK = Iterables.first((Set<Column>) sourcePersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 		
 		String tableName = nullable(linkage.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
 		TARGET_TABLE targetTable = (TARGET_TABLE) nullable(linkage.getTargetTable()).getOr(() -> new Table(tableName));
@@ -95,7 +95,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 		
 		EmbeddableMappingConfiguration<TRGT> embeddableConfiguration =
 				nullable(linkage.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
-		ClassMappingStrategy<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, TARGET_TABLE> elementRecordStrategy;
+		ClassMapping<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, TARGET_TABLE> elementRecordStrategy;
 		if (embeddableConfiguration == null) {
 			String columnName = nullable(linkage.getElementColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(collectionProviderDefinition));
@@ -103,9 +103,9 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 			elementColumn.primaryKey();
 			targetTable.addForeignKey(foreignKeyNamingStrategy::giveName, (Column) reverseColumn, (Column) sourcePK);
 			
-			elementRecordStrategy = new ElementRecordMappingStrategy<>(targetTable, reverseColumn, elementColumn);
+			elementRecordStrategy = new ElementRecordMapping<>(targetTable, reverseColumn, elementColumn);
 		} else {
-			// a special configuration was given, we compute a EmbeddedClassMappingStrategy from it
+			// a special configuration was given, we compute a EmbeddedClassMapping from it
 			BeanMappingBuilder elementCollectionMappingBuilder = new BeanMappingBuilder();
 			Map<ReversibleAccessor, Column> columnMap = elementCollectionMappingBuilder.build(embeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
@@ -133,9 +133,9 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 				v.primaryKey();
 			});
 			
-			EmbeddedClassMappingStrategy<ElementRecord<TRGT, ID>, TARGET_TABLE> embeddedClassMappingStrategy = new EmbeddedClassMappingStrategy<>(ElementRecord.class,
-					targetTable, (Map) projectedColumnMap);
-			elementRecordStrategy = new ElementRecordMappingStrategy<>(targetTable, reverseColumn, embeddedClassMappingStrategy);
+			EmbeddedClassMapping<ElementRecord<TRGT, ID>, TARGET_TABLE> embeddedClassMappingStrategy = new EmbeddedClassMapping<>(ElementRecord.class,
+																																  targetTable, (Map) projectedColumnMap);
+			elementRecordStrategy = new ElementRecordMapping<>(targetTable, reverseColumn, embeddedClassMappingStrategy);
 		}
 			
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
@@ -171,7 +171,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProviderForInsert = collectionProvider(
 			collectionAccessor,
-			sourcePersister.getMappingStrategy(),
+			sourcePersister.getMapping(),
 			false);
 		
 		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(wrapperPersister, collectionProviderForInsert));
@@ -182,7 +182,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProviderAsPersistedInstances = collectionProvider(
 			collectionAccessor,
-			sourcePersister.getMappingStrategy(),
+			sourcePersister.getMapping(),
 			true);
 		
 		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new CollectionUpdater<SRC, ElementRecord<TRGT, ID>, Collection<ElementRecord<TRGT, ID>>>(
@@ -210,7 +210,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProviderAsPersistedInstances = collectionProvider(
 			collectionAccessor,
-			sourcePersister.getMappingStrategy(),
+			sourcePersister.getMapping(),
 			true);
 		
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
@@ -247,33 +247,33 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	 * Mapping strategy dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.engine.AssociationRecordMappingStrategy}
 	 * in its principle.
 	 */
-	private static class ElementRecordMappingStrategy<C, I, T extends Table> extends ClassMappingStrategy<ElementRecord<C, I>, ElementRecord<C, I>, T> {
+	private static class ElementRecordMapping<C, I, T extends Table> extends ClassMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
 		
-		private ElementRecordMappingStrategy(T targetTable, Column<T, I> idColumn, Column<T, C> elementColumn) {
+		private ElementRecordMapping(T targetTable, Column<T, I> idColumn, Column<T, C> elementColumn) {
 			super((Class) ElementRecord.class,
 				  targetTable,
 				  (Map) Maps.forHashMap(ReversibleAccessor.class, Column.class)
 							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn)
 							.add(ElementRecord.ELEMENT_ACCESSOR, elementColumn),
-					new ElementRecordIdMappingStrategy<>(targetTable, idColumn, elementColumn));
+					new ElementRecordIdMapping<>(targetTable, idColumn, elementColumn));
 		}
 		
-		private ElementRecordMappingStrategy(T targetTable, Column<T, I> idColumn, EmbeddedClassMappingStrategy<ElementRecord<C, I>, T> embeddableMapping) {
+		private ElementRecordMapping(T targetTable, Column<T, I> idColumn, EmbeddedClassMapping<ElementRecord<C, I>, T> embeddableMapping) {
 			super((Class) ElementRecord.class,
 				  targetTable,
 				  (Map) Maps.putAll(Maps.forHashMap(ReversibleAccessor.class, Column.class)
 							.add(ElementRecord.IDENTIFIER_ACCESSOR, idColumn),
 							embeddableMapping.getPropertyToColumn()),
-					new ElementRecordIdMappingStrategy<>(targetTable, idColumn, embeddableMapping));
+					new ElementRecordIdMapping<>(targetTable, idColumn, embeddableMapping));
 		}
 		
 		/**
-		 * {@link IdMappingStrategy} for {@link ElementRecord} : a composed id made of
+		 * {@link IdMapping} for {@link ElementRecord} : a composed id made of
 		 * {@link ElementRecord#getId()} and {@link ElementRecord#getElement()}
 		 */
-		private static class ElementRecordIdMappingStrategy<C, I, T extends Table> extends ComposedIdMappingStrategy<ElementRecord<C, I>, ElementRecord<C, I>> {
+		private static class ElementRecordIdMapping<C, I, T extends Table> extends ComposedIdMapping<ElementRecord<C, I>, ElementRecord<C, I>> {
 			
-			public ElementRecordIdMappingStrategy(T targetTable, Column<T, I> idColumn, Column<T, C> elementColumn) {
+			public ElementRecordIdMapping(T targetTable, Column<T, I> idColumn, Column<T, C> elementColumn) {
 				super(new ElementRecordIdAccessor<>(),
 						new AlreadyAssignedIdentifierManager<>((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
 															   ElementRecord::markAsPersisted,
@@ -281,7 +281,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 						new DefaultElementRecordIdentifierAssembler<>(targetTable, idColumn, elementColumn));
 			}
 			
-			public ElementRecordIdMappingStrategy(T targetTable, Column<T, I> idColumn, EmbeddedClassMappingStrategy<ElementRecord<C, I>, T> elementColumn) {
+			public ElementRecordIdMapping(T targetTable, Column<T, I> idColumn, EmbeddedClassMapping<ElementRecord<C, I>, T> elementColumn) {
 				super(new ElementRecordIdAccessor<>(),
 						new AlreadyAssignedIdentifierManager<>((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
 															   ElementRecord::markAsPersisted,
@@ -290,7 +290,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 			}
 			
 			/**
-			 * Override because {@link ComposedIdMappingStrategy} is based on null identifier to determine newness, which is always false for {@link ElementRecord}
+			 * Override because {@link ComposedIdMapping} is based on null identifier to determine newness, which is always false for {@link ElementRecord}
 			 * because they always have one. We delegate its computation to the entity.
 			 * 
 			 * @param entity any non-null entity
@@ -365,11 +365,11 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 			private static class ConfiguredElementRecordIdentifierAssembler<TRGT, ID> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>> {
 				
 				private final Column<?, ID> idColumn;
-				private final EmbeddedClassMappingStrategy<ElementRecord<TRGT, ID>, ?> mappingStrategy;
+				private final EmbeddedClassMapping<ElementRecord<TRGT, ID>, ?> mappingStrategy;
 				
 				private <T extends Table> ConfiguredElementRecordIdentifierAssembler(T targetTable,
 																					 Column<T, ID> idColumn,
-																					 EmbeddedClassMappingStrategy<ElementRecord<TRGT, ID>, T> mappingStrategy) {
+																					 EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> mappingStrategy) {
 					super(targetTable);
 					this.idColumn = idColumn;
 					this.mappingStrategy = mappingStrategy;

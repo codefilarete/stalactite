@@ -11,7 +11,6 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.engine.TransactionalConnectionProvider;
-import org.codefilarete.stalactite.engine.idprovider.PooledSequenceIdentifierProvider;
 import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
 import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
 import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
@@ -46,7 +45,7 @@ public class PooledSequenceIdentifierProviderTest {
 		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(sequenceIdentifierGenerator.getPersister().getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(sequenceIdentifierGenerator.getPersister().getMapping().getTargetTable()));
 		ddlDeployer.deployDDL();
 		
 		// Creation of our test instance
@@ -81,7 +80,7 @@ public class PooledSequenceIdentifierProviderTest {
 				// whereas PersistenceContext connection provider has no real SeparateTransactionExecutor, it can be cast as such
 				(SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(sequenceIdentifierGenerator.getPersister().getMappingStrategy().getTargetTable()));
+		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(sequenceIdentifierGenerator.getPersister().getMapping().getTargetTable()));
 		ddlDeployer.deployDDL();
 		
 		// Creation of our test instance

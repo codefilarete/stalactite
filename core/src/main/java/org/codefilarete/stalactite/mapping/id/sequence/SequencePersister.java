@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.mapping.id.sequence;
 import java.util.Map;
 
 import org.codefilarete.stalactite.engine.runtime.Persister;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.PropertyAccessor;
@@ -153,12 +153,12 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 	
 	private static class SequencePersisterConfigurer {
 		
-		private ClassMappingStrategy<Sequence, String, SequenceTable> buildConfiguration(SequenceStorageOptions storageOptions) {
+		private ClassMapping<Sequence, String, SequenceTable> buildConfiguration(SequenceStorageOptions storageOptions) {
 			// Sequence table creation
 			SequenceTable sequenceTable = new SequenceTable(null, storageOptions.getTable(), storageOptions.getSequenceNameColumn(), storageOptions.getValueColumn());
 			// Strategy building
 			// NB: no id generator here because we manage ids (see reservePool)
-			return new ClassMappingStrategy<>(
+			return new ClassMapping<>(
 					Sequence.class,
 					sequenceTable,
 					sequenceTable.getPooledSequenceFieldMapping(),

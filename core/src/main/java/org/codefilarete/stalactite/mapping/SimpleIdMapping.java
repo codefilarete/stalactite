@@ -13,9 +13,9 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
  * Will mainly delegate its work to an {@link IdAccessor}, an {@link IdentifierInsertionManager} and a {@link SimpleIdentifierAssembler}
  * 
  * @author Guillaume Mary
- * @see ComposedIdMappingStrategy
+ * @see ComposedIdMapping
  */
-public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
+public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	
 	private final SinglePropertyIdAccessor<C, I> idAccessor;
 	
@@ -32,9 +32,9 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 	 * @param identifierInsertionManager defines the way the id is persisted into the database
 	 * @param identifierMarshaller defines the way the id is read from the database
 	 */
-	public SimpleIdMappingStrategy(SinglePropertyIdAccessor<C, I> idAccessor,
-								   IdentifierInsertionManager<C, I> identifierInsertionManager,
-								   SimpleIdentifierAssembler<I> identifierMarshaller) {
+	public SimpleIdMapping(SinglePropertyIdAccessor<C, I> idAccessor,
+						   IdentifierInsertionManager<C, I> identifierInsertionManager,
+						   SimpleIdentifierAssembler<I> identifierMarshaller) {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;
@@ -47,9 +47,9 @@ public class SimpleIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
 		}
 	}
 	
-	public SimpleIdMappingStrategy(ReversibleAccessor<C, I> identifierAccessor,
-								   IdentifierInsertionManager<C, I> identifierInsertionManager,
-								   SimpleIdentifierAssembler identifierMarshaller) {
+	public SimpleIdMapping(ReversibleAccessor<C, I> identifierAccessor,
+						   IdentifierInsertionManager<C, I> identifierInsertionManager,
+						   SimpleIdentifierAssembler identifierMarshaller) {
 		this(new SinglePropertyIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
 	}
 	

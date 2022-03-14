@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.util.List;
 import java.util.Map;
 
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -21,7 +22,6 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.Persister;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -55,9 +55,9 @@ class PersisterTest {
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
 		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
 		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
-		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				identifierInsertionManagerMock);
+		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																					  mapping, identifier,
+																					  identifierInsertionManagerMock);
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
@@ -88,9 +88,9 @@ class PersisterTest {
 		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
 		SelectListener identifierManagerSelectListenerMock = mock(SelectListener.class);
 		when(identifierInsertionManagerMock.getSelectListener()).thenReturn(identifierManagerSelectListenerMock);
-		ClassMappingStrategy<Toto, Integer, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				identifierInsertionManagerMock);
+		ClassMapping<Toto, Integer, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																						 mapping, identifier,
+																						 identifierInsertionManagerMock);
 		Holder<Toto> mockedSelectAnswer = new Holder<>();
 		Persister<Toto, Integer, TotoTable> testInstance = new Persister<Toto, Integer, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
@@ -174,9 +174,9 @@ class PersisterTest {
 		when(identifierInsertionManagerMock.getIdentifierType()).thenReturn(Long.class);
 		InsertListener identifierManagerInsertListenerMock = mock(InsertListener.class);
 		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
-		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				identifierInsertionManagerMock);
+		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																					  mapping, identifier,
+																					  identifierInsertionManagerMock);
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
@@ -213,9 +213,9 @@ class PersisterTest {
 		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
-		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
+		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																					  mapping, identifier,
+																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
@@ -257,9 +257,9 @@ class PersisterTest {
 		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
-		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
+		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																					  mapping, identifier,
+																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
@@ -296,9 +296,9 @@ class PersisterTest {
 		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
-		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
+		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																					  mapping, identifier,
+																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
@@ -332,9 +332,9 @@ class PersisterTest {
 		Map<? extends ReversibleAccessor<Toto, Object>, Column<TotoTable, Object>> mapping = (Map) Maps
 				.asMap(identifier, primaryKey)
 				.add(propB, columnB);
-		ClassMappingStrategy<Toto, Long, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
+		ClassMapping<Toto, Long, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																					  mapping, identifier,
+																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
@@ -368,9 +368,9 @@ class PersisterTest {
 		when(identifierInsertionManagerMock.getInsertListener()).thenReturn(identifierManagerInsertListenerMock);
 		SelectListener identifierManagerSelectListenerMock = mock(SelectListener.class);
 		when(identifierInsertionManagerMock.getSelectListener()).thenReturn(identifierManagerSelectListenerMock);
-		ClassMappingStrategy<Toto, Integer, TotoTable> classMappingStrategy = new ClassMappingStrategy<>(Toto.class, totoTable,
-				mapping, identifier,
-				identifierInsertionManagerMock);
+		ClassMapping<Toto, Integer, TotoTable> classMappingStrategy = new ClassMapping<>(Toto.class, totoTable,
+																						 mapping, identifier,
+																						 identifierInsertionManagerMock);
 		Persister<Toto, Integer, TotoTable> testInstance = new Persister<Toto, Integer, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */

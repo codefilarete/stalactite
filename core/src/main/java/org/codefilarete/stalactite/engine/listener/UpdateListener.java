@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.codefilarete.tool.Duo;
-import org.codefilarete.stalactite.mapping.MappingStrategy;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
@@ -64,20 +64,20 @@ public interface UpdateListener<C> {
 	}
 	
 	/**
-	 * Default behavior for giving {@link UpdatePayload} from some entities and a {@link MappingStrategy}.
+	 * Default behavior for giving {@link UpdatePayload} from some entities and a {@link Mapping}.
 	 * 
 	 * @param entities modified + unmodified entities
 	 * @param allColumns indicates if all columns must be updated or not
-	 * @param mappingStrategy the strategy that will compute updatable columns and values from modified + unmodified entities 
+	 * @param mapping the strategy that will compute updatable columns and values from modified + unmodified entities 
 	 * @param <C> entities type
 	 * @param <T> target table type
 	 * @return arguments wrapped into an {@link UpdatePayload}, enhanced with updatable columns and values
 	 */
 	static <C, T extends Table<T>> Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<C, C>> entities,
 																				 boolean allColumns,
-																				 MappingStrategy<C, T> mappingStrategy) {
+																				 Mapping<C, T> mapping) {
 		return (Iterable) computePayloads(entities, allColumns, (modified, unmodified, allColumnsLocal) ->
-				(Map) mappingStrategy.getUpdateValues(modified, unmodified, allColumnsLocal));
+				(Map) mapping.getUpdateValues(modified, unmodified, allColumnsLocal));
 	}
 	
 	static <C> Iterable<UpdatePayload<C, Table>> computePayloads(Iterable<? extends Duo<C, C>> entities,

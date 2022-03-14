@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.ComposedIdMappingStrategy;
+import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -36,7 +36,7 @@ public class SimpleIdentifierAssembler<I> implements IdentifierAssembler<I> {
 	@Override
 	public I assemble(@Nonnull Row row, @Nonnull ColumnedRow rowAliaser) {
 		Object value = rowAliaser.getValue(primaryKey, row);
-		return (I) (value == null || ComposedIdMappingStrategy.isDefaultPrimitiveValue(value) ? null : value);
+		return (I) (value == null || ComposedIdMapping.isDefaultPrimitiveValue(value) ? null : value);
 	}
 	
 	@Override

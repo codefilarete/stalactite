@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.sql.statement;
 import java.sql.PreparedStatement;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;

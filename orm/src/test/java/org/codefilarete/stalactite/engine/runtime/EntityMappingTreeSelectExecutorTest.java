@@ -18,11 +18,10 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.runtime.EntityMappingStrategyTreeSelectExecutor;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.ComposedIdMappingStrategy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -65,10 +64,10 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class EntityMappingStrategyTreeSelectExecutorTest {
+public class EntityMappingTreeSelectExecutorTest {
 	
-	static ClassMappingStrategy buildMappingStrategyMock(Table table) {
-		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+	static ClassMapping buildMappingStrategyMock(Table table) {
+		ClassMapping mappingStrategyMock = mock(ClassMapping.class);
 		when(mappingStrategyMock.getTargetTable()).thenReturn(table);
 		// the selected columns are plugged on the table ones
 		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> table.getColumns());
@@ -113,10 +112,10 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 	@ParameterizedTest
 	@MethodSource("selectData")
 	public void testSelect(Table targetTable, List<String> expectedSql, PairSetList<Integer, Integer> expectedParameters) throws SQLException {
-		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(targetTable);
-		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
-		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
-		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
+		ClassMapping<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(targetTable);
+		// mocking to prevent NPE from EntityMappingTreeSelectExecutor constructor
+		IdMapping idMappingMock = mock(IdMapping.class);
+		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
 		IdentifierAssembler t;
 		Set<Column> primaryKeyColumn = targetTable.getPrimaryKey().getColumns();
 		if (primaryKeyColumn.size() == 1) {
@@ -137,7 +136,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 				}
 			};
 		}
-		when(idMappingStrategyMock.getIdentifierAssembler()).thenReturn(t);
+		when(idMappingMock.getIdentifierAssembler()).thenReturn(t);
 		
 		Dialect dialect = new Dialect();
 		// we set a in operator size to test overflow
@@ -145,7 +144,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		
 		JdbcArgCaptor jdbcArgCaptor = new JdbcArgCaptor();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(jdbcArgCaptor.connection);
-		EntityMappingStrategyTreeSelectExecutor testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
+		EntityMappingTreeSelectExecutor testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
 		
 		List<Integer> inputValues = Arrays.asList(11, 13, 17, 23);
 		testInstance.select(inputValues);
@@ -177,11 +176,11 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 	public void testSelect_argumentWithOneBlock() throws SQLException {
 		Table dummyTable = new Table("dummyTable");
 		Column dummyPK = dummyTable.addColumn("dummyPK", Integer.class).primaryKey();
-		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(dummyTable);
-		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
-		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
-		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
-		when(idMappingStrategyMock.getIdentifierAssembler()).thenReturn(new SimpleIdentifierAssembler(dummyPK));
+		ClassMapping<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(dummyTable);
+		// mocking to prevent NPE from EntityMappingTreeSelectExecutor constructor
+		IdMapping idMappingMock = mock(IdMapping.class);
+		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
+		when(idMappingMock.getIdentifierAssembler()).thenReturn(new SimpleIdentifierAssembler(dummyPK));
 		
 		Dialect dialect = new Dialect();
 		// we set a in operator size to test overflow
@@ -190,7 +189,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		JdbcArgCaptor jdbcArgCaptor = new JdbcArgCaptor();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(jdbcArgCaptor.connection);
 		
-		EntityMappingStrategyTreeSelectExecutor testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
+		EntityMappingTreeSelectExecutor testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
 		testInstance.select(Arrays.asList(11, 13));
 		
 		// one query because in operator is bounded to 3 values
@@ -207,16 +206,16 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 	
 	@Test
 	public void testSelect_emptyArgument() {
-		ClassMappingStrategy<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(new Table("dummyTable"));
-		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
-		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
-		when(classMappingStrategy.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
+		ClassMapping<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(new Table("dummyTable"));
+		// mocking to prevent NPE from EntityMappingTreeSelectExecutor constructor
+		IdMapping idMappingMock = mock(IdMapping.class);
+		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
 		
 		List<String> capturedSQL = new ArrayList<>();
 		Dialect dialect = new Dialect();
 		// we set a in operator size to test overflow
 		dialect.setInOperatorMaxSize(3);
-		EntityMappingStrategyTreeSelectExecutor<Object, Object, Table> testInstance = new EntityMappingStrategyTreeSelectExecutor<Object, Object, Table>(
+		EntityMappingTreeSelectExecutor<Object, Object, Table> testInstance = new EntityMappingTreeSelectExecutor<Object, Object, Table>(
 				classMappingStrategy, dialect, mock(ConnectionProvider.class)) {
 			
 			@Override
@@ -269,12 +268,12 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 					toto.id1 = toto2.id1;
 					toto.id2 = toto2.id2;
 				}));
-		ClassMappingStrategy<Toto, Toto, Table> classMappingStrategy = new ClassMappingStrategy<Toto, Toto, Table>(Toto.class, targetTable,
-				(Map)
+		ClassMapping<Toto, Toto, Table> classMappingStrategy = new ClassMapping<Toto, Toto, Table>(Toto.class, targetTable,
+																								   (Map)
 				Maps.asMap((ReversibleAccessor) Accessors.accessorByMethodReference(Toto::getId1, Toto::setId1), (Column) id1)
 						.add(Accessors.accessorByMethodReference(Toto::getId2, Toto::setId2), id2)
 						.add(Accessors.accessorByMethodReference(Toto::getName, Toto::setName), name),
-				new ComposedIdMappingStrategy<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false)
+																								   new ComposedIdMapping<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false)
 						, new ComposedIdentifierAssembler<Toto>(targetTable) {
 					@Override
 					protected Toto assemble(Map<Column, Object> primaryKeyElements) {
@@ -289,7 +288,7 @@ public class EntityMappingStrategyTreeSelectExecutorTest {
 		);
 		
 		// Checking that selected entities by their id are those expected
-		EntityMappingStrategyTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingStrategyTreeSelectExecutor<>(classMappingStrategy, new HSQLDBDialect(), connectionProvider);
+		EntityMappingTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, new HSQLDBDialect(), connectionProvider);
 		List<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
 		assertThat(select.toString()).isEqualTo(Arrays.asList(entity1).toString());
 		

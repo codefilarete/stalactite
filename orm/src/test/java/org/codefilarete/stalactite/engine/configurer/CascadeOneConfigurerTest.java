@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -31,7 +32,6 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -72,9 +72,9 @@ class CascadeOneConfigurerTest {
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
-		ClassMappingStrategy<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMappingStrategy<Country, Identifier<Long>, Table>(Country.class, countryTable,
-				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
-				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
+		ClassMapping<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, Table>(Country.class, countryTable,
+																																		(Map) countryMapping, countryIdentifierAccessorByMethodReference,
+																																		(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
 		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
@@ -172,9 +172,9 @@ class CascadeOneConfigurerTest {
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
-		ClassMappingStrategy<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMappingStrategy<Country, Identifier<Long>, Table>(Country.class, countryTable,
-				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
-				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
+		ClassMapping<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, Table>(Country.class, countryTable,
+																																		(Map) countryMapping, countryIdentifierAccessorByMethodReference,
+																																		(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");

@@ -10,10 +10,10 @@ import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager
  * @author Guillaume Mary
  * @param <C> target persisted class
  * @param <I> identifier class
- * @see SimpleIdMappingStrategy
- * @see ComposedIdMappingStrategy
+ * @see SimpleIdMapping
+ * @see ComposedIdMapping
  */
-public interface IdMappingStrategy<C, I> {
+public interface IdMapping<C, I> {
 	
 	/**
 	 * Expected to indicate if given entity is persisted or not, meaning already exists in database.

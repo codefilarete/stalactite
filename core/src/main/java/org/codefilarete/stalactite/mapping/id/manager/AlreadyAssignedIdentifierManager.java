@@ -6,6 +6,7 @@ import java.util.function.Function;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.WriteExecutor.JDBCBatchingIterator;
+import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
@@ -20,7 +21,7 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
  * A way o managing it can be to create a wrapper around identifier.
  * 
  * @author Guillaume Mary
- * @see org.codefilarete.stalactite.mapping.SimpleIdMappingStrategy.IsNewDeterminer#isNew(Object) 
+ * @see SimpleIdMapping.IsNewDeterminer#isNew(Object) 
  */
 public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInsertionManager<C, I> {
 	

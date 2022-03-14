@@ -179,7 +179,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 				joinColumnNamingStrategy,
 				indexColumnNamingStrategy,
 				associationTableNamingStrategy,
-				subPersister.getMappingStrategy().getPropertyToColumn(),
+				subPersister.getMapping().getPropertyToColumn(),
 				tableNamingStrategy);
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}
@@ -231,7 +231,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					this.associationTableNamingStrategy,
 					this.indexColumnNamingStrategy)
 					// we must give primary key else reverse foreign key will target subclass table, which creates 2 fk in case of reuse of target persister
-					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns()));
+					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns()));
 			if (currentBuilderContext.isCycling(cascadeMany.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that

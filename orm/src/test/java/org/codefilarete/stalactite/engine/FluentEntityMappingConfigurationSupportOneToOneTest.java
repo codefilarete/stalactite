@@ -375,7 +375,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					((ConfiguredPersister) persistenceContext.getPersister(City.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+					((ConfiguredPersister) persistenceContext.getPersister(City.class)).getMapping().getTargetTable().getName().toUpperCase())) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(
@@ -407,7 +407,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(
@@ -453,7 +453,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(
@@ -490,7 +490,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(
@@ -528,7 +528,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(

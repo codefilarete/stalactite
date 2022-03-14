@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.OneToManyWithMappedAssociation
 import org.codefilarete.stalactite.engine.runtime.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
 import org.codefilarete.stalactite.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesInsertCascader;
 import org.codefilarete.stalactite.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
@@ -29,7 +30,6 @@ import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.query.model.Operators;
@@ -121,8 +121,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		persisterListener.addInsertListener(newRecordInsertionCascader(
 				manyRelationDescriptor.getCollectionGetter(),
 				associationPersister,
-				sourcePersister.getMappingStrategy(),
-				targetPersister.getMappingStrategy()));
+				sourcePersister.getMapping(),
+				targetPersister.getMapping()));
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly) {
@@ -241,7 +241,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 			}
 			
 			private SRCID castId(SRC e) {
-				return sourcePersister.getMappingStrategy().getId(e);
+				return sourcePersister.getMapping().getId(e);
 			}
 		});
 		
@@ -255,8 +255,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected abstract AfterInsertCollectionCascader<SRC, R> newRecordInsertionCascader(Function<SRC, C> collectionGetter,
 																						AssociationRecordPersister<R, T> associationPersister,
-																						EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-																						EntityMappingStrategy<TRGT, TRGTID, ?> strategy);
+																						EntityMapping<SRC, SRCID, ?> mappingStrategy,
+																						EntityMapping<TRGT, TRGTID, ?> strategy);
 	
 	protected abstract R newRecord(SRC e, TRGT target, int index);
 	

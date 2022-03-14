@@ -141,7 +141,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 						Collection<TRGT> targets = manyRelationDescriptor.getCollectionGetter().apply(src);
 						// We only delete persisted instances (for logic and to prevent from non matching row count exception)
 						return stream(targets)
-								.filter(not(targetPersister.getMappingStrategy()::isNew))
+								.filter(not(targetPersister.getMapping()::isNew))
 								.collect(Collectors.toList());
 					}
 				});

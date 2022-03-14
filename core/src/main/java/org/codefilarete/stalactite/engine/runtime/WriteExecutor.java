@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import org.codefilarete.tool.collection.SteppingIterator;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
@@ -18,7 +18,7 @@ public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C
 	private final int batchSize;
 	private final WriteOperationFactory writeOperationFactory;
 	
-	public WriteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+	public WriteExecutor(EntityMapping<C, I, T> mappingStrategy,
 						 ConnectionConfiguration connectionConfiguration,
 						 DMLGenerator dmlGenerator,
 						 WriteOperationFactory writeOperationFactory,

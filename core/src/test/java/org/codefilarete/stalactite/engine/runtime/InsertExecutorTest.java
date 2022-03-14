@@ -8,6 +8,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -18,7 +19,6 @@ import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.Ver
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -87,7 +87,7 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void insert_mandatoryColumn() {
-		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMappingStrategy().getTargetTable().mapColumnsOnName().get("b");
+		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
 		assertThatThrownBy(() -> testInstance.insert(Arrays.asList(new Toto(null, 23))))
@@ -142,9 +142,9 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 		Map<ReversibleAccessor, Column> mapping = Maps.asMap((ReversibleAccessor)
 				PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
 				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA), pk);
-		testInstance = new InsertExecutor<>(new ClassMappingStrategy<VersionnedToto, Integer, Table>(VersionnedToto.class, totoTable, (Map) mapping,
-				PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
-				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
+		testInstance = new InsertExecutor<>(new ClassMapping<VersionnedToto, Integer, Table>(VersionnedToto.class, totoTable, (Map) mapping,
+																							 PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
+																							 new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
 				new ConnectionConfigurationSupport(connectionProvider, 3), dmlGenerator, new WriteOperationFactory(), 3);
 		
 		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
@@ -180,7 +180,7 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 			new GeneratedKeysReaderAsInt(primaryKeyColumn.getName()),
 			Integer.class);
 
-		toReturn.classMappingStrategy = new ClassMappingStrategy<>(
+		toReturn.classMappingStrategy = new ClassMapping<>(
 			Toto.class,
 			targetTable,
 			mappedFileds,

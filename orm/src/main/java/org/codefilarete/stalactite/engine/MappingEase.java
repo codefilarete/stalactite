@@ -4,7 +4,7 @@ import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConf
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentSubEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
-import org.codefilarete.stalactite.mapping.EmbeddedClassMappingStrategy;
+import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 
 /**
  * Declares a simple entry point to start configuring a persistence mapping.
@@ -39,7 +39,7 @@ public final class MappingEase {
 	/**
 	 * Starts a {@link FluentEmbeddableMappingBuilder} for a given class.
 	 *
-	 * @param persistedClass the class to be persisted by the {@link EmbeddedClassMappingStrategy}
+	 * @param persistedClass the class to be persisted by the {@link EmbeddedClassMapping}
 	 * @param <T> any type to be persisted
 	 * @return a new {@link FluentEmbeddableMappingBuilder}
 	 */

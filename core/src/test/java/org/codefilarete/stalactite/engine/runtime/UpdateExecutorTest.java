@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
@@ -14,8 +15,7 @@ import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -78,12 +78,12 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void update_mandatoryColumn() {
-		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMappingStrategy().getTargetTable().mapColumnsOnName().get("b");
+		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
 		List<Duo<Toto, Toto>> differencesIterable = asList(new Duo<>(new Toto(1, null, 23), new Toto(1, 42, 23)));
 		Iterable<UpdatePayload<Toto, Table>> payloads = UpdateListener.computePayloads(differencesIterable, true,
-				testInstance.getMappingStrategy());
+				testInstance.getMapping());
 		
 		assertThatThrownBy(() -> testInstance.updateMappedColumns(payloads))
 				.isInstanceOf(IllegalArgumentException.class)
@@ -123,7 +123,7 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 		T table = (T) new Table<>("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
-		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
+		ClassMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMapping<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> true));
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
 				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), new WriteOperationFactory(), 4);
@@ -207,7 +207,7 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 		// variable introduced to bypass generics problem
 		UpdateExecutor<Toto, Integer, Table> localTestInstance = testInstance;
 		localTestInstance.updateVariousColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
-				false, localTestInstance.getMappingStrategy()));
+				false, localTestInstance.getMapping()));
 		
 		verify(jdbcMock.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
 		verify(jdbcMock.preparedStatement, times(expectedResult.executeBatchCallCount)).executeLargeBatch();
@@ -227,7 +227,7 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 		// variable introduced to bypass generics problem
 		UpdateExecutor<Toto, Integer, Table> localTestInstance = testInstance;
 		localTestInstance.updateMappedColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
-				true, localTestInstance.getMappingStrategy()));
+				true, localTestInstance.getMapping()));
 		
 		verify(jdbcMock.preparedStatement, times(4)).addBatch();
 		verify(jdbcMock.preparedStatement, times(2)).executeLargeBatch();
@@ -246,14 +246,14 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 		T table = (T) new Table<>("SimpleEntity");
 		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
-		ClassMappingStrategy<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMappingStrategy<SimpleEntity, Long, T>
+		ClassMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMapping<SimpleEntity, Long, T>
 				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> false));
 		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<>(
 				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), new WriteOperationFactory(), 4);
 		
 		
 		Iterable<UpdatePayload<SimpleEntity, T>> updatePayloads = UpdateListener.computePayloads(Arrays.asList(new Duo<>(new SimpleEntity(), 
-				new SimpleEntity())), true, testInstance.getMappingStrategy());
+				new SimpleEntity())), true, testInstance.getMapping());
 		assertThatCode(() -> testInstance.updateMappedColumns(updatePayloads)).doesNotThrowAnyException();
 	}
 	

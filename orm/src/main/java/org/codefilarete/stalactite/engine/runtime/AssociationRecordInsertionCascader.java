@@ -5,7 +5,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 
 import static org.codefilarete.tool.collection.Iterables.stream;
 
@@ -16,13 +16,13 @@ class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Col
 		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
 	
 	private final Function<SRC, C> collectionGetter;
-	private final EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy;
-	private final EntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy;
+	private final EntityMapping<SRC, SRCID, ?> mappingStrategy;
+	private final EntityMapping<TRGT, TRGTID, ?> targetStrategy;
 	
 	public AssociationRecordInsertionCascader(AssociationRecordPersister<AssociationRecord, ?> persister,
 											  Function<SRC, C> collectionGetter,
-											  EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-											  EntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+											  EntityMapping<SRC, SRCID, ?> mappingStrategy,
+											  EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
 		this.collectionGetter = collectionGetter;
 		this.mappingStrategy = mappingStrategy;

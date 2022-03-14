@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  *
  * @author Guillaume Mary
  */
-public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T extends Table> implements EmbeddedBeanMappingStrategy<C, T> {
+public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Table> implements EmbeddedBeanMapping<C, T> {
 	
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;
@@ -37,7 +37,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instanciate for select from database
 	 */
-	public ColumnedMapMappingStrategy(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
+	public ColumnedMapMapping(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		// We bind conversion on MapMappingStrategy conversion methods */
@@ -180,7 +180,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 	
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
-		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMappingStrategy.class) + " can't export a mapping between some accessors and their columns");
+		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
 	private static class LocalToMapRowTransformer<M extends Map<K, V>, K, V> extends ToMapRowTransformer<M> {
@@ -214,7 +214,7 @@ public abstract class ColumnedMapMappingStrategy<C extends Map<K, V>, K, V, T ex
 			return new LocalToMapRowTransformer<>(this.beanFactory, columnedRow, this.columns, this.keyProvider, this.databaseValueConverter);
 		}
 		
-		/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
+		/** We bind conversion on {@link ColumnedCollectionMapping} conversion methods */
 		@Override
 		public void applyRowToBean(Row row, M map) {
 			for (Column column : this.columns) {

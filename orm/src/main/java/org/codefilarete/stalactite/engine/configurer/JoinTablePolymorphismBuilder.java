@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.JoinTablePolymorphismPersister
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -26,7 +27,6 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -59,7 +59,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymo
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
 				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
 		this.joinTablePolymorphism = polymorphismPolicy;
-		this.mainTablePrimaryKey = this.mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey();
+		this.mainTablePrimaryKey = this.mainPersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 	
 	@Override
@@ -88,7 +88,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymo
 			addForeignKey(subTable);
 			Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
 			addIdentificationToMapping(identification, subEntityMapping);
-			ClassMappingStrategy<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+			ClassMapping<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
 					false,
 					subTable,
 					subEntityPropertiesMapping,
@@ -102,10 +102,10 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymo
 			subclassPersister = new SimpleRelationalEntityPersister(classMappingStrategy, dialect, connectionConfiguration);
 			
 			// Adding join with parent table to select
-			Column subEntityPrimaryKey = (Column) Iterables.first(subclassPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+			Column subEntityPrimaryKey = (Column) Iterables.first(subclassPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 			Column entityPrimaryKey = (Column) Iterables.first(this.mainTablePrimaryKey.getColumns());
 			subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-															   new EntityMergerAdapter<C, Table>(mainPersister.getMappingStrategy()),
+															   new EntityMergerAdapter<C, Table>(mainPersister.getMapping()),
 															   subEntityPrimaryKey, entityPrimaryKey);
 			
 			persisterPerSubclass.put(subConfiguration.getEntityType(), (EntityConfiguredJoinedTablesPersister<C, I>) subclassPersister);

@@ -43,9 +43,9 @@ import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersiste
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
-import org.codefilarete.stalactite.mapping.MappingStrategy.ShadowColumnValueProvider;
+import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -84,7 +84,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 		this.subEntitiesPersisters = subEntitiesPersisters;
 		ShadowColumnValueProvider<C, D, T> discriminatorValueProvider = new ShadowColumnValueProvider<>(discriminatorColumn,
 				c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()));
-		this.subEntitiesPersisters.values().forEach(subclassPersister -> ((EntityMappingStrategy) subclassPersister.getMappingStrategy())
+		this.subEntitiesPersisters.values().forEach(subclassPersister -> ((EntityMapping) subclassPersister.getMapping())
 				.addShadowColumnInsert(discriminatorValueProvider));
 		
 		subEntitiesPersisters.forEach((type, persister) ->
@@ -95,7 +95,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 				subEntitiesPersisters,
 				discriminatorColumn,
 				polymorphismPolicy,
-				(T) mainPersister.getMappingStrategy().getTargetTable(),
+				(T) mainPersister.getMapping().getTargetTable(),
 				connectionProvider,
 				dialect);
 		
@@ -107,7 +107,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 				connectionProvider,
 				dialect);
 		
-		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
+		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
 	}
 	
 	@Override
@@ -271,33 +271,33 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 	}
 	
 	/**
-	 * Overriden to capture {@link EntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
-	 * {@link EntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
+	 * Overriden to capture {@link EntityMapping#addShadowColumnInsert(ShadowColumnValueProvider)} and
+	 * {@link EntityMapping#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
 	 * ourselves (Persister) but the case is to add a silent Column insert/update which is not the goal of the Persister to know implementation
-	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link EntityMappingStrategy} are in charge of knowing
+	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link EntityMapping} are in charge of knowing
 	 * {@link Column} actions.
 	 *
 	 * @return an enhanced version of our main persister mapping strategy which dispatches silent column insert/update to sub-entities ones
 	 */
 	@Override
-	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
-		return new EntityMappingStrategyWrapper<C, I, T>(mainPersister.getMappingStrategy()) {
+	public EntityMapping<C, I, T> getMapping() {
+		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
 			@Override
 			public void addTransformerListener(TransformerListener<C> listener) {
-				subEntitiesPersisters.values().forEach(persister -> persister.getMappingStrategy().addTransformerListener(listener));
+				subEntitiesPersisters.values().forEach(persister -> persister.getMapping().addTransformerListener(listener));
 			}
 			
 			@Override
 			public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> provider) {
-				subEntitiesPersisters.values().forEach(p -> ((EntityMappingStrategy) p.getMappingStrategy()).addShadowColumnInsert(provider));
+				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addShadowColumnInsert(provider));
 			}
 			
 			@Override
 			public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> provider) {
-				subEntitiesPersisters.values().forEach(p -> ((EntityMappingStrategy) p.getMappingStrategy()).addShadowColumnUpdate(provider));
+				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addShadowColumnUpdate(provider));
 			}
 		};
 	}
@@ -310,9 +310,9 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
 		
-		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
+				new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
 						subclassPrimaryKey, selectExecutor,
 						DIFFERED_ENTITY_LOADER,
 						discriminatorColumn, subEntitiesPersisters::get),
@@ -335,9 +335,9 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 																				  Set<Column<T2, ?>> selectableColumns) {
 		
 		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
-		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
-				new SingleTableFirstPhaseRelationLoader(mainPersister.getMappingStrategy().getIdMappingStrategy(),
+				new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
 						subclassPrimaryKey, selectExecutor,
 						DIFFERED_ENTITY_LOADER,
 						discriminatorColumn, subEntitiesPersisters::get),
@@ -365,13 +365,13 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 		private final Function<Class, SelectExecutor> subtypeSelectors;
 		private final Set<D> discriminatorValues;
 		
-		private SingleTableFirstPhaseRelationLoader(IdMappingStrategy<C, I> subEntityIdMappingStrategy,
+		private SingleTableFirstPhaseRelationLoader(IdMapping<C, I> subEntityIdMapping,
 													Column primaryKey,
 													SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor,
 													ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder,
 													Column<T, D> discriminatorColumn, Function<Class, SelectExecutor> subtypeSelectors) {
 			// Note that selectExecutor won't be used because we dynamically lookup for it in fillCurrentRelationIds
-			super(subEntityIdMappingStrategy, primaryKey, selectExecutor, relationIdsHolder);
+			super(subEntityIdMapping, primaryKey, selectExecutor, relationIdsHolder);
 			this.discriminatorColumn = discriminatorColumn;
 			this.subtypeSelectors = subtypeSelectors;
 			this.discriminatorValues = Iterables.collect(polymorphismPolicy.getSubClasses(), conf -> polymorphismPolicy.getDiscriminatorValue(conf.getEntityType()), HashSet::new);
@@ -385,7 +385,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 			if (discriminatorValues.contains(discriminator)) {
 				Set<RelationIds<Object, C, I>> relationIds = ((Queue<Set<RelationIds<Object, C, I>>>) relationIdsHolder.get()).peek();
 				relationIds.add(new RelationIds(giveSelector(discriminator),
-						idMappingStrategy.getIdAccessor()::getId, bean, (I) columnedRow.getValue(primaryKey, row)));
+												idMapping.getIdAccessor()::getId, bean, (I) columnedRow.getValue(primaryKey, row)));
 			}
 		}
 		

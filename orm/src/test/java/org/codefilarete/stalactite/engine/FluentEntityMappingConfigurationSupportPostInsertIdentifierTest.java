@@ -116,7 +116,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.build(persistenceContext);
 		
 		// by default inheritance is single_table one, to comply with default JPA inheritance strategy
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Car");
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMapping().getTargetTable().getName()).isEqualTo("Car");
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -158,9 +158,9 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.build(persistenceContext);
 		
 		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("AbstractVehicle");
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo("Vehicle");
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMappingStrategy().getTargetTable().getName()).isEqualTo(
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMapping().getTargetTable().getName()).isEqualTo("AbstractVehicle");
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMapping().getTargetTable().getName()).isEqualTo("Vehicle");
+		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo(
 				"Car");
 		
 		// DML tests

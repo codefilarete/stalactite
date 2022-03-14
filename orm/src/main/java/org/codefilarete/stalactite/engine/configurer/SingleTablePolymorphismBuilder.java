@@ -21,7 +21,7 @@ import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -60,7 +60,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
-		T mainTable = (T) mainPersister.getMappingStrategy().getTargetTable();
+		T mainTable = (T) mainPersister.getMapping().getTargetTable();
 		for (SubEntityMappingConfiguration<? extends C> subConfiguration : polymorphismPolicy.getSubClasses()) {
 			// first we'll use table of columns defined in embedded override
 			// then the one defined by inheritance
@@ -74,7 +74,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 			// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dipatched to them
 			// by a proxy and main persister is not so much used
 			subEntityPropertiesMapping.putAll(mainMapping);
-			ClassMappingStrategy<? extends C, I, T> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+			ClassMapping<? extends C, I, T> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
 					false,
 					mainTable,
 					subEntityPropertiesMapping,
@@ -83,7 +83,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 					subConfiguration.getPropertiesMapping().getBeanType(),
 					null);
 			// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it
-			classMappingStrategy.addShadowColumns((ClassMappingStrategy) mainPersister.getMappingStrategy());
+			classMappingStrategy.addShadowColumns((ClassMapping) mainPersister.getMapping());
 			
 			// no primary key to add nor foreign key since table is the same as main one (single table strategy)
 			SimpleRelationalEntityPersister subclassPersister = new SimpleRelationalEntityPersister(classMappingStrategy, dialect, connectionConfiguration);
@@ -115,7 +115,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 	}
 	
 	private Column<T, D> ensureDiscriminatorColumn() {
-		Column<T, D> result = mainPersister.getMappingStrategy().getTargetTable().addColumn(
+		Column<T, D> result = mainPersister.getMapping().getTargetTable().addColumn(
 				polymorphismPolicy.getDiscriminatorColumn(),
 				polymorphismPolicy.getDiscrimintorType());
 		result.setNullable(false);

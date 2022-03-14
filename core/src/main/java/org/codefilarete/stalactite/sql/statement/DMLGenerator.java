@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.TreeSet;
 
 import org.codefilarete.stalactite.engine.runtime.DMLExecutor;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;

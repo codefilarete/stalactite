@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.runtime.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Arrays;
@@ -20,7 +21,6 @@ import org.codefilarete.tool.collection.PairIterator;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
@@ -58,7 +58,7 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 		targetPersister.joinAsMany(sourcePersister, associationPersister.getMainTable().getManySideKeyColumn(),
 				associationPersister.getMainTable().getManySidePrimaryKey(), manyRelationDescriptor.getRelationFixer(),
 				(row, columnedRow) -> {
-					TRGTID identifier = targetPersister.getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
 					Integer targetEntityIndex = EntityTreeInflater.currentContext().getRowDecoder().giveValue(associationTableJoinNodeName, indexColumn, row);
 					return identifier + "-" + targetEntityIndex;
 				}, associationTableJoinNodeName, true);
@@ -199,13 +199,13 @@ public class OneToManyWithIndexedAssociationTableEngine<SRC, TRGT, SRCID, TRGTID
 	protected IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C> newRecordInsertionCascader(
 			Function<SRC, C> collectionGetter,
 			AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> associationPersister,
-			EntityMappingStrategy<SRC, SRCID, ?> mappingStrategy,
-			EntityMappingStrategy<TRGT, TRGTID, ?> targetStrategy) {
+			EntityMapping<SRC, SRCID, ?> mappingStrategy,
+			EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
 		return new IndexedAssociationRecordInsertionCascader<>(associationPersister, collectionGetter, mappingStrategy, targetStrategy);
 	}
 	
 	@Override
 	protected IndexedAssociationRecord newRecord(SRC e, TRGT target, int index) {
-		return new IndexedAssociationRecord(sourcePersister.getMappingStrategy().getId(e), targetPersister.getMappingStrategy().getId(target), index);
+		return new IndexedAssociationRecord(sourcePersister.getMapping().getId(e), targetPersister.getMapping().getId(target), index);
 	}
 }

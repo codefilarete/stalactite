@@ -5,9 +5,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.codefilarete.stalactite.engine.runtime.EntityMappingTreeSelectExecutor;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.engine.runtime.EntityMappingStrategyTreeSelectExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
@@ -29,7 +29,7 @@ import static org.codefilarete.stalactite.query.model.Operators.in;
 /**
  * Class aimed at loading an entity graph which is selected by properties criteria coming from {@link EntityCriteriaSupport}.
  * 
- * Implemented as a light version of {@link EntityMappingStrategyTreeSelectExecutor} focused on {@link EntityCriteriaSupport},
+ * Implemented as a light version of {@link EntityMappingTreeSelectExecutor} focused on {@link EntityCriteriaSupport},
  * hence it is based on {@link EntityJoinTree} to build the bean graph.
  * 
  * @author Guillaume Mary

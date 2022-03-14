@@ -9,8 +9,8 @@ import java.util.Map;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
@@ -50,7 +50,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		// defining a test instance that maps Toto class onto TotoTable with "a" field as identifier
 		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
-		ClassMappingStrategy<Toto, Integer, TotoTable> totoClassMappingStrategy = new ClassMappingStrategy<>(
+		ClassMapping<Toto, Integer, TotoTable> totoClassMappingStrategy = new ClassMapping<>(
 				Toto.class,
 				totoClassTable,
 				totoClassMapping,

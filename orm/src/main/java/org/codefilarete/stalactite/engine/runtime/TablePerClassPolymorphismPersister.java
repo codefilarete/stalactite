@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -39,11 +40,10 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.mapping.MappingStrategy.ShadowColumnValueProvider;
+import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -90,14 +90,14 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				Entry::getKey,
 				Functions.chain(Entry::getValue, SimpleRelationalEntityPersister::getSelectExecutor));
 		this.selectExecutor = new TablePerClassPolymorphicSelectExecutor<>(
-				tablePerSubEntity,
-				subEntitiesSelectors,
-				(T) mainPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
+			tablePerSubEntity,
+			subEntitiesSelectors,
+			(T) mainPersister.getMapping().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
 		
 		this.entitySelectExecutor = new TablePerClassPolymorphicEntitySelectExecutor<>(tablePerSubEntity, subEntitiesPersisters,
-				(T) mainPersister.getMappingStrategy().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
+																					   (T) mainPersister.getMapping().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
 		
-		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMappingStrategy());
+		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
 	}
 	
 	@Override
@@ -121,7 +121,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	@Override
 	public Collection<Table> giveImpliedTables() {
 		// in table-per-class main persister table does not participate in database schema : only sub entities persisters do
-		return this.subEntitiesPersisters.values().stream().map(ConfiguredPersister::getMappingStrategy).map(EntityMappingStrategy::getTargetTable).collect(Collectors.toList());
+		return this.subEntitiesPersisters.values().stream().map(ConfiguredPersister::getMapping).map(EntityMapping::getTargetTable).collect(Collectors.toList());
 	}
 	
 	@Override
@@ -261,31 +261,31 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	/**
-	 * Overriden to capture {@link EntityMappingStrategy#addShadowColumnInsert(ShadowColumnValueProvider)} and
-	 * {@link EntityMappingStrategy#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
+	 * Overriden to capture {@link EntityMapping#addShadowColumnInsert(ShadowColumnValueProvider)} and
+	 * {@link EntityMapping#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on
 	 * ourselves (Persister) but the case is to add a silent Column insert/update which is not the goal of the Persister to know implementation
-	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link EntityMappingStrategy} are in charge of knowing
+	 * detail : they are to manage cascades and coordinate their mapping strategies. {@link EntityMapping} are in charge of knowing
 	 * {@link Column} actions.
 	 *
 	 * @return an enhanced version of our main persister mapping strategy which dispatches silent column insert/update to sub-entities ones
 	 */
 	@Override
-	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
-		return new EntityMappingStrategyWrapper<C, I, T>(mainPersister.getMappingStrategy()) {
+	public EntityMapping<C, I, T> getMapping() {
+		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
 			@Override
 			public void addTransformerListener(TransformerListener<C> listener) {
-				subEntitiesPersisters.values().forEach(persister -> persister.getMappingStrategy().addTransformerListener(listener));
+				subEntitiesPersisters.values().forEach(persister -> persister.getMapping().addTransformerListener(listener));
 			}
 			
 			@Override
 			public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
 					Column<T, O> c = provider.getColumn();
-					Column projectedColumn = p.getMappingStrategy().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
-					p.getMappingStrategy().addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
+					Column projectedColumn = p.getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
+					p.getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
 				});
 			}
 			
@@ -293,8 +293,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 			public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> {
 					Column<T, O> c = provider.getColumn();
-					Column projectedColumn = p.getMappingStrategy().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
-					p.getMappingStrategy().addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
+					Column projectedColumn = p.getMapping().getTargetTable().addColumn(c.getName(), c.getJavaType(), c.getSize());
+					p.getMapping().addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, provider.getValueProvider()));
 				});
 			}
 		};
@@ -308,7 +308,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				new EntityMappingStrategyAdapter<>((EntityMappingStrategy) this.getMappingStrategy()),
+				new EntityMappingAdapter<>((EntityMapping) this.getMapping()),
 				leftColumn,
 				rightColumn,
 				null,
@@ -330,27 +330,27 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 																				  Set<Column<T2, ?>> selectableColumns) {
 		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseRelationLoader
 		//  can compute disciminatorValue 
-		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMappingStrategy().getTargetTable()).getPrimaryKey().getColumns());
+		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMapping().getTargetTable()).getPrimaryKey().getColumns());
 		Map<EntityConfiguredJoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
 		if (rightColumn.equals(mainTablePK)) {
 			// join is made on primary key => case is association table
 			subEntitiesPersisters.forEach((c, subPersister) -> {
-				Column<T, Object> column = Iterables.first((Set<Column>) subPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+				Column<T, Object> column = Iterables.first((Set<Column>) subPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 				joinColumnPerSubPersister.put(subPersister, column);
 			});
 		} else {
 			// join is made on a foreign key => case of relation owned by reverse side
 			subEntitiesPersisters.forEach((c, subPersister) -> {
-				Column<T, ?> column = subPersister.getMappingStrategy().getTargetTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
+				Column<T, ?> column = subPersister.getMapping().getTargetTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
 				joinColumnPerSubPersister.put(subPersister, column);
 			});
 		}
 		
 		subEntitiesPersisters.forEach((c, subPersister) -> {
-			Column subclassPrimaryKey = Iterables.first((Set<Column>) subPersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+			Column subclassPrimaryKey = Iterables.first((Set<Column>) subPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 			sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
-					new FirstPhaseRelationLoader<>(subPersister.getMappingStrategy().getIdMappingStrategy(), subclassPrimaryKey, selectExecutor,
-							DIFFERED_ENTITY_LOADER),
+					new FirstPhaseRelationLoader<>(subPersister.getMapping().getIdMapping(), subclassPrimaryKey, selectExecutor,
+												   DIFFERED_ENTITY_LOADER),
 					leftColumn, joinColumnPerSubPersister.get(subPersister), JoinType.OUTER);
 		});
 		

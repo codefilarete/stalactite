@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Objects;
@@ -17,14 +18,13 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
@@ -48,13 +48,13 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
- * Class aimed at executing a SQL select statement from multiple joined {@link ClassMappingStrategy}.
+ * Class aimed at executing a SQL select statement from multiple joined {@link ClassMapping}.
  * Based on {@link EntityJoinTree} for storing the joins structure and {@link EntityTreeInflater} for building the entities from
  * the {@link ResultSet}.
  * 
  * @author Guillaume Mary
  */
-public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> extends SelectExecutor<C, I, T> implements JoinableSelectExecutor {
+public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends SelectExecutor<C, I, T> implements JoinableSelectExecutor {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
@@ -64,12 +64,12 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	private final PrimaryKey<Table> primaryKey;
 	private final WhereClauseDMLNameProvider whereClauseDMLNameProvider;
 	
-	public EntityMappingStrategyTreeSelectExecutor(EntityMappingStrategy<C, I, T> classMappingStrategy,
-												   Dialect dialect,
-												   ConnectionProvider connectionProvider) {
+	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> classMappingStrategy,
+										   Dialect dialect,
+										   ConnectionProvider connectionProvider) {
 		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
 		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
-		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingStrategyAdapter<>(classMappingStrategy), classMappingStrategy.getTargetTable());
+		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(classMappingStrategy), classMappingStrategy.getTargetTable());
 		this.blockSize = dialect.getInOperatorMaxSize();
 		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
 		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
@@ -101,7 +101,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
 			String leftStrategyName,
-			EntityMappingStrategy<U, ID, T2> strategy,
+			EntityMapping<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn) {
@@ -129,13 +129,13 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(
 			String leftStrategyName,
-			EntityMappingStrategy<U, ID, T2> strategy,
+			EntityMapping<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn,
 			boolean isOuterJoin) {
-		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingStrategyAdapter<>(strategy), leftJoinColumn, rightJoinColumn,
-				null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, java.util.Collections.emptySet());
+		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingAdapter<>(strategy), leftJoinColumn, rightJoinColumn,
+											  null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, java.util.Collections.emptySet());
 	}
 	
 	/**
@@ -154,7 +154,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(
 			String leftStrategyName,
-			EntityMappingStrategy<U, ID, T2> strategy,
+			EntityMapping<U, ID, T2> strategy,
 			Column<T1, ID> leftJoinColumn,
 			Column<T2, ID> rightJoinColumn) {
 		return entityJoinTree.addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy), leftJoinColumn, rightJoinColumn);
@@ -237,8 +237,8 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 		List<C> execute(String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, Object>, int[]> inOperatorValueIndexes) {
 			// binders must be exactly the ones necessary to the request, else an IllegalArgumentException is thrown at execution time
 			// so we have to extract them from what is in the request : only primary key columns are parameterized 
-			Map<Column<T, Object>, ParameterBinder> primaryKeyBinders = Iterables.map(getMappingStrategy().getTargetTable().getPrimaryKey().getColumns(),
-					Function.identity(), parameterBinderProvider::getBinder);
+			Map<Column<T, Object>, ParameterBinder> primaryKeyBinders = Iterables.map(getMapping().getTargetTable().getPrimaryKey().getColumns(),
+																					  Function.identity(), parameterBinderProvider::getBinder);
 			ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<>(
 					sql,
 					inOperatorValueIndexes,
@@ -246,7 +246,7 @@ public class EntityMappingStrategyTreeSelectExecutor<C, I, T extends Table> exte
 					selectParameterBinders);
 			List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
 			try (ReadOperation<Column<T, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
-				columnReadOperation.setListener(EntityMappingStrategyTreeSelectExecutor.this.operationListener);
+				columnReadOperation.setListener(EntityMappingTreeSelectExecutor.this.operationListener);
 				for (List<I> parcel : idsParcels) {
 					result.addAll(executor.execute(columnReadOperation, parcel));
 				}

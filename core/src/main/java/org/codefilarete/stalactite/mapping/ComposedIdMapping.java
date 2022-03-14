@@ -11,9 +11,9 @@ import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembl
  * Will mainly delegate its work to an {@link IdAccessor}, an {@link IdentifierInsertionManager} and a {@link ComposedIdentifierAssembler}
  * 
  * @author Guillaume Mary
- * @see SimpleIdMappingStrategy
+ * @see SimpleIdMapping
  */
-public class ComposedIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> {
+public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	
 	private final IdAccessor<C, I> idAccessor;
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
@@ -26,9 +26,9 @@ public class ComposedIdMappingStrategy<C, I> implements IdMappingStrategy<C, I> 
 	 * @param identifierInsertionManager defines the way the id is persisted into the database
 	 * @param identifierMarshaller defines the way the id is read from the database
 	 */
-	public ComposedIdMappingStrategy(IdAccessor<C, I> idAccessor,
-									 IdentifierInsertionManager<C, I> identifierInsertionManager,
-									 ComposedIdentifierAssembler<I> identifierMarshaller) {
+	public ComposedIdMapping(IdAccessor<C, I> idAccessor,
+							 IdentifierInsertionManager<C, I> identifierInsertionManager,
+							 ComposedIdentifierAssembler<I> identifierMarshaller) {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;

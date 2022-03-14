@@ -23,7 +23,7 @@ public class SequencePersisterTest {
 	@Test
 	void constructorWithoutArgs_usesDefaultStorageOptions() {
 		SequencePersister testInstance = new SequencePersister(new Dialect(), mock(SeparateTransactionExecutor.class), 42);
-		SequencePersister.SequenceTable sequenceTable = testInstance.getMappingStrategy().getTargetTable();
+		SequencePersister.SequenceTable sequenceTable = testInstance.getMapping().getTargetTable();
 
 		// Note that we don't use equals() method because it compares Table partially
 		assertThat(sequenceTable.getName()).isEqualTo(SequenceStorageOptions.DEFAULT.getTable());
@@ -43,7 +43,7 @@ public class SequencePersisterTest {
 	void constructorWithOptions() {
 		SequenceStorageOptions storageOptions = new SequenceStorageOptions("myTable", "mySequenceNameCol", "myNextValCol");
 		SequencePersister testInstance = new SequencePersister(storageOptions, new Dialect(), mock(SeparateTransactionExecutor.class), 42);
-		SequencePersister.SequenceTable sequenceTable = testInstance.getMappingStrategy().getTargetTable();
+		SequencePersister.SequenceTable sequenceTable = testInstance.getMapping().getTargetTable();
 
 		// Note that we don't use equals() method because it compares Table partially
 		assertThat(sequenceTable.getName()).isEqualTo(storageOptions.getTable());

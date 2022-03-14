@@ -3,14 +3,13 @@ package org.codefilarete.stalactite.mapping;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.EmbeddedClassMappingStrategy;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.sql.result.Row;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,12 +23,12 @@ import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 import static org.codefilarete.reflection.Accessors.mutatorByField;
 import static org.codefilarete.reflection.Accessors.mutatorByMethodReference;
 import static org.codefilarete.reflection.Accessors.propertyAccessor;
-import static org.codefilarete.stalactite.mapping.EmbeddedClassMappingStrategy.*;
+import static org.codefilarete.stalactite.mapping.EmbeddedClassMapping.*;
 
 /**
  * @author Guillaume Mary
  */
-public class EmbeddedClassMappingStrategyTest {
+public class EmbeddedClassMappingTest {
 	
 	private static Table targetTable;
 	private static Column<Table, Integer> colA;
@@ -48,11 +47,11 @@ public class EmbeddedClassMappingStrategyTest {
 				.add(propertyAccessor(Toto.class, "c"), colC);
 	}
 	
-	private EmbeddedClassMappingStrategy<Toto, Table> testInstance;
+	private EmbeddedClassMapping<Toto, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new EmbeddedClassMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
+		testInstance = new EmbeddedClassMapping<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 	}
 	
 	public static Object[][] testGetInsertValuesData() {
@@ -133,7 +132,7 @@ public class EmbeddedClassMappingStrategyTest {
 		row.put("a", null);
 		row.put("b", null);
 		row.put("c", null);
-		EmbeddedClassMappingStrategy<Toto, Table> testInstance = new EmbeddedClassMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
+		EmbeddedClassMapping<Toto, Table> testInstance = new EmbeddedClassMapping<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 		Toto toto = testInstance.transform(row);
 		assertThat(toto).isNotNull();
 		assertThat(toto.a).isNull();
@@ -177,7 +176,7 @@ public class EmbeddedClassMappingStrategyTest {
 		Map<PropertyAccessor<Toto, Object>, Column<Table, Integer>> classMapping = Maps.asMap(propertyAccessor(Toto.class, "a"), colA)
 				.add(propertyAccessor(Toto.class, "b"), colB)
 				.add(propertyAccessor(Toto.class, "c"), colC);
-		EmbeddedClassMappingStrategy testInstance = new EmbeddedClassMappingStrategy<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
+		EmbeddedClassMapping testInstance = new EmbeddedClassMapping<Toto, Table>(Toto.class, targetTable, (Map) classMapping);
 		// primary key shall not be written by this class
 		assertThat(testInstance.getInsertableColumns().contains(colA)).isTrue();
 		assertThat(testInstance.getUpdatableColumns().contains(colA)).isFalse();

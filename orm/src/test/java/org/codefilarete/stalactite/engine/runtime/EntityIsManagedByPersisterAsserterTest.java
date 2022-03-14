@@ -5,10 +5,10 @@ import java.lang.reflect.Method;
 
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
@@ -64,9 +64,9 @@ class EntityIsManagedByPersisterAsserterTest {
 		EntityConfiguredJoinedTablesPersister surrogateMock = mock(EntityConfiguredJoinedTablesPersister.class);
 		when(surrogateMock.getClassToPersist()).thenReturn(Vehicle.class);
 		when(surrogateMock.getId(args[0])).thenReturn(42L);
-		EntityMappingStrategy mappingStrategyMock = mock(EntityMappingStrategy.class);
+		EntityMapping mappingStrategyMock = mock(EntityMapping.class);
 		when(mappingStrategyMock.getId(any())).thenReturn(42L);
-		when(surrogateMock.getMappingStrategy()).thenReturn(mappingStrategyMock);
+		when(surrogateMock.getMapping()).thenReturn(mappingStrategyMock);
 		
 		EntityIsManagedByPersisterAsserter<AbstractVehicle, Integer> testInstance = Mockito.spy(new EntityIsManagedByPersisterAsserter<>(surrogateMock));
 		invokedMethod.invoke(testInstance, args);
@@ -83,9 +83,9 @@ class EntityIsManagedByPersisterAsserterTest {
 		EntityConfiguredJoinedTablesPersister surrogateMock = mock(EntityConfiguredJoinedTablesPersister.class, withSettings().extraInterfaces(PolymorphicPersister.class));
 		when(((PolymorphicPersister) surrogateMock).getSupportedEntityTypes()).thenReturn(Arrays.asSet(Vehicle.class));
 		when(surrogateMock.getId(args[0])).thenReturn(42L);
-		EntityMappingStrategy mappingStrategyMock = mock(EntityMappingStrategy.class);
+		EntityMapping mappingStrategyMock = mock(EntityMapping.class);
 		when(mappingStrategyMock.getId(any())).thenReturn(42L);
-		when(surrogateMock.getMappingStrategy()).thenReturn(mappingStrategyMock);
+		when(surrogateMock.getMapping()).thenReturn(mappingStrategyMock);
 		
 		EntityIsManagedByPersisterAsserter<AbstractVehicle, Integer> testInstance = Mockito.spy(new EntityIsManagedByPersisterAsserter<>(surrogateMock));
 		invokedMethod.invoke(testInstance, args);

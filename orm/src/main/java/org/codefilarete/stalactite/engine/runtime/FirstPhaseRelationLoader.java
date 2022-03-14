@@ -8,7 +8,7 @@ import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -19,16 +19,16 @@ import org.codefilarete.stalactite.sql.result.Row;
 class FirstPhaseRelationLoader<E, ID, T extends Table> implements EntityMerger<E, T> {
 	
 	protected final Column<Table, ID> primaryKey;
-	protected final IdMappingStrategy<E, ID> idMappingStrategy;
+	protected final IdMapping<E, ID> idMapping;
 	private final SelectExecutor<E, ID> selectExecutor;
 	protected final ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder;
 	
-	public FirstPhaseRelationLoader(IdMappingStrategy<E, ID> subEntityIdMappingStrategy,
+	public FirstPhaseRelationLoader(IdMapping<E, ID> subEntityIdMapping,
 									Column<Table, ID> primaryKey,
 									SelectExecutor<E, ID> selectExecutor,
 									ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder) {
 		this.primaryKey = primaryKey;
-		this.idMappingStrategy = subEntityIdMappingStrategy;
+		this.idMapping = subEntityIdMapping;
 		this.selectExecutor = selectExecutor;
 		this.relationIdsHolder = relationIdsHolder;
 	}
@@ -58,6 +58,6 @@ class FirstPhaseRelationLoader<E, ID, T extends Table> implements EntityMerger<E
 	
 	protected void fillCurrentRelationIds(Row row, E bean, ColumnedRow columnedRow) {
 		Set<RelationIds<Object, E, ID>> relationIds = ((Queue<Set<RelationIds<Object, E, ID>>>) (Queue) relationIdsHolder.get()).peek();
-		relationIds.add(new RelationIds<>(selectExecutor, idMappingStrategy.getIdAccessor()::getId, bean, (ID) columnedRow.getValue(primaryKey, row)));
+		relationIds.add(new RelationIds<>(selectExecutor, idMapping.getIdAccessor()::getId, bean, (ID) columnedRow.getValue(primaryKey, row)));
 	}
 }

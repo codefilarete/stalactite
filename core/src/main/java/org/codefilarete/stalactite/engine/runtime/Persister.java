@@ -8,6 +8,8 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.Duo;
@@ -20,9 +22,7 @@ import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.mapping.SimpleIdMappingStrategy;
+import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -39,7 +39,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 @Nonnull
 public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, I> {
 	
-	private final EntityMappingStrategy<C, I, T> mappingStrategy;
+	private final EntityMapping<C, I, T> mappingStrategy;
 	private final ConnectionConfiguration connectionConfiguration;
 	private final DMLGenerator dmlGenerator;
 	private final WriteOperationFactory writeOperationFactory;
@@ -50,11 +50,11 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	private final DeleteExecutor<C, I, T> deleteExecutor;
 	private final org.codefilarete.stalactite.engine.SelectExecutor<C, I> selectExecutor;
 	
-	public Persister(EntityMappingStrategy<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
+	public Persister(EntityMapping<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public Persister(EntityMappingStrategy<C, I, T> mappingStrategy, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public Persister(EntityMapping<C, I, T> mappingStrategy, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
@@ -70,13 +70,13 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 		
 		// Transfering identifier manager InsertListerner to here
 		getPersisterListener().addInsertListener(
-				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getInsertListener());
+			getMapping().getIdMapping().getIdentifierInsertionManager().getInsertListener());
 		getPersisterListener().addSelectListener(
-				getMappingStrategy().getIdMappingStrategy().getIdentifierInsertionManager().getSelectListener());
+			getMapping().getIdMapping().getIdentifierInsertionManager().getSelectListener());
 	}
 	
 	public Persister(ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
-					 int inOperatorMaxSize, EntityMappingStrategy<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
+					 int inOperatorMaxSize, EntityMapping<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
 					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, org.codefilarete.stalactite.engine.SelectExecutor<C, I> selectExecutor) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
@@ -89,7 +89,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 		this.selectExecutor = selectExecutor;
 	}
 	
-	protected InsertExecutor<C, I, T> newInsertExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+	protected InsertExecutor<C, I, T> newInsertExecutor(EntityMapping<C, I, T> mappingStrategy,
 														ConnectionConfiguration connectionConfiguration,
 														DMLGenerator dmlGenerator,
 														WriteOperationFactory writeOperationFactory,
@@ -98,7 +98,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 				writeOperationFactory, inOperatorMaxSize);
 	}
 	
-	protected UpdateExecutor<C, I, T> newUpdateExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+	protected UpdateExecutor<C, I, T> newUpdateExecutor(EntityMapping<C, I, T> mappingStrategy,
 														ConnectionConfiguration connectionProvider,
 														DMLGenerator dmlGenerator,
 														WriteOperationFactory writeOperationFactory,
@@ -107,7 +107,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 				writeOperationFactory, inOperatorMaxSize);
 	}
 	
-	protected DeleteExecutor<C, I, T> newDeleteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+	protected DeleteExecutor<C, I, T> newDeleteExecutor(EntityMapping<C, I, T> mappingStrategy,
 														ConnectionConfiguration connectionConfiguration,
 														DMLGenerator dmlGenerator,
 														WriteOperationFactory writeOperationFactory,
@@ -116,7 +116,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 				writeOperationFactory, inOperatorMaxSize);
 	}
 	
-	protected org.codefilarete.stalactite.engine.SelectExecutor<C, I> newSelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
+	protected org.codefilarete.stalactite.engine.SelectExecutor<C, I> newSelectExecutor(EntityMapping<C, I, T> mappingStrategy,
 																						ConnectionProvider connectionProvider,
 																						Dialect dialect) {
 		return new org.codefilarete.stalactite.engine.runtime.SelectExecutor(mappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
@@ -136,16 +136,16 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	
 	@Override
 	public Class<C> getClassToPersist() {
-		return getMappingStrategy().getClassToPersist();
+		return getMapping().getClassToPersist();
 	}
 	
 	@Override
-	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
+	public EntityMapping<C, I, T> getMapping() {
 		return mappingStrategy;
 	}
 	
 	public T getMainTable() {
-		return getMappingStrategy().getTargetTable();
+		return getMapping().getTargetTable();
 	}
 	
 	/**
@@ -204,7 +204,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	 */
 	@Override
 	public void persist(Iterable<? extends C> entities) {
-		EntityPersister.persist(entities, this::isNew, this, this, this, getMappingStrategy()::getId);
+		EntityPersister.persist(entities, this::isNew, this, this, this, getMapping()::getId);
 	}
 	
 	@Override
@@ -341,12 +341,12 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	}
 	
 	/**
-	 * Indicates if a bean is persisted or not. Delegated to {@link ClassMappingStrategy}
+	 * Indicates if a bean is persisted or not. Delegated to {@link ClassMapping}
 	 * 
 	 * @param c a bean
 	 * @return true if a bean is already persisted
-	 * @see ClassMappingStrategy#isNew(Object)
-	 * @see SimpleIdMappingStrategy.IsNewDeterminer
+	 * @see ClassMapping#isNew(Object)
+	 * @see SimpleIdMapping.IsNewDeterminer
 	 */
 	@Override
 	public boolean isNew(C c) {

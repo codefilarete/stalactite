@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.query;
 import java.util.HashMap;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
@@ -15,7 +16,6 @@ import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport.EntityGraphNode;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -51,7 +51,7 @@ class EntityCriteriaSupportTest {
 						.map(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMappingStrategy(), Country::getName, Operators.eq(""))
+		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMapping(), Country::getName, Operators.eq(""))
 				.and(Country::getId, Operators.in("11"))
 				.and(Country::getName, Operators.eq("toto"))
 				.and(Country::getName, Operators.between("11", ""))
@@ -90,12 +90,12 @@ class EntityCriteriaSupportTest {
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
 		Column nameColumn = countryTable.addColumn("name", String.class);
-		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy =
+		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
 				.build(dummyPersistenceContext, countryTable))
-				.getMappingStrategy();
+				.getMapping();
 		
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getName))).isEqualTo(nameColumn);
@@ -111,7 +111,7 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy =
+		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
@@ -119,12 +119,12 @@ class EntityCriteriaSupportTest {
 						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName), cityTable)
 				.build(dummyPersistenceContext, countryTable))
-				.getMappingStrategy();
+				.getMapping();
 		
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
-				((EntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMappingStrategy());
+				((EntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCapital), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
 	}
 	
@@ -137,7 +137,7 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
-		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy =
+		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
@@ -146,12 +146,12 @@ class EntityCriteriaSupportTest {
 						.map(City::getName), cityTable
 				)
 				.build(dummyPersistenceContext, countryTable))
-				.getMappingStrategy();
+				.getMapping();
 		
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
-				((EntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMappingStrategy());
+				((EntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCities), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
 	}
 	
@@ -162,11 +162,11 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy =
+		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.build(dummyPersistenceContext, countryTable))
-				.getMappingStrategy();
+				.getMapping();
 		
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		assertThatThrownBy(() -> testInstance.getColumn(new AccessorByMethodReference<>(Country::getName)))
@@ -181,11 +181,11 @@ class EntityCriteriaSupportTest {
 		
 		PersistenceContext dummyPersistenceContext = new PersistenceContext(mock(ConnectionProvider.class), dialect);
 		Table countryTable = new Table("Country");
-		EntityMappingStrategy<Country, Identifier<Long>, ?> mappingStrategy =
+		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.build(dummyPersistenceContext, countryTable))
-				.getMappingStrategy();
+				.getMapping();
 		
 		EntityCriteriaSupport<Country> testInstance = new EntityCriteriaSupport<>(mappingStrategy);
 		assertThatThrownBy(() -> testInstance.andMany(Country::getCities, City::getName, Operators.eq("Grenoble")))

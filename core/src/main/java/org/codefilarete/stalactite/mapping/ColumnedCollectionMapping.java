@@ -34,7 +34,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T extends Table> implements EmbeddedBeanMappingStrategy<C, T> {
+public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Table> implements EmbeddedBeanMapping<C, T> {
 	
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;
@@ -48,7 +48,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	 * @param columns columns that will be used for persistent of Collections, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instanciate for select from database
 	 */
-	public ColumnedCollectionMappingStrategy(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
+	public ColumnedCollectionMapping(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
 		this.columns = columns;
 		this.persistedClass = rowClass;
@@ -164,7 +164,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 	
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
-		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMappingStrategy.class) + " can't export a mapping between some accessors and their columns");
+		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	
 	@Override
@@ -195,7 +195,7 @@ public class ColumnedCollectionMappingStrategy<C extends Collection<O>, O, T ext
 			return new LocalToCollectionRowTransformer<>(this.beanFactory, columnedRow, this.columns, this.databaseValueConverter);
 		}
 		
-		/** We bind conversion on {@link ColumnedCollectionMappingStrategy} conversion methods */
+		/** We bind conversion on {@link ColumnedCollectionMapping} conversion methods */
 		@Override
 		public void applyRowToBean(Row row, C collection) {
 			for (Column column : this.columns) {

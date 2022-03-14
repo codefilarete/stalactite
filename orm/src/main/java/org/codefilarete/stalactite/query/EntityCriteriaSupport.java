@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Map;
 
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.Nullable;
@@ -23,10 +25,8 @@ import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.RuntimeMappingException;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
-import org.codefilarete.stalactite.mapping.SimpleIdMappingStrategy;
+import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
@@ -36,27 +36,27 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
  * Implementation of {@link EntityCriteria}
  * 
  * @author Guillaume Mary
- * @see #registerRelation(ValueAccessPoint, ClassMappingStrategy) 
+ * @see #registerRelation(ValueAccessPoint, ClassMapping) 
  */
 public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	
 	/** Delegate of the query : targets of the API methods */
 	private Criteria criteria = new Criteria();
 	
-	/** Root of the property-mapping graph representation. Must be constructed with {@link #registerRelation(ValueAccessPoint, ClassMappingStrategy)} */
+	/** Root of the property-mapping graph representation. Must be constructed with {@link #registerRelation(ValueAccessPoint, ClassMapping)} */
 	private final EntityGraphNode rootConfiguration;
 	
-	public <O> EntityCriteriaSupport(EntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, getter, operator);
 	}
 	
-	public <O> EntityCriteriaSupport(EntityMappingStrategy<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, setter, operator);
 	}
 	
-	public EntityCriteriaSupport(EntityMappingStrategy<C, ?, ?> mappingStrategy) {
+	public EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy) {
 		this.rootConfiguration = new EntityGraphNode(mappingStrategy);
 	}
 	
@@ -74,7 +74,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	 * @param mappingStrategy the mapping strategy of entities relation
 	 * @return a newly created node to configure relations of this just-declared relation
 	 */
-	public EntityGraphNode registerRelation(ValueAccessPoint relation, ClassMappingStrategy<?, ?, ?> mappingStrategy) {
+	public EntityGraphNode registerRelation(ValueAccessPoint relation, ClassMapping<?, ?, ?> mappingStrategy) {
 		return rootConfiguration.registerRelation(relation, mappingStrategy);
 	}
 	
@@ -152,13 +152,13 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		private final Map<ValueAccessPoint, EntityGraphNode> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
-		EntityGraphNode(EntityMappingStrategy<?, ?, ?> mappingStrategy) {
+		EntityGraphNode(EntityMapping<?, ?, ?> mappingStrategy) {
 			propertyToColumn.putAll(mappingStrategy.getPropertyToColumn());
 			// we add the identifier and primary key because they are not in the property mapping 
-			IdMappingStrategy<?, ?> idMappingStrategy = mappingStrategy.getIdMappingStrategy();
-			if (idMappingStrategy instanceof SimpleIdMappingStrategy) {
-				Column primaryKey = ((SimpleIdentifierAssembler) idMappingStrategy.getIdentifierAssembler()).getColumn();
-				propertyToColumn.put(((SimpleIdMappingStrategy<?, ?>) idMappingStrategy).getIdAccessor().getIdAccessor(), primaryKey);
+			IdMapping<?, ?> idMapping = mappingStrategy.getIdMapping();
+			if (idMapping instanceof SimpleIdMapping) {
+				Column primaryKey = ((SimpleIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumn();
+				propertyToColumn.put(((SimpleIdMapping<?, ?>) idMapping).getIdAccessor().getIdAccessor(), primaryKey);
 			}
 			mappingStrategy.getEmbeddedBeanStrategies().forEach((k, v) ->
 					v.getPropertyToColumn().forEach((p, c) ->
@@ -168,13 +168,13 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		}
 		
 		/**
-		 * Adds a {@link ClassMappingStrategy} as a relation of this node
+		 * Adds a {@link ClassMapping} as a relation of this node
 		 * 
-		 * @param relationProvider the accessor that gives access to a bean mapped by the {@link ClassMappingStrategy}
-		 * @param mappingStrategy a {@link ClassMappingStrategy}
+		 * @param relationProvider the accessor that gives access to a bean mapped by the {@link ClassMapping}
+		 * @param mappingStrategy a {@link ClassMapping}
 		 * @return a new {@link EntityGraphNode} containing
 		 */
-		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, EntityMappingStrategy<?, ?, ?> mappingStrategy) {
+		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, EntityMapping<?, ?, ?> mappingStrategy) {
 			EntityGraphNode graphNode = new EntityGraphNode(mappingStrategy);
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information

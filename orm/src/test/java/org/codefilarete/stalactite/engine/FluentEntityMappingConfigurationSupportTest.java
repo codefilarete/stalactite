@@ -458,8 +458,8 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		// column should be correctly created
-		assertThat(persister.getMappingStrategy().getTargetTable().getName()).isEqualTo("Toto");
-		Column columnForProperty = (Column) persister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("name");
+		assertThat(persister.getMapping().getTargetTable().getName()).isEqualTo("Toto");
+		Column columnForProperty = (Column) persister.getMapping().getTargetTable().mapColumnsOnName().get("name");
 		assertThat(columnForProperty).isNotNull();
 		assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
 	}
@@ -496,7 +496,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.map(Toto::getName).mandatory()
 				.build(persistenceContext);
 		
-		assertThat(totoPersister.getMappingStrategy().getTargetTable().getColumn("name").isNullable()).isFalse();
+		assertThat(totoPersister.getMapping().getTargetTable().getColumn("name").isNullable()).isFalse();
 	}
 	
 	@Test
@@ -509,12 +509,12 @@ class FluentEntityMappingConfigurationSupportTest {
 				.build(persistenceContext);
 		
 		// column should not have been created
-		Column columnForProperty = (Column) persister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("name");
+		Column columnForProperty = (Column) persister.getMapping().getTargetTable().mapColumnsOnName().get("name");
 		assertThat(columnForProperty).isNull();
 		
 		// title column is expected to be added to the mapping and participate to DML actions 
-		assertThat(persister.getMappingStrategy().getInsertableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("id", "title"));
-		assertThat(persister.getMappingStrategy().getUpdatableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("title"));
+		assertThat(persister.getMapping().getInsertableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("id", "title"));
+		assertThat(persister.getMapping().getUpdatableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("title"));
 	}
 	
 	@Test
@@ -695,9 +695,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overridden column are in DML statements
-		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(targetTable.getColumns());
-		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(targetTable.getColumnsNoPrimaryKey());
-		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(targetTable.getColumns());
+		assertThat(persister.getMapping().getInsertableColumns()).isEqualTo(targetTable.getColumns());
+		assertThat(persister.getMapping().getUpdatableColumns()).isEqualTo(targetTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMapping().getSelectableColumns()).isEqualTo(targetTable.getColumns());
 	}
 	
 	@Test
@@ -723,9 +723,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overridden column are in DML statements
-		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(targetTable.getColumns());
-		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(targetTable.getColumnsNoPrimaryKey());
-		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(targetTable.getColumns());
+		assertThat(persister.getMapping().getInsertableColumns()).isEqualTo(targetTable.getColumns());
+		assertThat(persister.getMapping().getUpdatableColumns()).isEqualTo(targetTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMapping().getSelectableColumns()).isEqualTo(targetTable.getColumns());
 	}
 	
 	@Test
@@ -781,9 +781,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overridden column are in DML statements
-		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(countryTable.getColumns());
-		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(countryTable.getColumnsNoPrimaryKey());
-		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(countryTable.getColumns());
+		assertThat(persister.getMapping().getInsertableColumns()).isEqualTo(countryTable.getColumns());
+		assertThat(persister.getMapping().getUpdatableColumns()).isEqualTo(countryTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMapping().getSelectableColumns()).isEqualTo(countryTable.getColumns());
 		
 		Country country = new Country(new PersistableIdentifier<>(1L));
 		country.setName("France");
@@ -880,9 +880,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		assertThat(columnsByName.get("modificationDate")).isNull();
 		
 		// checking that overridden column are in DML statements
-		assertThat(persister.getMappingStrategy().getInsertableColumns()).isEqualTo(countryTable.getColumns());
-		assertThat(persister.getMappingStrategy().getUpdatableColumns()).isEqualTo(countryTable.getColumnsNoPrimaryKey());
-		assertThat(persister.getMappingStrategy().getSelectableColumns()).isEqualTo(countryTable.getColumns());
+		assertThat(persister.getMapping().getInsertableColumns()).isEqualTo(countryTable.getColumns());
+		assertThat(persister.getMapping().getUpdatableColumns()).isEqualTo(countryTable.getColumnsNoPrimaryKey());
+		assertThat(persister.getMapping().getSelectableColumns()).isEqualTo(countryTable.getColumns());
 		
 		Country country = new Country(new PersistableIdentifier<>(1L));
 		country.setName("France");
@@ -1323,7 +1323,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender)
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1350,7 +1350,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender).mandatory()
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1375,7 +1375,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender).mandatory()
 				.build(persistenceContext);
 		
-		assertThat(personPersister.getMappingStrategy().getTargetTable().getColumn("gender").isNullable()).isFalse();
+		assertThat(personPersister.getMapping().getTargetTable().getColumn("gender").isNullable()).isFalse();
 	}
 	
 	@Test
@@ -1386,7 +1386,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender).byOrdinal()
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "INT");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1441,7 +1441,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender)
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1466,7 +1466,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender)
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1491,7 +1491,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender)
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMappingStrategy().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

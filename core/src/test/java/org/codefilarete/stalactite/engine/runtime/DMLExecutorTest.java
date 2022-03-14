@@ -7,12 +7,12 @@ import java.util.Objects;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.ComposedIdMappingStrategy;
+import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
@@ -36,7 +36,7 @@ class DMLExecutorTest {
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
 			new SinglePropertyIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
 
-		toReturn.classMappingStrategy = new ClassMappingStrategy<>(
+		toReturn.classMappingStrategy = new ClassMapping<>(
 			Toto.class,
 			targetTable,
 			mappedFileds,
@@ -86,11 +86,11 @@ class DMLExecutorTest {
 
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
 		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> mappedFileds = persistentFieldHarverster.mapFields(Toto.class, targetTable);
-		ComposedIdMappingStrategy<Toto, Toto> idMappingStrategy = new ComposedIdMappingStrategy<>(idAccessor,
-			new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
-			composedIdentifierAssembler);
+		ComposedIdMapping<Toto, Toto> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
+																				  new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
+																				  composedIdentifierAssembler);
 
-		toReturn.classMappingStrategy = new ClassMappingStrategy<>(
+		toReturn.classMappingStrategy = new ClassMapping<>(
 			Toto.class,
 			targetTable,
 			mappedFileds,
@@ -136,11 +136,11 @@ class DMLExecutorTest {
 
 		PersistenceConfiguration<Tata, ComposedId, Table> toReturn = new PersistenceConfiguration<>();
 
-		ComposedIdMappingStrategy<Tata, ComposedId> idMappingStrategy = new ComposedIdMappingStrategy<>(idAccessor,
-			new AlreadyAssignedIdentifierManager<>(ComposedId.class, c -> {}, c -> false),
-			composedIdentifierAssembler);
+		ComposedIdMapping<Tata, ComposedId> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
+																						new AlreadyAssignedIdentifierManager<>(ComposedId.class, c -> {}, c -> false),
+																						composedIdentifierAssembler);
 
-		toReturn.classMappingStrategy = new ClassMappingStrategy<>(
+		toReturn.classMappingStrategy = new ClassMapping<>(
 			Tata.class,
 			targetTable,
 			Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC),
@@ -153,7 +153,7 @@ class DMLExecutorTest {
 
 	protected static class PersistenceConfiguration<C, I, T extends Table> {
 		
-		protected ClassMappingStrategy<C, I, T> classMappingStrategy;
+		protected ClassMapping<C, I, T> classMappingStrategy;
 		protected Table targetTable;
 	}
 	

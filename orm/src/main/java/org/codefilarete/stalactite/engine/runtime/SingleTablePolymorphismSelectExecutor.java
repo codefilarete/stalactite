@@ -11,13 +11,13 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.SelectExecutor;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -104,14 +104,14 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 	
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(String leftStrategyName,
-																				  EntityMappingStrategy<U, ID, T2> strategy,
+																				  EntityMapping<U, ID, T2> strategy,
 																				  BeanRelationFixer beanRelationFixer,
 																				  Column<T1, ID> leftJoinColumn,
 																				  Column<T2, ID> rightJoinColumn,
 																				  boolean isOuterJoin) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
-			String joinName = persister.getEntityJoinTree().addRelationJoin(leftStrategyName, new EntityMappingStrategyAdapter<>(strategy),
+			String joinName = persister.getEntityJoinTree().addRelationJoin(leftStrategyName, new EntityMappingAdapter<>(strategy),
 					leftJoinColumn, rightJoinColumn, null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, Collections.emptySet());
 			joinNames.add(joinName);
 		});
@@ -127,7 +127,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 	
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(String leftStrategyName,
-																						   EntityMappingStrategy<U, ID, T2> strategy,
+																						   EntityMapping<U, ID, T2> strategy,
 																						   Column<T1, ID> leftJoinColumn,
 																						   Column<T2, ID> rightJoinColumn) {
 		Set<String> joinNames = new HashSet<>();

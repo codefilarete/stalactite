@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.engine.runtime.Persister;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -71,7 +71,7 @@ public class PersistenceContext implements PersisterRegistry {
 	private final Map<Class<?>, EntityPersister> persisterCache = new HashMap<>();
 	private final Dialect dialect;
 	private final TransactionAwareConnectionConfiguration connectionConfiguration;
-	private final Map<Class, ClassMappingStrategy> mappingStrategies = new HashMap<>(50);
+	private final Map<Class, ClassMapping> mapping = new HashMap<>(50);
 	
 	/**
 	 * Constructor with minimal but necessary information.
@@ -176,8 +176,8 @@ public class PersistenceContext implements PersisterRegistry {
 		return dialect;
 	}
 	
-	public <C, I, T extends Table<T>> ClassMappingStrategy<C, I, T> getMappingStrategy(Class<C> aClass) {
-		return mappingStrategies.get(aClass);
+	public <C, I, T extends Table<T>> ClassMapping<C, I, T> getMapping(Class<C> aClass) {
+		return mapping.get(aClass);
 	}
 	
 	/**
@@ -188,8 +188,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <I> the identifier type of the entity
 	 * @return the newly created {@link Persister} for the configuration
 	 */
-	public <C, I, T extends Table<T>> Persister<C, I, T> add(ClassMappingStrategy<C, I, T> classMappingStrategy) {
-		mappingStrategies.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
+	public <C, I, T extends Table<T>> Persister<C, I, T> add(ClassMapping<C, I, T> classMappingStrategy) {
+		mapping.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
 		Persister<C, I, T> persister = new Persister<>(classMappingStrategy, this);
 		addPersister(persister);
 		return persister;

@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -35,7 +35,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public DeleteExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
+	public DeleteExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 						  int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
@@ -54,12 +54,12 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 */
 	@Override
 	public void delete(Iterable<C> entities) {
-		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMappingStrategy().getTargetTable(), getMappingStrategy().getVersionedKeys());
+		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMapping().getTargetTable(), getMapping().getVersionedKeys());
 		List<? extends C> entitiesCopy = Iterables.copy(entities);
 		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
 		WriteOperation<Column<T, Object>> writeOperation = newWriteOperation(deleteStatement, getConnectionProvider(), expectedBatchedRowCountsSupplier);
 		JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entitiesCopy, writeOperation, getBatchSize());
-		jdbcBatchingIterator.forEachRemaining(c -> writeOperation.addBatch(getMappingStrategy().getVersionedKeyValues(c)));
+		jdbcBatchingIterator.forEachRemaining(c -> writeOperation.addBatch(getMapping().getVersionedKeyValues(c)));
 	}
 	
 	private WriteOperation<Column<T, Object>> newWriteOperation(SQLStatement<Column<T, Object>> statement, ConnectionProvider currentConnectionProvider, LongSupplier expectedRowCount) {
@@ -83,7 +83,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	@Override
 	public void deleteById(Iterable<C> entities) {
 		// get ids before passing them to deleteFromId
-		Set<I> ids = Iterables.collect(entities, getMappingStrategy()::getId, HashSet::new);
+		Set<I> ids = Iterables.collect(entities, getMapping()::getId, HashSet::new);
 		deleteFromId(ids);
 	}
 	
@@ -110,10 +110,10 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		// NB: ConnectionProvider must provide the same connection over all blocks
 		ConnectionProvider currentConnectionProvider = getConnectionProvider();
 		ColumnParameterizedSQL<T> deleteStatement;
-		T targetTable = getMappingStrategy().getTargetTable();
+		T targetTable = getMapping().getTargetTable();
 		
 		Set<Column<T, Object>> pkColumns = targetTable.getPrimaryKey().getColumns();
-		IdentifierAssembler<I> identifierAssembler = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler();
+		IdentifierAssembler<I> identifierAssembler = getMapping().getIdMapping().getIdentifierAssembler();
 		if (!parcels.isEmpty()) {
 			// creating the eventually tupled order "where (?, ?) in (?, ?)"  
 			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, blockSize);

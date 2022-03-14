@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityGraphSelectExecutor;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
@@ -26,11 +28,9 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingStrategyAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -46,11 +46,11 @@ import static java.util.Collections.emptyList;
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by the
- * {@link ClassMappingStrategy} passed to constructor and then it can be added to some other {@link RelationalEntityPersister} thanks to
+ * {@link ClassMapping} passed to constructor and then it can be added to some other {@link RelationalEntityPersister} thanks to
  * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean)} and
  * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Column, Column, String, BeanRelationFixer, boolean)}.
  * 
- * Entity load is defined by a select that joins all tables, each {@link ClassMappingStrategy} is called to complete
+ * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
  * entity loading.
  * 
  * In the orm module this class replace {@link Persister} in case of single table, because it has methods for join support whereas {@link Persister}
@@ -68,24 +68,24 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	private final EntitySelectExecutor<C> entitySelectExecutor;
 	/** Support for defining Entity criteria on {@link #newWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
-	private final EntityMappingStrategyTreeSelectExecutor<C, I, T> selectGraphExecutor;
+	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
 	
-	public SimpleRelationalEntityPersister(PersistenceContext persistenceContext, ClassMappingStrategy<C, I, T> mainMappingStrategy) {
+	public SimpleRelationalEntityPersister(PersistenceContext persistenceContext, ClassMapping<C, I, T> mainMappingStrategy) {
 		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public SimpleRelationalEntityPersister(ClassMappingStrategy<C, I, T> mainMappingStrategy, Dialect dialect,
+	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy, Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
 		this.persister = new Persister<>(mainMappingStrategy, dialect, connectionConfiguration);
-		this.criteriaSupport = new EntityCriteriaSupport<>(getMappingStrategy());
+		this.criteriaSupport = new EntityCriteriaSupport<>(getMapping());
 		this.selectGraphExecutor = newSelectExecutor(mainMappingStrategy, connectionConfiguration.getConnectionProvider(), dialect);
 		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
 	}
 	
-	protected EntityMappingStrategyTreeSelectExecutor<C, I, T> newSelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy,
-																				 ConnectionProvider connectionProvider,
-																				 Dialect dialect) {
-		return new EntityMappingStrategyTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
+	protected EntityMappingTreeSelectExecutor<C, I, T> newSelectExecutor(EntityMapping<C, I, T> mappingStrategy,
+																		 ConnectionProvider connectionProvider,
+																		 Dialect dialect) {
+		return new EntityMappingTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
 	protected EntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
@@ -100,7 +100,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	 * 
 	 * @return the executor for whole entity graph loading
 	 */
-	public EntityMappingStrategyTreeSelectExecutor<C, I, T> getEntityMappingStrategyTreeSelectExecutor() {
+	public EntityMappingTreeSelectExecutor<C, I, T> getEntityMappingTreeSelectExecutor() {
 		return this.selectGraphExecutor;
 	}
 	
@@ -126,7 +126,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
-		return getEntityMappingStrategyTreeSelectExecutor().getEntityJoinTree();
+		return getEntityMappingTreeSelectExecutor().getEntityJoinTree();
 	}
 	
 	@Override
@@ -149,8 +149,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	}
 	
 	@Override
-	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
-		return persister.getMappingStrategy();
+	public EntityMapping<C, I, T> getMapping() {
+		return persister.getMapping();
 	}
 	
 	@Override
@@ -237,7 +237,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 																				  boolean optional) {
 		
 		// We use our own select system since SelectListener is not aimed at joining table
-		EntityMappingStrategyAdapter<C, I, T> strategy = new EntityMappingStrategyAdapter<>(getMappingStrategy());
+		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
 				EntityJoinTree.ROOT_STRATEGY_NAME,
 				// because joinAsOne can be called in either case of owned-relation or reversly-owned-relation, generics can't be set correctly,
@@ -268,7 +268,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 																				  boolean optional,
 																				  Set<Column<T2, ?>> selectableColumns) {
 		
-		EntityMappingStrategyAdapter<C, I, T> strategy = new EntityMappingStrategyAdapter<>(getMappingStrategy());
+		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
 				joinName,
 				(EntityInflater) strategy,

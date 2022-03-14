@@ -5,12 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.ColumnedCollectionMappingStrategy;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingMap;
 import org.codefilarete.stalactite.sql.result.Row;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Guillaume Mary
  */
-public class ColumnedCollectionMappingStrategyTest {
+public class ColumnedCollectionMappingTest {
 	
 	private static Table targetTable;
 	private static Column col1;
@@ -50,11 +49,11 @@ public class ColumnedCollectionMappingStrategyTest {
 		col5 = namedColumns.get("col_5");
 	}
 	
-	private ColumnedCollectionMappingStrategy<List<String>, String, Table> testInstance;
+	private ColumnedCollectionMapping<List<String>, String, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new ColumnedCollectionMappingStrategy<List<String>, String, Table>(targetTable, targetTable.getColumns(), (Class<List<String>>) (Class) ArrayList.class) {
+		testInstance = new ColumnedCollectionMapping<List<String>, String, Table>(targetTable, targetTable.getColumns(), (Class<List<String>>) (Class) ArrayList.class) {
 			@Override
 			protected String toCollectionValue(Object object) {
 				return object == null ?  null : object.toString();

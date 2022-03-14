@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.TablePerClassPolymorphismPersister;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -22,8 +23,7 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.MappingStrategy.ShadowColumnValueProvider;
+import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -86,7 +86,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 			addPrimarykey(subTable);
 			Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
 			addIdentificationToMapping(identification, subEntityMapping);
-			ClassMappingStrategy<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+			ClassMapping<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
 					false,
 					subTable,
 					subEntityMapping.getMapping(),
@@ -96,11 +96,11 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 					null);
 			
 			// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it
-			((ClassMappingStrategy<C, I, T>) mainPersister.getMappingStrategy()).getShadowColumnsForInsert().forEach(columnValueProvider -> {
+			((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForInsert().forEach(columnValueProvider -> {
 				Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
 				classMappingStrategy.addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
 			});
-			((ClassMappingStrategy<C, I, T>) mainPersister.getMappingStrategy()).getShadowColumnsForUpdate().forEach(columnValueProvider -> {
+			((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnValueProvider -> {
 				Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
 				classMappingStrategy.addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
 			});
@@ -119,7 +119,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 	
 	
 	private void addPrimarykey(Table table) {
-		PersisterBuilderImpl.propagatePrimarykey(this.mainPersister.getMappingStrategy().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
+		PersisterBuilderImpl.propagatePrimarykey(this.mainPersister.getMapping().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
 	}
 	
 	private void addIdentificationToMapping(Identification identification, Mapping mapping) {

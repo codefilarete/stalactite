@@ -33,10 +33,10 @@ import org.codefilarete.stalactite.sql.result.Row;
  * Main class for persistence entity mapping description.
  * Composed of:
  * <ul>
- * <li>a main strategy : an embedded one ({@link EmbeddedClassMappingStrategy}, accessible by {@link #getMainMappingStrategy()}</li>
- * <li>an id strategy : {@link SimpleIdMappingStrategy} accessible with {@link #getIdMappingStrategy()}</li>
+ * <li>a main strategy : an embedded one ({@link EmbeddedClassMapping}, accessible by {@link #getMainMapping()}</li>
+ * <li>an id strategy : {@link SimpleIdMapping} accessible with {@link #getIdMapping()}</li>
  * <li>optional version mapping : accessible with {@link #getVersionedKeys()} for instance</li>
- * <li>additional mappings (for embeddable for instance) : see {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}</li>
+ * <li>additional mappings (for embeddable for instance) : see {@link #put(ReversibleAccessor, EmbeddedBeanMapping)}</li>
  * </ul>
  * </p>
  * <p>
@@ -55,9 +55,9 @@ import org.codefilarete.stalactite.sql.result.Row;
  * @author Guillaume Mary
  * @see org.codefilarete.stalactite.query.model.Query
  */
-public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappingStrategy<C, I, T> {
+public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, T> {
 	
-	private final EmbeddedClassMappingStrategy<C, T> mainMappingStrategy;
+	private final EmbeddedClassMapping<C, T> mainMapping;
 	
 	private final Set<Column<T, Object>> insertableColumns = new LinkedHashSet<>();
 	
@@ -65,36 +65,36 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	
 	private final Set<Column<T, Object>> selectableColumns = new LinkedHashSet<>();
 	
-	private final Map<ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> mappingStrategies = new HashMap<>();
+	private final Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategies = new HashMap<>();
 	
-	private final IdMappingStrategy<C, I> idMappingStrategy;
+	private final IdMapping<C, I> idMapping;
 	
 	private final Map<ReversibleAccessor, Column<T, Object>> versioningMapping = new HashMap<>();
 	
 	/**
 	 * Main constructor
-	 * Oriented for single column identifier / primary key. Prefer {@link #ClassMappingStrategy(Class, Table, Map, IdMappingStrategy)} for composed id.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}
+	 * Oriented for single column identifier / primary key. Prefer {@link #ClassMapping(Class, Table, Map, IdMapping)} for composed id.
+	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMapping)}
 	 * 
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn mapping between bean "properties" and table columns
 	 * @param identifierProperty identifier of the persisted class
 	 * @param identifierInsertionManager manager of identifiers
-	 * @see #put(ReversibleAccessor, EmbeddedBeanMappingStrategy) 
+	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping) 
 	 */
-	public ClassMappingStrategy(Class<C> classToPersist,
-								T targetTable,
-								Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
-								ReversibleAccessor<C, I> identifierProperty,
-								IdentifierInsertionManager<C, I> identifierInsertionManager) {
+	public ClassMapping(Class<C> classToPersist,
+						T targetTable,
+						Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+						ReversibleAccessor<C, I> identifierProperty,
+						IdentifierInsertionManager<C, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
 			throw new UnsupportedOperationException("No identifier property for " + Reflections.toString(classToPersist));
 		}
 		if (targetTable.getPrimaryKey() == null) {
 			throw new UnsupportedOperationException("No primary key column defined for " + targetTable.getAbsoluteName());
 		}
-		this.mainMappingStrategy = new EmbeddedClassMappingStrategy<>(classToPersist, targetTable, propertyToColumn);
+		this.mainMapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn);
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
@@ -107,25 +107,25 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 			throw new UnsupportedOperationException("Accessor '" + AccessorDefinition.toString(identifierProperty)
 					+ "' is declared as identifier but mapped column " + identifierColumn.toString() + " is not the primary key of table");
 		}
-		this.idMappingStrategy = new SimpleIdMappingStrategy<>(identifierProperty, identifierInsertionManager, new SimpleIdentifierAssembler<>(identifierColumn));
+		this.idMapping = new SimpleIdMapping<>(identifierProperty, identifierInsertionManager, new SimpleIdentifierAssembler<>(identifierColumn));
 	}
 	
 	/**
-	 * Secondary constructor, for composed id because one can precisely define the {@link IdMappingStrategy} by giving a {@link ComposedIdMappingStrategy}
+	 * Secondary constructor, for composed id because one can precisely define the {@link IdMapping} by giving a {@link ComposedIdMapping}
 	 * for instance.
-	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)}
+	 * It only defines main class and table, secondary ones, such as embedded class, must be defined through {@link #put(ReversibleAccessor, EmbeddedBeanMapping)}
 	 *
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn mapping between bean "properties" and table columns
-	 * @param idMappingStrategy mapping strategy of class identifier
-	 * @see #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)
+	 * @param idMapping mapping strategy of class identifier
+	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping)
 	 */
-	public ClassMappingStrategy(Class<C> classToPersist,
-								T targetTable,
-								Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
-								IdMappingStrategy<C, I> idMappingStrategy) {
-		this(new EmbeddedClassMappingStrategy<>(classToPersist, targetTable, propertyToColumn), idMappingStrategy);
+	public ClassMapping(Class<C> classToPersist,
+						T targetTable,
+						Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+						IdMapping<C, I> idMapping) {
+		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn), idMapping);
 	}
 	
 	/**
@@ -135,47 +135,47 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn mapping between bean "properties" and table columns
-	 * @param idMappingStrategy mapping strategy of class identifier
+	 * @param idMapping mapping strategy of class identifier
 	 * @param entityFactory entity factory
-	 * @see #put(ReversibleAccessor, EmbeddedBeanMappingStrategy)
+	 * @see #put(ReversibleAccessor, EmbeddedBeanMapping)
 	 */
-	public ClassMappingStrategy(Class<C> classToPersist,
-								T targetTable,
-								Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
-								IdMappingStrategy<C, I> idMappingStrategy,
-								Function<Function<Column, Object>, C> entityFactory) {
-		this(new EmbeddedClassMappingStrategy<>(classToPersist, targetTable, propertyToColumn, entityFactory), idMappingStrategy);
+	public ClassMapping(Class<C> classToPersist,
+						T targetTable,
+						Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+						IdMapping<C, I> idMapping,
+						Function<Function<Column, Object>, C> entityFactory) {
+		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, entityFactory), idMapping);
 	}
 	
-	private ClassMappingStrategy(EmbeddedClassMappingStrategy<C, T> mainMappingStrategy, IdMappingStrategy<C, I> idMappingStrategy) {
-		if (idMappingStrategy.getIdAccessor() == null) {
-			throw new UnsupportedOperationException("No identifier property defined for " + Reflections.toString(mainMappingStrategy.getClassToPersist()));
+	private ClassMapping(EmbeddedClassMapping<C, T> mainMapping, IdMapping<C, I> idMapping) {
+		if (idMapping.getIdAccessor() == null) {
+			throw new UnsupportedOperationException("No identifier property defined for " + Reflections.toString(mainMapping.getClassToPersist()));
 		}
-		if (mainMappingStrategy.getTargetTable().getPrimaryKey() == null) {
-			throw new UnsupportedOperationException("No primary key column defined for " + mainMappingStrategy.getTargetTable().getAbsoluteName());
+		if (mainMapping.getTargetTable().getPrimaryKey() == null) {
+			throw new UnsupportedOperationException("No primary key column defined for " + mainMapping.getTargetTable().getAbsoluteName());
 		}
-		this.mainMappingStrategy = mainMappingStrategy;
+		this.mainMapping = mainMapping;
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
-		this.idMappingStrategy = idMappingStrategy;
+		this.idMapping = idMapping;
 	}
 	
 	public Class<C> getClassToPersist() {
-		return mainMappingStrategy.getClassToPersist();
+		return mainMapping.getClassToPersist();
 	}
 	
 	@Override
 	public T getTargetTable() {
-		return mainMappingStrategy.getTargetTable();
+		return mainMapping.getTargetTable();
 	}
 	
-	public EmbeddedClassMappingStrategy<C, T> getMainMappingStrategy() {
-		return mainMappingStrategy;
+	public EmbeddedClassMapping<C, T> getMainMapping() {
+		return mainMapping;
 	}
 	
 	@Override
-	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies() {
+	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies() {
 		return mappingStrategies;
 	}
 	
@@ -188,8 +188,8 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		Map<ReversibleAccessor<C, Object>, Column<T, Object>> result = new HashMap<>();
-		result.putAll(getMainMappingStrategy().getPropertyToColumn());
-		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> value : mappingStrategies.entrySet()) {
+		result.putAll(getMainMapping().getPropertyToColumn());
+		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> value : mappingStrategies.entrySet()) {
 			value.getValue().getPropertyToColumn().forEach((k, v) -> result.put(new AccessorChain<>(value.getKey(), k), v));
 		}
 		return result;
@@ -223,21 +223,21 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	}
 	
 	@Override
-	public IdMappingStrategy<C, I> getIdMappingStrategy() {
-		return idMappingStrategy;
+	public IdMapping<C, I> getIdMapping() {
+		return idMapping;
 	}
 	
 	public Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForInsert() {
-		return Collections.unmodifiableCollection(this.mainMappingStrategy.getShadowColumnsForInsert());
+		return Collections.unmodifiableCollection(this.mainMapping.getShadowColumnsForInsert());
 	}
 	
 	public Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForUpdate() {
-		return Collections.unmodifiableCollection(this.mainMappingStrategy.getShadowColumnsForUpdate());
+		return Collections.unmodifiableCollection(this.mainMapping.getShadowColumnsForUpdate());
 	}
 	
-	public void addShadowColumns(ClassMappingStrategy<C, I, T> classMappingStrategy) {
-		classMappingStrategy.mainMappingStrategy.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
-		classMappingStrategy.mainMappingStrategy.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
+	public void addShadowColumns(ClassMapping<C, I, T> classMappingStrategy) {
+		classMappingStrategy.mainMapping.getShadowColumnsForInsert().forEach(this::addShadowColumnInsert);
+		classMappingStrategy.mainMapping.getShadowColumnsForUpdate().forEach(this::addShadowColumnUpdate);
 	}
 	
 	public void addVersionedColumn(ReversibleAccessor propertyAccessor, Column<T, Object> column) {
@@ -247,7 +247,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	@Override
 	public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
-		mainMappingStrategy.addShadowColumnInsert(valueProvider);
+		mainMapping.addShadowColumnInsert(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
 		insertableColumns.add((Column<T, Object>) valueProvider.getColumn());
 	}
@@ -255,31 +255,31 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	@Override
 	public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
-		mainMappingStrategy.addShadowColumnUpdate(valueProvider);
+		mainMapping.addShadowColumnUpdate(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
 		updatableColumns.add((Column<T, Object>) valueProvider.getColumn());
 	}
 	
 	@Override
 	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
-		mainMappingStrategy.addPropertySetByConstructor(accessor);
+		mainMapping.addPropertySetByConstructor(accessor);
 	}
 	
 	@Override
 	public <O> void addShadowColumnSelect(Column<T, O> column) {
-		mainMappingStrategy.addShadowColumnSelect(column);
+		mainMapping.addShadowColumnSelect(column);
 		fillSelectableColumns();
 	}
 	
 	/**
 	 * Sets a particular strategy for a given property.
-	 * The property type is supposed to be complex so it needs multiple columns for persistence and then needs an {@link EmbeddedBeanMappingStrategy}
+	 * The property type is supposed to be complex so it needs multiple columns for persistence and then needs an {@link EmbeddedBeanMapping}
 	 * 
 	 * @param property an object representing a {@link Field} or {@link Method}
 	 * @param mappingStrategy the strategy that should be used to persist the member
 	 */
-	public <O> void put(ReversibleAccessor<C, O> property, EmbeddedBeanMappingStrategy<O, T> mappingStrategy) {
-		mappingStrategies.put((ReversibleAccessor) property, (EmbeddedBeanMappingStrategy) mappingStrategy);
+	public <O> void put(ReversibleAccessor<C, O> property, EmbeddedBeanMapping<O, T> mappingStrategy) {
+		mappingStrategies.put((ReversibleAccessor) property, (EmbeddedBeanMapping) mappingStrategy);
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
 		addUpdatableColumns(mappingStrategy);
@@ -289,12 +289,12 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
-		Map<Column<T, Object>, Object> insertValues = mainMappingStrategy.getInsertValues(c);
+		Map<Column<T, Object>, Object> insertValues = mainMapping.getInsertValues(c);
 		getVersionedKeyValues(c).entrySet().stream()
 				// autoincrement columns mustn't be written
 				.filter(entry -> !entry.getKey().isAutoGenerated())
 				.forEach(entry -> insertValues.put(entry.getKey(), entry.getValue()));
-		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(c);
 			Map<Column<T, Object>, Object> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.putAll(fieldInsertValues);
@@ -310,8 +310,8 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 			// entities are different, so there's no value to be updated 
 			toReturn = new HashMap<>();
 		} else {
-			toReturn = mainMappingStrategy.getUpdateValues(modified, unmodified, allColumns);
-			for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
+			toReturn = mainMapping.getUpdateValues(modified, unmodified, allColumns);
+			for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
 				ReversibleAccessor<C, Object> accessor = fieldStrategyEntry.getKey();
 				Object modifiedValue = accessor.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
@@ -343,14 +343,14 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	 */
 	private void fillInsertableColumns() {
 		insertableColumns.clear();
-		addInsertableColumns(mainMappingStrategy);
+		addInsertableColumns(mainMapping);
 		mappingStrategies.values().forEach(this::addInsertableColumns);
 		insertableColumns.addAll(versioningMapping.values());
 		// NB : generated keys are never inserted but left because DMLGenerator needs its presence to detect it
 		// and also it prevents to generate not empty statement when they are Alone in the Dark ;) 
 	}
 	
-	private void addInsertableColumns(EmbeddedBeanMappingStrategy<?, T> embeddedBeanMapping) {
+	private void addInsertableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
 		insertableColumns.addAll(embeddedBeanMapping.getColumns());
 	}
 	
@@ -359,7 +359,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	 */
 	private void fillUpdatableColumns() {
 		updatableColumns.clear();
-		addUpdatableColumns(mainMappingStrategy);
+		addUpdatableColumns(mainMapping);
 		mappingStrategies.values().forEach(this::addUpdatableColumns);
 		updatableColumns.addAll(versioningMapping.values());
 		// keys are never updated
@@ -367,26 +367,26 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 		updatableColumns.removeIf(Column::isAutoGenerated);
 	}
 	
-	private void addUpdatableColumns(EmbeddedBeanMappingStrategy<?, T> embeddedBeanMapping) {
+	private void addUpdatableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
 		updatableColumns.addAll(embeddedBeanMapping.getColumns());
 	}
 	
 	private void fillSelectableColumns() {
 		selectableColumns.clear();
-		addSelectableColumns(mainMappingStrategy);
+		addSelectableColumns(mainMapping);
 		selectableColumns.addAll(getTargetTable().getPrimaryKey().getColumns());
 		selectableColumns.addAll(versioningMapping.values());
 		mappingStrategies.values().forEach(this::addSelectableColumns);
 	}
 	
-	private void addSelectableColumns(EmbeddedBeanMappingStrategy<?, T> embeddedBeanMapping) {
+	private void addSelectableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
 		selectableColumns.addAll(embeddedBeanMapping.getColumns());
 	}
 	
 	@Override
 	public Map<Column<T, Object>, Object> getVersionedKeyValues(C c) {
 		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
-		toReturn.putAll(getIdMappingStrategy().getIdentifierAssembler().getColumnValues(getId(c)));
+		toReturn.putAll(getIdMapping().getIdentifierAssembler().getColumnValues(getId(c)));
 		toReturn.putAll(getVersionedColumnsValues(c));
 		return toReturn;
 	}
@@ -409,17 +409,17 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	
 	@Override
 	public I getId(C c) {
-		return getIdMappingStrategy().getIdAccessor().getId(c);
+		return getIdMapping().getIdAccessor().getId(c);
 	}
 	
 	@Override
 	public void setId(C c, I identifier) {
-		getIdMappingStrategy().getIdAccessor().setId(c, identifier);
+		getIdMapping().getIdAccessor().setId(c, identifier);
 	}
 	
 	@Override
 	public boolean isNew(C c) {
-		return getIdMappingStrategy().isNew(c);
+		return getIdMapping().isNew(c);
 	}
 	
 	@Override
@@ -429,9 +429,9 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 		// Note : this may be done twice in single column primary key case, because constructor expects that the column must be present in the
 		// mapping, then it is used by the SimpleIdentifierAssembler
 		ColumnedRow columnedRow = new ColumnedRow();
-		setId(toReturn, getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow));
+		setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row, columnedRow));
 		// filling other properties
-		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> mappingStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategyEntry : mappingStrategies.entrySet()) {
 			mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
 		}
 		return toReturn;
@@ -443,7 +443,7 @@ public class ClassMappingStrategy<C, I, T extends Table> implements EntityMappin
 	}
 	
 	public ToBeanRowTransformer<C> getRowTransformer() {
-		return mainMappingStrategy.getRowTransformer();
+		return mainMapping.getRowTransformer();
 	}
 	
 	@Override

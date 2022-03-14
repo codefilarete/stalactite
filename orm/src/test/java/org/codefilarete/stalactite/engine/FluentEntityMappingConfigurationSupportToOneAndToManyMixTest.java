@@ -81,7 +81,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		
 		Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(
@@ -96,7 +96,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		
 		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				countryPersister.getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(

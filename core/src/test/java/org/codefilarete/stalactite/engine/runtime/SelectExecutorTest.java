@@ -7,11 +7,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.IdMappingStrategy;
+import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -247,18 +247,18 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 		Table targetTable = new Table("Toto");
 		Column id = targetTable.addColumn("id", long.class).primaryKey();
 		
-		ClassMappingStrategy mappingStrategyMock = mock(ClassMappingStrategy.class);
+		ClassMapping mappingStrategyMock = mock(ClassMapping.class);
 		when(mappingStrategyMock.getTargetTable()).thenReturn(targetTable);
 		// the selected columns are plugged on the table ones
 		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> targetTable.getColumns());
 		
 		// mocking to prevent NPE from EntityMappingStrategyTreeSelectExecutor constructor
-		IdMappingStrategy idMappingStrategyMock = mock(IdMappingStrategy.class);
-		when(mappingStrategyMock.getIdMappingStrategy()).thenReturn(idMappingStrategyMock);
+		IdMapping idMappingMock = mock(IdMapping.class);
+		when(mappingStrategyMock.getIdMapping()).thenReturn(idMappingMock);
 		
 		// mocking to provide entity values
 		IdentifierAssembler identifierAssemblerMock = mock(IdentifierAssembler.class);
-		when(idMappingStrategyMock.getIdentifierAssembler()).thenReturn(identifierAssemblerMock);
+		when(idMappingMock.getIdentifierAssembler()).thenReturn(identifierAssemblerMock);
 		Map<Column<Table, Object>, Object> idValuesPerEntity = Maps.asMap(id, Arrays.asList(10, 20));
 		when(identifierAssemblerMock.getColumnValues(anyList())).thenReturn(idValuesPerEntity);
 		

@@ -46,7 +46,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 							 EntityConfiguredPersister<O, ?> targetPersister,
 							 @Nullable BiConsumer<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved) {
-		this(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, targetPersister.getMappingStrategy()::getId);
+		this(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, targetPersister.getMapping()::getId);
 	}
 	
 	/**

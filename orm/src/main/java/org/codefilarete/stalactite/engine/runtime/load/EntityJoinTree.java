@@ -23,7 +23,7 @@ import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -526,18 +526,18 @@ public class EntityJoinTree<C, I> {
 		Set<Column<T, Object>> getSelectableColumns();
 		
 		/**
-		 * Adapter of a {@link EntityMappingStrategy} as a {@link EntityInflater}.
-		 * Implemented as a simple wrapper of a {@link EntityMappingStrategy} because methods are very close.
+		 * Adapter of a {@link EntityMapping} as a {@link EntityInflater}.
+		 * Implemented as a simple wrapper of a {@link EntityMapping} because methods are very close.
 		 * 
 		 * @param <E> entity type
 		 * @param <I> identifier type
 		 * @param <T> table type
 		 */
-		class EntityMappingStrategyAdapter<E, I, T extends Table> implements EntityInflater<E, I, T> {
+		class EntityMappingAdapter<E, I, T extends Table> implements EntityInflater<E, I, T> {
 			
-			private final EntityMappingStrategy<E, I, T> delegate;
+			private final EntityMapping<E, I, T> delegate;
 			
-			public EntityMappingStrategyAdapter(EntityMappingStrategy<E, I, T> delegate) {
+			public EntityMappingAdapter(EntityMapping<E, I, T> delegate) {
 				this.delegate = delegate;
 			}
 			
@@ -548,7 +548,7 @@ public class EntityJoinTree<C, I> {
 			
 			@Override
 			public I giveIdentifier(Row row, ColumnedRow columnedRow) {
-				return this.delegate.getIdMappingStrategy().getIdentifierAssembler().assemble(row, columnedRow);
+				return this.delegate.getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
 			}
 			
 			@Override
@@ -577,17 +577,17 @@ public class EntityJoinTree<C, I> {
 		Set<Column<T, Object>> getSelectableColumns();
 		
 		/**
-		 * Adapter of a {@link EntityMappingStrategy} as a {@link EntityMerger}.
-		 * Implemented as a simple wrapper of a {@link EntityMappingStrategy} because methods are very close.
+		 * Adapter of a {@link EntityMapping} as a {@link EntityMerger}.
+		 * Implemented as a simple wrapper of a {@link EntityMapping} because methods are very close.
 		 *
 		 * @param <E> entity type
 		 * @param <T> table type
 		 */
 		class EntityMergerAdapter<E, T extends Table> implements EntityMerger<E, T> {
 			
-			private final EntityMappingStrategy<E, ?, T> delegate;
+			private final EntityMapping<E, ?, T> delegate;
 			
-			public EntityMergerAdapter(EntityMappingStrategy<E, ?, T> delegate) {
+			public EntityMergerAdapter(EntityMapping<E, ?, T> delegate) {
 				this.delegate = delegate;
 			}
 			

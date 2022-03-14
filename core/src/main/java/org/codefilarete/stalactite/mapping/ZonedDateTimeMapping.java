@@ -36,7 +36,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class ZonedDateTimeMappingStrategy<T extends Table> implements EmbeddedBeanMappingStrategy<ZonedDateTime, T> {
+public class ZonedDateTimeMapping<T extends Table> implements EmbeddedBeanMapping<ZonedDateTime, T> {
 	
 	private final Column<T, LocalDateTime> dateTimeColumn;
 	private final Column<T, ZoneId> zoneColumn;
@@ -53,7 +53,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements EmbeddedBe
 	 * @param zoneColumn the column containing the zone part of final {@link ZonedDateTime}
 	 * @throws IllegalArgumentException if dateTimeColumn is not of type {@link LocalDateTime} or zoneColumn of type {@link ZoneId}
 	 */
-	public ZonedDateTimeMappingStrategy(Column<T, LocalDateTime> dateTimeColumn, Column<T, ZoneId> zoneColumn) {
+	public ZonedDateTimeMapping(Column<T, LocalDateTime> dateTimeColumn, Column<T, ZoneId> zoneColumn) {
 		if (!LocalDateTime.class.isAssignableFrom(dateTimeColumn.getJavaType())) {
 			throw new IllegalArgumentException("Only columns with type " + Reflections.toString(LocalDateTime.class) + " are supported");
 		}
@@ -128,7 +128,7 @@ public class ZonedDateTimeMappingStrategy<T extends Table> implements EmbeddedBe
 	
 	@Override
 	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
-		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMappingStrategy.class) + " can't export a mapping between some accessors and their columns"
+		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}
 	

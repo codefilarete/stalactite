@@ -41,9 +41,9 @@ import org.codefilarete.stalactite.engine.runtime.OneToManyWithIndexedAssociatio
 import org.codefilarete.stalactite.engine.runtime.OneToManyWithIndexedMappedAssociationEngine;
 import org.codefilarete.stalactite.engine.runtime.OneToManyWithMappedAssociationEngine;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
-import org.codefilarete.stalactite.mapping.MappingStrategy.ShadowColumnValueProvider;
+import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -213,10 +213,10 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	
 	protected Column lookupSourcePrimaryKey(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
 		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
-		if (sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns().size() > 1) {
+		if (sourcePersister.getMapping().getTargetTable().getPrimaryKey().getColumns().size() > 1) {
 			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 		}
-		return (Column) first(sourcePersister.getMappingStrategy().getTargetTable().getPrimaryKey().getColumns());
+		return (Column) first(sourcePersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 	}
 	
 	/**
@@ -328,7 +328,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		
 		private void prepare(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 			// case : Collection mapping without reverse property : an association table is needed
-			Table<?> rightTable = targetPersister.getMappingStrategy().getTargetTable();
+			Table<?> rightTable = targetPersister.getMapping().getTargetTable();
 			Column rightPrimaryKey = first(rightTable.getPrimaryKey().getColumns());
 			
 			determineAccessorDefinition(targetPersister);
@@ -392,7 +392,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			}
 			
 			AssociationRecordPersister<AssociationRecord, AssociationTable> associationPersister = new AssociationRecordPersister<>(
-					new AssociationRecordMappingStrategy(intermediaryTable),
+					new AssociationRecordMapping(intermediaryTable),
 					dialect,
 					connectionConfiguration);
 			associationTableEngine = new OneToManyWithAssociationTableEngine<>(
@@ -430,7 +430,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 			
 			AssociationRecordPersister<IndexedAssociationRecord, IndexedAssociationTable> indexedAssociationPersister =
 					new AssociationRecordPersister<>(
-							new IndexedAssociationRecordMappingStrategy(intermediaryTable),
+							new IndexedAssociationRecordMapping(intermediaryTable),
 							dialect,
 							connectionConfiguration);
 			associationTableEngine = new OneToManyWithIndexedAssociationTableEngine<>(
@@ -486,14 +486,14 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					getterSignature = Reflections.toString(reverseMethod);
 				}
 				reversePropertyAccessor = accessor(reverseMethod);
-				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
+				// Since reverse property accessor may not be declared the same way that it is present in ClassMapping
 				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
-				EntityMappingStrategy<TRGT, TRGTID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
+				EntityMapping<TRGT, TRGTID, Table> targetMappingStrategy = targetPersister.getMapping();
 				ValueAccessPointMap<? extends Column<?, Object>> accessPointMap = new ValueAccessPointMap<>(targetMappingStrategy.getPropertyToColumn());
 				reverseColumn = (Column<Table, SRCID>) accessPointMap.get(reversePropertyAccessor);
 				// we didn't find an existing matching column by its property (relation is not bidirectional), so we create it
 				if (reverseColumn == null) {
-					EntityMappingStrategy<SRC, SRCID, ?> sourceMappingStrategy = manyAssociationConfiguration.srcPersister.getMappingStrategy();
+					EntityMapping<SRC, SRCID, ?> sourceMappingStrategy = manyAssociationConfiguration.srcPersister.getMapping();
 					// no column found for reverse side owner, we create it
 					PrimaryKey<?> primaryKey = sourceMappingStrategy.getTargetTable().getPrimaryKey();
 					reverseColumn = targetMappingStrategy.getTargetTable().addColumn(
@@ -503,7 +503,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					reverseColumn.setNullable(!allowOrphanRemoval);
 					
 					SerializableFunction<TRGT, SRC> finalReverseGetter = reverseGetter;
-					IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();
+					IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMapping().getIdAccessor();
 					Function<TRGT, SRCID> targetIdSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).map(idAccessor::getId).getOr((SRCID) null);
 					ShadowColumnValueProvider<TRGT, SRCID, Table> targetIdValueProvider = new ShadowColumnValueProvider<>(reverseColumn, targetIdSupplier);
 					targetMappingStrategy.addShadowColumnInsert(targetIdValueProvider);
@@ -511,10 +511,10 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 				} // else = bidirectional relation with matching column, property and column will be maintained through it so we have nothing to do here
 				  // (user code is expected to maintain bidirectionality aka when adding an entity to its collection also set parent value)
 			} else {
-				// Since reverse property accessor may not be declared the same way that it is present in ClassMappingStrategy
+				// Since reverse property accessor may not be declared the same way that it is present in ClassMapping
 				// we must use a ValueAccessPointMap which allows to compare different ValueAccessPoints
-				EntityMappingStrategy<TRGT, TRGTID, Table> targetMappingStrategy = targetPersister.getMappingStrategy();
-				EntityMappingStrategy<SRC, SRCID, ?> sourceMappingStrategy = manyAssociationConfiguration.srcPersister.getMappingStrategy();
+				EntityMapping<TRGT, TRGTID, Table> targetMappingStrategy = targetPersister.getMapping();
+				EntityMapping<SRC, SRCID, ?> sourceMappingStrategy = manyAssociationConfiguration.srcPersister.getMapping();
 				
 				// Reverse side is surely defined by reverse method (because CascadeManyWithMappedAssociationConfigurer is invoked only
 				// when association is mapped by reverse side and reverse column is null),
@@ -533,7 +533,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					finalReverseGetter = reverseGetter;
 				}
 				
-				IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMappingStrategy().getIdAccessor();
+				IdAccessor<SRC, SRCID> idAccessor = sourceMappingStrategy.getIdMapping().getIdAccessor();
 				Function<TRGT, SRCID> targetIdSupplier = trgt -> nullable(finalReverseGetter.apply(trgt)).map(idAccessor::getId).getOr((SRCID) null);
 				ShadowColumnValueProvider<TRGT, SRCID, Table> targetIdValueProvider = new ShadowColumnValueProvider<>(reverseColumn, targetIdSupplier);
 				targetMappingStrategy.addShadowColumnInsert(targetIdValueProvider);
@@ -620,7 +620,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 													   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 			if (indexingColumn == null) {
 				String indexingColumnName = manyAssociationConfiguration.indexColumnNamingStrategy.giveName(accessorDefinition);
-				indexingColumn = targetPersister.getMappingStrategy().getTargetTable().addColumn(indexingColumnName, int.class);
+				indexingColumn = targetPersister.getMapping().getTargetTable().addColumn(indexingColumnName, int.class);
 			}
 			IndexedMappedManyRelationDescriptor<SRC, TRGT, C> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
 					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,

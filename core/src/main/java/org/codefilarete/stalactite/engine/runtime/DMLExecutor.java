@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -13,21 +13,21 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
  */
 public abstract class DMLExecutor<C, I, T extends Table> {
 	
-	private final EntityMappingStrategy<C, I, T> mappingStrategy;
+	private final EntityMapping<C, I, T> mapping;
 	private final ConnectionProvider connectionProvider;
 	private final DMLGenerator dmlGenerator;
 	private final int inOperatorMaxSize;
 	
-	public DMLExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider,
+	public DMLExecutor(EntityMapping<C, I, T> mapping, ConnectionProvider connectionProvider,
 					   DMLGenerator dmlGenerator, int inOperatorMaxSize) {
-		this.mappingStrategy = mappingStrategy;
+		this.mapping = mapping;
 		this.connectionProvider = connectionProvider;
 		this.dmlGenerator = dmlGenerator;
 		this.inOperatorMaxSize = inOperatorMaxSize;
 	}
 	
-	public EntityMappingStrategy<C, I, T> getMappingStrategy() {
-		return mappingStrategy;
+	public EntityMapping<C, I, T> getMapping() {
+		return mapping;
 	}
 	
 	public ConnectionProvider getConnectionProvider() {

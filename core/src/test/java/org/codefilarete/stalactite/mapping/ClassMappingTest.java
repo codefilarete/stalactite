@@ -8,12 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.mapping.AbstractTransformer;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.ColumnedCollectionMappingStrategy;
-import org.codefilarete.stalactite.mapping.ColumnedMapMappingStrategy;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
@@ -21,7 +15,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 /**
  * @author Guillaume Mary
  */
-public class ClassMappingStrategyTest {
+public class ClassMappingTest {
 	
 	private static Column colA;
 	private static Column colB;
@@ -51,7 +45,7 @@ public class ClassMappingStrategyTest {
 	private static PropertyAccessor<Toto, List<String>> myListField;
 	private static PropertyAccessor<Toto, Map<String, String>> myMapField;
 	
-	private static ClassMappingStrategy<Toto, Integer, Table> testInstance;
+	private static ClassMapping<Toto, Integer, Table> testInstance;
 	
 	@BeforeAll
 	public static void setUpClass() {
@@ -79,7 +73,7 @@ public class ClassMappingStrategyTest {
 	public static void setUpTestInstance() {
 		// instance to test
 		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
-		testInstance = new ClassMappingStrategy<>(
+		testInstance = new ClassMapping<>(
 				Toto.class,
 				targetTable,
 				(Map<ReversibleAccessor<Toto, Object>, Column<Table, Object>>) classMapping,
@@ -95,8 +89,8 @@ public class ClassMappingStrategyTest {
 			String columnName = "cold_" + i;
 			collectionColumn.add(targetTable.addColumn(columnName, String.class));
 		}
-		testInstance.put(myListField, new ColumnedCollectionMappingStrategy<List<String>, String, Table>(targetTable,
-																										 collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
+		testInstance.put(myListField, new ColumnedCollectionMapping<List<String>, String, Table>(targetTable,
+																								 collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
 			
 			@Override
 			protected String toCollectionValue(Object object) {
@@ -118,8 +112,8 @@ public class ClassMappingStrategyTest {
 					break;
 			}
 		}
-		testInstance.put(myMapField, new ColumnedMapMappingStrategy<Map<String, String>, String, String, Table>(targetTable,
-																												new HashSet<>(mappedColumnsByKey.values()), (Class<Map<String, String>>) (Class) HashMap.class) {
+		testInstance.put(myMapField, new ColumnedMapMapping<Map<String, String>, String, String, Table>(targetTable,
+																										new HashSet<>(mappedColumnsByKey.values()), (Class<Map<String, String>>) (Class) HashMap.class) {
 			
 			@Override
 			protected Column getColumn(String key) {
@@ -267,12 +261,12 @@ public class ClassMappingStrategyTest {
 	public void testBeanKeyIsPresent() {
 		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
 		assertThatExceptionOfType(IllegalArgumentException.class).as("Bean identifier '" + identifierAccesor + "' must have its matching column in " 
-				+ "the mapping").isThrownBy(() -> new ClassMappingStrategy<>(Toto.class,
-				targetTable,
-				Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
-				// identifier is not present in previous statement so it leads to the expected exception
-				identifierAccesor,
-				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {
+				+ "the mapping").isThrownBy(() -> new ClassMapping<>(Toto.class,
+																	 targetTable,
+																	 Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
+																	 // identifier is not present in previous statement so it leads to the expected exception
+																	 identifierAccesor,
+																	 new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {
 				}, c -> false)));
 	}
 	

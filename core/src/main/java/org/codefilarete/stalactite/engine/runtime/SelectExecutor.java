@@ -10,7 +10,7 @@ import java.util.Set;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -33,7 +33,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	
 	protected SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public SelectExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
+	public SelectExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
 	}
 	
@@ -58,8 +58,8 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 			ConnectionProvider localConnectionProvider = new SimpleConnectionProvider(getConnectionProvider().giveConnection());
 			// We distinguish the default case where packets are of the same size from the (last) case where it's different
 			// So we can apply the same read operation to all the firsts packets
-			T targetTable = getMappingStrategy().getTargetTable();
-			Set<Column<T, Object>> columnsToRead = getMappingStrategy().getSelectableColumns();
+			T targetTable = getMapping().getTargetTable();
+			Set<Column<T, Object>> columnsToRead = getMapping().getSelectableColumns();
 			InternalExecutor executor = new InternalExecutor();
 			if (!parcels.isEmpty()) {
 				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
@@ -94,7 +94,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		
 		@VisibleForTesting
 		List<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
-			Map<Column<T, Object>, Object> primaryKeyValues = getMappingStrategy().getIdMappingStrategy().getIdentifierAssembler().getColumnValues(ids);
+			Map<Column<T, Object>, Object> primaryKeyValues = getMapping().getIdMapping().getIdentifierAssembler().getColumnValues(ids);
 			try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);
 				return transform(closeableOperation, primaryKeyValues.size());
@@ -111,7 +111,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		}
 		
 		protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-			return Iterables.collect(() -> rowIterator, getMappingStrategy()::transform, () -> new ArrayList<>(resultSize));
+			return Iterables.collect(() -> rowIterator, getMapping()::transform, () -> new ArrayList<>(resultSize));
 		}
 	}
 }

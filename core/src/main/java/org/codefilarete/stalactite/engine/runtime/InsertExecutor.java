@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
@@ -40,17 +40,17 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
-	public InsertExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
+	public InsertExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 						  int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
-		this.identifierInsertionManager = mappingStrategy.getIdMappingStrategy().getIdentifierInsertionManager();
+		this.identifierInsertionManager = mappingStrategy.getIdMapping().getIdentifierInsertionManager();
 	}
 	
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column versionColumn = getMappingStrategy().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
+		Column versionColumn = getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
 	}
 	
@@ -64,7 +64,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	@Override
 	public void insert(Iterable<? extends C> entities) {
-		Set<Column<T, Object>> columns = getMappingStrategy().getInsertableColumns();
+		Set<Column<T, Object>> columns = getMapping().getInsertableColumns();
 		ColumnParameterizedSQL<T> insertStatement = getDmlGenerator().buildInsert(columns);
 		List<? extends C> entitiesCopy = Iterables.copy(entities);
 		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
@@ -84,7 +84,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	private void addToBatch(C entity, WriteOperation<Column<T, Object>> writeOperation) {
-		Map<Column<T, Object>, Object> insertValues = getMappingStrategy().getInsertValues(entity);
+		Map<Column<T, Object>, Object> insertValues = getMapping().getInsertValues(entity);
 		assertMandatoryColumnsHaveNonNullValues(insertValues);
 		optimisticLockManager.manageLock(entity, insertValues);
 		writeOperation.addBatch(insertValues);

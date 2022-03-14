@@ -34,7 +34,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class EmbeddedClassMappingStrategy<C, T extends Table> implements EmbeddedBeanMappingStrategy<C, T> {
+public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMapping<C, T> {
 	
 	private final Class<C> classToPersist;
 	
@@ -80,14 +80,14 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
-	public EmbeddedClassMappingStrategy(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn) {
+	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn) {
 		this(classToPersist, targetTable, propertyToColumn, row -> Reflections.newInstance(classToPersist));
 	}
 	
-	public EmbeddedClassMappingStrategy(Class<C> classToPersist,
-										T targetTable,
-										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
-										Function<Function<Column, Object>, C> beanFactory) {
+	public EmbeddedClassMapping(Class<C> classToPersist,
+								T targetTable,
+								Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+								Function<Function<Column, Object>, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.propertyToColumn = new HashMap<>(propertyToColumn);
@@ -302,7 +302,7 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 			for (Entry<Column, Mutator> columnFieldEntry : getColumnToMember().entrySet()) {
 				Object propertyValue = getColumnedRow().getValue(columnFieldEntry.getKey(), values);
 				beanValues.put(columnFieldEntry, propertyValue);
-				boolean valueIsDefault = EmbeddedClassMappingStrategy.this.defaultValueDeterminer.isDefaultValue(
+				boolean valueIsDefault = EmbeddedClassMapping.this.defaultValueDeterminer.isDefaultValue(
 						new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
 				if (columnFieldEntry.getValue() instanceof AccessorChainMutator) {
 					Accessor valuesAreDefaultOnesKey = (Accessor) ((AccessorChainMutator) columnFieldEntry.getValue()).getAccessors().get(0);
@@ -371,7 +371,7 @@ public class EmbeddedClassMappingStrategy<C, T extends Table> implements Embedde
 		 * Default implementation considers null as a default value for non primitive types, and default primitive type values as such for
 		 * primitive types (took in {@link Reflections#PRIMITIVE_DEFAULT_VALUES}).
 		 * 
-		 * @param mappedProperty column and its mapped property (configured in the {@link EmbeddedClassMappingStrategy}).
+		 * @param mappedProperty column and its mapped property (configured in the {@link EmbeddedClassMapping}).
 		 * 						 So one can use either the column or the accessor for fine grained default value determination
 		 * @param value value coming from a JDBC {@link java.sql.ResultSet}, mapped by the couple {@link Column} + {@link Mutator}.
 		 * @return true if value is a default one for column/property

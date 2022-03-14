@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.ArrayIterator;
 import org.codefilarete.tool.collection.Iterables;
@@ -17,9 +18,8 @@ import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
 import org.codefilarete.stalactite.engine.runtime.InsertExecutor.VersioningStrategyRollbackListener;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.EntityMappingStrategy;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
@@ -45,7 +45,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	private SQLOperationListener<UpwhereColumn<T>> operationListener;
 	
-	public UpdateExecutor(EntityMappingStrategy<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
+	public UpdateExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionConfiguration connectionConfiguration,
 						  DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
 						  int inOperatorMaxSize) {
 		super(mappingStrategy, connectionConfiguration, dmlGenerator, writeOperationFactory, inOperatorMaxSize);
@@ -54,7 +54,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	public void setVersioningStrategy(VersioningStrategy versioningStrategy) {
 		// we could have put the column as an attribute of the VersioningStrategy but, by making the column more dynamic, the strategy can be
 		// shared as long as PropertyAccessor is reusable over entities (wraps a common method)
-		Column<T, Object> versionColumn = getMappingStrategy().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
+		Column<T, Object> versionColumn = getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
 		setOptimisticLockManager(new RevertOnRollbackMVCC(versioningStrategy, versionColumn, getConnectionProvider()));
 	}
 	
@@ -86,9 +86,9 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 */
 	@Override
 	public void updateById(Iterable<C> entities) {
-		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
+		Set<Column<T, Object>> columnsToUpdate = getMapping().getUpdatableColumns();
 		if (!columnsToUpdate.isEmpty()) {
-			PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
+			PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMapping().getVersionedKeys());
 			List<C> entitiesCopy = Iterables.copy(entities);
 			ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
 			WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(updateOperation, getConnectionProvider(), expectedBatchedRowCountsSupplier);
@@ -96,7 +96,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			JDBCBatchingIterator<C> jdbcBatchingIterator = new JDBCBatchingIterator<>(entities, writeOperation, getBatchSize());
 			while (jdbcBatchingIterator.hasNext()) {
 				C c = jdbcBatchingIterator.next();
-				Map<UpwhereColumn<T>, Object> updateValues = getMappingStrategy().getUpdateValues(c, null, true);
+				Map<UpwhereColumn<T>, Object> updateValues = getMapping().getUpdateValues(c, null, true);
 				writeOperation.addBatch(updateValues);
 			}
 		}
@@ -117,7 +117,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @return persistence payloads of entities
 	 */
 	protected Iterable<UpdatePayload<C, T>> computePayloads(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		return UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMappingStrategy());
+		return UpdateListener.computePayloads(differencesIterable, allColumnsStatement, getMapping());
 	}
 	
 	// can't be named "update" due to naming conflict with the one with Iterable<Duo>
@@ -151,7 +151,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	
 	/**
 	 * Executes update of given payloads. This method expects that every payload wants to update same columns
-	 * as those given by {@link ClassMappingStrategy#getUpdatableColumns()} : this means all mapped columns.
+	 * as those given by {@link ClassMapping#getUpdatableColumns()} : this means all mapped columns.
 	 * If such a contract is not fullfilled, an exception may occur (because of missing data)
 	 * 
 	 * This method applies JDBC batch.
@@ -161,12 +161,12 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 */
 	public void updateMappedColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
 		// we ask the strategy to lookup for updatable columns (not taken directly on mapping strategy target table)
-		Set<Column<T, Object>> columnsToUpdate = getMappingStrategy().getUpdatableColumns();
+		Set<Column<T, Object>> columnsToUpdate = getMapping().getUpdatableColumns();
 		if (!columnsToUpdate.isEmpty()) {	// we don't execute code below with empty columns to avoid a NPE in buildUpdate(..) due to lack of any element
 			// we update only entities that have values to be modified
 			List<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 			if (!Iterables.isEmpty(toUpdate)) {
-				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMappingStrategy().getVersionedKeys());
+				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(columnsToUpdate, getMapping().getVersionedKeys());
 				ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(toUpdate.size(), getBatchSize());
 				WriteOperation<UpwhereColumn<T>> writeOperation = newWriteOperation(preparedUpdate, getConnectionProvider(), expectedBatchedRowCountsSupplier);
 				// Since all columns are updated we can benefit from JDBC batch
@@ -293,7 +293,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		@Override
 		public JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns) {
 			return updateOperationCache.computeIfAbsent(upwhereColumns, input -> {
-				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(UpwhereColumn.getUpdateColumns(input), getMappingStrategy().getVersionedKeys());
+				PreparedUpdate<T> preparedUpdate = getDmlGenerator().buildUpdate(UpwhereColumn.getUpdateColumns(input), getMapping().getVersionedKeys());
 				return new JDBCBatchingOperation<>(newWriteOperation(preparedUpdate, connectionProvider, expectedRowCount), getBatchSize());
 			});
 		}

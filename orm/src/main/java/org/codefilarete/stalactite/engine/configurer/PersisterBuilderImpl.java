@@ -44,6 +44,7 @@ import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsse
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
@@ -70,8 +71,7 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.SimpleIdMappingStrategy;
+import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -248,7 +248,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		// Creating main persister 
 		Mapping mainMapping = Iterables.first(inheritanceMappingPerTable.getMappings());
 		SimpleRelationalEntityPersister<C, I, Table> mainPersister = buildMainPersister(identification, mainMapping, dialect, connectionConfiguration);
-		PersisterBuilderContext.CURRENT.get().addEntity(mainPersister.getMappingStrategy().getClassToPersist());
+		PersisterBuilderContext.CURRENT.get().addEntity(mainPersister.getMapping().getClassToPersist());
 		
 		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, persisterRegistry, mainPersister,
 				columnNamingStrategy,
@@ -348,8 +348,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		VersioningStrategy versioningStrategy = this.entityMappingConfiguration.getOptimisticLockOption();
 		if (versioningStrategy != null) {
 			// we have to declare it to the mapping strategy. To do that we must find the versionning column
-			Column column = result.getMappingStrategy().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
-			((ClassMappingStrategy) result.getMappingStrategy()).addVersionedColumn(versioningStrategy.getVersionAccessor(), column);
+			Column column = result.getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
+			((ClassMapping) result.getMapping()).addVersionedColumn(versioningStrategy.getVersionAccessor(), column);
 			// and don't forget to give it to the workers !
 			result.getUpdateExecutor().setVersioningStrategy(versioningStrategy);
 			result.getInsertExecutor().setVersioningStrategy(versioningStrategy);
@@ -367,7 +367,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		mappings.forEach(mapping -> {
 			Column subclassPK = (Column) Iterables.first(mapping.targetTable.getPrimaryKey().getColumns());
 			mapping.mapping.put(identification.getIdAccessor(), subclassPK);
-			ClassMappingStrategy<C, I, Table> currentMappingStrategy = createClassMappingStrategy(
+			ClassMapping<C, I, Table> currentMappingStrategy = createClassMappingStrategy(
 					identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration(),
 					mapping.targetTable,
 					mapping.mapping,
@@ -380,8 +380,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getEntityMappingStrategyTreeSelectExecutor().addComplementaryJoin(EntityJoinTree.ROOT_STRATEGY_NAME, currentMappingStrategy,
-																								superclassPK, subclassPK);
+				mainPersister.getEntityMappingTreeSelectExecutor().addComplementaryJoin(EntityJoinTree.ROOT_STRATEGY_NAME, currentMappingStrategy,
+																						superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}
 		});
@@ -393,7 +393,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 																						  Dialect dialect,
 																						  ConnectionConfiguration connectionConfiguration) {
 		EntityMappingConfiguration mappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
-		ClassMappingStrategy<C, I, T> parentMappingStrategy = createClassMappingStrategy(
+		ClassMapping<C, I, T> parentMappingStrategy = createClassMappingStrategy(
 				identification.getIdentificationDefiner().getPropertiesMapping() == mappingConfiguration.getPropertiesMapping(),
 				mapping.targetTable,
 				mapping.mapping,
@@ -850,18 +850,18 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	/**
 	 * 
 	 * @param isIdentifyingConfiguration true for a root mapping (will use {@link Identification#insertionManager}), false for inheritance case (will use {@link Identification#identificationDefiner}) 
-	 * @param targetTable {@link Table} to use by created {@link ClassMappingStrategy}
-	 * @param mapping properties to be managed by created {@link ClassMappingStrategy}
+	 * @param targetTable {@link Table} to use by created {@link ClassMapping}
+	 * @param mapping properties to be managed by created {@link ClassMapping}
 	 * @param propertiesSetByConstructor properties set by contructor ;), to avoid re-setting them (and even look for a setter for them) 
 	 * @param identification {@link Identification} to use (see isIdentifyingConfiguration)
-	 * @param beanType entity type to be managed by created {@link ClassMappingStrategy}
+	 * @param beanType entity type to be managed by created {@link ClassMapping}
 	 * @param entityFactoryProvider optional, if null default bean type constructor will be used
 	 * @param <X> entity type
 	 * @param <I> identifier type
 	 * @param <T> {@link Table} type
-	 * @return a new {@link ClassMappingStrategy} built from all arguments
+	 * @return a new {@link ClassMapping} built from all arguments
 	 */
-	static <X, I, T extends Table> ClassMappingStrategy<X, I, T> createClassMappingStrategy(
+	static <X, I, T extends Table> ClassMapping<X, I, T> createClassMappingStrategy(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<? extends ReversibleAccessor, Column> mapping,
@@ -877,8 +877,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		IdentifierInsertionManager<X, I> identifierInsertionManager = (IdentifierInsertionManager<X, I>) (isIdentifyingConfiguration
 				? identification.insertionManager
 				: identification.fallbackInsertionManager);
-		SimpleIdMappingStrategy<X, I> simpleIdMappingStrategy = new SimpleIdMappingStrategy<>(idAccessor, identifierInsertionManager,
-				new SimpleIdentifierAssembler<>(primaryKey));
+		SimpleIdMapping<X, I> simpleIdMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,
+																			  new SimpleIdentifierAssembler<>(primaryKey));
 		
 		Function<Function<Column, Object>, X> beanFactory;
 		if (entityFactoryProvider == null) {
@@ -903,7 +903,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			beanFactory = entityFactoryProvider.giveEntityFactory(targetTable);
 		}
 		
-		ClassMappingStrategy<X, I, T> result = new ClassMappingStrategy<X, I, T>(beanType, targetTable, (Map) mapping, simpleIdMappingStrategy, beanFactory);
+		ClassMapping<X, I, T> result = new ClassMapping<X, I, T>(beanType, targetTable, (Map) mapping, simpleIdMappingStrategy, beanFactory);
 		propertiesSetByConstructor.forEach(result::addPropertySetByConstructor);
 		return result;
 	}
@@ -914,9 +914,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		private final IdentifierPolicy identifierPolicy;
 		private final EntityMappingConfiguration identificationDefiner;
 		
-		/** Insertion manager for {@link ClassMappingStrategy} that owns identifier policy */
+		/** Insertion manager for {@link ClassMapping} that owns identifier policy */
 		private IdentifierInsertionManager<Object, Object> insertionManager;
-		/** Insertion manager for {@link ClassMappingStrategy} that doesn't own identifier policy : they get an already-assigned one */
+		/** Insertion manager for {@link ClassMapping} that doesn't own identifier policy : they get an already-assigned one */
 		private AlreadyAssignedIdentifierManager<Object, Object> fallbackInsertionManager;
 		
 		

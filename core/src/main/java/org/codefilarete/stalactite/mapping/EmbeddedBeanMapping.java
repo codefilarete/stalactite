@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public interface EmbeddedBeanMappingStrategy<C, T extends Table> extends MappingStrategy<C, T> {
+public interface EmbeddedBeanMapping<C, T extends Table> extends Mapping<C, T> {
 	
 	/**
 	 * Gives the columns implied in the persistence. Used as a reference for CRUD operations.

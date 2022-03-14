@@ -3,12 +3,9 @@ package org.codefilarete.stalactite.mapping;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.AbstractTransformer;
-import org.codefilarete.stalactite.mapping.ColumnedMapMappingStrategy;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingMap;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -22,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Guillaume Mary
  */
-public class ColumnedMapMappingStrategyTest {
+public class ColumnedMapMappingTest {
 	
 	private static Table totoTable;
 	private static Column col1;
@@ -53,11 +50,11 @@ public class ColumnedMapMappingStrategyTest {
 		col5 = namedColumns.get("col_5");
 	}
 	
-	private ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, Table> testInstance;
+	private ColumnedMapMapping<Map<Integer, String>, Integer, String, Table> testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new ColumnedMapMappingStrategy<Map<Integer, String>, Integer, String, Table>(totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
+		testInstance = new ColumnedMapMapping<Map<Integer, String>, Integer, String, Table>(totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
 			@Override
 			protected Column getColumn(Integer key) {
 				if (key > 5) {

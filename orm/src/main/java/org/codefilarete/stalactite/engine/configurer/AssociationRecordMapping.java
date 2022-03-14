@@ -9,23 +9,23 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.ClassMappingStrategy;
-import org.codefilarete.stalactite.mapping.ComposedIdMappingStrategy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * @author Guillaume Mary
  */
-class AssociationRecordMappingStrategy extends ClassMappingStrategy<AssociationRecord, AssociationRecord, AssociationTable> {
+class AssociationRecordMapping extends ClassMapping<AssociationRecord, AssociationRecord, AssociationTable> {
 	
-	public AssociationRecordMappingStrategy(AssociationTable targetTable) {
+	public AssociationRecordMapping(AssociationTable targetTable) {
 		super(AssociationRecord.class, targetTable, (Map) Maps
 						.forHashMap(ReversibleAccessor.class, Column.class)
 						.add(AssociationRecord.LEFT_ACCESSOR, targetTable.getOneSideKeyColumn())
 						.add(AssociationRecord.RIGHT_ACCESSOR, targetTable.getManySideKeyColumn())
 				,
-				new ComposedIdMappingStrategy<AssociationRecord, AssociationRecord>(new IdAccessor<AssociationRecord, AssociationRecord>() {
+				new ComposedIdMapping<AssociationRecord, AssociationRecord>(new IdAccessor<AssociationRecord, AssociationRecord>() {
 					@Override
 					public AssociationRecord getId(AssociationRecord associationRecord) {
 						return associationRecord;
@@ -37,7 +37,7 @@ class AssociationRecordMappingStrategy extends ClassMappingStrategy<AssociationR
 						associationRecord.setRight(identifier.getRight());
 					}
 				}, new AlreadyAssignedIdentifierManager<>(AssociationRecord.class, AssociationRecord::markAsPersisted, AssociationRecord::isPersisted),
-						new ComposedIdentifierAssembler<AssociationRecord>(targetTable) {
+																			new ComposedIdentifierAssembler<AssociationRecord>(targetTable) {
 							@Override
 							protected AssociationRecord assemble(Map<Column, Object> primaryKeyElements) {
 								Object leftValue = primaryKeyElements.get(targetTable.getOneSideKeyColumn());

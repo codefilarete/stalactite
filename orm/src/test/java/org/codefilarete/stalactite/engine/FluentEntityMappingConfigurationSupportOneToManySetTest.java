@@ -107,7 +107,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
 		
 		ResultSetIterator<JdbcForeignKey> fkCityIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				((ConfiguredPersister) countryPersister).getMappingStrategy().getTargetTable().getName().toUpperCase())) {
+				((ConfiguredPersister) countryPersister).getMapping().getTargetTable().getName().toUpperCase())) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(

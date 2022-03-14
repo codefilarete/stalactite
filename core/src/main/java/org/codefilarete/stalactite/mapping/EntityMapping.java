@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  *
  * @author Guillaume Mary
  */
-public interface EntityMappingStrategy<C, I, T extends Table> extends MappingStrategy<C, T>, IdAccessor<C, I> {
+public interface EntityMapping<C, I, T extends Table> extends Mapping<C, T>, IdAccessor<C, I> {
 	
 	T getTargetTable();
 	
@@ -26,7 +26,7 @@ public interface EntityMappingStrategy<C, I, T extends Table> extends MappingStr
 	 */
 	boolean isNew(C c);
 	
-	IdMappingStrategy<C, I> getIdMappingStrategy();
+	IdMapping<C, I> getIdMapping();
 	
 	Set<Column<T, Object>> getInsertableColumns();
 	
@@ -38,5 +38,5 @@ public interface EntityMappingStrategy<C, I, T extends Table> extends MappingStr
 	
 	Map<Column<T, Object>, Object> getVersionedKeyValues(C c);
 	
-	Map<ReversibleAccessor<C, Object>, EmbeddedBeanMappingStrategy<Object, T>> getEmbeddedBeanStrategies();
+	Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies();
 }

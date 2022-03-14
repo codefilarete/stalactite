@@ -5,11 +5,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;

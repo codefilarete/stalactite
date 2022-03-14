@@ -6,9 +6,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.ZonedDateTimeMappingStrategy;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.mapping.MappingStrategy.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -21,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Guillaume Mary
  */
-class ZonedDateTimeMappingStrategyTest {
+class ZonedDateTimeMappingTest {
 	
 	private static Table targetTable;
 	private static Column<Table, LocalDateTime> colA;
@@ -34,11 +33,11 @@ class ZonedDateTimeMappingStrategyTest {
 		colB = targetTable.addColumn("b", ZoneId.class);
 	}
 	
-	private ZonedDateTimeMappingStrategy testInstance;
+	private ZonedDateTimeMapping testInstance;
 	
 	@BeforeEach
 	public void setUp() {
-		testInstance = new ZonedDateTimeMappingStrategy<>(colA, colB);
+		testInstance = new ZonedDateTimeMapping<>(colA, colB);
 	}
 	
 	@Test
