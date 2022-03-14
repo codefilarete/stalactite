@@ -573,8 +573,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param tables target tables on which primary keys must be added
 	 * @param primaryKey
 	 */
-	@VisibleForTesting
-	static void propagatePrimarykey(PrimaryKey primaryKey, Set<Table> tables) {
+	public static void propagatePrimarykey(PrimaryKey primaryKey, Set<Table> tables) {
 		Column pkColumn = (Column) Iterables.first(primaryKey.getColumns());
 		Holder<Column> previousPk = new Holder<>(pkColumn);
 		tables.forEach(t -> {

@@ -33,7 +33,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final SingleTablePolymorphism<C, D> polymorphismPolicy;
 	private final Map<ReversibleAccessor, Column> mainMapping;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, D> polymorphismPolicy,
@@ -51,7 +50,6 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 	) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
 				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
-		this.polymorphismPolicy = polymorphismPolicy;
 		this.mainMapping = mainMapping;
 	}
 	
@@ -71,7 +69,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 			
 			Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), mainTable,
 					this.columnBinderRegistry, this.columnNameProvider);
-			// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dipatched to them
+			// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dispatched to them
 			// by a proxy and main persister is not so much used
 			subEntityPropertiesMapping.putAll(mainMapping);
 			ClassMapping<? extends C, I, T> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
@@ -96,7 +94,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 		// available by PersistenceContext.getPersister(..)) and it is one sure that they are perfect ones (all their features should be tested)
 		SingleTablePolymorphismPersister<C, I, ?, ?> surrogate = new SingleTablePolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
-				discriminatorColumn, polymorphismPolicy);
+				discriminatorColumn, (SingleTablePolymorphism<C, D>) polymorphismPolicy);
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		
@@ -116,8 +114,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, D> extends AbstractP
 	
 	private Column<T, D> ensureDiscriminatorColumn() {
 		Column<T, D> result = mainPersister.getMapping().getTargetTable().addColumn(
-				polymorphismPolicy.getDiscriminatorColumn(),
-				polymorphismPolicy.getDiscrimintorType());
+				((SingleTablePolymorphism<C, D>) polymorphismPolicy).getDiscriminatorColumn(),
+				((SingleTablePolymorphism<C, D>) polymorphismPolicy).getDiscrimintorType());
 		result.setNullable(false);
 		return result;
 	}

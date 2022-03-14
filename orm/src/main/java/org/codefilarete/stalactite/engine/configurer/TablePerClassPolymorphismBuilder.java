@@ -37,7 +37,6 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final TablePerClassPolymorphism<C> polymorphismPolicy;
 	private final Map<ReversibleAccessor, Column> mainMapping;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
@@ -55,7 +54,6 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 									 AssociationTableNamingStrategy associationTableNamingStrategy) {
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
 				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
-		this.polymorphismPolicy = polymorphismPolicy;
 		this.mainMapping = mainMapping;
 	}
 	
@@ -69,7 +67,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 			// then the one defined by inheritance
 			// if both are null we'll create a new one
 			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
-			Table tableDefinedByInheritanceConfiguration = polymorphismPolicy.giveTable(subConfiguration);
+			Table tableDefinedByInheritanceConfiguration = ((TablePerClassPolymorphism<C>) polymorphismPolicy).giveTable(subConfiguration);
 			
 			assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
 			

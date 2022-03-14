@@ -18,18 +18,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.exception.NotImplementedException;
-import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
@@ -39,13 +27,24 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointComparator;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
+import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Hanger.Holder;
 
+import static org.codefilarete.reflection.MethodReferences.toMethodReferenceString;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.stream;
-import static org.codefilarete.reflection.MethodReferences.toMethodReferenceString;
 
 /**
  * Engine that converts mapping definition of a {@link EmbeddableMappingConfiguration} to a simple {@link Map}.
@@ -64,13 +63,12 @@ class BeanMappingBuilder {
 	
 	/**
 	 * Iterates over configuration to look for any property defining a {@link Column} to use, its table would be the one to be used by builder.
-	 * Throws an exception if several different tables are found during iteration.
+	 * Throws an exception if several tables are found during iteration.
 	 * 
-	 * @param mappingConfiguration the configuration to look up for any oerriding {@link Column}
+	 * @param mappingConfiguration the configuration to look up for any overriding {@link Column}
 	 * @return null if no {@link Table} was found (meaning that builder is free to create one)
 	 */
-	@VisibleForTesting
-	static Table giveTargetTable(EmbeddableMappingConfiguration<?> mappingConfiguration) {
+	public static Table giveTargetTable(EmbeddableMappingConfiguration<?> mappingConfiguration) {
 		Holder<Table> result = new Holder<>();
 		
 		// algorithm close to the one of includeEmbeddedMapping(..)
