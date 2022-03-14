@@ -23,9 +23,9 @@ import org.codefilarete.tool.collection.Maps;
 /**
  * @author Guillaume Mary
  */
-class DMLExecutorTest {
+abstract class DMLExecutorTest {
 	
-	protected PersistenceConfiguration<Toto, Integer, Table> giveDefaultPersistenceConfiguration() {
+	protected static PersistenceConfiguration<Toto, Integer, Table> giveDefaultPersistenceConfiguration() {
 		PersistenceConfiguration<Toto, Integer, Table> toReturn = new PersistenceConfiguration<>();
 
 		Table targetTable = new Table("Toto");
@@ -50,7 +50,7 @@ class DMLExecutorTest {
 	/**
 	 * Gives a persistence configuration of {@link Toto} class which id is composed of {@code Toto.a} and {@code Toto.b} fields
 	 */
-	protected PersistenceConfiguration<Toto, Toto, Table> giveIdAsItselfPersistenceConfiguration() {
+	protected static PersistenceConfiguration<Toto, Toto, Table> giveIdAsItselfPersistenceConfiguration() {
 		Table targetTable = new Table("Toto");
 		Column colA = targetTable.addColumn("a", Integer.class).primaryKey();
 		Column colB = targetTable.addColumn("b", Integer.class).primaryKey();
@@ -103,7 +103,7 @@ class DMLExecutorTest {
 	/**
 	 * Gives a persistence configuration of {@link Tata} class which id is {@link ComposedId}
 	 */
-	protected PersistenceConfiguration<Tata, ComposedId, Table> giveComposedIdPersistenceConfiguration() {
+	protected static PersistenceConfiguration<Tata, ComposedId, Table> giveComposedIdPersistenceConfiguration() {
 		Table targetTable = new Table("Tata");
 		Column colA = targetTable.addColumn("a", Integer.class).primaryKey();
 		Column colB = targetTable.addColumn("b", Integer.class).primaryKey();

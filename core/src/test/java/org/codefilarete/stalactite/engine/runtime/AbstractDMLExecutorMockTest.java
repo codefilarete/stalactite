@@ -30,7 +30,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-public class AbstractDMLExecutorMockTest extends DMLExecutorTest {
+public abstract class AbstractDMLExecutorMockTest extends DMLExecutorTest {
 	
 	protected JdbcMock jdbcMock;
 	protected WriteOperationFactory noRowCountCheckWriteOperationFactory;

@@ -447,7 +447,6 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	 */
 	private static class CascadeManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> extends ConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C> {
 		
-		private final ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration;
 		private final boolean allowOrphanRemoval;
 		
 		private OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C> mappedAssociationEngine;
@@ -455,7 +454,6 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		private CascadeManyWithMappedAssociationConfigurer(ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C> manyAssociationConfiguration,
 														   boolean allowOrphanRemoval) {
 			super(manyAssociationConfiguration);
-			this.manyAssociationConfiguration = manyAssociationConfiguration;
 			this.allowOrphanRemoval = allowOrphanRemoval;
 		}
 		

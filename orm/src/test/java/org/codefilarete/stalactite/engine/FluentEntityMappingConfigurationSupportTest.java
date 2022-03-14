@@ -1905,12 +1905,10 @@ class FluentEntityMappingConfigurationSupportTest {
 	 * Test to check that the API returns right Object which means:
 	 * - interfaces are well written to return right types, so one can chain others methods
 	 * - at runtime instance of the right type is also returned
-	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.engine
-	 * .FluentEmbeddableMappingBuilder")
+	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder")
 	 * <p>
 	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
-	 * considered
-	 * as a best effort, and any regression found in user code should be added here
+	 * considered as best effort, and any regression found in user code should be added here
 	 */
 	@Test
 	void apiUsage() {
@@ -1953,7 +1951,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			MappingEase.entityBuilder(Country.class, long.class)
 					.map(Country::getName)
 					.map(Country::getId, "zz")
-					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
+					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					// embed with setter
 					.embed(Country::setPresident, MappingEase.embeddableBuilder(Person.class)
 							.map(Person::getName))

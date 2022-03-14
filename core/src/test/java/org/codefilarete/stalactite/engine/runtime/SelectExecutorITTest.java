@@ -32,11 +32,9 @@ abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 													.with(Integer.class, "int"));
 	
-	private final DMLExecutorTest dmlExecutorTest = new DMLExecutorTest();
-	
 	@Test
 	void select() throws SQLException {
-		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = dmlExecutorTest.giveDefaultPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = DMLExecutorTest.giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		Connection connection = connectionProvider.giveConnection();
@@ -69,7 +67,7 @@ abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
 	
 	@Test
 	void select_composedId_idIsItSelf() throws SQLException {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = dmlExecutorTest.giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = DMLExecutorTest.giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		Connection connection = connectionProvider.giveConnection();
@@ -94,7 +92,7 @@ abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
 	
 	@Test
 	void select_composedId_idIsABean() throws SQLException {
-		PersistenceConfiguration<Tata, ComposedId, Table> persistenceConfiguration = dmlExecutorTest.giveComposedIdPersistenceConfiguration();
+		PersistenceConfiguration<Tata, ComposedId, Table> persistenceConfiguration = DMLExecutorTest.giveComposedIdPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		Connection connection = connectionProvider.giveConnection();
