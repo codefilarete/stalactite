@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIndentifierPolicy;
+import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.NotYetSupportedOperationException;
@@ -491,7 +491,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					
 					/**
 					 * Implemented to update target owning column after insert. Made AFTER insert to benefit from id when set by database with
-					 * IdentifierPolicy is {@link AfterInsertIndentifierPolicy}
+					 * IdentifierPolicy is {@link AfterInsertIdentifierPolicy}
 					 */
 					@Override
 					public void afterInsert(Iterable<? extends SRC> entities) {
@@ -618,7 +618,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			sourcePersister.addInsertListener(new InsertListener<SRC>() {
 				/**
 				 * Implemented to persist target instance after insert. Made AFTER insert to benefit from id when set by database with
-				 * IdentifierPolicy is {@link AfterInsertIndentifierPolicy}
+				 * IdentifierPolicy is {@link AfterInsertIdentifierPolicy}
 				 */
 				@Override
 				public void afterInsert(Iterable<? extends SRC> entities) {

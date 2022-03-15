@@ -21,7 +21,6 @@ import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
@@ -34,19 +33,20 @@ import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
@@ -54,6 +54,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.function.Serie.IntegerSerie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -129,7 +130,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void collectEmbeddedMappingFromInheritance_fromMappedSuperClasses() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(Car::getModel)
 						.mapSuperClass(embeddableBuilder(AbstractVehicle.class)
@@ -175,9 +176,9 @@ public class PersisterBuilderImplTest {
 	@Test
 	void collectEmbeddedMappingFromInheritance_fromInheritedClasses() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.map(Car::getModel)
-						.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
+						.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 								.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 								.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 										.map(Timestamp::getCreationDate)
@@ -226,12 +227,12 @@ public class PersisterBuilderImplTest {
 		Table vehicleTable = new Table("Vehicle");
 		Table abstractVehicleTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.map(Car::getModel)
-						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
+						.mapInheritance(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
 								.embed(Vehicle::getColor, embeddableBuilder(Color.class)
 										.map(Color::getRgb))
-								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
+								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 												.map(Timestamp::getCreationDate)
@@ -311,7 +312,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void collectEmbeddedMappingFromInheritance_withoutHierarchy() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(Car::getModel)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
@@ -353,7 +354,7 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void addIdentifyingPrimarykey_alreadyAssignedPolicy() {
-		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
+		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.alreadyAssigned(o -> {}, o -> true))
 				.getConfiguration();
 		
@@ -377,8 +378,16 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void addIdentifyingPrimarykey_beforeInsertPolicy() {
-		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
-				.mapKey(AbstractVehicle::getId, IdentifierPolicy.beforeInsert(new InMemoryCounterIdentifierGenerator()))
+		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
+				.mapKey(AbstractVehicle::getId, IdentifierPolicy.beforeInsert(new Sequence<Identifier<Long>>() {
+					
+					private long identifier = 0;
+					
+					@Override
+					public Identifier<Long> next() {
+						return new PersistableIdentifier<>(identifier++);
+					}
+				}))
 				.getConfiguration();
 		
 		Table mainTable = new Table("AbstractVehicle");
@@ -401,7 +410,7 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void addIdentifyingPrimarykey_afterInsertPolicy() {
-		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
+		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.afterInsert())
 				.getConfiguration();
 		
@@ -425,7 +434,7 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void propagatePrimarykey() {
-		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
+		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.afterInsert())
 				.getConfiguration();
 		
@@ -466,7 +475,7 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void applyForeignKeys() {
-		EntityMappingConfiguration<AbstractVehicle, Identifier> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.class)
+		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.afterInsert())
 				.getConfiguration();
 		
@@ -503,7 +512,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_returnsAlreadyExisintgPersister() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.map(Car::getModel)
 						.map(Vehicle::getColor)
 						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -520,7 +529,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_singleTable_singleClass() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.map(Car::getModel)
 						.map(Vehicle::getColor)
 						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -549,11 +558,11 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_singleTable_withInheritance() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.map(Car::getModel)
-						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
+						.mapInheritance(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
 								.map(Vehicle::getColor)
-								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
+								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 												.map(Timestamp::getCreationDate)
@@ -582,11 +591,11 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_joinedTables() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 						.map(Car::getModel)
-						.mapInheritance(entityBuilder(Vehicle.class, Identifier.class)
+						.mapInheritance(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
 								.map(Vehicle::getColor)
-								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.class)
+								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 												.map(Timestamp::getCreationDate)
@@ -644,7 +653,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_createsAnInstanceThatDoesntRequiresTwoSelectsOnItsUpdateMethod() throws SQLException {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.class)
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
 				.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Car::getModel));
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
@@ -687,7 +696,7 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_resultAssertsThatPersisterManageGivenEntities() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(AbstractVehicle.class, Identifier.class)
+				entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
@@ -718,13 +727,13 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_withPolymorphismJoinedTables_resultAssertsThatPersisterManageGivenEntities() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(AbstractVehicle.class, Identifier.class)
+				entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
 								.map(Timestamp::getModificationDate))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
-							.addSubClass(subentityBuilder(Vehicle.class, Identifier.class)))
+							.addSubClass(subentityBuilder(Vehicle.class, Identifier.LONG_TYPE)))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
@@ -751,13 +760,13 @@ public class PersisterBuilderImplTest {
 	@Test
 	void build_withPolymorphismSingleTable_resultAssertsThatPersisterManageGivenEntities() {
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(AbstractVehicle.class, Identifier.class)
+				entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
 								.map(Timestamp::getCreationDate)
 								.map(Timestamp::getModificationDate))
 						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
-								.addSubClass(subentityBuilder(Vehicle.class, Identifier.class), "Vehicle"))
+								.addSubClass(subentityBuilder(Vehicle.class, Identifier.LONG_TYPE), "Vehicle"))
 		);
 		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));

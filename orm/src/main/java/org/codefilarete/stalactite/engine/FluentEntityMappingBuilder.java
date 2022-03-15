@@ -35,7 +35,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
@@ -46,7 +46,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy, Column<T, I> column);
+	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
@@ -57,7 +57,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy, String columnName);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}.
@@ -67,7 +67,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
@@ -77,7 +77,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy, Column<T, I> column);
+	<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column);
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
@@ -87,7 +87,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
 	 * @return an object for configuration chaining
 	 */
-	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy, String columnName);
+	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName);
 	
 	/**
 	 * Interface for {@link #mapKey(SerializableFunction, IdentifierPolicy)} family methods return. Aimed at chaining to configure entity key mapping. 

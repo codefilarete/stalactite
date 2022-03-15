@@ -27,15 +27,15 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 * Available identifier policies for entities.
 	 * @see IdentifierInsertionManager
 	 */
-	interface IdentifierPolicy {
+	interface IdentifierPolicy<ID> {
 		/**
 		 * Policy for entities that have their id given by database after insert, such as increment column.
 		 * This implies that generated values can be read through {@link PreparedStatement#getGeneratedKeys()}
 		 * 
 		 * @return a new policy that will be used to get the identifier value
 		 */
-		static <I> AfterInsertIndentifierPolicy<I> afterInsert() {
-			return new AfterInsertIndentifierPolicySupport<>();
+		static <I> AfterInsertIdentifierPolicy<I> afterInsert() {
+			return new AfterInsertIdentifierPolicySupport<>();
 		}
 		
 		/**
@@ -61,7 +61,8 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		 * @param <I> identifier type
 		 * @return a new policy taht will be used to know persistent state of entities
 		 */
-		static <C, I> AlreadyAssignedIdentifierPolicy<C, I> alreadyAssigned(Consumer<C> markAsPersistedFunction, Function<C, Boolean> isPersistedFunction) {
+		static <C, I> AlreadyAssignedIdentifierPolicy<C, I> alreadyAssigned(Consumer<C> markAsPersistedFunction,
+																		  Function<C, Boolean> isPersistedFunction) {
 			return new AlreadyAssignedIdentifierPolicySupport<>(markAsPersistedFunction, isPersistedFunction);
 		}
 	}
@@ -70,11 +71,11 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 * Contract for after-insert identifier generation policy. Since nothing needs to be configured for it, not method is added.
 	 * @param <I> identifier type
 	 */
-	interface AfterInsertIndentifierPolicy<I> extends IdentifierPolicy {
+	interface AfterInsertIdentifierPolicy<I> extends IdentifierPolicy<I> {
 		
 	}
 	
-	class AfterInsertIndentifierPolicySupport<I> implements AfterInsertIndentifierPolicy<I> {
+	class AfterInsertIdentifierPolicySupport<I> implements AfterInsertIdentifierPolicy<I> {
 		
 	}
 	
@@ -82,7 +83,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 * Contract for before-insert identifier generation policy. Requires the {@link Sequence} that generates the id, and that will be invoked before insertion.
 	 * @param <I> identifier type
 	 */
-	interface BeforeInsertIdentifierPolicy<I> extends IdentifierPolicy {
+	interface BeforeInsertIdentifierPolicy<I> extends IdentifierPolicy<I> {
 		
 		Sequence<I> getIdentifierProvider();
 	}
@@ -105,7 +106,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 * Contract for already-assigned identifier policy. Requires the methods that store entities persistence state.
 	 * @param <I> identifier type
 	 */
-	interface AlreadyAssignedIdentifierPolicy<C, I> extends IdentifierPolicy {
+	interface AlreadyAssignedIdentifierPolicy<C, I> extends IdentifierPolicy<I> {
 		
 		Consumer<C> getMarkAsPersistedFunction();
 		

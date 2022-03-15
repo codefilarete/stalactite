@@ -1,12 +1,10 @@
 package org.codefilarete.stalactite.query;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
@@ -19,63 +17,26 @@ import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersiste
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.exception.Exceptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.query.model.Operators.eq;
 import static org.codefilarete.tool.function.Functions.chain;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
  */
 class EntityGraphSelectExecutorTest {
-	
-	private Dialect dialect;
-	private ConnectionProvider connectionProviderMock;
-	private ArgumentCaptor<String> sqlCaptor;
-	private Connection connectionMock;
-	
-	@BeforeEach
-	void initTest() {
-		dialect = new Dialect();
-		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
-		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
-	}
-	
-	private void createConnectionProvider(List<Map<String, Object>> data) {
-		// creation of a Connection that will give our test case data
-		connectionProviderMock = mock(ConnectionProvider.class);
-		connectionMock = mock(Connection.class);
-		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
-		try {
-			PreparedStatement statementMock = mock(PreparedStatement.class);
-			sqlCaptor = ArgumentCaptor.forClass(String.class);
-			when(connectionMock.prepareStatement(any())).thenReturn(statementMock);
-			when(statementMock.executeQuery()).thenReturn(new InMemoryResultSet(data));
-		} catch (SQLException e) {
-			// impossible since there's no real database connection
-			throw Exceptions.asRuntimeException(e);
-		}
-	}
 	
 	@Test
 	void loadGraph() throws SQLException {
@@ -88,10 +49,10 @@ class EntityGraphSelectExecutorTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		OptimizedUpdatePersister<Country, Identifier> persister = (OptimizedUpdatePersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
+		OptimizedUpdatePersister<Country, Identifier<Long>> persister = (OptimizedUpdatePersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
 			.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 			.map(Country::getName)
-			.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
+			.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName))
 					.mappedBy(City::getCountry)
@@ -107,7 +68,7 @@ class EntityGraphSelectExecutorTest {
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(44, 'Grenoble', 12)").execute();
 		
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
-		EntityGraphSelectExecutor<Country, Identifier, Table> testInstance = new EntityGraphSelectExecutor<>(persister.getEntityJoinTree(), connectionProvider, columnBinderRegistry);
+		EntityGraphSelectExecutor<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelectExecutor<>(persister.getEntityJoinTree(), connectionProvider, columnBinderRegistry);
 		
 		// Criteria tied to data formerly persisted
 		EntityCriteria<Country> countryEntityCriteriaSupport =
@@ -149,10 +110,10 @@ class EntityGraphSelectExecutorTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		EntityConfiguredJoinedTablesPersister<Country, Identifier> persister = (EntityConfiguredJoinedTablesPersister<Country, Identifier>) entityBuilder(Country.class, Identifier.class)
+		EntityConfiguredJoinedTablesPersister<Country, Identifier<Long>> persister = (EntityConfiguredJoinedTablesPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
-				.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.class)
+				.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
 						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName))
 				.mappedBy(City::getCountry)

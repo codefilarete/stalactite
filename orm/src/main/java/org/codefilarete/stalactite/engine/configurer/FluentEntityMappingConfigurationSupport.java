@@ -74,7 +74,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private final Class<C> persistedClass;
 	
-	private IdentifierPolicy identifierPolicy;
+	private IdentifierPolicy<I> identifierPolicy;
 	
 	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
 	
@@ -221,39 +221,39 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy) {
+	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
 		LinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
-	public <T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy,
+	public <T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy,
 																			   Column<T, I> column) {
 		LinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy identifierPolicy,
+	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy,
 																			   String columnName) {
 		LinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy) {
+	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
 		LinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
-	public <T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy, Column<T, I> column) {
+	public <T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column) {
 		LinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
-	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy identifierPolicy, String columnName) {
+	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
 		LinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
