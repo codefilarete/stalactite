@@ -30,7 +30,7 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, D> implements EntitySelectExecutor<C> {
+public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, DTYPE> implements EntitySelectExecutor<C> {
 	
 	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	private static final String PRIMARY_KEY_ALIAS = "PK";
@@ -42,13 +42,13 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
-												Column<T, D> discriminatorColumn,
+	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass,
+												Column<T, DTYPE> discriminatorColumn,
 												SingleTablePolymorphism polymorphismPolicy,
 												EntityJoinTree<C, I> mainEntityJoinTree,
 												ConnectionProvider connectionProvider,
 												Dialect dialect) {
-		this.persisterPerSubclass = persisterPerSubclass;
+		this.persisterPerSubclass = (Map) persisterPerSubclass;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.entityJoinTree = mainEntityJoinTree;
@@ -66,7 +66,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		query.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
-		List<Duo<I, D>> ids = readIds(sqlQueryBuilder, pk);
+		List<Duo<I, DTYPE>> ids = readIds(sqlQueryBuilder, pk);
 		
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		ids.forEach(id -> idsPerSubclass.computeIfAbsent(polymorphismPolicy.getClass(id.getRight()), k -> new HashSet<>()).add(id.getLeft()));
@@ -77,14 +77,14 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 		return result;
 	}
 	
-	private List<Duo<I, D>> readIds(SQLQueryBuilder sqlQueryBuilder, Column<T, I> pk) {
+	private List<Duo<I, DTYPE>> readIds(SQLQueryBuilder sqlQueryBuilder, Column<T, I> pk) {
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet,
 					Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk))
 							.add(DISCRIMINATOR_ALIAS, dialect.getColumnBinderRegistry().getBinder(discriminatorColumn)));
-			return Iterables.collectToList(() -> rowIterator, row -> new Duo<>((I) row.get(PRIMARY_KEY_ALIAS), (D) row.get(DISCRIMINATOR_ALIAS)));
+			return Iterables.collectToList(() -> rowIterator, row -> new Duo<>((I) row.get(PRIMARY_KEY_ALIAS), (DTYPE) row.get(DISCRIMINATOR_ALIAS)));
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}

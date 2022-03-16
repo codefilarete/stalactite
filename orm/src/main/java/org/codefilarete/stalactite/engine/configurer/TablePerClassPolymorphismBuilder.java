@@ -3,32 +3,32 @@ package org.codefilarete.stalactite.engine.configurer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.TablePerClassPolymorphismPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.exception.NotImplementedException;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.exception.NotImplementedException;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -40,7 +40,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 	private final Map<ReversibleAccessor, Column> mainMapping;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
-									 Identification identification,
+									 Identification<C, I> identification,
 									 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 									 Map<ReversibleAccessor, Column> mainMapping,
 									 ColumnBinderRegistry columnBinderRegistry,
@@ -63,47 +63,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		for (SubEntityMappingConfiguration<? extends C> subConfiguration : polymorphismPolicy.getSubClasses()) {
-			// first we'll use table of columns defined in embedded override
-			// then the one defined by inheritance
-			// if both are null we'll create a new one
-			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
-			Table tableDefinedByInheritanceConfiguration = ((TablePerClassPolymorphism<C>) polymorphismPolicy).giveTable(subConfiguration);
-			
-			assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
-			
-			Table subTable = nullable(tableDefinedByColumnOverride)
-					.elseSet(tableDefinedByInheritanceConfiguration)
-					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
-			
-			Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
-					this.columnBinderRegistry, this.columnNameProvider);
-			// in table-per-class polymorphism, main properties must be transfered to sub-entities ones, because CRUD operations are dipatched to them
-			// by a proxy and main persister is not so much used
-			Map<ReversibleAccessor, Column> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
-			subEntityPropertiesMapping.putAll(projectedMainMapping);
-			addPrimarykey(subTable);
-			Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
-			addIdentificationToMapping(identification, subEntityMapping);
-			ClassMapping<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
-					false,
-					subTable,
-					subEntityMapping.getMapping(),
-					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in table-per-class polymorphism 
-					identification,
-					subConfiguration.getPropertiesMapping().getBeanType(),
-					null);
-			
-			// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it
-			((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForInsert().forEach(columnValueProvider -> {
-				Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
-				classMappingStrategy.addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
-			});
-			((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnValueProvider -> {
-				Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
-				classMappingStrategy.addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
-			});
-			
-			SimpleRelationalEntityPersister subclassPersister = new SimpleRelationalEntityPersister(classMappingStrategy, dialect, connectionConfiguration);
+			SimpleRelationalEntityPersister subclassPersister = buildSubclassPersister(dialect, connectionConfiguration,
+																								   beanMappingBuilder, subConfiguration);
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		
@@ -115,12 +76,59 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect);
 	}
 	
+	private <D> SimpleRelationalEntityPersister<D, I, Table> buildSubclassPersister(Dialect dialect,
+																			ConnectionConfiguration connectionConfiguration,
+																			BeanMappingBuilder beanMappingBuilder,
+																			SubEntityMappingConfiguration<D> subConfiguration) {
+		// first we'll use table of columns defined in embedded override
+		// then the one defined by inheritance
+		// if both are null we'll create a new one
+		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
+		Table tableDefinedByInheritanceConfiguration = ((TablePerClassPolymorphism<D>) polymorphismPolicy).giveTable(subConfiguration);
+		
+		assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+		
+		Table subTable = nullable(tableDefinedByColumnOverride)
+				.elseSet(tableDefinedByInheritanceConfiguration)
+				.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
+		
+		Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
+																							  this.columnBinderRegistry, this.columnNameProvider);
+		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them
+		// by a proxy and main persister is not so much used
+		Map<ReversibleAccessor, Column> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
+		subEntityPropertiesMapping.putAll(projectedMainMapping);
+		addPrimarykey(subTable);
+		Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
+		addIdentificationToMapping(identification, subEntityMapping);
+		ClassMapping<D, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+			false,
+			subTable,
+			subEntityMapping.getMapping(),
+			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in table-per-class polymorphism 
+			(Identification<D, I>) identification,
+			subConfiguration.getPropertiesMapping().getBeanType(),
+			null);
+		
+		// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it
+		((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForInsert().forEach(columnValueProvider -> {
+			Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
+			classMappingStrategy.addShadowColumnInsert(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
+		});
+		((ClassMapping<C, I, T>) mainPersister.getMapping()).getShadowColumnsForUpdate().forEach(columnValueProvider -> {
+			Column projectedColumn = subTable.addColumn(columnValueProvider.getColumn().getName(), columnValueProvider.getColumn().getJavaType());
+			classMappingStrategy.addShadowColumnUpdate(new ShadowColumnValueProvider<>(projectedColumn, columnValueProvider.getValueProvider()));
+		});
+		
+		return new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
+	}
+	
 	
 	private void addPrimarykey(Table table) {
 		PersisterBuilderImpl.propagatePrimarykey(this.mainPersister.getMapping().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
 	}
 	
-	private void addIdentificationToMapping(Identification identification, Mapping mapping) {
+	private void addIdentificationToMapping(Identification<C, I> identification, Mapping mapping) {
 		PersisterBuilderImpl.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 	}
 	

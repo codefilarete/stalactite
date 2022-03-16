@@ -28,7 +28,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	TableNamingStrategy getTableNamingStrategy();
 	
-	IdentifierPolicy getIdentifierPolicy();
+	IdentifierPolicy<I> getIdentifierPolicy();
 	
 	ReversibleAccessor<C, I> getIdentifierAccessor();
 	

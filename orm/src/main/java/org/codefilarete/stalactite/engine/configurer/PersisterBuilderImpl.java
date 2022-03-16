@@ -229,7 +229,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		mapEntityConfigurationPerTable();
 		
-		Identification identification = determineIdentification();
+		Identification<C, I> identification = determineIdentification();
 		
 		// collecting mapping from inheritance
 		MappingPerTable inheritanceMappingPerTable = collectPropertiesMappingFromInheritance();
@@ -357,7 +357,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	private <T extends Table> KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> buildParentPersisters(Iterable<Mapping> mappings,
-																											   Identification identification,
+																											   Identification<C, I> identification,
 																											   SimpleRelationalEntityPersister<C, I, T> mainPersister,
 																											   Dialect dialect,
 																											   ConnectionConfiguration connectionConfiguration) {
@@ -388,7 +388,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		return parentPersisters;
 	}
 	
-	private <T extends Table> SimpleRelationalEntityPersister<C, I, T> buildMainPersister(Identification identification,
+	private <T extends Table> SimpleRelationalEntityPersister<C, I, T> buildMainPersister(Identification<C, I> identification,
 																						  Mapping mapping,
 																						  Dialect dialect,
 																						  ConnectionConfiguration connectionConfiguration) {
@@ -562,7 +562,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		this.elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
 	}
 	
-	static void addIdentificationToMapping(Identification identification, Iterable<Mapping> mappings) {
+	static <C, I> void addIdentificationToMapping(Identification<C, I> identification, Iterable<Mapping> mappings) {
 		mappings.forEach(mapping -> mapping.addIdentifier(identification.getIdAccessor()));
 	}
 	
@@ -602,7 +602,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return the created {@link PrimaryKey}
 	 */
 	@VisibleForTesting
-	PrimaryKey addIdentifyingPrimarykey(Identification identification, MappingPerTable inheritanceMappingPerTable) {
+	PrimaryKey addIdentifyingPrimarykey(Identification<C, I> identification, MappingPerTable inheritanceMappingPerTable) {
 		Table pkTable = this.tableMap.get(identification.identificationDefiner);
 		Column identifierColumn = inheritanceMappingPerTable.giveMapping(pkTable).get(identification.getIdAccessor());
 		Column primaryKey = nullable(identifierColumn)
@@ -745,7 +745,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return a couple that defines identification of the mapping
 	 * @throws UnsupportedOperationException when identifiation was not found, because it doesn't make sense to have an entity without identification
 	 */
-	private Identification determineIdentification() {
+	private Identification<C, I> determineIdentification() {
 		if (entityMappingConfiguration.getInheritanceConfiguration() != null && entityMappingConfiguration.getPropertiesMapping().getMappedSuperClassConfiguration() != null) {
 			throw new MappingConfigurationException("Combination of mapped super class and inheritance is not supported, please remove one of them");
 		}
@@ -758,7 +758,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		// if mappedSuperClass is used, then identifier is expected to be declared on the configuration
 		// because mappedSuperClass can't define it (it is an EmbeddableMappingConfiguration)
-		final Holder<EntityMappingConfiguration<? super C, I>> configurationDefiningIdentification = new Holder<>();
+		final Holder<EntityMappingConfiguration<C, I>> configurationDefiningIdentification = new Holder<>();
 		// hierarchy must be scanned to find the very first configuration that defines identification
 		visitInheritedEntityMappingConfigurations(entityConfiguration -> {
 			if (entityConfiguration.getIdentifierPolicy() != null) {
@@ -771,11 +771,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				}
 			}
 		});
-		EntityMappingConfiguration<? super C, I> foundConfiguration = configurationDefiningIdentification.get();
+		EntityMappingConfiguration<C, I> foundConfiguration = configurationDefiningIdentification.get();
 		if (foundConfiguration == null) {
 			throw newMissingIdentificationException();
 		}
-		return new Identification(foundConfiguration);
+		return new Identification<>(foundConfiguration);
 	}
 	
 	/**
@@ -789,13 +789,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param generatedKeysReaderBuilder reader for {@link AfterInsertIdentifierPolicy}
 	 * @param <X> entity type that defines identifier manager, used as internal, may be C or one of its ancestor
 	 */
-	private <X> void determineIdentifierManager(
-			Identification identification,
-			MappingPerTable mappingPerTable,
-			ReversibleAccessor idAccessor,
-			GeneratedKeysReaderBuilder generatedKeysReaderBuilder) {
+	private <X> void determineIdentifierManager(Identification<X, I> identification,
+												MappingPerTable mappingPerTable,
+												ReversibleAccessor<X, I> idAccessor,
+												GeneratedKeysReaderBuilder generatedKeysReaderBuilder) {
 		IdentifierInsertionManager<X, I> identifierInsertionManager = null;
-		IdentifierPolicy identifierPolicy = identification.getIdentifierPolicy();
+		IdentifierPolicy<I> identifierPolicy = identification.getIdentifierPolicy();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		Class<I> identifierType = idDefinition.getMemberType();
 		if (identifierPolicy instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
@@ -834,8 +833,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			}
 			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType, c -> { }, isPersistedFunction);
 		}
-		identification.insertionManager = (IdentifierInsertionManager<Object, Object>) identifierInsertionManager;
-		identification.fallbackInsertionManager = (AlreadyAssignedIdentifierManager<Object, Object>) fallbackMappingIdentifierManager;
+		identification.insertionManager = identifierInsertionManager;
+		identification.fallbackInsertionManager = fallbackMappingIdentifierManager;
 	}
 	
 	private UnsupportedOperationException newMissingIdentificationException() {
@@ -865,7 +864,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			T targetTable,
 			Map<? extends ReversibleAccessor, Column> mapping,
 			ValueAccessPointSet propertiesSetByConstructor,
-			Identification identification,
+			Identification<X, I> identification,
 			Class<X> beanType,
 			@Nullable EntityMappingConfiguration.EntityFactoryProvider<X> entityFactoryProvider) {
 
@@ -907,33 +906,33 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		return result;
 	}
 	
-	static class Identification {
+	static class Identification<C, I> {
 		
-		private final ReversibleAccessor idAccessor;
-		private final IdentifierPolicy identifierPolicy;
-		private final EntityMappingConfiguration identificationDefiner;
+		private final ReversibleAccessor<C, I> idAccessor;
+		private final IdentifierPolicy<I> identifierPolicy;
+		private final EntityMappingConfiguration<C, I> identificationDefiner;
 		
 		/** Insertion manager for {@link ClassMapping} that owns identifier policy */
-		private IdentifierInsertionManager<Object, Object> insertionManager;
+		private IdentifierInsertionManager<C, I> insertionManager;
 		/** Insertion manager for {@link ClassMapping} that doesn't own identifier policy : they get an already-assigned one */
-		private AlreadyAssignedIdentifierManager<Object, Object> fallbackInsertionManager;
+		private AlreadyAssignedIdentifierManager<C, I> fallbackInsertionManager;
 		
 		
-		public Identification(EntityMappingConfiguration identificationDefiner) {
+		public Identification(EntityMappingConfiguration<C, I> identificationDefiner) {
 			this.idAccessor = identificationDefiner.getIdentifierAccessor();
 			this.identifierPolicy = identificationDefiner.getIdentifierPolicy();
 			this.identificationDefiner = identificationDefiner;
 		}
 		
-		public ReversibleAccessor getIdAccessor() {
+		public ReversibleAccessor<C, I> getIdAccessor() {
 			return idAccessor;
 		}
 		
-		public IdentifierPolicy getIdentifierPolicy() {
+		public IdentifierPolicy<I> getIdentifierPolicy() {
 			return identifierPolicy;
 		}
 		
-		public EntityMappingConfiguration getIdentificationDefiner() {
+		public EntityMappingConfiguration<C, I> getIdentificationDefiner() {
 			return identificationDefiner;
 		}
 	}

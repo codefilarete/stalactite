@@ -835,33 +835,33 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					.build((Class<FluentMappingBuilderPropertyOptions<C, I>>) (Class) FluentMappingBuilderPropertyOptions.class);
 		}
 		
-		<E> LinkageSupport<C, I> addKeyMapping(SerializableFunction<C, E> getter, IdentifierPolicy identifierPolicy) {
+		<E> LinkageSupport<C, I> addKeyMapping(SerializableFunction<C, E> getter, IdentifierPolicy<I> identifierPolicy) {
 			return addKeyMapping(Accessors.accessor(getter), identifierPolicy);
 		}
 		
-		<E> LinkageSupport<C, I> addKeyMapping(SerializableFunction<C, E> getter, IdentifierPolicy identifierPolicy, Column<?, E> column) {
+		<E> LinkageSupport<C, I> addKeyMapping(SerializableFunction<C, E> getter, IdentifierPolicy<I> identifierPolicy, Column<?, E> column) {
 			LinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 			return linkage;
 		}
 		
-		<E> LinkageSupport<C, I> addKeyMapping(SerializableFunction<C, E> getter, IdentifierPolicy identifierPolicy, String columnName) {
+		<E> LinkageSupport<C, I> addKeyMapping(SerializableFunction<C, E> getter, IdentifierPolicy<I> identifierPolicy, String columnName) {
 			LinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
 			return linkage;
 		}
 		
-		<E> LinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, E> setter, IdentifierPolicy identifierPolicy) {
+		<E> LinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, E> setter, IdentifierPolicy<I> identifierPolicy) {
 			return addKeyMapping(Accessors.mutator(setter), identifierPolicy);
 		}
 		
-		<E> LinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, E> setter, IdentifierPolicy identifierPolicy, Column<?, E> column) {
+		<E> LinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, E> setter, IdentifierPolicy<I> identifierPolicy, Column<?, E> column) {
 			LinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 			return linkage;
 		}
 		
-		<E> LinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, E> setter, IdentifierPolicy identifierPolicy, String columnName) {
+		<E> LinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, E> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
 			LinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
 			return linkage;
@@ -873,7 +873,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		 * @param identifierPolicy
 		 * @return
 		 */
-		LinkageSupport<C, I> addKeyMapping(ReversibleAccessor<C, ?> propertyAccessor, IdentifierPolicy identifierPolicy) {
+		LinkageSupport<C, I> addKeyMapping(ReversibleAccessor<C, ?> propertyAccessor, IdentifierPolicy<I> identifierPolicy) {
 			
 			// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
 			if (entityConfigurationSupport.identifierAccessor != null) {

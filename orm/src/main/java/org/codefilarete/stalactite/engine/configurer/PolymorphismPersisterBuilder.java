@@ -36,7 +36,7 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 	
 	private final PolymorphismPolicy<C> polymorphismPolicy;
 	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
-	private final Identification identification;
+	private final Identification<C, I> identification;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final ColumnNameProvider columnNameProvider;
 	
@@ -50,7 +50,7 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 	private final TableNamingStrategy tableNamingStrategy;
 	
 	PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
-								 Identification identification,
+								 Identification<C, I> identification,
 								 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 								 ColumnBinderRegistry columnBinderRegistry,
 								 ColumnNameProvider columnNameProvider,

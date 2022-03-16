@@ -35,7 +35,7 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
+public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 		implements SelectExecutor<C, I>, JoinableSelectExecutor {
 	
 	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
@@ -45,8 +45,8 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismSelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
-													   Column<T, D> discriminatorColumn,
+	public SingleTablePolymorphismSelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters,
+													   Column<T, DTYPE> discriminatorColumn,
 													   SingleTablePolymorphism polymorphismPolicy,
 													   T table,
 													   ConnectionProvider connectionProvider,
@@ -56,7 +56,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.discriminatorColumn = discriminatorColumn;
-		this.subEntitiesPersisters = subEntitiesPersisters;
+		this.subEntitiesPersisters = (Map) subEntitiesPersisters;
 	}
 	
 	public Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> getSubEntitiesPersisters() {
@@ -88,7 +88,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, D>
 			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 			resultSetIterator.forEachRemaining(row -> {
-				D dtype = (D) columnedRow.getValue(discriminatorColumn, row);
+				DTYPE dtype = (DTYPE) columnedRow.getValue(discriminatorColumn, row);
 				Class<? extends C> entitySubclass = polymorphismPolicy.getClass(dtype);
 				// adding identifier to subclass' ids
 				idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())

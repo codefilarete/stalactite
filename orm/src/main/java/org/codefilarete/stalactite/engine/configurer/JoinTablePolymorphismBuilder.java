@@ -45,7 +45,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymo
 	private final PrimaryKey mainTablePrimaryKey;
 	
 	JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
-								 Identification identification,
+								 Identification<C, I> identification,
 								 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
 								 ColumnBinderRegistry columnBinderRegistry,
 								 ColumnNameProvider columnNameProvider,
@@ -64,51 +64,13 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymo
 	
 	@Override
 	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass = new HashMap<>();
+		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
 		for (SubEntityMappingConfiguration<? extends C> subConfiguration : joinTablePolymorphism.getSubClasses()) {
-			EntityConfiguredJoinedTablesPersister<? extends C, I> subclassPersister;
+			persisterPerSubclass.put(subConfiguration.getEntityType(),
+									 buildSubclassPersister(dialect, connectionConfiguration, beanMappingBuilder, subConfiguration));
 			
-			// first we'll use table of columns defined in embedded override
-			// then the one defined by inheritance
-			// if both are null we'll create a new one
-			Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
-			Table tableDefinedByInheritanceConfiguration = joinTablePolymorphism.giveTable(subConfiguration);
-			
-			assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
-			
-			Table subTable = nullable(tableDefinedByColumnOverride)
-					.elseSet(tableDefinedByInheritanceConfiguration)
-					.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
-			
-			Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
-					this.columnBinderRegistry, this.columnNameProvider);
-			addPrimarykey(subTable);
-			addForeignKey(subTable);
-			Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
-			addIdentificationToMapping(identification, subEntityMapping);
-			ClassMapping<? extends C, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
-					false,
-					subTable,
-					subEntityPropertiesMapping,
-					new ValueAccessPointSet(),	// TODO: implement properties set by constructor feature in joined-tables polymorphism
-					identification,
-					subConfiguration.getPropertiesMapping().getBeanType(),
-					null);
-			
-			// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
-			// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
-			subclassPersister = new SimpleRelationalEntityPersister(classMappingStrategy, dialect, connectionConfiguration);
-			
-			// Adding join with parent table to select
-			Column subEntityPrimaryKey = (Column) Iterables.first(subclassPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
-			Column entityPrimaryKey = (Column) Iterables.first(this.mainTablePrimaryKey.getColumns());
-			subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-															   new EntityMergerAdapter<C, Table>(mainPersister.getMapping()),
-															   subEntityPrimaryKey, entityPrimaryKey);
-			
-			persisterPerSubclass.put(subConfiguration.getEntityType(), (EntityConfiguredJoinedTablesPersister<C, I>) subclassPersister);
 		}
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
@@ -117,6 +79,50 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymo
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
 				dialect);
 		return surrogate;
+	}
+	
+	private <D> EntityConfiguredJoinedTablesPersister<D, I> buildSubclassPersister(Dialect dialect,
+																				   ConnectionConfiguration connectionConfiguration,
+																				   BeanMappingBuilder beanMappingBuilder,
+																				   SubEntityMappingConfiguration<D> subConfiguration) {
+		// first we'll use table of columns defined in embedded override
+		// then the one defined by inheritance
+		// if both are null we'll create a new one
+		Table tableDefinedByColumnOverride = BeanMappingBuilder.giveTargetTable(subConfiguration.getPropertiesMapping());
+		Table tableDefinedByInheritanceConfiguration = joinTablePolymorphism.giveTable(subConfiguration);
+		
+		assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
+		
+		Table subTable = nullable(tableDefinedByColumnOverride)
+				.elseSet(tableDefinedByInheritanceConfiguration)
+				.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
+		
+		Map<ReversibleAccessor, Column> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
+																							  this.columnBinderRegistry, this.columnNameProvider);
+		addPrimarykey(subTable);
+		addForeignKey(subTable);
+		Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
+		addIdentificationToMapping(identification, subEntityMapping);
+		ClassMapping<D, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
+			false,
+			subTable,
+			subEntityPropertiesMapping,
+			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in joined-tables polymorphism
+			(Identification<D, I>) identification,
+			subConfiguration.getPropertiesMapping().getBeanType(),
+			null);
+		
+		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
+		// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
+		EntityConfiguredJoinedTablesPersister<D, I> subclassPersister = new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
+		
+		// Adding join with parent table to select
+		Column subEntityPrimaryKey = (Column) Iterables.first(subclassPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
+		Column entityPrimaryKey = (Column) Iterables.first(this.mainTablePrimaryKey.getColumns());
+		subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+														   new EntityMergerAdapter<C, Table>(mainPersister.getMapping()),
+														   subEntityPrimaryKey, entityPrimaryKey);
+		return subclassPersister;
 	}
 	
 	@Override
@@ -137,7 +143,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table> extends AbstractPolymo
 		PersisterBuilderImpl.applyForeignKeys(this.mainTablePrimaryKey, this.foreignKeyNamingStrategy, Arrays.asSet(table));
 	}
 	
-	private void addIdentificationToMapping(Identification identification, Mapping mapping) {
+	private void addIdentificationToMapping(Identification<C, I> identification, Mapping mapping) {
 		PersisterBuilderImpl.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 	}
 }

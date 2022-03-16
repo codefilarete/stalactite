@@ -33,7 +33,7 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 class JoinTablePolymorphismBuilderTest {
 	
 	@Test
-	void build_targetTableAndOverringColumnsAreDifferent_throwsException() {
+	void build_targetTableAndOverridingColumnsAreDifferent_throwsException() {
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");

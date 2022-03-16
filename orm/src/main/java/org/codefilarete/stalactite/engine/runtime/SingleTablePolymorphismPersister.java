@@ -58,31 +58,31 @@ import org.codefilarete.stalactite.sql.result.Row;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
+public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
 	
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	private final SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor;
-	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor;
+	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters;
 	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
-	private final Column<T, D> discriminatorColumn;
-	private final SingleTablePolymorphism<C, D> polymorphismPolicy;
-	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, D> entitySelectExecutor;
+	private final Column<T, DTYPE> discriminatorColumn;
+	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
+	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, DTYPE> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public SingleTablePolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-											Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+											Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters,
 											ConnectionProvider connectionProvider,
 											Dialect dialect,
-											Column<T, D> discriminatorColumn,
-											SingleTablePolymorphism<C, D> polymorphismPolicy) {
+											Column<T, DTYPE> discriminatorColumn,
+											SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 		this.mainPersister = mainPersister;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
-		ShadowColumnValueProvider<C, D, T> discriminatorValueProvider = new ShadowColumnValueProvider<>(discriminatorColumn,
+		ShadowColumnValueProvider<C, DTYPE, T> discriminatorValueProvider = new ShadowColumnValueProvider<>(discriminatorColumn,
 				c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()));
 		this.subEntitiesPersisters.values().forEach(subclassPersister -> ((EntityMapping) subclassPersister.getMapping())
 				.addShadowColumnInsert(discriminatorValueProvider));
@@ -158,7 +158,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(payload);
+						entitiesPerType.computeIfAbsent((UpdateExecutor<C>) persister, p -> new HashSet<>()).add(payload);
 					}
 				})
 		);
@@ -188,7 +188,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent(persister, p -> new HashSet<>()).add(entity);
+						entitiesPerType.computeIfAbsent((EntityPersister<C, I>) persister, p -> new HashSet<>()).add(entity);
 					}
 				})
 		);
@@ -287,7 +287,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 		return new EntityMappingWrapper<C, I, T>(mainPersister.getMapping()) {
 			@Override
 			public void addTransformerListener(TransformerListener<C> listener) {
-				subEntitiesPersisters.values().forEach(persister -> persister.getMapping().addTransformerListener(listener));
+				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addTransformerListener(listener));
 			}
 			
 			@Override
@@ -361,15 +361,15 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 	}
 	
 	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader {
-		private final Column<T, D> discriminatorColumn;
+		private final Column<T, DTYPE> discriminatorColumn;
 		private final Function<Class, SelectExecutor> subtypeSelectors;
-		private final Set<D> discriminatorValues;
+		private final Set<DTYPE> discriminatorValues;
 		
 		private SingleTableFirstPhaseRelationLoader(IdMapping<C, I> subEntityIdMapping,
 													Column primaryKey,
-													SingleTablePolymorphismSelectExecutor<C, I, T, D> selectExecutor,
+													SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor,
 													ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder,
-													Column<T, D> discriminatorColumn, Function<Class, SelectExecutor> subtypeSelectors) {
+													Column<T, DTYPE> discriminatorColumn, Function<Class, SelectExecutor> subtypeSelectors) {
 			// Note that selectExecutor won't be used because we dynamically lookup for it in fillCurrentRelationIds
 			super(subEntityIdMapping, primaryKey, selectExecutor, relationIdsHolder);
 			this.discriminatorColumn = discriminatorColumn;
@@ -379,7 +379,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 		
 		@Override
 		protected void fillCurrentRelationIds(Row row, Object bean, ColumnedRow columnedRow) {
-			D discriminator = columnedRow.getValue(discriminatorColumn, row);
+			DTYPE discriminator = columnedRow.getValue(discriminatorColumn, row);
 			// we avoid NPE on polymorphismPolicy.getClass(discriminator) caused by null discriminator in case of empty relation
 			// by only treating known discriminator values (prefered way to check against null because type can be primitive one)
 			if (discriminatorValues.contains(discriminator)) {
@@ -394,7 +394,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, D> imple
 			return Arrays.asSet(primaryKey, discriminatorColumn);
 		}
 		
-		private SelectExecutor giveSelector(D discriminator) {
+		private SelectExecutor giveSelector(DTYPE discriminator) {
 			return subtypeSelectors.apply(polymorphismPolicy.getClass(discriminator));
 		}
 	}

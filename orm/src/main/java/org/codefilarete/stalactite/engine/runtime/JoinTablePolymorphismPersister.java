@@ -80,18 +80,18 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	
 	public JoinTablePolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-										  Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+										  Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters,
 										  ConnectionProvider connectionProvider,
 										  Dialect dialect) {
 		this.mainPersister = mainPersister;
 		this.parentClass = this.mainPersister.getClassToPersist();
 		this.mainTablePrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 		
-		this.subEntitiesPersisters = subEntitiesPersisters;
-		Set<Entry<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
-		Map<Class<? extends C>, SelectExecutor<C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
+		this.subEntitiesPersisters = (Map) subEntitiesPersisters;
+		Set<Entry<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
+		Map<Class<? extends C>, SelectExecutor<? extends C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
 				Entry::getValue);
-		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> e.getValue().getMapping().getIdMapping());
+		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
 		
 		// sub entities persisters will be used to select sub entities but at this point they lacks subgraph loading, so we add it (from their parent)
 		subEntitiesPersisters.forEach((type, persister) ->

@@ -15,7 +15,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	
 	/**
 	 * Marks the property as mandatory, which makes the mapped column not nullable : does not make a null checking at runtime.
-	 * Note that using this method on an identifier one as no purpose because identifiers are already madatory.
+	 * Note that using this method on an identifier one as no purpose because identifiers are already mandatory.
 	 */
 	@Override
 	ColumnOptions<C, I> mandatory();
@@ -27,6 +27,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 * Available identifier policies for entities.
 	 * @see IdentifierInsertionManager
 	 */
+	@SuppressWarnings("java:S2326" /* Unused generics is necessary to caller signature (mapKey) to make policy identifier type match entity identifier one */)
 	interface IdentifierPolicy<ID> {
 		/**
 		 * Policy for entities that have their id given by database after insert, such as increment column.
@@ -59,7 +60,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		 * @param isPersistedFunction the {@link Function} that allows to know if entity was already inserted in database
 		 * @param <C> entity type
 		 * @param <I> identifier type
-		 * @return a new policy taht will be used to know persistent state of entities
+		 * @return a new policy that will be used to know persistent state of entities
 		 */
 		static <C, I> AlreadyAssignedIdentifierPolicy<C, I> alreadyAssigned(Consumer<C> markAsPersistedFunction,
 																		  Function<C, Boolean> isPersistedFunction) {

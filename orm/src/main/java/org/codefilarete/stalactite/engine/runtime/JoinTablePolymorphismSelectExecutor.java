@@ -41,13 +41,13 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 	
 	public JoinTablePolymorphismSelectExecutor(
 			Map<Class<? extends C>, Table> tablePerSubEntity,
-			Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors,
+			Map<Class<? extends C>, SelectExecutor<? extends C, I>> subEntitiesSelectors,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
 		this.tablePerSubEntity = tablePerSubEntity;
-		this.subEntitiesSelectors = subEntitiesSelectors;
+		this.subEntitiesSelectors = (Map) subEntitiesSelectors;
 		this.mainTable = mainTable;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
