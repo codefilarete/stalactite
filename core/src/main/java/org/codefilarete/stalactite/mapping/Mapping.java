@@ -41,8 +41,8 @@ public interface Mapping<C, T extends Table> {
 	 * 					may be null to generate a rough update statement (allColumn doesn't matter in this case) 
 	 * @param allColumns indicates if allColumns must be returned, even if they are not all modified (necessary for JDBC batch optimization)
 	 * @return a mapping between columns that must be put in the SQL update order and there values,
-	 * 			thus a distinction between columns to be updated and columns necessary to the where clause must be done, this is don through {@link UpwhereColumn},
-	 * 			so returned value may contains duplicates regarding {@link Column} (they can be in update & where part, especially for optimist lock columns)	
+	 * 			thus a distinction between columns to be updated and columns necessary to the where clause must be done, this is done through {@link UpwhereColumn},
+	 * 			so returned value may contain duplicates regarding {@link Column} (they can be in update & where part, especially for optimist lock columns)	
 	 */
 	@Nonnull
 	Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
