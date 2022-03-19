@@ -12,8 +12,7 @@
 	<artifactId>sql</artifactId>
 	
 	<properties>
-		<tools.version>1.0-SNAPSHOT</tools.version>
-		<reflection.version>1.0-SNAPSHOT</reflection.version>
+		<reflection.version>1.0.0</reflection.version>
 	</properties>
 	
 	<build>
@@ -34,11 +33,6 @@
 	</build>
 	
 	<dependencies>
-		<dependency>
-			<groupId>org.codefilarete</groupId>
-			<artifactId>tools</artifactId>
-			<version>${tools.version}</version>
-		</dependency>
 		<dependency>
 			<groupId>org.codefilarete</groupId>
 			<artifactId>reflection</artifactId>
