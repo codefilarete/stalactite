@@ -32,7 +32,7 @@ import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
- * It maintains an index of its joins based on an unique name for each, so they can be refrenced outside of {@link EntityJoinTree} and without
+ * It maintains an index of its joins based on an unique name for each, so they can be referenced outside {@link EntityJoinTree} without
  * depending on classes of this package (since the reference is a {@link String}). 
  * 
  * @author Guillaume Mary
@@ -87,8 +87,8 @@ public class EntityJoinTree<C, I> {
 	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
-	 * @param joinType says wether or not the join must be open
-	 * @param beanRelationFixer a function to fullfill relation between beans
+	 * @param joinType says whether the join must be open
+	 * @param beanRelationFixer a function to fulfill relation between beans
 	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
@@ -121,8 +121,8 @@ public class EntityJoinTree<C, I> {
 	 * @param leftJoinColumn the {@link Column} (of a previously registered join) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} to be joined with {@code leftJoinColumn}
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
-	 * @param joinType says wether or not the join must be open
-	 * @param beanRelationFixer a function to fullfill relation between beans
+	 * @param joinType says whether the join must be open
+	 * @param beanRelationFixer a function to fulfill relation between beans
 	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
@@ -197,7 +197,7 @@ public class EntityJoinTree<C, I> {
 	}
 	
 	/**
-	 * Adds a passive join to this select : this kind if join doesn't take part to bean construction, it aims only at adding an SQL join to
+	 * Adds a passive join to this select : this kind of join doesn't take part to bean construction, it aims only at adding an SQL join to
 	 * bean graph loading.
 	 *
 	 * @param leftStrategyName join name on which join must be created
@@ -262,7 +262,7 @@ public class EntityJoinTree<C, I> {
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
 	 * {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set)}.
 	 * When {@link #ROOT_STRATEGY_NAME} is given, {@link #getRoot()} will be used, meanwhile, be aware that using this method to retreive root node
-	 * is not the recommanded way : prefer usage of {@link #getRoot()} to prevent exposure of {@link #ROOT_STRATEGY_NAME}
+	 * is not the recommended way : prefer usage of {@link #getRoot()} to prevent exposure of {@link #ROOT_STRATEGY_NAME}
 	 *
 	 * @param leftStrategyName join node name to be given
 	 * @return null if the node doesn't exist
@@ -359,7 +359,7 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * Goes down this tree by breadth first.
 	 * Consumer is invoked foreach node <strong>except root</strong> because it usually has a special treatment. 
-	 * Used to create an equivalent tree of this instance with another type of node. This generally requires to know current parent to allow child
+	 * Used to create an equivalent tree of this instance with another type of node. This generally requires knowing current parent to allow child
 	 * addition : consumer gets current parent as a first argument
 	 * 
 	 * @param initialNode very first parent given as first argument to consumer
@@ -447,7 +447,7 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * Copies given node and set it as a child of given parent.
 	 * Could have been implemented by each node class itself but since this behavior is required only by the tree and a particular algorithm, decision
-	 * mas made to do it outside of them.
+	 * mas made to do it outside them.
 	 * 
 	 * @param node node to be cloned
 	 * @param parent parent node target of the clone
@@ -495,9 +495,9 @@ public class EntityJoinTree<C, I> {
 	private class StrategyIndexNamer {
 		
 		private String generateName(JoinNode node) {
-			// We generate a name which is unique across trees so node clones can be found outside of this class by their name on different trees.
+			// We generate a name which is unique across trees so node clones can be found outside this class by their name on different trees.
 			// This is necessary for particular case of reading indexing column of indexed collection with an association table : the node that needs
-			// to use indexing column is not the owner of the association table clone hence it can't use it (see table clone mecanism at EntityTreeQueryBuilder).
+			// to use indexing column is not the owner of the association table clone hence it can't use it (see table clone mechanism at EntityTreeQueryBuilder).
 			// Said differently the "needer" is the official owner whereas the indexing column is on another node dedicated to the relation table maintenance.
 			// The found way for the official node to access data through the indexing column is to use the identifier of the relation table node,
 			// because it has it when it is created (see OneToManyWithIndexedAssociationTableEngine), and because the node is cloned through tree

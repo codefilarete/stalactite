@@ -39,7 +39,7 @@ public class EntityTreeInflater<C> {
 	private static final ThreadLocal<EntityTreeInflater<?>.TreeInflationContext> CURRENT_CONTEXT = new ThreadLocal<>();
 	
 	/**
-	 * Gives current {@link TreeInflationContext}. A current one is available during {@link #transform(Iterable, int)} invokation.
+	 * Gives current {@link TreeInflationContext}. A current one is available during {@link #transform(Iterable, int)} invocation.
 	 * 
 	 * @return current {@link TreeInflationContext}, null if you're not invoking it during its lifecycle
 	 */
@@ -49,7 +49,7 @@ public class EntityTreeInflater<C> {
 	
 	/**
 	 * All inflaters, mergers and so on, in a tree structure that reflects {@link EntityJoinTree}.
-	 * Made as such to benefit from the possbility to cancel in-depth iteration in {@link #transform(Row, TreeInflationContext)} method during relation
+	 * Made as such to benefit from the possibility to cancel in-depth iteration in {@link #transform(Row, TreeInflationContext)} method during relation
 	 * building
 	 */
 	private final ConsumerNode consumerRoot;
@@ -61,7 +61,7 @@ public class EntityTreeInflater<C> {
 	
 	/**
 	 * Constructor with necessary elements
-	 * @param consumerRoot top level row consumer, the one that will computes root instances
+	 * @param consumerRoot top level row consumer, the one that will compute root instances
 	 * @param columnAliases query column aliases
 	 * @param tablePerJoinNodeName mapping between join nodes and their names
 	 */
@@ -73,8 +73,8 @@ public class EntityTreeInflater<C> {
 	/**
 	 *
 	 * @param rows rows (coming from database select) to be read to build beans graph
-	 * @param resultSize expected reuslt size, only for resulting list optimization
-	 * @return a list of root beans, built from given rows by asking internal strategy joins to instanciate and complete them
+	 * @param resultSize expected result size, only for resulting list optimization
+	 * @return a list of root beans, built from given rows by asking internal strategy joins to instantiate and complete them
 	 */
 	public List<C> transform(Iterable<Row> rows, int resultSize) {
 		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> this.new TreeInflationContext(), (Function<EntityTreeInflater<?>.TreeInflationContext, List<C>>) context ->
@@ -96,8 +96,8 @@ public class EntityTreeInflater<C> {
 	Nullable<C> transform(Row row, EntityTreeInflater<?>.TreeInflationContext context) {
 		context.setCurrentRow(row);
 		// Algorithm : we iterate depth by depth the tree structure of the joins
-		// We start by the root of the hierarchy.
-		// We process the entity of the current depth, then process the direct relations, add those relations to the depth iterator
+		// We start by hierarchy root.
+		// We process entity of current depth, process the direct relations, then add those relations to depth iterator
 		Nullable<C> result = Nullable.nullable(((JoinRootRowConsumer<C, ?>) this.consumerRoot.consumer).createRootInstance(row, context));
 		
 		if (result.isPresent()) {
@@ -176,7 +176,7 @@ public class EntityTreeInflater<C> {
 		/**
 		 * Asks for parentEntity consumption by {@link JoinRootRowConsumer}
 		 * @param joinRowConsumer consumer expected to use given entity to constructs, fills, does whatever, with given entity
-		 * @param parentEntity entity on which consumer mecanism may apply
+		 * @param parentEntity entity on which consumer mechanism may apply
 		 * @return the optional entity created by consumer (as in one-to-one or one-to-many relation), else given parentEntity (not null)
 		 */
 		abstract Object apply(JoinRowConsumer joinRowConsumer, Object parentEntity);
@@ -232,12 +232,12 @@ public class EntityTreeInflater<C> {
 	}
 	
 	/**
-	 * Container for informations used during {@link Row} transformation as a bean graph.
+	 * Container for information used during {@link Row} transformation as a bean graph.
 	 * Accessible from {@link EntityTreeInflater#currentContext()} during its lifecycle :
-	 * - instanciated at beginning of {@link Row} transformation ({@link EntityTreeInflater#transform(Iterable, int)}
+	 * - instanced at beginning of {@link Row} transformation ({@link EntityTreeInflater#transform(Iterable, int)}
 	 * - dropped at the end of the method
 	 * 
-	 * @implNote made non-static to ease access to the surrouding {@link EntityTreeInflater} instance
+	 * @implNote made non-static to ease access to the surrounding {@link EntityTreeInflater} instance
 	 */
 	public class TreeInflationContext {
 		
@@ -286,7 +286,7 @@ public class EntityTreeInflater<C> {
 		}
 		
 		/**
-		 * Expected to retrieve an entity by its class and identifier from cache or instanciates it and put it into the cache
+		 * Expected to retrieve an entity by its class and identifier from cache or instantiates it and put it into the cache
 		 *
 		 * @param clazz the type of the entity
 		 * @param identifier the identifier of the entity (Long, String, ...)
@@ -303,7 +303,7 @@ public class EntityTreeInflater<C> {
 	 * Made for nodes that need to read data from row but don't own the column table under which the data are, in particular indexing column of a
 	 * {@link java.util.Collection}.
 	 * 
-	 * See {@link EntityTreeQueryBuilder} for table clone mecanism.
+	 * See {@link EntityTreeQueryBuilder} for table clone mechanism.
 	 * 
 	 * @see #giveValue(String, Column, Row)
 	 */

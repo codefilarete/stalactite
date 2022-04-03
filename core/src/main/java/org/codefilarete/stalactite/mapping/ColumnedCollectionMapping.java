@@ -46,7 +46,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	 *
 	 * @param targetTable table to persist in
 	 * @param columns columns that will be used for persistent of Collections, expected to be a subset of targetTable columns    
-	 * @param rowClass Class to instanciate for select from database
+	 * @param rowClass Class to instantiate for select from database
 	 */
 	public ColumnedCollectionMapping(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;

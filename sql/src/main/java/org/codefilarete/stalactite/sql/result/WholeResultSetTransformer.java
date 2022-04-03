@@ -64,28 +64,28 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	/** The list of relations that will assemble objects */
 	private final KeepOrderSet<Assembler<C>> assemblers = new KeepOrderSet<>();
-	/** Raw consumers, not linked to any beans, will be run on each row, if someone expect it to be run once per bean, then attach it to root converter */
+	/** Raw consumers, not linked to any beans, will be run on each row, if someone expects it to be run once per bean, then attach it to root converter */
 	private final Set<ColumnConsumer<C, Object>> consumers = new HashSet<>();
 	
 	/**
-	 * Constructor with root bean instanciation parameters
+	 * Constructor with root bean instantiation parameters
 	 * 
 	 * @param rootType main bean type
 	 * @param columnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
-	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
+	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instantiation needed)
 	 */
 	public WholeResultSetTransformer(Class<C> rootType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
 		this(new ResultSetRowTransformer<>(rootType, columnName, reader, beanFactory));
 	}
 	
 	/**
-	 * Constructor with root bean instanciation parameters as a default Java Bean constructor and setter for key value
+	 * Constructor with root bean instantiation parameters as a default Java Bean constructor and setter for key value
 	 *
 	 * @param rootType main bean type
 	 * @param columnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
-	 * @param beanFactory the bean constructor. Not called if bean key is null (no instanciation needed)
+	 * @param beanFactory the bean constructor. Not called if bean key is null (no instantiation needed)
 	 * @param setter setter for bean key
 	 */
 	public WholeResultSetTransformer(Class<C> rootType, String columnName, ResultSetReader<I> reader, Supplier<C> beanFactory, BiConsumer<C, I> setter) {
@@ -97,7 +97,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	/**
-	 * Constructor with root bean instanciation parameters.
+	 * Constructor with root bean instantiation parameters.
 	 * 
 	 * With this constructor a root instance per {@link ResultSet} row will be created since there's no mean to distinguish a row instance from another
 	 * because no key reader is given. This is expected to be used for flat data retrieval. 
@@ -110,7 +110,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	/**
-	 * Special constructor aimed at defining root transformer when other constructors are unsufficient
+	 * Special constructor aimed at defining root transformer when other constructors are insufficient
 	 * 
 	 * @param rootTransformer transformer that will create graph root-beans from {@link ResultSet}
 	 */
@@ -258,8 +258,8 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	@Override
 	public WholeResultSetTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
-		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignements
-		// (follow rootConverter assignements to be sure)
+		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignments
+		// (follow rootConverter assignments to be sure)
 		ResultSetRowTransformer<I, C> rootConverterCopy = this.rootConverter.transformer.copyWithAliases(columnMapping);
 		WholeResultSetTransformer<I, C> result = new WholeResultSetTransformer<>(rootConverterCopy);
 		this.assemblers.forEach(assembler ->
@@ -394,7 +394,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		
 		/**
 		 * Implementation to avoid collision in Set, based on {@link ResultSetRowAssembler} only because we don't want to assemble beans twice
-		 * because their relation differ in {@link AssemblyPolicy}, there one can't sepcify twice same combiner with different policies.
+		 * because their relation differ in {@link AssemblyPolicy}, there one can't specify twice same combiner with different policies.
 		 */
 		@Override
 		public boolean equals(Object o) {
@@ -407,7 +407,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		
 		/**
 		 * Implementation to avoid collision in Set, based on {@link ResultSetRowAssembler} only because we don't want to assemble beans twice
-		 * because their relation differ in {@link AssemblyPolicy}, there one can't sepcify twice same combiner with different policies.
+		 * because their relation differ in {@link AssemblyPolicy}, there one can't specify twice same combiner with different policies.
 		 */
 		@Override
 		public int hashCode() {

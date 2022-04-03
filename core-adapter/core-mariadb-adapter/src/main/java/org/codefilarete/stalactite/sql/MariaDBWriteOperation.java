@@ -38,7 +38,7 @@ public class MariaDBWriteOperation<ParamType> extends WriteOperation<ParamType> 
 	}
 	
 	/**
-	 * Overriden to :
+	 * Overridden to :
 	 * - call executeUpdate() instead of executeLargeUpdate() because MariaDB client 1.3.4 doesn't support it
 	 * - call retryer to prevent exception due to key lock on insert
 	 */
@@ -52,7 +52,7 @@ public class MariaDBWriteOperation<ParamType> extends WriteOperation<ParamType> 
 	}
 	
 	/**
-	 * Overriden to :
+	 * Overridden to :
 	 * - call executeBatch() instead of executeLargeBatch() because MariaDB client 1.3.4 doesn't support it
 	 * - call retryer to prevent exception due to key lock on insert
 	 */

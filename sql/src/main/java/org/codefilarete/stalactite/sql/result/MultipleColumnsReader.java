@@ -23,7 +23,7 @@ public class MultipleColumnsReader<C> implements ColumnReader<C> {
 	private final Function<Map<String, Object>, C> assembler;
 	
 	/**
-	 * Default contructor
+	 * Default constructor
 	 * 
 	 * @param columnReaders readers to be used for reading {@link ResultSet} rows per column
 	 * @param assembler function to assemble row values to create the bean of a row,

@@ -30,7 +30,7 @@ public class CurrentThreadConnectionProvider implements ConnectionProvider {
 	
 	public CurrentThreadConnectionProvider(DataSource dataSource, int connectionOpeningRetryMaxCount) {
 		this.dataSource = dataSource;
-		// Since Retryer is expected to be Thread-safe we instanciate is once
+		// Since Retryer is expected to be Thread-safe we instantiate is once
 		this.closedConnectionRetryer = new ClosedConnectionRetryer(connectionOpeningRetryMaxCount);
 	}
 	
@@ -65,7 +65,7 @@ public class CurrentThreadConnectionProvider implements ConnectionProvider {
 	
 	/**
 	 * Attaches a {@link Connection} to current {@link Thread}
-	 * {@link Connection} is set auto-commit to false to enable transaction mode because it better suits usual ORM usage.
+	 * {@link Connection} is set auto-commit to false for enabling transaction mode because it better suits usual ORM usage.
 	 * 
 	 * @return the attached {@link Connection}
 	 */

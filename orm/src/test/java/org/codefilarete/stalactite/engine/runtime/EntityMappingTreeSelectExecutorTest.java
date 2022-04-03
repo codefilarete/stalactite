@@ -163,7 +163,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		PairSetList<Object, Object> capturedValuesAsPairSetList = new PairSetList<>();
 		int paramCountPerQuery = primaryKeyColumn.size() * dialect.getInOperatorMaxSize();
 		Iterables.iterate(capturedValues, (i, c) -> {
-			// Because PairSetList contains already an empty line at instanciation time we should not add one at very first iteration (i != 0)  
+			// Because PairSetList contains already an empty line at instantiation time we should not add one at very first iteration (i != 0)  
 			if (i != 0 && i % paramCountPerQuery == 0) {
 				capturedValuesAsPairSetList.newRow();
 			}

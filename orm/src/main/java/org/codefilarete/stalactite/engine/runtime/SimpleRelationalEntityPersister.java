@@ -45,8 +45,8 @@ import static java.util.Collections.emptyList;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
- * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by the
- * {@link ClassMapping} passed to constructor and then it can be added to some other {@link RelationalEntityPersister} thanks to
+ * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
+ * {@link ClassMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
  * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean)} and
  * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Column, Column, String, BeanRelationFixer, boolean)}.
  * 
@@ -139,7 +139,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	}
 	
 	/**
-	 * Overriden to implement a load by joining tables
+	 * Overridden to implement a load by joining tables
 	 * 
 	 * @param ids entity identifiers
 	 * @return a List of loaded entities corresponding to identifiers passed as parameter
@@ -164,7 +164,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
+		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
 		return new EntityCriteriaSupport<>(criteriaSupport);
 	}
 	

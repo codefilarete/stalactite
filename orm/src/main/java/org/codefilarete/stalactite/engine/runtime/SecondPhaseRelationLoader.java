@@ -57,7 +57,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 		Map<SRC, Set<TRGTID>> targetIdPerSource = new HashMap<>();
 		Set<RelationIds<SRC, TRGT, TRGTID>> relationIds = ((Queue<Set<RelationIds<SRC, TRGT, TRGTID>>>) (Queue) relationIdsHolder.get()).poll();
 		// we remove null targetIds (Target Ids may be null if relation is nullified) because
-		// - selecting entities with null id is non-sensence
+		// - selecting entities with null id is nonsense
 		// - it prevents from generating SQL "in ()" which is invalid
 		// - it prevents from NullPointerException when applying target to source
 		relationIds.stream().filter(r -> !isDefaultValue(r.getTargetId())).forEach(r -> {

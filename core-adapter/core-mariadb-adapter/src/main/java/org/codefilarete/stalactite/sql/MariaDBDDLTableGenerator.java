@@ -19,7 +19,7 @@ public class MariaDBDDLTableGenerator extends DDLTableGenerator {
 	}
 	
 	/**
-	 * Overriden to change "drop constraint" into "drop foreign key", MariaDB specific
+	 * Overridden to change "drop constraint" into "drop foreign key", MariaDB specific
 	 */
 	@Override
 	public String generateDropForeignKey(ForeignKey foreignKey) {

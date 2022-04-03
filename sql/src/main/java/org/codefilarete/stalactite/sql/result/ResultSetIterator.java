@@ -76,7 +76,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	}
 	
 	/**
-	 * Change the given {@link ResultSet} at contruction time. Aimed at reusing this iterator.
+	 * Change the given {@link ResultSet} at construction time. Aimed at reusing this iterator.
 	 * 
 	 * @param resultSet
 	 */
@@ -94,7 +94,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	}
 	
 	/**
-	 * Called when {@link ResultSet} is set. Doesn't rewind the {@link ResultSet} to the begining.
+	 * Called when {@link ResultSet} is set. Doesn't rewind the {@link ResultSet} to the beginning.
 	 */
 	private void reset() {
 		this.nextCalled = false;
@@ -110,7 +110,7 @@ public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implement
 	@Override
 	public boolean hasNext() {
 		try {
-			// Warn: operator order is very important to prevent next() to be called unecessarly
+			// Warn: operator order is very important to prevent next() to be called unnecessarily
 			return (hasNext = !nextCalled && resultSet.next());
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);

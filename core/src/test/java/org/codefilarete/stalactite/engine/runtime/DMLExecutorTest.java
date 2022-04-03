@@ -175,7 +175,7 @@ abstract class DMLExecutorTest {
 		}
 		
 		/**
-		 * Contructor that doesn't set identifier. Created to test identifier auto-insertion.
+		 * Constructor that doesn't set identifier. Created to test identifier auto-insertion.
 		 * @param b
 		 * @param c
 		 */

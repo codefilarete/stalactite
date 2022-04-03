@@ -12,7 +12,7 @@ public interface ConnectionConfiguration {
 	int getBatchSize();
 	
 	/**
-	 * Default implementation of {@link ConnectionConfiguration} that keeps and gives values provided at instanciation time
+	 * Default implementation of {@link ConnectionConfiguration} that keeps and gives values provided at instantiation time
 	 * 
 	 * @author Guillaume Mary
 	 */

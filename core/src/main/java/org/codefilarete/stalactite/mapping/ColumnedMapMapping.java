@@ -35,7 +35,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	 * 
 	 * @param targetTable table to persist in
 	 * @param columns columns that will be used for persistent of Maps, expected to be a subset of targetTable columns    
-	 * @param rowClass Class to instanciate for select from database
+	 * @param rowClass Class to instantiate for select from database
 	 */
 	public ColumnedMapMapping(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;

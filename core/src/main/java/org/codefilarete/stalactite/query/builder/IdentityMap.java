@@ -8,7 +8,7 @@ import java.util.Map;
  * Storage of key-value pairs based on key {@link System#identityHashCode} to avoid loss of bean in classical {@link Map} : because those are based on
  * instance hashCode, beans can't be retrieved due some hashCode change when computation is based on incompletly filled attributes, such as collection.
  * <p>
- * It does not implement {@link Map} because it is mainly used as a marking name instead of the anonymous Map class which only instanciation brings
+ * It does not implement {@link Map} because it is mainly used as a marking name instead of the anonymous Map class which only instantiation brings
  * the implementation : by this name the developer clearly says its intention (and should add a comment why such a Map is required in its
  * algorithm ;) ).
  * It could also have been replaced by {@link java.util.IdentityHashMap} (or use it internally) but, first it would have broken previous principle,

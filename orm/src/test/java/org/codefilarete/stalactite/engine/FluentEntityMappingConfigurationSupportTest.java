@@ -284,7 +284,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Toto loadedInstance = persister.select(entity.getId());
 			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
 			assertThat(loadedInstance.isConstructorWith2ArgsWasCalled()).as("constructor with Id was called").isTrue();
-			// Checking that property is not overridden by setter access (because we used setByContructor)
+			// Checking that property is not overridden by setter access (because we used setByConstructor)
 			assertThat(loadedInstance.getName()).isEqualTo("Tutu by constructor");
 		}
 		
@@ -314,7 +314,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			Toto loadedInstance = persister.select(entity.getId());
 			assertThat(loadedInstance.isSetIdWasCalled()).as("setId was called").isFalse();
 			assertThat(loadedInstance.isConstructorWith2ArgsWasCalled()).as("constructor with Id was called").isTrue();
-			// Checking that property is not overridden by setter access (because we used setByContructor)
+			// Checking that property is not overridden by setter access (because we used setByConstructor)
 			assertThat(loadedInstance.getName()).isEqualTo("Tutu by constructor");
 		}
 		
@@ -1002,7 +1002,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Toto toto = new Toto();
-			// this partial instanciation of Timestamp let us test its partial load too
+			// this partial instantiation of Timestamp let us test its partial load too
 			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
 			persister.insert(toto);
 			
@@ -1049,7 +1049,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Toto toto = new Toto();
-			// this partial instanciation of Timestamp let us test its partial load too
+			// this partial instantiation of Timestamp let us test its partial load too
 			toto.setTimestamp(new TimestampWithLocale(Dates.nowAsDate(), null, Locale.US));
 			persister.insert(toto);
 			
@@ -1097,7 +1097,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Toto toto = new Toto();
-			// this partial instanciation of Timestamp let us test its partial load too
+			// this partial instantiation of Timestamp let us test its partial load too
 			toto.setTimestamp(new TimestampWithLocale(Dates.nowAsDate(), null, Locale.US));
 			persister.insert(toto);
 			
@@ -1140,7 +1140,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Toto toto = new Toto();
-			// this partial instanciation of Timestamp let us test its partial load too
+			// this partial instantiation of Timestamp let us test its partial load too
 			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
 			persister.insert(toto);
 			
@@ -1201,7 +1201,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Toto toto = new Toto();
-			// this partial instanciation of Timestamp let us test its partial load too
+			// this partial instantiation of Timestamp let us test its partial load too
 			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
 			persister.insert(toto);
 			
@@ -1263,7 +1263,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Toto toto = new Toto();
-			// this partial instanciation of Timestamp let us test its partial load too
+			// this partial instantiation of Timestamp let us test its partial load too
 			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
 			persister.insert(toto);
 			
@@ -1302,7 +1302,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Toto toto = new Toto();
-			// this partial instanciation of Timestamp let us test its partial load too
+			// this partial instantiation of Timestamp let us test its partial load too
 			toto.setTimestamp(new Timestamp(Dates.nowAsDate(), null));
 			persister.insert(toto);
 			
@@ -2122,7 +2122,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		public void setId(Identifier<UUID> id) {
-			// this method is a lure for default ReversibleAccessor mecanism because it matches getter by its name but does nothing special about id
+			// this method is a lure for default ReversibleAccessor mechanism because it matches getter by its name but does nothing special about id
 			setIdWasCalled = true;
 		}
 		

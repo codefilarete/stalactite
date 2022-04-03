@@ -41,7 +41,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	}
 	
 	/**
-	 * Specialized version of add(..) for a collection-typed property : will instanciate and set the collection before adding the
+	 * Specialized version of add(..) for a collection-typed property : will instantiate and set the collection before adding the
 	 * {@link ResultSet} value. Be aware that this method focuses on filling a simple-typed {@link Collection} (Integer, String, ...), not
 	 * complex-typed ones because {@link ResultSetReader} is only capable of reading one column. 
 	 * 
@@ -80,8 +80,8 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 
 	/**
 	 * Clones this instance for another type of bean.
-	 * Usefull to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning current instance,
-	 * one has only to register specific columns of the inheritant bean.
+	 * Useful to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning current instance,
+	 * one has only to register specific columns of the inheriting bean.
 	 * 
 	 * @param beanType the target bean type
 	 * @param beanFactory the adhoc constructor for the target bean
@@ -92,8 +92,8 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	
 	/**
 	 * Clones this instance for another type of bean.
-	 * Usefull to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning current instance,
-	 * one has only to register specific columns of the inheritant bean.
+	 * Useful to map a bean inheriting from another because it avoids redeclaration of common column mapping. Then after cloning current instance,
+	 * one has only to register specific columns of the inheriting bean.
 	 *
 	 * @param beanType the target bean type
 	 * @param beanFactory the adhoc constructor for the target bean
@@ -105,7 +105,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	/**
 	 * Will combine bean created by this instance with the one created by relatedBeanCreator thanks to given combiner.
 	 *
-	 * @param combiner the assciative function between bean created by this instance and the one created by given transformer
+	 * @param combiner the associative function between bean created by this instance and the one created by given transformer
 	 * @param relatedBeanCreator creator of another type of bean that will be combined with the one created by this instance
 	 * @param <K> other bean type
 	 * @param <V> other bean key type
@@ -122,7 +122,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	}
 	
 	/**
-	 * Overriden for return type cast.
+	 * Overridden for return type cast.
 	 */
 	default ResultSetTransformer<I, C> copyWithAliases(Map<String, String> columnMapping) {
 		return copyWithAliases(columnMapping::get);

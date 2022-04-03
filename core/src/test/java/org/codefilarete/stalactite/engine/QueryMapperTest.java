@@ -289,7 +289,7 @@ class QueryMapperTest {
 		// Checking that setters were called
 		verify(statementMock, times(2)).setInt(anyInt(), captor.capture());
 		assertThat(captor.getAllValues()).isEqualTo(Arrays.asList(1, 2));
-		// Checking instanciation was done
+		// Checking instantiation was done
 		assertThat(Iterables.first(result).toString()).isEqualTo(new Toto(42).toString());
 	}
 	

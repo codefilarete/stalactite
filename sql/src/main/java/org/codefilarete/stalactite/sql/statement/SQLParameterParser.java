@@ -65,7 +65,7 @@ public class SQLParameterParser {
 	}
 	
 	/**
-	 * Main entry point: will parse SQL given at contructor
+	 * Main entry point: will parse SQL given at constructor
 	 *
 	 * @return the resulting parse (not null)
 	 */

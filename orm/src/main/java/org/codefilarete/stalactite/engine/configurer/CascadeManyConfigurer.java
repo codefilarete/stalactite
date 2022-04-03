@@ -258,7 +258,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		
 		/**
-		 * Gives the collection factory used to instanciate relation field.
+		 * Gives the collection factory used to instantiate relation field.
 		 * 
 		 * @return the one given by {@link CascadeMany#getCollectionFactory()} or one deduced from member signature
 		 */

@@ -21,7 +21,7 @@ public class MySQLDialect extends Dialect {
 	}
 
 	/**
-	 * Overriden to return dedicated MySQL generated keys reader because MySQL reads them from a specific column
+	 * Overridden to return dedicated MySQL generated keys reader because MySQL reads them from a specific column
 	 * <strong>Only supports Integer</strong>
 	 */
 	@Override

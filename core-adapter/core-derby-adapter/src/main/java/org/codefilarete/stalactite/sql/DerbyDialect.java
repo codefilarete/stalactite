@@ -27,7 +27,7 @@ public class DerbyDialect extends Dialect {
 	}
 
 	/**
-	 * Overriden to return dedicated Derby generated keys reader because Derby as a special management
+	 * Overridden to return dedicated Derby generated keys reader because Derby as a special management
 	 * <strong>Only supports Integer</strong>
 	 */
 	@Override

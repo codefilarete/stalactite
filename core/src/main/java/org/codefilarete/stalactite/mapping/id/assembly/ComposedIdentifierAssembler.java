@@ -51,7 +51,7 @@ public abstract class ComposedIdentifierAssembler<I> implements IdentifierAssemb
 	}
 	
 	/**
-	 * Build an identifier from the given {@link java.sql.ResultSet} row extract.
+	 * Builds an identifier from the given {@link java.sql.ResultSet} row extract.
 	 * Expected to return null if the identifier can't be build
 	 * 
 	 * @param primaryKeyElements primary key values from a {@link java.sql.ResultSet} row

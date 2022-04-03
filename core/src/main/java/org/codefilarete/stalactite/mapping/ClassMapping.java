@@ -130,7 +130,7 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	
 	/**
 	 * Constructor that let caller give a bean factory. The bean factory is given a value provider of the form of a {@link Function&lt;Column, Object&gt;}
-	 * that can be called to get values to build expected entity or determine the right type to be instanciated according to current row values.
+	 * that can be called to get values to build expected entity or determine the right type to be instantiated according to current row values.
 	 * 
 	 * @param classToPersist the class to be persisted
 	 * @param targetTable the persisting table

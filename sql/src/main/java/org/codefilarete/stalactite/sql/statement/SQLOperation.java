@@ -85,7 +85,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 */
 	public void setValues(Map<ParamType, ?> values) {
 		this.listener.onValuesSet(values);
-		// we transfert data to our own structure
+		// we transfer data to our own structure
 		this.sqlStatement.setValues(values);
 	}
 	
@@ -243,7 +243,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * Contract to implement for being notified of actions on an {@link SQLOperation}
 	 * Created for use cases where listening to SQL orders is necessary but auditing logs is not enough because you only get a String version of
 	 * what is executed.
-	 * <strong>Be aware that sensible values are not filtered</strong> at the opposit to logged ones hence you get same values passed to SQL
+	 * <strong>Be aware that sensible values are not filtered</strong> at the opposite to logged ones hence you get same values passed to SQL
 	 * order, DON'T LOG THEM. Hence this listener is not made to replace logging system.
 	 * 
 	 * @param <ParamType> type of the {@link SQLOperation} to be registered on
@@ -253,8 +253,8 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		/**
 		 * Called when the {@link SQLOperation#setValues(Map)} is called.
 		 * Please note that the given {@link Map} is writable which allow values to be modified, but this is not the primary goal on this method
-		 * and is not an active feature and may be changed in the future. This is done so because making it unmodifiable needs an superfluous
-		 * instanciation.
+		 * and is not an active feature and may be changed in the future. This is done so because making it unmodifiable needs a superfluous
+		 * instantiation.
 		 * Please note also that this behavior defers from {@link #onValueSet(Object, Object)} where the value is "readonly" : since it is passed
 		 * by reference (Java language), simple (non complex) types are considered readonly.
 		 * 

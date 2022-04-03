@@ -124,7 +124,7 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 	public interface EntityCache {
 		
 		/**
-		 * Expected to retrieve an entity by its class and identifier from cache or instanciates it and put it into the cache
+		 * Expected to retrieve an entity by its class and identifier from cache or instantiates it and put it into the cache
 		 *
 		 * @param clazz the type of the entity
 		 * @param identifier the identifier of the entity (Long, String, ...)

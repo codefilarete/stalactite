@@ -40,7 +40,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	 * Context for indexed mapped List. Will keep bean index during select between "unrelated" methods/phases :
 	 * index column must be added to SQL select, read from ResultSet and order applied to sort final List, but this particular feature crosses over
 	 * layers (entities and SQL) which is not implemented. In such circumstances, ThreadLocal comes to the rescue.
-	 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non static (acceptable small overhead)
+	 * Could be static, but would lack the TRGT typing, which leads to some generics errors, so left non-static (acceptable small overhead)
 	 */
 	private final ThreadLocal<IdentityMap<TRGTID, Integer>> currentSelectedIndexes = new ThreadLocal<>();
 	
@@ -99,7 +99,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	}
 	
 	private void addIndexSelection(String joinNodeName, Column<Table, TRGTID> primaryKey) {
-		// Implementation note: 2 possiblities
+		// Implementation note: 2 possibilities
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
 		// - keep object indexes and sort the target List through a comparator of indexes
 		// The latter is used because target List is already filled by the relationFixer
@@ -136,7 +136,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		AbstractJoinNode<TRGT, Table, Table, TRGTID> join = (AbstractJoinNode<TRGT, Table, Table, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
 		join.setTransformerListener((trgt, rowValueProvider) -> {
 			IdentityMap<TRGTID, Integer> indexPerBean = currentSelectedIndexes.get();
-			// indexPerBean may not be present because its mecanism was added on persisterListener which is the one of the source bean
+			// indexPerBean may not be present because its mechanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
 			if (indexPerBean != null) {
 				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row

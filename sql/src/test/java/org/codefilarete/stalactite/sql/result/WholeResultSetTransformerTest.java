@@ -146,7 +146,7 @@ public class WholeResultSetTransformerTest {
 		String leftFeatherColorColumnName = "featherColor";
 		WholeResultSetTransformer<String, WingInner> testInstance = new WholeResultSetTransformer<>(WingInner.class, wingInstanciationColumnName, STRING_READER, WingInner::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER,
-				// Simply instanciate the inner class as usual
+				// Simply instantiate the inner class as usual
 				// No need to be added to the wing instance because the constructor does it
 				(wing, colorName) -> wing.new FeatherInner(colorName)
 		);

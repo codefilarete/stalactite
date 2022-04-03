@@ -92,7 +92,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
 	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
-	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
+	 * @param beanRelationFixer a function to fulfill relation between 2 strategies beans
 	 * @param <U> type of bean mapped by the given strategy
 	 * @param <T1> joined left table
 	 * @param <T2> joined right table
@@ -119,7 +119,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 	 * @param leftJoinColumn the {@link Column} (of previous strategy left table) to be joined with {@code rightJoinColumn}
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
 	 * @param isOuterJoin says wether or not the join must be open
-	 * @param beanRelationFixer a function to fullfill relation between 2 strategies beans
+	 * @param beanRelationFixer a function to fulfill relation between 2 strategies beans
 	 * @param <U> type of bean mapped by the given strategy
 	 * @param <T1> joined left table
 	 * @param <T2> joined right table
@@ -169,7 +169,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 			EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
 			Query query = entityTreeQuery.getQuery();
 			
-			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instanciation
+			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instantiation
 			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), whereClauseDMLNameProvider);
 			DDLAppender identifierCriteria = new JoinDDLAppender(whereClauseDMLNameProvider);
 			query.getWhere().and(identifierCriteria);
@@ -208,7 +208,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 	
 	/**
 	 * Small class that focuses on operation execution and entity loading.
-	 * Kind of method group serving same purpose, made non static for simplicity.
+	 * Kind of method group serving same purpose, made non-static for simplicity.
 	 */
 	@VisibleForTesting
 	class InternalExecutor {
@@ -267,7 +267,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 			this.whereTableAlias = whereTableAlias;
 		}
 		
-		/** Overriden to get alias of the root and only for it, throws exception it given table is not where table one */
+		/** Overridden to get alias of the root and only for it, throws exception if given table is not where table one */
 		@Override
 		public String getAlias(Table table) {
 			if (table == whereTable) {
@@ -292,7 +292,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 			this.dmlNameProvider = dmlNameProvider;
 		}
 		
-		/** Overriden to change the way {@link Column}s are appended : their table prefix are added */
+		/** Overridden to change the way {@link Column}s are appended : their table prefix are added */
 		@Override
 		public StringAppender cat(Object o) {
 			if (o instanceof Column) {

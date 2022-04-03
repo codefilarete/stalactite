@@ -132,7 +132,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	/**
 	 * Executes update of given payloads. This method will create as many SQL orders as necessary for them (some cache is used for payload with
 	 * same columns to be updated).
-	 * This method should be used for heterogeneous use case where payloads doesn't contain same columns for update.
+	 * This method should be used for heterogeneous use case where payloads don't contain same columns for update.
 	 * 
 	 * Prefers {@link #updateMappedColumns(Iterable)} if you know that all payloads target the same columns.  
 	 * 
@@ -152,7 +152,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	/**
 	 * Executes update of given payloads. This method expects that every payload wants to update same columns
 	 * as those given by {@link ClassMapping#getUpdatableColumns()} : this means all mapped columns.
-	 * If such a contract is not fullfilled, an exception may occur (because of missing data)
+	 * If such a contract is not fulfilled, an exception may occur (because of missing data)
 	 * 
 	 * This method applies JDBC batch.
 	 *
@@ -211,9 +211,10 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	}
 	
 	/**
-	 * Facility to trigger JDBC Batch when number of setted values is reached. Usefull for update statements.
-	 * Its principle is near to JDBCBatchingIterator but update methods have to compute differences on each couple so
-	 * they generate multiple statements according to differences, hence an Iterator is not a good candidate for design.
+	 * Facility to trigger JDBC Batch when a threshold of {@link #setValues(Map)} count is reached. Useful for update statements.
+	 * Its principle is near {@link org.codefilarete.stalactite.engine.runtime.WriteExecutor.JDBCBatchingIterator} but update methods have to compute
+	 * differences on each couple therefore it generates multiple statements according to differences, hence an {@link Iterator} is not a good
+	 * candidate for current class design.
 	 */
 	private static class JDBCBatchingOperation<T extends Table> {
 		private final WriteOperation<UpwhereColumn<T>> writeOperation;
@@ -256,7 +257,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		
 		private SingleJDBCBatchingOperation(JDBCBatchingOperation<T> jdbcBatchingOperation) {
 			this.jdbcBatchingOperation = jdbcBatchingOperation;
-			operationIterator = new ArrayIterator<>(this.jdbcBatchingOperation);
+			this.operationIterator = new ArrayIterator<>(this.jdbcBatchingOperation);
 		}
 		
 		@Override

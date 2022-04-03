@@ -61,7 +61,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param sourcePersister source that needs this instance joins
 	 * @param leftColumn left part of the join, expected to be one of source table 
 	 * @param rightColumn right part of the join, expected to be one of current instance table
-	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instanciation
+	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
 	 * 					not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
@@ -87,7 +87,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param sourcePersister source that needs this instance joins
 	 * @param leftColumn left part of the join, expected to be one of source table 
 	 * @param rightColumn right part of the join, expected to be one of current instance table
-	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instanciation
+	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
 	 * 					not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
@@ -109,9 +109,9 @@ public interface RelationalEntityPersister<C, I> {
 	 * Copies current instance joins root to given select
 	 * 
 	 * @param entityJoinTree target of the copy
-	 * @param joinName name of target select join on which joins of thisinstance must be copied
+	 * @param joinName name of target select join on which joins of this instance must be copied
 	 * @param <E> target select entity type
-	 * @param <ID> identifier tyoe
+	 * @param <ID> identifier type
 	 */
 	<E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName);
 	

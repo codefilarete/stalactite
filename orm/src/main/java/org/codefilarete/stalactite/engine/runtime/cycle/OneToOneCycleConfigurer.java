@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostIn
  */
 public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	
-	// instanciated as a LinkedHashSet only for steady debugging purpose, could be replaced by a HashSet
+	// instantiated as a LinkedHashSet only for steady debugging purpose, could be replaced by a HashSet
 	private final Set<RelationConfigurer<?, ?, ?>> relations = new LinkedHashSet<>();
 	
 	public OneToOneCycleConfigurer(Class<TRGT> entityType) {

@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 /**
  * Builder of polymorphic persisters. Handles {@link PolymorphismPolicy} subtypes, as such, it is the main entry point for polymorphic persisters :
  * it will invoke {@link JoinTablePolymorphismBuilder}, {@link SingleTablePolymorphismBuilder} or {@link TablePerClassPolymorphismBuilder}
- * accoring to policy. Hence those builders are not expected to be invoked directly outside of this class.
+ * according to policy. Hence, those builders are not expected to be invoked directly outside this class.
  * 
  * @author Guillaume Mary
  */
@@ -104,8 +104,8 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 		}
 		EntityConfiguredJoinedTablesPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		result = new PersisterListenerWrapper<>(result);
-		// We transfert listeners so that all actions are made in the same "event listener context" : all listeners are agregated in a top level one.
-		// Made in particular for already-assigned mark-as-persisted mecanism and relation cascade triggering.
+		// We transfer listeners so that all actions are made in the same "event listener context" : all listeners are aggregated in a top level one.
+		// Made in particular for already-assigned mark-as-persisted mechanism and relation cascade triggering.
 		mainPersister.getPersisterListener().moveTo(result.getPersisterListener());
 		
 		return result;

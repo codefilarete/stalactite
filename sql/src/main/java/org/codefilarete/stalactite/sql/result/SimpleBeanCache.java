@@ -33,7 +33,7 @@ public final class SimpleBeanCache {
 	}
 	
 	/**
-	 * Main method that tries to retrieve an entity by its class and identifier or instanciates it and put it into the cache
+	 * Main method that tries to retrieve an entity by its class and identifier or instantiates it and put it into the cache
 	 *
 	 * @param clazz the type of the entity
 	 * @param identifier the identifier of the entity (Long, String, ...),
@@ -58,7 +58,7 @@ public final class SimpleBeanCache {
 	}
 	
 	/**
-	 * Wrapper for {@link Map} key to take arrays into account : array's hashcode are not computed on their content (as the opposit of List)
+	 * Wrapper for {@link Map} key to take arrays into account : array's hashcode are not computed on their content (as the opposite of List)
 	 * hence two arrays having same content are not under the same hashcode. This class computes hashcode arrays on their content, thus, two
 	 * beans with same composed keys hit the cache.
 	 */

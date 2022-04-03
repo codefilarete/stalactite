@@ -18,13 +18,13 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	
 	protected final Function<Function<Column, Object>, C> beanFactory;
 	
-	/** A kind of {@link Column} aliaser, mainly usefull in case of {@link #copyWithAliases(ColumnedRow)} usage */
+	/** A kind of {@link Column} aliaser, mainly useful in case of {@link #copyWithAliases(ColumnedRow)} usage */
 	private final ColumnedRow columnedRow;
 	
 	private final Collection<TransformerListener<C>> rowTransformerListeners = new ArrayList<>();
 	
 	/**
-	 * Constructor for beans to be instanciated with their default constructor.
+	 * Constructor for beans to be instanced with their default constructor.
 	 *
 	 * @param clazz bean class
 	 */
@@ -69,9 +69,9 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	}
 	
 	/**
-	 * Instanciates a bean 
+	 * Instantiates a bean 
 	 * 
-	 * @param row current {@link java.sql.ResultSet} row, may be used to defined which bean to instanciate
+	 * @param row current {@link java.sql.ResultSet} row, may be used to defined which bean to instantiate
 	 * @return a new instance of bean C
 	 */
 	protected C newBeanInstance(Row row) {

@@ -29,7 +29,7 @@ public class PersisterBuilderContext {
 	 * Give access to current {@link PersisterBuilderContext}, created and destroyed by
 	 * {@link PersisterBuilderImpl#build(Dialect, ConnectionConfiguration, PersisterRegistry, Table)}
 	 * 
-	 * Made static because several {@link PersisterBuilderImpl}s are instanciated along the build process.
+	 * Made static because several {@link PersisterBuilderImpl}s are instantiated along the build process.
 	 * Not the best design ever, but works !
 	 */
 	static final ThreadLocal<PersisterBuilderContext> CURRENT = new ThreadLocal<>();
@@ -41,7 +41,7 @@ public class PersisterBuilderContext {
 	private final Set<Class> entityCandidates = new HashSet<>();
 	
 	/**
-	 * List of post initializers to be invoked after persister instanciation and main configuration
+	 * List of post initializers to be invoked after persister instantiation and main configuration
 	 */
 	private final List<PostInitializer<Object>> postInitializers = new ArrayList<>();
 	

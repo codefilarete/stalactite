@@ -44,7 +44,7 @@ public class H2Dialect extends Dialect {
 			return sqlType;
 		}
 		
-		/** Overriden to implement H2 "unique" keyword */
+		/** Overridden to implement H2 "unique" keyword */
 		@Override
 		protected void generateCreatePrimaryKey(PrimaryKey primaryKey, DDLAppender sqlCreateTable) {
 			sqlCreateTable.cat(", unique (")

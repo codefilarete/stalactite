@@ -28,7 +28,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}.
-	 * By default, the entity no-arg constructor is used to instanciate them, but you may change this behavior thanks to one of the
+	 * By default, the entity no-arg constructor is used to instantiate them, but you may change this behavior thanks to one of the
 	 * {@link FluentEntityMappingBuilderKeyOptions#usingConstructor(Function)} methods
 	 *
 	 * @param getter getter of the property to be used as key
@@ -39,7 +39,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
-	 * By default, the entity no-arg constructor is used to instanciate them, but you may change this behavior thanks to one of the
+	 * By default, the entity no-arg constructor is used to instantiate them, but you may change this behavior thanks to one of the
 	 * {@link FluentEntityMappingBuilderKeyOptions#usingConstructor(Function)} methods
 	 *
 	 * @param getter getter of the property to be used as key
@@ -50,7 +50,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
-	 * By default, the entity no-arg constructor is used to instanciate them, but you may change this behavior thanks to one of the
+	 * By default, the entity no-arg constructor is used to instantiate them, but you may change this behavior thanks to one of the
 	 * {@link FluentEntityMappingBuilderKeyOptions#usingConstructor(Function)} methods
 	 *
 	 * @param getter getter of the property to be used as key
@@ -61,7 +61,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}.
-	 * By default, the entity no-arg constructor is used to instanciate them.
+	 * By default, the entity no-arg constructor is used to instantiate them.
 	 *
 	 * @param setter setter of the property to be used as key
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
@@ -71,7 +71,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given {@link Column}.
-	 * By default, the entity no-arg constructor is used to instanciate them.
+	 * By default, the entity no-arg constructor is used to instantiate them.
 	 *
 	 * @param setter setter of the property to be used as key
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
@@ -81,7 +81,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Maps given property as identifier, using given {@link IdentifierPolicy}, and given column name.
-	 * By default, the entity no-arg constructor is used to instanciate them.
+	 * By default, the entity no-arg constructor is used to instantiate them.
 	 *
 	 * @param setter setter of the property to be used as key
 	 * @param identifierPolicy {@link IdentifierPolicy} to be used for entity insertion
@@ -107,7 +107,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		/**
 		 * Indicates the 1-arg constructor to be used to instantiate entity. It will be given primary key value.
 		 * 
-		 * @param factory 1-arg contructor to be used
+		 * @param factory 1-arg constructor to be used
 		 * @return this
 		 */
 		KeyOptions<C, I> usingConstructor(Function<? super I, C> factory);
@@ -115,8 +115,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		/**
 		 * Indicates the 1-arg constructor to be used to instantiate entity. It will be given column value (expected to be table primary key).
 		 * 
-		 * @param factory 1-arg contructor to be used
-		 * @param input column to use for retrieving value to be given as contructor argument
+		 * @param factory 1-arg constructor to be used
+		 * @param input column to use for retrieving value to be given as constructor argument
 		 * @return this
 		 */
 		<T extends Table> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
@@ -125,7 +125,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * Variant of {@link #usingConstructor(Function, Column)} with only column name.
 		 * 
 		 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
-		 * @param columnName name of column to use for retrieving value to be given as contructor argument
+		 * @param columnName name of column to use for retrieving value to be given as constructor argument
 		 */
 		KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName);
 		
@@ -137,8 +137,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * should use this column as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 2-args constructor to use (can also be a method factory, not a pure class constructor)
-		 * @param input1 first column to use for retrieving value to be given as contructor argument
-		 * @param input2 second column to use for retrieving value to be given as contructor argument
+		 * @param input1 first column to use for retrieving value to be given as constructor argument
+		 * @param input2 second column to use for retrieving value to be given as constructor argument
 		 */
 		<X, T extends Table> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
 															   Column<T, I> input1,
@@ -163,9 +163,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * should use the columns as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 3-args constructor to use (can also be a method factory, not a pure class constructor)
-		 * @param input1 first column to use for retrieving value to be given as contructor argument
-		 * @param input2 second column to use for retrieving value to be given as contructor argument
-		 * @param input3 third column to use for retrieving value to be given as contructor argument
+		 * @param input1 first column to use for retrieving value to be given as constructor argument
+		 * @param input2 second column to use for retrieving value to be given as constructor argument
+		 * @param input3 third column to use for retrieving value to be given as constructor argument
 		 */
 		<X, Y, T extends Table> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
 																  Column<T, I> input1,
@@ -286,7 +286,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * an exception will be thrown at build time.
 	 * 
 	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
-	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
 	FluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
 	
@@ -298,7 +298,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * Declares the mapping of a super class.
 	 * 
 	 * @param superMappingConfigurationProvider a mapping configuration of a super type of the current mapped type
-	 * @return a enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
 	FluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfigurationProvider);
 	
@@ -309,7 +309,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param mappingConfiguration the mapping configuration of the target entity
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
@@ -320,7 +320,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param mappingConfiguration the mapping configuration of the target entity
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
@@ -332,7 +332,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param table target table of the mapped configuration
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
@@ -344,7 +344,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param table target table of the mapped configuration
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
-	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
@@ -358,7 +358,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <O> type of {@link Set} element
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Set} type
-	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
 	 * @see #mapOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Set<O>>
@@ -375,7 +375,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
-	 * This method is dedicated to {@link List} because generic types are erased so you can't defined a generic type extending {@link List} and refine
+	 * This method is dedicated to {@link List} because generic types are erased so you can't define a generic type extending {@link List} and refine
 	 * return type or arguments in order to distinct it from a {@link Set} version.
 	 * 
 	 * @param getter the way to get the {@link List} from source entities
@@ -383,7 +383,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <O> type of {@link List} element
 	 * @param <J> type of identifier of {@code O} (target entities)
 	 * @param <S> refined {@link List} type
-	 * @return a enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
 	 * @see #mapOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends List<O>>
@@ -514,7 +514,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * A merge of {@link FluentMappingBuilderOneToManyOptions} and {@link IndexableCollectionOptions} to defined a one-to-many relation
-	 * with a indexed {@link java.util.Collection} such as a {@link List}
+	 * with an indexed {@link java.util.Collection} such as a {@link List}
 	 * 
 	 * @param <C> type of source entity
 	 * @param <I> type of identifier of source entity

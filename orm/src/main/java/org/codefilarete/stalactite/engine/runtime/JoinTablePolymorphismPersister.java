@@ -53,7 +53,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
- * Class that wraps some other persisters and transfers its invokations to them.
+ * Class that wraps some other persisters and transfers its invocations to them.
  * Used for polymorphism to dispatch method calls to sub-entities persisters.
  * 
  * @author Guillaume Mary
@@ -133,7 +133,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	@Override
 	public Collection<Table> giveImpliedTables() {
 		// Implied tables are those of sub entities.
-		// Note that doing this lately (not in constructor) garanties that it is uptodate because sub entities may have relations which are
+		// Note that doing this lately (not in constructor) guaranties that it is up-to-date because sub entities may have relations which are
 		// configured out of constructor by caller
 		List<Table> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toList());
 		return Collections.cat(mainPersister.giveImpliedTables(), subTables);
@@ -183,7 +183,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 		List<C> result = mainSelectExecutor.select(ids);
 		
 		// Then we call sub entities afterSelect listeners else they are not invoked. Done in particular for relation on sub entities that have
-		// an already-assigned identifier which requires to mark entities as persisted (to prevent them from trying to be inserted wherease they 
+		// an already-assigned identifier which requires marking entities as persisted (to prevent them from trying to be inserted whereas they 
 		// already are)
 		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
 		for (C entity : result) {

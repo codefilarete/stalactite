@@ -98,7 +98,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	}
 	
 	/**
-	 * Updates given entity in database according to following mecanism : it selects the existing data in database, then compares it with given
+	 * Updates given entity in database according to following mechanism : it selects the existing data in database, then compares it with given
 	 * entity in memory, and then updates database if necessary (nothing if no change was made).
 	 *
 	 * @param entity the entity to be updated
@@ -108,7 +108,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	}
 	
 	/**
-	 * Updates given entity in database according to following mecanism : it selects the existing data in database, then compares it with given
+	 * Updates given entity in database according to following mechanism : it selects the existing data in database, then compares it with given
 	 * entity in memory, and then updates database if necessary (nothing if no change was made).
 	 *
 	 * @param entity the entity to be updated
@@ -119,7 +119,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	}
 	
 	/**
-	 * Updates given entities in database according to following mecanism : it selects the existing data in database, then compares it with given
+	 * Updates given entities in database according to following mechanism : it selects the existing data in database, then compares it with given
 	 * entities in memory, and then updates database if necessary (nothing if no change was made).
 	 * To be used for CRUD use case.
 	 *
@@ -142,7 +142,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * Subclasses may override this behavior to enhance loading or change its algorithm (by using {@link #updateById(Iterable)} for instance)
 	 * 
 	 * @param id key of entity to be modified 
-	 * @param entityConsumer businness code expected to modify its given entity
+	 * @param entityConsumer business code expected to modify its given entity
 	 */
 	@Experimental
 	default void update(I id, Consumer<C> entityConsumer) {
@@ -153,7 +153,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * Massive version of {@link #update(Object, Consumer)}. {@link Consumer} will be called for each found entities.
 	 * 
 	 * @param ids keys of entities to be modified
-	 * @param entityConsumer businness code expected to modify its given entity
+	 * @param entityConsumer business code expected to modify its given entity
 	 */
 	@Experimental
 	default void update(Iterable<I> ids, Consumer<C> entityConsumer) {
@@ -176,7 +176,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	
 	/**
 	 * Will delete instances only by their identifier.
-	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 * This method will not take optimistic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
 	 * @param entity entity to be deleted
 	 */
@@ -280,11 +280,11 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 		/**
 		 * Combines with "and" given criteria on an embedded or one-to-one bean property
 		 *
-		 * @param getter1 a method reference to the embbeded bean
-		 * @param getter2 a method reference to the embbeded bean property
+		 * @param getter1 a method reference to the embedded bean
+		 * @param getter2 a method reference to the embedded bean property
 		 * @param operator operator of the criteria (will be the condition on the matching column)
 		 * @param <A> embedded bean type
-		 * @param <B> embbeded bean property type, also criteria value
+		 * @param <B> embedded bean property type, also criteria value
 		 * @return this
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */

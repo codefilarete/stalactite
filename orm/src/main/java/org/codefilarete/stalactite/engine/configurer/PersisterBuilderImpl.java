@@ -317,7 +317,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	/**
-	 * Contract to post initialize some thing after persister has been instanciated but need some more configuration.
+	 * Contract triggered after a persister has been built, made to fulfill some more configuration.
 	 * Used in particular to deal with bean cycle load.
 	 * 
 	 * @param <P> entity type to be persisted
@@ -850,7 +850,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param isIdentifyingConfiguration true for a root mapping (will use {@link Identification#insertionManager}), false for inheritance case (will use {@link Identification#identificationDefiner}) 
 	 * @param targetTable {@link Table} to use by created {@link ClassMapping}
 	 * @param mapping properties to be managed by created {@link ClassMapping}
-	 * @param propertiesSetByConstructor properties set by contructor ;), to avoid re-setting them (and even look for a setter for them) 
+	 * @param propertiesSetByConstructor properties set by constructor ;), to avoid re-setting them (and even look for a setter for them) 
 	 * @param identification {@link Identification} to use (see isIdentifyingConfiguration)
 	 * @param beanType entity type to be managed by created {@link ClassMapping}
 	 * @param entityFactoryProvider optional, if null default bean type constructor will be used

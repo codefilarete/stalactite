@@ -613,7 +613,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			};
 			// Please note that 1st implementation was to simply add persistTargetCascader, but it invokes persist() which may invoke update()
 			// and because we are in the relation-owned-by-target case targetPersister.update() needs foreign key value provider to be
-			// fullfilled (see addUpdateCascade for addShadowColumnUpdate), so we wrap persistTargetCascader with a foreign key value provider.
+			// fulfilled (see addUpdateCascade for addShadowColumnUpdate), so we wrap persistTargetCascader with a foreign key value provider.
 			// This focuses particular use case when a target is modified and newly assigned to the source
 			sourcePersister.addInsertListener(new InsertListener<SRC>() {
 				/**

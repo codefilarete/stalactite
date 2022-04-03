@@ -290,13 +290,13 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 		
 		@Override
 		public void applyRowToBean(Row values, C targetRowBean) {
-			// Algorithm is a little bit complex due to embedded beans into this embedded one and the fact that we may not instanciate them
-			// if all of their attributes has default values in current row : because instanciation is done silently by AccessorChainMutator
-			// (the object that let us set embedded bean attributes) we have to check the need of their invokation before ... their invokation.
-			// Therefore we keep a boolean indicating if their values are default ones (if true its means that bean shouldn't be instanciated)
+			// Algorithm is a bit complex due to embedded beans into this embedded one and the fact that we may not instantiate them
+			// if all of their attributes has default values in current row : because instantiation is done silently by AccessorChainMutator
+			// (the object that let us set embedded bean attributes) we have to check the need of their invocation before ... their invocation.
+			// Therefore, we keep a boolean indicating if their values are default ones (if true its means that bean shouldn't be instantiated)
 			// per accessor to this bean. Example : with the mappings "Person::getTimestamp, Timestamp::setCreationDate" and
 			// "Person::getTimestamp, Timestamp::setModificationDate", then we keep a boolean per "Person::getTimestamp" saying that if one of
-			// creationDate and modificationDate is not null then we should instanciate Timestamp, if both are null then not. 
+			// creationDate and modificationDate is not null then we should instantiate Timestamp, if both are null then not. 
 			Map<Entry<Column, Mutator>, Object> beanValues = new HashMap<>();
 			Map<Accessor, MutableBoolean> valuesAreDefaultOnes = new HashMap<>();
 			for (Entry<Column, Mutator> columnFieldEntry : getColumnToMember().entrySet()) {
@@ -361,18 +361,18 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	}
 	
 	/**
-	 * Small constract that helps to determine if a value is a default one for a bean property.
-	 * Aimed at deciding if embedded beans must be instanciated or not according to row values (from {@link java.sql.ResultSet}
+	 * Small contract that helps to determine if a value is a default one for a bean property.
+	 * Aimed at deciding if embedded beans must be instanced or not according to row values (from {@link java.sql.ResultSet}
 	 * during the conversion phase
 	 */
 	public interface DefaultValueDeterminer {
 
 		/**
-		 * Default implementation considers null as a default value for non primitive types, and default primitive type values as such for
+		 * Default implementation considers null as a default value for non-primitive types, and default primitive type values as such for
 		 * primitive types (took in {@link Reflections#PRIMITIVE_DEFAULT_VALUES}).
 		 * 
 		 * @param mappedProperty column and its mapped property (configured in the {@link EmbeddedClassMapping}).
-		 * 						 So one can use either the column or the accessor for fine grained default value determination
+		 * 						 So one can use either the column or the accessor for fine-grained default value determination
 		 * @param value value coming from a JDBC {@link java.sql.ResultSet}, mapped by the couple {@link Column} + {@link Mutator}.
 		 * @return true if value is a default one for column/property
 		 */

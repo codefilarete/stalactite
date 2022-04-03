@@ -45,7 +45,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	 * 
 	 * @param columnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
-	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
+	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instantiation needed)
 	 */
 	public ResultSetRowTransformer(Class<C> beanType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
 		this(beanType, new IdentifierArgBeanFactory<>(new SingleColumnReader<>(columnName, reader), beanFactory));
@@ -56,7 +56,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	 *
 	 * @param beanType type of built instances
 	 * @param reader object to ease column reading, indicates column type
-	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instanciation needed)
+	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instantiation needed)
 	 */
 	public ResultSetRowTransformer(Class<C> beanType, ColumnReader<I> reader, SerializableFunction<I, C> beanFactory) {
 		this(beanType, new IdentifierArgBeanFactory<>(reader, beanFactory));
@@ -64,7 +64,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	
 	/**
 	 * Constructor with main and mandatory arguments.
-	 * With  this constructor an instance per {@link ResultSet} row will be created since there's no mean to distinguish a row instance from another
+	 * With this constructor an instance per {@link ResultSet} row will be created since there's no mean to distinguish a row instance from another
 	 * because no key reader is given
 	 *
 	 * @param beanType type of built instances
@@ -77,7 +77,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	/**
 	 * For internal usage
 	 * @param beanType type of built instances
-	 * @param beanFactory bean factory to use as contructor
+	 * @param beanFactory bean factory to use as constructor
 	 */
 	ResultSetRowTransformer(Class<C> beanType, BeanFactory<C> beanFactory) {
 		this.beanType = beanType;
@@ -215,7 +215,7 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	}
 	
 	/**
-	 * Specialization of {@link BeanFactory} for no-arg contructor classes.
+	 * Specialization of {@link BeanFactory} for no-arg constructor classes.
 	 * 
 	 * @param <C> created type
 	 */

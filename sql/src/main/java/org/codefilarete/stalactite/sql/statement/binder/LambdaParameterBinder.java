@@ -17,7 +17,7 @@ public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	private final PreparedStatementWriter<T> preparedStatementWriter;
 	
 	/**
-	 * Default basic constructor that delegates its mecanism to a given {@link ResultSetReader} and a {@link PreparedStatementWriter}
+	 * Default basic constructor that delegates its mechanism to a given {@link ResultSetReader} and a {@link PreparedStatementWriter}
 	 * 
 	 * @param resultSetReader a {@link ResultSetReader}
 	 * @param preparedStatementWriter a {@link PreparedStatementWriter}

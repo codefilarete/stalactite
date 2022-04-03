@@ -178,7 +178,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * Defines the key column and the way to create the bean : a constructor with the key as parameter.
 	 *
 	 * @param <I> the type of the column, which is also that of the factory argument
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param factory the factory function that will instantiate new beans (with key as single argument)
 	 * @param columnName the key column name
 	 * @param columnType the type of the column, which is also that of the factory argument
 	 * @return this
@@ -193,7 +193,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * Defines key columns and the way to create the bean : a constructor with 2 arguments.
 	 *
 	 * @param <I> the type of the column, which is also that of the factory argument
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param factory the factory function that will instantiate new beans (with key as single argument)
 	 * @param column1Name the first key column name
 	 * @param column1Type the type of the first column, which is also that of the factory first argument
 	 * @param column2Name the second key column name
@@ -215,7 +215,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * Defines key columns and the way to create the bean : a constructor with 3 arguments.
 	 *
 	 * @param <I> the type of the column, which is also that of the factory argument
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param factory the factory function that will instantiate new beans (with key as single argument)
 	 * @param column1Name the first key column name
 	 * @param column1Type the type of the first column, which is also that of the factory first argument
 	 * @param column2Name the second key column name
@@ -241,7 +241,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * Same as {@link #mapKey(SerializableFunction, String, Class)} but with {@link org.codefilarete.stalactite.sql.ddl.structure.Column} signature
 	 *
 	 * @param <I> type of the key
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param factory the factory function that will instantiate new beans (with key as single argument)
 	 * @param column the mapped column used as a key
 	 * @return this
 	 */
@@ -256,7 +256,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.sql.ddl.structure.Column)} with a 2-args constructor
 	 *
 	 * @param <I> type of the key
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param factory the factory function that will instantiate new beans (with key as single argument)
 	 * @param column1 the first column of the key
 	 * @param column2 the second column of the key
 	 * @return this
@@ -278,7 +278,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * Same as {@link #mapKey(SerializableFunction, org.codefilarete.stalactite.sql.ddl.structure.Column)} with a 3-args constructor
 	 *
 	 * @param <I> type of the key
-	 * @param factory the factory function that will instanciate new beans (with key as single argument)
+	 * @param factory the factory function that will instantiate new beans (with key as single argument)
 	 * @param column1 the first column of the key
 	 * @param column2 the second column of the key
 	 * @param column3 the third column of the key
@@ -386,7 +386,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	/**
 	 * Same as {@link #map(org.codefilarete.stalactite.sql.ddl.structure.Column, SerializableBiConsumer)}.
-	 * Differs by providing the possiblity to convert the value before setting it onto the bean.
+	 * Differs by providing the possibility to convert the value before setting it onto the bean.
 	 *
 	 * @param column the mapped column
 	 * @param setter the setter function
@@ -487,12 +487,12 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		}, HashSet::new);
 		MultipleColumnsReader<Object[]> multipleColumnsReader = new MultipleColumnsReader<>(columnReaders, resultSetRow -> {
 			// we transform all columns value into a Object[]
-			Object[] contructorArgs = new Object[columns.size()];
+			Object[] constructorArgs = new Object[columns.size()];
 			int i = 0;
 			for (Column column : columns) {
-				contructorArgs[i++] = resultSetRow.get(column.getName());
+				constructorArgs[i++] = resultSetRow.get(column.getName());
 			}
-			return contructorArgs;
+			return constructorArgs;
 		});
 		
 		ResultSetRowTransformer<Object[], C> resultSetRowConverter = new ResultSetRowTransformer<>(
@@ -662,7 +662,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		}
 		
 		/**
-		 * Transfert this mapping to given instance
+		 * Transfer this mapping to given instance
 		 * @param target instance that will consume current mapping
 		 */
 		public void applyTo(WholeResultSetTransformer<I, C> target) {

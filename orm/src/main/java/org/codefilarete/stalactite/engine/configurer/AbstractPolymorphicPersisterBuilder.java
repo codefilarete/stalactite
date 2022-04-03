@@ -102,9 +102,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	
 	/**
 	 * Adds relations to given persisters which are expected to be subclass's one. Relations are not only one-to-one and one-to-many ones but also
-	 * Polymorphism ones (sub class can also be polymophic, resulting in a kind of resursive call to create a polymorphism tree)
+	 * Polymorphism ones (subclass can also be polymorphic, resulting in a kind of recursive call to create a polymorphism tree)
 	 *
-	 * <strong>Given persiter Map may be modified</strong> by this method by replacing persisters by new ones.
+	 * <strong>Given persister Map may be modified</strong> by this method by replacing persisters by new ones.
 	 *
 	 * @param persisterPerSubclass persisters that need relation
 	 * @param dialect the {@link Dialect} use for type binding
@@ -126,7 +126,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry, subConfiguration, subEntityPersister);
 				}
 				
-				// We register relation of sub class persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
+				// We register relation of subclass persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
 				registerRelationCascades(
 						subConfiguration,
 						dialect,
@@ -155,7 +155,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 	/**
 	 * Creates a polymorphic persister for an already-polymorphic case (this class) : used when main persister subclasses are also polymorphic.
 	 *
-	 * @param subPersister a sub class persister of our main persister
+	 * @param subPersister a subclass persister of our main persister
 	 * @param subPolymorphismPolicy the sub persister {@link PolymorphismPolicy}
 	 * @param dialect the {@link Dialect} use for type binding
 	 * @param connectionConfiguration the connection configuration
@@ -235,7 +235,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 			if (currentBuilderContext.isCycling(cascadeMany.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
-				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be inhanced), and
+				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be enhanced), and
 				// overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
 				PostInitializer postInitializer = new PostInitializer(cascadeMany.getTargetMappingConfiguration().getEntityType()) {
 					@Override
@@ -260,7 +260,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 			}
 		}
 		// Please note that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
-		// is made in two phases, see JoinTablePolymorphismEntitySelectExecutor (instanciated in JoinTablePolymorphismPersister)
+		// is made in two phases, see JoinTablePolymorphismEntitySelectExecutor (instantiated in JoinTablePolymorphismPersister)
 		
 		// taking element collections into account
 		for (ElementCollectionLinkage<D, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {

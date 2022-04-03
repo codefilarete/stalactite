@@ -15,7 +15,7 @@ import org.codefilarete.tool.function.TriConsumer;
 /**
  * An interface aimed at abstracting the way how relations between 2 beans are filled : implementation should handle one-to-one relationship
  * as well as one-to-many relationship.
- * Since implemenations are quite simple, they are done through all "of" static methods in this interface.
+ * Since implementations are quite simple, they are done through all "of" static methods in this interface.
  * 
  * @param <E> bean type on which relation must be applied to
  * @param <I> relation input type 
@@ -32,7 +32,7 @@ public interface BeanRelationFixer<E, I> {
 	 * Main method that fills the relation
 	 * 
 	 * @param target the owner of the relation
-	 * @param input the objet to be writen/added into the relation
+	 * @param input the objet to be written/added into the relation
 	 */
 	void apply(E target, I input);
 	
@@ -61,9 +61,9 @@ public interface BeanRelationFixer<E, I> {
 	}
 	
 	/**
-	 * Returns a {@link Supplier} of concrete instance for given collection type : for {@link List} and {@link Set} types it repectively
+	 * Returns a {@link Supplier} of concrete instance for given collection type : for {@link List} and {@link Set} types it respectively
 	 * returns an {@link ArrayList} instance and an {@link HashSet} instance, for any other case collectionType is expected to be concrete therefore
-	 * it will try to instanciate it.
+	 * it will try to instantiate it.
 	 * 
 	 * @param collectionType expected to be one of List.class or Set.class or a concrete type
 	 * @return a {@link Supplier} of a concrete {@link Collection} compatible with given collectionType
@@ -75,18 +75,18 @@ public interface BeanRelationFixer<E, I> {
 		} else if (Set.class.equals(collectionType)) {
 			concreteType = (Class) HashSet.class;
 		} else {
-			// given type is expected to be concrete, we'll instanciate it
+			// given type is expected to be concrete, we'll instantiate it
 			concreteType = collectionType;
 		}
 		return () -> Reflections.newInstance(concreteType);
 	}
 	
 	/**
-	 * Shortcut to {@link #of(BiConsumer, Function, Supplier)} with a supplier that will isntanciate the given concrete Collection class
+	 * Shortcut to {@link #of(BiConsumer, Function, Supplier)} with a supplier that will instantiate the given concrete Collection class
 	 * 
 	 * @param setter the method that sets the {@link Collection} onto the target bean
 	 * @param getter the method that gets the {@link Collection} from the target bean
-	 * @param concreteCollectionType the Class that will be instanciated to fill the relation if it is null
+	 * @param concreteCollectionType the Class that will be instanced to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
 	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter,
@@ -107,11 +107,11 @@ public interface BeanRelationFixer<E, I> {
 	}
 	
 	/**
-	 * Shortcut to {@link #of(BiConsumer, Function, Supplier, BiConsumer)} with a supplier that will instanciate the given concrete Collection class
+	 * Shortcut to {@link #of(BiConsumer, Function, Supplier, BiConsumer)} with a supplier that will instantiate the given concrete Collection class
 	 *
 	 * @param setter the method that sets the {@link Collection} onto the target bean
 	 * @param getter the method that gets the {@link Collection} from the target bean
-	 * @param concreteCollectionType the Class that will be instanciated to fill the relation if it is null
+	 * @param concreteCollectionType the Class that will be instanced to fill the relation if it is null
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
 	static <E, I, C extends Collection<I>> BeanRelationFixer<E, I> of(BiConsumer<E, C> setter, Function<E, C> getter,

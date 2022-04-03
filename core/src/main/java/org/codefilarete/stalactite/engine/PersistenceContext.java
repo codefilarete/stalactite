@@ -89,7 +89,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * JDBC batch size is set to 100.
 	 *
 	 * @param dataSource a JDBC {@link Connection} provider
-	 * @param dialect dialect to be used with {@link Connection} gioven by dataSource
+	 * @param dialect dialect to be used with {@link Connection} given by dataSource
 	 */
 	public PersistenceContext(DataSource dataSource, Dialect dialect) {
 		this(new CurrentThreadConnectionProvider(dataSource), dialect);
@@ -314,7 +314,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * Queries the database for given column and invokes given 1-arg constructor with it.
 	 * 
 	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
-	 * Moreover only column table is queried : no join nor assembly is made.
+	 * Moreover, only column table is queried : no join nor assembly is made.
 	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 * 
 	 * @param factory a one-argument bean constructor
@@ -338,7 +338,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * Queries the database for given columns and invokes given 2-args constructor with them. 
 	 *
 	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
-	 * Moreover only columns table is queried : no join nor assembly are processed.
+	 * Moreover, only columns table is queried : no join nor assembly are processed.
 	 * Prefer {@link #select(SerializableBiFunction, Column, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 *
 	 * @param factory a two-arguments bean constructor
@@ -363,7 +363,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * Queries the database for given columns and invokes given 3-args constructor with them.
 	 *
 	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
-	 * Moreover only columns table is queried : no join nor assembly are processed.
+	 * Moreover, only columns table is queried : no join nor assembly are processed.
 	 * Prefer {@link #select(SerializableBiFunction, Column, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 *
 	 * @param factory a two-arguments bean constructor
@@ -388,10 +388,10 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Queries the database and invokes given no-arg constructor for each row.
-	 * Additionnal bean fullfilment will be done by using configuration you'll give through {@link SelectMapping}.
+	 * Additional bean fulfillment will be done by using configuration you'll give through {@link SelectMapping}.
 	 *
 	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
-	 * Moreover only columns table is queried : no join nor assembly are processed.
+	 * Moreover, only columns table is queried : no join nor assembly are processed.
 	 * Prefer {@link #select(SerializableBiFunction, Column, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 *
 	 * @param factory a two-arguments bean constructor
@@ -407,15 +407,15 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Queries the database for given columns and invokes given 1-arg constructor with it.
-	 * Additionnal bean fullfilment will be done by using configuration you'll give through {@link SelectMapping}. 
+	 * Additional bean fulfillment will be done by using configuration you'll give through {@link SelectMapping}. 
 	 *
 	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
-	 * Moreover only column table is queried : no join nor assembly are processed.
+	 * Moreover, only column table is queried : no join nor assembly are processed.
 	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 *
 	 * @param factory a one-argument bean constructor
-	 * @param column any table column (primary key may be prefered because its result is given to bean constructor but it is not expected)
-	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param column any table column (primary key may be preferred because its result is given to bean constructor but it is not expected)
+	 * @param selectMapping allow to add some mapping beyond instantiation time
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
@@ -429,16 +429,16 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Queries the database for given columns and invokes given 2-args constructor with them.
-	 * Additionnal bean fullfilment will be done by using configuration you'll give through {@link SelectMapping}.
+	 * Additional bean fulfillment will be done by using configuration you'll give through {@link SelectMapping}.
 	 *
 	 * Usage is for very simple cases because IT DOESN'T FILTER DATABASE ROWS : no where clause is appended to the query.
-	 * Moreover only columns table is queried : no join nor assembly are processed.
+	 * Moreover, only columns table is queried : no join nor assembly are processed.
 	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 *
 	 * @param factory a two-arguments bean constructor
 	 * @param column1 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
 	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
-	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param selectMapping allow to add some mapping beyond instantiation time
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
@@ -453,7 +453,7 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Queries the database and invokes given no-arg constructor for each row.
-	 * Additionnal bean fullfilment will be done by using configuration you'll give through {@link SelectMapping}.
+	 * Additional bean fulfillment will be done by using configuration you'll give through {@link SelectMapping}.
 	 *
 	 * Usage is for very simple cases : only columns table is targeted (no join nor assembly are processed).
 	 * Prefer {@link #newQuery(SQLBuilder, Class)} for a more complete use case.
@@ -473,14 +473,14 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Queries the database for given column and invokes given 1-arg constructor with it.
-	 * Additionnal bean fullfilment will be done by using configuration you'll give through {@link SelectMapping}. 
+	 * Additional bean fulfillment will be done by using configuration you'll give through {@link SelectMapping}. 
 	 *
 	 * Usage is for very simple cases : only columns table is targeted (no join nor assembly are processed).
 	 * Prefer {@link #newQuery(SQLBuilder, Class)} for a more complete use case.
 	 *
 	 * @param factory a one-argument bean constructor
-	 * @param column any table column (primary key may be prefered because its result is given to bean constructor but it is not expected)
-	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param column any table column (primary key may be preferred because its result is given to bean constructor but it is not expected)
+	 * @param selectMapping allow to add some mapping beyond instantiation time
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
@@ -496,7 +496,7 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Queries the database for given columns and invokes given 2-args constructor with them.
-	 * Additionnal bean fullfilment will be done by using configuration you'll give through {@link SelectMapping}.
+	 * Additional bean fulfillment will be done by using configuration you'll give through {@link SelectMapping}.
 	 *
 	 * Usage is for very simple cases : only columns table is targeted (no join nor assembly are processed).
 	 * Prefer {@link #newQuery(SQLBuilder, Class)} for a more complete use case.
@@ -504,7 +504,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param factory a one-argument bean constructor
 	 * @param column1 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
 	 * @param column2 a table column (may be a primary key column because its result is given to bean constructor but it is not expected)
-	 * @param selectMapping allow to add some mapping beyond instanciation time
+	 * @param selectMapping allow to add some mapping beyond instantiation time
 	 * @param <C> type of created beans
 	 * @param <I> constructor first-arg type and first column type
 	 * @param <J> constructor second-arg type and second column type
@@ -524,9 +524,9 @@ public class PersistenceContext implements PersisterRegistry {
 	 * Very generic internal method made to execute selection
 	 * 
 	 * @param beanType bean type to be built, used for marking return type 
-	 * @param keyMapper function that configures contructor and data key
+	 * @param keyMapper function that configures constructor and data key
 	 * @param selectableKeys contains columns to be added to select clause
-	 * @param selectMapping function that configures bean fullfilment
+	 * @param selectMapping function that configures bean fulfillment
 	 * @param where function that configures where clause
 	 * @param <C> type of created beans
 	 * @return beans created with selected data
@@ -571,7 +571,7 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	/**
-	 * Small support to store additional bean fullfilment of select queries.
+	 * Small support to store additional bean fulfillment of select queries.
 	 * 
 	 * @param <C> resulting bean type
 	 * @param <T> targeted table type of selected columns
@@ -604,7 +604,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Only visible from {@link PersistenceContext} (not for external usage) because only necessary in case of absence of explicit selected columns
 		 * (bean with no-arg constructor).
 		 * May returns null if no {@link Column} is defined which should raise an exception since it doesn't make sense (remember : this method is
-		 * only used when no-arg constructor is used, hence giving no additional bean fullfilment doesn't seem logical because that would create
+		 * only used when no-arg constructor is used, hence giving no additional bean fulfillment doesn't seem logical because that would create
 		 * one (empty) bean per row : what's the use case ?)
 		 * 
 		 * @return the {@link Table} targeted by {@link Column}s defined in this instance, null if no {@link Column} are defined WHICH IS A WRONG USAGE
@@ -628,14 +628,14 @@ public class PersistenceContext implements PersisterRegistry {
 			return this;
 		}
 		
-		/** Overriden to adapt return type */
+		/** Overridden to adapt return type */
 		@Override
 		public <C> ExecutableUpdate set(Column<Table, C> column, C value) {
 			super.set(column, value);
 			return this;
 		}
 		
-		/** Overriden to adapt return type */
+		/** Overridden to adapt return type */
 		@Override
 		public <C> ExecutableUpdate set(Column<Table, C> column1, Column<Table, C> column2) {
 			super.set(column1, column2);
@@ -678,7 +678,7 @@ public class PersistenceContext implements PersisterRegistry {
 			super(table);
 		}
 		
-		/** Overriden to adapt return type */
+		/** Overridden to adapt return type */
 		@Override
 		public <C> ExecutableInsert<T> set(Column<T, C> column, C value) {
 			super.set(column, value);
@@ -876,7 +876,7 @@ public class PersistenceContext implements PersisterRegistry {
 	/**
 	 * Bridge between {@link ConnectionProvider}, {@link ConnectionConfiguration}, {@link org.codefilarete.stalactite.sql.TransactionObserver}
 	 * and {@link SeparateTransactionExecutor} so one can notify {@link PersistenceContext} from commit and rollback as well as maintain internal
-	 * mecanisms such as :
+	 * mechanisms such as :
 	 * - creating a separate transaction to manage HiLo Sequence
 	 * - revert entity version on transaction rollback (when versioning is active)
 	 */

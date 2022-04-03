@@ -51,7 +51,7 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	
 	/**
 	 *
-	 * @param clazz the constructor to be used to instanciate a new bean
+	 * @param clazz the constructor to be used to instantiate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
 	public ToBeanRowTransformer(Class<C> clazz, Map<Column, Mutator> columnToMember) {
@@ -61,7 +61,7 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	
 	/**
 	 *
-	 * @param beanFactory factory to be used to instanciate a new bean
+	 * @param beanFactory factory to be used to instantiate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
 	public ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {

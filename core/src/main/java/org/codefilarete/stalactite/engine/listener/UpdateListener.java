@@ -29,7 +29,7 @@ public interface UpdateListener<C> {
 	/**
 	 * Payload for listener's methods. Carries modified + unmodified entities and the columns + values
 	 * which must be updated.
-	 * Not expected to be used elsewhere than the {@link UpdateListener} mecanism.
+	 * Not expected to be used elsewhere than the {@link UpdateListener} mechanism.
 	 * 
 	 * @param <C> entities type
 	 * @param <T> target table type

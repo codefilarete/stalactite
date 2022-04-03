@@ -94,7 +94,7 @@ public abstract class SQLStatement<ParamType> {
 	public abstract String getSQL();
 	
 	/**
-	 * Calls right setXXX method (according to {@link ParameterBinder} given at contructor) on the given
+	 * Calls right setXXX method (according to {@link ParameterBinder} given at constructor) on the given
 	 * {@link PreparedStatement}. Called by {@link SQLOperation} classes.
 	 * 
 	 * @param statement target for values

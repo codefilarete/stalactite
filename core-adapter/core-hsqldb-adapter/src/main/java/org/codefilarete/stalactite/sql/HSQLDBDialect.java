@@ -53,7 +53,7 @@ public class HSQLDBDialect extends Dialect {
 			return sqlType;
 		}
 		
-		/** Overriden to implement HSQLDB "unique" keyword */
+		/** Overridden to implement HSQLDB "unique" keyword */
 		@Override
 		protected void generateCreatePrimaryKey(PrimaryKey primaryKey, DDLAppender sqlCreateTable) {
 			sqlCreateTable.cat(", unique (")

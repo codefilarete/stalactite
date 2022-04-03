@@ -31,11 +31,11 @@ public interface RowTransformer<C> {
 		 * Method invoked for each read row after all transformations made by a {@link AbstractTransformer} on a bean, so bean given as input is
 		 * considered "complete".
 		 *
-		 * @param c current row bean, may be dfferent from row to row depending on bean instanciation policy of bean factory given
+		 * @param c current row bean, may be different from row to row depending on bean instantiation policy of bean factory given
 		 * 		to {@link ToBeanRowTransformer} at construction time 
-		 * @param rowValueProvider a function that let one read a value from current row without exposing internal mecanism of row reading.
+		 * @param rowValueProvider a function that let one read a value from current row without exposing internal mechanism of row reading.
 		 *  Input is a {@link Column} because it is safer than a simple column name because {@link ToBeanRowTransformer} can be copied with
-		 *  different aliases making mistach when value is read from name.
+		 *  different aliases making mismatch when value is read from name.
 		 */
 		void onTransform(C c, Function<Column, Object> rowValueProvider);
 		

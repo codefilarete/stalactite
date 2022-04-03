@@ -91,7 +91,7 @@ class ResultSetRowTransformerTest {
 	
 	@Test
 	void transform_basicUseCase_complexConsumer() throws SQLException {
-		// The default ModifiableInt that takes its value from "a". Reinstanciated on each row.
+		// The default ModifiableInt that takes its value from "a". Reinstantiated on each row.
 		ResultSetRowTransformer<Integer, ModifiableInt> testInstance = new ResultSetRowTransformer<>(ModifiableInt.class, "a", INTEGER_READER, ModifiableInt::new);
 		// The secondary that will increment the same ModifiableInt by column "b" value
 		testInstance.add(new ColumnConsumer<>("b", INTEGER_READER, (t, i) -> t.increment(Objects.preventNull(i, 0))));

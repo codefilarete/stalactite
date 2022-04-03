@@ -15,7 +15,7 @@ public class DerbyTableGenerator extends DDLTableGenerator {
 	}
 	
 	/**
-	 * Overriden to take identity column into account : Derby script must be adapted
+	 * Overridden to take identity column into account : Derby script must be adapted
 	 */
 	@Override
 	protected String getSqlType(Column column) {

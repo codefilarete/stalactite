@@ -22,7 +22,7 @@ public class DerbyGeneratedKeysReader extends GeneratedKeysReader<Integer> {
 		super("1", DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER);
 	}
 	
-	/** Overriden to simulate generated keys for Derby because it only returns the highest generated key */
+	/** Overridden to simulate generated keys for Derby because it only returns the highest generated key */
 	@Override
 	public List<Integer> read(WriteOperation writeOperation) throws SQLException {
 		List<Integer> rows = super.read(writeOperation);

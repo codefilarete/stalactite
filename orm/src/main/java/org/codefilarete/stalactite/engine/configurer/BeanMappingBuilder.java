@@ -261,7 +261,7 @@ class BeanMappingBuilder {
 			}
 			prefix = AccessorChain.forModel(
 				accessors,
-				// this can look superfluous but fills the gap of instanciating right bean when configuration is a subtype of inset accessor,
+				// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
 				// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
 				// (where T is type returned by accessor, or expected as input of mutator)
 				(localAccessor, accessorInputType) -> insetBeanType);
@@ -296,7 +296,7 @@ class BeanMappingBuilder {
 				});
 		return AccessorChain.forModel(
 				finalAccessors,
-				// this can look superfluous but fills the gap of instanciating right bean when configuration is a subtype of inset accessor,
+				// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
 				// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
 				// (where T is type returned by accessor, or expected as input of mutator)
 				(accessor, aClass) -> beanType);

@@ -167,7 +167,7 @@ public class From implements Iterable<Join>, JoinChain {
 		private final JoinDirection joinDirection;
 		
 		/**
-		 * Contructor that needs direction
+		 * Constructor that needs direction
 		 *
 		 * @param joinDirection the join type of this join
 		 */

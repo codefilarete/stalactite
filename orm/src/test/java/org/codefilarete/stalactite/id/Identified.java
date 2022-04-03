@@ -20,9 +20,9 @@ public interface Identified<I> {
 	/**
 	 * Gives a {@link ParameterBinder} for a general {@link Identified} to be declared in a {@link ParameterBinderRegistry}
 	 * for SQL write operation purpose : it will use the surrogate id as a value for the {@link PreparedStatement}.
-	 * The returned {@link ParameterBinder} has no purpose for selection because it doesn't know how to build a fullfilled instance. Even if
+	 * The returned {@link ParameterBinder} has no purpose for selection because it doesn't know how to build a fulfilled instance. Even if
 	 * it is called, the result is ignored by {@link EntityTreeInflater} which cleanly handle
-	 * instanciation and filling of the target.
+	 * instantiation and filling of the target.
 	 * 
 	 * @param parameterBinder the surrogate {@link ParameterBinder} (can be for primitive type because null is already handled by this method result)
 	 * @param <I> the type of the surrogate {@link Identifier}
@@ -34,7 +34,7 @@ public interface Identified<I> {
 			@Override
 			public Identified<I> doGet(ResultSet resultSet, String columnName) {
 				// we can't instantiate the right Identified because we don't have its class, moreover we should fill the instance properties
-				// but we don't have the material to do it, hence the select decoding process is done differenly elsewhere in
+				// but we don't have the material to do it, hence the select decoding process is done differently elsewhere in
 				// EntityTreeInflater, so we can return anything here 
 				return null;
 			}
