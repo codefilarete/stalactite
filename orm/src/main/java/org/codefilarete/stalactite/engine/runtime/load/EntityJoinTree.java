@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -45,15 +46,17 @@ public class EntityJoinTree<C, I> {
 	private final JoinRoot<C, I, ?> root;
 	
 	/**
-	 * A mapping between a name and a join to help finding them when we want to join one with another new one
-	 * @see #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set) 
+	 * A mapping between a name and a join to find them when we want to join one with another new one
+	 * @see #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set)
+	 * @see #indexKeyGenerator
 	 */
 	private final Map<String, JoinNode> joinIndex = new HashMap<>();
 	
 	/**
-	 * The objet that will help to give names of strategies into the index (no impact on the generated SQL)
+	 * The objet that will help to give node names / keys into the index (no impact on the generated SQL)
+	 * @see	#joinIndex
 	 */
-	private final StrategyIndexNamer indexNamer = new StrategyIndexNamer();
+	private final NodeKeyGenerator indexKeyGenerator = new NodeKeyGenerator();
 	
 	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newIdentitySet();
 	
@@ -253,7 +256,7 @@ public class EntityJoinTree<C, I> {
 			throw new IllegalArgumentException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
 		}
 		AbstractJoinNode joinNode = joinNodeSupplier.apply(owningJoin);
-		String joinName = this.indexNamer.generateName(joinNode);
+		String joinName = this.indexKeyGenerator.generateKey(joinNode);
 		this.joinIndex.put(joinName, joinNode);
 		return joinName;
 	}
@@ -492,9 +495,15 @@ public class EntityJoinTree<C, I> {
 		return nodeCopy;
 	}
 	
-	private class StrategyIndexNamer {
+	private class NodeKeyGenerator {
 		
-		private String generateName(JoinNode node) {
+		/**
+		 * We don't use {@link java.security.SecureRandom} because it consumes too much time while computing random values (more than 500ms
+		 * for a 6-digit identifier ! ... for each Node !!), and there's no need for security here.
+		 */
+		private final Randomizer keyGenerator = new Randomizer(new LinearRandomGenerator(new Random()));
+		
+		private String generateKey(JoinNode node) {
 			// We generate a name which is unique across trees so node clones can be found outside this class by their name on different trees.
 			// This is necessary for particular case of reading indexing column of indexed collection with an association table : the node that needs
 			// to use indexing column is not the owner of the association table clone hence it can't use it (see table clone mechanism at EntityTreeQueryBuilder).
@@ -502,10 +511,10 @@ public class EntityJoinTree<C, I> {
 			// The found way for the official node to access data through the indexing column is to use the identifier of the relation table node,
 			// because it has it when it is created (see OneToManyWithIndexedAssociationTableEngine), and because the node is cloned through tree
 			// the identifier should be "universal".
-			// Note that this naming strategy could be more chaotic (random) since names are only here to give a unique identifier to joins but
-			// the hereafter algorithm can help for debug 
+			// Note that this naming strategy could be more chaotic (totally random) since names are only here to give a unique identifier to joins
+			// but the hereafter algorithm can help for debug
 			return node.getTable().getAbsoluteName()
-					+ "-" + Integer.toHexString(System.identityHashCode(EntityJoinTree.this)) + "-" + Randomizer.INSTANCE.randomHexString(6);
+					+ "-" + Integer.toHexString(System.identityHashCode(EntityJoinTree.this)) + "-" + keyGenerator.randomHexString(6);
 		}
 	}
 	
