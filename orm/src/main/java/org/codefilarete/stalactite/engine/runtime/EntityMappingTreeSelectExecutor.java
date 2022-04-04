@@ -225,7 +225,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 			this.entityTreeInflater = entityTreeQuery.getInflater();
 			this.selectParameterBinders = entityTreeQuery.getSelectParameterBinders();
 			this.connectionProvider = connectionProvider;
-			this.executor = new SelectExecutor<C, I, Table>.InternalExecutor() {
+			this.executor = new SelectExecutor.InternalExecutor<C, I, T>(getMapping()) {
 				@Override
 				protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
 					return entityTreeInflater.transform(() -> rowIterator, resultSize);

@@ -31,10 +31,13 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
  */
 public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
 	
+	private final InternalExecutor<C, I, T> internalExecutor;
+	
 	protected SQLOperationListener<Column<T, Object>> operationListener;
 	
 	public SelectExecutor(EntityMapping<C, I, T> mappingStrategy, ConnectionProvider connectionProvider, DMLGenerator dmlGenerator, int inOperatorMaxSize) {
 		super(mappingStrategy, connectionProvider, dmlGenerator, inOperatorMaxSize);
+		this.internalExecutor = new InternalExecutor<>(mappingStrategy);
 	}
 	
 	public void setOperationListener(SQLOperationListener<Column<T, Object>> operationListener) {
@@ -60,16 +63,15 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 			// So we can apply the same read operation to all the firsts packets
 			T targetTable = getMapping().getTargetTable();
 			Set<Column<T, Object>> columnsToRead = getMapping().getSelectableColumns();
-			InternalExecutor executor = new InternalExecutor();
 			if (!parcels.isEmpty()) {
 				ReadOperation<Column<T, Object>> defaultReadOperation = newReadOperation(targetTable, columnsToRead, blockSize, localConnectionProvider);
-				parcels.forEach(parcel -> result.addAll(executor.execute(defaultReadOperation, parcel)));
+				parcels.forEach(parcel -> result.addAll(internalExecutor.execute(defaultReadOperation, parcel)));
 			}
 			
 			// last packet treatment (packet size may be different)
 			if (!lastParcel.isEmpty()) {
 				ReadOperation<Column<T, Object>> lastReadOperation = newReadOperation(targetTable, columnsToRead, lastBlockSize, localConnectionProvider);
-				result.addAll(executor.execute(lastReadOperation, lastParcel));
+				result.addAll(internalExecutor.execute(lastReadOperation, lastParcel));
 			}
 		}
 		return result;
@@ -87,14 +89,20 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	
 	/**
 	 * Small class that focuses on operation execution and entity loading.
-	 * Kind of method group serving same purpose, made non static for simplicity.
+	 * Kind of method group serving same purpose, made non-static for simplicity.
 	 */
 	@VisibleForTesting
-	class InternalExecutor {
+	static class InternalExecutor<C, I, T extends Table> {
+		
+		private final EntityMapping<C, I, T> mapping;
+		
+		InternalExecutor(EntityMapping<C, I, T> mapping) {
+			this.mapping = mapping;
+		}
 		
 		@VisibleForTesting
 		List<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
-			Map<Column<T, Object>, Object> primaryKeyValues = getMapping().getIdMapping().getIdentifierAssembler().getColumnValues(ids);
+			Map<Column<T, Object>, Object> primaryKeyValues = mapping.getIdMapping().getIdentifierAssembler().getColumnValues(ids);
 			try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);
 				return transform(closeableOperation, primaryKeyValues.size());
@@ -111,7 +119,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		}
 		
 		protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-			return Iterables.collect(() -> rowIterator, getMapping()::transform, () -> new ArrayList<>(resultSize));
+			return Iterables.collect(() -> rowIterator, mapping::transform, () -> new ArrayList<>(resultSize));
 		}
 	}
 }
