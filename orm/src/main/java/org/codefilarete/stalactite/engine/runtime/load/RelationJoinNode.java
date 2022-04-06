@@ -33,7 +33,8 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 	/** Relation fixer for instances of this strategy on owning strategy entities */
 	private final BeanRelationFixer<Object, C> beanRelationFixer;
 	
-	private final BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider;
+	/** Available only in List cases : gives the identifier of an entity in the List to avoid duplicate mix (typically : concatenates list index to entity id)*/
+	private final BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider;
 	
 	RelationJoinNode(JoinNode<T1> parent,
 					 Column<T1, I> leftJoinColumn,
@@ -43,11 +44,11 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 					 @Nullable String tableAlias,
 					 EntityInflater<C, I, T2> entityInflater,
 					 BeanRelationFixer<Object, C> beanRelationFixer,
-					 @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider) {
+					 @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
 		this.beanRelationFixer = beanRelationFixer;
-		this.duplicateIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) duplicateIdentifierProvider;
+		this.relationIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) relationIdentifierProvider;
 	}
 	
 	public EntityInflater<C, ?, T2> getEntityInflater() {
@@ -58,13 +59,13 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		return beanRelationFixer;
 	}
 	
-	public BiFunction<Row, ColumnedRow, Object> getDuplicateIdentifierProvider() {
-		return duplicateIdentifierProvider;
+	public BiFunction<Row, ColumnedRow, Object> getRelationIdentifierProvider() {
+		return relationIdentifierProvider;
 	}
 	
 	@Override
 	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
-		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, duplicateIdentifierProvider, getTransformerListener());
+		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, relationIdentifierProvider, getTransformerListener());
 	}
 	
 	static class RelationJoinRowConsumer<C, I> implements JoinRowConsumer {

@@ -263,7 +263,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 																				  Column<T1, ID> leftColumn,
 																				  Column<T2, ID> rightColumn,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider,
 																				  String joinName,
 																				  boolean optional,
 																				  Set<Column<T2, ?>> selectableColumns) {
@@ -278,7 +278,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 				optional ? JoinType.OUTER : JoinType.INNER,
 				beanRelationFixer,
 				selectableColumns,
-				duplicateIdentifierProvider);
+				relationIdentifierProvider);
 		
 		// adding our subgraph select to source persister
 		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);

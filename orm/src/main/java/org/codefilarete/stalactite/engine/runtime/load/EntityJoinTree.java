@@ -127,7 +127,7 @@ public class EntityJoinTree<C, I> {
 	 * @param joinType says whether the join must be open
 	 * @param beanRelationFixer a function to fulfill relation between beans
 	 * @param additionalSelectableColumns columns to be added to SQL select clause out of ones took from given inflater, necessary for indexed relations
-	 * @param duplicateIdentifierProvider a function that computes the relation identifier
+	 * @param relationIdentifierProvider relation identifier provider, not null for List cases : necessary because List may contain duplicate
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 * 
 	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)
@@ -140,7 +140,7 @@ public class EntityJoinTree<C, I> {
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer,
 																					  Set<? extends Column<T2, ?>> additionalSelectableColumns,
-																					  @Nullable BiFunction<Row, ColumnedRow, ID> duplicateIdentifierProvider) {
+																					  @Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
 				parent,
 				leftJoinColumn, rightJoinColumn, joinType,
@@ -148,7 +148,7 @@ public class EntityJoinTree<C, I> {
 				rightTableAlias,
 				inflater,
 				(BeanRelationFixer<Object, U>) beanRelationFixer,
-				duplicateIdentifierProvider));
+				relationIdentifierProvider));
 	}
 	
 	/**
@@ -469,7 +469,7 @@ public class EntityJoinTree<C, I> {
 					node.getTableAlias(),
 					((RelationJoinNode) node).getEntityInflater(),
 					((RelationJoinNode) node).getBeanRelationFixer(),
-					((RelationJoinNode) node).getDuplicateIdentifierProvider());
+					((RelationJoinNode) node).getRelationIdentifierProvider());
 		} else if (node instanceof MergeJoinNode) {
 			nodeCopy = new MergeJoinNode(
 					parent,
