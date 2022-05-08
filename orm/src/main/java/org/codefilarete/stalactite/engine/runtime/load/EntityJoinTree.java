@@ -14,22 +14,27 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.mapping.AbstractTransformer;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.bean.Randomizer;
-import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.ReadOnlyList;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
+import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.bean.Randomizer;
+import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.ReadOnlyList;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
@@ -136,7 +141,7 @@ public class EntityJoinTree<C, I> {
 																					  EntityInflater<U, ID, T2> inflater,
 																					  Column<T1, ID> leftJoinColumn,
 																					  Column<T2, ID> rightJoinColumn,
-																					  String rightTableAlias,
+																					  @Nullable String rightTableAlias,
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer,
 																					  Set<? extends Column<T2, ?>> additionalSelectableColumns,

@@ -37,12 +37,12 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final Map<ReversibleAccessor, Column> mainMapping;
+	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> mainMapping;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
 									 Identification<C, I> identification,
 									 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-									 Map<ReversibleAccessor, Column> mainMapping,
+									 Map<ReversibleAccessor<C, ?>, Column<T, ?>> mainMapping,
 									 ColumnBinderRegistry columnBinderRegistry,
 									 ColumnNameProvider columnNameProvider,
 									 TableNamingStrategy tableNamingStrategy,

@@ -46,7 +46,7 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 	private final ColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
-	private final Map<ReversibleAccessor, Column> mainMapping;
+	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> mainMapping;
 	private final TableNamingStrategy tableNamingStrategy;
 	
 	PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
@@ -60,7 +60,7 @@ class PolymorphismPersisterBuilder<C, I, T extends Table> implements Polymorphis
 								 ColumnNamingStrategy joinColumnNamingStrategy,
 								 ColumnNamingStrategy indexColumnNamingStrategy,
 								 AssociationTableNamingStrategy associationTableNamingStrategy,
-								 Map<ReversibleAccessor, Column> mainMapping,
+								 Map<ReversibleAccessor<C, ?>, Column<T, ?>> mainMapping,
 								 TableNamingStrategy tableNamingStrategy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;

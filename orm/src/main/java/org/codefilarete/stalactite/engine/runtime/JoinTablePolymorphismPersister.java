@@ -108,9 +108,11 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 			subclassSelectExecutors,
 			mainPersister.getMapping().getTargetTable(), connectionProvider, dialect);
 		
-		this.entitySelectExecutor = new JoinTablePolymorphismEntitySelectExecutor(subEntitiesPersisters, subEntitiesPersisters,
-				mainPersister.getMapping().getTargetTable(),
-				mainPersister.getEntityJoinTree(), connectionProvider, dialect);
+		this.entitySelectExecutor = new JoinTablePolymorphismEntitySelectExecutor<>(subEntitiesPersisters,
+																					mainPersister.getMainTable(),
+																					mainPersister.getEntityJoinTree(),
+																					connectionProvider,
+																					dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
 	}
@@ -256,7 +258,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
+		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
 		return new EntityCriteriaSupport<>(criteriaSupport);
 	}
 	

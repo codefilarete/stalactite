@@ -10,45 +10,42 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.query.EntitySelectExecutor;
 import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select.AliasedColumn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * @author Guillaume Mary
  */
 public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
-	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
-	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2;
+	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass;
 	private final T mainTable;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
-													 Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2,
+	public JoinTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass,
 													 T mainTable,
 													 EntityJoinTree<C, I> entityJoinTree,
 													 ConnectionProvider connectionProvider,
 													 Dialect dialect) {
 		this.persisterPerSubclass = persisterPerSubclass;
-		this.persisterPerSubclass2 = persisterPerSubclass2;
 		this.mainTable = mainTable;
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
@@ -77,7 +74,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, aliases, primaryKey);
 		
 		List<C> result = new ArrayList<>();
-		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass2.get(k).select(v)));
+		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}
 	
@@ -95,8 +92,8 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
 				Class<? extends C> entitySubclass;
-				Set<Entry<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>>> entries = persisterPerSubclass.entrySet();
-				Entry<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> subclassEntityOnRow = Iterables.find(entries,
+				Set<Entry<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>>> entries = persisterPerSubclass.entrySet();
+				Entry<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subclassEntityOnRow = Iterables.find(entries,
 						e -> {
 							boolean isPKEmpty = true;
 							Iterator<Column> columnIt = e.getValue().getMainTable().getPrimaryKey().getColumns().iterator();

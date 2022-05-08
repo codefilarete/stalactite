@@ -34,12 +34,12 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 class SingleTablePolymorphismBuilder<C, I, T extends Table, DTYPE> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
-	private final Map<ReversibleAccessor, Column> mainMapping;
+	private final Map<ReversibleAccessor<C, ?>, Column<T, ?>> mainMapping;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 								   Identification<C, I> identification,
 								   EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-								   Map<ReversibleAccessor, Column> mainMapping,
+								   Map<ReversibleAccessor<C, ?>, Column<T, ?>> mainMapping,
 								   ColumnBinderRegistry columnBinderRegistry,
 								   ColumnNameProvider columnNameProvider,
 								   TableNamingStrategy tableNamingStrategy, ColumnNamingStrategy columnNamingStrategy,

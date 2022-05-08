@@ -103,7 +103,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// - keep object indexes and put sorted beans in a temporary List, then add them all to the target List
 		// - keep object indexes and sort the target List through a comparator of indexes
 		// The latter is used because target List is already filled by the relationFixer
-		// If we use the former we must change the relation fixer and keep a temporary List. Seems little bit more complex.
+		// If we use the former we must change the relation fixer and keep a temporary List. Seems a bit more complex.
 		// May be changed if any performance issue is noticed
 		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override

@@ -276,7 +276,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					polymorphismPolicy, identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider,
 					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
 					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
-					this.associationTableNamingStrategy, mainMapping.getMapping(), this.tableNamingStrategy);
+					this.associationTableNamingStrategy, (Map<ReversibleAccessor<C, ?>, Column<Table, ?>>) (Map) mainMapping.getMapping(), this.tableNamingStrategy);
 			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		}
 		
@@ -347,7 +347,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private <T extends Table> void handleVersioningStrategy(SimpleRelationalEntityPersister<C, I, T> result) {
 		VersioningStrategy versioningStrategy = this.entityMappingConfiguration.getOptimisticLockOption();
 		if (versioningStrategy != null) {
-			// we have to declare it to the mapping strategy. To do that we must find the versionning column
+			// we have to declare it to the mapping strategy. To do that we must find the versioning column
 			Column column = result.getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
 			((ClassMapping) result.getMapping()).addVersionedColumn(versioningStrategy.getVersionAccessor(), column);
 			// and don't forget to give it to the workers !
@@ -444,7 +444,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			// Before insert of child we must insert parent
 			persisterListener.addInsertListener(new BeforeInsertSupport<>(superPersister::insert, Function.identity()));
 			
-			// On child update, parent must be updated too, no constraint on order for this, after is arbitrarly choosen
+			// On child update, parent must be updated too, no constraint on order for this, after is arbitrarily chosen
 			persisterListener.addUpdateListener(new AfterUpdateSupport<>(superPersister::update, Function.identity()));
 			// idem for updateById
 			persisterListener.addUpdateByIdListener(new UpdateByIdListener<C>() {

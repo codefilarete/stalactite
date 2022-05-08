@@ -5,11 +5,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
@@ -19,16 +22,14 @@ import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Polymo
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary
@@ -166,22 +167,22 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 																								   Dialect dialect,
 																								   ConnectionConfiguration connectionConfiguration,
 																								   PersisterRegistry persisterRegistry) {
-		// we only have to call a polymmoprhic builder with given methods arguments, and same configuration values as this instance
-		PolymorphismPersisterBuilder<? extends C, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder(
-				subPolymorphismPolicy,
-				identification,
-				subPersister,
-				columnBinderRegistry,
-				columnNameProvider,
-				columnNamingStrategy,
-				foreignKeyNamingStrategy,
-				elementCollectionTableNamingStrategy,
-				joinColumnNamingStrategy,
-				indexColumnNamingStrategy,
-				associationTableNamingStrategy,
-				subPersister.getMapping().getPropertyToColumn(),
-				tableNamingStrategy);
-		return (EntityConfiguredJoinedTablesPersister<D, I>) polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
+		// we only have to call a polymorphic builder with given methods arguments, and same configuration values as this instance
+		PolymorphismPersisterBuilder<D, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
+			subPolymorphismPolicy,
+			(Identification<D, I>) identification,
+			subPersister,
+			columnBinderRegistry,
+			columnNameProvider,
+			columnNamingStrategy,
+			foreignKeyNamingStrategy,
+			elementCollectionTableNamingStrategy,
+			joinColumnNamingStrategy,
+			indexColumnNamingStrategy,
+			associationTableNamingStrategy,
+			(Map<ReversibleAccessor<D, ?>, Column<T, ?>>) (Map) subPersister.getMapping().getPropertyToColumn(),
+			tableNamingStrategy);
+		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}
 	
 	private <D extends C, TRGT> void registerRelationCascades(SubEntityMappingConfiguration<D> entityMappingConfiguration,

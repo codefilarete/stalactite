@@ -56,7 +56,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 	@Override
 	public List<C> select(Iterable<I> ids) {
 		// 2 possibilities :
-		// - execute a request that join all tables and all relations, then give result to transfomer
+		// - execute a request that join all tables and all relations, then give result to transformer
 		//   Pros : one request, simple approach
 		//   Cons : one eventually big/complex request, has some drawback on how to create this request (impacts on parent
 		//          Persister behavior) and how to build the transformer. In conclusion quite complex
@@ -66,7 +66,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 		//   differences)
 		//   Cons : first request not so easy to write. Performance may be lower because of 1+N (one per subclass) database 
 		//   requests
-		// => option 2 choosen. May be reviewed later, or make this policy configurable.
+		// => option 2 chosen. May be reviewed later, or make this policy configurable.
 		
 		// Doing this in 2 phases
 		// - make a select with id + discriminator in select clause and ids in where to determine ids per subclass type
