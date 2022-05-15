@@ -21,7 +21,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeIn
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -35,6 +34,7 @@ import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.ReadOnlyList;
+import org.codefilarete.tool.function.Hanger.Holder;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
@@ -65,8 +65,8 @@ public class EntityJoinTree<C, I> {
 	
 	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newIdentitySet();
 	
-	public <T extends Table> EntityJoinTree(EntityInflater<C, I, T> entityInflater, T table) {
-		this.root = new JoinRoot<>(this, entityInflater, table);
+	public <T extends Table> EntityJoinTree(EntityInflater<C, I, T> rootEntityInflater, T table) {
+		this.root = new JoinRoot<>(this, rootEntityInflater, table);
 		this.joinIndex.put(ROOT_STRATEGY_NAME, root);
 	}
 	
@@ -156,6 +156,136 @@ public class EntityJoinTree<C, I> {
 				relationIdentifierProvider));
 	}
 	
+	public <U, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE> String addPolymorphicRelationJoin(
+			String leftStrategyName,
+			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+			Column<T1, JOINCOLTYPE> leftJoinColumn,
+			Column<T2, JOINCOLTYPE> rightJoinColumn,
+			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
+			BeanRelationFixer<C, U> beanRelationFixer,
+			@Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
+		
+		Holder<PolymorphicRelationJoinNode<U, T1, T2, ID>> createdJoinHolder = new Holder<>();
+		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
+			PolymorphicRelationJoinNode<U, T1, T2, ID> polymorphicRelationJoinNode = new PolymorphicRelationJoinNode<U, T1, T2, ID>(
+				parent,
+				(Column) leftJoinColumn,
+				(Column) rightJoinColumn, JoinType.OUTER,
+				mainPersister.getMainTable().getColumns(),
+				null,
+				new EntityMappingAdapter<U, ID, T2>(mainPersister.getMapping()),
+				(BeanRelationFixer<Object, U>) beanRelationFixer,
+				relationIdentifierProvider);
+			createdJoinHolder.set(polymorphicRelationJoinNode);
+			return polymorphicRelationJoinNode;
+		});
+		
+		this.addPolymorphicSubPersistersJoins(relationJoinName, mainPersister, createdJoinHolder.get(), subPersisters);
+		
+		return relationJoinName;
+	}
+	
+	private <U, V extends U, T1 extends Table, T2 extends Table, ID> void addPolymorphicSubPersistersJoins(String mainPolymorphicJoinNodeName,
+																										   EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+																										   PolymorphicRelationJoinNode<U, T1, T2, ID> mainPersisterJoin,
+																										   Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters) {
+		subPersisters.forEach(subPersister -> {
+			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
+			this.<T1>addJoin(mainPolymorphicJoinNodeName, parent -> new MergeJoinNode<V, T1, T2, ID>(parent,
+																									 (Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns()),
+																									 (Column) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns()),
+																									 JoinType.OUTER,
+																									 null,
+																									 new EntityMergerAdapter<>(localSubPersister.getMapping())) {
+				@Override
+				public MergeJoinRowConsumer<V> toConsumer(ColumnedRow columnedRow) {
+					PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
+						new PolymorphicMergeEntityInflater<>(mainPersister, localSubPersister), columnedRow);
+					mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer);
+					return joinRowConsumer;
+				}
+			});
+		});
+	}
+	
+	static class PolymorphicMergeEntityInflater<E, D extends E, I, T extends Table<T>> implements EntityInflater<D, I, T> {
+		
+		private final EntityConfiguredJoinedTablesPersister<E, I> mainPersister;
+		
+		private final EntityConfiguredJoinedTablesPersister<D, I> subPersister;
+		
+		PolymorphicMergeEntityInflater(EntityConfiguredJoinedTablesPersister<E, I> mainPersister,
+									   EntityConfiguredJoinedTablesPersister<D, I> subPersister) {
+			this.mainPersister = mainPersister;
+			this.subPersister = subPersister;
+		}
+		
+		@Override
+		public Class<D> getEntityType() {
+			return subPersister.getClassToPersist();
+		}
+		
+		@Override
+		public I giveIdentifier(Row row, ColumnedRow columnedRow) {
+			return mainPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
+		}
+		
+		@Override
+		public RowTransformer<D> copyTransformerWithAliases(ColumnedRow columnedRow) {
+			AbstractTransformer<D> subTransformer = subPersister.getMapping().copyTransformerWithAliases(columnedRow);
+			return new RowTransformer<D>() {
+				@Override
+				public D transform(Row row) {
+					return subTransformer.transform(row);
+				}
+				
+				@Override
+				public void applyRowToBean(Row row, Object bean) {
+					
+				}
+				
+				@Override
+				public AbstractTransformer copyWithAliases(ColumnedRow columnedRow) {
+					return null;
+				}
+				
+				@Override
+				public void addTransformerListener(TransformerListener listener) {
+					
+				}
+			};
+		}
+		
+		@Override
+		public Set<Column<T, Object>> getSelectableColumns() {
+			return (Set) subPersister.getMapping().getSelectableColumns();
+		}
+	}
+	
+	static class PolymorphicMergeJoinRowConsumer<C, D extends C, I> extends MergeJoinRowConsumer<D> {
+		
+		private final BiFunction<Row, ColumnedRow, I> identifierProvider;
+		
+		private final ColumnedRow columnedRow;
+		
+		public PolymorphicMergeJoinRowConsumer(PolymorphicMergeEntityInflater<C, D, I, ?> entityInflater,
+											   ColumnedRow columnedRow) {
+			super(entityInflater.copyTransformerWithAliases(columnedRow));
+			this.identifierProvider = entityInflater::giveIdentifier;
+			this.columnedRow = columnedRow;
+		}
+		
+		@Nullable
+		public I giveIdentifier(Row row) {
+			return identifierProvider.apply(row, columnedRow);
+		}
+		
+		public D transform(Row row) {
+			return super.merger.transform(row);
+		}
+	}
+		
+	
 	/**
 	 * Adds a join to this select.
 	 * Use for inheritance cases when joined data are used to complete an existing bean. 
@@ -188,20 +318,20 @@ public class EntityJoinTree<C, I> {
 	 * @param <T2> right table type
 	 * @param <ID> type of joined values
 	 * @param leftStrategyName join name on which join must be created
-	 * @param inflater strategy to be used to load bean
+	 * @param entityMerger strategy to be used to load bean
 	 * @param leftJoinColumn left join column, expected to be one of left strategy table
 	 * @param rightJoinColumn right join column
 	 * @param joinType type of join to create
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
-																				   EntityMerger<U, T2> inflater,
+																				   EntityMerger<U, T2> entityMerger,
 																				   Column<T1, ID> leftJoinColumn,
 																				   Column<T2, ID> rightJoinColumn,
 																				   JoinType joinType) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new MergeJoinNode<>(parent,
 				leftJoinColumn, rightJoinColumn, joinType,
-				null, inflater));
+				null, entityMerger));
 	}
 	
 	/**
@@ -435,7 +565,6 @@ public class EntityJoinTree<C, I> {
 				targetPath.add(nodeClone);
 			}
 			
-			
 			// if depth changes, we must remove target depth
 			AbstractJoinNode nextIterationNode = joinStack.peek();
 			if (nextIterationNode != null && nextIterationNode.getParent() != currentNode.getParent()) {
@@ -521,101 +650,6 @@ public class EntityJoinTree<C, I> {
 			return node.getTable().getAbsoluteName()
 					+ "-" + Integer.toHexString(System.identityHashCode(EntityJoinTree.this)) + "-" + keyGenerator.randomHexString(6);
 		}
-	}
-	
-	/**
-	 * Constract to deserialize a database row to a bean
-	 *
-	 * @param <E>
-	 * @param <I>
-	 */
-	public interface EntityInflater<E, I, T extends Table> {
-		
-		Class<E> getEntityType();
-		
-		I giveIdentifier(Row row, ColumnedRow columnedRow);
-		
-		RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
-		
-		Set<Column<T, Object>> getSelectableColumns();
-		
-		/**
-		 * Adapter of a {@link EntityMapping} as a {@link EntityInflater}.
-		 * Implemented as a simple wrapper of a {@link EntityMapping} because methods are very close.
-		 * 
-		 * @param <E> entity type
-		 * @param <I> identifier type
-		 * @param <T> table type
-		 */
-		class EntityMappingAdapter<E, I, T extends Table> implements EntityInflater<E, I, T> {
-			
-			private final EntityMapping<E, I, T> delegate;
-			
-			public EntityMappingAdapter(EntityMapping<E, I, T> delegate) {
-				this.delegate = delegate;
-			}
-			
-			@Override
-			public Class<E> getEntityType() {
-				return this.delegate.getClassToPersist();
-			}
-			
-			@Override
-			public I giveIdentifier(Row row, ColumnedRow columnedRow) {
-				return this.delegate.getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
-			}
-			
-			@Override
-			public RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
-				return this.delegate.copyTransformerWithAliases(columnedRow);
-			}
-			
-			@Override
-			public Set<Column<T, Object>> getSelectableColumns() {
-				return this.delegate.getSelectableColumns();
-			}
-		}
-		
-	}
-	
-	/**
-	 * Contract to merge a row to some bean property (no bean creation, only property completion)
-	 * 
-	 * @param <E>
-	 * @param <T>
-	 */
-	public interface EntityMerger<E, T extends Table> {
-		
-		RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
-		
-		Set<Column<T, Object>> getSelectableColumns();
-		
-		/**
-		 * Adapter of a {@link EntityMapping} as a {@link EntityMerger}.
-		 * Implemented as a simple wrapper of a {@link EntityMapping} because methods are very close.
-		 *
-		 * @param <E> entity type
-		 * @param <T> table type
-		 */
-		class EntityMergerAdapter<E, T extends Table> implements EntityMerger<E, T> {
-			
-			private final EntityMapping<E, ?, T> delegate;
-			
-			public EntityMergerAdapter(EntityMapping<E, ?, T> delegate) {
-				this.delegate = delegate;
-			}
-			
-			@Override
-			public RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
-				return delegate.copyTransformerWithAliases(columnedRow);
-			}
-			
-			@Override
-			public Set<Column<T, Object>> getSelectableColumns() {
-				return delegate.getSelectableColumns();
-			}
-		}
-		
 	}
 	
 	public enum JoinType {

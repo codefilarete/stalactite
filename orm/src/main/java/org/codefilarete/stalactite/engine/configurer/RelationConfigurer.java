@@ -156,7 +156,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		}
 		
 		@Override
-		public void consume(EntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
+		public void consume(EntityConfiguredJoinedTablesPersister<TRGT, ?> targetPersister) {
 			sourcePersister.getCriteriaSupport().getRootConfiguration().registerRelation(targetEntityAccessor, targetPersister.getMapping());
 		}
 	}

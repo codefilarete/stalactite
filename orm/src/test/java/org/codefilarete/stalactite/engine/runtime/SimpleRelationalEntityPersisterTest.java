@@ -15,8 +15,38 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
+import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
+import org.codefilarete.stalactite.engine.listener.DeleteListener;
+import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
+import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.RelationalExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.id.Identified;
+import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
@@ -24,34 +54,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
-import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
-import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.RelationalExecutableEntityQuery;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.id.Identified;
-import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.id.PersistedIdentifier;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
-import org.codefilarete.stalactite.test.PairSetList;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,7 +62,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -186,8 +188,17 @@ class SimpleRelationalEntityPersisterTest {
 		
 		@BeforeEach
 		void setUp() throws SQLException {
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
 			initMapping();
 			initTest();
+			PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(initializer -> initializer.consume(
+				(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
+		}
+		
+		@AfterEach
+		void removeEntityCandidates() {
+			PersisterBuilderContext.CURRENT.remove();
 		}
 		
 		@Test
@@ -446,8 +457,17 @@ class SimpleRelationalEntityPersisterTest {
 		
 		@BeforeEach
 		void setUp() throws SQLException {
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
 			initMapping();
 			initTest();
+			PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(initializer -> initializer.consume(
+				(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
+		}
+		
+		@AfterEach
+		void removeEntityCandidates() {
+			PersisterBuilderContext.CURRENT.remove();
 		}
 		
 		void initMapping() {

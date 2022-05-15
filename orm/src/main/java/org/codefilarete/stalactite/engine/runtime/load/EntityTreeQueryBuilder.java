@@ -6,22 +6,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.ConsumerNode;
+import org.codefilarete.stalactite.mapping.ColumnedRow;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderProvider;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
-import org.codefilarete.stalactite.query.model.From;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderProvider;
+import org.codefilarete.tool.function.Hanger.Holder;
 
 /**
  * Builder of a {@link Query} from an {@link EntityJoinTree}
@@ -55,46 +57,7 @@ public class EntityTreeQueryBuilder<C> {
 		// Table clones storage per their initial node to manage several occurrence of same table in query
 		Map<JoinNode, Table> tablePerJoinNode = new HashMap<>();
 		
-		// Simple class that helps to add columns to select, made as internal method class else it would take more parameters
-		class ResultHelper {
-			
-			private <T1 extends Table<T1>> void addColumnsToSelect(JoinNode joinNode, String tableAlias) {
-				Iterable<Column<T1, Object>> selectableColumns = joinNode.getColumnsToSelect();
-				for (Column selectableColumn : selectableColumns) {
-					String alias = aliasBuilder.buildColumnAlias(tableAlias, selectableColumn);
-					Column columnClone = tablePerJoinNode.get(joinNode).getColumn(selectableColumn.getName());
-					query.select(columnClone, alias);
-					// we link the column alias to the binder so it will be easy to read the ResultSet
-					selectParameterBinders.put(alias, parameterBinderProvider.getBinder(selectableColumn));
-					columnAliases.put(columnClone, alias);
-				}
-			}
-			
-			/**
-			 * Builds {@link ConsumerNode}s for the generated 
-			 * @return
-			 */
-			private ConsumerNode buildConsumerTree() {
-				ConsumerNode consumerRoot = new ConsumerNode(tree.getRoot().toConsumer(createDedicatedRowDecoder(tree.getRoot())));
-				tree.foreachJoinWithDepth(consumerRoot, (targetOwner, currentNode) -> {
-					ConsumerNode consumerNode = new ConsumerNode(currentNode.toConsumer(createDedicatedRowDecoder(currentNode)));
-					targetOwner.addConsumer(consumerNode);
-					return consumerNode;
-				});
-				return consumerRoot;
-			}
-			
-			/**
-			 * Creates a {@link ColumnedRow} dedicated to given node : because we created table clones
-			 * @param node
-			 * @return
-			 */
-			private ColumnedRow createDedicatedRowDecoder(JoinNode node) {
-				return new ColumnedRow(column -> columnAliases.get(tablePerJoinNode.get(node).getColumn(column.getName())));
-			}
-		}
-		
-		ResultHelper resultHelper = new ResultHelper();
+		ResultHelper resultHelper = new ResultHelper(tree, parameterBinderProvider, aliasBuilder, query, selectParameterBinders, columnAliases, tablePerJoinNode);
 		
 		/* In the following algorithm, node tables will be cloned and applied a unique alias to manage presence of twice the same table in different
 		 * nodes. This happens when tree contains sibling relations (like person->firstHouse and person->secondaryHouse), or, in a more general way,
@@ -112,12 +75,15 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// completing from clause
 		this.tree.foreachJoin(join -> {
-			Table copyTable = tablePerJoinNode.computeIfAbsent(join, this::cloneTable);
+			tablePerJoinNode.put(join, cloneTable(join));
+		});
+		this.tree.foreachJoin(join -> {
 			String tableAlias = aliasBuilder.buildTableAlias(join);
 			resultHelper.addColumnsToSelect(join, tableAlias);
 			Column leftJoinColumn = tablePerJoinNode.get(join.getParent()).getColumn(join.getLeftJoinColumn().getName());
 			
-			Column rightJoinColumn = copyTable.getColumn(join.getRightJoinColumn().getName());
+			Table tableClone = tablePerJoinNode.get(join);
+			Column rightJoinColumn = tableClone.getColumn(join.getRightJoinColumn().getName());
 			switch (join.getJoinType()) {
 				case INNER:
 					from.innerJoin(leftJoinColumn, rightJoinColumn);
@@ -127,11 +93,12 @@ public class EntityTreeQueryBuilder<C> {
 					break;
 			}
 			
-			from.setAlias(copyTable, tableAlias);
+			from.setAlias(tableClone, tableAlias);
 		});
 		
-		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree(), columnAliases,
-				Maps.innerJoinOnValuesAndKeys(tree.getJoinIndex(), tablePerJoinNode));
+		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree(),
+																			columnAliases,
+																			Maps.innerJoinOnValuesAndKeys(tree.getJoinIndex(), tablePerJoinNode));
 		
 		return new EntityTreeQuery<>(query, selectParameterBinders, columnAliases, entityTreeInflater);
 	}
@@ -147,6 +114,88 @@ public class EntityTreeQueryBuilder<C> {
 		Table table = new Table(joinNode.getTable().getName());
 		((Set<Column>) joinNode.getTable().getColumns()).forEach(column -> table.addColumn(column.getName(), column.getJavaType(), column.getSize()));
 		return table;
+	}
+	
+	// Simple class that helps to add columns to select, made as internal method class else it would take more parameters
+	private static class ResultHelper {
+		
+		private final EntityJoinTree<Object, Object> tree;
+		
+		private final ParameterBinderProvider<Column> parameterBinderProvider;
+		
+		private final AliasBuilder aliasBuilder;
+		
+		private final Query query;
+		
+		private final Map<String, ParameterBinder> selectParameterBinders;
+		
+		// Made IdentityMap to support presence of same table multiple times in query, in particular for cycling bean graph (tables are cloned)
+		private final IdentityMap<Column, String> columnAliases;
+		
+		// Table clones storage per their initial node to manage several occurrence of same table in query
+		private final Map<JoinNode, Table> tablePerJoinNode;
+		
+		private final Map<JoinRowConsumer, Table> tablePerConsumer = new HashMap<>();
+		
+		private ResultHelper(EntityJoinTree<?, ?> tree,
+							 ParameterBinderProvider<Column> parameterBinderProvider,
+							 AliasBuilder aliasBuilder, Query query, Map<String, ParameterBinder> selectParameterBinders, IdentityMap<Column, String> columnAliases,
+							 Map<JoinNode, Table> tablePerJoinNode) {
+			this.tree = (EntityJoinTree<Object, Object>) tree;
+			this.parameterBinderProvider = parameterBinderProvider;
+			this.aliasBuilder = aliasBuilder;
+			this.query = query;
+			this.selectParameterBinders = selectParameterBinders;
+			this.columnAliases = columnAliases;
+			this.tablePerJoinNode = tablePerJoinNode;
+		}
+		
+		private <T1 extends Table<T1>> void addColumnsToSelect(JoinNode joinNode, String tableAlias) {
+			Iterable<Column<T1, Object>> selectableColumns = joinNode.getColumnsToSelect();
+			for (Column selectableColumn : selectableColumns) {
+				String alias = aliasBuilder.buildColumnAlias(tableAlias, selectableColumn);
+				Column columnClone = tablePerJoinNode.get(joinNode).getColumn(selectableColumn.getName());
+				query.select(columnClone, alias);
+				// we link the column alias to the binder so it will be easy to read the ResultSet
+				selectParameterBinders.put(alias, parameterBinderProvider.getBinder(selectableColumn));
+				columnAliases.put(columnClone, alias);
+			}
+		}
+		
+		/**
+		 * Builds {@link ConsumerNode}s for the generated 
+		 * @return
+		 */
+		private ConsumerNode buildConsumerTree() {
+			ConsumerNode consumerRoot = new ConsumerNode(tree.getRoot().toConsumer(createDedicatedRowDecoder(tree.getRoot())));
+			tree.foreachJoinWithDepth(consumerRoot, (targetOwner, currentNode) -> {
+				Holder<JoinRowConsumer> consumerHolder = new Holder<>();
+				Function<Column, String> aliasProvider = column -> columnAliases.get(tablePerConsumer.get(consumerHolder.get()).getColumn(column.getName()));
+				JoinRowConsumer consumer = currentNode.toConsumer(new ColumnedRow(aliasProvider));
+				consumerHolder.set(consumer);
+				ConsumerNode consumerNode = new ConsumerNode(consumer);
+				tablePerConsumer.put(consumer, tablePerJoinNode.get(currentNode));
+				targetOwner.addConsumer(consumerNode);
+				return consumerNode;
+			});
+			return consumerRoot;
+		}
+		
+		/**
+		 * Creates a {@link ColumnedRow} dedicated to given node : because we created table clones
+		 * @param node
+		 * @return
+		 */
+		private ColumnedRow createDedicatedRowDecoder(JoinNode node) {
+			return new ColumnedRow(column -> {
+				Table nodeTable = tablePerJoinNode.get(node);
+				if (!nodeTable.getName().equals(column.getTable().getName())) {
+					throw new IllegalArgumentException("Column table doesn't match node table : something went wrong during alias building."
+														   + " Column table is " + column.getTable().getName() + " vs " + nodeTable.getName());
+				}
+				return columnAliases.get(nodeTable.getColumn(column.getName()));
+			});
+		}
 	}
 	
 	/**

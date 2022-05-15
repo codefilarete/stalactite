@@ -35,7 +35,7 @@ public class OneToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	@Override
-	public void consume(EntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
+	public void consume(EntityConfiguredJoinedTablesPersister<TRGT, ?> targetPersister) {
 		registerRelationLoader(targetPersister);
 	}
 	

@@ -6,23 +6,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
-import org.codefilarete.stalactite.sql.result.Row;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Class dedicated to select statement execution
@@ -88,21 +90,30 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	}
 	
 	/**
-	 * Small class that focuses on operation execution and entity loading.
-	 * Kind of method group serving same purpose, made non-static for simplicity.
+	 * Small class that focuses on operation execution and entity creation from its result.
 	 */
 	@VisibleForTesting
 	static class InternalExecutor<C, I, T extends Table> {
 		
-		private final EntityMapping<C, I, T> mapping;
+		private final IdentifierAssembler<I> primaryKeyProvider;
+		private final Function<Row, C> transformer;
 		
 		InternalExecutor(EntityMapping<C, I, T> mapping) {
-			this.mapping = mapping;
+			this(mapping.getIdMapping().getIdentifierAssembler(), mapping::transform);
+		}
+		
+		/**
+		 * @param primaryKeyProvider will provide entity ids necessary to set parameters of {@link ReadOperation} before its execution 
+		 * @param transformer will transform result given by {@link ReadOperation} execution
+		 */
+		InternalExecutor(IdentifierAssembler<I> primaryKeyProvider, Function<Row, C> transformer) {
+			this.primaryKeyProvider = primaryKeyProvider;
+			this.transformer = transformer;
 		}
 		
 		@VisibleForTesting
 		List<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
-			Map<Column<T, Object>, Object> primaryKeyValues = mapping.getIdMapping().getIdentifierAssembler().getColumnValues(ids);
+			Map<Column<T, Object>, Object> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
 			try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);
 				return transform(closeableOperation, primaryKeyValues.size());
@@ -119,7 +130,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		}
 		
 		protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-			return Iterables.collect(() -> rowIterator, mapping::transform, () -> new ArrayList<>(resultSize));
+			return Iterables.collect(() -> rowIterator, transformer, () -> new ArrayList<>(resultSize));
 		}
 	}
 }

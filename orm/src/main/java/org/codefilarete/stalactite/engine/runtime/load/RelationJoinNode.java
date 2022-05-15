@@ -7,10 +7,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.tool.bean.Objects;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
@@ -18,7 +15,9 @@ import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.bean.Objects;
 
 /**
  * Join node for filling a relation between beans such as one-to-one or one-to-many
@@ -55,6 +54,10 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		return entityInflater;
 	}
 	
+	public Class<C> getEntityType() {
+		return entityInflater.getEntityType();
+	}
+	
 	BeanRelationFixer<Object, C> getBeanRelationFixer() {
 		return beanRelationFixer;
 	}
@@ -65,10 +68,15 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 	
 	@Override
 	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
-		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, relationIdentifierProvider, getTransformerListener());
+		return new DefaultRelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, relationIdentifierProvider, getTransformerListener());
 	}
 	
-	static class RelationJoinRowConsumer<C, I> implements JoinRowConsumer {
+	interface RelationJoinRowConsumer<C, I> extends JoinRowConsumer {
+		
+		C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context);
+	}
+	
+	static class DefaultRelationJoinRowConsumer<C, I> implements RelationJoinRowConsumer<C, I> {
 		
 		private final Class<C> entityType;
 		
@@ -87,11 +95,11 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		@Nullable
 		private final TransformerListener<C> transformerListener;
 		
-		RelationJoinRowConsumer(EntityInflater<C, I, ?> entityInflater,
-								BeanRelationFixer<Object, C> beanRelationFixer,
-								ColumnedRow columnedRow,
-								@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer,
-								@Nullable TransformerListener<C> transformerListener) {
+		DefaultRelationJoinRowConsumer(EntityInflater<C, I, ?> entityInflater,
+									   BeanRelationFixer<Object, C> beanRelationFixer,
+									   ColumnedRow columnedRow,
+									   @Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer,
+									   @Nullable TransformerListener<C> transformerListener) {
 			this.entityType = entityInflater.getEntityType();
 			this.identifierProvider = entityInflater::giveIdentifier;
 			this.beanRelationFixer = beanRelationFixer;
@@ -101,7 +109,12 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 			this.transformerListener = transformerListener;
 		}
 		
-		C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context) {
+		RowTransformer<C> getRowTransformer() {
+			return rowTransformer;
+		}
+		
+		@Override
+		public C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context) {
 			I rightIdentifier = identifierProvider.apply(row, columnedRow);
 			// we avoid treating twice same relation, overall to avoid adding twice same instance to a collection (one-to-many list cases)
 			// in case of multiple collections in ResultSet because it creates similar data (through cross join) which are treated as many as

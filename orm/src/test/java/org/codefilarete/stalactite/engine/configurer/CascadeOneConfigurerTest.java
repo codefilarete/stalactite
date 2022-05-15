@@ -41,6 +41,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,6 +57,16 @@ import static org.mockito.Mockito.when;
  * @author Guillaume Mary
  */
 class CascadeOneConfigurerTest {
+	
+	@BeforeEach
+	void initEntityCandidates() {
+		PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
+	}
+	
+	@AfterEach
+	void removeEntityCandidates() {
+		PersisterBuilderContext.CURRENT.remove();
+	}
 	
 	@Test
 	void tableStructure() throws SQLException {

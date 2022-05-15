@@ -20,7 +20,6 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifier;
-import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;

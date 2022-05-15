@@ -376,27 +376,14 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 																				  boolean optional,
 																				  Set<Column<T2, ?>> selectableColumns) {
 		
-		String createdJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(joinName,
-				leftColumn,
-				rightColumn,
-				JoinType.OUTER,
-				selectableColumns);
 		
-		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
-		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
-			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
-			sourcePersister.getEntityJoinTree().addMergeJoin(createdJoinName,
-					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
-					mainTablePrimaryKey,
-					subclassPrimaryKey,
-					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
-					JoinType.OUTER);
-		});
-		
-		// adding second phase loader
-		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
-		
-		return createdJoinName;
+		return sourcePersister.getEntityJoinTree().addPolymorphicRelationJoin(joinName,
+																			  mainPersister,
+																			  leftColumn,
+																			  rightColumn,
+																			  new HashSet<>(this.subEntitiesPersisters.values()),
+																			  beanRelationFixer,
+																			  null);
 	}
 	
 	@Override

@@ -17,8 +17,8 @@ public interface JoinableSelectExecutor {
 																		   Column<T2, ID> rightJoinColumn,
 																		   boolean isOuterJoin);
 	
-	<U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(String leftStrategyName,
-																					EntityMapping<U, ID, T2> strategy,
-																					Column<T1, ID> leftJoinColumn,
-																					Column<T2, ID> rightJoinColumn);
+	<U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
+																			EntityMapping<U, ID, T2> strategy,
+																			Column<T1, ID> leftJoinColumn,
+																			Column<T2, ID> rightJoinColumn);
 }

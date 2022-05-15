@@ -11,21 +11,24 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor.EntityCreationResult;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.BasicEntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Bean graph creator from database rows. Based on a tree of {@link ConsumerNode}s which wraps some {@link JoinRowConsumer}.
@@ -104,16 +107,25 @@ public class EntityTreeInflater<C> {
 			foreachNode(new NodeVisitor(result.get()) {
 				
 				@Override
-				public Object apply(JoinRowConsumer join, Object entity) {
+				public EntityCreationResult apply(ConsumerNode join, Object entity) {
 					// processing current depth
-					if (join instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
-						((PassiveJoinRowConsumer) join).consume(entity, row);
-						return entity;
-					} else if (join instanceof MergeJoinNode.MergeJoinRowConsumer) {
-						((MergeJoinRowConsumer) join).mergeProperties(entity, row);
-						return entity;
-					} else if (join instanceof RelationJoinNode.RelationJoinRowConsumer) {
-						return ((RelationJoinRowConsumer) join).applyRelatedEntity(entity, row, context);
+					JoinRowConsumer consumer = join.getConsumer();
+					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
+						((PassiveJoinRowConsumer) consumer).consume(entity, row);
+						return new EntityCreationResult(entity, join);
+					} else if (consumer instanceof MergeJoinNode.MergeJoinRowConsumer) {
+						((MergeJoinRowConsumer) consumer).mergeProperties(entity, row);
+						return new EntityCreationResult(entity, join);
+					} else if (consumer instanceof RelationJoinNode.RelationJoinRowConsumer) {
+						Object relatedEntity = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entity, row, context);
+						if (consumer instanceof ForkJoinRowConsumer) {
+							// In case of join-table polymorphism we have to provide the tree branch on which id was found
+							// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
+							JoinRowConsumer nextRowConsumer = ((ForkJoinRowConsumer) consumer).giveNextConsumer();
+							List<ConsumerNode> nodeBranch = java.util.Collections.singletonList(Iterables.find(join.consumers, c -> nextRowConsumer == c.consumer));
+							return new EntityCreationResult(relatedEntity, nodeBranch);
+						}
+						return new EntityCreationResult(relatedEntity, join);
 					} else {
 						// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
 						throw new IllegalArgumentException("Unexpected join type, only "
@@ -129,25 +141,26 @@ public class EntityTreeInflater<C> {
 	}
 	
 	@VisibleForTesting
-	void foreachNode(NodeVisitor consumer) {
+	void foreachNode(NodeVisitor nodeVisitor) {
 		Queue<ConsumerNode> joinNodeStack = Collections.newLifoQueue();
 		joinNodeStack.addAll(this.consumerRoot.consumers);
 		// Maintaining entities that will be given to each node : they are entities produced by parent node
-		Map<ConsumerNode, Object> entityPerNode = new HashMap<>(10);
-		joinNodeStack.forEach(node -> entityPerNode.put(node, consumer.entityRoot));
-		
+		Map<ConsumerNode, Object> entityPerConsumer = new HashMap<>(10);
+		joinNodeStack.forEach(node -> entityPerConsumer.put(node, nodeVisitor.entityRoot));
+
 		while (!joinNodeStack.isEmpty()) {
 			ConsumerNode joinNode = joinNodeStack.poll();
-			Object entity = consumer.apply(joinNode.consumer, entityPerNode.get(joinNode));
-			if (entity != null) {
-				joinNodeStack.addAll(joinNode.consumers);
-				joinNode.consumers.forEach(node -> entityPerNode.put(node, entity));
+			EntityCreationResult result = nodeVisitor.apply(joinNode, entityPerConsumer.get(joinNode));
+			if (result.getEntity() != null) {
+				List<ConsumerNode> nextConsumers = result.nextConsumers();
+				joinNodeStack.addAll(nextConsumers);
+				nextConsumers.forEach(node -> entityPerConsumer.put(node, result.getEntity()));
 			}
 		}
 	}
-	
+
 	/**
-	 * Small structure to store {@link JoinRootRowConsumer} as a tree that reflects {@link EntityJoinTree} input.
+	 * Small structure to store {@link JoinRowConsumer} as a tree that reflects {@link EntityJoinTree} input.
 	 */
 	static class ConsumerNode {
 		
@@ -159,12 +172,15 @@ public class EntityTreeInflater<C> {
 			this.consumer = consumer;
 		}
 		
+		public JoinRowConsumer getConsumer() {
+			return consumer;
+		}
+		
 		void addConsumer(ConsumerNode consumer) {
 			this.consumers.add(consumer);
 		}
 	}
 	
-	@VisibleForTesting
 	static abstract class NodeVisitor {
 		
 		private final Object entityRoot;
@@ -174,12 +190,36 @@ public class EntityTreeInflater<C> {
 		}
 		
 		/**
-		 * Asks for parentEntity consumption by {@link JoinRootRowConsumer}
-		 * @param joinRowConsumer consumer expected to use given entity to constructs, fills, does whatever, with given entity
+		 * Asks for parentEntity consumption by {@link ConsumerNode}
+		 * @param consumerNode consumer expected to use given entity to constructs, fills, does whatever, with given entity
 		 * @param parentEntity entity on which consumer mechanism may apply
 		 * @return the optional entity created by consumer (as in one-to-one or one-to-many relation), else given parentEntity (not null)
 		 */
-		abstract Object apply(JoinRowConsumer joinRowConsumer, Object parentEntity);
+		abstract EntityCreationResult apply(ConsumerNode consumerNode, Object parentEntity);
+		
+		static class EntityCreationResult {
+			
+			private final Object entity;
+			
+			private final List<ConsumerNode> consumers;
+			
+			EntityCreationResult(Object entity, ConsumerNode entityCreator) {
+				this(entity, entityCreator.consumers);
+			}
+			
+			EntityCreationResult(Object entity, List<ConsumerNode> consumers) {
+				this.entity = entity;
+				this.consumers = consumers;
+			}
+			
+			public Object getEntity() {
+				return entity;
+			}
+			
+			List<ConsumerNode> nextConsumers() {
+				return consumers;
+			}
+		}
 	}
 	
 	/**

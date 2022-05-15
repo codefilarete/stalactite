@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.engine.SelectExecutor;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.IdMapping;

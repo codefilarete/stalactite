@@ -59,6 +59,7 @@ import org.codefilarete.tool.function.Serie.IntegerSerie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
@@ -109,22 +110,6 @@ public class PersisterBuilderImplTest {
 	@AfterEach
 	void removeEntityCandidates() {
 		PersisterBuilderContext.CURRENT.remove();
-	}
-	
-	@Test
-	void build_connectionProviderIsNotRollbackObserver_throwsException() {
-		DataSource dataSource = mock(DataSource.class);
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(entityBuilder(Country.class, Identifier.LONG_TYPE)
-				// setting a foreign key naming strategy to be tested
-				.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
-				.versionedBy(Country::getVersion, new IntegerSerie())
-				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Country::getName)
-				.map(Country::getDescription));
-		ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 10);
-		assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, Mockito.mock(PersisterRegistry.class), null))
-				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessage("Version control is only supported with o.c.s.s.ConnectionProvider that also implements o.c.s.s.RollbackObserver");
 	}
 	
 	@Test
@@ -493,8 +478,8 @@ public class PersisterBuilderImplTest {
 		testInstance.applyForeignKeys(primaryKey, Arrays.asSet(tableB, tableC));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
-				Column::getAbsoluteName,
-				chain(Column::getJavaType, Reflections::toString));  
+																	Column::getAbsoluteName,
+																	chain(Column::getJavaType, Reflections::toString));  
 		Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
 				ForeignKey::getName,
 				link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
@@ -509,285 +494,310 @@ public class PersisterBuilderImplTest {
 				.containsExactly(new ForeignKey("FK_Car_id_Vehicle_id", tableC.getColumn("id"), tableB.getColumn("id")));
 	}
 	
-	@Test
-	void build_returnsAlreadyExisintgPersister() {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.LONG_TYPE)
-						.map(Car::getModel)
-						.map(Vehicle::getColor)
-						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.map(Timestamp::getCreationDate)
-								.map(Timestamp::getModificationDate))
-		);
+	@Nested
+	class BuildTest {
 		
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		PersistenceContext persistenceContext = new PersistenceContext(connectionProviderMock, DIALECT);
-		assertThat(testInstance.build(persistenceContext)).isSameAs(testInstance.build(persistenceContext));
-	}
-	
-	@Test
-	void build_singleTable_singleClass() throws SQLException {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.LONG_TYPE)
-						.map(Car::getModel)
-						.map(Vehicle::getColor)
-						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.map(Timestamp::getCreationDate)
-								.map(Timestamp::getModificationDate))
-		);
+		@BeforeEach
+		void removeEntityCandidates() {
+			PersisterBuilderContext.CURRENT.remove();
+		}
 		
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
-		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
-		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
-		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		Car entity = new Car(1L);
-		entity.setModel("Renault");
-		entity.setColor(new Color(123));
-		entity.setTimestamp(new Timestamp());
-		result.insert(entity);
-		assertThat(sqlCaptor.getAllValues())
+		@Test
+		void build_connectionProviderIsNotRollbackObserver_throwsException() {
+			DataSource dataSource = mock(DataSource.class);
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(entityBuilder(Country.class, Identifier.LONG_TYPE)
+																			 // setting a foreign key naming strategy to be tested
+																			 .withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+																			 .versionedBy(Country::getVersion, new IntegerSerie())
+																			 .mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+																			 .map(Country::getName)
+																			 .map(Country::getDescription));
+			ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 10);
+			assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, Mockito.mock(PersisterRegistry.class), null))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Version control is only supported with o.c.s.s.ConnectionProvider that also implements o.c.s.s.RollbackObserver");
+		}
+		
+		@Test
+		void build_returnsAlreadyExisintgPersister() {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
+					.map(Car::getModel)
+					.map(Vehicle::getColor)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate))
+			);
+			
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			PersistenceContext persistenceContext = new PersistenceContext(connectionProviderMock, DIALECT);
+			assertThat(testInstance.build(persistenceContext)).isSameAs(testInstance.build(persistenceContext));
+		}
+		
+		@Test
+		void build_singleTable_singleClass() throws SQLException {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
+					.map(Car::getModel)
+					.map(Vehicle::getColor)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate))
+			);
+			
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			Connection connectionMock = mock(Connection.class);
+			when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
+			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+			when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
+			EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+			Car entity = new Car(1L);
+			entity.setModel("Renault");
+			entity.setColor(new Color(123));
+			entity.setTimestamp(new Timestamp());
+			result.insert(entity);
+			assertThat(sqlCaptor.getAllValues())
 				.containsExactly("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)");
-	}
-	
-	@Test
-	void build_singleTable_withInheritance() throws SQLException {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(Car.class, Identifier.LONG_TYPE)
-						.map(Car::getModel)
-						.mapInheritance(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
-								.map(Vehicle::getColor)
-								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
-										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-												.map(Timestamp::getCreationDate)
-												.map(Timestamp::getModificationDate))
-								)
-						)
-		);
+		}
 		
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
-		ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
-		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-		when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
-		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		Car entity = new Car(1L);
-		entity.setModel("Renault");
-		entity.setColor(new Color(123));
-		entity.setTimestamp(new Timestamp());
-		result.insert(entity);
-		assertThat(sqlCaptor.getAllValues())
+		@Test
+		void build_singleTable_withInheritance() throws SQLException {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(Car.class, Identifier.LONG_TYPE)
+					.map(Car::getModel)
+					.mapInheritance(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
+										.map(Vehicle::getColor)
+										.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
+															.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+															.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+																.map(Timestamp::getCreationDate)
+																.map(Timestamp::getModificationDate))
+										)
+					)
+			);
+			
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			Connection connectionMock = mock(Connection.class);
+			when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
+			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+			when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
+			EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+			Car entity = new Car(1L);
+			entity.setModel("Renault");
+			entity.setColor(new Color(123));
+			entity.setTimestamp(new Timestamp());
+			result.insert(entity);
+			assertThat(sqlCaptor.getAllValues())
 				.containsExactly("insert into Car(color, creationDate, id, model, modificationDate) values (?, ?, ?, ?, ?)");
-	}
-	
-	@Test
-	void build_joinedTables() throws SQLException {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+		}
+		
+		@Test
+		void build_joinedTables() throws SQLException {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.LONG_TYPE)
-						.map(Car::getModel)
-						.mapInheritance(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
-								.map(Vehicle::getColor)
-								.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
-										.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-										.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-												.map(Timestamp::getCreationDate)
-												.map(Timestamp::getModificationDate))
-								).withJoinedTable()
-						).withJoinedTable()
-		);
-		
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
-		ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
-		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-		when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
-		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptyIterator()));
-		
-		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		Car entity = new Car(1L);
-		entity.setModel("Renault");
-		entity.setColor(new Color(123));
-		entity.setTimestamp(new Timestamp());
-		result.insert(entity);
-		assertThat(insertCaptor.getAllValues()).containsExactly(
+					.map(Car::getModel)
+					.mapInheritance(entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
+										.map(Vehicle::getColor)
+										.mapInheritance(entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
+															.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+															.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+																.map(Timestamp::getCreationDate)
+																.map(Timestamp::getModificationDate))
+										).withJoinedTable()
+					).withJoinedTable()
+			);
+			
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			Connection connectionMock = mock(Connection.class);
+			when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
+			ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
+			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+			when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
+			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
+			when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptyIterator()));
+			
+			EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+			Car entity = new Car(1L);
+			entity.setModel("Renault");
+			entity.setColor(new Color(123));
+			entity.setTimestamp(new Timestamp());
+			result.insert(entity);
+			assertThat(insertCaptor.getAllValues()).containsExactly(
 				"insert into AbstractVehicle(creationDate, id, modificationDate) values (?, ?, ?)",
 				"insert into Vehicle(color, id) values (?, ?)",
 				"insert into Car(id, model) values (?, ?)");
-		
-		ArgumentCaptor<String> deleteCaptor = ArgumentCaptor.forClass(String.class);
-		when(connectionMock.prepareStatement(deleteCaptor.capture())).thenReturn(preparedStatementMock);
-		result.delete(entity);
-		assertThat(deleteCaptor.getAllValues()).containsExactly(
+			
+			ArgumentCaptor<String> deleteCaptor = ArgumentCaptor.forClass(String.class);
+			when(connectionMock.prepareStatement(deleteCaptor.capture())).thenReturn(preparedStatementMock);
+			result.delete(entity);
+			assertThat(deleteCaptor.getAllValues()).containsExactly(
 				"delete from Car where id = ?",
 				"delete from Vehicle where id = ?",
 				"delete from AbstractVehicle where id = ?");
-		
-		ArgumentCaptor<String> selectCaptor = ArgumentCaptor.forClass(String.class);
-		when(connectionMock.prepareStatement(selectCaptor.capture())).thenReturn(preparedStatementMock);
-		result.select(entity.getId());
-		assertThat(selectCaptor.getAllValues()).containsExactly(
+			
+			ArgumentCaptor<String> selectCaptor = ArgumentCaptor.forClass(String.class);
+			when(connectionMock.prepareStatement(selectCaptor.capture())).thenReturn(preparedStatementMock);
+			result.select(entity.getId());
+			assertThat(selectCaptor.getAllValues()).containsExactly(
 				// the expected select may change in future as we don't care about select order nor joins order, tested in case of huge regression
 				"select"
-						+ " Car.id as Car_id,"
-						+ " Car.model as Car_model,"
-						+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
-						+ " AbstractVehicle.id as AbstractVehicle_id,"
-						+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
-						+ " Vehicle.color as Vehicle_color,"
-						+ " Vehicle.id as Vehicle_id"
-						+ " from Car inner join AbstractVehicle as AbstractVehicle on Car.id = AbstractVehicle.id"
-						+ " inner join Vehicle as Vehicle on Car.id = Vehicle.id"
-						+ " where Car.id in (?)");
-	}
-	
-	@Test
-	void build_createsAnInstanceThatDoesntRequiresTwoSelectsOnItsUpdateMethod() throws SQLException {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+					+ " Car.id as Car_id,"
+					+ " Car.model as Car_model,"
+					+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
+					+ " AbstractVehicle.id as AbstractVehicle_id,"
+					+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
+					+ " Vehicle.color as Vehicle_color,"
+					+ " Vehicle.id as Vehicle_id"
+					+ " from Car inner join AbstractVehicle as AbstractVehicle on Car.id = AbstractVehicle.id"
+					+ " inner join Vehicle as Vehicle on Car.id = Vehicle.id"
+					+ " where Car.id in (?)");
+		}
+		
+		@Test
+		void build_createsAnInstanceThatDoesntRequiresTwoSelectsOnItsUpdateMethod() throws SQLException {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.LONG_TYPE)
-				.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Car::getModel));
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		Connection connectionMock = mock(Connection.class);
-		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
-		ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
-		PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-		when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
-		when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
-		when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Arrays.asList(Maps.forHashMap(String.class, Object.class)
-				.add("Car_id", 1L)
-				.add("Car_model", "Renault"))));
-		
-		EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		Car dummyCar = new Car(1L);
-		dummyCar.setModel("Renault");
-		
-		result.insert(dummyCar);
-		
-		// this should execute a SQL select only once thanks to cache
-		result.update(dummyCar.getId(), vehicle -> vehicle.setModel("Peugeot"));
-		
-		// only 1 select was done whereas entity was updated
-		assertThat(insertCaptor.getAllValues()).containsExactly(
+					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Car::getModel));
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			Connection connectionMock = mock(Connection.class);
+			when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
+			ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
+			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
+			when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
+			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
+			when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Arrays.asList(Maps.forHashMap(String.class, Object.class)
+																										  .add("Car_id", 1L)
+																										  .add("Car_model", "Renault"))));
+			
+			EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			
+			result.insert(dummyCar);
+			
+			// this should execute a SQL select only once thanks to cache
+			result.update(dummyCar.getId(), vehicle -> vehicle.setModel("Peugeot"));
+			
+			// only 1 select was done whereas entity was updated
+			assertThat(insertCaptor.getAllValues()).containsExactly(
 				"insert into Car(id, model) values (?, ?)",
 				"select Car.id as Car_id, Car.model as Car_model from Car where Car.id in (?)",
 				"update Car set model = ? where id = ?"
-				);
-		ArgumentCaptor<Integer> valueIndexCaptor = ArgumentCaptor.forClass(int.class);
-		ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
-		verify(preparedStatementMock, times(2)).setString(valueIndexCaptor.capture(), valueCaptor.capture());
-		assertThat(valueCaptor.getAllValues()).containsExactly(
+			);
+			ArgumentCaptor<Integer> valueIndexCaptor = ArgumentCaptor.forClass(int.class);
+			ArgumentCaptor<String> valueCaptor = ArgumentCaptor.forClass(String.class);
+			verify(preparedStatementMock, times(2)).setString(valueIndexCaptor.capture(), valueCaptor.capture());
+			assertThat(valueCaptor.getAllValues()).containsExactly(
 				"Renault",
 				"Peugeot");
+			
+			verify(preparedStatementMock).executeQuery();
+			
+		}
 		
-		verify(preparedStatementMock).executeQuery();
+		@Test
+		void build_resultAssertsThatPersisterManageGivenEntities() {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate))
+			);
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+			assertThatThrownBy(() -> result.persist(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
+			assertThatThrownBy(() -> result.insert(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
+			assertThatThrownBy(() -> result.update(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
+			assertThatThrownBy(() -> result.updateById(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
+			assertThatThrownBy(() -> result.delete(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
+			assertThatThrownBy(() -> result.deleteById(new Vehicle(42L)))
+				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
+		}
 		
-	}
-	
-	@Test
-	void build_resultAssertsThatPersisterManageGivenEntities() {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+		@Test
+		void build_withPolymorphismJoinedTables_resultAssertsThatPersisterManageGivenEntities() {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
-						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.map(Timestamp::getCreationDate)
-								.map(Timestamp::getModificationDate))
-		);
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		assertThatThrownBy(() -> result.persist(new Vehicle(42L)))
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate))
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
+										 .addSubClass(subentityBuilder(Vehicle.class, Identifier.LONG_TYPE)))
+			);
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+			assertThatThrownBy(() -> result.persist(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
-		assertThatThrownBy(() -> result.insert(new Vehicle(42L)))
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
+			assertThatThrownBy(() -> result.insert(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
-		assertThatThrownBy(() -> result.update(new Vehicle(42L)))
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
+			assertThatThrownBy(() -> result.update(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
-		assertThatThrownBy(() -> result.updateById(new Vehicle(42L)))
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
+			assertThatThrownBy(() -> result.updateById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
-		assertThatThrownBy(() -> result.delete(new Vehicle(42L)))
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
+			assertThatThrownBy(() -> result.delete(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
-		assertThatThrownBy(() -> result.deleteById(new Vehicle(42L)))
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
+			assertThatThrownBy(() -> result.deleteById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Vehicle");
-	}
-	
-	@Test
-	void build_withPolymorphismJoinedTables_resultAssertsThatPersisterManageGivenEntities() {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
+				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
+		}
+		
+		@Test
+		void build_withPolymorphismSingleTable_resultAssertsThatPersisterManageGivenEntities() {
+			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
-						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.map(Timestamp::getCreationDate)
-								.map(Timestamp::getModificationDate))
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
-							.addSubClass(subentityBuilder(Vehicle.class, Identifier.LONG_TYPE)))
-		);
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		assertThatThrownBy(() -> result.persist(new Car(42L)))
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate))
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
+										 .addSubClass(subentityBuilder(Vehicle.class, Identifier.LONG_TYPE), "Vehicle"))
+			);
+			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
+			EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
+			assertThatThrownBy(() -> result.persist(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.insert(new Car(42L)))
+			assertThatThrownBy(() -> result.insert(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.update(new Car(42L)))
+			assertThatThrownBy(() -> result.update(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.updateById(new Car(42L)))
+			assertThatThrownBy(() -> result.updateById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.delete(new Car(42L)))
+			assertThatThrownBy(() -> result.delete(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.deleteById(new Car(42L)))
+			assertThatThrownBy(() -> result.deleteById(new Car(42L)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-	}
-	
-	@Test
-	void build_withPolymorphismSingleTable_resultAssertsThatPersisterManageGivenEntities() {
-		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
-				entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
-						.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.embed(AbstractVehicle::getTimestamp, embeddableBuilder(Timestamp.class)
-								.map(Timestamp::getCreationDate)
-								.map(Timestamp::getModificationDate))
-						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
-								.addSubClass(subentityBuilder(Vehicle.class, Identifier.LONG_TYPE), "Vehicle"))
-		);
-		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
-		EntityPersister<AbstractVehicle, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
-		assertThatThrownBy(() -> result.persist(new Car(42L)))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.insert(new Car(42L)))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.update(new Car(42L)))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.updateById(new Car(42L)))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.delete(new Car(42L)))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
-		assertThatThrownBy(() -> result.deleteById(new Car(42L)))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, UnsupportedOperationException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Persister of o.c.s.e.m.AbstractVehicle is not configured to persist o.c.s.e.m.Car");
+		}
 	}
 	
 	public static class ToStringBuilder<E> {

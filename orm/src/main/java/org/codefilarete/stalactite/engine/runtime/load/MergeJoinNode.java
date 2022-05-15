@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
@@ -22,11 +21,11 @@ class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJo
 	private final EntityMerger<C, T2> merger;
 	
 	MergeJoinNode(JoinNode<T1> parent,
-							Column<T1, I> leftJoinColumn,
-							Column<T2, I> rightJoinColumn,
-							JoinType joinType,
-							@Nullable String tableAlias,
-							EntityMerger<C, T2> merger) {
+				  Column<T1, I> leftJoinColumn,
+				  Column<T2, I> rightJoinColumn,
+				  JoinType joinType,
+				  @Nullable String tableAlias,
+				  EntityMerger<C, T2> merger) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, (Set) merger.getSelectableColumns(), tableAlias);
 		this.merger = merger;
 	}
@@ -36,7 +35,7 @@ class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJo
 	}
 	
 	@Override
-	public JoinRowConsumer toConsumer(ColumnedRow columnedRow) {
+	public MergeJoinRowConsumer<C> toConsumer(ColumnedRow columnedRow) {
 		return new MergeJoinRowConsumer<>(merger.copyTransformerWithAliases(columnedRow));
 	}
 	
@@ -47,7 +46,7 @@ class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJo
 	 */
 	static class MergeJoinRowConsumer<C> implements JoinRowConsumer {
 		
-		private final RowTransformer<C> merger;
+		protected final RowTransformer<C> merger;
 		
 		public MergeJoinRowConsumer(RowTransformer<C> merger) {
 			this.merger = merger;

@@ -13,16 +13,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
-import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.bean.Objects;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderMap;
-import org.codefilarete.tool.function.Functions;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -40,18 +30,28 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.query.RelationalEntityCriteria;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.function.Functions;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary

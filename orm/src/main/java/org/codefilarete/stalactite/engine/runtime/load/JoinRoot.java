@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater;
 import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.ColumnedRow;

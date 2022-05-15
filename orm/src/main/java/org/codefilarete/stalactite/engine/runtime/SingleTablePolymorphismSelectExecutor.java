@@ -11,26 +11,26 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.SelectExecutor;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * @author Guillaume Mary
@@ -126,10 +126,10 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 	}
 	
 	@Override
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(String leftStrategyName,
-																						   EntityMapping<U, ID, T2> strategy,
-																						   Column<T1, ID> leftJoinColumn,
-																						   Column<T2, ID> rightJoinColumn) {
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
+																				   EntityMapping<U, ID, T2> strategy,
+																				   Column<T1, ID> leftJoinColumn,
+																				   Column<T2, ID> rightJoinColumn) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
 			String joinName = persister.getEntityJoinTree().addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy),

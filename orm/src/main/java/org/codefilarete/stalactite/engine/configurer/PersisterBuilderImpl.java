@@ -210,6 +210,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 								+ Reflections.toString(invokation.getEntityType()), e);
 					}
 				});
+				PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
 			}
 			return result;
 		} finally {
@@ -341,7 +342,15 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		 * 
 		 * @param persister entity type persister
 		 */
-		public abstract void consume(EntityConfiguredJoinedTablesPersister<P, Object> persister);
+		public abstract void consume(EntityConfiguredJoinedTablesPersister<P, ?> persister);
+	}
+	
+	public interface BuildLifeCycleListener {
+		
+		/**
+		 * Invoked after main entity graph creation
+		 */
+		void afterAllBuild();
 	}
 	
 	private <T extends Table> void handleVersioningStrategy(SimpleRelationalEntityPersister<C, I, T> result) {
@@ -380,8 +389,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
-				mainPersister.getEntityMappingTreeSelectExecutor().addComplementaryJoin(EntityJoinTree.ROOT_STRATEGY_NAME, currentMappingStrategy,
-																						superclassPK, subclassPK);
+				mainPersister.getEntityMappingTreeSelectExecutor().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME, currentMappingStrategy,
+																				superclassPK, subclassPK);
 				currentTable.set(currentPersister.getMainTable());
 			}
 		});

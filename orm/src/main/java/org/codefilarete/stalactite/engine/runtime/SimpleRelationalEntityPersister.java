@@ -7,16 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
-import org.codefilarete.stalactite.query.EntityGraphSelectExecutor;
-import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -27,19 +17,29 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.query.EntityGraphSelectExecutor;
+import org.codefilarete.stalactite.query.EntitySelectExecutor;
+import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static java.util.Collections.emptyList;
 
@@ -104,6 +104,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 		return this.selectGraphExecutor;
 	}
 	
+	@Override
 	public T getMainTable() {
 		return this.persister.getMainTable();
 	}
@@ -116,7 +117,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 		return persister.getUpdateExecutor();
 	}
 	
-	public SelectExecutor<C, I, T> getSelectExecutor() {
+	public EntityMappingTreeSelectExecutor<C, I, T> getSelectExecutor() {
 		return this.selectGraphExecutor;
 	}
 	
