@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
@@ -102,7 +103,7 @@ public class HSQLDBDialect extends Dialect {
 		}
 		
 		@Override
-		public String getSimpleName(Table table) {
+		public String getSimpleName(Fromable table) {
 			if (KEYWORDS.contains(table.getName())) {
 				return "`" + super.getSimpleName(table) + "`";
 			}

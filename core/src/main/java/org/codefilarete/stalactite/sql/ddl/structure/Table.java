@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
@@ -29,7 +30,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  *
  * @author Guillaume Mary
  */
-public class Table<SELF extends Table<SELF>> {
+public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	private final Schema schema;
 	
@@ -65,10 +66,12 @@ public class Table<SELF extends Table<SELF>> {
 		return schema;
 	}
 	
+	@Override
 	public String getName() {
 		return name;
 	}
 	
+	@Override
 	public String getAbsoluteName() {
 		return absoluteName;
 	}
@@ -263,7 +266,7 @@ public class Table<SELF extends Table<SELF>> {
 		}
 		
 		Table table = (Table) o;
-		return name.equalsIgnoreCase(table.name);
+		return getName().equalsIgnoreCase(table.getName());
 	}
 	
 	/**

@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query.builder;
 
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.From;
@@ -8,6 +9,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.query.model.QueryEase.select;
 
 /**
  * @author Guillaume Mary
@@ -28,6 +30,9 @@ public class FromBuilderTest {
 		Table tableToto2 = new Table(null, "Toto2");
 		Column colToto2A = tableToto2.addColumn("a", String.class);
 		Column colToto2B = tableToto2.addColumn("b", String.class);
+		
+		Union union = select(colTotoA, colTotoB).from(tableToto, "T1").where(colTotoB, "= 1").unionAll(
+				select(colTotoA, colTotoB).from(tableToto, "T2").where(colTotoB, "= 2"));
 		
 		return new Object[][] {
 				// testing syntax with Table API
@@ -106,6 +111,8 @@ public class FromBuilderTest {
 						"Toto right outer join Tata on id = id" },
 				{ new From().add(tableToto).crossJoin(tableTata).rightOuterJoin(tableToto, tableTutu, "id = id"),
 						"Toto cross join Tata right outer join Tutu on id = id" },
+				{ new From().add(tableToto).leftOuterJoin(tableToto, union.asPseudoTable("Tutu"), "z = y"),
+						"Toto left outer join (select T1.a, T1.b from Toto as T1 where T1.b = 1 union all select T2.a, T2.b from Toto as T2 where T2.b = 2) as Tutu on z = y" },
 		};
 	}
 	

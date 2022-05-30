@@ -26,6 +26,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
@@ -297,7 +298,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 		
 		/** Overridden to get alias of the root and only for it, throws exception if given table is not where table one */
 		@Override
-		public String getAlias(Table table) {
+		public String getAlias(Fromable table) {
 			if (table == whereTable) {
 				return Objects.preventNull(whereTableAlias, table.getName());
 			} else {

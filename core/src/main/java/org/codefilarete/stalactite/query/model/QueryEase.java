@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.model.Query.FluentSelect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * A simple class to avoid "new Query()" syntax chained with {@link Query#select(Column, String)}
@@ -12,12 +12,16 @@ import org.codefilarete.stalactite.query.model.Query.FluentSelect;
  */
 public class QueryEase {
 	
-	public static FluentSelect select(Iterable<?> selectables) {
+	public static FluentSelect select(Iterable<? extends Selectable> selectables) {
 		return new Query().select(selectables);
 	}
 	
-	public static FluentSelect select(Object selectable, Object... columns) {
-		return new Query().select(selectable, columns);
+	public static FluentSelect select(String expression, String... expressions) {
+		return new Query().select(expression, expressions);
+	}
+	
+	public static FluentSelect select(Selectable expression, Selectable... expressions) {
+		return new Query().select(expression, expressions);
 	}
 	
 	public static FluentSelect select(Column column, String alias) {

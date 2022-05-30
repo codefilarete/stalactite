@@ -2,9 +2,6 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Iterator;
 
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.Strings;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
@@ -12,6 +9,12 @@ import org.codefilarete.stalactite.query.model.From.ColumnJoin;
 import org.codefilarete.stalactite.query.model.From.CrossJoin;
 import org.codefilarete.stalactite.query.model.From.Join;
 import org.codefilarete.stalactite.query.model.From.RawTableJoin;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.Strings;
 
 /**
  * @author Guillaume Mary
@@ -55,11 +58,15 @@ public class FromBuilder implements SQLBuilder {
 			super(200);
 		}
 		
-		/** Overriden to dispatch to dedicated cat methods */
+		/** Overridden to dispatch to dedicated cat methods */
 		@Override
 		public StringAppender cat(Object o) {
 			if (o instanceof Table) {
 				return cat((Table) o);
+			} else if (o instanceof Query) {
+				return cat((Query) o);
+			} else if (o instanceof UnionInFrom) {
+				return cat((UnionInFrom) o);
 			} else if (o instanceof CrossJoin) {
 				return cat((CrossJoin) o);
 			} else if (o instanceof AbstractJoin) {
@@ -72,6 +79,18 @@ public class FromBuilder implements SQLBuilder {
 		private StringAppender cat(Table table) {
 			String tableAlias = dmlNameProvider.getAlias(table);
 			return cat(table.getName()).catIf(!Strings.isEmpty(tableAlias), " as " + tableAlias);
+		}
+		
+		private StringAppender cat(Query query) {
+			SQLQueryBuilder unionBuilder = new SQLQueryBuilder(query);
+			return cat(unionBuilder.toSQL());
+		}
+		
+		private StringAppender cat(UnionInFrom union) {
+			String tableAlias = dmlNameProvider.getAlias(union);
+			UnionSQLBuilder unionSQLBuilder = new UnionSQLBuilder(union.getUnion());
+			// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
+			return cat("(", unionSQLBuilder.toSQL(), ") as ").cat(Strings.preventEmpty(tableAlias, union.getName()));
 		}
 		
 		private StringAppender cat(CrossJoin join) {
@@ -90,7 +109,7 @@ public class FromBuilder implements SQLBuilder {
 				String rightTableAlias = dmlNameProvider.getAlias(columnJoin.getRightTable());
 				CharSequence leftPrefix = Strings.preventEmpty(leftTableAlias, columnJoin.getLeftTable().getName());
 				CharSequence rightPrefix = Strings.preventEmpty(rightTableAlias, columnJoin.getRightTable().getName());
-				cat(leftPrefix, ".", columnJoin.getLeftColumn().getName(), " = ", rightPrefix, ".", columnJoin.getRightColumn().getName());
+				cat(leftPrefix, ".", columnJoin.getLeftColumn().getExpression(), " = ", rightPrefix, ".", columnJoin.getRightColumn().getExpression());
 			} else {
 				// did I miss something ?
 				throw new UnsupportedOperationException("From building is not implemented for " + join.getClass().getName());
@@ -98,7 +117,7 @@ public class FromBuilder implements SQLBuilder {
 			return this;
 		}
 		
-		protected void cat(JoinDirection joinDirection, Table table) {
+		protected void cat(JoinDirection joinDirection, Fromable table) {
 			String joinType;
 			switch (joinDirection) {
 				case INNER_JOIN:

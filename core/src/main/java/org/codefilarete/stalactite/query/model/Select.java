@@ -1,43 +1,62 @@
 package org.codefilarete.stalactite.query.model;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * A support for the select part of a SQL query
  *
  * @author Guillaume Mary
  */
-public class Select implements Iterable<Object /* String, Column or AliasedColumn */>, SelectChain<Select> {
+public class Select implements Iterable<Selectable /* String, Column or AliasedColumn */>, SelectChain<Select>, SelectablesPod {
 	
 	/** String, Column or {@link AliasedColumn} */
-	private final List<Object> columns = new ArrayList<>(5);
+	private final KeepOrderSet<Selectable> columns = new KeepOrderSet<>();
 	
 	private boolean distinct = false;
 	
-	private Select add(Object column) {
+	@Override
+	public KeepOrderSet<Selectable> getColumns() {
+		return columns;
+	}
+	
+	private Select add(Selectable column) {
 		this.columns.add(column);
 		return this;
 	}
 	
 	@Override
-	public Select add(Object selectable, Object... selectables) {
-		add(selectable);
-		for (Object col : selectables) {
-			add(col);
+	public Select add(Iterable<? extends Selectable> expressions) {
+		expressions.forEach(this::add);
+		return this;
+	}
+	
+	@Override
+	public Select add(Selectable expression, Selectable... expressions) {
+		add(expression);
+		for (Selectable expr : expressions) {
+			add(expr);
 		}
 		return this;
 	}
 	
 	@Override
-	public Select add(Column column, String alias) {
+	public Select add(String expression, String... expressions) {
+		add(new SelectableString(expression));
+		for (String expr : expressions) {
+			add(new SelectableString(expr));
+		}
+		return this;
+	}
+	
+	@Override
+	public Select add(Column<?, ?> column, String alias) {
 		return add(new AliasedColumn(column, alias));
 	}
 	
@@ -74,40 +93,38 @@ public class Select implements Iterable<Object /* String, Column or AliasedColum
 		return this;
 	}
 	
-	public Object remove(int index) {
-		return this.columns.remove(index);
+	public void removeAt(int index) {
+		this.columns.removeAt(index);
 	}
 	
-	public List<Object> clear() {
-		List<Object> result = Iterables.copy(this.columns);
+	public KeepOrderSet<Selectable> clear() {
+		KeepOrderSet<Selectable> result = new KeepOrderSet<>(this.columns);
 		this.columns.clear();
 		return result;
 	}
 	
-	public Object get(int index) {
-		return this.columns.get(index);
-	}
-	
-	public void set(int index, Object object) {
-		this.columns.set(index, object);
-	}
-	
 	@Override
-	public Iterator<Object> iterator() {
+	public Iterator<Selectable> iterator() {
 		return this.columns.iterator();
 	}
 	
-	public static class AliasedColumn extends Aliased {
+	public static class AliasedColumn<O> extends Aliased implements Selectable {
 		
-		private final Column column;
+		private final Column<?, O> column;
 		
-		public AliasedColumn(Column column, String alias) {
+		public AliasedColumn(Column<?, O> column, String alias) {
 			super(alias);
 			this.column = column;
 		}
 		
-		public Column getColumn() {
+		public Column<?, O> getColumn() {
 			return column;
 		}
+		
+		@Override
+		public String getExpression() {
+			return column.getName();
+		}
 	}
+	
 }

@@ -4,12 +4,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.codefilarete.tool.Strings;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.codefilarete.stalactite.query.model.From.Join;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.Strings;
 
 /**
  * Class to ease From clause creation in a Select SQL statement.
@@ -18,7 +17,7 @@ import org.codefilarete.stalactite.query.model.From.Join;
  * 
  * @author Guillaume Mary
  */
-public class From implements Iterable<Join>, JoinChain {
+public class From implements Iterable<Join>, JoinChain<From> {
 	
 	private final List<Join> joins = new ArrayList<>();
 	
@@ -26,7 +25,7 @@ public class From implements Iterable<Join>, JoinChain {
 	 * Table aliases.
 	 * An {@link IdentityMap} is used to support presence of table clone : same name but not same instance. Needed in particular for cycling.
 	 */
-	private final IdentityMap<Table, String> tableAliases = new IdentityMap<>(4);
+	private final IdentityMap<Fromable, String> tableAliases = new IdentityMap<>(4);
 	
 	public From() {
 		// default constructor, properties are already assigned
@@ -36,93 +35,93 @@ public class From implements Iterable<Join>, JoinChain {
 		return joins;
 	}
 	
-	public IdentityMap<Table, String> getTableAliases() {
+	public IdentityMap<Fromable, String> getTableAliases() {
 		return tableAliases;
 	}
 	
 	@Override
-	public From innerJoin(Column leftColumn, Column rightColumn) {
+	public <I> From innerJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn) {
 		return addNewJoin(leftColumn, rightColumn, JoinDirection.INNER_JOIN);
 	}
 	
 	@Override
-	public From leftOuterJoin(Column leftColumn, Column rightColumn) {
+	public <I> From leftOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn) {
 		return addNewJoin(leftColumn, rightColumn, JoinDirection.LEFT_OUTER_JOIN);
 	}
 	
 	@Override
-	public From rightOuterJoin(Column leftColumn, Column rightColumn) {
+	public <I> From rightOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn) {
 		return addNewJoin(leftColumn, rightColumn, JoinDirection.RIGHT_OUTER_JOIN);
 	}
 	
-	private From addNewJoin(Column leftColumn, Column rightColumn, JoinDirection joinDirection) {
+	private <I> From addNewJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn, JoinDirection joinDirection) {
 		return add(new ColumnJoin(leftColumn, rightColumn, joinDirection));
 	}
 	
 	@Override
-	public From innerJoin(Table leftTable, Table rightTable, String joinClause) {
+	public From innerJoin(Fromable leftTable, Fromable rightTable, String joinClause) {
 		return addNewJoin(leftTable, rightTable, joinClause, JoinDirection.INNER_JOIN);
 	}
 	
 	@Override
-	public From innerJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
+	public From innerJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause) {
 		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, JoinDirection.INNER_JOIN);
 	}
 	
 	@Override
-	public From leftOuterJoin(Table leftTable, Table rigTable, String joinClause) {
+	public From leftOuterJoin(Fromable leftTable, Fromable rigTable, String joinClause) {
 		return addNewJoin(leftTable, rigTable, joinClause, JoinDirection.LEFT_OUTER_JOIN);
 	}
 	
 	@Override
-	public From leftOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
+	public From leftOuterJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause) {
 		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, JoinDirection.LEFT_OUTER_JOIN);
 	}
 	
 	@Override
-	public From rightOuterJoin(Table leftTable, Table rigTable, String joinClause) {
+	public From rightOuterJoin(Fromable leftTable, Fromable rigTable, String joinClause) {
 		return addNewJoin(leftTable, rigTable, joinClause, JoinDirection.RIGHT_OUTER_JOIN);
 	}
 	
 	@Override
-	public From rightOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause) {
+	public From rightOuterJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause) {
 		return addNewJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, JoinDirection.RIGHT_OUTER_JOIN);
 	}
 	
 	@Override
-	public From crossJoin(Table table) {
+	public From crossJoin(Fromable table) {
 		CrossJoin crossJoin = new CrossJoin(table);
 		add(crossJoin);
 		return this;
 	}
 	
 	@Override
-	public From crossJoin(Table table, String tableAlias) {
+	public From crossJoin(Fromable table, String tableAlias) {
 		CrossJoin crossJoin = new CrossJoin(table, tableAlias);
 		add(crossJoin);
 		return this;
 	}
 	
-	public From add(Table table) {
+	public From add(Fromable table) {
 		CrossJoin crossJoin = new CrossJoin(table);
 		return add(crossJoin);
 	}
 	
-	public From add(Table table, String tableAlias) {
+	public From add(Fromable table, String tableAlias) {
 		CrossJoin crossJoin = new CrossJoin(table, tableAlias);
 		return add(crossJoin);
 	}
 	
-	private From addNewJoin(Table leftTable, Table rigTable, String joinClause, JoinDirection joinDirection) {
+	private From addNewJoin(Fromable leftTable, Fromable rigTable, String joinClause, JoinDirection joinDirection) {
 		return add(new RawTableJoin(leftTable, rigTable, joinClause, joinDirection));
 	}
 	
-	private From addNewJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause, JoinDirection joinDirection) {
+	private From addNewJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause, JoinDirection joinDirection) {
 		return add(new RawTableJoin(leftTable, leftTableAlias, rigTable, rightTableAlias, joinClause, joinDirection));
 	}
 	
 	@Override
-	public From setAlias(Table table, String alias) {
+	public From setAlias(Fromable table, String alias) {
 		if (!Strings.isEmpty(alias)) {
 			this.tableAliases.put(table, alias);
 		}
@@ -150,7 +149,7 @@ public class From implements Iterable<Join>, JoinChain {
 	 */
 	public interface Join {
 		
-		Table getLeftTable();
+		Fromable getLeftTable();
 	}
 	
 	/**
@@ -191,7 +190,7 @@ public class From implements Iterable<Join>, JoinChain {
 			return joinDirection == JoinDirection.RIGHT_OUTER_JOIN;
 		}
 		
-		public abstract Table getRightTable();
+		public abstract Fromable getRightTable();
 	}
 	
 	/**
@@ -199,28 +198,28 @@ public class From implements Iterable<Join>, JoinChain {
 	 */
 	public class CrossJoin implements Join {
 		
-		private final Table leftTable;
+		private final Fromable leftTable;
 		
-		public CrossJoin(Table leftTable) {
+		public CrossJoin(Fromable leftTable) {
 			this.leftTable = leftTable;
 		}
 		
-		public CrossJoin(Table table, String tableAlias) {
+		public CrossJoin(Fromable table, String tableAlias) {
 			this(table);
 			setAlias(table, tableAlias);
 		}
 		
 		@Override
-		public Table getLeftTable() {
+		public Fromable getLeftTable() {
 			return this.leftTable;
 		}
 		
-		public From crossJoin(Table table) {
+		public From crossJoin(Fromable table) {
 			CrossJoin crossJoin = new CrossJoin(table);
 			return From.this.add(crossJoin);
 		}
 		
-		public From crossJoin(Table table, String alias) {
+		public From crossJoin(Fromable table, String alias) {
 			CrossJoin crossJoin = new CrossJoin(table, alias);
 			return From.this.add(crossJoin);
 		}
@@ -230,16 +229,16 @@ public class From implements Iterable<Join>, JoinChain {
 	 * Join that only ask for joined table but not the way they are : the join condition is a free and is let as a String
 	 */
 	public class RawTableJoin extends AbstractJoin {
-		private final Table leftTable;
-		private final Table rightTable;
+		private final Fromable leftTable;
+		private final Fromable rightTable;
 		private final String joinClause;
 		
-		public RawTableJoin(Table leftTable, Table rightTable, String joinClause, JoinDirection joinDirection) {
+		public RawTableJoin(Fromable leftTable, Fromable rightTable, String joinClause, JoinDirection joinDirection) {
 			this(leftTable, null, rightTable, null, joinClause, joinDirection);
 		}
 		
-		public RawTableJoin(Table leftTable, String leftTableAlias,
-							Table rightTable, String rightTableAlias, String joinClause, JoinDirection joinDirection) {
+		public RawTableJoin(Fromable leftTable, String leftTableAlias,
+							Fromable rightTable, String rightTableAlias, String joinClause, JoinDirection joinDirection) {
 			super(joinDirection);
 			this.leftTable = leftTable;
 			this.rightTable = rightTable;
@@ -249,12 +248,12 @@ public class From implements Iterable<Join>, JoinChain {
 		}
 		
 		@Override
-		public Table getLeftTable() {
+		public Fromable getLeftTable() {
 			return leftTable;
 		}
 		
 		@Override
-		public Table getRightTable() {
+		public Fromable getRightTable() {
 			return rightTable;
 		}
 		
@@ -264,35 +263,35 @@ public class From implements Iterable<Join>, JoinChain {
 	}
 	
 	/**
-	 * Class that define a join with {@link Column}
+	 * Class that defines a join with {@link Column}
 	 */
 	public class ColumnJoin extends AbstractJoin {
 		
-		private final Column leftColumn;
-		private final Column rightColumn;
+		private final JoinLink leftColumn;
+		private final JoinLink rightColumn;
 		
-		public ColumnJoin(Column leftColumn, Column rightColumn, JoinDirection joinDirection) {
+		public ColumnJoin(JoinLink leftColumn, JoinLink rightColumn, JoinDirection joinDirection) {
 			super(joinDirection);
 			this.leftColumn = leftColumn;
 			this.rightColumn = rightColumn;
 		}
 		
-		public Column getLeftColumn() {
+		public JoinLink getLeftColumn() {
 			return leftColumn;
 		}
 		
-		public Column getRightColumn() {
+		public JoinLink getRightColumn() {
 			return rightColumn;
 		}
 		
 		@Override
-		public Table getLeftTable() {
-			return leftColumn.getTable();
+		public Fromable getLeftTable() {
+			return leftColumn.getOwner();
 		}
 		
 		@Override
-		public Table getRightTable() {
-			return rightColumn.getTable();
+		public Fromable getRightTable() {
+			return rightColumn.getOwner();
 		}
 	}
 }

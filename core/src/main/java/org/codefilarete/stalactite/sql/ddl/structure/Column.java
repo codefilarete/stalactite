@@ -2,13 +2,17 @@ package org.codefilarete.stalactite.sql.ddl.structure;
 
 import javax.annotation.Nonnull;
 
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
+
 /**
  * Column of a table.
  * 
  * @param <O> the Java type this columns is mapped to
  * @author Guillaume Mary
  */
-public class Column<T extends Table, O> {
+public class Column<T extends Table, O> implements Selectable, JoinLink<O> {
 	
 	private final T table;
 	private final String name;
@@ -40,6 +44,21 @@ public class Column<T extends Table, O> {
 		this.nullable = !javaType.isPrimitive();	// default basic principle
 	}
 	
+	@Override
+	public Fromable getOwner() {
+		return getTable();
+	}
+	
+	@Override
+	public String getExpression() {
+		return this.name;
+	}
+	
+	@Override
+	public Class<O> getJavaType() {
+		return this.javaType;
+	}
+	
 	public T getTable() {
 		return table;
 	}
@@ -63,10 +82,6 @@ public class Column<T extends Table, O> {
 	 */
 	public String getAlias() {
 		return alias;
-	}
-	
-	public Class<O> getJavaType() {
-		return javaType;
 	}
 	
 	public Integer getSize() {

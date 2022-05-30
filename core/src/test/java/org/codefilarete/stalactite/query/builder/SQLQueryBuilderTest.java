@@ -2,12 +2,12 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -24,7 +24,7 @@ import static org.codefilarete.stalactite.query.model.QueryEase.select;
  */
 public class SQLQueryBuilderTest {
 	
-	public static Object[][] testToSQL_data() {
+	public static Object[][] toSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
 		final Column colTotoA = tableToto.addColumn("a", String.class);
 		final Column colTotoB = tableToto.addColumn("b", String.class);
@@ -103,17 +103,22 @@ public class SQLQueryBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, "= 1").groupBy(colTotoA)
 						.having(sum(colTotoB), " > 1").limit(2),
 						"select T.a, Tata.b from Toto as T where T.b = 1 group by T.a having sum(T.b) > 1 limit 2" },
+				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, "= 1").unionAll( 
+						select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, "= 1")),
+						"select T.a, Tata.b from Toto as T where T.b = 1"
+								+ " union all"
+								+ " select T.a, Tata.b from Toto as T where T.b = 1" },
 		};
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testToSQL_data")
-	public void testToSQL(QueryProvider queryProvider, String expected) {
-		SQLQueryBuilder testInstance = new SQLQueryBuilder(queryProvider.getQuery());
+	@MethodSource("toSQL_data")
+	public void toSQL(QueryProvider<?> queryProvider, String expected) {
+		SQLBuilder testInstance = SQLQueryBuilder.of(queryProvider.getQuery());
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
-	public static Object[][] testToPreparedSQL_data() {
+	public static Object[][] toPreparedSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
 		final Column colTotoA = tableToto.addColumn("a", String.class);
 		final Column colTotoB = tableToto.addColumn("b", String.class);
@@ -138,8 +143,8 @@ public class SQLQueryBuilderTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testToPreparedSQL_data")
-	public void testToPreparedSQL(QueryProvider queryProvider,
+	@MethodSource("toPreparedSQL_data")
+	public void toPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		SQLQueryBuilder testInstance = new SQLQueryBuilder(queryProvider);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();

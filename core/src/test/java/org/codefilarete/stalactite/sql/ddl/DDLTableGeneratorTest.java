@@ -3,13 +3,13 @@ package org.codefilarete.stalactite.sql.ddl;
 import javax.annotation.Nonnull;
 import java.util.Collections;
 
-import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
-import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,7 +78,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Table table) {
+			public String getSimpleName(@Nonnull Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}
@@ -103,7 +103,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Table table) {
+			public String getSimpleName(@Nonnull Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}

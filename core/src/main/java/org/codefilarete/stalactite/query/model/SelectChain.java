@@ -11,9 +11,15 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  */
 public interface SelectChain<T extends SelectChain<T>> {
 	
-	T add(Object selectable, Object... selectables);
+	T add(Iterable<? extends Selectable> expressions);
 	
-	T add(Column column, String alias);
+	T add(Selectable expression, Selectable... expressions);
+	
+	T add(String expression, String... expressions);
+	
+//	T add(Object selectable, Object... selectables);
+	
+	T add(Column<?, ?> column, String alias);
 	
 	default T add(Column col1, String alias1, Column col2, String alias2) {
 		return add(col1, alias1).add(col2, alias2);

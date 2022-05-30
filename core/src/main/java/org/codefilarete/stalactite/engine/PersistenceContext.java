@@ -595,7 +595,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		
 		private void appendTo(Query query, BeanPropertyQueryMapper<C> queryMapper) {
-			mapping.keySet().forEach(query::select);
+			query.select(mapping.keySet());
 			mapping.forEach((k, v) -> queryMapper.map((Column) k, v));
 		}
 		

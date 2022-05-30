@@ -1,8 +1,5 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-
 /**
  * The interface defining what's possible to do (fluent point of view) on a from (more exactly a join to take more general cases)
  * 
@@ -10,27 +7,27 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  */
 public interface JoinChain<T extends JoinChain<T>> {
 	
-	T innerJoin(Column leftColumn, Column rightColumn);
+	<I> T innerJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn);
 	
-	T leftOuterJoin(Column leftColumn, Column rightColumn);
+	<I> T leftOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn);
 	
-	T rightOuterJoin(Column leftColumn, Column rightColumn);
+	<I> T rightOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn);
 	
-	T innerJoin(Table leftTable, Table rightTable, String joinClause);
+	T innerJoin(Fromable leftTable, Fromable rightTable, String joinClause);
 	
-	T innerJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause);
+	T innerJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause);
 	
-	T leftOuterJoin(Table leftTable, Table rigTable, String joinClause);
+	T leftOuterJoin(Fromable leftTable, Fromable rigTable, String joinClause);
 	
-	T leftOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause);
+	T leftOuterJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause);
 	
-	T rightOuterJoin(Table leftTable, Table rigTable, String joinClause);
+	T rightOuterJoin(Fromable leftTable, Fromable rigTable, String joinClause);
 	
-	T rightOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause);
+	T rightOuterJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause);
 	
-	T crossJoin(Table table);
+	T crossJoin(Fromable table);
 	
-	T crossJoin(Table table, String tableAlias);
+	T crossJoin(Fromable table, String tableAlias);
 	
-	T setAlias(Table table, String alias);
+	T setAlias(Fromable table, String alias);
 }

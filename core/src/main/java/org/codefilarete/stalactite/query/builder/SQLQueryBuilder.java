@@ -1,5 +1,8 @@
 package org.codefilarete.stalactite.query.builder;
 
+import org.codefilarete.stalactite.query.model.QueryStatement;
+import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -24,6 +27,16 @@ import org.codefilarete.stalactite.query.model.QueryProvider;
  */
 public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
+	public static SQLBuilder of(QueryStatement queryStatement) {
+		if (queryStatement instanceof Query) {
+			return new SQLQueryBuilder((Query) queryStatement);
+		} else if (queryStatement instanceof Union) {
+			return new UnionSQLBuilder((Union) queryStatement);
+		} else {
+			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
+		}
+	}
+	
 	private final DMLNameProvider dmlNameProvider;
 	private final Query query;
 	private final SelectBuilder selectBuilder;
@@ -36,7 +49,7 @@ public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	 * 
 	 * @param query a {@link QueryProvider}
 	 */
-	public SQLQueryBuilder(QueryProvider query) {
+	public SQLQueryBuilder(QueryProvider<Query> query) {
 		this(query.getQuery());
 	}
 	

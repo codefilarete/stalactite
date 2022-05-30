@@ -6,7 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.codefilarete.stalactite.engine.runtime.EntityMappingTreeSelectExecutor;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
@@ -71,7 +73,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		List<Object> columns = query.getSelectSurrogate().clear();
+		KeepOrderSet<Selectable> columns = query.getSelectSurrogate().clear();
 		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		List<I> ids = readIds(sqlQueryBuilder, pk);
@@ -81,7 +83,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 			return Collections.emptyList();
 		} else {
 			// Second phase : selecting elements by main table pk (adding necessary columns)
-			query.getSelectSurrogate().remove(0);    // previous pk selection removal
+			query.getSelectSurrogate().removeAt(0);    // previous pk selection removal
 			columns.forEach(query::select);
 			query.getWhereSurrogate().clear();
 			query.where(pk, in(ids));
