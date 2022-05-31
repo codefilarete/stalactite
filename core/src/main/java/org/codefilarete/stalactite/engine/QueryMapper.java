@@ -62,7 +62,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	private final Class<C> rootBeanType;
 	
 	/** The sql provider */
-	private final SQLBuilder sql;
+	private final SQLBuilder sqlBuilder;
 	
 	/** The registry of {@link ParameterBinder}s, for column reading as well as sql argument setting */
 	private final ColumnBinderRegistry columnBinderRegistry;
@@ -82,49 +82,49 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * Simple constructor
 	 * 
 	 * @param rootBeanType type of built bean
-	 * @param sql the sql to execute
+	 * @param sqlBuilder the sql to execute
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 */
-	public QueryMapper(Class<C> rootBeanType, CharSequence sql, ColumnBinderRegistry columnBinderRegistry) {
-		this(rootBeanType, sql, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
+	public QueryMapper(Class<C> rootBeanType, CharSequence sqlBuilder, ColumnBinderRegistry columnBinderRegistry) {
+		this(rootBeanType, sqlBuilder, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
 	}
 	
 	/**
 	 * Simple constructor
 	 *
 	 * @param rootBeanType type of built bean
-	 * @param sql the sql provider
+	 * @param sqlBuilder the sql provider
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 */
-	public QueryMapper(Class<C> rootBeanType, SQLBuilder sql, ColumnBinderRegistry columnBinderRegistry) {
-		this(rootBeanType, sql, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
+	public QueryMapper(Class<C> rootBeanType, SQLBuilder sqlBuilder, ColumnBinderRegistry columnBinderRegistry) {
+		this(rootBeanType, sqlBuilder, columnBinderRegistry, METHOD_REFERENCE_CAPTURER);
 	}
 	
 	/**
 	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryMapper}
 	 * 
 	 * @param rootBeanType type of built bean
-	 * @param sql the sql to execute
+	 * @param sqlBuilder the sql to execute
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public QueryMapper(Class<C> rootBeanType, CharSequence sql, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
-		this(rootBeanType, () -> sql, columnBinderRegistry, methodReferenceCapturer);
+	public QueryMapper(Class<C> rootBeanType, CharSequence sqlBuilder, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
+		this(rootBeanType, () -> sqlBuilder, columnBinderRegistry, methodReferenceCapturer);
 	}
 	
 	/**
 	 * Constructor to share {@link MethodReferenceCapturer} between instance of {@link QueryMapper}
 	 *
 	 * @param rootBeanType type of built bean
-	 * @param sql the sql provider
+	 * @param sqlBuilder the sql provider
 	 * @param columnBinderRegistry a provider for SQL parameters and selected column
 	 * @param methodReferenceCapturer a method capturer (when column types are not given by {@link #map(String, SerializableBiConsumer)}),
 	 * default is {@link #METHOD_REFERENCE_CAPTURER}
 	 */
-	public QueryMapper(Class<C> rootBeanType, SQLBuilder sql, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
+	public QueryMapper(Class<C> rootBeanType, SQLBuilder sqlBuilder, ColumnBinderRegistry columnBinderRegistry, MethodReferenceCapturer methodReferenceCapturer) {
 		this.rootBeanType = rootBeanType;
-		this.sql = sql;
+		this.sqlBuilder = sqlBuilder;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.methodReferenceCapturer = methodReferenceCapturer;
 	}
@@ -469,7 +469,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			transformerToUse = rootTransformer;
 		}
 		this.mapping.applyTo((WholeResultSetTransformer) transformerToUse);
-		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sql.toSQL().toString(), sqlParameterBinders);
+		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sqlBuilder.toSQL().toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
 			readOperation.setValues(sqlArguments);
 			return code.apply(transformerToUse, readOperation.execute());

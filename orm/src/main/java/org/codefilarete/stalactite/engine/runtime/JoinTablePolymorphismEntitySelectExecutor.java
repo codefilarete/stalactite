@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select.AliasedColumn;
@@ -64,7 +64,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
 		
-		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
+		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> aliases = new HashMap<>();
@@ -78,7 +78,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 		return result;
 	}
 	
-	private Map<Class, Set<I>> readIds(SQLQueryBuilder sqlQueryBuilder, Map<String, ResultSetReader> aliases,
+	private Map<Class, Set<I>> readIds(QuerySQLBuilder sqlQueryBuilder, Map<String, ResultSetReader> aliases,
 									   Column<T, I> primaryKey) {
 		Map<Class, Set<I>> result = new HashMap<>();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());

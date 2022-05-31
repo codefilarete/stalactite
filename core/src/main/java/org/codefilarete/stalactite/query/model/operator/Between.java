@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query.model.operator;
 
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 
 /**
@@ -22,7 +23,7 @@ public class Between<O> extends AbstractRelationalOperator<O> {
 	
 	/**
 	 * Returns boundaries of this instance, null when both {@link Interval} boundaries are null (done as such to simplify a bit "is null"
-	 * code in {@link org.codefilarete.stalactite.query.builder.WhereBuilder})
+	 * code in {@link WhereSQLBuilder})
 	 * 
 	 * @return null if value boundaries are both null.
 	 */

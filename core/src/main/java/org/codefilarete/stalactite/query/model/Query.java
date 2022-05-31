@@ -2,19 +2,18 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 
 /**
  * A support for a SQL query, trying to be closest as possible to a real select query syntax and implementing the most simple/common usage. 
- * No syntax validation is done. Final printing can be made by {@link SQLQueryBuilder}
+ * No syntax validation is done. Final printing can be made by {@link QuerySQLBuilder}
  * 
  * @author Guillaume Mary
- * @see SQLQueryBuilder
+ * @see QuerySQLBuilder
  * @see QueryEase
  */
 public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware, QueryProvider<Query>,
@@ -36,13 +35,17 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	private final FluentLimit limit;
 	
 	public Query() {
+		this(null);
+	}
+	
+	public Query(Fromable rootTable) {
 		this.selectSurrogate = new Select();
 		this.select = new MethodDispatcher()
 				.redirect(SelectChain.class, selectSurrogate, true)
 				.redirect(FromAware.class, this)
 				.redirect(QueryProvider.class, this)
 				.build(FluentSelect.class);
-		this.fromSurrogate = new From();
+		this.fromSurrogate = new From(rootTable);
 		this.from = new MethodDispatcher()
 				.redirect(JoinChain.class, fromSurrogate, true)
 				.redirect(WhereAware.class, this)
@@ -178,32 +181,32 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public FluentFrom from(Table leftTable, Table rightTable, String joinCondition) {
-		this.fromSurrogate.innerJoin(leftTable, rightTable, joinCondition);
+	public FluentFrom from(Fromable leftTable, Fromable rightTable, String joinCondition) {
+		this.fromSurrogate.setRoot(leftTable).innerJoin(rightTable, joinCondition);
 		return from;
 	}
 	
 	@Override
-	public FluentFrom from(Table leftTable) {
-		this.fromSurrogate.crossJoin(leftTable);
+	public FluentFrom from(Fromable leftTable) {
+		this.fromSurrogate.setRoot(leftTable);
 		return from;
 	}
 	
 	@Override
-	public FluentFrom from(Table leftTable, String tableAlias) {
-		this.fromSurrogate.crossJoin(leftTable, tableAlias);
+	public FluentFrom from(Fromable leftTable, String tableAlias) {
+		this.fromSurrogate.setRoot(leftTable, tableAlias);
 		return from;
 	}
 	
 	@Override
-	public FluentFrom from(Table leftTable, String leftTableAlias, Table rightTable, String rightTableAlias, String joinCondition) {
-		this.fromSurrogate.innerJoin(leftTable, leftTableAlias, rightTable, rightTableAlias, joinCondition);
+	public FluentFrom from(Fromable leftTable, String leftTableAlias, Fromable rightTable, String rightTableAlias, String joinCondition) {
+		this.fromSurrogate.setRoot(leftTable).innerJoin(rightTable, rightTableAlias, joinCondition);
 		return from;
 	}
 	
 	@Override
 	public <I> FluentFrom from(JoinLink<I> leftColumn, JoinLink<I> rightColumn) {
-		this.fromSurrogate.innerJoin(leftColumn, rightColumn);
+		this.fromSurrogate.setRoot(leftColumn.getOwner()).innerJoin(leftColumn, rightColumn);
 		return from;
 	}
 	

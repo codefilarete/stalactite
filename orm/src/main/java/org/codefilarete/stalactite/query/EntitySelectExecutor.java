@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.query;
 
 import java.util.List;
 
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 
@@ -13,8 +13,8 @@ public interface EntitySelectExecutor<C> {
 	
 	List<C> loadGraph(CriteriaChain where);
 	
-	static SQLQueryBuilder createQueryBuilder(CriteriaChain where, Query query) {
-		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
+	static QuerySQLBuilder createQueryBuilder(CriteriaChain where, Query query) {
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			query.getWhere().and(where);
 		}

@@ -7,8 +7,8 @@ import org.codefilarete.tool.StringAppender;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -25,11 +25,11 @@ import org.codefilarete.stalactite.query.model.QueryProvider;
  * @see #toSQL()
  * @see #toPreparedSQL(ColumnBinderRegistry) 
  */
-public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
+public class QuerySQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	public static SQLBuilder of(QueryStatement queryStatement) {
 		if (queryStatement instanceof Query) {
-			return new SQLQueryBuilder((Query) queryStatement);
+			return new QuerySQLBuilder((Query) queryStatement);
 		} else if (queryStatement instanceof Union) {
 			return new UnionSQLBuilder((Union) queryStatement);
 		} else {
@@ -40,16 +40,16 @@ public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	private final DMLNameProvider dmlNameProvider;
 	private final Query query;
 	private final SelectBuilder selectBuilder;
-	private final FromBuilder fromBuilder;
-	private final WhereBuilder whereBuilder;
-	private final WhereBuilder havingBuilder;
+	private final FromSQLBuilder fromSqlBuilder;
+	private final WhereSQLBuilder whereSqlBuilder;
+	private final WhereSQLBuilder havingBuilder;
 	
 	/**
 	 * Constructor to be combined with result of {@link Query} methods for a short writing, because it avoids calling {@link QueryProvider#getQuery()} 
 	 * 
 	 * @param query a {@link QueryProvider}
 	 */
-	public SQLQueryBuilder(QueryProvider<Query> query) {
+	public QuerySQLBuilder(QueryProvider<Query> query) {
 		this(query.getQuery());
 	}
 	
@@ -58,13 +58,13 @@ public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 	 * 
 	 * @param query a {@link Query}
 	 */
-	public SQLQueryBuilder(Query query) {
+	public QuerySQLBuilder(Query query) {
 		this.dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases()::get);
 		this.query = query;
 		this.selectBuilder = new SelectBuilder(query.getSelectSurrogate(), dmlNameProvider);
-		this.fromBuilder = new FromBuilder(query.getFromSurrogate());
-		this.whereBuilder = new WhereBuilder(query.getWhere(), dmlNameProvider);
-		this.havingBuilder = new WhereBuilder(query.getHavingSurrogate(), dmlNameProvider);
+		this.fromSqlBuilder = new FromSQLBuilder(query.getFromSurrogate());
+		this.whereSqlBuilder = new WhereSQLBuilder(query.getWhere(), dmlNameProvider);
+		this.havingBuilder = new WhereSQLBuilder(query.getHavingSurrogate(), dmlNameProvider);
 	}
 	
 	/**
@@ -80,9 +80,9 @@ public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		StringAppender sql = new StringAppender(500);
 		
 		sql.cat("select ", selectBuilder.toSQL());
-		sql.cat(" from ", fromBuilder.toSQL());
+		sql.cat(" from ", fromSqlBuilder.toSQL());
 		if (!query.getWhereSurrogate().getConditions().isEmpty()) {
-			sql.cat(" where ", whereBuilder.toSQL());
+			sql.cat(" where ", whereSqlBuilder.toSQL());
 		}
 		
 		GroupBy groupBy = query.getGroupBySurrogate();
@@ -118,10 +118,10 @@ public class SQLQueryBuilder implements SQLBuilder, PreparedSQLBuilder {
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
 		
 		sql.cat("select ", selectBuilder.toSQL());
-		sql.cat(" from ", fromBuilder.toSQL());
+		sql.cat(" from ", fromSqlBuilder.toSQL());
 		if (!query.getWhereSurrogate().getConditions().isEmpty()) {
 			sql.cat(" where ");
-			whereBuilder.toPreparedSQL(preparedSQLWrapper);
+			whereSqlBuilder.toPreparedSQL(preparedSQLWrapper);
 		}
 		
 		GroupBy groupBy = query.getGroupBySurrogate();

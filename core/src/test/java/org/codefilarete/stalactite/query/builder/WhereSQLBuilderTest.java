@@ -31,7 +31,7 @@ import static org.codefilarete.stalactite.query.model.QueryEase.where;
 /**
  * @author Guillaume Mary
  */
-public class WhereBuilderTest {
+public class WhereSQLBuilderTest {
 	
 	public static Object[][] toSQL_data() {
 		Table tableToto = new Table(null, "Toto");
@@ -73,7 +73,7 @@ public class WhereBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
 	public void toSQL(CriteriaChain where, Map<Table, String> tableAliases, String expected) {
-		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
+		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, tableAliases);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
@@ -178,7 +178,7 @@ public class WhereBuilderTest {
 	@MethodSource("testToPreparedSQL_data")
 	public void testToPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases, 
 						  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		WhereBuilder testInstance = new WhereBuilder(where, tableAliases);
+		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, tableAliases);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);

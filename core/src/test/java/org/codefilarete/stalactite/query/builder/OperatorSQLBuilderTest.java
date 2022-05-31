@@ -5,7 +5,7 @@ import java.util.Collections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Like;
@@ -31,13 +31,13 @@ import static org.codefilarete.stalactite.query.model.Operators.sum;
 /**
  * @author Guillaume Mary
  */
-public class OperatorBuilderTest {
+public class OperatorSQLBuilderTest {
 	
 	private DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap());
 	
 	@Test
 	public void cat_nullValue_isTransformedToIsNull() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.cat(new AbstractRelationalOperator() {
@@ -51,7 +51,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catNullValue() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catNullValue(false, new StringAppenderWrapper(result, dmlNameProvider));
@@ -64,7 +64,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catIsNull() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIsNull(new IsNull(), new StringAppenderWrapper(result, dmlNameProvider));
@@ -84,7 +84,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catLike() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLike(new Like("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -104,7 +104,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catIn() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIn(in("a", "b"), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -123,7 +123,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catBetween() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catBetween(between(1, 2), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -140,7 +140,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catGreater() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catGreater(gt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -161,7 +161,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catLower() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLower(lt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -182,7 +182,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catEquals() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		testInstance.catEquals(eq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -191,7 +191,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catEquals_column() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -203,7 +203,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catSum() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -215,7 +215,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catCount() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -227,7 +227,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catMin() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -239,7 +239,7 @@ public class OperatorBuilderTest {
 	
 	@Test
 	public void catMax() {
-		OperatorBuilder testInstance = new OperatorBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");

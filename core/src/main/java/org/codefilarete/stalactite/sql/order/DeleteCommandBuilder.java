@@ -13,11 +13,11 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.WhereBuilder;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
@@ -77,8 +77,8 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (delete.getCriteria().iterator().hasNext()) {
 			result.cat(" where ");
-			WhereBuilder whereBuilder = new WhereBuilder(this.delete.getCriteria(), dmlNameProvider);
-			whereBuilder.appendSQL(result);
+			WhereSQLBuilder whereSqlBuilder = new WhereSQLBuilder(this.delete.getCriteria(), dmlNameProvider);
+			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();
 	}

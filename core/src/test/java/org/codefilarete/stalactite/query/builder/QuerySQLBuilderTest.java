@@ -22,7 +22,7 @@ import static org.codefilarete.stalactite.query.model.QueryEase.select;
 /**
  * @author Guillaume Mary
  */
-public class SQLQueryBuilderTest {
+public class QuerySQLBuilderTest {
 	
 	public static Object[][] toSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
@@ -114,7 +114,7 @@ public class SQLQueryBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
 	public void toSQL(QueryProvider<?> queryProvider, String expected) {
-		SQLBuilder testInstance = SQLQueryBuilder.of(queryProvider.getQuery());
+		SQLBuilder testInstance = QuerySQLBuilder.of(queryProvider.getQuery());
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
@@ -146,7 +146,7 @@ public class SQLQueryBuilderTest {
 	@MethodSource("toPreparedSQL_data")
 	public void toPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		SQLQueryBuilder testInstance = new SQLQueryBuilder(queryProvider);
+		QuerySQLBuilder testInstance = new QuerySQLBuilder(queryProvider);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);

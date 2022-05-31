@@ -18,11 +18,11 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.WhereBuilder;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
@@ -102,8 +102,8 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (!update.getCriteria().getConditions().isEmpty()) {
 			result.cat(" where ");
-			WhereBuilder whereBuilder = new WhereBuilder(this.update.getCriteria(), dmlNameProvider);
-			whereBuilder.appendSQL(result);
+			WhereSQLBuilder whereSqlBuilder = new WhereSQLBuilder(this.update.getCriteria(), dmlNameProvider);
+			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();
 	}

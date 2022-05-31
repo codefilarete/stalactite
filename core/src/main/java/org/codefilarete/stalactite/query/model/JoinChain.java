@@ -13,17 +13,17 @@ public interface JoinChain<T extends JoinChain<T>> {
 	
 	<I> T rightOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn);
 	
-	T innerJoin(Fromable leftTable, Fromable rightTable, String joinClause);
+	T innerJoin(Fromable rightTable, String joinClause);
 	
-	T innerJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause);
+	T innerJoin(Fromable rightTable, String rightTableAlias, String joinClause);
 	
-	T leftOuterJoin(Fromable leftTable, Fromable rigTable, String joinClause);
+	T leftOuterJoin(Fromable rightTable, String joinClause);
 	
-	T leftOuterJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause);
+	T leftOuterJoin(Fromable rightTable, String rightTableAlias, String joinClause);
 	
-	T rightOuterJoin(Fromable leftTable, Fromable rigTable, String joinClause);
+	T rightOuterJoin(Fromable rightTable, String joinClause);
 	
-	T rightOuterJoin(Fromable leftTable, String leftTableAlias, Fromable rigTable, String rightTableAlias, String joinClause);
+	T rightOuterJoin(Fromable rightTable, String rightTableAlias, String joinClause);
 	
 	T crossJoin(Fromable table);
 	

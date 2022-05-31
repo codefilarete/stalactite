@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.WhereBuilder;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
@@ -68,7 +68,7 @@ class EntityCriteriaSupportTest {
 				.or(Country::setName, Operators.gteq("11"))
 				;
 		
-		WhereBuilder queryBuilder = new WhereBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getCriteria(), new DMLNameProvider(new HashMap<Table, String>() {
+		WhereSQLBuilder queryBuilder = new WhereSQLBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getCriteria(), new DMLNameProvider(new HashMap<Table, String>() {
 			@Override
 			public String get(Object key) {
 				String o = super.get(key);

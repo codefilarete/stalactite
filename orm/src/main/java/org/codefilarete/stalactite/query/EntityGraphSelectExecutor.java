@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -70,7 +70,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
+		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		KeepOrderSet<Selectable> columns = query.getSelectSurrogate().clear();
@@ -93,7 +93,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		}
 	}
 	
-	private List<I> readIds(SQLQueryBuilder sqlQueryBuilder, Column<T, I> pk) {
+	private List<I> readIds(QuerySQLBuilder sqlQueryBuilder, Column<T, I> pk) {
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();

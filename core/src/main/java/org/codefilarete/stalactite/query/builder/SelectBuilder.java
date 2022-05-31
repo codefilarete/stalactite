@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Select.AliasedColumn;
@@ -21,7 +21,7 @@ public class SelectBuilder implements SQLBuilder {
 	
 	private final Select select;
 	private final DMLNameProvider dmlNameProvider;
-	private final OperatorBuilder operatorBuilder;
+	private final OperatorSQLBuilder operatorSqlBuilder;
 	
 	public SelectBuilder(Select select, Map<Table, String> tableAliases) {
 		this(select, new DMLNameProvider(tableAliases));
@@ -30,7 +30,7 @@ public class SelectBuilder implements SQLBuilder {
 	public SelectBuilder(Select select, DMLNameProvider dmlNameProvider) {
 		this.select = select;
 		this.dmlNameProvider = dmlNameProvider;
-		this.operatorBuilder = new OperatorBuilder(this.dmlNameProvider);
+		this.operatorSqlBuilder = new OperatorSQLBuilder(this.dmlNameProvider);
 	}
 	
 	@Override
@@ -78,6 +78,6 @@ public class SelectBuilder implements SQLBuilder {
 	}
 	
 	private void cat(AbstractRelationalOperator operator, SQLAppender appenderWrapper) {
-		operatorBuilder.cat(operator, appenderWrapper);
+		operatorSqlBuilder.cat(operator, appenderWrapper);
 	}
 }

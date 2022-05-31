@@ -70,7 +70,7 @@ public class EntityTreeQueryBuilder<C> {
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
 		Table rootTableClone = cloneTable(joinRoot);
 		tablePerJoinNode.put(joinRoot, rootTableClone);
-		From from = query.getFromSurrogate().add(rootTableClone);
+		From from = query.getFromSurrogate().setRoot(rootTableClone);
 		resultHelper.addColumnsToSelect(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
 		
 		// completing from clause

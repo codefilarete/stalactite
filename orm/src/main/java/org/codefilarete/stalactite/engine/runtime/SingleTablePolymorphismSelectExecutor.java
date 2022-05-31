@@ -17,7 +17,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMerger
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
@@ -76,7 +76,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 				.add(discriminatorColumn, discriminatorColumn.getAlias())
 				.from(table)
 				.where(primaryKey, Operators.in(ids)).getQuery();
-		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		Map<Column, String> aliases = query.getSelectSurrogate().giveColumnAliases();
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();

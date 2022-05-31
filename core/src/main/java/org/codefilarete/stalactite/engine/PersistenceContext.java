@@ -45,7 +45,7 @@ import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
@@ -241,8 +241,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 * @see org.codefilarete.stalactite.query.model.QueryEase
 	 */
-	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
-		return newQuery(new SQLQueryBuilder(queryProvider), beanType);
+	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider<Query> queryProvider, Class<C> beanType) {
+		return newQuery(new QuerySQLBuilder(queryProvider), beanType);
 	}
 	
 	/**
@@ -255,7 +255,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 */
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(new SQLQueryBuilder(query), beanType);
+		return newQuery(new QuerySQLBuilder(query), beanType);
 	}
 	
 	/**
@@ -544,7 +544,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		Query query = QueryEase.select(selectableKeys).from(table).getQuery();
 		where.accept(query.getWhere());
-		QueryMapper<C> queryMapper = newTransformableQuery(new SQLQueryBuilder(query), beanType);
+		QueryMapper<C> queryMapper = newTransformableQuery(new QuerySQLBuilder(query), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);

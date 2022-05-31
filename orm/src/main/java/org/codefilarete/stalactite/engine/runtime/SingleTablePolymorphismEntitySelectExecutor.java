@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -60,7 +60,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	public List<C> loadGraph(CriteriaChain where) {
 		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
 		
-		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
+		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
 		
 		// selecting ids and their discriminator
 		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());
@@ -77,7 +77,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 		return result;
 	}
 	
-	private List<Duo<I, DTYPE>> readIds(SQLQueryBuilder sqlQueryBuilder, Column<T, I> pk) {
+	private List<Duo<I, DTYPE>> readIds(QuerySQLBuilder sqlQueryBuilder, Column<T, I> pk) {
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();

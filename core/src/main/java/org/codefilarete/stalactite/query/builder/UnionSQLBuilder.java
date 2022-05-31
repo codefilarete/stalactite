@@ -40,7 +40,7 @@ public class UnionSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		}
 		
 		private StringAppender cat(Query query) {
-			SQLQueryBuilder unionBuilder = new SQLQueryBuilder(query);
+			QuerySQLBuilder unionBuilder = new QuerySQLBuilder(query);
 			return cat(unionBuilder.toSQL());
 		}
 	} 

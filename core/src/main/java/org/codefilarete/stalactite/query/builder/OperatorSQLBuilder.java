@@ -30,19 +30,19 @@ import org.codefilarete.stalactite.query.model.operator.Sum;
  * 
  * @author Guillaume Mary
  */
-public class OperatorBuilder {
+public class OperatorSQLBuilder {
 	
 	private final DMLNameProvider dmlNameProvider;
 	
-	public OperatorBuilder() {
+	public OperatorSQLBuilder() {
 		this(Collections.emptyMap());
 	}
 	
-	public OperatorBuilder(Map<? extends Table, String> tableAliases) {
+	public OperatorSQLBuilder(Map<? extends Table, String> tableAliases) {
 		this(new DMLNameProvider(tableAliases));
 	}
 	
-	public OperatorBuilder(DMLNameProvider dmlNameProvider) {
+	public OperatorSQLBuilder(DMLNameProvider dmlNameProvider) {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 	

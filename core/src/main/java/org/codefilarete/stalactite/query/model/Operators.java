@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
@@ -36,7 +36,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Lower(value)</code> to ease a fluent write of queries for "lower than" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lower}
 	 */
 	static Lower lt(Object value) {
@@ -45,7 +45,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Lower(value, true)</code> to ease a fluent write of queries for "lower than equals" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lower} with equals checking
 	 */
 	static Lower lteq(Object value) {
@@ -54,7 +54,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Greater(value)</code> to ease a fluent write of queries for "greater than" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Greater}
 	 */
 	static <O> Greater<O>  gt(O value) {
@@ -63,7 +63,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Greater(value, true)</code> to ease a fluent write of queries for "greater than equals" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Greater} with equals checking
 	 */
 	static <O> Greater<O> gteq(O value) {
@@ -72,8 +72,8 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Between(value1, value2)</code> to ease a fluent write of queries for "between" comparisons
-	 * @param value1 a value, null accepted, transformed to "is null" by {@link OperatorBuilder}) if both values are
-	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperatorBuilder}) if both values are
+	 * @param value1 a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder}) if both values are
+	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder}) if both values are
 	 * @return a new instance of {@link Between} with equals checking
 	 */
 	static <O> Between<O> between(O value1, O value2) {
@@ -82,7 +82,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link In}
 	 */
 	static <O> In<O> in(Iterable<O> value) {
@@ -91,9 +91,9 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons.
-	 * Note that this signature won't transform null values to "is null" by {@link OperatorBuilder}), prefers {@link #in(Iterable)} for it.
+	 * Note that this signature won't transform null values to "is null" by {@link OperatorSQLBuilder}), prefers {@link #in(Iterable)} for it.
 	 * 
-	 * @param value a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link In}
 	 * @see #in(Iterable)
 	 */

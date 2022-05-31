@@ -8,9 +8,9 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
@@ -23,7 +23,7 @@ import org.codefilarete.stalactite.query.model.RawCriterion;
  * 
  * @author Guillaume Mary
  */
-public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
+public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 
 	public static final String AND = "and";
 	public static final String OR = "or";
@@ -32,11 +32,11 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	private final DMLNameProvider dmlNameProvider;
 	
-	public WhereBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
+	public WhereSQLBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
 		this(where, new DMLNameProvider(tableAliases));
 	}
 	
-	public WhereBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider) {
+	public WhereSQLBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider) {
 		this.where = where;
 		this.dmlNameProvider = dmlNameProvider;
 	}
@@ -78,13 +78,13 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		private final SQLAppender sql;
 		
-		private final OperatorBuilder operatorBuilder;
+		private final OperatorSQLBuilder operatorSqlBuilder;
 		
 		private final DMLNameProvider dmlNameProvider;
 		
 		public WhereAppender(SQLAppender sql, DMLNameProvider dmlNameProvider) {
 			this.sql = sql;
-			this.operatorBuilder = new OperatorBuilder(dmlNameProvider);
+			this.operatorSqlBuilder = new OperatorSQLBuilder(dmlNameProvider);
 			this.dmlNameProvider = dmlNameProvider;
 		}
 		
@@ -159,11 +159,11 @@ public class WhereBuilder implements SQLBuilder, PreparedSQLBuilder {
 		}
 		
 		public void cat(AbstractRelationalOperator operator) {
-			operatorBuilder.cat(operator, sql);
+			operatorSqlBuilder.cat(operator, sql);
 		}
 		
 		public void cat(Column column, AbstractRelationalOperator operator) {
-			operatorBuilder.cat(column, operator, sql);
+			operatorSqlBuilder.cat(column, operator, sql);
 		}
 		
 		public String getName(LogicalOperator operator) {

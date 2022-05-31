@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.query.model.From.ColumnJoin;
 import org.codefilarete.stalactite.query.model.From.CrossJoin;
 import org.codefilarete.stalactite.query.model.From.Join;
 import org.codefilarete.stalactite.query.model.From.RawTableJoin;
+import org.codefilarete.stalactite.query.model.FromProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
@@ -19,28 +20,32 @@ import org.codefilarete.tool.Strings;
 /**
  * @author Guillaume Mary
  */
-public class FromBuilder implements SQLBuilder {
+public class FromSQLBuilder implements SQLBuilder {
 	
 	private final From from;
 	
 	private final DMLNameProvider dmlNameProvider;
+	
+	public FromSQLBuilder(FromProvider from) {
+		this(from.getFrom());
+	}
 
-	public FromBuilder(From from) {
+	public FromSQLBuilder(From from) {
 		this.from = from;
 		this.dmlNameProvider = new DMLNameProvider(from.getTableAliases()::get);
 	}
 
 	@Override
 	public String toSQL() {
-		StringAppender sql = new FromGenerator();
-		
-		Iterator<Join> joinIterator = from.getJoins().iterator();
-		if (!joinIterator.hasNext()) {
+		if (from.getRoot() == null) {
 			// invalid SQL
 			throw new IllegalArgumentException("Empty from");
 		}
-		joinIterator.forEachRemaining(sql::cat);
-		return sql.toString();
+		StringAppender fromGenerator = new FromGenerator();
+		fromGenerator.cat(from.getRoot());
+		Iterator<Join> joinIterator = from.getJoins().iterator();
+		joinIterator.forEachRemaining(fromGenerator::cat);
+		return fromGenerator.toString();
 	}
 	
 	/**
@@ -82,39 +87,39 @@ public class FromBuilder implements SQLBuilder {
 		}
 		
 		private StringAppender cat(Query query) {
-			SQLQueryBuilder unionBuilder = new SQLQueryBuilder(query);
+			QuerySQLBuilder unionBuilder = new QuerySQLBuilder(query);
 			return cat(unionBuilder.toSQL());
 		}
 		
 		private StringAppender cat(UnionInFrom union) {
-			String tableAlias = dmlNameProvider.getAlias(union);
-			UnionSQLBuilder unionSQLBuilder = new UnionSQLBuilder(union.getUnion());
+			UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getUnion());
 			// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
-			return cat("(", unionSQLBuilder.toSQL(), ") as ").cat(Strings.preventEmpty(tableAlias, union.getName()));
+			return cat("(", unionSqlBuilder.toSQL(), ") as ").cat(getAliasOrDefault(union));
 		}
 		
 		private StringAppender cat(CrossJoin join) {
-			catIf(length() > 0, CROSS_JOIN).cat(join.getLeftTable());
+			catIf(length() > 0, CROSS_JOIN).cat(join.getRightTable());
 			return this;
 		}
 		
 		private StringAppender cat(AbstractJoin join) {
-			catIf(length() == 0, join.getLeftTable());
 			cat(join.getJoinDirection(), join.getRightTable());
 			if (join instanceof RawTableJoin) {
 				cat(((RawTableJoin) join).getJoinClause());
 			} else if (join instanceof ColumnJoin) {
 				ColumnJoin columnJoin = (ColumnJoin) join;
-				String leftTableAlias = dmlNameProvider.getAlias(columnJoin.getLeftTable());
-				String rightTableAlias = dmlNameProvider.getAlias(columnJoin.getRightTable());
-				CharSequence leftPrefix = Strings.preventEmpty(leftTableAlias, columnJoin.getLeftTable().getName());
-				CharSequence rightPrefix = Strings.preventEmpty(rightTableAlias, columnJoin.getRightTable().getName());
+				CharSequence leftPrefix = getAliasOrDefault(columnJoin.getLeftColumn().getOwner());
+				CharSequence rightPrefix = getAliasOrDefault(columnJoin.getRightColumn().getOwner());
 				cat(leftPrefix, ".", columnJoin.getLeftColumn().getExpression(), " = ", rightPrefix, ".", columnJoin.getRightColumn().getExpression());
 			} else {
 				// did I miss something ?
 				throw new UnsupportedOperationException("From building is not implemented for " + join.getClass().getName());
 			}
 			return this;
+		}
+		
+		private String getAliasOrDefault(Fromable fromable) {
+			return Strings.preventEmpty(dmlNameProvider.getAlias(fromable), fromable.getName());
 		}
 		
 		protected void cat(JoinDirection joinDirection, Fromable table) {

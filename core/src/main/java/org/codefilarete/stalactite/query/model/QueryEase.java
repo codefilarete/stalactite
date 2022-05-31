@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query.FluentSelect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
@@ -40,6 +41,10 @@ public class QueryEase {
 		return new Query().select(aliasedColumns);
 	}
 	
+	public static FluentSelect from(Fromable rootTable) {
+		return new Query().from(rootTable).getQuery().getSelect();
+	}
+	
 	public static Where where(Column column, String condition) {
 		return new Where(column, condition);
 	}
@@ -50,7 +55,7 @@ public class QueryEase {
 	
 	/**
 	 * Shortcut to create a {@link Criteria}.
-	 * Combined with {@link org.codefilarete.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 * Combined with {@link WhereSQLBuilder} it will add parenthesis around it.
 	 * 
 	 * @param column a {@link Column}
 	 * @param condition the criteria on the {@link Column}
@@ -62,7 +67,7 @@ public class QueryEase {
 	
 	/**
 	 * Shortcut to create a {@link Criteria}.
-	 * Combined with {@link org.codefilarete.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 * Combined with {@link WhereSQLBuilder} it will add parenthesis around it.
 	 *
 	 * @param column a {@link Column}
 	 * @param condition the criteria on the {@link Column}
@@ -74,7 +79,7 @@ public class QueryEase {
 	
 	/**
 	 * Shortcut to create a {@link Criteria}.
-	 * Combined with {@link org.codefilarete.stalactite.query.builder.WhereBuilder} it will add parenthesis around it.
+	 * Combined with {@link WhereSQLBuilder} it will add parenthesis around it.
 	 *
 	 * @param columns a combination of objects describing the criteria
 	 * @return a new {@link Criteria}

@@ -18,7 +18,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -107,7 +107,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 				query.getWhere().and(projectedWhere);
 			}
 			
-			SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
+			QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(columnBinderRegistry);
 			queries.add(preparedSQL);
 		});

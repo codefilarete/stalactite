@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
@@ -82,7 +82,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 			query.select(subclassPrimaryKey, subclassPrimaryKey.getAlias());
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
-		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
 		Map<Column, String> aliases = query.getSelectSurrogate().giveColumnAliases();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
