@@ -6,7 +6,7 @@ package org.codefilarete.stalactite.query.model;
  * @see SelectableString
  * @author Guillaume Mary
  */
-public interface Selectable {
+public interface Selectable<C> {
 	
 	/**
 	 * Gives the SQL string that must be put in the select clause.
@@ -16,20 +16,35 @@ public interface Selectable {
 	 */
 	String getExpression();
 	
+	Class<C> getJavaType();
+	
+	// TODO: see if still necessary on Selectable (comes from Column)
+	default String getAbsoluteName() {
+		return getExpression();
+	}
+	
 	/**
 	 * Implementation for String to be put in Select clause
 	 */
-	class SelectableString implements Selectable {
+	class SelectableString<C> implements Selectable<C> {
 		
 		private final String expression;
 		
-		public SelectableString(String expression) {
+		private final Class<C> javaType;
+		
+		public SelectableString(String expression, Class<C> javaType) {
 			this.expression = expression;
+			this.javaType = javaType;
 		}
 		
 		@Override
 		public String getExpression() {
 			return expression;
+		}
+		
+		@Override
+		public Class<C> getJavaType() {
+			return javaType;
 		}
 	}
 }

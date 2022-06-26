@@ -540,7 +540,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.delete(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable), Long.class)
+			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c", long.class).from(answerChoicesTable), Long.class)
 					.mapKey("c", long.class)
 					.execute();
 			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);
@@ -577,7 +577,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.deleteById(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c").from(answerChoicesTable).getQuery(), Long.class)
+			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c", long.class).from(answerChoicesTable).getQuery(), Long.class)
 					.mapKey("c", long.class)
 					.execute();
 			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);

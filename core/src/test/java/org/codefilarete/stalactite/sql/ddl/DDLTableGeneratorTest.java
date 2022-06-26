@@ -4,9 +4,10 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
-import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
@@ -47,7 +48,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == primaryKey) {
 					return "'key'";
 				}
@@ -78,11 +79,11 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Fromable table) {
+			public String getName(@Nonnull Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}
-				return super.getSimpleName(toto);
+				return super.getName(toto);
 			}
 		};
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
@@ -103,11 +104,11 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Fromable table) {
+			public String getName(@Nonnull Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}
-				return super.getSimpleName(toto);
+				return super.getName(toto);
 			}
 		};
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
@@ -134,7 +135,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == newColumn) {
 					return "'key'";
 				}
@@ -170,7 +171,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == newColumn) {
 					return "'key'";
 				}
@@ -207,7 +208,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -235,7 +236,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -276,7 +277,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA || column == colA2) {
 					return "'key'";
 				}
@@ -306,7 +307,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}

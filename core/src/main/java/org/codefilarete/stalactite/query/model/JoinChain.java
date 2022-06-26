@@ -7,11 +7,11 @@ package org.codefilarete.stalactite.query.model;
  */
 public interface JoinChain<T extends JoinChain<T>> {
 	
-	<I> T innerJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn);
+	<I> T innerJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
 	
-	<I> T leftOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn);
+	<I> T leftOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
 	
-	<I> T rightOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn);
+	<I> T rightOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
 	
 	T innerJoin(Fromable rightTable, String joinClause);
 	

@@ -13,15 +13,12 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Representation of a database Table, not exhaustive but sufficient for our need.
@@ -66,18 +63,28 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		return schema;
 	}
 	
-	@Override
 	public String getName() {
 		return name;
 	}
 	
-	@Override
 	public String getAbsoluteName() {
 		return absoluteName;
 	}
 	
-	public Set<Column<SELF, Object>> getColumns() {
+	/**
+	 * Gives columns of this table as an unmodifiable set.
+	 * 
+	 * @return an unmodifiable Set&lt;Column&gt;
+	 */
+	public Set<Column<SELF, ?>> getColumns() {
 		return Collections.unmodifiableSet(columns.asSet());
+	}
+	
+	@Override
+	public Map<Column<SELF, ?>, String> getAliases() {
+		Map<Column<SELF, ?>, String> result = new HashMap<>();
+		columnsPerName.forEach((key, value) -> result.put(value, key));
+		return Collections.unmodifiableMap(result);
 	}
 	
 	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
@@ -155,8 +162,9 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @param columnName an expected matching column name
 	 * @return null if not found
 	 */
-	public Column<SELF, Object> findColumn(String columnName) {
-		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).map(Duo::getLeft).get();
+	@Override
+	public Column<SELF, ?> findColumn(String columnName) {
+		return getColumn(columnName);
 	}
 	
 	/**

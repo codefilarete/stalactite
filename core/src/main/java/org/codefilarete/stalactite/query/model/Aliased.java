@@ -3,21 +3,9 @@ package org.codefilarete.stalactite.query.model;
 /**
  * @author guillaume.mary
  */
-public abstract class Aliased {
-	private String alias;
+public interface Aliased {
 
-	public Aliased() {
-	}
+	Selectable<?> as(String alias);
 
-	public Aliased(String alias) {
-		this.alias = alias;
-	}
-
-	public void as(String alias) {
-		this.alias = alias;
-	}
-
-	public String getAlias() {
-		return alias;
-	}
+	String getAlias();
 }

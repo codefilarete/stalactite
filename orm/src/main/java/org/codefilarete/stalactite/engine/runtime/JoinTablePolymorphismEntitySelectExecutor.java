@@ -17,7 +17,6 @@ import org.codefilarete.stalactite.query.EntitySelectExecutor;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Select.AliasedColumn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -69,7 +68,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> aliases = new HashMap<>();
 		Iterables.stream(query.getSelectSurrogate())
-				.map(AliasedColumn.class::cast).map(AliasedColumn::getColumn)
+				.map(Column.class::cast)
 				.forEach(c -> aliases.put(c.getAlias(), dialect.getColumnBinderRegistry().getBinder(c)));
 		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, aliases, primaryKey);
 		
@@ -86,7 +85,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 			ResultSet resultSet = readOperation.execute();
 			
 			RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
-			ColumnedRow columnedRow = new ColumnedRow(Column::getAlias);
+			ColumnedRow columnedRow = new ColumnedRow();
 			resultSetIterator.forEachRemaining(row -> {
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 

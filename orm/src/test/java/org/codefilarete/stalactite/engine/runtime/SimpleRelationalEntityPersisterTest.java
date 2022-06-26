@@ -147,7 +147,7 @@ class SimpleRelationalEntityPersisterTest {
 	}
 	
 	protected void initTest() throws SQLException {
-		// reset id counter between 2 tests to keep independency between them
+		// reset id counter between 2 tests to keep independence between them
 		identifierGenerator.reset();
 		
 		preparedStatement = mock(PreparedStatement.class);
@@ -157,7 +157,7 @@ class SimpleRelationalEntityPersisterTest {
 		
 		connection = mock(Connection.class);
 		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
-		// weither or not it should prepare statement
+		// either or not it should prepare statement
 		when(preparedStatement.getConnection()).thenReturn(connection);
 		statementArgCaptor = ArgumentCaptor.forClass(String.class);
 		when(connection.prepareStatement(statementArgCaptor.capture())).thenReturn(preparedStatement);

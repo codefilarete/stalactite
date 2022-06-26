@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Max extends UnitaryOperator implements Selectable {
+public class Max extends UnitaryOperator implements Selectable<Long> {
 	
 	public Max(Column value) {
 		super(value);
@@ -18,5 +18,10 @@ public class Max extends UnitaryOperator implements Selectable {
 	@Override
 	public String getExpression() {
 		return "max";
+	}
+	
+	@Override
+	public Class<Long> getJavaType() {
+		return long.class;
 	}
 }

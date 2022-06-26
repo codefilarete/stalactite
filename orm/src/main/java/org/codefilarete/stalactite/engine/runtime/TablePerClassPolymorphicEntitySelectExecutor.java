@@ -90,7 +90,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 			discriminatorValues.put(discriminatorValue, subEntityType);
 			Query query = QueryEase.
 					select(primaryKey, pkAlias)
-					.add("'"+ discriminatorValue +"' as " + discriminatorAlias)
+					.add("'"+ discriminatorValue +"'", String.class).as(discriminatorAlias)
 					.from(subEntityTable)
 					.getQuery();
 			

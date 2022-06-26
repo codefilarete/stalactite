@@ -23,14 +23,14 @@ public class MySQLDDLTableGenerator extends DDLTableGenerator {
 	 */
 	@Override
 	public String generateDropForeignKey(ForeignKey foreignKey) {
-		StringAppender sqlCreateTable = new StringAppender("alter table ", dmlNameProvider.getSimpleName(foreignKey.getTable()),
+		StringAppender sqlCreateTable = new StringAppender("alter table ", dmlNameProvider.getName(foreignKey.getTable()),
 			" drop foreign key ", foreignKey.getName());
 		return sqlCreateTable.toString();
 	}
 	
 	@Override
 	public String generateDropIndex(Index index) {
-		StringAppender sqlDropColumn = new StringAppender("alter table ", dmlNameProvider.getSimpleName(index.getTable()),
+		StringAppender sqlDropColumn = new StringAppender("alter table ", dmlNameProvider.getName(index.getTable()),
 			" drop index ", index.getName());
 		return sqlDropColumn.toString();
 	}

@@ -5,7 +5,7 @@ package org.codefilarete.stalactite.query.model;
  * 
  * @author Guillaume Mary
  */
-public interface Fromable {
+public interface Fromable extends SelectablesPod {
 	
 	String getName();
 	

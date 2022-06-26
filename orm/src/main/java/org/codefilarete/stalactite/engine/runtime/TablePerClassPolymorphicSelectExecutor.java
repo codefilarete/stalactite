@@ -94,9 +94,12 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 			Column<T, I> primaryKey = (Column<T, I>) Iterables.first(subEntityTable.getPrimaryKey().getColumns());
 			String discriminatorValue = subEntityType.getSimpleName();
 			discriminatorValues.put(discriminatorValue, subEntityType);
-			Query query = QueryEase.
-					select(primaryKey, pkAlias)
-					.add("'"+ discriminatorValue +"' as " + discriminatorAlias)
+			Query.FluentSelectClause select = QueryEase.
+					select(primaryKey, pkAlias);
+			select.add("'" + discriminatorValue + "'", String.class);
+			Query.FluentSelectClauseAliasableExpression add = select
+					.add("'" + discriminatorValue + "'", String.class);
+			Query query = add.as(discriminatorAlias)
 					.from(subEntityTable)
 					.where(primaryKey, Operators.in(ids)).getQuery();
 			QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);

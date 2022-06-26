@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
+import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.operator.Between;
@@ -181,4 +183,11 @@ public interface Operators {
 		return new Max(column);
 	}
 	
+	static <C> Cast<C> cast(String expression, Class<C> javaType) {
+		return cast(new SelectableString<>(expression, javaType));
+	}
+	
+	static <C> Cast<C> cast(Selectable<C> column) {
+		return new Cast<>(column);
+	}
 }

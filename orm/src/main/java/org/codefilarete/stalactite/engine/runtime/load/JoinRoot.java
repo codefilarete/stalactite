@@ -6,11 +6,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 
@@ -24,7 +24,7 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	private final EntityJoinTree<C, I> tree;
 	
 	/** Root entity inflater */
-	private final EntityInflater<C, I, T> entityInflater;
+	private final EntityInflater<C, I> entityInflater;
 	
 	private final T table;
 	
@@ -34,7 +34,7 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	@Nullable
 	private String tableAlias;
 	
-	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I, T> entityInflater, T table) {
+	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table) {
 		this.tree = tree;
 		this.entityInflater = entityInflater;
 		this.table = table;
@@ -45,7 +45,7 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 		return tree;
 	}
 	
-	public EntityInflater<C, I, T> getEntityInflater() {
+	public EntityInflater<C, I> getEntityInflater() {
 		return entityInflater;
 	}
 	
@@ -55,8 +55,8 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	}
 	
 	@Override
-	public Set<Column<T, Object>> getColumnsToSelect() {
-		return getEntityInflater().getSelectableColumns();
+	public Set<Selectable<?>> getColumnsToSelect() {
+		return (Set) getEntityInflater().getSelectableColumns();
 	}
 	
 	@Override
@@ -91,7 +91,7 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 		
 		private final ColumnedRow columnedRow;
 		
-		JoinRootRowConsumer(EntityInflater<C, I, ? extends Table> entityInflater, ColumnedRow columnedRow) {
+		JoinRootRowConsumer(EntityInflater<C, I> entityInflater, ColumnedRow columnedRow) {
 			this.entityType = entityInflater.getEntityType();
 			this.identifierDecoder = entityInflater::giveIdentifier;
 			this.entityBuilder = entityInflater.copyTransformerWithAliases(columnedRow);

@@ -283,8 +283,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			PassiveJoinNode passiveJoin = (PassiveJoinNode) sourcePersister.getEntityJoinTree().getJoin(joinName);
 			targetPersister.getEntityJoinTree().foreachJoin(joinNode -> {
 				if (joinNode instanceof RelationJoinNode
-						&& ((RelationJoinNode<?, ?, ?, ?>) joinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
-					Column localLeftColumn = joinNode.getTable().getColumn(leftColumn.getName());
+						&& ((RelationJoinNode<?, ?, ?, ?, ?>) joinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
+					Column localLeftColumn = joinNode.getTable().findColumn(leftColumn.getName());
 					EntityJoinTree.copyNodeToParent(passiveJoin, joinNode, localLeftColumn);
 				}
 			});
@@ -593,8 +593,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			PassiveJoinNode passiveJoin = (PassiveJoinNode) sourcePersister.getEntityJoinTree().getJoin(joinName);
 			targetPersister.getEntityJoinTree().foreachJoin(joinNode -> {
 				if (joinNode instanceof RelationJoinNode
-						&& ((RelationJoinNode<?, ?, ?, ?>) joinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
-					Column localLeftColumn = joinNode.getTable().getColumn(leftColumn.getName());
+						&& ((RelationJoinNode<?, ?, ?, ?, ?>) joinNode).getEntityInflater().getEntityType() == sourcePersister.getClassToPersist()) {
+					Column localLeftColumn = joinNode.getTable().findColumn(leftColumn.getName());
 					EntityJoinTree.copyNodeToParent(passiveJoin, joinNode, localLeftColumn);
 				}
 			});

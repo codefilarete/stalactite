@@ -77,7 +77,7 @@ public class WhereSQLBuilderTest {
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
-	public static Object[][] testToPreparedSQL_data() {
+	public static Object[][] toPreparedSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colA = tableToto.addColumn("a", String.class);
 		Column colB = tableToto.addColumn("b", String.class);
@@ -175,8 +175,8 @@ public class WhereSQLBuilderTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testToPreparedSQL_data")
-	public void testToPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases, 
+	@MethodSource("toPreparedSQL_data")
+	public void toPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases, 
 						  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, tableAliases);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();

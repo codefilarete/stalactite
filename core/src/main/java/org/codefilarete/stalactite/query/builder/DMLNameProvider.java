@@ -1,11 +1,12 @@
 package org.codefilarete.stalactite.query.builder;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Strings;
 
 /**
@@ -30,9 +31,13 @@ public class DMLNameProvider {
 	 * @param column a column
 	 * @return the column name prefixed with table name/alias
 	 */
-	public String getName(@Nonnull Column column) {
-		String tablePrefix = getTablePrefix(column.getTable());
-		return tablePrefix + "." + getSimpleName(column);
+	public String getName(Selectable<?> column) {
+		if (column instanceof JoinLink) {
+			String tablePrefix = getTablePrefix(((JoinLink<?, ?>) column).getOwner());
+			return tablePrefix + "." + getSimpleName(column);
+		} else {
+			return getSimpleName(column);
+		}
 	}
 	
 	/**
@@ -42,8 +47,8 @@ public class DMLNameProvider {
 	 * @param column a column
 	 * @return the column name (eventually escaped)
 	 */
-	public String getSimpleName(@Nonnull Column column) {
-		return column.getName();
+	public String getSimpleName(Selectable<?> column) {
+		return column.getExpression();
 	}
 	
 	public String getAlias(Fromable table) {
@@ -52,17 +57,21 @@ public class DMLNameProvider {
 	
 	public String getTablePrefix(Fromable table) {
 		String tableAlias = getAlias(table);
-		return Strings.isEmpty(tableAlias) ? getSimpleName(table) : tableAlias;
+		return Strings.isEmpty(tableAlias) ? getName(table) : tableAlias;
 	}
 	
 	/**
 	 * Gives the table name.
-	 * Aimed at being overridden to take keywords into account (and put it between quotes for instance)
+	 * Aimed at being overridden to take keywords into account (and put result between quotes for instance)
 	 *
 	 * @param table a table
 	 * @return the table name (eventually escaped)
 	 */
-	public String getSimpleName(Fromable table) {
-		return table.getAbsoluteName();
+	public String getName(Fromable table) {
+		if (table instanceof Table) {
+			return table.getAbsoluteName();
+		} else {
+			return table.getName();
+		}
 	}
 }

@@ -17,9 +17,8 @@ class FluentEmbeddableMappingConfigurationSupportTest {
 	 * - at runtime instance of the right type is also returned
 	 * (avoid "java.lang.ClassCastException: com.sun.proxy.$Proxy10 cannot be cast to org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder")
 	 * <p>
-	 * As many as possible combinations of method chaining should be done here, because all combination seems impossible, this test must be
-	 * considered
-	 * as a best effort, and any regression found in user code should be added here
+	 * As many as possible combinations of method chaining should be done here, but since all combinations seem impossible, this test must be
+	 * considered as a best effort, and any regression found in user code should be added here
 	 */
 	
 	@Test

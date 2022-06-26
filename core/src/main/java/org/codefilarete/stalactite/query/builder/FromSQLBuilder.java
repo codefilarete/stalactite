@@ -66,7 +66,9 @@ public class FromSQLBuilder implements SQLBuilder {
 		/** Overridden to dispatch to dedicated cat methods */
 		@Override
 		public StringAppender cat(Object o) {
-			if (o instanceof Table) {
+			if (o instanceof String) {
+				return cat((String) o);
+			} else if (o instanceof Table) {
 				return cat((Table) o);
 			} else if (o instanceof Query) {
 				return cat((Query) o);
@@ -79,6 +81,18 @@ public class FromSQLBuilder implements SQLBuilder {
 			} else {
 				return super.cat(o);
 			}
+		}
+		
+		/**
+		 * Made to skip going through cat(Object) while calling it from internal method that passes String as argument. Small optimization, eases
+		 * debug, simplifies call.
+		 * 
+		 * @param s any String
+		 * @return this
+		 */
+		private StringAppender cat(String s) {
+			super.appender.append(s);
+			return this;
 		}
 		
 		private StringAppender cat(Table table) {

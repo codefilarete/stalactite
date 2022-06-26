@@ -11,7 +11,6 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -42,6 +41,7 @@ import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.ParameterizedWhere;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
@@ -62,7 +62,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
-	private final ParameterBinderIndex<Column, ParameterBinder> parameterBinderProvider;
+	private final ColumnBinderRegistry parameterBinderProvider;
 	private final int blockSize;
 	
 	private final PrimaryKey<T> primaryKey;
@@ -75,7 +75,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	private final DMLGenerator dmlGenerator;
 	private String rawQuery;
 	private EntityTreeQuery<C> entityTreeQuery;
-	private ParameterBinderIndexFromMap<Column<T, Object>, ParameterBinder> parameterBinderForPKInSelect;
+	private final ParameterBinderIndexFromMap<Column<T, Object>, ParameterBinder> parameterBinderForPKInSelect;
 	
 	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> entityMapping,
 										   Dialect dialect,
@@ -94,12 +94,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 		parameterBinderForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), parameterBinderProvider::getBinder));
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
-		currentBuilderContext.addBuildLifeCycleListener(new BuildLifeCycleListener() {
-			@Override
-			public void afterAllBuild() {
-				prepareQuery();
-			}
-		});
+		currentBuilderContext.addBuildLifeCycleListener(this::prepareQuery);
 	}
 	
 	@VisibleForTesting

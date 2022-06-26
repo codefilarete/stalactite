@@ -35,10 +35,10 @@ public class MySQLDMLNameProvier extends DMLNameProvider {
 	}
 	
 	@Override
-	public String getSimpleName(Fromable table) {
+	public String getName(Fromable table) {
 		if (KEYWORDS.contains(table.getName())) {
-			return "`" + super.getSimpleName(table) + "`";
+			return "`" + super.getName(table) + "`";
 		}
-		return super.getSimpleName(table);
+		return super.getName(table);
 	}
 }

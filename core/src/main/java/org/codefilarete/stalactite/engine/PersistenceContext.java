@@ -14,13 +14,25 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.runtime.Persister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.DialectResolver;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.Delete;
@@ -31,34 +43,22 @@ import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatemen
 import org.codefilarete.stalactite.sql.order.Update;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.danekja.java.util.function.serializable.SerializableSupplier;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryEase;
-import org.codefilarete.stalactite.query.model.QueryProvider;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.WriteOperation;
-import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
-import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
-import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.danekja.java.util.function.serializable.SerializableSupplier;
 
 /**
  * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
@@ -533,7 +533,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 */
 	private <C, T extends Table> List<C> select(Class<C> beanType,
 							   Consumer<BeanKeyQueryMapper<C>> keyMapper,
-							   List<Column> selectableKeys,
+							   List<? extends Column<?, ?>> selectableKeys,
 							   Consumer<SelectMapping<C, T>> selectMapping,
 							   Consumer<CriteriaChain> where) {
 		SelectMapping<C, T> selectMappingSupport = new SelectMapping<>();

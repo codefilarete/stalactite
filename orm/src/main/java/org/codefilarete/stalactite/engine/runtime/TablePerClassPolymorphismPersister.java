@@ -24,13 +24,12 @@ import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -325,11 +324,11 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 																				  Column<T1, ID> leftColumn,
 																				  Column<T2, ID> rightColumn,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																				  String joinName,
 																				  boolean optional,
 																				  Set<Column<T2, ?>> selectableColumns) {
-		// TODO: simplify query : it joins on target table as many as subentities which can be reduced to one join if FirstPhaseRelationLoader
-		//  can compute disciminatorValue 
+		
 		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMapping().getTargetTable()).getPrimaryKey().getColumns());
 		Map<EntityConfiguredJoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
 		if (rightColumn.equals(mainTablePK)) {
@@ -342,23 +341,17 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 			// join is made on a foreign key => case of relation owned by reverse side
 			subEntitiesPersisters.forEach((c, subPersister) -> {
 				Column<T, ?> column = subPersister.getMapping().getTargetTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
+				subPersister.getMapping().addShadowColumnSelect((Column) column);
 				joinColumnPerSubPersister.put(subPersister, column);
 			});
 		}
 		
-		subEntitiesPersisters.forEach((c, subPersister) -> {
-			Column subclassPrimaryKey = Iterables.first((Set<Column>) subPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
-			sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
-					new FirstPhaseRelationLoader<>(subPersister.getMapping().getIdMapping(), subclassPrimaryKey, selectExecutor,
-												   DIFFERED_ENTITY_LOADER),
-					leftColumn, joinColumnPerSubPersister.get(subPersister), JoinType.OUTER);
-		});
-		
-		// adding second phase loader
-		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
-		
-		// FIXME : we shouldn't return null here but a created join node name: which one since we have several table to join ? see joinAsOne(..) maybe ?
-		return null;
+		return sourcePersister.getEntityJoinTree().addTablePerClassPolymorphicRelationJoin(joinName,
+																					mainPersister,
+																					leftColumn,
+																					rightColumn,
+																					new HashSet<>(this.subEntitiesPersisters.values()),
+																					beanRelationFixer);
 	}
 	
 	@Override

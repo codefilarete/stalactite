@@ -83,21 +83,21 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	}
 	
 	@Override
-	public <I> From innerJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn) {
+	public <I> From innerJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn) {
 		return addNewJoin(leftColumn, rightColumn, INNER_JOIN);
 	}
 	
 	@Override
-	public <I> From leftOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn) {
+	public <I> From leftOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn) {
 		return addNewJoin(leftColumn, rightColumn, LEFT_OUTER_JOIN);
 	}
 	
 	@Override
-	public <I> From rightOuterJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn) {
+	public <I> From rightOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn) {
 		return addNewJoin(leftColumn, rightColumn, RIGHT_OUTER_JOIN);
 	}
 	
-	private <I> From addNewJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn, JoinDirection joinDirection) {
+	private <I> From addNewJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn, JoinDirection joinDirection) {
 		return add(new ColumnJoin<>(leftColumn, rightColumn, joinDirection));
 	}
 	
@@ -296,20 +296,20 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	 */
 	public class ColumnJoin<I> extends AbstractJoin {
 		
-		private final JoinLink<I> leftColumn;
-		private final JoinLink<I> rightColumn;
+		private final JoinLink<?, I> leftColumn;
+		private final JoinLink<?, I> rightColumn;
 		
-		private ColumnJoin(JoinLink<I> leftColumn, JoinLink<I> rightColumn, JoinDirection joinDirection) {
+		private ColumnJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn, JoinDirection joinDirection) {
 			super(joinDirection);
 			this.leftColumn = leftColumn;
 			this.rightColumn = rightColumn;
 		}
 		
-		public JoinLink<I> getLeftColumn() {
+		public JoinLink<?, I> getLeftColumn() {
 			return leftColumn;
 		}
 		
-		public JoinLink<I> getRightColumn() {
+		public JoinLink<?, I> getRightColumn() {
 			return rightColumn;
 		}
 		

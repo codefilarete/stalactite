@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -10,6 +9,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
@@ -95,19 +95,19 @@ public class HSQLDBDialect extends Dialect {
 		}
 		
 		@Override
-		public String getSimpleName(@Nonnull Column column) {
-			if (KEYWORDS.contains(column.getName())) {
-				return "`" + column.getName() + "`";
+		public String getSimpleName(Selectable<?> column) {
+			if (KEYWORDS.contains(column.getExpression())) {
+				return "`" + column.getExpression() + "`";
 			}
 			return super.getSimpleName(column);
 		}
 		
 		@Override
-		public String getSimpleName(Fromable table) {
+		public String getName(Fromable table) {
 			if (KEYWORDS.contains(table.getName())) {
-				return "`" + super.getSimpleName(table) + "`";
+				return "`" + super.getName(table) + "`";
 			}
-			return super.getSimpleName(table);
+			return super.getName(table);
 		}
 	}
 	

@@ -6,9 +6,9 @@ package org.codefilarete.stalactite.query.model;
  * 
  * @author Guillaume Mary
  */
-public interface JoinLink<O> {
+public interface JoinLink<T extends Fromable, O> extends Selectable<O> {
 	
-	Fromable getOwner();
+	T getOwner();
 	
 	String getExpression();
 	

@@ -232,12 +232,13 @@ public class EntityMappingTreeSelectExecutorTest {
 		Dialect dialect = new Dialect();
 		// we set a in operator size to test overflow
 		dialect.setInOperatorMaxSize(3);
+		ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
 		EntityMappingTreeSelectExecutor<Object, Object, Table> testInstance = new EntityMappingTreeSelectExecutor<Object, Object, Table>(
-				classMappingStrategy, dialect, mock(ConnectionProvider.class)) {
+			classMappingStrategy, dialect, connectionProvider) {
 			
 			@Override
 			InternalExecutor newInternalExecutor(EntityTreeQuery<Object> entityTreeQuery) {
-				return new InternalExecutor(entityTreeQuery, this.getConnectionProvider()) {
+				return new InternalExecutor(entityTreeQuery, connectionProvider) {
 					@Override
 					List<Object> execute(String sql, Collection<? extends List<Object>> idsParcels,
 										 Map<Column<Table, Object>, int[]> inOperatorValueIndexes) {

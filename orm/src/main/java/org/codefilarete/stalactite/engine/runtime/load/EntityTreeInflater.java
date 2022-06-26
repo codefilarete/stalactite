@@ -20,6 +20,8 @@ import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.BasicEnt
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
 import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -68,7 +70,7 @@ public class EntityTreeInflater<C> {
 	 * @param columnAliases query column aliases
 	 * @param tablePerJoinNodeName mapping between join nodes and their names
 	 */
-	EntityTreeInflater(ConsumerNode consumerRoot, IdentityMap<Column, String> columnAliases, Map<String, Table> tablePerJoinNodeName) {
+	EntityTreeInflater(ConsumerNode consumerRoot, IdentityMap<Selectable, String> columnAliases, Map<String, Fromable> tablePerJoinNodeName) {
 		this.consumerRoot = consumerRoot;
 		this.rowDecoder = new EntityTreeQueryRowDecoder(columnAliases, tablePerJoinNodeName);
 	}
@@ -227,10 +229,10 @@ public class EntityTreeInflater<C> {
 	 */
 	static class RelationIdentifier {
 		
-		private final Object rootEntity;
-		private final Class relatedEntityType;
-		private final Object relatedBeanIdentifier;
-		private final RelationJoinRowConsumer joinNode;
+		protected final Object rootEntity;
+		protected final Class relatedEntityType;
+		protected final Object relatedBeanIdentifier;
+		protected final RelationJoinRowConsumer joinNode;
 		
 		RelationIdentifier(Object rootEntity, Class<?> relatedEntityType, Object relatedBeanIdentifier, RelationJoinRowConsumer joinNode) {
 			this.rootEntity = rootEntity;
@@ -349,12 +351,12 @@ public class EntityTreeInflater<C> {
 	 */
 	public static class EntityTreeQueryRowDecoder {
 		
-		private final IdentityMap<Column, String> columnAliases;
+		private final IdentityMap<Selectable, String> columnAliases;
 		
-		private final Map<String, Table> tablePerJoinNodeName;
+		private final Map<String, Fromable> tablePerJoinNodeName;
 		
-		EntityTreeQueryRowDecoder(IdentityMap<Column, String> columnAliases,
-								  Map<String, Table> tablePerJoinNodeName) {
+		EntityTreeQueryRowDecoder(IdentityMap<Selectable, String> columnAliases,
+								  Map<String, Fromable> tablePerJoinNodeName) {
 			this.columnAliases = columnAliases;
 			this.tablePerJoinNodeName = tablePerJoinNodeName;
 		}
@@ -372,12 +374,12 @@ public class EntityTreeInflater<C> {
 		 */
 		@javax.annotation.Nullable
 		public <T extends Table<T>, O> O giveValue(String joinNodeName, Column<T, O> column, Row row) {
-			Table table = tablePerJoinNodeName.get(joinNodeName);
+			Fromable table = tablePerJoinNodeName.get(joinNodeName);
 			if (table == null) {
 				// This is more for debugging purpose than for a real production goal, may be removed later
 				throw new MappingConfigurationException("Can't find node named " + joinNodeName + " in joins : " + this.tablePerJoinNodeName);
 			}
-			Column<T, O> columnClone = table.getColumn(column.getName());
+			Column<T, O> columnClone = (Column<T, O>) table.findColumn(column.getName());
 			return (O) row.get(columnAliases.get(columnClone));
 		}
 	}

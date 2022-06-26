@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
@@ -23,6 +24,11 @@ import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.query.model.Union.PseudoColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -33,8 +39,12 @@ import org.codefilarete.tool.bean.Randomizer;
 import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.trace.ModifiableInt;
+
+import static org.codefilarete.stalactite.query.model.Operators.cast;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
@@ -65,7 +75,7 @@ public class EntityJoinTree<C, I> {
 	
 	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newIdentitySet();
 	
-	public <T extends Table> EntityJoinTree(EntityInflater<C, I, T> rootEntityInflater, T table) {
+	public <T extends Table> EntityJoinTree(EntityInflater<C, I> rootEntityInflater, T table) {
 		this.root = new JoinRoot<>(this, rootEntityInflater, table);
 		this.joinIndex.put(ROOT_STRATEGY_NAME, root);
 	}
@@ -101,7 +111,7 @@ public class EntityJoinTree<C, I> {
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
-																					  EntityInflater<U, ID, T2> inflater,
+																					  EntityInflater<U, ID> inflater,
 																					  Column<T1, ID> leftJoinColumn,
 																					  Column<T2, ID> rightJoinColumn,
 																					  String rightTableAlias,
@@ -138,7 +148,7 @@ public class EntityJoinTree<C, I> {
 	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
-																					  EntityInflater<U, ID, T2> inflater,
+																					  EntityInflater<U, ID> inflater,
 																					  Column<T1, ID> leftJoinColumn,
 																					  Column<T2, ID> rightJoinColumn,
 																					  @Nullable String rightTableAlias,
@@ -165,15 +175,16 @@ public class EntityJoinTree<C, I> {
 			BeanRelationFixer<C, U> beanRelationFixer,
 			@Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
 		
-		Holder<PolymorphicRelationJoinNode<U, T1, T2, ID>> createdJoinHolder = new Holder<>();
+		Holder<PolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID>> createdJoinHolder = new Holder<>();
 		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
-			PolymorphicRelationJoinNode<U, T1, T2, ID> polymorphicRelationJoinNode = new PolymorphicRelationJoinNode<U, T1, T2, ID>(
+			PolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID> polymorphicRelationJoinNode = new PolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID>(
 				parent,
 				(Column) leftJoinColumn,
-				(Column) rightJoinColumn, JoinType.OUTER,
+				(Column) rightJoinColumn,
+				JoinType.OUTER,
 				mainPersister.getMainTable().getColumns(),
 				null,
-				new EntityMappingAdapter<U, ID, T2>(mainPersister.getMapping()),
+				new EntityMappingAdapter<>(mainPersister.getMapping()),
 				(BeanRelationFixer<Object, U>) beanRelationFixer,
 				relationIdentifierProvider);
 			createdJoinHolder.set(polymorphicRelationJoinNode);
@@ -187,7 +198,7 @@ public class EntityJoinTree<C, I> {
 	
 	private <U, V extends U, T1 extends Table, T2 extends Table, ID> void addPolymorphicSubPersistersJoins(String mainPolymorphicJoinNodeName,
 																										   EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-																										   PolymorphicRelationJoinNode<U, T1, T2, ID> mainPersisterJoin,
+																										   PolymorphicRelationJoinNode<U, T1, T2, ?, ID> mainPersisterJoin,
 																										   Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters) {
 		subPersisters.forEach(subPersister -> {
 			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
@@ -208,7 +219,106 @@ public class EntityJoinTree<C, I> {
 		});
 	}
 	
-	static class PolymorphicMergeEntityInflater<E, D extends E, I, T extends Table<T>> implements EntityInflater<D, I, T> {
+	public <U, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE> String addTablePerClassPolymorphicRelationJoin(
+			String leftStrategyName,
+			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+			Column<T1, JOINCOLTYPE> leftJoinColumn,
+			Column<T2, JOINCOLTYPE> rightJoinColumn,
+			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
+			BeanRelationFixer<C, U> beanRelationFixer) {
+		
+		
+		// we build a union of all sub queries that will be joined in the main query
+		// To build the union we need columns that are common to all persisters
+		Set<Column<?, ?>> commonColumns = new KeepOrderSet<>();
+		commonColumns.addAll(mainPersister.getMapping().getSelectableColumns());
+		// TODO : right column is not in selected columns of class mapping : understand why (and if that's normal)
+		commonColumns.add(rightJoinColumn);
+		
+		Set<String> commonColumnsNames = commonColumns.stream().map(Column::getName).collect(Collectors.toSet());
+		
+		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
+		subPersisters.forEach(subPersister -> {
+			nonCommonColumns.addAll(subPersister.getMainTable().getColumns());
+		});
+		nonCommonColumns.removeIf(c -> commonColumnsNames.contains(c.getName()));
+		
+		Union subPersistersUnion = new Union();
+		String entityTypeDiscriminatorName = "clazz_";
+		PseudoColumn<Integer> discriminatorPseudoColumn = subPersistersUnion.registerColumn(entityTypeDiscriminatorName, Integer.class);
+		ModifiableInt discriminatorComputer = new ModifiableInt();
+		
+		subPersisters.forEach(subPersister -> {
+			Query subEntityQuery = new Query(subPersister.getMapping().getTargetTable());
+			subEntityQuery.select(String.valueOf(discriminatorComputer.increment()), Integer.class).as(entityTypeDiscriminatorName);
+			subPersistersUnion.unionAll(subEntityQuery);
+			
+			commonColumns.forEach(column -> {
+				subEntityQuery.select(column.getName(), column.getJavaType());
+				subPersistersUnion.registerColumn(column.getName(), column.getJavaType());
+			});
+			
+			nonCommonColumns.forEach(column -> {
+				Selectable<?> expression;
+				if (subPersister.getMapping().getSelectableColumns().contains(column)) {
+					expression = new SelectableString<>(column.getName(), column.getJavaType());
+				} else {
+					expression = cast("null", column.getJavaType());
+				}
+				// we put an alias else cast(..) as no name which makes it doesn't match official-column name, and then
+				// may cause an error since SQL in kind of invalid 
+				subEntityQuery.select(expression, column.getName());
+				subPersistersUnion.registerColumn(column.getName(), column.getJavaType());
+			});
+		});
+		
+		Holder<TablePerClassPolymorphicRelationJoinNode<U, T1, JOINCOLTYPE, ID>> createdJoinHolder = new Holder<>();
+		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
+			TablePerClassPolymorphicRelationJoinNode<U, T1, JOINCOLTYPE, ID> relationJoinNode = new TablePerClassPolymorphicRelationJoinNode<>(parent,
+					subPersistersUnion,
+					leftJoinColumn,
+					rightJoinColumn,
+					JoinType.OUTER,
+					subPersistersUnion.getColumns(),
+					mainPersister.getClassToPersist().getSimpleName(),
+					new EntityMappingAdapter<>(mainPersister.getMapping()),
+					(BeanRelationFixer<Object, U>) beanRelationFixer,
+					discriminatorPseudoColumn);
+			createdJoinHolder.set(relationJoinNode);
+			return relationJoinNode;
+		});
+		
+		this.addTablePerClassPolymorphicSubPersistersJoins(relationJoinName, mainPersister, createdJoinHolder.get(), subPersisters);
+		
+		return relationJoinName;
+	}
+	
+	private <U, V extends U, T1 extends Table, T2 extends Table, ID> void addTablePerClassPolymorphicSubPersistersJoins(String mainPolymorphicJoinNodeName,
+																														EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+																														TablePerClassPolymorphicRelationJoinNode<U, T1, ?, ID> mainPersisterJoin,
+																														Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters) {
+		
+		ModifiableInt discriminatorComputer = new ModifiableInt();
+		subPersisters.forEach(subPersister -> {
+			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
+			this.<T1>addJoin(mainPolymorphicJoinNodeName, parent -> new MergeJoinNode<V, T1, T2, ID>(parent,
+																									 (Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns()),
+																									 (Column) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns()),
+																									 JoinType.OUTER,
+																									 null,
+																									 new EntityMergerAdapter<>(localSubPersister.getMapping())) {
+				@Override
+				public MergeJoinRowConsumer<V> toConsumer(ColumnedRow columnedRow) {
+					PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
+							new PolymorphicMergeEntityInflater<>(mainPersister, localSubPersister), columnedRow);
+					mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer, discriminatorComputer.increment());
+					return joinRowConsumer;
+				}
+			});
+		});
+	}
+	
+	static class PolymorphicMergeEntityInflater<E, D extends E, I, T extends Table<T>> implements EntityInflater<D, I> {
 		
 		private final EntityConfiguredJoinedTablesPersister<E, I> mainPersister;
 		
@@ -257,7 +367,7 @@ public class EntityJoinTree<C, I> {
 		}
 		
 		@Override
-		public Set<Column<T, Object>> getSelectableColumns() {
+		public Set<Selectable<?>> getSelectableColumns() {
 			return (Set) subPersister.getMapping().getSelectableColumns();
 		}
 	}
@@ -436,8 +546,8 @@ public class EntityJoinTree<C, I> {
 		Set<Table> result = new HashSet<>();
 		result.add(root.getTable());
 		foreachJoin(node -> {
-			if (!tablesToBeExcludedFromDDL.contains(node.getTable())) {
-				result.add(node.getTable());
+			if (node.getTable() instanceof Table && !tablesToBeExcludedFromDDL.contains(node.getTable())) {
+				result.add((Table) node.getTable());
 			}
 		});
 		return result;
@@ -466,11 +576,11 @@ public class EntityJoinTree<C, I> {
 		projectTo(target.getJoin(joinNodeName));
 	}
 	
-	public void projectTo(JoinNode joinNode) {
+	public void projectTo(JoinNode<Table> joinNode) {
 		EntityJoinTree<?, ?> tree = joinNode.getTree();
 		foreachJoinWithDepth(joinNode, (targetOwner, currentNode) -> {
 			// cloning each node, the only difference lays on left column : target gets its matching column 
-			Column projectedLeftColumn = targetOwner.getTable().getColumn(currentNode.getLeftJoinColumn().getName());
+			Column projectedLeftColumn = ((Table) targetOwner.getTable()).getColumn(currentNode.getLeftJoinColumn().getExpression());
 			if (projectedLeftColumn == null) {
 				throw new IllegalArgumentException("Expected column "
 						+ currentNode.getLeftJoinColumn().getAbsoluteName() + " to exist in target table " + targetOwner.getTable().getName());

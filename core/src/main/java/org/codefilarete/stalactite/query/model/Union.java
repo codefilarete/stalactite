@@ -1,10 +1,10 @@
 package org.codefilarete.stalactite.query.model;
 
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
@@ -17,13 +17,12 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	
 	private final KeepOrderSet<Query> queries;
 	
-	/** The "false" Table than can represent this Union in a From clause */
-	private final Table<?> pseudoTable;
+	private final Map<Selectable<?>, String> aliases = new HashMap<>();
 	
-	public Union(Query firstQuery, Query ... otherQueries) {
-		this.pseudoTable = new Table<>("");
-		this.queries = new KeepOrderSet<>(firstQuery);
-		Collections.addAll(this.queries, otherQueries);
+	private final KeepOrderSet<PseudoColumn<Object>> columns = new KeepOrderSet<>();
+	
+	public Union(Query ... queries) {
+		this.queries = new KeepOrderSet<>(queries);
 	}
 	
 	public KeepOrderSet<Query> getQueries() {
@@ -35,13 +34,60 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		return this;
 	}
 	
-	public <O> Column<?, O> registerColumn(String name, Class<O> javaType) {
-		return this.pseudoTable.addColumn(name, javaType);
+	/**
+	 * Adds a column to this table.
+	 * May do nothing if a column already exists with same name and type.
+	 * Will throw an exception if a column with same name but with different type already exists.
+	 *
+	 * @param expression column name
+	 * @param javaType column type
+	 * @param <O> column type
+	 * @return the created column or the existing one
+	 */
+	public <O> PseudoColumn<O> addColumn(String expression, Class<O> javaType) {
+		return addertColumn(new PseudoColumn<>(this, expression, javaType));
+	}
+	
+	/**
+	 * Adds with presence assertion (add + assert = addert, poor naming)
+	 *
+	 * @param column the column to be added
+	 * @param <O> column type
+	 * @return given column
+	 */
+	private <O> PseudoColumn<O> addertColumn(PseudoColumn<O> column) {
+		// Quite close to Table.addertColumn(..)
+		PseudoColumn<O> existingColumn = findColumn(column.getExpression());
+		if (existingColumn != null && (!existingColumn.getJavaType().equals(column.getJavaType()))) {
+			throw new IllegalArgumentException("Trying to add a column that already exists with a different type : "
+													   + existingColumn.getExpression() + " vs " + column.getExpression());
+		}
+		if (existingColumn == null) {
+			columns.add((PseudoColumn<Object>) column);
+			return column;
+		} else {
+			return existingColumn;
+		}
+	}
+	
+	public <O> PseudoColumn<O> registerColumn(String expression, Class<O> javaType) {
+		return addColumn(expression, javaType);
+	}
+	
+	public <O> PseudoColumn<O> registerColumn(String expression, Class<O> javaType, String alias) {
+		PseudoColumn<O> newColumn = registerColumn(expression, javaType);
+		this.aliases.put(newColumn, alias);
+		return newColumn;
 	}
 	
 	@Override
-	public Set<Selectable> getColumns() {
-		return (Set) this.pseudoTable.getColumns();
+	public Set<PseudoColumn<?>> getColumns() {
+		return (Set) columns;
+	}
+	
+	@Override
+	public Map<Selectable<?>, String> getAliases() {
+		return aliases;
 	}
 	
 	@Override
@@ -50,7 +96,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		return this;
 	}
 	
-	public Fromable asPseudoTable(String name) {
+	public UnionInFrom asPseudoTable(String name) {
 		return new UnionInFrom(name, this);
 	}
 	
@@ -60,9 +106,22 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		
 		private final Union union;
 		
+		private final KeepOrderSet<PseudoColumn<Object>> columns = new KeepOrderSet<>();
+		
+		private final Map<Selectable<?>, String> aliases = new HashMap<>();
+		
 		public UnionInFrom(String name, Union union) {
 			this.name = name;
 			this.union = union;
+			Map<Selectable<?>, String> unionAliases = union.getAliases();
+			for (PseudoColumn<?> column : union.getColumns()) {
+				PseudoColumn<?> newPseudoColumn = new PseudoColumn<>(this, column.getExpression(), column.getJavaType());
+				columns.add((PseudoColumn<Object>) newPseudoColumn);
+				String alias = unionAliases.get(column);
+				if (alias != null) {
+					this.aliases.put(newPseudoColumn, alias);
+				}
+			}
 		}
 		
 		public Union getUnion() {
@@ -76,7 +135,52 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		
 		@Override
 		public String getAbsoluteName() {
+			return getName();
+		}
+		
+		@Override
+		public Set<PseudoColumn<?>> getColumns() {
+			return (Set) this.columns;
+		}
+		
+		@Override
+		public Map<Selectable<?>, String> getAliases() {
+			return this.aliases;
+		}
+	}
+	
+	public static class PseudoColumn<O> implements Selectable<O>, JoinLink<UnionInFrom, O> {
+		
+		private final SelectablesPod union;	// Union or UnionInFrom
+		
+		private final String name;
+		
+		private final Class<O> javaType;
+		
+		
+		private PseudoColumn(SelectablesPod union, String name, Class<O> javaType) {
+			this.union = union;
+			this.name = name;
+			this.javaType = javaType;
+		}
+		
+		/**
+		 * To be called only for pseudo-column in a {@link UnionInFrom}, else would throw a {@link ClassCastException}
+		 * @return UnionInFrom owning this column
+		 */
+		@Override
+		public UnionInFrom getOwner() {
+			return (UnionInFrom) union;
+		}
+		
+		@Override
+		public String getExpression() {
 			return name;
+		}
+		
+		@Override
+		public Class<O> getJavaType() {
+			return javaType;
 		}
 	}
 }

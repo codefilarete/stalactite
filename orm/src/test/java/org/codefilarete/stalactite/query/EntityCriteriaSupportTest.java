@@ -79,7 +79,6 @@ class EntityCriteriaSupportTest {
 				return o;
 			}
 		}));
-		System.out.println(queryBuilder.toSQL());
 	}
 	
 	@Test

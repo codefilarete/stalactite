@@ -28,7 +28,7 @@ public class DDLAppender extends StringAppender {
 	@Override
 	public StringAppender cat(Object o) {
 		if (o instanceof Table) {
-			return super.cat(dmlNameProvider.getSimpleName((Table) o));
+			return super.cat(dmlNameProvider.getName((Table) o));
 		} else if (o instanceof Column) {
 			return super.cat(dmlNameProvider.getSimpleName((Column) o));
 		} else {

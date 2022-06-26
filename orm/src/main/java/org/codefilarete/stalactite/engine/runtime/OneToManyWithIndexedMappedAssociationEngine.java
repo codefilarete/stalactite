@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,19 +15,17 @@ import java.util.stream.Stream;
 import org.codefilarete.stalactite.engine.RuntimeMappingException;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
+import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
+import org.codefilarete.stalactite.query.builder.IdentityMap;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
-import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
 
 /**
  * @author Guillaume Mary
@@ -116,8 +113,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
-						List<TRGT> apply = manyRelationDescriptor.getCollectionGetter().apply(src);
-						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(targetPersister.getId(target))));
+//						List<TRGT> apply = manyRelationDescriptor.getCollectionGetter().apply(src);
+//						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(targetPersister.getId(target))));
 					});
 				} finally {
 					cleanContext();
@@ -133,19 +130,19 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				currentSelectedIndexes.remove();
 			}
 		});
-		AbstractJoinNode<TRGT, Table, Table, TRGTID> join = (AbstractJoinNode<TRGT, Table, Table, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
-		join.setTransformerListener((trgt, rowValueProvider) -> {
-			IdentityMap<TRGTID, Integer> indexPerBean = currentSelectedIndexes.get();
-			// indexPerBean may not be present because its mechanism was added on persisterListener which is the one of the source bean
-			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
-			if (indexPerBean != null) {
-				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row
-				// because it was read from ResultSet
-				int index = EntityTreeInflater.currentContext().giveValue(joinNodeName, indexingColumn);
-				TRGTID relationOwnerId = (TRGTID) EntityTreeInflater.currentContext().giveValue(joinNodeName, primaryKey);
-				indexPerBean.put(relationOwnerId, index);
-			}
-		});
+//		AbstractJoinNode<TRGT, Table, Table, TRGTID> join = (AbstractJoinNode<TRGT, Table, Table, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
+//		join.setTransformerListener((trgt, rowValueProvider) -> {
+//			IdentityMap<TRGTID, Integer> indexPerBean = currentSelectedIndexes.get();
+//			// indexPerBean may not be present because its mechanism was added on persisterListener which is the one of the source bean
+//			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
+//			if (indexPerBean != null) {
+//				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row
+//				// because it was read from ResultSet
+//				int index = EntityTreeInflater.currentContext().giveValue(joinNodeName, indexingColumn);
+//				TRGTID relationOwnerId = (TRGTID) EntityTreeInflater.currentContext().giveValue(joinNodeName, primaryKey);
+//				indexPerBean.put(relationOwnerId, index);
+//			}
+//		});
 	}
 	
 	@Override
@@ -234,14 +231,15 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 									 Column indexingColumn) {
 			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider);
 			this.indexingColumn = indexingColumn;
-			addShadowIndexInsert(targetPersister);
+//			addShadowIndexInsert(targetPersister);
 			addShadowIndexUpdate(targetPersister);
 			
 		}
 		
 		private void addShadowIndexUpdate(EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
-			targetPersister.getMapping().addShadowColumnUpdate(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
-																												  // Thread safe by updatableListIndex access
+			targetPersister.getMapping().addShadowColumnUpdate(new ShadowColumnValueProvider<TRGT, Object, Table>(
+					indexingColumn,
+					// Thread safe by updatableListIndex access
 					target -> currentUpdatableListIndex.get().get(target)) {
 				@Override
 				public boolean accept(Object entity) {
@@ -252,9 +250,11 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		
 		private void addShadowIndexInsert(EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
 			// adding index insert/update to strategy
-			targetPersister.getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(indexingColumn,
-																												  // Thread safe by updatableListIndex access
-					target -> currentInsertableListIndex.get().get(target)) {
+			targetPersister.getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, Object, Table>(
+					indexingColumn,
+					// Thread safe by updatableListIndex access
+					target ->
+							this.currentInsertableListIndex.get().get(target)) {
 				@Override
 				public boolean accept(Object entity) {
 					return currentInsertableListIndex.get() != null && currentInsertableListIndex.get().containsKey(entity);

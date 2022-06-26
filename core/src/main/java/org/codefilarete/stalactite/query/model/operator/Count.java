@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Count extends UnitaryOperator implements Selectable {
+public class Count extends UnitaryOperator implements Selectable<Long> {
 	
 	public Count(Column value) {
 		super(value);
@@ -18,5 +18,10 @@ public class Count extends UnitaryOperator implements Selectable {
 	@Override
 	public String getExpression() {
 		return "count";
+	}
+	
+	@Override
+	public Class<Long> getJavaType() {
+		return long.class;
 	}
 }

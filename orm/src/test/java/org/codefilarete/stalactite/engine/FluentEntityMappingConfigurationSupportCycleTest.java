@@ -469,7 +469,6 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		 */
 		@Test
 		void crud_2cycles_sibling() {
-			new Query();
 			Table personTable = new Table("Person");
 			
 			// we need a holder to skip final variable problem 
@@ -477,7 +476,6 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			FluentEntityMappingBuilder<House, Identifier<Long>> houseMapping = MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
 					.mapKey(House::getId, ALREADY_ASSIGNED)
 					.map(House::getName);
-			EntityMappingConfiguration<House, Identifier<Long>> houseMappingConfiguration = houseMapping.getConfiguration();
 			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)

@@ -2,14 +2,13 @@ package org.codefilarete.stalactite.sql.ddl;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;
-import java.util.Set;
 
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.tool.StringAppender;
 
 /**
@@ -30,9 +29,9 @@ public class DDLTableGenerator {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 	
-	public String generateCreateTable(Table table) {
+	public String generateCreateTable(Table<?> table) {
 		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "create table ", table, "(");
-		for (Column column : (Set<Column>) table.getColumns()) {
+		for (Column<?, ?> column : table.getColumns()) {
 			generateCreateColumn(column, sqlCreateTable);
 			sqlCreateTable.cat(", ");
 		}

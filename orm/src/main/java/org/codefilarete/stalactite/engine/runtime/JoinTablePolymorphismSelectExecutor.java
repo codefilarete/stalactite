@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
@@ -83,13 +84,13 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
-		Map<Column, String> aliases = query.getSelectSurrogate().giveColumnAliases();
+		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			Map<String, ResultSetReader> readers = new HashMap<>();
-			aliases.forEach((c, as) -> readers.put(as, dialect.getColumnBinderRegistry().getBinder(c)));
+			aliases.forEach((c, as) -> readers.put(as, dialect.getColumnBinderRegistry().getBinder((Column) c)));
 			
 			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);

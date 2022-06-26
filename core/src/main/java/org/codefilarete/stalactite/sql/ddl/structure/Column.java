@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.sql.ddl.structure;
 
 import javax.annotation.Nonnull;
 
-import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 
@@ -12,7 +11,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * @param <O> the Java type this columns is mapped to
  * @author Guillaume Mary
  */
-public class Column<T extends Table, O> implements Selectable, JoinLink<O> {
+public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O> {
 	
 	private final T table;
 	private final String name;
@@ -45,7 +44,7 @@ public class Column<T extends Table, O> implements Selectable, JoinLink<O> {
 	}
 	
 	@Override
-	public Fromable getOwner() {
+	public T getOwner() {
 		return getTable();
 	}
 	

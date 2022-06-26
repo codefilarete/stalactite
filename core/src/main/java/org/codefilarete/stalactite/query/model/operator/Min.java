@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Min extends UnitaryOperator implements Selectable {
+public class Min extends UnitaryOperator implements Selectable<Long> {
 	
 	public Min(Column value) {
 		super(value);
@@ -18,5 +18,10 @@ public class Min extends UnitaryOperator implements Selectable {
 	@Override
 	public String getExpression() {
 		return "min";
+	}
+	
+	@Override
+	public Class<Long> getJavaType() {
+		return Long.class;
 	}
 }

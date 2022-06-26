@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.mapping;
 import javax.annotation.Nullable;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -17,20 +18,20 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class ColumnedRow {
 	
-	private final Function<Column, String> aliasProvider;
+	private final Function<? super Selectable<?>, String> aliasProvider;
 	
 	/**
 	 * Default constructor, will take values in {@link Row}s by column names
 	 */
 	public ColumnedRow() {
-		this(Column::getName);
+		this(Selectable::getExpression);
 	}
 	
 	/**
 	 * Constructor that will apply the given "sliding" function on column names in order to make them match {@link Row} keys
 	 * @param aliasProvider a {@link Function} that makes mapping between {@link Column} and {@link Row} keys
 	 */
-	public ColumnedRow(Function<Column, String> aliasProvider) {
+	public ColumnedRow(Function<? super Selectable<?>, String> aliasProvider) {
 		this.aliasProvider = aliasProvider;
 	}
 	
@@ -45,7 +46,7 @@ public class ColumnedRow {
 	 * @return the value found in {@link Row} for the given {@link Column}, maybe null
 	 */
 	@Nullable
-	public <T extends Table<T>, O> O getValue(Column<T, O> column, Row row) {
+	public <T extends Table<T>, O> O getValue(Selectable<O> column, Row row) {
 		String columnAlias = aliasProvider.apply(column);
 		if (columnAlias != null) {
 			return (O) row.get(columnAlias);

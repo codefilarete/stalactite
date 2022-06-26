@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -29,6 +30,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
 
@@ -77,13 +79,24 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 				.from(table)
 				.where(primaryKey, Operators.in(ids)).getQuery();
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
-		Map<Column, String> aliases = query.getSelectSurrogate().giveColumnAliases();
+		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(columnBinderRegistry);
+		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try(ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			Map<String, ResultSetReader> readers = new HashMap<>();
-			aliases.forEach((c, as) -> readers.put(as, dialect.getColumnBinderRegistry().getBinder(c)));
+			aliases.forEach((c, as) -> {
+				// TODO: reader computation should be done (and is done) in columnBinderRegistry but it doesn't handle Selectables, only Columns,
+				// and making it to do so is not simple. So for now we do this little trick.
+				ResultSetReader reader;
+				if (c instanceof Column) {
+					reader = columnBinderRegistry.getBinder((Column) c);
+				} else {
+					reader = columnBinderRegistry.getBinder(c.getJavaType());
+				}
+				readers.put(as, reader);
+			});
 			
 			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);

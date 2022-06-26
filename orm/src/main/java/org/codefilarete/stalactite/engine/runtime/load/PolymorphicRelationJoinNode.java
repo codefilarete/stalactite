@@ -32,17 +32,17 @@ import org.codefilarete.tool.bean.Objects;
  * 
  * @author Guillaume Mary
  */
-public class PolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends RelationJoinNode<C, T1, T2, I> {
+public class PolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, T2, JOINCOLTYPE, I> {
 	
 	private final Set<Duo<EntityConfiguredJoinedTablesPersister<? extends C, I>, PolymorphicMergeJoinRowConsumer<C, ? extends C, I>>> subPersisters = new HashSet<>();
 	
 	PolymorphicRelationJoinNode(JoinNode<T1> parent,
-								Column<T1, I> leftJoinColumn,
-								Column<T2, I> rightJoinColumn,
+								Column<T1, JOINCOLTYPE> leftJoinColumn,
+								Column<T2, JOINCOLTYPE> rightJoinColumn,
 								JoinType joinType,
 								Set<Column<T2, ?>> columnsToSelect,
 								@Nullable String tableAlias,
-								EntityInflater<C, I, T2> entityInflater,
+								EntityInflater<C, I> entityInflater,
 								BeanRelationFixer<Object, C> beanRelationFixer,
 								@Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, relationIdentifierProvider);

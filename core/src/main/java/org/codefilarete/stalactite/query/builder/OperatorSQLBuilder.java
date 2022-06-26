@@ -4,16 +4,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
+import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
@@ -24,6 +18,13 @@ import org.codefilarete.stalactite.query.model.operator.Lower;
 import org.codefilarete.stalactite.query.model.operator.Max;
 import org.codefilarete.stalactite.query.model.operator.Min;
 import org.codefilarete.stalactite.query.model.operator.Sum;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
  * A class made to print a {@link AbstractRelationalOperator}
@@ -80,6 +81,8 @@ public class OperatorSQLBuilder {
 				catMin((Min) operator, sql);
 			} else if (operator instanceof Max) {
 				catMax((Max) operator, sql);
+			} else if (operator instanceof Cast) {
+				catCast((Cast) operator, sql);
 			} else {
 				throw new UnsupportedOperationException("Operator " + Reflections.toString(operator.getClass()) + " is not implemented");
 			}
@@ -179,6 +182,12 @@ public class OperatorSQLBuilder {
 	
 	public void catMax(Max max, SQLAppender sqlAppender) {
 		sqlAppender.cat("max(", dmlNameProvider.getName(((Column) max.getValue())), ")");
+	}
+	
+	public void catCast(Cast<?> cast, SQLAppender sqlAppender) {
+		// TODO : fix SQL type by providing Dialect all along chain call to make it available here, then ask it to give SQL type for cast Java Type
+		sqlAppender.cat("cast(", cast.getValue().getExpression(), " as " , "varchar(255)", ")");
+//		sqlAppender.cat("cast(", cast.getExpression(), " as " , dmlNameProvider.getName(cast.getJavaType())), ")");
 	}
 	
 	/**

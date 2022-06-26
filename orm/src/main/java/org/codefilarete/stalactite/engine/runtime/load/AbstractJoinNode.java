@@ -8,28 +8,29 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.tool.collection.ReadOnlyList;
 
 /**
  * Abstraction of relation, merge and passive joins.
  * 
  * @author Guillaume Mary
  */
-public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I> implements JoinNode<T2> {
+public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINCOLTYPE> implements JoinNode<T2> {
 	
 	/** Join column with previous strategy table */
-	private final Column<T1, I> leftJoinColumn;
+	private final JoinLink<T1, JOINCOLTYPE> leftJoinColumn;
 	
 	/** Join column with next strategy table */
-	private final Column<T2, I> rightJoinColumn;
+	private final JoinLink<T2, JOINCOLTYPE> rightJoinColumn;
 	
 	/** Indicates if the join must be an inner or (left) outer join */
 	private final JoinType joinType;
 	
-	private final Set<Column<T2, Object>> columnsToSelect;
+	private final Set<Selectable<Object>> columnsToSelect;
 	
 	private final JoinNode<T1> parent;
 	
@@ -43,10 +44,10 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	private TransformerListener<C> transformerListener;
 	
 	protected AbstractJoinNode(JoinNode<T1> parent,
-							   Column<T1, I> leftJoinColumn,
-							   Column<T2, I> rightJoinColumn,
+							   JoinLink<T1, JOINCOLTYPE> leftJoinColumn,
+							   JoinLink<T2, JOINCOLTYPE> rightJoinColumn,
 							   JoinType joinType,
-							   Set<Column<T2, ?>> columnsToSelect,
+							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
 							   @Nullable String tableAlias) {
 		this.parent = parent;
 		this.leftJoinColumn = leftJoinColumn;
@@ -74,15 +75,15 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	}
 	
 	@Override
-	public T2 getTable() {
+	public Fromable getTable() {
 		return getRightTable();
 	}
 	
-	public Column<?, I> getLeftJoinColumn() {
+	public JoinLink<T1, JOINCOLTYPE> getLeftJoinColumn() {
 		return leftJoinColumn;
 	}
 	
-	public Column<T2, I> getRightJoinColumn() {
+	public JoinLink<T2, JOINCOLTYPE> getRightJoinColumn() {
 		return rightJoinColumn;
 	}
 	
@@ -91,8 +92,8 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	}
 	
 	@Override
-	public Set<Column<T2, Object>> getColumnsToSelect() {
-		return columnsToSelect;
+	public Set<Selectable<?>> getColumnsToSelect() {
+		return (Set) columnsToSelect;
 	}
 	
 	@Override
@@ -105,7 +106,7 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 		return transformerListener;
 	}
 	
-	public AbstractJoinNode<C, T1, T2, I> setTransformerListener(@Nullable TransformerListener<C> transformerListener) {
+	public AbstractJoinNode<C, T1, T2, JOINCOLTYPE> setTransformerListener(@Nullable TransformerListener<C> transformerListener) {
 		this.transformerListener = transformerListener;
 		return this;
 	}
@@ -126,7 +127,7 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	}
 	
 	public T2 getRightTable() {
-		return this.rightJoinColumn.getTable();
+		return this.rightJoinColumn.getOwner();
 	}
 	
 	/**

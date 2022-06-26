@@ -1,19 +1,19 @@
 package org.codefilarete.stalactite.sql.statement;
 
-import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -55,7 +55,7 @@ public class DMLGeneratorTest {
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -99,7 +99,7 @@ public class DMLGeneratorTest {
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -141,7 +141,7 @@ public class DMLGeneratorTest {
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -194,7 +194,7 @@ public class DMLGeneratorTest {
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -232,7 +232,7 @@ public class DMLGeneratorTest {
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -287,7 +287,7 @@ public class DMLGeneratorTest {
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}

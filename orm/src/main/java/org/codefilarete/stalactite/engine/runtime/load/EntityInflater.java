@@ -5,14 +5,14 @@ import java.util.Set;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Contract to deserialize a database row to a bean
  */
-public interface EntityInflater<E, I, T extends Table> {
+public interface EntityInflater<E, I> {
 	
 	Class<E> getEntityType();
 	
@@ -20,7 +20,7 @@ public interface EntityInflater<E, I, T extends Table> {
 	
 	RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
-	Set<Column<T, Object>> getSelectableColumns();
+	Set<Selectable<?>> getSelectableColumns();
 	
 	/**
 	 * Adapter of a {@link EntityMapping} as a {@link EntityInflater}.
@@ -30,7 +30,7 @@ public interface EntityInflater<E, I, T extends Table> {
 	 * @param <I> identifier type
 	 * @param <T> table type
 	 */
-	class EntityMappingAdapter<E, I, T extends Table> implements EntityInflater<E, I, T> {
+	class EntityMappingAdapter<E, I, T extends Table> implements EntityInflater<E, I> {
 		
 		private final EntityMapping<E, I, T> delegate;
 		
@@ -54,8 +54,8 @@ public interface EntityInflater<E, I, T extends Table> {
 		}
 		
 		@Override
-		public Set<Column<T, Object>> getSelectableColumns() {
-			return this.delegate.getSelectableColumns();
+		public Set<Selectable<?>> getSelectableColumns() {
+			return (Set) this.delegate.getSelectableColumns();
 		}
 	}
 	

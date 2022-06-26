@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.query.model;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.model.Query.FluentHaving;
+import org.codefilarete.stalactite.query.model.Query.FluentHavingClause;
 
 /**
  * @author Guillaume Mary
  */
 public interface HavingAware {
 	
-	FluentHaving having(Column column, String condition);
+	FluentHavingClause having(Column column, String condition);
 	
-	FluentHaving having(Object... columns);
+	FluentHavingClause having(Object... columns);
 }
