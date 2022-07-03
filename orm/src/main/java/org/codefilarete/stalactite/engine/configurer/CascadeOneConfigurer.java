@@ -270,14 +270,15 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			Column targetTableClonePK = targetTableClone.addColumn(rightColumn.getName(), rightColumn.getJavaType());
 			String tableCloneAlias = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
 			// This can't be done directly on root persister (took via persisterRegistry and targetPersister.getClassToPersist()) because
-			// TransfomerListener would get root instance as source (aggregate root), not current source
-			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-																				 leftColumn,
-																				 targetTableClonePK,
-																				 tableAlias,
-																				 cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(targetTableClonePK),
-																				 (src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(targetTableClonePK)),
-																				 false);
+			// TransformerListener would get root instance as source (aggregate root), not current source
+			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(
+					EntityJoinTree.ROOT_STRATEGY_NAME,
+					leftColumn,
+					targetTableClonePK,
+					tableAlias,
+					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(targetTableClonePK),
+					(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(targetTableClonePK)),
+					true);
 			
 			// Propagating 2-phases load to all nodes that use cycling type
 			PassiveJoinNode passiveJoin = (PassiveJoinNode) sourcePersister.getEntityJoinTree().getJoin(joinName);
@@ -582,12 +583,14 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			Table targetTableClone = new Table(targetTable.getName());
 			Column relationOwnerForeignKey = targetTableClone.addColumn(rightColumn.getName(), rightColumn.getJavaType());
 			Column relationOwnerPrimaryKey = targetTableClone.addColumn(targetPrimaryKey.getName(), targetPrimaryKey.getJavaType());
-			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-																				 leftColumn,
-																				 relationOwnerForeignKey,
-																				 tableAlias,
-																				 cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
-																				 (src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey)), false);
+			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(
+					EntityJoinTree.ROOT_STRATEGY_NAME,
+					leftColumn,
+					relationOwnerForeignKey,
+					tableAlias,
+					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
+					(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey)),
+					true);
 			
 			// Propagating 2-phases load to all nodes that use cycling type
 			PassiveJoinNode passiveJoin = (PassiveJoinNode) sourcePersister.getEntityJoinTree().getJoin(joinName);

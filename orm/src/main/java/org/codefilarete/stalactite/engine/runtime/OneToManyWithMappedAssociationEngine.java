@@ -166,13 +166,14 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		Column relationOwnerPrimaryKey = relationOwnerTableClone.addColumn(sourcePrimaryKey.getName(), sourcePrimaryKey.getJavaType());
 		Column relationOwnerClone = relationOwnerTableClone.addColumn(relationOwner.getName(), relationOwner.getJavaType());
 		
-		sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+		sourcePersister.getEntityJoinTree().addPassiveJoin(
+				ROOT_STRATEGY_NAME,
 				sourcePrimaryKey,
 				relationOwnerClone,
 				relationOwnerTableClone.getName() + "_" + AccessorDefinition.giveDefinition(collectionGetter).getName(),
 				JoinType.OUTER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
-				(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey))
-				, false);
+				(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey)),
+				true);
 	}
 	
 	public static class TargetInstancesInsertCascader<I, O, J> extends AfterInsertCollectionCascader<I, O> {

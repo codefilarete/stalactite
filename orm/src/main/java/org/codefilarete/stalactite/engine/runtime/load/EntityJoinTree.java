@@ -487,7 +487,7 @@ public class EntityJoinTree<C, I> {
 																				  Set<Column<T2, ?>> columnsToSelect,
 																				  TransformerListener<C> transformerListener,
 																				  boolean rightTableParticipatesToDDL) {
-		if (!rightTableParticipatesToDDL) {
+		if (rightTableParticipatesToDDL) {
 			tablesToBeExcludedFromDDL.add(rightJoinColumn.getTable());
 		}
 		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
