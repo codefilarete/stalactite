@@ -23,8 +23,8 @@ public class SelectBuilderTest {
 
 	public static Object[][] toSQL_data() {
 		Table tableToto = new Table(null, "Toto");
-		Column<Table, String> colTotoA = tableToto.addColumn("a", String.class);
-		Column<Table, String> colTotoB = tableToto.addColumn("b", String.class);
+		Column<Table, Integer> colTotoA = tableToto.addColumn("a", Integer.class);
+		Column<Table, Integer> colTotoB = tableToto.addColumn("b", Integer.class);
 		Table tableTata = new Table(null, "Tata");
 		Column<Table, String> colTataA = tableTata.addColumn("a", String.class);
 		Column<Table, String> colTataB = tableTata.addColumn("b", String.class);

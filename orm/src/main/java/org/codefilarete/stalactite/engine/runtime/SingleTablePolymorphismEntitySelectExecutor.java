@@ -60,7 +60,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	public List<C> loadGraph(CriteriaChain where) {
 		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
+		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query, dialect);
 		
 		// selecting ids and their discriminator
 		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());

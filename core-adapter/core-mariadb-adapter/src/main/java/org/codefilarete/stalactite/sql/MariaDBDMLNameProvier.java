@@ -7,7 +7,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 
@@ -27,9 +27,9 @@ public class MariaDBDMLNameProvier extends DMLNameProvider {
 	}
 	
 	@Override
-	public String getSimpleName(@Nonnull Column column) {
-		if (KEYWORDS.contains(column.getName())) {
-			return "`" + column.getName() + "`";
+	public String getSimpleName(@Nonnull Selectable<?> column) {
+		if (KEYWORDS.contains(column.getExpression())) {
+			return "`" + column.getExpression() + "`";
 		}
 		return super.getSimpleName(column);
 	}

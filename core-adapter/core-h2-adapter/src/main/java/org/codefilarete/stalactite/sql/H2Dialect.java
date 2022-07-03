@@ -34,7 +34,7 @@ public class H2Dialect extends Dialect {
 	public static class H2DDLTableGenerator extends DDLTableGenerator {
 		
 		public H2DDLTableGenerator(SqlTypeRegistry typeMapping) {
-			super(typeMapping, new H2DMLNameProvier(Collections.emptyMap()));
+			super(typeMapping, new H2DMLNameProvider(Collections.emptyMap()));
 		}
 		
 		@Override
@@ -56,12 +56,12 @@ public class H2Dialect extends Dialect {
 	}
 	
 	
-	public static class H2DMLNameProvier extends DMLNameProvider {
+	public static class H2DMLNameProvider extends DMLNameProvider {
 		
 		/** H2 keywords to be escape. TODO: to be completed */
 		public static final Set<String> KEYWORDS = Collections.unmodifiableSet(Arrays.asTreeSet(String.CASE_INSENSITIVE_ORDER));
 		
-		public H2DMLNameProvier(Map<Table, String> tableAliases) {
+		public H2DMLNameProvider(Map<Table, String> tableAliases) {
 			super(tableAliases);
 		}
 		

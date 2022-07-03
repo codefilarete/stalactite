@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 
 /**
  * Represents a between operator.
@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
  * 
  * @author Guillaume Mary
  */
-public class Between<O> extends AbstractRelationalOperator<O> {
+public class Between<O> extends ConditionalOperator<O> {
 	
 	private final Interval<O> value;
 	

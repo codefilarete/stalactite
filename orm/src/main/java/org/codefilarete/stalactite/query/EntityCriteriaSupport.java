@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 
@@ -46,12 +46,12 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	/** Root of the property-mapping graph representation. Must be constructed with {@link #registerRelation(ValueAccessPoint, ClassMapping)} */
 	private final EntityGraphNode rootConfiguration;
 	
-	public <O> EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, getter, operator);
 	}
 	
-	public <O> EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy, SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
 		this(mappingStrategy);
 		add(null, setter, operator);
 	}
@@ -78,15 +78,15 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		return rootConfiguration.registerRelation(relation, mappingStrategy);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		return add(logicalOperator, getColumn(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
 		return add(logicalOperator, getColumn(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, Column column, AbstractRelationalOperator<O> operator) {
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, Column column, ConditionalOperator<O> operator) {
 		if (logicalOperator == LogicalOperator.OR) {
 			criteria.or(column, operator);
 		} else {
@@ -96,33 +96,33 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		return add(LogicalOperator.AND, getter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
 		return add(LogicalOperator.AND, setter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		return add(LogicalOperator.OR, getter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
 		return add(LogicalOperator.OR, setter, operator);
 	}
 	
 	@Override
-	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
+	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator) {
 		criteria.and(getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 		return this;
 	}
 	
 	@Override
-	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator) {
+	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator) {
 		criteria.and(getColumn(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 		return this;
 	}

@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -21,7 +22,6 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.Maps;
@@ -43,16 +43,16 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 	
 	private final ConnectionProvider connectionProvider;
 	
-	private final ColumnBinderRegistry parameterBinderProvider;
+	private final Dialect dialect;
 	
 	private final EntityJoinTree<C, I> entityJoinTree;
 	
 	public EntityGraphSelectExecutor(EntityJoinTree<C, I> entityJoinTree,
 									 ConnectionProvider connectionProvider,
-									 ColumnBinderRegistry columnBinderRegistry) {
+									 Dialect dialect) {
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
-		this.parameterBinderProvider = columnBinderRegistry;
+		this.dialect = dialect;
 	}
 	
 	/**
@@ -67,10 +67,10 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 	 */
 	@Override
 	public List<C> loadGraph(CriteriaChain where) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
+		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query, dialect);
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();
@@ -88,16 +88,16 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 			query.getWhereSurrogate().clear();
 			query.where(pk, in(ids));
 			
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
 	}
 	
 	private List<I> readIds(QuerySQLBuilder sqlQueryBuilder, Column<T, I> pk) {
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(parameterBinderProvider);
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, Maps.asMap(PRIMARY_KEY_ALIAS, parameterBinderProvider.getBinder(pk)));
+			RowIterator rowIterator = new RowIterator(resultSet, Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk)));
 			return Iterables.collectToList(() -> rowIterator, row -> (I) row.get(PRIMARY_KEY_ALIAS));
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);

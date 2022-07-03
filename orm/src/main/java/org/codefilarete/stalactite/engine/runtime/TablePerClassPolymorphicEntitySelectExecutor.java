@@ -1,37 +1,24 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.util.*;
 
-import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.function.Functions;
-import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.model.*;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.model.AbstractCriterion;
-import org.codefilarete.stalactite.query.model.ColumnCriterion;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryEase;
-import org.codefilarete.stalactite.query.model.Where;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.ReadOperation;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
  * @author Guillaume Mary
@@ -41,36 +28,20 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 	private final Map<Class, Table> tablePerSubConfiguration;
 	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
 	private final ConnectionProvider connectionProvider;
-	private final ColumnBinderRegistry columnBinderRegistry;
+	private final Dialect dialect;
 	private final Table mainTable;
-	
-	public TablePerClassPolymorphicEntitySelectExecutor(
-			Map<SubEntityMappingConfiguration, Table> tablePerSubConfiguration,
-			Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
-			T mainTable,
-			ConnectionProvider connectionProvider,
-			ColumnBinderRegistry columnBinderRegistry,
-			boolean safeGuard
-	) {
-		this.tablePerSubConfiguration = Iterables.map(tablePerSubConfiguration.entrySet(),
-				Functions.chain(Entry<SubEntityMappingConfiguration, Table>::getKey, SubEntityMappingConfiguration::getEntityType), Entry::getValue);
-		this.persisterPerSubclass = persisterPerSubclass;
-		this.connectionProvider = connectionProvider;
-		this.columnBinderRegistry = columnBinderRegistry;
-		this.mainTable = mainTable;
-	}
 	
 	public TablePerClassPolymorphicEntitySelectExecutor(
 			Map<Class, Table> tablePerSubConfiguration,
 			Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
 			T mainTable,
 			ConnectionProvider connectionProvider,
-			ColumnBinderRegistry columnBinderRegistry
+			Dialect dialect
 	) {
 		this.tablePerSubConfiguration = tablePerSubConfiguration;
 		this.persisterPerSubclass = persisterPerSubclass;
 		this.connectionProvider = connectionProvider;
-		this.columnBinderRegistry = columnBinderRegistry;
+		this.dialect = dialect;
 		this.mainTable = mainTable;
 	}
 	
@@ -81,8 +52,8 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 		String discriminatorAlias = "Y";
 		String pkAlias = "PK";
 		Map<String, ResultSetReader> readers = new HashMap<>();
-		readers.put(discriminatorAlias, columnBinderRegistry.getBinder(String.class));
-		ParameterBinder pkBinder = columnBinderRegistry.getBinder((Column) Iterables.first(mainTable.getPrimaryKey().getColumns()));
+		readers.put(discriminatorAlias, dialect.getColumnBinderRegistry().getBinder(String.class));
+		ParameterBinder pkBinder = dialect.getColumnBinderRegistry().getBinder((Column) Iterables.first(mainTable.getPrimaryKey().getColumns()));
 		readers.put(pkAlias, pkBinder);
 		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
 			Column<T, I> primaryKey = (Column<T, I>) Iterables.first(subEntityTable.getPrimaryKey().getColumns());
@@ -107,8 +78,8 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 				query.getWhere().and(projectedWhere);
 			}
 			
-			QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(columnBinderRegistry);
+			QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 			queries.add(preparedSQL);
 		});
 		

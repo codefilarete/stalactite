@@ -10,8 +10,8 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
  */
 public class Like extends UnitaryOperator<CharSequence> {
 	
-	private boolean leadingStar;
-	private boolean endingStar;
+	private final boolean leadingStar;
+	private final boolean endingStar;
 	
 	/**
 	 * Basic constructor

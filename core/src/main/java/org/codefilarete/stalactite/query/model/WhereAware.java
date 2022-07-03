@@ -12,7 +12,7 @@ public interface WhereAware extends GroupByAware {
 	
 	FluentWhereClause where(Column column, CharSequence condition);
 	
-	FluentWhereClause where(Column column, AbstractRelationalOperator condition);
+	FluentWhereClause where(Column column, ConditionalOperator condition);
 	
 	FluentWhereClause where(Criteria criteria);
 	

@@ -1,24 +1,33 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
  * @author Guillaume Mary
  */
-public class Cast<C> extends UnitaryOperator<Selectable<C>> implements Selectable<C> {
+public class Cast<V> extends SQLFunction<V> {
 	
-	public Cast(Selectable<C> value) {
-		super(value);
+	private final Integer typeSize;
+	
+	public Cast(String expression, Class<V> castType) {
+		super("cast", castType, expression);
+		this.typeSize = null;
 	}
 	
-	@Override
-	public String getExpression() {
-		return "cast";
+	public Cast(Selectable<V> casted, Class<V> castType) {
+		this(casted, castType, null);
 	}
 	
-	@Override
-	public Class<C> getJavaType() {
-		return this.getValue().getJavaType();
+	public Cast(Selectable<V> casted, Class<V> castType, Integer typeSize) {
+		super("cast", castType, casted);
+		this.typeSize = typeSize;
+	}
+	
+	public Object getCastTarget() {
+		return getArguments()[0];
+	}
+	
+	public Integer getTypeSize() {
+		return typeSize;
 	}
 }

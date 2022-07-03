@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.query.builder;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
@@ -23,6 +24,8 @@ import static org.codefilarete.stalactite.query.model.QueryEase.select;
  * @author Guillaume Mary
  */
 public class QuerySQLBuilderTest {
+	
+	private final Dialect dialect = new Dialect();
 	
 	public static Object[][] toSQL_data() {
 		final Table tableToto = new Table(null, "Toto");
@@ -114,7 +117,7 @@ public class QuerySQLBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
 	public void toSQL(QueryProvider<?> queryProvider, String expected) {
-		SQLBuilder testInstance = QuerySQLBuilder.of(queryProvider.getQuery());
+		SQLBuilder testInstance = QuerySQLBuilder.of(queryProvider.getQuery(), dialect);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
@@ -146,7 +149,7 @@ public class QuerySQLBuilderTest {
 	@MethodSource("toPreparedSQL_data")
 	public void toPreparedSQL(QueryProvider queryProvider,
 								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		QuerySQLBuilder testInstance = new QuerySQLBuilder(queryProvider);
+		QuerySQLBuilder testInstance = new QuerySQLBuilder(queryProvider, dialect);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);

@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 
 /**
  * Represents a "in" comparison
  * 
  * @author Guillaume Mary
  */
-public class In<O> extends AbstractRelationalOperator<O> {
+public class In<O> extends ConditionalOperator<O> {
 	
 	private final Iterable<O> value;
 	

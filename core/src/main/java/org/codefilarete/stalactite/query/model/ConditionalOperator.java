@@ -7,7 +7,7 @@ package org.codefilarete.stalactite.query.model;
  * @author Guillaume Mary
  */
 @SuppressWarnings("squid:S2326")	// V is voluntary let, even if not used in this class, for using-API
-public abstract class AbstractRelationalOperator<V> {
+public abstract class ConditionalOperator<V> {
 	
 	/** Is this operator must be negated ? */
 	private boolean not;

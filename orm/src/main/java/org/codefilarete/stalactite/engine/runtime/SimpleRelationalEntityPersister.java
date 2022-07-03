@@ -27,7 +27,7 @@ import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityGraphSelectExecutor;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -92,7 +92,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 		return new EntityGraphSelectExecutor<>(
 				getEntityJoinTree(),
 				persister.getConnectionProvider(),
-				dialect.getColumnBinderRegistry());
+				dialect);
 	}
 	
 	/**
@@ -175,14 +175,14 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	}
 	
 	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
 	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(setter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);

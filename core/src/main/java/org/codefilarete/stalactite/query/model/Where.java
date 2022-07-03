@@ -14,7 +14,7 @@ public class Where<SELF extends Where<SELF>> extends Criteria<SELF> {
 		super(column, condition);
 	}
 	
-	public Where(Column column, AbstractRelationalOperator condition) {
+	public Where(Column column, ConditionalOperator condition) {
 		super(column, condition);
 	}
 	

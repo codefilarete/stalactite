@@ -19,7 +19,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
 import org.codefilarete.stalactite.engine.listener.PersisterListener;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 
 /**
  * @author Guillaume Mary
@@ -197,7 +197,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
@@ -208,7 +208,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 	
 	List<C> selectAll();
 	
@@ -242,7 +242,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 		 * @return this
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
-		<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 		
 		/**
 		 * Combines with "and" given criteria on property  
@@ -253,7 +253,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 		 * @return this
 		 * @throws IllegalArgumentException if column matching setter was not found
 		 */
-		<O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		<O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 		
 		/**
 		 * Combines with "or" given criteria on property  
@@ -264,7 +264,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 		 * @return this
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
-		<O> EntityCriteria<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		<O> EntityCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 		
 		/**
 		 * Combines with "or" given criteria on property  
@@ -275,7 +275,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 		 * @return this
 		 * @throws IllegalArgumentException if column matching setter was not found
 		 */
-		<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 		
 		/**
 		 * Combines with "and" given criteria on an embedded or one-to-one bean property
@@ -288,6 +288,6 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 		 * @return this
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
-		<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
 	}
 }

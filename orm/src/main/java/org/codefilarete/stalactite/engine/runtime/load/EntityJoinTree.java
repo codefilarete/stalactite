@@ -583,7 +583,7 @@ public class EntityJoinTree<C, I> {
 			Column projectedLeftColumn = ((Table) targetOwner.getTable()).getColumn(currentNode.getLeftJoinColumn().getExpression());
 			if (projectedLeftColumn == null) {
 				throw new IllegalArgumentException("Expected column "
-						+ currentNode.getLeftJoinColumn().getAbsoluteName() + " to exist in target table " + targetOwner.getTable().getName());
+						+ currentNode.getLeftJoinColumn().getExpression() + " to exist in target table " + targetOwner.getTable().getName());
 			}
 			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, projectedLeftColumn);
 			// maintaining join names through trees : we add current node name to target one. Then nodes can be found across trees

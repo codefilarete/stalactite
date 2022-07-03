@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.query.model.Selectable;
 
 /**
@@ -9,19 +7,9 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Max extends UnitaryOperator implements Selectable<Long> {
+public class Max<N extends Number> extends SQLFunction<N> {
 	
-	public Max(Column value) {
-		super(value);
-	}
-	
-	@Override
-	public String getExpression() {
-		return "max";
-	}
-	
-	@Override
-	public Class<Long> getJavaType() {
-		return long.class;
+	public Max(Selectable<N> value) {
+		super("max", value.getJavaType(), value);
 	}
 }

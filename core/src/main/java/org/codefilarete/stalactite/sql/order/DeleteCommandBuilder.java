@@ -5,21 +5,17 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.builder.*;
+import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
-import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
-import org.codefilarete.stalactite.query.model.ColumnCriterion;
-import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
  * A SQL builder for {@link Delete} objects
@@ -31,10 +27,12 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
 public class DeleteCommandBuilder implements SQLBuilder {
 	
 	private final Delete delete;
+	private final Dialect dialect;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public DeleteCommandBuilder(Delete delete) {
+	public DeleteCommandBuilder(Delete delete, Dialect dialect) {
 		this.delete = delete;
+		this.dialect = dialect;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
 	}
 	
@@ -77,15 +75,15 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (delete.getCriteria().iterator().hasNext()) {
 			result.cat(" where ");
-			WhereSQLBuilder whereSqlBuilder = new WhereSQLBuilder(this.delete.getCriteria(), dmlNameProvider);
+			WhereSQLBuilder whereSqlBuilder = new WhereSQLBuilder(this.delete.getCriteria(), dmlNameProvider, this.dialect);
 			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();
 	}
 	
-	public PreparedSQL toStatement(ColumnBinderRegistry columnBinderRegistry) {
+	public PreparedSQL toStatement() {
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
+		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
 		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
 		
 		// final assembly

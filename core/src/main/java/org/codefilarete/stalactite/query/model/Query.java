@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -13,9 +12,7 @@ import org.codefilarete.stalactite.query.model.SelectChain.AliasableExpression;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.codefilarete.tool.function.TriFunction;
 import org.codefilarete.tool.reflect.MethodDispatcher;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
 
 /**
  * A support for a SQL query, trying to be closest as possible to a real select query syntax and implementing the most simple/common usage. 
@@ -255,7 +252,7 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public FluentWhereClause where(Column column, AbstractRelationalOperator condition) {
+	public FluentWhereClause where(Column column, ConditionalOperator condition) {
 		this.whereSurrogate.and(new ColumnCriterion(column, condition));
 		return where;
 	}

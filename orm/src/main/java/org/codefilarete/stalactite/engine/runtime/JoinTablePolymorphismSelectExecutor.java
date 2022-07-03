@@ -83,7 +83,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 			query.select(subclassPrimaryKey, subclassPrimaryKey.getAlias());
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
 		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();

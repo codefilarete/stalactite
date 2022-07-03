@@ -2,13 +2,12 @@ package org.codefilarete.stalactite.query.builder;
 
 import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -27,11 +26,11 @@ import org.codefilarete.stalactite.query.model.QueryProvider;
  */
 public class QuerySQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
-	public static SQLBuilder of(QueryStatement queryStatement) {
+	public static SQLBuilder of(QueryStatement queryStatement, Dialect dialect) {
 		if (queryStatement instanceof Query) {
-			return new QuerySQLBuilder((Query) queryStatement);
+			return new QuerySQLBuilder((Query) queryStatement, dialect);
 		} else if (queryStatement instanceof Union) {
-			return new UnionSQLBuilder((Union) queryStatement);
+			return new UnionSQLBuilder((Union) queryStatement, dialect);
 		} else {
 			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
 		}
@@ -49,8 +48,8 @@ public class QuerySQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	 * 
 	 * @param query a {@link QueryProvider}
 	 */
-	public QuerySQLBuilder(QueryProvider<Query> query) {
-		this(query.getQuery());
+	public QuerySQLBuilder(QueryProvider<Query> query, Dialect dialect) {
+		this(query.getQuery(), dialect);
 	}
 	
 	/**
@@ -58,13 +57,13 @@ public class QuerySQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	 * 
 	 * @param query a {@link Query}
 	 */
-	public QuerySQLBuilder(Query query) {
+	public QuerySQLBuilder(Query query, Dialect dialect) {
 		this.dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases()::get);
 		this.query = query;
-		this.selectBuilder = new SelectBuilder(query.getSelectSurrogate(), dmlNameProvider);
-		this.fromSqlBuilder = new FromSQLBuilder(query.getFromSurrogate());
-		this.whereSqlBuilder = new WhereSQLBuilder(query.getWhere(), dmlNameProvider);
-		this.havingBuilder = new WhereSQLBuilder(query.getHavingSurrogate(), dmlNameProvider);
+		this.selectBuilder = new SelectBuilder(query.getSelectSurrogate(), dmlNameProvider, dialect);
+		this.fromSqlBuilder = new FromSQLBuilder(query.getFromSurrogate(), dialect);
+		this.whereSqlBuilder = new WhereSQLBuilder(query.getWhere(), dmlNameProvider, dialect);
+		this.havingBuilder = new WhereSQLBuilder(query.getHavingSurrogate(), dmlNameProvider, dialect);
 	}
 	
 	/**

@@ -196,10 +196,10 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	 * 
 	 * In case of {@link Persister#deleteById}, association records will be deleted only by source entity keys.
 	 * 
-	 * @param deleteTargetEntities true to delete many-side entities, false to onlly delete association records
-	 * @param columnBinderRegistry should come from a {@link Dialect}, necessary for deleteById action
+	 * @param deleteTargetEntities true to delete many-side entities, false to only delete association records
+	 * @param dialect necessary to build valid SQL for deleteById action
 	 */
-	public void addDeleteCascade(boolean deleteTargetEntities, ColumnBinderRegistry columnBinderRegistry) {
+	public void addDeleteCascade(boolean deleteTargetEntities, Dialect dialect) {
 		// we delete association records
 		persisterListener.addDeleteListener(new DeleteListener<SRC>() {
 			@Override
@@ -232,7 +232,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				Set<SRCID> identifiers = collect(entities, this::castId, HashSet::new);
 				associationTableDelete.where(associationPersister.getMainTable().getOneSideKeyColumn(), Operators.in(identifiers));
 				
-				PreparedSQL deleteStatement = new DeleteCommandBuilder(associationTableDelete).toStatement(columnBinderRegistry);
+				PreparedSQL deleteStatement = new DeleteCommandBuilder(associationTableDelete, dialect).toStatement();
 				// We don't know how many relations is contained in the table, so we don't check for deletion row count
 				try (WriteOperation<Integer> writeOperation = writeOperationFactory.createInstance(deleteStatement, associationPersister.getConnectionProvider())) {
 					writeOperation.setValues(deleteStatement.getValues());

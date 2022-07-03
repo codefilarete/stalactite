@@ -67,8 +67,7 @@ class EntityGraphSelectExecutorTest {
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(43, 'Lyon', 12)").execute();
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(44, 'Grenoble', 12)").execute();
 		
-		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
-		EntityGraphSelectExecutor<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelectExecutor<>(persister.getEntityJoinTree(), connectionProvider, columnBinderRegistry);
+		EntityGraphSelectExecutor<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelectExecutor<>(persister.getEntityJoinTree(), connectionProvider, dialect);
 		
 		// Criteria tied to data formerly persisted
 		EntityCriteria<Country> countryEntityCriteriaSupport =

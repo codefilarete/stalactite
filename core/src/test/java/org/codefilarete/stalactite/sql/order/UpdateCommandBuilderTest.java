@@ -3,13 +3,11 @@ package org.codefilarete.stalactite.sql.order;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.sql.order.Update;
-import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder;
-import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
@@ -33,18 +31,19 @@ class UpdateCommandBuilderTest {
 				.set(columnA)
 				.set(columnB);
 		update.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
-		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update);
+		Dialect dialect = new Dialect();
+		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto set a = ?, b = ? where a = 44 or a = b");
 		
 		update = new Update(totoTable)
 				.set(columnA, columnB);
-		testInstance = new UpdateCommandBuilder(update);
+		testInstance = new UpdateCommandBuilder(update, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto set a = b");
 		
 		
 		update = new Update(totoTable)
 				.set(columnA, "tata");
-		testInstance = new UpdateCommandBuilder(update);
+		testInstance = new UpdateCommandBuilder(update, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto set a = 'tata'");
 	}
 	
@@ -64,13 +63,14 @@ class UpdateCommandBuilderTest {
 				.set(columnA)
 				.set(columnB);
 		update.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
-		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update);
+		Dialect dialect = new Dialect();
+		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto, Tata set Toto.a = ?, Toto.b = ? where Toto.a = Tata.x or Toto.a = Tata.y");
 		
 		update = new Update(totoTable)
 				.set(columnC, columnZ);
 		update.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
-		testInstance = new UpdateCommandBuilder(update);
+		testInstance = new UpdateCommandBuilder(update, dialect);
 		assertThat(testInstance.toSQL()).isEqualTo("update Toto, Tata set Toto.c = Tata.z where Toto.a = Tata.x or Toto.a = Tata.y");
 	}
 	
@@ -88,11 +88,10 @@ class UpdateCommandBuilderTest {
 				.set(columnC, "tata")
 				.set(columnD);
 		update.where(columnA, Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
-		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update);
+		Dialect dialect = new Dialect();
+		UpdateCommandBuilder testInstance = new UpdateCommandBuilder(update, dialect);
 		
-		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
-		
-		UpdateStatement result = testInstance.toStatement(binderRegistry);
+		UpdateStatement result = testInstance.toStatement();
 		assertThat(result.getSQL()).isEqualTo("update Toto set a = ?, b = a, c = ?, d = ? where a in (?, ?) or a = b");
 				
 		assertThat(result.getValues()).isEqualTo(Maps.asMap(2, (Object) "tata").add(4, 42L).add(5, 43L));
@@ -118,8 +117,8 @@ class UpdateCommandBuilderTest {
 		verify(mock).setString(2, "tutu");
 		
 		// ensuring that column type override in registry is taken into account
-		binderRegistry.register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
-		result = testInstance.toStatement(binderRegistry);
+		dialect.getColumnBinderRegistry().register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
+		result = testInstance.toStatement();
 		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result.setValue(columnA, -42l);
 		result.setValue(columnD, "toto");

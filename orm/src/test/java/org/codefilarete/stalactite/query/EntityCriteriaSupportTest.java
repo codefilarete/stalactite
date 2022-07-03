@@ -67,18 +67,6 @@ class EntityCriteriaSupportTest {
 				.or(Country::setName, Operators.between("11", ""))
 				.or(Country::setName, Operators.gteq("11"))
 				;
-		
-		WhereSQLBuilder queryBuilder = new WhereSQLBuilder(((EntityCriteriaSupport) countryEntityCriteriaSupport).getCriteria(), new DMLNameProvider(new HashMap<Table, String>() {
-			@Override
-			public String get(Object key) {
-				String o = super.get(key);
-				if (o == null) {
-					o = ((Table) key).getName();
-					put(((Table) key), o);
-				}
-				return o;
-			}
-		}));
 	}
 	
 	@Test

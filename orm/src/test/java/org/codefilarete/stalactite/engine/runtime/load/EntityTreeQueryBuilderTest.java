@@ -12,6 +12,7 @@ import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -64,7 +65,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery<?> entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
 				+ " Toto.id as Toto_id, Toto.name as Toto_name"
 				+ ", Toto.tata1Id as Toto_tata1Id, Toto.tata2Id as Toto_tata2Id"
@@ -162,7 +163,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery treeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(treeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(treeQuery.getQuery(), new Dialect());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expected);
 		
 		IdentityMap<Column, String> expectedColumnClones = new IdentityMap<>();
@@ -223,7 +224,7 @@ class EntityTreeQueryBuilderTest {
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(rootMappingStrategy), rootMappingStrategy.getTargetTable());
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry());
 		entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(classMappingStrategy), leftJoinColumn, rightJoinColumn, null, INNER, null, Collections.emptySet());
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(testInstance.buildSelectQuery().getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(testInstance.buildSelectQuery().getQuery(), new Dialect());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expected);
 	}
 	
@@ -262,7 +263,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
 				+ " Toto.id as Toto_id, Toto.name as Toto_name"
 				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -327,7 +328,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
 				+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
 				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
@@ -400,7 +401,7 @@ class EntityTreeQueryBuilderTest {
 		};
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery());
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
 				+ " Toto.id as Toto_id, Toto.name as Toto_name"
 				+ ", Tata.id as Tata_id, Tata.name as Tata_name"

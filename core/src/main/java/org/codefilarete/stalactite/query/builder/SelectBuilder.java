@@ -2,11 +2,10 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.operator.SQLFunction;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
@@ -19,16 +18,16 @@ public class SelectBuilder implements SQLBuilder {
 	
 	private final Select select;
 	private final DMLNameProvider dmlNameProvider;
-	private final OperatorSQLBuilder operatorSqlBuilder;
+	private final FunctionSQLBuilder functionSQLBuilder;
 	
 	public SelectBuilder(Select select, Map<Table, String> tableAliases) {
-		this(select, new DMLNameProvider(tableAliases));
+		this(select, new DMLNameProvider(tableAliases), new Dialect());
 	}
 	
-	public SelectBuilder(Select select, DMLNameProvider dmlNameProvider) {
+	public SelectBuilder(Select select, DMLNameProvider dmlNameProvider, Dialect dialect) {
 		this.select = select;
 		this.dmlNameProvider = dmlNameProvider;
-		this.operatorSqlBuilder = new OperatorSQLBuilder(this.dmlNameProvider);
+		this.functionSQLBuilder = new FunctionSQLBuilder(this.dmlNameProvider, dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping());
 	}
 	
 	@Override
@@ -42,8 +41,8 @@ public class SelectBuilder implements SQLBuilder {
 	private void cat(Iterable<? extends Selectable<?> /* String, Column or AliasedColumn */> select, StringAppender sql) {
 		StringAppenderWrapper appenderWrapper = new StringAppenderWrapper(sql, dmlNameProvider);
 		for (Object o : select) {
-			if (o instanceof AbstractRelationalOperator) {
-				cat((AbstractRelationalOperator) o, appenderWrapper);
+			if (o instanceof SQLFunction) {
+				cat((SQLFunction) o, appenderWrapper);
 			} else if (o instanceof Selectable) {	// must be after previous ifs because they deal with dedicated Selectable cases
 				cat((Selectable) o, sql);
 			} else if (o instanceof Iterable) {
@@ -64,9 +63,9 @@ public class SelectBuilder implements SQLBuilder {
 		sql.cat(dmlNameProvider.getName(column)).catIf(!Strings.isEmpty(alias), " as ", alias);
 	}
 	
-	private void cat(AbstractRelationalOperator<?> operator, SQLAppender appenderWrapper) {
+	private void cat(SQLFunction<?> operator, SQLAppender appenderWrapper) {
 		String alias = select.getAliases().get(operator);	// can be UnitaryOperator which is Selectable
-		operatorSqlBuilder.cat(operator, appenderWrapper);
+		functionSQLBuilder.cat(operator, appenderWrapper);
 		appenderWrapper.catIf(!Strings.isEmpty(alias), " as " + alias);
 	}
 }

@@ -2,45 +2,30 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Collections;
 
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.StringAppender;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.between;
-import static org.codefilarete.stalactite.query.model.Operators.contains;
-import static org.codefilarete.stalactite.query.model.Operators.count;
-import static org.codefilarete.stalactite.query.model.Operators.endsWith;
-import static org.codefilarete.stalactite.query.model.Operators.eq;
-import static org.codefilarete.stalactite.query.model.Operators.gt;
-import static org.codefilarete.stalactite.query.model.Operators.gteq;
-import static org.codefilarete.stalactite.query.model.Operators.in;
-import static org.codefilarete.stalactite.query.model.Operators.lt;
-import static org.codefilarete.stalactite.query.model.Operators.lteq;
-import static org.codefilarete.stalactite.query.model.Operators.max;
-import static org.codefilarete.stalactite.query.model.Operators.min;
-import static org.codefilarete.stalactite.query.model.Operators.not;
-import static org.codefilarete.stalactite.query.model.Operators.startsWith;
-import static org.codefilarete.stalactite.query.model.Operators.sum;
+import static org.codefilarete.stalactite.query.model.Operators.*;
 
 /**
  * @author Guillaume Mary
  */
 public class OperatorSQLBuilderTest {
 	
-	private DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap());
+	private final DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap());
 	
 	@Test
 	public void cat_nullValue_isTransformedToIsNull() {
 		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.cat(new AbstractRelationalOperator() {
+		testInstance.cat(new ConditionalOperator() {
 			@Override
 			public boolean isNull() {
 				return true;
@@ -199,53 +184,5 @@ public class OperatorSQLBuilderTest {
 		
 		testInstance.catEquals(eq(colA), new StringAppenderWrapper(result, dmlNameProvider), null);
 		assertThat(result.toString()).isEqualTo("= Toto.a");
-	}
-	
-	@Test
-	public void catSum() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
-		StringAppender result = new StringAppender();
-		
-		Table tableToto = new Table("Toto");
-		Column colA = tableToto.addColumn("a", Integer.class);
-		
-		testInstance.catSum(sum(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertThat(result.toString()).isEqualTo("sum(Toto.a)");
-	}
-	
-	@Test
-	public void catCount() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
-		StringAppender result = new StringAppender();
-		
-		Table tableToto = new Table("Toto");
-		Column colA = tableToto.addColumn("a", Integer.class);
-		
-		testInstance.catCount(count(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertThat(result.toString()).isEqualTo("count(Toto.a)");
-	}
-	
-	@Test
-	public void catMin() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
-		StringAppender result = new StringAppender();
-		
-		Table tableToto = new Table("Toto");
-		Column colA = tableToto.addColumn("a", Integer.class);
-		
-		testInstance.catMin(min(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertThat(result.toString()).isEqualTo("min(Toto.a)");
-	}
-	
-	@Test
-	public void catMax() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
-		StringAppender result = new StringAppender();
-		
-		Table tableToto = new Table("Toto");
-		Column colA = tableToto.addColumn("a", Integer.class);
-		
-		testInstance.catMax(max(colA), new StringAppenderWrapper(result, dmlNameProvider));
-		assertThat(result.toString()).isEqualTo("max(Toto.a)");
 	}
 }

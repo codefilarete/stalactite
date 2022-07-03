@@ -14,10 +14,12 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
+
+import javax.annotation.Nullable;
 
 /**
  * A SQL builder for {@link Insert} objects
@@ -38,7 +40,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 	public String toSQL() {
 		return toSQL(new StringAppenderWrapper(new StringAppender(), new DMLNameProvider(new HashMap<>())) {
 			@Override
-			public StringAppenderWrapper catValue(Column column, Object value) {
+			public StringAppenderWrapper catValue(@Nullable Column column, Object value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {

@@ -37,7 +37,7 @@ import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -91,10 +91,14 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		this.selectExecutor = new TablePerClassPolymorphicSelectExecutor<>(
 			tablePerSubEntity,
 			subEntitiesSelectors,
-			(T) mainPersister.getMapping().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
+			(T) mainPersister.getMapping().getTargetTable(), connectionProvider, dialect);
 		
-		this.entitySelectExecutor = new TablePerClassPolymorphicEntitySelectExecutor<>(tablePerSubEntity, subEntitiesPersisters,
-																					   (T) mainPersister.getMapping().getTargetTable(), connectionProvider, dialect.getColumnBinderRegistry());
+		this.entitySelectExecutor = new TablePerClassPolymorphicEntitySelectExecutor<>(
+				tablePerSubEntity,
+				subEntitiesPersisters,
+				(T) mainPersister.getMapping().getTargetTable(),
+				connectionProvider,
+				dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
 	}
@@ -191,14 +195,14 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator) {
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
 	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator) {
+	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(setter, operator);
 		return wrapIntoExecutable(localCriteriaSupport);

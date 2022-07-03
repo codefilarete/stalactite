@@ -49,7 +49,7 @@ public class QueryEase {
 		return new Where(column, condition);
 	}
 	
-	public static Where where(Column column, AbstractRelationalOperator condition) {
+	public static Where where(Column column, ConditionalOperator condition) {
 		return new Where(column, condition);
 	}
 	
@@ -73,7 +73,7 @@ public class QueryEase {
 	 * @param condition the criteria on the {@link Column}
 	 * @return a new {@link Criteria}
 	 */
-	public static Criteria filter(Column column, AbstractRelationalOperator condition) {
+	public static Criteria filter(Column column, ConditionalOperator condition) {
 		return new Criteria(column, condition);
 	}
 	

@@ -9,13 +9,14 @@ import org.codefilarete.stalactite.query.model.From.ColumnJoin;
 import org.codefilarete.stalactite.query.model.From.CrossJoin;
 import org.codefilarete.stalactite.query.model.From.Join;
 import org.codefilarete.stalactite.query.model.From.RawTableJoin;
-import org.codefilarete.stalactite.query.model.FromProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.VisibleForTesting;
 
 /**
  * @author Guillaume Mary
@@ -25,16 +26,19 @@ public class FromSQLBuilder implements SQLBuilder {
 	private final From from;
 	
 	private final DMLNameProvider dmlNameProvider;
+	private final Dialect dialect;
 	
-	public FromSQLBuilder(FromProvider from) {
-		this(from.getFrom());
+	@VisibleForTesting
+	FromSQLBuilder(From from) {
+		this(from, new Dialect());
 	}
-
-	public FromSQLBuilder(From from) {
+	
+	public FromSQLBuilder(From from, Dialect dialect) {
 		this.from = from;
 		this.dmlNameProvider = new DMLNameProvider(from.getTableAliases()::get);
+		this.dialect = dialect;
 	}
-
+	
 	@Override
 	public String toSQL() {
 		if (from.getRoot() == null) {
@@ -101,12 +105,12 @@ public class FromSQLBuilder implements SQLBuilder {
 		}
 		
 		private StringAppender cat(Query query) {
-			QuerySQLBuilder unionBuilder = new QuerySQLBuilder(query);
+			QuerySQLBuilder unionBuilder = new QuerySQLBuilder(query, FromSQLBuilder.this.dialect);
 			return cat(unionBuilder.toSQL());
 		}
 		
 		private StringAppender cat(UnionInFrom union) {
-			UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getUnion());
+			UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getUnion(), FromSQLBuilder.this.dialect);
 			// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 			return cat("(", unionSqlBuilder.toSQL(), ") as ").cat(getAliasOrDefault(union));
 		}

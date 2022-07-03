@@ -31,7 +31,7 @@ public interface Operators {
 		return new Equals<>(value);
 	}
 	
-	static <I extends AbstractRelationalOperator> I not(I operator) {
+	static <I extends ConditionalOperator> I not(I operator) {
 		operator.setNot();
 		return operator;
 	}
@@ -155,7 +155,7 @@ public interface Operators {
 	 * Shortcut to <code>new Sum(column)</code> to ease a fluent write of queries for "sum" operation
 	 * @return a new instance of {@link Sum}
 	 */
-	static <N extends Number> Sum<N> sum(Column<?, N> column) {
+	static <N extends Number> Sum<N> sum(Selectable<N> column) {
 		return new Sum<>(column);
 	}
 	
@@ -163,31 +163,27 @@ public interface Operators {
 	 * Shortcut to <code>new Count(column)</code> to ease a fluent write of queries for "count" operation
 	 * @return a new instance of {@link Count}
 	 */
-	static Count count(Column column) {
-		return new Count(column);
+	static <N> Count<N> count(Selectable<N> column) {
+		return new Count<>(column);
 	}
 	
 	/**
 	 * Shortcut to <code>new Min(column)</code> to ease a fluent write of queries for "min" operation
 	 * @return a new instance of {@link Min}
 	 */
-	static Min min(Column column) {
-		return new Min(column);
+	static <N extends Number> Min<N> min(Selectable<N> column) {
+		return new Min<>(column);
 	}
 	
 	/**
 	 * Shortcut to <code>new Max(column)</code> to ease a fluent write of queries for "max" operation
 	 * @return a new instance of {@link Max}
 	 */
-	static Max max(Column column) {
-		return new Max(column);
+	static <N extends Number> Max<N> max(Selectable<N> column) {
+		return new Max<>(column);
 	}
 	
 	static <C> Cast<C> cast(String expression, Class<C> javaType) {
-		return cast(new SelectableString<>(expression, javaType));
-	}
-	
-	static <C> Cast<C> cast(Selectable<C> column) {
-		return new Cast<>(column);
+		return new Cast<>(expression, javaType);
 	}
 }

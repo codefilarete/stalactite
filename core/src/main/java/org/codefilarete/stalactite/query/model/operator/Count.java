@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.query.model.Selectable;
 
 /**
@@ -9,19 +7,9 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Count extends UnitaryOperator implements Selectable<Long> {
+public class Count<N> extends SQLFunction<N> {
 	
-	public Count(Column value) {
-		super(value);
-	}
-	
-	@Override
-	public String getExpression() {
-		return "count";
-	}
-	
-	@Override
-	public Class<Long> getJavaType() {
-		return long.class;
+	public Count(Selectable<N> value) {
+		super("count", value.getJavaType(), value);
 	}
 }

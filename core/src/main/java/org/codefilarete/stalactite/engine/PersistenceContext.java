@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.runtime.Persister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
@@ -242,7 +242,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @see org.codefilarete.stalactite.query.model.QueryEase
 	 */
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider<Query> queryProvider, Class<C> beanType) {
-		return newQuery(new QuerySQLBuilder(queryProvider), beanType);
+		return newQuery(new QuerySQLBuilder(queryProvider, dialect), beanType);
 	}
 	
 	/**
@@ -255,7 +255,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 */
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(new QuerySQLBuilder(query), beanType);
+		return newQuery(new QuerySQLBuilder(query, dialect), beanType);
 	}
 	
 	/**
@@ -544,7 +544,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		Query query = QueryEase.select(selectableKeys).from(table).getQuery();
 		where.accept(query.getWhere());
-		QueryMapper<C> queryMapper = newTransformableQuery(new QuerySQLBuilder(query), beanType);
+		QueryMapper<C> queryMapper = newTransformableQuery(new QuerySQLBuilder(query, dialect), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
@@ -646,7 +646,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this update statement with given values
 		 */
 		public void execute() {
-			UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
+			UpdateStatement updateStatement = new UpdateCommandBuilder(this, dialect).toStatement();
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				writeOperation.execute();
@@ -663,7 +663,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		
 		@Override
-		public ExecutableCriteria where(Column column, AbstractRelationalOperator condition) {
+		public ExecutableCriteria where(Column column, ConditionalOperator condition) {
 			CriteriaChain where = super.where(column, condition);
 			return new MethodReferenceDispatcher()
 					.redirect(ExecutableSQL::execute, this::execute)
@@ -707,7 +707,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this delete statement with given values.
 		 */
 		public void execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
+			PreparedSQL deleteStatement = new DeleteCommandBuilder(this, dialect).toStatement();
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				writeOperation.execute();
@@ -724,7 +724,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		
 		@Override
-		public ExecutableCriteria where(Column column, AbstractRelationalOperator condition) {
+		public ExecutableCriteria where(Column column, ConditionalOperator condition) {
 			CriteriaChain where = super.where(column, condition);
 			return new MethodReferenceDispatcher()
 					.redirect(ExecutableSQL::execute, this::execute)

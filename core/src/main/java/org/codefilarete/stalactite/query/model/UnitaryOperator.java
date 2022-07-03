@@ -5,7 +5,7 @@ package org.codefilarete.stalactite.query.model;
  * 
  * @author Guillaume Mary
  */
-public abstract class UnitaryOperator<V> extends AbstractRelationalOperator<V> {
+public abstract class UnitaryOperator<V> extends ConditionalOperator<V> {
 	
 	/** Value of the operator */
 	private V value;

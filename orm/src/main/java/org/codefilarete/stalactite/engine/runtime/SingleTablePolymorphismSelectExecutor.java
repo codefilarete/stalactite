@@ -78,7 +78,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 				.add(discriminatorColumn, discriminatorColumn.getAlias())
 				.from(table)
 				.where(primaryKey, Operators.in(ids)).getQuery();
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query);
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(columnBinderRegistry);
 		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();

@@ -62,7 +62,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
-	private final ColumnBinderRegistry parameterBinderProvider;
+	private final Dialect dialect;
 	private final int blockSize;
 	
 	private final PrimaryKey<T> primaryKey;
@@ -80,7 +80,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> entityMapping,
 										   Dialect dialect,
 										   ConnectionProvider connectionProvider) {
-		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
+		this.dialect = dialect;
 		this.identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
 		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(entityMapping), entityMapping.getTargetTable());
 		this.blockSize = dialect.getInOperatorMaxSize();
@@ -89,9 +89,9 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(entityMapping.getTargetTable(), entityMapping.getTargetTable().getAbsoluteName());
 		this.connectionProvider = connectionProvider;
 		
-		this.dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), whereClauseDMLNameProvider);
+		this.dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new NoopSorter(), whereClauseDMLNameProvider);
 		
-		parameterBinderForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), parameterBinderProvider::getBinder));
+		parameterBinderForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), dialect.getColumnBinderRegistry()::getBinder));
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		currentBuilderContext.addBuildLifeCycleListener(this::prepareQuery);
@@ -99,8 +99,8 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	
 	@VisibleForTesting
 	void prepareQuery() {
-		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
-		this.rawQuery = new QuerySQLBuilder(entityTreeQuery.getQuery()).toSQL();
+		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		this.rawQuery = new QuerySQLBuilder(entityTreeQuery.getQuery(), dialect).toSQL();
 	}
 	
 	public EntityJoinTree<C, I> getEntityJoinTree() {
@@ -108,7 +108,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	}
 	
 	public ParameterBinderIndex<Column, ParameterBinder> getParameterBinderProvider() {
-		return parameterBinderProvider;
+		return dialect.getColumnBinderRegistry();
 	}
 	
 	public void setOperationListener(SQLOperationListener<Column<T, Object>> operationListener) {

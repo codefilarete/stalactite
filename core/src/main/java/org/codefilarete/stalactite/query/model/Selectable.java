@@ -18,11 +18,6 @@ public interface Selectable<C> {
 	
 	Class<C> getJavaType();
 	
-	// TODO: see if still necessary on Selectable (comes from Column)
-	default String getAbsoluteName() {
-		return getExpression();
-	}
-	
 	/**
 	 * Implementation for String to be put in Select clause
 	 */

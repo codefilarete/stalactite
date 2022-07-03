@@ -2,21 +2,17 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.query.model.*;
+import org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator;
+import org.codefilarete.stalactite.query.model.operator.SQLFunction;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder.StringAppenderWrapper;
-import org.codefilarete.stalactite.query.model.AbstractCriterion;
-import org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
-import org.codefilarete.stalactite.query.model.ColumnCriterion;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.RawCriterion;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.VisibleForTesting;
 
 /**
  * A class made to print a where clause (widened to {@link CriteriaChain})
@@ -31,14 +27,17 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	private final CriteriaChain where;
 	
 	private final DMLNameProvider dmlNameProvider;
+	private final Dialect dialect;
 	
-	public WhereSQLBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
-		this(where, new DMLNameProvider(tableAliases));
+	@VisibleForTesting
+	WhereSQLBuilder(CriteriaChain where, Map<Table, String> tableAliases) {
+		this(where, new DMLNameProvider(tableAliases), new Dialect());
 	}
 	
-	public WhereSQLBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider) {
+	public WhereSQLBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider, Dialect dialect) {
 		this.where = where;
 		this.dmlNameProvider = dmlNameProvider;
+		this.dialect = dialect;
 	}
 	
 	@Override
@@ -51,7 +50,7 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	}
 	
 	public String appendSQL(SQLAppender sql) {
-		WhereAppender whereAppender = new WhereAppender(sql, dmlNameProvider);
+		WhereAppender whereAppender = new WhereAppender(sql, dmlNameProvider, dialect);
 		whereAppender.cat(where);
 		return sql.getSQL();
 	}
@@ -67,7 +66,7 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 	}
 	
 	public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
-		WhereAppender whereAppender = new WhereAppender(preparedSQLWrapper, dmlNameProvider);
+		WhereAppender whereAppender = new WhereAppender(preparedSQLWrapper, dmlNameProvider, dialect);
 		whereAppender.cat(where);
 		PreparedSQL result = new PreparedSQL(preparedSQLWrapper.getSQL(), preparedSQLWrapper.getParameterBinders());
 		result.setValues(preparedSQLWrapper.getValues());
@@ -80,11 +79,14 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		private final OperatorSQLBuilder operatorSqlBuilder;
 		
+		private final FunctionSQLBuilder functionSQLBuilder;
+		
 		private final DMLNameProvider dmlNameProvider;
 		
-		public WhereAppender(SQLAppender sql, DMLNameProvider dmlNameProvider) {
+		public WhereAppender(SQLAppender sql, DMLNameProvider dmlNameProvider, Dialect dialect) {
 			this.sql = sql;
 			this.operatorSqlBuilder = new OperatorSQLBuilder(dmlNameProvider);
+			this.functionSQLBuilder = new FunctionSQLBuilder(dmlNameProvider, dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping());
 			this.dmlNameProvider = dmlNameProvider;
 		}
 		
@@ -126,8 +128,10 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 					sql.cat(")");
 				} else if (o instanceof Column) {
 					cat((Column) o);
-				} else if (o instanceof AbstractRelationalOperator) {
-					cat((AbstractRelationalOperator) o);
+				} else if (o instanceof ConditionalOperator) {
+					cat((ConditionalOperator) o);
+				} else if (o instanceof SQLFunction) {	// made for having(sum(col), eq(..))
+					cat((SQLFunction) o);
 				} else {
 					throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 				}
@@ -140,8 +144,8 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 			Object o = criterion.getCondition();
 			if (o instanceof CharSequence) {
 				sql.cat(o.toString());
-			} else if (o instanceof AbstractRelationalOperator) {
-				cat(criterion.getColumn(), (AbstractRelationalOperator) o);
+			} else if (o instanceof ConditionalOperator) {
+				cat(criterion.getColumn(), (ConditionalOperator) o);
 			} else {
 				throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
 			}
@@ -158,11 +162,15 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 			}
 		}
 		
-		public void cat(AbstractRelationalOperator operator) {
+		public void cat(ConditionalOperator operator) {
 			operatorSqlBuilder.cat(operator, sql);
 		}
 		
-		public void cat(Column column, AbstractRelationalOperator operator) {
+		public void cat(SQLFunction sqlFunction) {
+			functionSQLBuilder.cat(sqlFunction, sql);
+		}
+		
+		public void cat(Column column, ConditionalOperator operator) {
 			operatorSqlBuilder.cat(column, operator, sql);
 		}
 		
