@@ -3,49 +3,48 @@ package org.codefilarete.stalactite.engine.configurer;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnOptions;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointSet;
+import org.codefilarete.stalactite.engine.*;
 import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration.InheritanceConfiguration;
-import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentEntityMappingBuilderKeyOptions;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.PersisterBuilder;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterUpdateSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsserter;
-import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
+import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
+import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
+import org.codefilarete.stalactite.engine.runtime.*;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.codefilarete.stalactite.mapping.SimpleIdMapping;
+import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
@@ -53,33 +52,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.SerializableTriFunction;
-import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.VersioningStrategy;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.codefilarete.stalactite.mapping.SimpleIdMapping;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -621,7 +594,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			});
 		primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
 		primaryKey.primaryKey();
-		if (identification.getIdentifierPolicy() instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
+		if (identification.getIdentifierPolicy() instanceof AfterInsertIdentifierPolicy) {
 			primaryKey.autoGenerated();
 		}
 		return pkTable.getPrimaryKey();
@@ -806,7 +779,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		IdentifierPolicy<I> identifierPolicy = identification.getIdentifierPolicy();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		Class<I> identifierType = idDefinition.getMemberType();
-		if (identifierPolicy instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
+		if (identifierPolicy instanceof AfterInsertIdentifierPolicy) {
 			// with identifier set by database generated key, identifier must be retrieved as soon as possible which means by the very first
 			// persister, which is current one, which is the first in order of mappings
 			Table targetTable = Iterables.first(mappingPerTable.getMappings()).targetTable;
@@ -816,10 +789,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					generatedKeysReaderBuilder.buildGeneratedKeysReader(primaryKey.getName(), primaryKey.getJavaType()),
 					primaryKey.getJavaType()
 			);
-		} else if (identifierPolicy instanceof ColumnOptions.BeforeInsertIdentifierPolicy) {
+		} else if (identifierPolicy instanceof BeforeInsertIdentifierPolicy) {
 			identifierInsertionManager = new BeforeInsertIdentifierManager<>(
 					new SinglePropertyIdAccessor<>(idAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
-		} else if (identifierPolicy instanceof ColumnOptions.AlreadyAssignedIdentifierPolicy) {
+		} else if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
 			AlreadyAssignedIdentifierPolicy<X, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<X, I>) identifierPolicy;
 			identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(
 					identifierType,
@@ -827,7 +800,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					alreadyAssignedPolicy.getIsPersistedFunction());
 		}
 		
-		// Treating configuration that are not the identifying one : they get an already-assigned identifier manager
+		// Treating configurations that are not the identifying one (for child-class) : they get an already-assigned identifier manager
 		AlreadyAssignedIdentifierManager<X, I> fallbackMappingIdentifierManager;
 		if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
 			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType,
@@ -877,13 +850,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			Class<X> beanType,
 			@Nullable EntityMappingConfiguration.EntityFactoryProvider<X> entityFactoryProvider) {
 
-		Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
-		ReversibleAccessor idAccessor = identification.getIdAccessor();
+		Column<T, I> primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
+		ReversibleAccessor<X, I> idAccessor = identification.getIdAccessor();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
-		IdentifierInsertionManager<X, I> identifierInsertionManager = (IdentifierInsertionManager<X, I>) (isIdentifyingConfiguration
+		IdentifierInsertionManager<X, I> identifierInsertionManager = isIdentifyingConfiguration
 				? identification.insertionManager
-				: identification.fallbackInsertionManager);
+				: identification.fallbackInsertionManager;
 		SimpleIdMapping<X, I> simpleIdMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,
 																			  new SimpleIdentifierAssembler<>(primaryKey));
 		

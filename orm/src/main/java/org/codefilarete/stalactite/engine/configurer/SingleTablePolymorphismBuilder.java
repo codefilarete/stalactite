@@ -77,7 +77,6 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, DTYPE> extends Abstr
 		return surrogate;
 	}
 	
-	@Nonnull
 	private <D> SimpleRelationalEntityPersister<D, I, T> buildSubclassPersister(Dialect dialect,
 																				ConnectionConfiguration connectionConfiguration,
 																				BeanMappingBuilder beanMappingBuilder,
@@ -98,7 +97,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, DTYPE> extends Abstr
 		// by a proxy and main persister is not so much used
 		subEntityPropertiesMapping.putAll(mainMapping);
 		ClassMapping<D, I, T> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
-			false,
+			true,	// given Identification (which is parent one) contains identifier policy
 			mainTable,
 			subEntityPropertiesMapping,
 			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in single-table polymorphism

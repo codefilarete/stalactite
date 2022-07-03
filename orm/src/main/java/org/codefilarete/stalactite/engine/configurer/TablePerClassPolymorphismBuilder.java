@@ -102,7 +102,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 		Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
 		addIdentificationToMapping(identification, subEntityMapping);
 		ClassMapping<D, I, Table> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
-			false,
+			true,	// given Identification (which is parent one) contains identifier policy
 			subTable,
 			subEntityMapping.getMapping(),
 			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in table-per-class polymorphism 
