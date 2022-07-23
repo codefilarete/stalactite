@@ -38,7 +38,7 @@ public abstract class BeforeDeleteByIdCollectionCascader<TRIGGER, TARGET> implem
 	}
 	
 	/**
-	 * Overriden to delete Target instances of the Trigger instances.
+	 * Overridden to delete Target instances of the Trigger instances.
 	 *
 	 * @param entities source entities previously deleted
 	 */

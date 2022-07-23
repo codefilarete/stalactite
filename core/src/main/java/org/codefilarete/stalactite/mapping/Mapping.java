@@ -111,8 +111,8 @@ public interface Mapping<C, T extends Table> {
 	AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
 	/**
-	 * Adds a tranformer listener, optional operation
-	 * @param listener the listener to be notify of transformation
+	 * Adds a transformer listener, optional operation
+	 * @param listener the listener to be notified of transformation
 	 */
 	default void addTransformerListener(TransformerListener<C> listener) {
 		// does nothing by default
@@ -186,7 +186,7 @@ public interface Mapping<C, T extends Table> {
 		}
 		
 		/**
-		 * Implemented to ditinguish columns of the update clause from those of the where part, because the main purpose of this class is to be put
+		 * Implemented to distinguish columns of the update clause from those of the where part, because the main purpose of this class is to be put
 		 * in a {@link Map}.
 		 * 
 		 * @param obj another object
@@ -212,7 +212,7 @@ public interface Mapping<C, T extends Table> {
 		}
 		
 		/**
-		 * Overriden to print "U" or "W" according to the purpose of this instance. Simplifies traces abd eventual debug.
+		 * Overridden to print "U" or "W" according to the purpose of this instance. Simplifies trace and eventual debug.
 		 * @return the column's absolute name, suffixed by "U" or "W" according to the purpose of this instance 
 		 */
 		@Override
@@ -227,7 +227,7 @@ public interface Mapping<C, T extends Table> {
 	 * <br/>
 	 * An instance may reject to provide a value in some circumstances by overriding {@link #accept(Object)} (which returns true by default).
 	 * 
-	 * Reader my be interested in getting {@link Column} value in select phase, then he may use {@link Mapping#addShadowColumnSelect(Column)}
+	 * Reader may be interested in getting {@link Column} value in select phase, then he may use {@link Mapping#addShadowColumnSelect(Column)}
 	 * 
 	 * @param <C> bean type to read value from
 	 * @param <V> value type

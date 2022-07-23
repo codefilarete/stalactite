@@ -20,7 +20,7 @@ public class DDLAppender extends StringAppender {
 	}
 	
 	/**
-	 * Overriden to append {@link Table} and {@link Column} names according to {@link DMLNameProvider} given at construction time
+	 * Overridden to append {@link Table} and {@link Column} names according to {@link DMLNameProvider} given at construction time
 	 * 
 	 * @param o any object
 	 * @return this

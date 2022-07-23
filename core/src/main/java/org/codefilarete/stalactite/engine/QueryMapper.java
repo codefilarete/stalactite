@@ -406,7 +406,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		mapping.add((ColumnMapping) columnMapping);
 	}
 	
-	/** Overriden to adapt return type */
+	/** Overridden to adapt return type */
 	@Override
 	public QueryMapper<C> map(ResultSetRowAssembler<C> assembler) {
 		return map(assembler, AssemblyPolicy.ON_EACH_ROW);

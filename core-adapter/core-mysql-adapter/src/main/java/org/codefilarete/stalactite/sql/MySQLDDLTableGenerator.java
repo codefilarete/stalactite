@@ -19,7 +19,7 @@ public class MySQLDDLTableGenerator extends DDLTableGenerator {
 	}
 	
 	/**
-	 * Overriden to change "drop constraint" into "drop foreign key", MySQL specific
+	 * Overridden to change "drop constraint" into "drop foreign key", MySQL specific
 	 */
 	@Override
 	public String generateDropForeignKey(ForeignKey foreignKey) {

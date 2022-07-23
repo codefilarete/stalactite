@@ -114,7 +114,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	<K, V> ResultSetTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
 	
 	/**
-	 * Overriden for return type cast.
+	 * Overridden for return type cast.
 	 */
 	@Override
 	default ResultSetTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {

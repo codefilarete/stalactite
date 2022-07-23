@@ -111,7 +111,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 						@Override
 						protected String giveColumnName(Linkage pawn) {
-							return nullable(linkage.getOverridenColumnNames().get(pawn.getAccessor()))
+							return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
 									.getOr(() -> super.giveColumnName(pawn));
 						}
 					});

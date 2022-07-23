@@ -257,7 +257,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 			}
 			
 			/**
-			 * Overriden to put data in cache at the very end of iteration (when <pre>super.next()</pre> returns false)
+			 * Overridden to put data in cache at the very end of iteration (when <pre>super.next()</pre> returns false)
 			 * @return false when there's no more row to read
 			 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 			 */

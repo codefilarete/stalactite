@@ -42,7 +42,7 @@ public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements 
 	}
 	
 	/**
-	 * Overriden to insert Target instances of the Trigger instances.
+	 * Overridden to insert Target instances of the Trigger instances.
 	 *
 	 * @param entities source entities previously inserted
 	 */

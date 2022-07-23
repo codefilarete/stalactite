@@ -38,7 +38,7 @@ public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C
 	
 	/**
 	 * Iterator that triggers batch execution every batch size step.
-	 * Usefull for insert and delete statements.
+	 * Useful for insert and delete statements.
 	 */
 	public static class JDBCBatchingIterator<E> extends SteppingIterator<E> {
 		private final WriteOperation writeOperation;

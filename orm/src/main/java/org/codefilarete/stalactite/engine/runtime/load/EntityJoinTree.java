@@ -731,7 +731,7 @@ public class EntityJoinTree<C, I> {
 					node.getColumnsToSelect(),
 					node.getTableAlias());
 		} else {
-			throw new UnsupportedOperationException("Unexpected type of join : some algorithm as change, please implement it here or fix it : "
+			throw new UnsupportedOperationException("Unexpected type of join : some algorithm has changed, please implement it here or fix it : "
 					+ Reflections.toString(node.getClass()));
 		}
 		nodeCopy.setTransformerListener(node.getTransformerListener());

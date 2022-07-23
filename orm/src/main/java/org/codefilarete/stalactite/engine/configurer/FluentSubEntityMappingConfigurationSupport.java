@@ -90,7 +90,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	@Override
 	public Function<Function<Column, Object>, C> getEntityFactory() {
-		// for now (until reason to expose this to user) instanciation type is the same as entity one
+		// for now (until reason to expose this to user) instantiation type is the same as entity one
 		return row -> Reflections.newInstance(getEntityType());
 	}
 	

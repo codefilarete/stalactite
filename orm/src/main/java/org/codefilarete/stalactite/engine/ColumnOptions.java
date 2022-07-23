@@ -104,7 +104,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	}
 	
 	/**
-	 * Contract for already-assigned identifier policy. Requires the methods that store entities persistence state.
+	 * Contract for already-assigned identifier policy. Requires the methods that store entity persistence state.
 	 * @param <I> identifier type
 	 */
 	interface AlreadyAssignedIdentifierPolicy<C, I> extends IdentifierPolicy<I> {

@@ -42,7 +42,7 @@ public class OperatorSQLBuilder {
 		if (operator.isNull()) {
 			catNullValue(operator.isNot(), sql);
 		} else {
-			// uggly way of dispatching concatenation, can't find a better way without heavying classes or struggling with single responsability design
+			// ugly way of dispatching concatenation, can't find a better way without heaving classes or struggling with single responsibility design
 			if (operator instanceof Equals) {
 				catEquals((Equals) operator, sql, column);
 			} else if (operator instanceof Lower) {

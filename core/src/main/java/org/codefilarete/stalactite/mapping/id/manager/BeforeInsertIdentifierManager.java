@@ -87,7 +87,7 @@ public class BeforeInsertIdentifierManager<T, I> implements IdentifierInsertionM
 		}
 		
 		/**
-		 * Overriden to call identifier fixer, hence it is called before batch execution which is called by {@link #onStep()}
+		 * Overridden to call identifier fixer, hence it is called before batch execution which is called by {@link #onStep()}
 		 * @return same as super.next()
 		 */
 		@Override

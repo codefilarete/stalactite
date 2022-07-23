@@ -256,8 +256,8 @@ class EntityTreeInflaterTest {
 		}
 		
 		@Test
-		void equals_instancesDifferIdentifierWithOverridenEquals() {
-			// all informations are the same => equality is true
+		void equals_instancesDifferIdentifierWithOverriddenEquals() {
+			// all information are the same => equality is true
 			RelationIdentifier id7 = new RelationIdentifier(rootEntityReference, Entity1.class, new Object() {
 				@Override
 				public boolean equals(Object obj) {

@@ -55,7 +55,7 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 					
 					@Override
 					public void update(Iterable<? extends Duo<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
-						// Overriden to do no action, because default super action is complex to mock
+						// Overridden to do no action, because default super action is complex to mock
 					}
 				};
 			}

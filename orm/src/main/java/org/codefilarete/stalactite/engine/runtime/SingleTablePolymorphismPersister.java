@@ -128,7 +128,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	@Override
 	public Collection<Table> giveImpliedTables() {
 		// Implied tables are those of sub entities.
-		// Note that doing this lately (not in constructor) garanties that it is uptodate because sub entities may have relations which are configured
+		// Note that doing this lately (not in constructor) guaranties that it is uptodate because sub entities may have relations which are configured
 		// out of constructor by caller
 		Set<Table> subTables = subEntitiesPersisters.values().stream().flatMap(p -> p.giveImpliedTables().stream()).collect(Collectors.toSet());
 		return Collections.cat(mainPersister.giveImpliedTables(), subTables);
@@ -226,7 +226,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invokations and criteria will aggregate
+		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
 		return new EntityCriteriaSupport<>(criteriaSupport);
 	}
 	
@@ -271,7 +271,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	/**
-	 * Overriden to capture {@link EntityMapping#addShadowColumnInsert(ShadowColumnValueProvider)} and
+	 * Overridden to capture {@link EntityMapping#addShadowColumnInsert(ShadowColumnValueProvider)} and
 	 * {@link EntityMapping#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 *

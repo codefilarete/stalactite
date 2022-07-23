@@ -44,7 +44,7 @@ class H2ParameterBindersTest extends AbstractParameterBindersITTest {
 	}
 	
 	/**
-	 * Overriden to take into account rounding made by H2 on stored nanos
+	 * Overridden to take into account rounding made by H2 on stored nanos
 	 */
 	@Test
 	void localDateTimeBinder() throws SQLException {
@@ -56,7 +56,7 @@ class H2ParameterBindersTest extends AbstractParameterBindersITTest {
 	}
 	
 	/**
-	 * Overriden to take into account rounding made by H2 on stored nanos
+	 * Overridden to take into account rounding made by H2 on stored nanos
 	 */
 	@Test
 	void localTimeBinder() throws SQLException {

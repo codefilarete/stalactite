@@ -23,7 +23,7 @@ public interface ResultSetRowAssembler<T> extends CopiableForAnotherQuery<T> {
 	void assemble(T rootBean, ResultSet resultSet) throws SQLException;
 	
 	/**
-	 * Overriden for return type cast.
+	 * Overridden for return type cast.
 	 */
 	default ResultSetRowAssembler<T> copyWithAliases(Function<String, String> columnMapping) {
 		throw new NotImplementedException("This instance doesn't support copy, please implement it if you wish to reuse its mapping for another query");

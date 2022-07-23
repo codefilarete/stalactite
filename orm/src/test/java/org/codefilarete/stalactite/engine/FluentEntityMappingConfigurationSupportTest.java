@@ -627,7 +627,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void embed_withOverridenColumnName() {
+	void embed_withOverriddenColumnName() {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
@@ -655,7 +655,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void embed_withOverridenColumnName_nameAlreadyExists_throwsException() {
+	void embed_withOverriddenColumnName_nameAlreadyExists_throwsException() {
 		Table totoTable = new Table("Toto");
 		Column<Table, Identifier> idColumn = totoTable.addColumn("id", UUID_TYPE);
 		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
@@ -674,7 +674,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
-	void embed_withOverridenColumn() {
+	void embed_withOverriddenColumn() {
 		Table targetTable = new Table("Toto");
 		Column<Table, Date> createdAt = targetTable.addColumn("createdAt", Date.class);
 		Column<Table, Date> modifiedAt = targetTable.addColumn("modifiedAt", Date.class);
@@ -1176,7 +1176,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void overrideName_nameIsAlreadyOverriden_nameIsOverwritten() {
+		void overrideName_nameIsAlreadyOverridden_nameIsOverwritten() {
 			Table totoTable = new Table("Toto");
 			Column<Table, Identifier> idColumn = totoTable.addColumn("id", UUID_TYPE);
 			Column<Table, Date> creationDate = totoTable.addColumn("createdAt", Date.class);

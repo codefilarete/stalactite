@@ -71,7 +71,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	
 	/**
 	 * Defines the collection factory to be used at load time to initialize property if it is null.
-	 * Usefull for cases where property is lazily initialized in bean.
+	 * Useful for cases where property is lazily initialized in bean.
 	 * 
 	 * @param collectionFactory a collection factory
 	 * @return the global mapping configurer

@@ -16,7 +16,7 @@ public class DerbyReadOperation<ParamType> extends ReadOperation<ParamType> {
 	}
 	
 	/**
-	 * Overriden to use Derby special {@link EmbedConnection#cancelRunningStatement()} method
+	 * Overridden to use Derby special {@link EmbedConnection#cancelRunningStatement()} method
 	 * to avoid exception "ERROR 0A000: Feature not implemented: cancel" (see {@link EmbedStatement#cancel()} implementation).
 	 * 
 	 * @throws SQLException if cancellation fails

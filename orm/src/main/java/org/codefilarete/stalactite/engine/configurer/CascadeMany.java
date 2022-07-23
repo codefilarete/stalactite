@@ -38,7 +38,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	/**
 	 * Source setter on target for bidirectionality (no consequence on database mapping).
-	 * Usefull only for cases of association table because this case doesn't set any reverse information hence such setter can't be deduced.
+	 * Useful only for cases of association table because this case doesn't set any reverse information hence such setter can't be deduced.
 	 */
 	private SerializableBiConsumer<TRGT, SRC> reverseLink;
 	

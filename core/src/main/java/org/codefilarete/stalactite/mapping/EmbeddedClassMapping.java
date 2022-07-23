@@ -257,7 +257,7 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	
 	@Override
 	public C transform(Row row) {
-		// NB: please note that this transfomer will determine intermediary bean instanciation through isDefaultValue(..)
+		// NB: please note that this transfomer will determine intermediary bean instantiation through isDefaultValue(..)
 		return this.rowTransformer.transform(row);
 	}
 	

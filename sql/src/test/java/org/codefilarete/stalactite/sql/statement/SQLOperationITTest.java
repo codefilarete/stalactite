@@ -33,7 +33,7 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 	abstract Predicate<Throwable> giveCancelOperationPredicate();
 	
 	/**
-	 * Overriden to use a {@link CurrentThreadConnectionProvider}
+	 * Overridden to use a {@link CurrentThreadConnectionProvider}
 	 */
 	@Override
 	protected void setConnectionProvider() {

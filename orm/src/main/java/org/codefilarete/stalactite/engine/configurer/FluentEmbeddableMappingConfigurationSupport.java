@@ -506,11 +506,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return this.excludedProperties;
 		}
 		
-		public ValueAccessPointMap<String> getOverridenColumnNames() {
+		public ValueAccessPointMap<String> getOverriddenColumnNames() {
 			return this.overriddenColumnNames;
 		}
 		
-		public ValueAccessPointMap<Column> getOverridenColumns() {
+		public ValueAccessPointMap<Column> getOverriddenColumns() {
 			return overriddenColumns;
 		}
 		

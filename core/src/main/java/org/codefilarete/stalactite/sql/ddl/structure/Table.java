@@ -45,7 +45,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	private final Map<String, Column<SELF, ?>> columnsPerName = new HashMap<>();
 	
-	/** Made to avoid name & uppercase computation at each invokation of hashCode(). Made by principle, not for any performance issue observation */
+	/** Made to avoid name & uppercase computation at each invocation of hashCode(). Made by principle, not for any performance issue observation */
 	private final int hashCode;
 	
 	public Table(String name) {

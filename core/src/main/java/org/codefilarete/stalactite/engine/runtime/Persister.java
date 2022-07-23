@@ -151,7 +151,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	/**
 	 * Gives all tables implied in the persistence of the entity such as joined tables or duplicating tables (depending
 	 * on the implementation of this {@link Persister})
-	 * Usefull to generate schema creation script.
+	 * Useful to generate schema creation script.
 	 * 
 	 * @return a {@link Set} of implied tables, not expected to be writable
 	 */
@@ -286,7 +286,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 	
 	/**
 	 * Updates instances that may have changes.
-	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
+	 * Groups statements to benefit from JDBC batch. Useful overall when allColumnsStatement
 	 * is set to false.
 	 * 
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side

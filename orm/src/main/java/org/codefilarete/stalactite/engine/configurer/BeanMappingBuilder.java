@@ -75,7 +75,7 @@ class BeanMappingBuilder {
 		Queue<Inset> stack = new ArrayDeque<>(mappingConfiguration.getInsets());
 		while (!stack.isEmpty()) {
 			Inset<?, ?> inset = stack.poll();
-			inset.getOverridenColumns().forEach((valueAccessPoint, targetColumn) ->
+			inset.getOverriddenColumns().forEach((valueAccessPoint, targetColumn) ->
 				assertHolderIsFilledWithTargetTable(result, targetColumn, valueAccessPoint)
 			);
 			EmbeddableMappingConfiguration<?> configuration = inset.getBeanMappingBuilder().getConfiguration();
@@ -233,7 +233,7 @@ class BeanMappingBuilder {
 				includeMappedSuperClassMapping(inset, accessorPath, superClassConfiguration);
 			}
 			
-			includeDirectMapping(configuration, mappingPrefix, inset.getOverridenColumnNames(), inset.getOverridenColumns(),
+			includeDirectMapping(configuration, mappingPrefix, inset.getOverriddenColumnNames(), inset.getOverriddenColumns(),
 					inset.getExcludedProperties());
 			if (configuration.getInsets().isEmpty()) {
 				accessorPath.remove();
@@ -268,10 +268,10 @@ class BeanMappingBuilder {
 			
 			// Computing definitive column because it may be overridden by inset declaration
 			Column finalColumn;
-			if (inset.getOverridenColumns().containsKey(accessor)) {
-				finalColumn = inset.getOverridenColumns().get(accessor);
-			} else if (inset.getOverridenColumnNames().containsKey(accessor)) {
-				finalColumn = targetTable.addColumn(inset.getOverridenColumnNames().get(accessor), column.getJavaType());
+			if (inset.getOverriddenColumns().containsKey(accessor)) {
+				finalColumn = inset.getOverriddenColumns().get(accessor);
+			} else if (inset.getOverriddenColumnNames().containsKey(accessor)) {
+				finalColumn = targetTable.addColumn(inset.getOverriddenColumnNames().get(accessor), column.getJavaType());
 			} else {
 				finalColumn = targetTable.addColumn(column.getName(), column.getJavaType());
 			}
@@ -323,7 +323,7 @@ class BeanMappingBuilder {
 			Map<String, ValueAccessPoint> columNamePerAccessPoint1 = new HashMap<>();
 			inset.getBeanMappingBuilder().getConfiguration().getPropertiesMapping().forEach(linkage -> {
 				if (!inset.getExcludedProperties().contains(linkage.getAccessor())) {
-					String columnName = determineColumnName(linkage, inset.getOverridenColumnNames().get(linkage.getAccessor()));
+					String columnName = determineColumnName(linkage, inset.getOverriddenColumnNames().get(linkage.getAccessor()));
 					columNamePerAccessPoint1.put(columnName, linkage.getAccessor());
 				}
 			});
@@ -331,7 +331,7 @@ class BeanMappingBuilder {
 			Map<String, ValueAccessPoint> columNamePerAccessPoint2 = new HashMap<>();
 			inset.getBeanMappingBuilder().getConfiguration().getPropertiesMapping().forEach(linkage -> {
 				if (!abstractInset.getExcludedProperties().contains(linkage.getAccessor())) {
-					String columnName = determineColumnName(linkage, abstractInset.getOverridenColumnNames().get(linkage.getAccessor()));
+					String columnName = determineColumnName(linkage, abstractInset.getOverriddenColumnNames().get(linkage.getAccessor()));
 					columNamePerAccessPoint2.put(columnName, linkage.getAccessor());
 				}
 			});

@@ -108,7 +108,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	PersisterBuilderImpl<C, I> setColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
 		this.columnNamingStrategy = columnNamingStrategy;
 		this.columnNameProvider = new ColumnNameProvider(this.columnNamingStrategy) {
-			/** Overriden to invoke join column naming strategy if necessary */
+			/** Overridden to invoke join column naming strategy if necessary */
 			@Override
 			protected String giveColumnName(Linkage linkage) {
 				if (PersisterBuilderContext.CURRENT.get().isEntity(linkage.getColumnType())) {
@@ -175,12 +175,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				// This if is only there to execute code below only once, at the very end of persistence graph build,
 				// even if it could seem counterintuitive since it compares "isInitiator" whereas this comment talks about end of graph :
 				// because persistence configuration is made with a deep-first algorithm, this code (after doBuild()) will be called at the very end.
-				PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(invokation -> {
+				PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(invocation -> {
 					try {
-						invokation.consume((EntityConfiguredJoinedTablesPersister) persisterRegistry.getPersister(invokation.getEntityType()));
+						invocation.consume((EntityConfiguredJoinedTablesPersister) persisterRegistry.getPersister(invocation.getEntityType()));
 					} catch (RuntimeException e) {
 						throw new MappingConfigurationException("Error while post processing persister of type "
-								+ Reflections.toString(invokation.getEntityType()), e);
+								+ Reflections.toString(invocation.getEntityType()), e);
 					}
 				});
 				PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
@@ -255,8 +255,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		
 		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
-		// because user may forgot to / can't mark it as such
-		if (entityMappingConfiguration.getIdentifierPolicy() instanceof ColumnOptions.AlreadyAssignedIdentifierPolicy) {
+		// because user may forget to / can't mark it as such
+		if (entityMappingConfiguration.getIdentifierPolicy() instanceof AlreadyAssignedIdentifierPolicy) {
 			Consumer<C> asPersistedMarker = ((AlreadyAssignedIdentifierPolicy<C, I>) entityMappingConfiguration.getIdentifierPolicy()).getMarkAsPersistedFunction();
 			result.addSelectListener(new SelectListener<C, I>() {
 				@Override
@@ -278,7 +278,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		handleVersioningStrategy(mainPersister);
 		
 		// we wrap final result with some transversal features
-		// NB: Order of wrap is important due to invokation of instance methods with code like "this.doSomething(..)" in particular with OptimizedUpdatePersister
+		// NB: Order of wrap is important due to invocation of instance methods with code like "this.doSomething(..)" in particular with OptimizedUpdatePersister
 		// which internaly calls update(C, C, boolean) on update(id, Consumer): the latter method is not listened by EntityIsManagedByPersisterAsserter
 		// (because it has no purpose since entity is not given as argument) but update(C, C, boolean) is and should be, that is not the case if
 		// EntityIsManagedByPersisterAsserter is done first since OptimizedUpdatePersister invokes itself with "this.update(C, C, boolean)"
@@ -866,8 +866,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			if (constructorById == null) {
 				Constructor<X> defaultConstructor = Reflections.findConstructor(beanType);
 				if (defaultConstructor == null) {
-					// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in heritance
-					// path which currently won't be instanciated at runtime (because its concrete subclass will be) so there's no reason to throw
+					// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in inheritance
+					// path which currently won't be instanced at runtime (because its concrete subclass will be) so there's no reason to throw
 					// the exception now
 					beanFactory = c -> {
 						throw new MappingConfigurationException("Entity class " + Reflections.toString(beanType) + " doesn't have a compatible accessible constructor,"

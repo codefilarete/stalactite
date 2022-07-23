@@ -86,7 +86,7 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	
 	/**
 	 * Updates an instance that may have changes.
-	 * Groups statements to benefit from JDBC batch. Usefull overall when allColumnsStatement
+	 * Groups statements to benefit from JDBC batch. Useful overall when allColumnsStatement
 	 * is set to false.
 	 *
 	 * @param modified the supposing entity that has differences againt {@code unmodified} entity

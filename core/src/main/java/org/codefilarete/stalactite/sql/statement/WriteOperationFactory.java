@@ -63,7 +63,7 @@ public class WriteOperationFactory {
 	}
 	
 	/**
-	 * Instanciates a {@link WriteOperation} with a generic contract of updated row count, see {@link WriteOperation#WriteOperation(SQLStatement, ConnectionProvider, RowCountListener)}
+	 * Instantiates a {@link WriteOperation} with a generic contract of updated row count, see {@link WriteOperation#WriteOperation(SQLStatement, ConnectionProvider, RowCountListener)}
 	 * 
 	 * @param sqlGenerator the SQL order to be executed, expected to be an INSERT, UPDATE or DELETE one
 	 * @param connectionProvider will provide {@link PreparedStatement} for SQL order execution

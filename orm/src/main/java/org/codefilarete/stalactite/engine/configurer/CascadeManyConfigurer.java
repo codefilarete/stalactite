@@ -173,7 +173,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		if (cascadeMany.isOwnedByReverseSide()) {
 			// case : reverse property is defined through one of the setter, getter or column on the reverse side
 			if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
-				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table");
+				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevant with an association table");
 			}
 			configurer = new CascadeManyWithMappedAssociationConfigurer<>(manyAssociationConfiguration, orphanRemoval);
 		} else {

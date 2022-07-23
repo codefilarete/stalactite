@@ -46,7 +46,7 @@ public class MySQLParameterBindersTest extends AbstractParameterBindersITTest {
 	}
 	
 	/**
-	 * Overriden to take into account rounding made by MySQL on stored nanos
+	 * Overridden to take into account rounding made by MySQL on stored nanos
 	 */
 	@Test
 	void localDateTimeBinder() throws SQLException {
@@ -58,7 +58,7 @@ public class MySQLParameterBindersTest extends AbstractParameterBindersITTest {
 	}
 	
 	/**
-	 * Overriden to take into account rounding made by MySQL on stored nanos
+	 * Overridden to take into account rounding made by MySQL on stored nanos
 	 */
 	@Test
 	void localTimeBinder() throws SQLException {

@@ -163,7 +163,7 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	}
 	
 	/**
-	 * Overriden only for simple print (debug)
+	 * Overridden only for simple print (debug)
 	 */
 	@Override
 	public String toString() {

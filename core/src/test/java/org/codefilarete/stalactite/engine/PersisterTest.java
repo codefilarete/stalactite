@@ -60,12 +60,12 @@ class PersisterTest {
 																					  identifierInsertionManagerMock);
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doInsert(Iterable entities) {
 			}
 			
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doUpdateById(Iterable<Toto> entities) {
 			}
@@ -94,12 +94,12 @@ class PersisterTest {
 		Holder<Toto> mockedSelectAnswer = new Holder<>();
 		Persister<Toto, Integer, TotoTable> testInstance = new Persister<Toto, Integer, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doInsert(Iterable entities) {
 			}
 			
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 			}
@@ -132,7 +132,7 @@ class PersisterTest {
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
-		// no invokation of select listener because target of persist(..) method wasn't persisted
+		// no invocation of select listener because target of persist(..) method wasn't persisted
 		verify(identifierManagerSelectListenerMock, never()).beforeSelect(anyIterable());
 		verify(identifierManagerSelectListenerMock, never()).afterSelect(anyIterable());
 		
@@ -179,7 +179,7 @@ class PersisterTest {
 																					  identifierInsertionManagerMock);
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doInsert(Iterable entities) {
 			}
@@ -218,7 +218,7 @@ class PersisterTest {
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 			}
@@ -262,7 +262,7 @@ class PersisterTest {
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doUpdateById(Iterable entities) {
 			}
@@ -301,7 +301,7 @@ class PersisterTest {
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doDelete(Iterable entities) {
 			}
@@ -337,7 +337,7 @@ class PersisterTest {
 																					  new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		Persister<Toto, Long, TotoTable> testInstance = new Persister<Toto, Long, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doDeleteById(Iterable entities) {
 			}
@@ -373,17 +373,17 @@ class PersisterTest {
 																						 identifierInsertionManagerMock);
 		Persister<Toto, Integer, TotoTable> testInstance = new Persister<Toto, Integer, TotoTable>(classMappingStrategy, new Dialect(),
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doInsert(Iterable entities) {
 			}
 			
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected void doUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 			}
 			
-			/** Overriden to prevent from building real world SQL statement because ConnectionProvider is mocked */
+			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
 			protected List<Toto> doSelect(Iterable<Integer> ids) {
 				return Iterables.collectToList(ids, id -> new Toto(id, null, null));

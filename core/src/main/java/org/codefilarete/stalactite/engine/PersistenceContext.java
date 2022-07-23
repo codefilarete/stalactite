@@ -621,7 +621,7 @@ public class PersistenceContext implements PersisterRegistry {
 			super(targetTable);
 		}
 		
-		/** Overriden to adapt return type */
+		/** Overridden to adapt return type */
 		@Override
 		public ExecutableUpdate set(Column column) {
 			super.set(column);

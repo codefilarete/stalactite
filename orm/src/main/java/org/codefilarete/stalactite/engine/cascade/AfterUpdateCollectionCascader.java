@@ -36,7 +36,7 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 	}
 	
 	/**
-	 * Overriden to update Target instances of the Trigger instances.
+	 * Overridden to update Target instances of the Trigger instances.
 	 * @param entities source entities previously updated
 	 * @param allColumnsStatement true if all columns must be updated, false if only changed ones must be in the update statement
 	 */

@@ -97,7 +97,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		return this;
 	}
 
-	public ValueAccessPointMap<String> getOverridenColumnNames() {
+	public ValueAccessPointMap<String> getOverriddenColumnNames() {
 		return this.overriddenColumnNames;
 	}
 	

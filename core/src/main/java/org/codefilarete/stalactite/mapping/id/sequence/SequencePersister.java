@@ -29,8 +29,8 @@ public class SequencePersister extends Persister<Sequence, String, SequenceTable
 	/**
 	 * Constructor with default table and column names.
 	 * @param dialect the {@link Dialect} to use for database dialog
-	 * @param separateTransactionExecutor a transaction provider that mmust give a new and separate transaction
-	 * @param jdbcBatchSize the JDBC batch size, not really usefull for this class since it doesn't do massive insert
+	 * @param separateTransactionExecutor a transaction provider that must give a new and separate transaction
+	 * @param jdbcBatchSize the JDBC batch size, not really useful for this class since it doesn't do massive insert
 	 * @see SequenceStorageOptions#DEFAULT
 	 */
 	public SequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {
