@@ -609,7 +609,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			// adding cascade treatment: after source insert, target is persisted
 			// Please note that we collect entities in a Set to avoid persisting duplicates twice which may produce constraint exception if some source
 			// entities points to same target entity. In details the Set is an identity Set to avoid basing our comparison on implemented
-			// equals/hashCode although this could be sufficent, identity seems safer and match our logic.
+			// equals/hashCode although this could be sufficient, identity seems safer and match our logic.
 			Collector<TRGT, ?, Set<TRGT>> identitySetProvider = Collectors.toCollection(org.codefilarete.tool.collection.Collections::newIdentitySet);
 			Consumer<Iterable<? extends SRC>> persistTargetCascader = entities -> {
 				targetPersister.persist(Iterables.stream(entities).map(cascadeOne.getTargetProvider()::get).filter(Objects::nonNull).collect(identitySetProvider));

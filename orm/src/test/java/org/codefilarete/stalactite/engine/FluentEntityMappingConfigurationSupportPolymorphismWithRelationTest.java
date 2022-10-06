@@ -1771,8 +1771,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
-			// which is far from sufficent for ou checking
-			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			// which is far from sufficient for ou checking
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
 			ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 					.addProperty(Vehicle::getId)
 					.addProperty(Vehicle::getClass)
@@ -1873,8 +1873,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
-			// which is far from sufficent for ou checking
-			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			// which is far from sufficient for ou checking
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
 			ObjectPrinter<Vehicle> vehiclePrinter = new ObjectPrinterBuilder<Vehicle>()
 					.addProperty(Vehicle::getId)
 					.addProperty(Vehicle::getClass)
@@ -2060,7 +2060,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedCountry).isEqualTo(country);
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
-			// which is far from sufficent for ou checking
+			// which is far from sufficient for ou checking
 			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
 			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
 					.addProperty(Country::getId)
@@ -2245,8 +2245,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedCountry).isEqualTo(country);
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
-			// which is far from sufficent for ou checking
-			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			// which is far from sufficient for ou checking
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
 			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
 					.addProperty(Country::getId)
 					.addProperty(Country::getName)
@@ -2490,8 +2490,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedCountry).isEqualTo(country);
 			
 			// we use a printer to compare our results because entities override equals() which only keep "id" into account
-			// which is far from sufficent for ou checking
-			// Note htat we don't us ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
+			// which is far from sufficient for ou checking
+			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
 			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
 					.addProperty(Country::getId)
 					.addProperty(Country::getName)
