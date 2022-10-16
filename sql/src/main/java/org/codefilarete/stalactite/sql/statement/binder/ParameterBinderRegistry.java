@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.sql.Blob;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -88,6 +89,7 @@ public class ParameterBinderRegistry {
 		register(LocalDate.class, DefaultParameterBinders.LOCALDATE_BINDER);
 		register(LocalDateTime.class, DefaultParameterBinders.LOCALDATETIME_BINDER);
 		register(LocalTime.class, DefaultParameterBinders.LOCALTIME_BINDER);
+		register(Instant.class, new LambdaParameterBinder<>(DefaultParameterBinders.LONG_BINDER, Instant::ofEpochMilli, Instant::toEpochMilli));
 		register(java.sql.Timestamp.class, DefaultParameterBinders.TIMESTAMP_BINDER);
 		register(Boolean.class, DefaultParameterBinders.BOOLEAN_BINDER);
 		register(Boolean.TYPE, DefaultParameterBinders.BOOLEAN_PRIMITIVE_BINDER);

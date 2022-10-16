@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -62,6 +63,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(LocalDate.class, "timestamp");
 		put(LocalDateTime.class, "timestamp");
 		put(LocalTime.class, "timestamp");
+		put(Instant.class, "bigint");
 		put(String.class, "varchar");
 		put(String.class, 16383, "varchar($l)");
 		// 35 chars because the largest timezone found is "America/Argentina/ComodRivadavia" (with ZoneId.getAvailableZoneIds())

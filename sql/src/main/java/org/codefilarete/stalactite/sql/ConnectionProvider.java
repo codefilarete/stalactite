@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 /**
@@ -15,6 +14,5 @@ public interface ConnectionProvider {
 	 * 
 	 * @return neither null nor a closed connection
 	 */
-	@Nonnull
 	Connection giveConnection();
 }

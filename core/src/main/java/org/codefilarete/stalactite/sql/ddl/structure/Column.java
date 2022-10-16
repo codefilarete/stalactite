@@ -100,9 +100,17 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	 * @param nullable is this Column is optional or mandatory
 	 * @return this
 	 */
-	public Column nullable(boolean nullable) {
+	public Column<T, O> nullable(boolean nullable) {
 		setNullable(nullable);
 		return this;
+	}
+	
+	/**
+	 * Fluent API. Set this column as not nullable.
+	 * @return this
+	 */
+	public Column<T, O> notNull() {
+		return nullable(false);
 	}
 	
 	public boolean isPrimaryKey() {
