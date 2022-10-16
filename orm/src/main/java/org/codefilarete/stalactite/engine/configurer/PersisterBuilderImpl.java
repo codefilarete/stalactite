@@ -267,7 +267,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		
 		// parent persister must be kept in ascending order for further treatments
-		Iterator<Mapping> mappings = Iterables.filter(Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().asSet()),
+		Iterator<Mapping> mappings = Iterables.filter(Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().getSurrogate()),
 				m -> !mainMapping.equals(m) && !m.mappedSuperClass);
 		KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> parentPersisters = buildParentPersisters(() -> mappings,
 				identification, mainPersister, dialect, connectionConfiguration

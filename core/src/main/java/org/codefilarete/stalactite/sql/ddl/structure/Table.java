@@ -77,7 +77,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @return an unmodifiable Set&lt;Column&gt;
 	 */
 	public Set<Column<SELF, ?>> getColumns() {
-		return Collections.unmodifiableSet(columns.asSet());
+		return Collections.unmodifiableSet(columns);
 	}
 	
 	@Override
@@ -88,7 +88,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	}
 	
 	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
-		LinkedHashSet<Column<SELF, Object>> result = this.columns.asSet();
+		LinkedHashSet<Column<SELF, Object>> result = new LinkedHashSet<>(this.columns);
 		result.removeAll(org.codefilarete.tool.Nullable.nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(Collections.emptySet()));
 		return result;
 	}
@@ -177,7 +177,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	@Nullable
 	public PrimaryKey<SELF> getPrimaryKey() {
 		if (primaryKey == null) {
-			Set<Column<SELF, Object>> pkColumns = Iterables.collect(columns.asSet(), Column::isPrimaryKey, Function.identity(), LinkedHashSet::new);
+			Set<Column<SELF, Object>> pkColumns = Iterables.collect(columns, Column::isPrimaryKey, Function.identity(), LinkedHashSet::new);
 			primaryKey = pkColumns.isEmpty() ? null : new PrimaryKey<>(pkColumns);
 		}
 		return primaryKey;
