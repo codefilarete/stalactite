@@ -1,10 +1,12 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
@@ -30,7 +32,6 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Bean graph creator from database rows. Based on a tree of {@link ConsumerNode}s which wraps some {@link JoinRowConsumer}.
@@ -111,6 +112,7 @@ public class EntityTreeInflater<C> {
 				@Override
 				public EntityCreationResult apply(ConsumerNode join, Object entity) {
 					// processing current depth
+					ConsumerNode consumerRoot1 = consumerRoot;
 					JoinRowConsumer consumer = join.getConsumer();
 					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
 						((PassiveJoinRowConsumer) consumer).consume(entity, row);
@@ -124,8 +126,14 @@ public class EntityTreeInflater<C> {
 							// In case of join-table polymorphism we have to provide the tree branch on which id was found
 							// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
 							JoinRowConsumer nextRowConsumer = ((ForkJoinRowConsumer) consumer).giveNextConsumer();
-							List<ConsumerNode> nodeBranch = java.util.Collections.singletonList(Iterables.find(join.consumers, c -> nextRowConsumer == c.consumer));
-							return new EntityCreationResult(relatedEntity, nodeBranch);
+							Optional<ConsumerNode> consumerNode = join.consumers.stream().filter(c -> nextRowConsumer == c.consumer).findFirst();
+							if (!consumerNode.isPresent()) {
+								throw new IllegalStateException("Can't find consumer node for " + nextRowConsumer + " in " + join.consumers);
+							} else {
+								return new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
+							}
+//							List<ConsumerNode> nodeBranch = java.util.Collections.singletonList(Iterables.find(join.consumers, c -> nextRowConsumer == c.consumer));
+//							return new EntityCreationResult(relatedEntity, nodeBranch);
 						}
 						return new EntityCreationResult(relatedEntity, join);
 					} else {

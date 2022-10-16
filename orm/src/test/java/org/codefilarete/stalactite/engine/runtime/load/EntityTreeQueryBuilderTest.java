@@ -2,9 +2,9 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Map;
 
+import org.codefilarete.stalactite.engine.runtime.RawQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ClassMapping;
@@ -66,14 +66,17 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery<?> entityTreeQuery = testInstance.buildSelectQuery();
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
-		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
-				+ " Toto.id as Toto_id, Toto.name as Toto_name"
-				+ ", Toto.tata1Id as Toto_tata1Id, Toto.tata2Id as Toto_tata2Id"
-				+ ", x.id as x_id, x.name as x_name"
-				+ ", y.id as y_id, y.name as y_name"
-				+ " from Toto"
-				+ " inner join Tata as x on Toto.tata1Id = x.id"
-				+ " inner join Tata as y on Toto.tata2Id = y.id");
+		
+		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
+		assertThat(actual.getColumns()).containsExactlyInAnyOrder(
+				"Toto.id as Toto_id", "Toto.name as Toto_name",
+				"Toto.tata1Id as Toto_tata1Id", "Toto.tata2Id as Toto_tata2Id",
+				"x.name as x_name", "x.id as x_id",
+				"y.name as y_name", "y.id as y_id");
+		assertThat(actual.getFrom()).isEqualTo(
+				"Toto"
+						+ " inner join Tata as x on Toto.tata1Id = x.id"
+						+ " inner join Tata as y on Toto.tata2Id = y.id");
 		
 		// checking root aliases computation
 		JoinNode root = entityJoinTree.getRoot();
@@ -264,13 +267,16 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
-		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
-				+ " Toto.id as Toto_id, Toto.name as Toto_name"
-				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-				+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
-				+ " from Toto"
-				+ " inner join Tata as Tata on Toto.id = Tata.id"
-				+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id");
+		
+		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
+		assertThat(actual.getColumns()).containsExactlyInAnyOrder(
+				"Toto.id as Toto_id", "Toto.name as Toto_name",
+				"Tata.name as Tata_name", "Tata.id as Tata_id",
+				"Tata_Tutu.id as Tata_Tutu_id", "Tata_Tutu.name as Tata_Tutu_name");
+		assertThat(actual.getFrom()).isEqualTo(
+				"Toto"
+						+ " inner join Tata as Tata on Toto.id = Tata.id"
+						+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id");
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
 				.add(totoPrimaryKey, "Toto_id")
@@ -329,13 +335,18 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
-		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
-				+ " Toto.id as Toto_id, Toto.name as Toto_name, Toto.tataId as Toto_tataId, Toto.tutuId as Toto_tutuId"
-				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-				+ ", Tutu.id as Tutu_id, Tutu.name as Tutu_name"
-				+ " from Toto"
-				+ " inner join Tata as Tata on Toto.tataId = Tata.id"
-				+ " left outer join Tutu as Tutu on Toto.tutuId = Tutu.id");
+		
+		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
+		assertThat(actual.getColumns()).containsExactlyInAnyOrder(
+				"Toto.id as Toto_id", "Toto.name as Toto_name",
+				"Toto.tataId as Toto_tataId", "Toto.tutuId as Toto_tutuId",
+				"Tata.name as Tata_name", "Tata.id as Tata_id",
+				"Tutu.name as Tutu_name", "Tutu.id as Tutu_id"
+		);
+		assertThat(actual.getFrom()).isEqualTo(
+				"Toto"
+						+ " inner join Tata as Tata on Toto.tataId = Tata.id"
+						+ " left outer join Tutu as Tutu on Toto.tutuId = Tutu.id");
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
 				.add(totoPrimaryKey, "Toto_id")
@@ -402,15 +413,18 @@ class EntityTreeQueryBuilderTest {
 		
 		EntityTreeQuery entityTreeQuery = testInstance.buildSelectQuery();
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(entityTreeQuery.getQuery(), new Dialect());
-		assertThat(sqlQueryBuilder.toSQL()).isEqualTo("select"
-				+ " Toto.id as Toto_id, Toto.name as Toto_name"
-				+ ", Tata.id as Tata_id, Tata.name as Tata_name"
-				+ ", Titi.id as Titi_id, Titi.name as Titi_name"
-				+ ", Tata_Tutu.id as Tata_Tutu_id, Tata_Tutu.name as Tata_Tutu_name"
-				+ " from Toto"
-				+ " inner join Tata as Tata on Toto.id = Tata.id"
-				+ " inner join Titi as Titi on Toto.id = Titi.id"
-				+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id");
+		
+		RawQuery actual = new RawQuery(sqlQueryBuilder.toSQL());
+		assertThat(actual.getColumns()).containsExactlyInAnyOrder(
+				"Toto.id as Toto_id", "Toto.name as Toto_name",
+				"Tata.name as Tata_name", "Tata.id as Tata_id",
+				"Titi.name as Titi_name", "Titi.id as Titi_id",
+				"Tata_Tutu.id as Tata_Tutu_id", "Tata_Tutu.name as Tata_Tutu_name");
+		assertThat(actual.getFrom()).isEqualTo(
+				"Toto"
+						+ " inner join Tata as Tata on Toto.id = Tata.id"
+						+ " inner join Titi as Titi on Toto.id = Titi.id"
+						+ " inner join Tutu as Tata_Tutu on Tata.id = Tata_Tutu.id");
 		
 		Map<Column, String> expectedAliases = Maps.forHashMap(Column.class, String.class)
 				.add(totoPrimaryKey, "Toto_id")
@@ -432,36 +446,4 @@ class EntityTreeQueryBuilderTest {
 		assertThat(entityTreeQuery.getColumnAliases().getDelegate())
 				.isEqualTo(expectedColumnClones.getDelegate());
 	}
-	
-	/**
-	 * A simple factory method to easily start building of  a {@link IdentityMap}
-	 *
-	 * @param keyType key type
-	 * @param valueType value type
-	 * @param <K> key type
-	 * @param <V> value type
-	 * @return a new {@link ChainingIdentityMap} that allows chaining of additional key and value
-	 */
-	public static <K, V> ChainingIdentityMap<K, V> forIdentityMap(Class<K> keyType, Class<V> valueType) {
-		return new ChainingIdentityMap<>();
-	}
-	
-	
-	/**
-	 * Simple {@link IdentityHashMap} that allows to chain calls to {@link #add(Object, Object)} (same as put) and so quickly create a Map.
-	 *
-	 * @param <K>
-	 * @param <V>
-	 */
-	public static class ChainingIdentityMap<K, V> extends IdentityMap<K, V> {
-		
-		public ChainingIdentityMap() {
-		}
-		
-		public ChainingIdentityMap<K, V> add(K key, V value) {
-			put(key, value);
-			return this;
-		}
-	}
-	
 }

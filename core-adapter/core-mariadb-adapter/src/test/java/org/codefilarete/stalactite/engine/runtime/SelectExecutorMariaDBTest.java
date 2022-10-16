@@ -2,6 +2,8 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MariaDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 
 /**
@@ -14,5 +16,10 @@ class SelectExecutorMariaDBTest extends SelectExecutorITTest {
 	@Override
 	protected DataSource giveDataSource() {
 		return DATASOURCE;
+	}
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MariaDBDatabaseHelper();
 	}
 }

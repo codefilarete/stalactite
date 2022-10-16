@@ -8,48 +8,42 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
+import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.stalactite.test.PairSetList;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
@@ -112,10 +106,22 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-				Maps.asHashMap(colA, 1).add(colB, 17).add(colC, 23),
-				Maps.asHashMap(colA, 2).add(colB, 29).add(colC, 31)
-		));
+		ExtendedMapAssert.assertThatMap((Map<Column, Integer>) (Map) statementArgCaptor.getAllValues().get(0))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getAbsoluteName().equals(entry2.getKey().getAbsoluteName())
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(colA, 1),
+						entry(colB, 17),
+						entry(colC, 23));
+		ExtendedMapAssert.assertThatMap((Map<Column, Integer>) (Map) statementArgCaptor.getAllValues().get(1))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getAbsoluteName().equals(entry2.getKey().getAbsoluteName())
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(colA, 2),
+						entry(colB, 29),
+						entry(colC, 31));
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
 		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 	}

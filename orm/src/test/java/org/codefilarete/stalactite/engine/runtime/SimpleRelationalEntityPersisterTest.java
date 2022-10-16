@@ -605,25 +605,34 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(32)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			verify(preparedStatement, times(8)).addBatch();
 			verify(preparedStatement, times(4)).executeLargeBatch();
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)",
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)"
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"
+			);
+			assertThat(statementArgCaptor.getAllValues().subList(2, 4)).isEqualTo(Arrays.asList(
 					"update Toto1 set a = ?, b = ? where id = ?",
 					"update Toto2 set x = ?, y = ?, z = ? where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).hasSize(4);
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 		}
@@ -764,23 +773,31 @@ class SimpleRelationalEntityPersisterTest {
 			
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"));
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)"
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"
+			);
+			assertThat(statementArgCaptor.getAllValues()).hasSize(2);
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 			

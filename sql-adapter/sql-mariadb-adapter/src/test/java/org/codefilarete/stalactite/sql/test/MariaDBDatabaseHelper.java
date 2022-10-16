@@ -10,17 +10,16 @@ import org.codefilarete.tool.exception.Exceptions;
 /**
  * @author Guillaume Mary
  */
-public class DerbyDatabaseHelper extends DatabaseHelper {
+public class MariaDBDatabaseHelper extends DatabaseHelper {
 	
 	/**
-	 * Overridden to select tables from "APP" schema which is default one.
+	 * Overridden to select tables of connection catalog and schema
 	 */
 	@Override
 	protected ResultSetIterator<String> lookupTables(Connection connection) {
-		// default Derby schema is "APP" so we query tables for it else we'll try to delegate system tables  
 		ResultSet tables;
 		try {
-			tables = connection.getMetaData().getTables(null, "APP", null, new String[] { "TABLE" });
+			tables = connection.getMetaData().getTables(connection.getCatalog(), connection.getSchema(), null, new String[] { "TABLE" });
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
 		}

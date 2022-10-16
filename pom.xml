@@ -47,7 +47,7 @@
 		<junit.version>5.8.2</junit.version>
 		<mockito.version>4.3.1</mockito.version>
 		<slf4j-api.version>1.7.36</slf4j-api.version>
-		<assertj-core.version>3.22.0</assertj-core.version>
+		<assertj-core.version>3.23.1</assertj-core.version>
 		<!-- Tools lib dependency must be aligned with sql module Reflection lib dependency which also has its Tools lib dep -->
 		<tools.version>1.0.2-SNAPSHOT</tools.version>
 	</properties>

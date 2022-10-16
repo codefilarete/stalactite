@@ -34,9 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.codefilarete.tool.collection.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -109,11 +107,26 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-				Maps.asHashMap(new UpwhereColumn<>(colA, false), 1).add(new UpwhereColumn<>(colB, true), 17).add(new UpwhereColumn<>(colC, true),
-						23),
-				Maps.asHashMap(new UpwhereColumn<>(colA, false), 2).add(new UpwhereColumn<>(colB, true), 29).add(new UpwhereColumn<>(colC, true), 31)
-		));
+		ExtendedMapAssert.assertThatMap((Map<UpwhereColumn, Integer>) (Map) statementArgCaptor.getAllValues().get(0))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getColumn().getAbsoluteName().equals(entry2.getKey().getColumn().getAbsoluteName())
+						&& entry1.getKey().isUpdate() == entry2.getKey().isUpdate()
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(new UpwhereColumn<>(colA, false), 1),
+						entry(new UpwhereColumn<>(colB, true), 17),
+						entry(new UpwhereColumn<>(colC, true), 23)
+				);
+		ExtendedMapAssert.assertThatMap((Map<UpwhereColumn, Integer>) (Map) statementArgCaptor.getAllValues().get(1))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getColumn().getAbsoluteName().equals(entry2.getKey().getColumn().getAbsoluteName())
+						&& entry1.getKey().isUpdate() == entry2.getKey().isUpdate()
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(new UpwhereColumn<>(colA, false), 2),
+						entry(new UpwhereColumn<>(colB, true), 29),
+						entry(new UpwhereColumn<>(colC, true), 31)
+				);
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
 		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("update Toto set b = ?, c = ? where a = ?");
 	}

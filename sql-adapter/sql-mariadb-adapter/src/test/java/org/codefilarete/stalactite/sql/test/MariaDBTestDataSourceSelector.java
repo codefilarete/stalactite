@@ -23,11 +23,11 @@ public class MariaDBTestDataSourceSelector extends TestDataSourceSelector {
 		MariaDbDataSource mariaDbDataSource;
 		try {
 			mariaDbDataSource = new MariaDbDataSource(url);
+			Nullable.nullable(properties.get("mariadb.user")).invokeThrower(mariaDbDataSource::setUser);
+			Nullable.nullable(properties.get("mariadb.password")).invokeThrower(mariaDbDataSource::setPassword);
 		} catch (SQLException e) {
 			throw new RuntimeException("Can't build MariaDB DataSource from url " + url, e);
 		}
-		Nullable.nullable(properties.get("mariadb.user")).invoke(mariaDbDataSource::setUser);
-		Nullable.nullable(properties.get("mariadb.password")).invoke(mariaDbDataSource::setPassword);
 		return mariaDbDataSource;
 	}
 	

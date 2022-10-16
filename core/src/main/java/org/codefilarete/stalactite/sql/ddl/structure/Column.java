@@ -138,29 +138,10 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 		return this;
 	}
 	
-	/**
-	 * Implementation based on absolute name comparison. Done for Collections comparison.
-	 *
-	 * @param o un Object
-	 * @return true if absolute name of both Column (this and o) are the same ignoring case.
+	/* Do not implement equals/hashCode, which can be tempting (based on absolute name for instance)
+	 * because it breaks possibility to add clones of column (through clones of table) in select clause when
+	 * joining several times same table is necessary : for that case column clones must be considered distinct
 	 */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		
-		Column column = (Column) o;
-		return getAbsoluteName().equalsIgnoreCase(column.getAbsoluteName());
-	}
-	
-	@Override
-	public int hashCode() {
-		return getAbsoluteName().toUpperCase().hashCode();
-	}
 	
 	/**
 	 * Overridden only for simple print (debug)

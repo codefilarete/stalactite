@@ -190,6 +190,7 @@ public class EntityTreeQueryBuilder<C> {
 			Map<JoinRowConsumer, Fromable> tablePerConsumer = new HashMap<>();
 			ConsumerNode consumerRoot = new ConsumerNode(tree.getRoot().toConsumer(createDedicatedRowDecoder(tree.getRoot())));
 			tree.foreachJoinWithDepth(consumerRoot, (targetOwner, currentNode) -> {
+				EntityJoinTree<?, ?> tree1 = tree;
 				Holder<JoinRowConsumer> consumerHolder = new Holder<>();
 				Function<? super Selectable<?>, String> aliasProvider = column -> columnAliases.get(tablePerConsumer.get(consumerHolder.get()).findColumn(column.getExpression()));
 				JoinRowConsumer consumer = currentNode.toConsumer(new ColumnedRow(aliasProvider));
@@ -228,7 +229,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		private final Query query;
 		
-		/** Mappig between column name in select and their {@link ParameterBinder} for reading */
+		/** Mapping between column name in select and their {@link ParameterBinder} for reading */
 		private final Map<String, ParameterBinder> selectParameterBinders;
 		
 		/**

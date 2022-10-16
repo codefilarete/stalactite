@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +17,9 @@ import org.codefilarete.stalactite.engine.RuntimeMappingException;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -113,8 +116,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
-//						List<TRGT> apply = manyRelationDescriptor.getCollectionGetter().apply(src);
-//						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(targetPersister.getId(target))));
+						List<TRGT> apply = manyRelationDescriptor.getCollectionGetter().apply(src);
+						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(targetPersister.getId(target))));
 					});
 				} finally {
 					cleanContext();
@@ -130,19 +133,19 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				currentSelectedIndexes.remove();
 			}
 		});
-//		AbstractJoinNode<TRGT, Table, Table, TRGTID> join = (AbstractJoinNode<TRGT, Table, Table, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
-//		join.setTransformerListener((trgt, rowValueProvider) -> {
-//			IdentityMap<TRGTID, Integer> indexPerBean = currentSelectedIndexes.get();
-//			// indexPerBean may not be present because its mechanism was added on persisterListener which is the one of the source bean
-//			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
-//			if (indexPerBean != null) {
-//				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row
-//				// because it was read from ResultSet
-//				int index = EntityTreeInflater.currentContext().giveValue(joinNodeName, indexingColumn);
-//				TRGTID relationOwnerId = (TRGTID) EntityTreeInflater.currentContext().giveValue(joinNodeName, primaryKey);
-//				indexPerBean.put(relationOwnerId, index);
-//			}
-//		});
+		AbstractJoinNode<TRGT, Table, Table, TRGTID> join = (AbstractJoinNode<TRGT, Table, Table, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
+		join.setTransformerListener((trgt, rowValueProvider) -> {
+			IdentityMap<TRGTID, Integer> indexPerBean = currentSelectedIndexes.get();
+			// indexPerBean may not be present because its mechanism was added on persisterListener which is the one of the source bean
+			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
+			if (indexPerBean != null) {
+				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row
+				// because it was read from ResultSet
+				int index = EntityTreeInflater.currentContext().giveValue(joinNodeName, indexingColumn);
+				TRGTID relationOwnerId = (TRGTID) EntityTreeInflater.currentContext().giveValue(joinNodeName, primaryKey);
+				indexPerBean.put(relationOwnerId, index);
+			}
+		});
 	}
 	
 	@Override
@@ -231,7 +234,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 									 Column indexingColumn) {
 			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider);
 			this.indexingColumn = indexingColumn;
-//			addShadowIndexInsert(targetPersister);
+			addShadowIndexInsert(targetPersister);
 			addShadowIndexUpdate(targetPersister);
 			
 		}

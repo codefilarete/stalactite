@@ -13,13 +13,13 @@ import org.codefilarete.tool.exception.Exceptions;
 public class MySQLDatabaseHelper extends DatabaseHelper {
 	
 	/**
-	 * Override to select tables from "APP" schema which is default one.
+	 * Overridden to select tables of connection catalog and schema
 	 */
 	@Override
 	protected ResultSetIterator<String> lookupTables(Connection connection) {
 		ResultSet tables;
 		try {
-			tables = connection.getMetaData().getTables(connection.getCatalog(), connection.getSchema(), null, null);
+			tables = connection.getMetaData().getTables(connection.getCatalog(), connection.getSchema(), null, new String[] { "TABLE" });
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
 		}

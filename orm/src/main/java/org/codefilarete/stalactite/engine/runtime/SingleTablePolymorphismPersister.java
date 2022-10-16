@@ -330,24 +330,36 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 																				  Column<T1, ID> leftColumn,
 																				  Column<T2, ID> rightColumn,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider, String joinName,
+																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
+																				  String joinName,
 																				  boolean optional,
 																				  Set<Column<T2, ?>> selectableColumns) {
 		
-		// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
-		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
-		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
-				new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
-						subclassPrimaryKey, selectExecutor,
-						DIFFERED_ENTITY_LOADER,
-						discriminatorColumn, subEntitiesPersisters::get),
-				(Column<T1, I>) leftColumn, (Column<T2, I>) rightColumn, JoinType.OUTER);
+		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMapping().getTargetTable()).getPrimaryKey().getColumns());
+		Map<EntityConfiguredJoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
+		if (rightColumn.equals(mainTablePK)) {
+			// join is made on primary key => case is association table
+			subEntitiesPersisters.forEach((c, subPersister) -> {
+				Column<T, Object> column = Iterables.first((Set<Column>) subPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
+				joinColumnPerSubPersister.put(subPersister, column);
+			});
+		} else {
+			// join is made on a foreign key => case of relation owned by reverse side
+			subEntitiesPersisters.forEach((c, subPersister) -> {
+				Column<T, ?> column = subPersister.getMapping().getTargetTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
+				subPersister.getMapping().addShadowColumnSelect((Column) column);
+				joinColumnPerSubPersister.put(subPersister, column);
+			});
+		}
 		
-		
-		// adding second phase loader
-		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
-		
-		return createdJoinNodeName;
+		return sourcePersister.getEntityJoinTree().addSingleTablePolymorphicRelationJoin(joinName,
+				mainPersister,
+				leftColumn,
+				rightColumn,
+				new HashSet<>(this.subEntitiesPersisters.values()),
+				beanRelationFixer,
+				polymorphismPolicy,
+				(Column<T2, DTYPE>) discriminatorColumn);
 	}
 	
 	@Override

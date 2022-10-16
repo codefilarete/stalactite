@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.Savepoint;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -8,23 +9,24 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.VersioningStrategy;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.RollbackListener;
 import org.codefilarete.stalactite.sql.RollbackObserver;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSQL;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory.ExpectedBatchedRowCountsSupplier;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Dedicated class to insert statement execution
@@ -94,7 +96,9 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		Set<Column> nonNullColumnsWithNullValues = Iterables.collect(insertValues.entrySet(),
 				e -> !e.getKey().isNullable() && e.getValue() == null, Entry::getKey, HashSet::new);
 		if (!nonNullColumnsWithNullValues.isEmpty()) {
-			throw new BindingException("Expected non null value for : " + new StringAppender().ccat(nonNullColumnsWithNullValues, ", "));
+			throw new BindingException("Expected non null value for : "
+					// we sort result only to stabilize message for tests assertion, do not get it as a business rule
+					+ new StringAppender().ccat(Arrays.asTreeSet(Comparator.comparing(Column::getAbsoluteName), nonNullColumnsWithNullValues) , ", "));
 		}
 	}
 	

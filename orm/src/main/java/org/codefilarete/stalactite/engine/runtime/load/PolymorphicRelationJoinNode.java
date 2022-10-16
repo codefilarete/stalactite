@@ -28,7 +28,7 @@ import org.codefilarete.tool.bean.Objects;
  * would only give parent entity, which, out of being a wrong approach, can be an abstract type). Then instance is filled up with parent properties
  * by calling merging method (see line 98).
  * Finally, {@link JoinTablePolymorphicRelationJoinRowConsumer} must extend {@link ForkJoinRowConsumer} to give next branch to be consumed by
- * {@link EntityTreeInflater} to avoid "dead" branch to be read : we give according to consumer that found the identifier. 
+ * {@link EntityTreeInflater} to avoid "dead" branch to be read : we give it according to the consumer which found the identifier. 
  * 
  * @author Guillaume Mary
  */

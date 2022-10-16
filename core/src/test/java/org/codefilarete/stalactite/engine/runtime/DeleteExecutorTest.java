@@ -1,33 +1,29 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.test.PairSetList;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.test.PairSetList.pairSetList;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 	
@@ -76,10 +72,13 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+		assertThat(statementArgCaptor.getAllValues())
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementComparator(Comparator.comparing(Object::toString))
+				.containsExactly(
 				Maps.asHashMap(colA, 1),
 				Maps.asHashMap(colA, 2)
-		));
+		);
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
 		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("delete from Toto where a = ?");
 	}
@@ -176,7 +175,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 		verify(jdbcMock.preparedStatement, times(1)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(8)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		
-		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
+		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.indexCaptor.getAllValues(), jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
 		assertThat(actualValuePairs).containsExactlyInAnyOrder(new Duo<>(1, 17),
 															   new Duo<>(2, 29),
 															   new Duo<>(3, 37),
@@ -202,7 +201,10 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 		verify(jdbcMock.preparedStatement, times(1)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(10)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		
-		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
+		System.out.println(jdbcMock.indexCaptor.getAllValues());
+		System.out.println(jdbcMock.valueCaptor.getAllValues());
+		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.indexCaptor.getAllValues(), jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
+		System.out.println("actualValuePairs : " + actualValuePairs);
 		assertThat(actualValuePairs).containsExactlyInAnyOrder(new Duo<>(1, 17),
 															   new Duo<>(2, 29),
 															   new Duo<>(3, 37),
@@ -228,7 +230,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 		verify(jdbcMock.preparedStatement, times(0)).executeLargeUpdate();
 		verify(jdbcMock.preparedStatement, times(12)).setInt(jdbcMock.indexCaptor.capture(), jdbcMock.valueCaptor.capture());
 		
-		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
+		List<Duo<Integer, Integer>> actualValuePairs = arrangeValues(jdbcMock.indexCaptor.getAllValues(), jdbcMock.valueCaptor.getAllValues(), testInstance.getBatchSize());
 		assertThat(actualValuePairs).containsExactlyInAnyOrder(new Duo<>(1, 17),
 															   new Duo<>(2, 29),
 															   new Duo<>(3, 37),
@@ -237,7 +239,7 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 															   new Duo<>(6, 67));
 	}
 	
-	static List<Duo<Integer, Integer>> arrangeValues(List<Integer> capturedValues, int batchSize) {
+	static List<Duo<Integer, Integer>> arrangeValues(List<Integer> capturedIndexes, List<Integer> capturedValues, int batchSize) {
 		// Captured values is a list of values such as :
 		// - col A values for block #1 (3 values),
 		// - col B values for block #1 (3 values),
@@ -246,36 +248,28 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 		// - col A values for block #3 (2 values),
 		// - col B values for block #3 (2 values)
 		// the algorithm below unpacks it to get pairs of (colA, colB)
+		Duo<Integer, Integer>[] result = new Duo[capturedIndexes.size() / 2];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = new Duo<>();
+		}
+		
+		// [1, 3, 5, 2, 4, 6,      1, 3, 2, 4]
+		// [4, 2, 1, 43, 29, 17,      3, 5, 37, 59]
+		// {1, 17}, {2, 29}, {3, 37}, {4, 43}, {5, 59}
 		
 		// computing blocks sizes
 		int colCount = 2;
-		int columnsBlockCount = capturedValues.size() / colCount;
-		int blockCount = columnsBlockCount / batchSize;
-		int lastBlockSize = columnsBlockCount % batchSize;
-		int[] blocksSizes = new int[blockCount + (lastBlockSize == 0 ? 0 : 1)];
-		java.util.Arrays.fill(blocksSizes, batchSize);
-		if (lastBlockSize != 0) {
-			blocksSizes[blocksSizes.length-1] = lastBlockSize;
-		}
-		
-		IntStream blocksSizeStream = IntStream.of(blocksSizes);
-		List<Integer> colAValues = new ArrayList<>();
-		List<Integer> colBValues = new ArrayList<>();
-		
-		// Dispatching values in column values lists
-		Iterator<Integer> valuesIterator = capturedValues.iterator();
-		blocksSizeStream.forEach(blockSize -> {
-			List<Integer> listToFill;
-			for (int colNumber = 0; colNumber < colCount; colNumber++) {
-				// Note: columns are stored in a Map or Set in DeleteExecutor algorithm, so setting even column numbers to B values and odd ones to A
-				// is only based on debug experience of this test. But since Column implements equals + hashCode, this is steady and may not be a matter of concern.
-				listToFill = colNumber % colCount == 0 ? colBValues : colAValues;
-				for (int i = 0; i < blockSize; i++) {
-					listToFill.add(valuesIterator.next());
-				}
+		for (int i = 0; i < capturedIndexes.size(); i++) {
+			int index = capturedIndexes.get(i);
+			int value = capturedValues.get(i);
+			int currentBlockNumber = batchSize * (i / (batchSize * colCount));
+			int duoNumber = (int) Math.ceil((double) index / colCount) + currentBlockNumber;
+			if (index % 2 == 0) {
+				result[duoNumber-1].setRight(value);
+			} else {
+				result[duoNumber-1].setLeft(value);
 			}
-		});
-		
-		return PairSetList.toPairs(colAValues, colBValues);
+		};
+		return Arrays.asList(result);
 	}
 }

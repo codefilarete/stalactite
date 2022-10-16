@@ -919,7 +919,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 	}
 	
-	@VisibleForTesting
+	@org.codefilarete.tool.VisibleForTesting
 	static class MappingPerTable {
 		private final KeepOrderSet<Mapping> mappings = new KeepOrderSet<>();
 		

@@ -61,6 +61,8 @@ public class MySQLEmbeddableDataSource extends UrlAwareDataSource implements Clo
 				.withServerVariable("bind-address", "localhost")
 				.build();
 			
+			// /!\ if Mysql doesn't start under Windows, you may miss MSVCR100.dll,
+			// which is available in Microsoft Visual Studio 2010 redistributable package, download it and install it
 			db = com.wix.mysql.EmbeddedMysql.anEmbeddedMysql(config).start();
 			USED_PORTS.put(port, db);
 		}

@@ -83,7 +83,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 			return Collections.emptyList();
 		} else {
 			// Second phase : selecting elements by main table pk (adding necessary columns)
-			query.getSelectSurrogate().removeAt(0);    // previous pk selection removal
+			query.getSelectSurrogate().remove(pk);    // previous pk selection removal
 			columns.forEach(query::select);
 			query.getWhereSurrogate().clear();
 			query.where(pk, in(ids));

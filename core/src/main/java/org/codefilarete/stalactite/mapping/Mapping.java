@@ -185,6 +185,10 @@ public interface Mapping<C, T extends Table> {
 			return column;
 		}
 		
+		public boolean isUpdate() {
+			return update;
+		}
+		
 		/**
 		 * Implemented to distinguish columns of the update clause from those of the where part, because the main purpose of this class is to be put
 		 * in a {@link Map}.

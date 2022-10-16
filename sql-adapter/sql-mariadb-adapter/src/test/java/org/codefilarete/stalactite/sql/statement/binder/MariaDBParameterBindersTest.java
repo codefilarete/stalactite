@@ -2,6 +2,8 @@ package org.codefilarete.stalactite.sql.statement.binder;
 
 import javax.sql.DataSource;
 
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MariaDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -15,6 +17,10 @@ class MariaDBParameterBindersTest extends AbstractParameterBindersITTest {
 	@Override
 	public DataSource giveDataSource() {
 		return DATASOURCE;
+	}
+	
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MariaDBDatabaseHelper();
 	}
 	
 	@Override

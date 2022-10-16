@@ -4,6 +4,8 @@ import javax.sql.DataSource;
 
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.MariaDBDialect;
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MariaDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 
 /**
@@ -17,6 +19,11 @@ public class PersisterMariaDBTest extends PersisterITTest {
 	public DataSource giveDataSource() {
         return DATASOURCE;
     }
+	
+	@Override
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MariaDBDatabaseHelper();
+	}
 	
 	@Override
 	Dialect createDialect() {

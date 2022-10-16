@@ -12,7 +12,7 @@ public class MariaDBDialectResolver {
 		
 		private static final MariaDBDialect MARIADB_DIALECT = new MariaDBDialect();
 		
-		private static final DatabaseSignet MARIADB_10_0_SIGNET = new DatabaseSignet("MySQL", 10, 0);
+		private static final DatabaseSignet MARIADB_10_0_SIGNET = new DatabaseSignet("MariaDB", 10, 0);
 		
 		@Override
 		public DatabaseSignet getCompatibility() {

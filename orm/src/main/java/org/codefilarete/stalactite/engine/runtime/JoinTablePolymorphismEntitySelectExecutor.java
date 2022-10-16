@@ -66,26 +66,30 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query, dialect);
 		
 		// selecting ids and their entity type
-		Map<String, ResultSetReader> aliases = new HashMap<>();
+		Map<String, ResultSetReader> columnReaders = new HashMap<>();
+		Map<Column, String> aliases = new HashMap<>();
 		Iterables.stream(query.getSelectSurrogate())
 				.map(Column.class::cast)
-				.forEach(c -> aliases.put(c.getAlias(), dialect.getColumnBinderRegistry().getBinder(c)));
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, aliases, primaryKey);
+				.forEach(c -> {
+					columnReaders.put(c.getAlias(), dialect.getColumnBinderRegistry().getBinder(c));
+					aliases.put(c, c.getAlias());
+				});
+		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, columnReaders, primaryKey, columnedRow);
 		
 		List<C> result = new ArrayList<>();
 		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}
 	
-	private Map<Class, Set<I>> readIds(QuerySQLBuilder sqlQueryBuilder, Map<String, ResultSetReader> aliases,
-									   Column<T, I> primaryKey) {
+	private Map<Class, Set<I>> readIds(QuerySQLBuilder sqlQueryBuilder, Map<String, ResultSetReader> columnReaders,
+									   Column<T, I> primaryKey, ColumnedRow columnedRow) {
 		Map<Class, Set<I>> result = new HashMap<>();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			
-			RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
-			ColumnedRow columnedRow = new ColumnedRow();
+			RowIterator resultSetIterator = new RowIterator(resultSet, columnReaders);
 			resultSetIterator.forEachRemaining(row -> {
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
@@ -106,7 +110,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 				
 				// adding identifier to subclass' ids
 				result.computeIfAbsent(entitySubclass, k -> new HashSet<>())
-						.add((I) columnedRow.getValue(primaryKey, row));
+						.add((I) row.get(primaryKey.getAlias()));
 			});
 			return result;
 		} catch (RuntimeException e) {

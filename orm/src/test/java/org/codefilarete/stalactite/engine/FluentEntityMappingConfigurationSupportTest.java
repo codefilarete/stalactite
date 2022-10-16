@@ -143,7 +143,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 					.map(Toto::getName)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -169,7 +169,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.mapKey(Toto::getId, IdentifierPolicy.<Toto, Identifier<UUID>>alreadyAssigned(c -> c.getId().setPersisted(), c -> c.getId().isPersisted()))
 						.usingConstructor(constructor)
 					.map(Toto::getName)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -334,7 +334,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -995,7 +995,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1042,7 +1042,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampWithLocaleMapping)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1128,7 +1128,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
 						.overrideName(Timestamp::getCreationDate, "createdAt")
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			Map<String, Column> columnsByName = totoTable.mapColumnsOnName();
 			
@@ -1194,7 +1194,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
 						.overrideName(Timestamp::getCreationDate, "createdAt")
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			// column should be correctly created
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1253,7 +1253,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Toto::getName)
 					.embed(Toto::getTimestamp, timestampMapping)
 						.exclude(Timestamp::getCreationDate)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			Map map = totoTable.mapColumnsOnName();
 			assertThat(map.get("creationDate")).isNull();
@@ -1817,7 +1817,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 					.map(Toto::getName)
 					.mapCollection(Toto::getPossibleStates, State.class)
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -1846,7 +1846,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.mapCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -1878,7 +1878,7 @@ class FluentEntityMappingConfigurationSupportTest {
 						.map(Timestamp::getCreationDate)
 						.map(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "createdAt")
-					.build(persistenceContext);
+					.build(persistenceContext, totoTable);	// necessary to set table since we override Identifier binding
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();

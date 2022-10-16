@@ -42,7 +42,7 @@ public class HSQLDBDialect extends Dialect {
 	public static class HSQLDBDDLTableGenerator extends DDLTableGenerator {
 		
 		public HSQLDBDDLTableGenerator(SqlTypeRegistry typeMapping) {
-			super(typeMapping, new HSQLDBDMLNameProvier(Collections.emptyMap()));
+			super(typeMapping, new HSQLDBDMLNameProvider(Collections.emptyMap()));
 		}
 		
 		@Override
@@ -85,12 +85,12 @@ public class HSQLDBDialect extends Dialect {
 		
 	} 
 	
-	public static class HSQLDBDMLNameProvier extends DMLNameProvider {
+	public static class HSQLDBDMLNameProvider extends DMLNameProvider {
 		
 		/** HSQLDB keywords to be escape. TODO: to be completed */
 		public static final Set<String> KEYWORDS = Collections.unmodifiableSet(Arrays.asTreeSet(String.CASE_INSENSITIVE_ORDER));
 		
-		public HSQLDBDMLNameProvier(Map<Table, String> tableAliases) {
+		public HSQLDBDMLNameProvider(Map<Table, String> tableAliases) {
 			super(tableAliases);
 		}
 		

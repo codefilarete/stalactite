@@ -66,6 +66,11 @@ public class Select implements FluentSelect<Select> {
 		return this;
 	}
 	
+	public Select remove(Selectable<?> selectable) {
+		this.columns.remove(selectable);
+		return this;
+	}
+	
 	/**
 	 * Gives column aliases. If a {@link Column} is not present in result, then it means it has no alias
 	 * 
@@ -89,10 +94,6 @@ public class Select implements FluentSelect<Select> {
 	public Select distinct() {
 		this.distinct = true;
 		return this;
-	}
-	
-	public void removeAt(int index) {
-		this.columns.removeAt(index);
 	}
 	
 	public KeepOrderMap<Selectable<?>, String> clear() {
