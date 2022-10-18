@@ -67,7 +67,7 @@ public class EntityTreeQueryBuilder<C> {
 		 * nodes. This happens when tree contains sibling relations (like person->firstHouse and person->secondaryHouse), or, in a more general way,
 		 * maps some entities onto same table. So by cloning tables and using IdentityMap<Column, String> for alias storage we can affect different
 		 * aliases to same initial table of different nodes : final alias computation can be seen at ResultHelper.createDedicatedRowDecoder(..) 
-		 * Those clones doesn't affect SQL generation since table and column clones have same name as the original.
+		 * Those clones don't affect SQL generation since table and column clones have same name as the original.
 		 */
 		
 		// initialization of the From clause with the very first table

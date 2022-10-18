@@ -135,28 +135,28 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		// insert test
 		persister.insert(Arrays.asList(dummyCar, dummyTruk));
 		
-		Car dummyCarModfied = new Car(1L);
-		dummyCarModfied.setModel("Peugeot");
-		Truk dummyTrukModfied = new Truk(2L);
-		dummyTrukModfied.setColor(new Color(99));
+		Car dummyCarModified = new Car(1L);
+		dummyCarModified.setModel("Peugeot");
+		Truk dummyTrukModified = new Truk(2L);
+		dummyTrukModified.setColor(new Color(99));
 		
-		persister.update(dummyCarModfied, dummyCar, true);
+		persister.update(dummyCarModified, dummyCar, true);
 		
-		persister.update(dummyTrukModfied, dummyTruk, true);
+		persister.update(dummyTrukModified, dummyTruk, true);
 		
 		connectionProvider.giveConnection().commit();
-		persister.delete(dummyCarModfied);
-		persister.delete(dummyTrukModfied);
+		persister.delete(dummyCarModified);
+		persister.delete(dummyTrukModified);
 		connectionProvider.giveConnection().rollback();
 		
-		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
+		persister.delete(Arrays.asList(dummyCarModified, dummyTrukModified));
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
-		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModfied);
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId())))).isEqualTo(Arrays.asSet(dummyCarModfied,
-				dummyTrukModfied));
+		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModified);
+		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModified);
+		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId())))).isEqualTo(Arrays.asSet(dummyCarModified,
+				dummyTrukModified));
 	}
 	
 	@Nested

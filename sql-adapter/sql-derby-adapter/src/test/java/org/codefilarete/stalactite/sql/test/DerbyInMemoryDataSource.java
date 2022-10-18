@@ -1,21 +1,19 @@
 package org.codefilarete.stalactite.sql.test;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 
 import org.apache.derby.iapi.reference.Property;
 import org.apache.derby.jdbc.EmbeddedDataSource;
-import org.codefilarete.tool.bean.Randomizer;
 import org.codefilarete.stalactite.sql.UrlAwareDataSource;
+import org.codefilarete.tool.bean.Randomizer;
 
 /**
  * Simple Derby DataSource for tests
  * 
  * @author Guillaume Mary
  */
-public class DerbyInMemoryDataSource extends UrlAwareDataSource implements Closeable {
+public class DerbyInMemoryDataSource extends UrlAwareDataSource {
 	
 	/** No operation logger to get rid of derby.log, see System.setProperty("derby.stream.error.field"), must be public */
 	public static final PrintWriter NOOP_LOGGER = new PrintWriter(new NoopWriter());
@@ -42,11 +40,6 @@ public class DerbyInMemoryDataSource extends UrlAwareDataSource implements Close
 	protected void fixDerbyLogger() {
 		// get rid of default derby.log (setLogWriter doesn't work)
 		System.setProperty(Property.ERRORLOG_FIELD_PROPERTY, DerbyInMemoryDataSource.class.getName() + ".NOOP_LOGGER");
-	}
-	
-	@Override
-	public void close() throws IOException {
-		
 	}
 	
 	/**

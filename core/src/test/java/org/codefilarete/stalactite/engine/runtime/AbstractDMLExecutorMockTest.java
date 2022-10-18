@@ -46,7 +46,7 @@ public abstract class AbstractDMLExecutorMockTest extends DMLExecutorTest {
 																		   ConnectionProvider connectionProvider,
 																		   ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider,
 																		   RowCountListener rowCountListener) {
-				// we d'ont care about row count checker in thoses tests, so every statement will be created without it
+				// we don't care about row count checker in those tests, so every statement will be created without it
 				return new WriteOperation<ParamType>(sqlGenerator, connectionProvider, NOOP_COUNT_CHECKER) {
 					@Override
 					protected void prepareStatement(Connection connection) throws SQLException {
@@ -73,7 +73,7 @@ public abstract class AbstractDMLExecutorMockTest extends DMLExecutorTest {
 				
 				connection = mock(Connection.class);
 				// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
-				// weither or not it should prepare statement
+				// either or not it should prepare statement
 				when(preparedStatement.getConnection()).thenReturn(connection);
 				sqlCaptor = ArgumentCaptor.forClass(String.class);
 				when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatement);

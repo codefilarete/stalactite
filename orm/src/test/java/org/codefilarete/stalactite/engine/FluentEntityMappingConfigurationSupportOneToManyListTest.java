@@ -180,7 +180,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Choice choice3Clone = new Choice(updateTestData.getChoice3().getId());
 			Choice choice4 = new Choice(40L);
 			
-			// creating a clone to test instance swaping
+			// creating a clone to test instance swapping
 			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
 			// addition of an element and little swap
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice4, choice2Clone, choice1Clone));
@@ -207,7 +207,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Choice choice1 = updateTestData.getChoice1();
 			Choice choice3 = updateTestData.getChoice3();
 			
-			// creating a clone to test instance swaping
+			// creating a clone to test instance swapping
 			Question modifiedQuestion = new Question(newQuestion.getId().getSurrogate());
 			Choice choice3Copy = new Choice(new PersistedIdentifier<>(choice3.getId().getSurrogate()));
 			Choice choice1Copy = new Choice(new PersistedIdentifier<>(choice1.getId().getSurrogate()));

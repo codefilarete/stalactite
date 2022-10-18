@@ -83,7 +83,7 @@ public class PostgreSQLEmbeddedDataSource extends UrlAwareDataSource implements 
 	}
 	
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		// stop Postgres
 		db.stop();
 	}

@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -69,7 +68,7 @@ public class MySQLEmbeddableDataSource extends UrlAwareDataSource implements Clo
 	}
 	
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		USED_PORTS.get(port).stop(); //optional, as there is a shutdown hook
 	}
 }
