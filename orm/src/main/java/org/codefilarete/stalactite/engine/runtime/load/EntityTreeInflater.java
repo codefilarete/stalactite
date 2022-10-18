@@ -125,11 +125,16 @@ public class EntityTreeInflater<C> {
 							// In case of join-table polymorphism we have to provide the tree branch on which id was found
 							// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
 							JoinRowConsumer nextRowConsumer = ((ForkJoinRowConsumer) consumer).giveNextConsumer();
-							Optional<ConsumerNode> consumerNode = join.consumers.stream().filter(c -> nextRowConsumer == c.consumer).findFirst();
-							if (!consumerNode.isPresent()) {
-								throw new IllegalStateException("Can't find consumer node for " + nextRowConsumer + " in " + join.consumers);
+							if (nextRowConsumer == null) {
+								// means no identifier of polymorphic entity
+								return new EntityCreationResult(null, (List<ConsumerNode>) null);
 							} else {
-								return new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
+								Optional<ConsumerNode> consumerNode = join.consumers.stream().filter(c -> nextRowConsumer == c.consumer).findFirst();
+								if (!consumerNode.isPresent()) {
+									throw new IllegalStateException("Can't find consumer node for " + nextRowConsumer + " in " + join.consumers);
+								} else {
+									return new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
+								}
 							}
 						}
 						return new EntityCreationResult(relatedEntity, join);

@@ -20,6 +20,8 @@ import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.bean.Objects;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * Particular {@link JoinNode} made to handle relation from an entity to a collection of some another polymorphic one. Actually relation doesn't
  * make the complexity of that class: polymorphic entity instantiation is the core focus of it. Here are the hot spots:
@@ -125,7 +127,7 @@ public class PolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, 
 		
 		@Override
 		public JoinRowConsumer giveNextConsumer() {
-			return currentlyFoundConsumer.get().getRight();
+			return nullable(currentlyFoundConsumer.get()).map(Duo::getRight).get();
 		}
 	}
 }

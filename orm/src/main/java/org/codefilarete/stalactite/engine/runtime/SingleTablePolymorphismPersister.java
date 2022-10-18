@@ -55,6 +55,8 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+
 /**
  * @author Guillaume Mary
  */
@@ -88,7 +90,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 				.addShadowColumnInsert(discriminatorValueProvider));
 		
 		subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.copyRootJoinsTo(persister.getEntityJoinTree(), EntityJoinTree.ROOT_STRATEGY_NAME)
+				mainPersister.copyRootJoinsTo(persister.getEntityJoinTree(), ROOT_STRATEGY_NAME)
 		);
 		
 		this.selectExecutor = new SingleTablePolymorphismSelectExecutor<>(
@@ -310,19 +312,32 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
 		
-		Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
-		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
-						subclassPrimaryKey, selectExecutor,
-						DIFFERED_ENTITY_LOADER,
-						discriminatorColumn, subEntitiesPersisters::get),
-				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
+		boolean loadSeparately = false;
 		
-		
-		// adding second phase loader
-		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
-		
-		return createdJoinNodeName;
+		if (loadSeparately) {
+			Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
+			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_STRATEGY_NAME,
+					new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
+							subclassPrimaryKey, selectExecutor,
+							DIFFERED_ENTITY_LOADER,
+							discriminatorColumn, subEntitiesPersisters::get),
+					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
+			
+			
+			// adding second phase loader
+			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			
+			return createdJoinNodeName;
+		} else {
+			return sourcePersister.getEntityJoinTree().addSingleTablePolymorphicRelationJoin(ROOT_STRATEGY_NAME,
+					mainPersister,
+					leftColumn,
+					rightColumn,
+					new HashSet<>(this.subEntitiesPersisters.values()),
+					beanRelationFixer,
+					polymorphismPolicy,
+					(Column<T2, DTYPE>) discriminatorColumn);
+		}
 	}
 	
 	@Override

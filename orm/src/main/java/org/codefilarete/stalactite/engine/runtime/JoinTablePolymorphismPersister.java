@@ -52,6 +52,8 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+
 /**
  * Class that wraps some other persisters and transfers its invocations to them.
  * Used for polymorphism to dispatch method calls to sub-entities persisters.
@@ -344,26 +346,38 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
 		
-		// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
-		// (we don't need to create bean nor fulfill properties in first phase) 
-		// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
-		String mainTableJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, Arrays.asSet(rightColumn));
-		Column primaryKey = (Column) Iterables.first(getMapping().getTargetTable().getPrimaryKey().getColumns());
-		this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
-			Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
-			sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
-					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
-					primaryKey,
-					subclassPrimaryKey,
-					// since we don't know what kind of sub entity is present we must do an OUTER join between common truck and all sub tables
-					JoinType.OUTER);
-		});
+		boolean loadSeparately = false;
 		
-		// adding second phase loader
-		((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
-		
-		return mainTableJoinName;
+		if (loadSeparately) {
+			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
+			// (we don't need to create bean nor fulfill properties in first phase) 
+			// NB: here rightColumn is parent class primary key or reverse column that owns property (depending how one-to-one relation is mapped) 
+			String mainTableJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,
+					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER, Arrays.asSet(rightColumn));
+			Column primaryKey = (Column) Iterables.first(getMapping().getTargetTable().getPrimaryKey().getColumns());
+			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
+				Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
+				sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
+						new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
+						primaryKey,
+						subclassPrimaryKey,
+						// since we don't know what kind of sub entity is present we must do an OUTER join between common truck and all sub tables
+						JoinType.OUTER);
+			});
+			
+			// adding second phase loader
+			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			
+			return mainTableJoinName;
+		} else {
+			return sourcePersister.getEntityJoinTree().addPolymorphicRelationJoin(ROOT_STRATEGY_NAME,
+					mainPersister,
+					leftColumn,
+					rightColumn,
+					new HashSet<>(this.subEntitiesPersisters.values()),
+					beanRelationFixer,
+					null);
+		}
 	}
 	
 	@Override

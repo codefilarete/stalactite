@@ -53,6 +53,8 @@ import org.codefilarete.tool.function.Functions;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+
 /**
  * @author Guillaume Mary
  */
@@ -83,7 +85,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
 		this.subEntitiesPersisters.forEach((type, persister) ->
-				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree(), EntityJoinTree.ROOT_STRATEGY_NAME)
+				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree(), ROOT_STRATEGY_NAME)
 		);
 		
 		Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors = Iterables.map(subEntitiesPersisters.entrySet(),
@@ -311,17 +313,28 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  boolean optional) {
-		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				new EntityMappingAdapter<>((EntityMapping) this.getMapping()),
-				leftColumn,
-				rightColumn,
-				null,
-				optional ? JoinType.OUTER : JoinType.INNER,
-				beanRelationFixer, Collections.emptySet());
+		boolean loadSeparately = false;
 		
-		copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
-		
-		return createdJoinNodeName;
+		if (loadSeparately) {
+			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(ROOT_STRATEGY_NAME,
+					new EntityMappingAdapter<>((EntityMapping) this.getMapping()),
+					leftColumn,
+					rightColumn,
+					null,
+					optional ? JoinType.OUTER : JoinType.INNER,
+					beanRelationFixer, Collections.emptySet());
+			
+			copyRootJoinsTo(sourcePersister.getEntityJoinTree(), createdJoinNodeName);
+			
+			return createdJoinNodeName;
+		} else {
+			return sourcePersister.getEntityJoinTree().addTablePerClassPolymorphicRelationJoin(ROOT_STRATEGY_NAME,
+					mainPersister,
+					leftColumn,
+					rightColumn,
+					new HashSet<>(this.subEntitiesPersisters.values()),
+					beanRelationFixer);
+		}
 	}
 	
 	@Override
