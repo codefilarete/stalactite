@@ -190,7 +190,6 @@ public class EntityTreeQueryBuilder<C> {
 			Map<JoinRowConsumer, Fromable> tablePerConsumer = new HashMap<>();
 			ConsumerNode consumerRoot = new ConsumerNode(tree.getRoot().toConsumer(createDedicatedRowDecoder(tree.getRoot())));
 			tree.foreachJoinWithDepth(consumerRoot, (targetOwner, currentNode) -> {
-				EntityJoinTree<?, ?> tree1 = tree;
 				Holder<JoinRowConsumer> consumerHolder = new Holder<>();
 				Function<? super Selectable<?>, String> aliasProvider = column -> columnAliases.get(tablePerConsumer.get(consumerHolder.get()).findColumn(column.getExpression()));
 				JoinRowConsumer consumer = currentNode.toConsumer(new ColumnedRow(aliasProvider));
@@ -209,14 +208,7 @@ public class EntityTreeQueryBuilder<C> {
 		 * @return
 		 */
 		private ColumnedRow createDedicatedRowDecoder(JoinNode node) {
-			return new ColumnedRow(column -> {
-				Fromable nodeTable = tablePerJoinNode.get(node);
-//				if (!nodeTable.getName().equals(column.getTable().getName())) {
-//					throw new IllegalArgumentException("Column table doesn't match node table : something went wrong during alias building."
-//														   + " Column table is " + column.getTable().getName() + " vs " + nodeTable.getName());
-//				}
-				return columnAliases.get(nodeTable.findColumn(column.getExpression()));
-			});
+			return new ColumnedRow(column -> columnAliases.get(tablePerJoinNode.get(node).findColumn(column.getExpression())));
 		}
 	}
 	

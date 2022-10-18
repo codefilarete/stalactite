@@ -333,26 +333,6 @@ public class EntityJoinTree<C, I> {
 			BeanRelationFixer<C, U> beanRelationFixer,
 			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy,
 			Column<T2, DTYPE> discriminatorColumn) {
-
-
-//		Holder<TablePerClassPolymorphicRelationJoinNode<U, T1, JOINCOLTYPE, ID>> createdJoinHolder = new Holder<>();
-//		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
-//			TablePerClassPolymorphicRelationJoinNode<U, T1, JOINCOLTYPE, ID> relationJoinNode = new TablePerClassPolymorphicRelationJoinNode<>(parent,
-//					subPersistersUnion,
-//					leftJoinColumn,
-//					rightJoinColumn,
-//					JoinType.OUTER,
-//					subPersistersUnion.getColumns(),
-//					mainPersister.getClassToPersist().getSimpleName(),
-//					new EntityMappingAdapter<>(mainPersister.getMapping()),
-//					(BeanRelationFixer<Object, U>) beanRelationFixer,
-//					discriminatorPseudoColumn);
-//			createdJoinHolder.set(relationJoinNode);
-//			return relationJoinNode;
-//		});
-//		
-//		this.addTablePerClassPolymorphicSubPersistersJoins(relationJoinName, mainPersister, createdJoinHolder.get(), subPersisters);
-		
 		
 		Holder<SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>> createdJoinHolder = new Holder<>();
 		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
@@ -378,8 +358,6 @@ public class EntityJoinTree<C, I> {
 			return polymorphicRelationJoinNode;
 		});
 		
-//		this.addSingleTableSubPersistersJoin(relationJoinName, mainPersister, createdJoinHolder.get(), subPersisters, polymorphismPolicy);
-		
 		return relationJoinName;
 	}
 	
@@ -393,14 +371,8 @@ public class EntityJoinTree<C, I> {
 		subPersisters.forEach(subPersister -> {
 			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
 			PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<U, V, ID>(
-					new PolymorphicMergeEntityInflater<>(mainPersister, localSubPersister), columnedRow) {
-				@Override
-				public String toString() {
-					return "me";
-				}
-			};
+					new PolymorphicMergeEntityInflater<>(mainPersister, localSubPersister), columnedRow);
 			mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer, polymorphismPolicy.getDiscriminatorValue(localSubPersister.getClassToPersist()));
-//			System.out.println("ici");
 		});
 	}
 
@@ -431,27 +403,6 @@ public class EntityJoinTree<C, I> {
 		@Override
 		public RowTransformer<D> copyTransformerWithAliases(ColumnedRow columnedRow) {
 			return subPersister.getMapping().copyTransformerWithAliases(columnedRow);
-//			return new RowTransformer<D>() {
-//				@Override
-//				public D transform(Row row) {
-//					return subTransformer.transform(row);
-//				}
-//				
-//				@Override
-//				public void applyRowToBean(Row row, Object bean) {
-//					
-//				}
-//				
-//				@Override
-//				public AbstractTransformer copyWithAliases(ColumnedRow columnedRow) {
-//					return null;
-//				}
-//				
-//				@Override
-//				public void addTransformerListener(TransformerListener listener) {
-//					
-//				}
-//			};
 		}
 		
 		@Override

@@ -112,7 +112,6 @@ public class EntityTreeInflater<C> {
 				@Override
 				public EntityCreationResult apply(ConsumerNode join, Object entity) {
 					// processing current depth
-					ConsumerNode consumerRoot1 = consumerRoot;
 					JoinRowConsumer consumer = join.getConsumer();
 					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
 						((PassiveJoinRowConsumer) consumer).consume(entity, row);
@@ -132,8 +131,6 @@ public class EntityTreeInflater<C> {
 							} else {
 								return new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
 							}
-//							List<ConsumerNode> nodeBranch = java.util.Collections.singletonList(Iterables.find(join.consumers, c -> nextRowConsumer == c.consumer));
-//							return new EntityCreationResult(relatedEntity, nodeBranch);
 						}
 						return new EntityCreationResult(relatedEntity, join);
 					} else {
