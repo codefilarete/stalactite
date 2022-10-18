@@ -4,16 +4,16 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * 
@@ -46,6 +46,11 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	private RelationMode relationMode = RelationMode.ALL;
 	/** Optional provider of collection instance to be used if collection value is null */
 	private Supplier<C> collectionFactory;
+	
+	/**
+	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
+	 */
+	private boolean fetchSeparately;
 	
 	/**
 	 * Default, simple constructor.
@@ -164,6 +169,18 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public void setCollectionFactory(Supplier<C> collectionFactory) {
 		this.collectionFactory = collectionFactory;
+	}
+	
+	public boolean isFetchSeparately() {
+		return fetchSeparately;
+	}
+	
+	public void setFetchSeparately(boolean fetchSeparately) {
+		this.fetchSeparately = fetchSeparately;
+	}
+	
+	public void setLoadSeparately() {
+		setFetchSeparately(true);
 	}
 	
 	private class MappedByConfiguration {

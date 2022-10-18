@@ -57,8 +57,8 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	
 	@Override
 	public void addSelectCascade(Column sourcePrimaryKey,
-								 Column relationOwner    // foreign key on target table
-	) {
+								 Column relationOwner,    // foreign key on target table
+								 boolean loadSeparately) {
 		// we add target subgraph joins to main persister
 		Column<Table, TRGTID> primaryKey = (Column<Table, TRGTID>) Iterables.first(targetPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 		String joinNodeName = targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, manyRelationDescriptor.getRelationFixer(),
@@ -66,8 +66,11 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					TRGTID identifier = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
 					Integer targetEntityIndex = columnedRow.getValue(indexingColumn, row);
 					return identifier + "-" + targetEntityIndex;
-				}, EntityJoinTree.ROOT_STRATEGY_NAME, relationOwner.isNullable(),
-				Arrays.asHashSet(indexingColumn, primaryKey));
+				},
+				EntityJoinTree.ROOT_STRATEGY_NAME,
+				relationOwner.isNullable(),
+				Arrays.asHashSet(indexingColumn, primaryKey),
+				loadSeparately);
 		
 		addIndexSelection(joinNodeName, primaryKey);
 		

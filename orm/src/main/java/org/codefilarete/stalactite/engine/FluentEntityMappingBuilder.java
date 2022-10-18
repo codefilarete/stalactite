@@ -7,13 +7,13 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.function.Serie;
-import org.codefilarete.tool.function.TriFunction;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.function.Serie;
+import org.codefilarete.tool.function.TriFunction;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class. 
@@ -510,6 +510,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode);
 		
+		@Override
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately();
 	}
 	
 	/**
@@ -565,6 +567,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
+		
+		@Override
+		FluentMappingBuilderOneToManyListOptions<C, I, O, S> fetchSeparately();
 	}
 	
 	/**
@@ -649,6 +654,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 
 		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
+		
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>

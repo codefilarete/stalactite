@@ -6,16 +6,18 @@ import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
+import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToManyOptions;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
+import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
-import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
@@ -45,6 +47,7 @@ import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions;
@@ -59,11 +62,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
-import static org.codefilarete.stalactite.engine.MappingEase.embeddableBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
+import static org.codefilarete.stalactite.engine.MappingEase.*;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
+import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.mockito.ArgumentMatchers.any;
@@ -101,9 +103,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Object[][] result = new Object[][] {
 				{	"single table",
 					entityBuilder(Vehicle.class, LONG_TYPE)
-						.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 						.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-								.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+								.mapKey(Engine::getId, ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel), "CAR")
@@ -113,9 +115,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext1.getConnectionProvider() },
 				{	"joined tables",
 					entityBuilder(Vehicle.class, LONG_TYPE)
-						.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 						.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-								.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+								.mapKey(Engine::getId, ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel))
@@ -125,9 +127,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext2.getConnectionProvider() },
 				{	"table per class",
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-									.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+									.mapKey(Engine::getId, ALREADY_ASSIGNED))
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel))
@@ -186,17 +188,17 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		
 		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
-				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.map(Person::getName);
 		
 		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(City::getId, ALREADY_ASSIGNED)
 				.map(City::getName);
 		
 		Object[][] result = new Object[][] {
 				{	"single table",
 						entityBuilder(Country.class, Identifier.LONG_TYPE)
-								.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Country::getId, ALREADY_ASSIGNED)
 								.map(Country::getName)
 								.map(Country::getDescription)
 								.mapOneToOne(Country::getPresident, personMappingBuilder)
@@ -208,7 +210,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				},
 				{	"joined tables",
 						entityBuilder(Country.class, Identifier.LONG_TYPE)
-								.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Country::getId, ALREADY_ASSIGNED)
 								.map(Country::getName)
 								.map(Country::getDescription)
 								.mapOneToOne(Country::getPresident, personMappingBuilder)
@@ -287,9 +289,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Object[][] result = new Object[][] {
 					{	"single table / one-to-one with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-										.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+										.mapKey(Engine::getId, ALREADY_ASSIGNED))
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -304,7 +306,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							persistenceContext1.getConnectionProvider() },
 				{	"joined tables / one-to-one with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -396,9 +398,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Object[][] result = new Object[][] {
 				{	"single table / one-to-many with association table",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-										.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+										.mapKey(Engine::getId, ALREADY_ASSIGNED))
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -413,9 +415,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext1.getConnectionProvider() },
 				{	"single table / one-to-many with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-										.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+										.mapKey(Engine::getId, ALREADY_ASSIGNED))
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -430,7 +432,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext2.getConnectionProvider() },
 				{	"joined tables / one-to-many with association table",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -445,7 +447,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext3.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -460,7 +462,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext4.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association / each subclass declares its association",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -481,7 +483,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						persistenceContext5.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association / association is defined as common property",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapOneToManyList(Vehicle::getWheels, entityBuilder(Wheel.class, String.class)
 										// please note that we use an already-assigned policy because it requires entities to be mark
 										// as persisted after select, so we test also select listener of relation
@@ -579,7 +581,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 //						persistenceContext1.getConnectionProvider() },
 				{	"joined tables / one-to-many with association table",
 						entityBuilder(Vehicle.class, LONG_TYPE)
-								.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
@@ -655,9 +657,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void oneSubClass() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -719,9 +721,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -797,10 +799,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses_withCommonProperties() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.map(Vehicle::getColor)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -894,9 +896,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void listenersAreNotified() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -952,9 +954,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void oneSubClass() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1015,9 +1017,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1121,10 +1123,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses_withCommonProperties() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.map(Vehicle::getColor)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1224,9 +1226,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void listenersAreNotified() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1282,9 +1284,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void oneSubClass() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1346,9 +1348,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1435,10 +1437,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void twoSubClasses_withCommonProperties() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.map(Vehicle::getColor)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1527,9 +1529,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		void listenersAreNotified() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id
-					.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Vehicle::getEngine, entityBuilder(Engine.class, LONG_TYPE)
-							.mapKey(Engine::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED))
+							.mapKey(Engine::getId, ALREADY_ASSIGNED))
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
@@ -1592,14 +1594,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 									.addSubClass(subentityBuilder(Truk.class))
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1665,14 +1667,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 									.addSubClass(subentityBuilder(Truk.class))
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1738,7 +1740,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.map(Vehicle::getColor)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 									.addSubClass(subentityBuilder(Truk.class), "T")
@@ -1746,7 +1748,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1840,7 +1842,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<Vehicle, Identifier<Long>> vehicleConfiguration =
 					entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.map(Vehicle::getColor)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 									.addSubClass(subentityBuilder(Truk.class), "T")
@@ -1848,7 +1850,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
-					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
@@ -1934,453 +1936,190 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 	}
 	
 	
-	@Nested
-	class OneToPolymorphicMany {
+	private enum PolymorphismType {
+		SINGLE_TABLE,
+		JOIN_TABLE,
+		TABLE_PER_CLASS
+	}
+	
+	static EntityPersister<Country, Identifier<Long>> generateOneToManyTestCase(PolymorphismType type,
+																				boolean withAssociationTable,
+																				boolean fetchSeparately,
+																				PersistenceContext persistenceContext) {
+		FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
+				embeddableBuilder(Country.class)
+						.map(Country::getName)
+						.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
+								.map(Timestamp::getCreationDate)
+								.map(Timestamp::getModificationDate));
 		
-		@Test
-		void oneToJoinedTables_crud_withAssociationTable() {
-			
-			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
-					embeddableBuilder(Country.class)
-							.map(Country::getName)
-							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
-									.map(Timestamp::getCreationDate)
-									.map(Timestamp::getModificationDate));
-			
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
-					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName)
-							.mapPolymorphism(PolymorphismPolicy.<City>joinTable()
-									.addSubClass(subentityBuilder(Village.class)
-										.map(Village::getBarCount))
-									.addSubClass(subentityBuilder(Town.class)
-										.map(Town::getDiscotecCount))
-							);
-			
-			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.mapOneToManySet(Country::getCities, cityConfiguration)
-								.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
-								.cascading(RelationMode.ALL)
-							.mapSuperClass(timestampedPersistentBeanMapping)
-							.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			// insert
-			Country country = new Country(1L);
-			Village grenoble = new Village(42L);
-			grenoble.setName("Grenoble");
-			country.addCity(grenoble);
-			testInstance.insert(country);
-			
-			// testing select
-			Country loadedCountry = testInstance.select(country.getId());
-			assertThat(loadedCountry).isEqualTo(country);
-			// ensuring that reverse side is also set
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
-			
-			// testing update and select of mixed type of City
-			Town lyon = new Town(17L);
-			lyon.setDiscotecCount(123);
-			lyon.setName("Lyon");
-			country.addCity(lyon);
-			grenoble.setBarCount(51);
-			testInstance.update(country, loadedCountry, true);
-			
-			loadedCountry = testInstance.select(country.getId());
-			// resulting select must contain Town and Village
-			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
-			// bidirectionality must be preserved
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
-			
-			// testing update : removal of a city, reversed column must be set to null
-			Country modifiedCountry = new Country(country.getId());
-			modifiedCountry.addCity(Iterables.first(country.getCities()));
-			
-			testInstance.update(modifiedCountry, country, false);
-			// there's only 1 relation in table
-			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
-					.mapKey(i -> i, "Country_id", Long.class)
-					.execute();
-			assertThat(cityCountryIds).isEqualTo(Arrays.asList(country.getId().getSurrogate()));
-
-			// testing delete
-			testInstance.delete(modifiedCountry);
-			// Cities shouldn't be deleted (we didn't ask for delete orphan)
-			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
-					.mapKey(i -> i, "id", Long.class)
-					.execute();
-			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
+				entityBuilder(City.class, LONG_TYPE)
+						.mapKey(City::getId, ALREADY_ASSIGNED)
+						.map(City::getName)
+						.mapPolymorphism(givePolymorphismPolicy(type));
+		
+		FluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City, Set<City>> persisterConfiguration = entityBuilder(Country.class, LONG_TYPE)
+				.mapKey(Country::getId, ALREADY_ASSIGNED)
+				.mapOneToManySet(Country::getCities, cityConfiguration)
+				.cascading(RelationMode.ALL);
+		
+		persisterConfiguration
+				.mapSuperClass(timestampedPersistentBeanMapping);
+		
+		if (withAssociationTable) {
+			persisterConfiguration.reverselySetBy(City::setCountry);    // necessary if you want bidirectionnality to be set in memory
+		} else {
+			persisterConfiguration.mappedBy(City::getCountry);
 		}
 		
-		@Test
-		void oneToJoinedTables_crud_ownedByReverseSide() {
-			
-			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
-					embeddableBuilder(Country.class)
-							.map(Country::getName)
-							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
-									.map(Timestamp::getCreationDate)
-									.map(Timestamp::getModificationDate));
-			
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
-					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName)
-							.mapPolymorphism(PolymorphismPolicy.<City>joinTable()
-									.addSubClass(subentityBuilder(Village.class)
-											.map(Village::getBarCount))
-									.addSubClass(subentityBuilder(Town.class)
-											.map(Town::getDiscotecCount))
-							);
-			
-			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapOneToManySet(Country::getCities, cityConfiguration)
-						.mappedBy(City::getCountry)
-						.cascading(RelationMode.ALL)
-					.mapSuperClass(timestampedPersistentBeanMapping)
-					.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			// insert
-			Country country = new Country(1L);
-			Village grenoble = new Village(42L);
-			grenoble.setName("Grenoble");
-			country.addCity(grenoble);
-			testInstance.insert(country);
-			
-			// testing select
-			Country loadedCountry = testInstance.select(country.getId());
-			assertThat(loadedCountry).isEqualTo(country);
-			
-			// we use a printer to compare our results because entities override equals() which only keep "id" into account
-			// which is far from sufficient for ou checking
-			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
-			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
-					.addProperty(Country::getId)
-					.addProperty(Country::getName)
-					.addProperty(Country::getTimestamp)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
-					.build();
-			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
-					.addProperty(City::getId)
-					.addProperty(Village::getBarCount)
-					.addProperty(Town::getDiscotecCount)
-					.addProperty(City::getName)
-					.addProperty(City::getCountry)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
-					.withPrinter(Country.class, countryPrinter::toString)
-					.build();
-			
-			assertThat(loadedCountry.getCities())
-					.usingElementComparator(Comparator.comparing(cityPrinter::toString))
-					.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
-					.isEqualTo(country.getCities());
-			
-			// ensuring that reverse side is also set
-			assertThat(loadedCountry.getCities())
-					.extracting(City::getCountry)
-					.containsExactlyInAnyOrder(loadedCountry);
-			
-			// testing update and select of mixed type of City
-			Town lyon = new Town(17L);
-			lyon.setDiscotecCount(123);
-			lyon.setName("Lyon");
-			country.addCity(lyon);
-			grenoble.setBarCount(51);
-			testInstance.update(country, loadedCountry, true);
-			
-			loadedCountry = testInstance.select(country.getId());
-			// resulting select must contain Town and Village
-			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
-			// bidirectionality must be preserved
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
-			
-			// testing update : removal of a city, reversed column must be set to null
-			Country modifiedCountry = new Country(country.getId());
-			modifiedCountry.addCity(Iterables.first(country.getCities()));
-			
-			testInstance.update(modifiedCountry, country, false);
-			// there's only 1 relation in table
-			List<Long> cityCountryIds = persistenceContext.newQuery("select CountryId from City", Long.class)
-					.mapKey(i -> i, "CountryId", Long.class)
+		if (fetchSeparately) {
+			persisterConfiguration.fetchSeparately();
+		}
+		
+		return persisterConfiguration.build(persistenceContext);
+	}
+	
+	static PolymorphismPolicy<City> givePolymorphismPolicy(PolymorphismType type) {
+		switch (type) {
+			case SINGLE_TABLE:
+				return PolymorphismPolicy.<City>singleTable()
+						.addSubClass(subentityBuilder(Village.class)
+								.map(Village::getBarCount), "V")
+						.addSubClass(subentityBuilder(Town.class)
+								.map(Town::getDiscotecCount), "T");
+			case JOIN_TABLE:
+				return PolymorphismPolicy.<City>joinTable()
+						.addSubClass(subentityBuilder(Village.class)
+								.map(Village::getBarCount))
+						.addSubClass(subentityBuilder(Town.class)
+								.map(Town::getDiscotecCount));
+			case TABLE_PER_CLASS:
+				return PolymorphismPolicy.<City>tablePerClass()
+						.addSubClass(subentityBuilder(Village.class)
+								.map(Village::getBarCount))
+						.addSubClass(subentityBuilder(Town.class)
+								.map(Town::getDiscotecCount));
+			default:
+				throw new UnsupportedOperationException();
+		}
+	}
+	
+	public static Stream<Object[]> OneToPolymorphicMany_crud() {
+		// Building result by making a combination of 3 infos :
+		// - polymorphism type,
+		// - with association table,
+		// - load relation separately
+		return Stream.of(PolymorphismType.values())
+				.flatMap(type -> Stream.of(true, false)
+						.flatMap(withAssociationTable -> Stream.of(true, false)
+								.map(fetchSeparately -> {
+									PersistenceContext persistenceContext1 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
+									String testCaseName = new StringAppender().ccat(withAssociationTable, fetchSeparately, type, ", ").toString();
+									return new Object[] {
+											testCaseName,
+											generateOneToManyTestCase(type, withAssociationTable, fetchSeparately, persistenceContext1), persistenceContext1,
+											// following info are only for assertion purpose
+											withAssociationTable,
+											type == PolymorphismType.TABLE_PER_CLASS };
+								})));
+	}
+	
+	@ParameterizedTest(name = "{0}")
+	@MethodSource
+	void OneToPolymorphicMany_crud(String displayName, EntityPersister<Country, Identifier<Long>> testInstance, PersistenceContext persistenceContext,
+								   boolean withAssociationTable,
+								   boolean isTablePerClass) {
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		// insert
+		Country country = new Country(1L);
+		Village grenoble = new Village(42L);
+		grenoble.setName("Grenoble");
+		country.addCity(grenoble);
+		testInstance.insert(country);
+		
+		// testing select
+		Country loadedCountry = testInstance.select(country.getId());
+		assertThat(loadedCountry).isEqualTo(country);
+		
+		// we use a printer to compare our results because entities override equals() which only keep "id" into account
+		// which is far from sufficient for our checking
+		// Note that we don't use ObjectPrinterBuilder#printerFor because it takes getCities() into account whereas its code is not ready for recursivity 
+		ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
+				.addProperty(Country::getId)
+				.addProperty(Country::getName)
+				.addProperty(Country::getTimestamp)
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+				.build();
+		ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
+				.addProperty(City::getId)
+				.addProperty(Village::getBarCount)
+				.addProperty(Town::getDiscotecCount)
+				.addProperty(City::getName)
+				.addProperty(City::getCountry)
+				.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
+				.withPrinter(Country.class, countryPrinter::toString)
+				.build();
+		
+		assertThat(loadedCountry.getCities())
+				.usingElementComparator(Comparator.comparing(cityPrinter::toString))
+				.withRepresentation(new PartialRepresentation<>(City.class, cityPrinter))
+				.isEqualTo(country.getCities());
+		
+		// ensuring that reverse side is also set
+		assertThat(loadedCountry.getCities())
+				.extracting(City::getCountry)
+				.containsExactlyInAnyOrder(loadedCountry);
+		
+		// testing update and select of mixed type of City
+		Town lyon = new Town(17L);
+		lyon.setDiscotecCount(123);
+		lyon.setName("Lyon");
+		country.addCity(lyon);
+		grenoble.setBarCount(51);
+		testInstance.update(country, loadedCountry, true);
+		
+		loadedCountry = testInstance.select(country.getId());
+		// resulting select must contain Town and Village
+		assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
+		// bidirectionality must be preserved
+		assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
+		
+		// testing update : removal of a city, reversed column must be set to null
+		Country modifiedCountry = new Country(country.getId());
+		modifiedCountry.addCity(Iterables.first(country.getCities()));
+		
+		testInstance.update(modifiedCountry, country, false);
+		// there's only 1 relation in table
+		List<Long> cityCountryIds;
+		if (withAssociationTable) {
+			cityCountryIds = persistenceContext.newQuery("select Country_Id from Country_cities", Long.class)
+					.mapKey("Country_Id", Long.class)
+					.execute();
+			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getSurrogate());
+		} else if (isTablePerClass) {
+			cityCountryIds = persistenceContext.newQuery("select CountryId from Town union all select CountryId from Village", Long.class)
+					.mapKey("CountryId", Long.class)
 					.execute();
 			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
-			
-			// testing delete
-			testInstance.delete(modifiedCountry);
-			// Cities shouldn't be deleted (we didn't ask for delete orphan)
-			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
-					.mapKey(i -> i, "id", Long.class)
+		} else {
+			cityCountryIds = persistenceContext.newQuery("select CountryId from City", Long.class)
+					.mapKey("CountryId", Long.class)
 					.execute();
-			assertThat(new HashSet<>(cityIds)).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
+			assertThat(new HashSet<>(cityCountryIds)).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
 		}
 		
-		@Test
-		void oneToSingleTable_crud_withAssociationTable() {
-			
-			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
-					embeddableBuilder(Country.class)
-							.map(Country::getName)
-							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
-									.map(Timestamp::getCreationDate)
-									.map(Timestamp::getModificationDate));
-			
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
-					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName)
-							.mapPolymorphism(PolymorphismPolicy.<City>singleTable()
-									.addSubClass(subentityBuilder(Village.class)
-											.map(Village::getBarCount), "V")
-									.addSubClass(subentityBuilder(Town.class)
-											.map(Town::getDiscotecCount), "T")
-							);
-			
-			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapOneToManySet(Country::getCities, cityConfiguration)
-						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
-						.cascading(RelationMode.ALL)
-					.mapSuperClass(timestampedPersistentBeanMapping)
-					.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			// insert
-			Country country = new Country(1L);
-			Village grenoble = new Village(42L);
-			grenoble.setName("Grenoble");
-			country.addCity(grenoble);
-			testInstance.insert(country);
-			
-			// testing select
-			Country loadedCountry = testInstance.select(country.getId());
-			assertThat(loadedCountry).isEqualTo(country);
-			// ensuring that reverse side is also set
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
-			
-			// testing update and select of mixed type of City
-			Town lyon = new Town(17L);
-			lyon.setDiscotecCount(123);
-			lyon.setName("Lyon");
-			country.addCity(lyon);
-			grenoble.setBarCount(51);
-			testInstance.update(country, loadedCountry, true);
-			
-			loadedCountry = testInstance.select(country.getId());
-			// resulting select must contain Town and Village
-			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
-			// bidirectionality must be preserved
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
-			
-			// testing update : removal of a city, reversed column must be set to null
-			Country modifiedCountry = new Country(country.getId());
-			modifiedCountry.addCity(Iterables.first(country.getCities()));
-			
-			testInstance.update(modifiedCountry, country, false);
-			// there's only 1 relation in table
-			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
-					.mapKey(i -> i, "Country_id", Long.class)
-					.execute();
-			assertThat(cityCountryIds).containsExactly(country.getId().getSurrogate());
-			
-			// testing delete
-			testInstance.delete(modifiedCountry);
-			// Cities shouldn't be deleted (we didn't ask for delete orphan)
-			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
-					.mapKey(i -> i, "id", Long.class)
-					.execute();
-			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
-		}
-		
-		@Test
-		void oneToSingleTable_crud_ownedByReverseSide() {
-			
-			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
-					embeddableBuilder(Country.class)
-							.map(Country::getName)
-							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
-									.map(Timestamp::getCreationDate)
-									.map(Timestamp::getModificationDate));
-			
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
-					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName)
-							.mapPolymorphism(PolymorphismPolicy.<City>singleTable()
-									.addSubClass(subentityBuilder(Village.class)
-											.map(Village::getBarCount), "V")
-									.addSubClass(subentityBuilder(Town.class)
-											.map(Town::getDiscotecCount), "T")
-							);
-			
-			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapOneToManySet(Country::getCities, cityConfiguration)
-					.mappedBy(City::getCountry)
-					.cascading(RelationMode.ALL)
-					.mapSuperClass(timestampedPersistentBeanMapping)
-					.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			// insert
-			Country country = new Country(1L);
-			Village grenoble = new Village(42L);
-			grenoble.setName("Grenoble");
-			country.addCity(grenoble);
-			testInstance.insert(country);
-			
-			// testing select
-			Country loadedCountry = testInstance.select(country.getId());
-			assertThat(loadedCountry).isEqualTo(country);
-			
-			// we use a printer to compare our results because entities override equals() which only keep "id" into account
-			// which is far from sufficient for ou checking
-			// Note that we don't use ObjectPrinterBuilder#printerFor because it take getCities() into account whereas its code is not ready for recursivity 
-			ObjectPrinter<Country> countryPrinter = new ObjectPrinterBuilder<Country>()
-					.addProperty(Country::getId)
-					.addProperty(Country::getName)
-					.addProperty(Country::getTimestamp)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
-					.build();
-			ObjectPrinter<City> cityPrinter = new ObjectPrinterBuilder<City>()
-					.addProperty(City::getId)
-					.addProperty(Village::getBarCount)
-					.addProperty(Town::getDiscotecCount)
-					.addProperty(City::getName)
-					.addProperty(City::getCountry)
-					.withPrinter(AbstractIdentifier.class, Functions.chain(AbstractIdentifier::getSurrogate, String::valueOf))
-					.withPrinter(Country.class, countryPrinter::toString)
-					.build();
-			
-			assertThat(loadedCountry.getCities())
-					.usingElementComparator(Comparator.comparing(cityPrinter::toString))
-					.isEqualTo(country.getCities());
-			// ensuring that reverse side is also set
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
-			
-			// testing update and select of mixed type of City
-			Town lyon = new Town(17L);
-			lyon.setDiscotecCount(123);
-			lyon.setName("Lyon");
-			country.addCity(lyon);
-			grenoble.setBarCount(51);
-			testInstance.update(country, loadedCountry, true);
-			
-			loadedCountry = testInstance.select(country.getId());
-			// resulting select must contain Town and Village
-			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
-			// bidirectionality must be preserved
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
-			
-			// testing update : removal of a city, reversed column must be set to null
-			Country modifiedCountry = new Country(country.getId().getSurrogate());
-			modifiedCountry.addCity(Iterables.first(country.getCities()));
-			
-			testInstance.update(modifiedCountry, country, false);
-			// there's only 1 relation in table
-			List<Long> cityCountryIds = persistenceContext.newQuery("select CountryId from City", Long.class)
-					.mapKey(i -> i, "CountryId", Long.class)
-					.execute();
-			assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
-			
-			// testing delete
-			testInstance.delete(modifiedCountry);
-			// Cities shouldn't be deleted (we didn't ask for delete orphan)
-			List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
-					.mapKey(i -> i, "id", Long.class)
-					.execute();
-			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
-		}
-		
-		@Test
-		void oneToTablePerClass_crud_withAssociationTable() {
-			
-			FluentEmbeddableMappingBuilder<Country> timestampedPersistentBeanMapping =
-					embeddableBuilder(Country.class)
-							.map(Country::getName)
-							.embed(Country::getTimestamp, embeddableBuilder(Timestamp.class)
-									.map(Timestamp::getCreationDate)
-									.map(Timestamp::getModificationDate));
-			
-			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
-					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-							.map(City::getName)
-							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
-									.addSubClass(subentityBuilder(Village.class)
-											.map(Village::getBarCount))
-									.addSubClass(subentityBuilder(Town.class)
-											.map(Town::getDiscotecCount))
-							);
-			
-			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.mapOneToManySet(Country::getCities, cityConfiguration)
-						.reverselySetBy(City::setCountry)	// necessary if you want bidirectionnality to be set in memory
-						.cascading(RelationMode.ALL)
-					.mapSuperClass(timestampedPersistentBeanMapping)
-					.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			// insert
-			Country country = new Country(1L);
-			Village grenoble = new Village(42L);
-			grenoble.setName("Grenoble");
-			country.addCity(grenoble);
-			testInstance.insert(country);
-			
-			// testing select
-			Country loadedCountry = testInstance.select(country.getId());
-			assertThat(loadedCountry).isEqualTo(country);
-			// ensuring that reverse side is also set
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry);
-			
-			// testing update and select of mixed type of City
-			Town lyon = new Town(17L);
-			lyon.setDiscotecCount(123);
-			lyon.setName("Lyon");
-			country.addCity(lyon);
-			grenoble.setBarCount(51);
-			testInstance.update(country, loadedCountry, true);
-			
-			loadedCountry = testInstance.select(country.getId());
-			// resulting select must contain Town and Village
-			assertThat(loadedCountry.getCities()).containsExactlyInAnyOrder(grenoble, lyon);
-			// bidirectionality must be preserved
-			assertThat(loadedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(loadedCountry, loadedCountry);
-			
-			// testing update : removal of a city, reversed column must be set to null
-			Country modifiedCountry = new Country(country.getId());
-			modifiedCountry.addCity(Iterables.first(country.getCities()));
-			
-			testInstance.update(modifiedCountry, country, false);
-			// there's only 1 relation in table
-			List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
-					.mapKey(i -> i, "Country_id", Long.class)
-					.execute();
-			assertThat(cityCountryIds).isEqualTo(Arrays.asList(country.getId().getSurrogate()));
-			
-			// testing delete
-			testInstance.delete(modifiedCountry);
-			// Cities shouldn't be deleted (we didn't ask for delete orphan)
-			List<Long> cityIds = persistenceContext.newQuery("select id from Town union all select id from Village", Long.class)
-					.mapKey(i -> i, "id", Long.class)
-					.execute();
-			assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
-		}
+		// testing delete
+		testInstance.delete(modifiedCountry);
+		// Cities shouldn't be deleted (we didn't ask for delete orphan)
+		List<City> select = persistenceContext.getPersister(City.class).select(Arrays.asList(grenoble.getId(), lyon.getId()));
+		assertThat(select).hasSize(2);
+	}
+	
+	@Nested
+	class OneToPolymorphicMany {
 		
 		@Test
 		void oneToTablePerClass_crud_ownedByReverseSide_foreignKeysAreCreated() throws SQLException {
@@ -2394,7 +2133,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2404,7 +2143,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
 					.cascading(RelationMode.ALL)
@@ -2458,7 +2197,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration =
 					entityBuilder(City.class, LONG_TYPE)
-							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.mapKey(City::getId, ALREADY_ASSIGNED)
 							.map(City::getName)
 							.mapPolymorphism(PolymorphismPolicy.<City>tablePerClass()
 									.addSubClass(subentityBuilder(Village.class)
@@ -2468,7 +2207,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							);
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Country::getId, ALREADY_ASSIGNED)
 					.mapOneToManySet(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
 					.cascading(RelationMode.ALL)

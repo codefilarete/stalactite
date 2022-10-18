@@ -184,8 +184,10 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																				  String joinName,
 																				  boolean optional,
-																				  Set<Column<T2, ?>> selectableColumns) {
-		return surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider, joinName, optional, selectableColumns);
+																				  Set<Column<T2, ?>> selectableColumns,
+																				  boolean loadSeparately) {
+		return surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
+				joinName, optional, selectableColumns, loadSeparately);
 	}
 	
 	@Override

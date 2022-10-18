@@ -333,7 +333,8 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																				  String joinName,
 																				  boolean optional,
-																				  Set<Column<T2, ?>> selectableColumns) {
+																				  Set<Column<T2, ?>> selectableColumns,
+																				  boolean loadSeparately) {
 		
 		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMapping().getTargetTable()).getPrimaryKey().getColumns());
 		Map<EntityConfiguredJoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
@@ -352,14 +353,29 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 			});
 		}
 		
-		return sourcePersister.getEntityJoinTree().addSingleTablePolymorphicRelationJoin(joinName,
-				mainPersister,
-				leftColumn,
-				rightColumn,
-				new HashSet<>(this.subEntitiesPersisters.values()),
-				beanRelationFixer,
-				polymorphismPolicy,
-				(Column<T2, DTYPE>) discriminatorColumn);
+		if (loadSeparately) {
+			// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
+			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
+					new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
+							mainTablePK, selectExecutor,
+							DIFFERED_ENTITY_LOADER,
+							discriminatorColumn, subEntitiesPersisters::get),
+					(Column<T1, I>) leftColumn, (Column<T2, I>) rightColumn, JoinType.OUTER);
+			
+			// adding second phase loader
+			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			
+			return createdJoinNodeName;
+		} else {
+			return sourcePersister.getEntityJoinTree().addSingleTablePolymorphicRelationJoin(joinName,
+					mainPersister,
+					leftColumn,
+					rightColumn,
+					new HashSet<>(this.subEntitiesPersisters.values()),
+					beanRelationFixer,
+					polymorphismPolicy,
+					(Column<T2, DTYPE>) discriminatorColumn);
+		}
 	}
 	
 	@Override

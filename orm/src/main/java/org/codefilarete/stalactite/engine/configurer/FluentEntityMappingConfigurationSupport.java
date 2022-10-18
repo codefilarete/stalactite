@@ -422,6 +422,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				elementCollectionLinkage.setTargetTableName(tableName);
 				return null;
 			}
+			
 		};
 	}
 	
@@ -1046,10 +1047,16 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			cascadeMany.setRelationMode(relationMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}
+		
+		@Override
+		public FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately() {
+			cascadeMany.setLoadSeparately();
+			return null;	// we can return null because dispatcher will return proxy
+		}
 	}
 	
 	/**
-	 * Stores informations of {@link InheritanceConfiguration}
+	 * Stores information of {@link InheritanceConfiguration}
 	 * 
 	 * @param <E> entity type
 	 * @param <I> identifier type

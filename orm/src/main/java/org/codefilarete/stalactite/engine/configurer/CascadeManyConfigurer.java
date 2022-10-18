@@ -152,12 +152,12 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 	}
 	
 	void appendCascade(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany,
-							  EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-							  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-							  ColumnNamingStrategy joinColumnNamingStrategy,
-							  ColumnNamingStrategy indexColumnNamingStrategy,
-							  AssociationTableNamingStrategy associationTableNamingStrategy,
-							  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+					   EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+					   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+					   ColumnNamingStrategy joinColumnNamingStrategy,
+					   ColumnNamingStrategy indexColumnNamingStrategy,
+					   AssociationTableNamingStrategy associationTableNamingStrategy,
+					   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 		Column leftPrimaryKey = nullable(sourcePrimaryKey).getOr(() -> lookupSourcePrimaryKey(sourcePersister));
 		
 		RelationMode maintenanceMode = cascadeMany.getRelationMode();
@@ -183,7 +183,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					maintenanceMode == RelationMode.ASSOCIATION_ONLY,
 					connectionConfiguration);
 		}
-		configurer.configure(targetPersister);
+		configurer.configure(targetPersister, cascadeMany.isFetchSeparately());
 	}
 	
 	private Table determineTargetTable(CascadeMany<SRC, TRGT, TRGTID, C> cascadeMany) {
@@ -296,7 +296,7 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 					targetPersister.getClassToPersist());
 		}
 		
-		abstract void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister);
+		abstract void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister, boolean loadSeparately);
 		
 		public abstract CascadeConfigurationResult<SRC,TRGT> appendCascadesWithSelectIn2Phases(String tableAlias, EntityConfiguredJoinedTablesPersister<TRGT,
 						TRGTID> targetPersister, FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
@@ -346,9 +346,9 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		
 		@Override
-		void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+		void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister, boolean loadSeparately) {
 			prepare(targetPersister);
-			associationTableEngine.addSelectCascade(manyAssociationConfiguration.srcPersister);
+			associationTableEngine.addSelectCascade(manyAssociationConfiguration.srcPersister, loadSeparately);
 			addWriteCascades(associationTableEngine);
 		}
 		
@@ -572,9 +572,9 @@ public class CascadeManyConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collectio
 		}
 		
 		@Override
-		void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+		void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister, boolean loadSeparately) {
 			prepare(targetPersister);
-			mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, mappedAssociationEngine.getManyRelationDescriptor().getReverseColumn());
+			mappedAssociationEngine.addSelectCascade(manyAssociationConfiguration.leftPrimaryKey, mappedAssociationEngine.getManyRelationDescriptor().getReverseColumn(), loadSeparately);
 			addWriteCascades(mappedAssociationEngine);
 		}
 		

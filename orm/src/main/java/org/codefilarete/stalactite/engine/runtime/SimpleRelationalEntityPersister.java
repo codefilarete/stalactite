@@ -47,7 +47,7 @@ import static java.util.Collections.emptyList;
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
  * {@link ClassMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
- * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean)} and
+ * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean, boolean)} and
  * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Column, Column, String, BeanRelationFixer, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
@@ -267,7 +267,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 																				  @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider,
 																				  String joinName,
 																				  boolean optional,
-																				  Set<Column<T2, ?>> selectableColumns) {
+																				  Set<Column<T2, ?>> selectableColumns,
+																				  boolean loadSeparately) {
 		
 		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(

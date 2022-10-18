@@ -61,10 +61,6 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 		this.subEntitiesPersisters = (Map) subEntitiesPersisters;
 	}
 	
-	public Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> getSubEntitiesPersisters() {
-		return subEntitiesPersisters;
-	}
-	
 	@Override
 	public List<C> select(Iterable<I> ids) {
 		// Doing this in 2 phases

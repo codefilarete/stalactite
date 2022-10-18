@@ -62,11 +62,11 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	}
 	
 	public void addSelectCascade(Column sourcePrimaryKey,
-								 Column relationOwner    // foreign key on target table
-	) {
+								 Column relationOwner,    // foreign key on target table
+								 boolean loadSeparately) {
 		// we add target subgraph joins to main persister
 		targetPersister.joinAsMany(sourcePersister, sourcePrimaryKey, relationOwner, manyRelationDescriptor.getRelationFixer(),
-				null, EntityJoinTree.ROOT_STRATEGY_NAME, relationOwner.isNullable());
+				null, EntityJoinTree.ROOT_STRATEGY_NAME, relationOwner.isNullable(), loadSeparately);
 		
 		// we must trigger subgraph event on loading of our own graph, this is mainly for event that initializes things because given ids
 		// are not those of their entity

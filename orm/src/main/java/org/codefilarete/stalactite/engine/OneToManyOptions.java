@@ -78,4 +78,11 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 */
 	OneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
 	
+	/**
+	 * Asks to load relation in some separate query (actually may use several queries according to association table presence or polymorphism)
+	 * 
+	 * @return the global mapping configurer
+	 */
+	OneToManyOptions<C, I, O, S> fetchSeparately();
+	
 }

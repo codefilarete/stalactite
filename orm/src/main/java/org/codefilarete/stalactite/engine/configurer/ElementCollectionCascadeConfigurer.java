@@ -73,10 +73,10 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	}
 	
 	public <T extends Table, TARGET_TABLE extends Table<?>> void appendCascade(ElementCollectionLinkage<SRC, TRGT, C> linkage,
-												   EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-												   ColumnNamingStrategy columnNamingStrategy,
-												   ElementCollectionTableNamingStrategy tableNamingStrategy) {
+																			   EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+																			   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+																			   ColumnNamingStrategy columnNamingStrategy,
+																			   ElementCollectionTableNamingStrategy tableNamingStrategy) {
 		
 		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(linkage.getCollectionProvider());
 		// schema configuration
@@ -217,12 +217,12 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	}
 	
 	private void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-													RelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> elementRecordPersister,
-													Column sourcePK,
-													Column elementRecordToSourceForeignKey,
-													BiConsumer<SRC, C> collectionSetter,
-													Function<SRC, C> collectionGetter,
-													Supplier<C> collectionFactory) {
+								  RelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> elementRecordPersister,
+								  Column sourcePK,
+								  Column elementRecordToSourceForeignKey,
+								  BiConsumer<SRC, C> collectionSetter,
+								  Function<SRC, C> collectionGetter,
+								  Supplier<C> collectionFactory) {
 		// a particular collection fixer that gets raw values (elements) from ElementRecord
 		// because elementRecordPersister manages ElementRecord, so it gives them as input of the relation,
 		// hence an adaption is needed to "convert" it
@@ -232,7 +232,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 				collectionFactory,
 				(bean, input, collection) -> collection.add(input.getElement()));	// element value is taken from ElementRecord
 		
-		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, EntityJoinTree.ROOT_STRATEGY_NAME, true);
+		elementRecordPersister.joinAsMany(sourcePersister, sourcePK, elementRecordToSourceForeignKey, relationFixer, null, EntityJoinTree.ROOT_STRATEGY_NAME, true, false);
 	}
 	
 	private Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
@@ -244,7 +244,7 @@ public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collect
 	}
 	
 	/**
-	 * Mapping strategy dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.engine.AssociationRecordMappingStrategy}
+	 * Mapping strategy dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.engine.AssociationTableNamingStrategy}
 	 * in its principle.
 	 */
 	private static class ElementRecordMapping<C, I, T extends Table> extends ClassMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
