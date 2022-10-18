@@ -356,7 +356,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 					new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
 					primaryKey,
 					subclassPrimaryKey,
-					// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
+					// since we don't know what kind of sub entity is present we must do an OUTER join between common truck and all sub tables
 					JoinType.OUTER);
 		});
 		
@@ -390,7 +390,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 						new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
 						mainTablePrimaryKey,
 						subclassPrimaryKey,
-						// since we don't know what kind of sub entity is present we must do an OUTER join between common truk and all sub tables
+						// since we don't know what kind of sub entity is present we must do an OUTER join between common truck and all sub tables
 						JoinType.OUTER);
 			});
 			

@@ -6,16 +6,16 @@ import org.codefilarete.stalactite.id.Identifier;
 /**
  * @author Guillaume Mary
  */
-public class Truk extends Vehicle {
+public class Truck extends Vehicle {
 	
-	public Truk() {
+	public Truck() {
 	}
 	
-	public Truk(Long id) {
+	public Truck(Long id) {
 		this(new PersistableIdentifier<>(id));
 	}
 	
-	Truk(Identifier<Long> id) {
+	Truck(Identifier<Long> id) {
 		super(id);
 	}
 }

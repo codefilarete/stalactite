@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.engine.model.Engine;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Town;
-import org.codefilarete.stalactite.engine.model.Truk;
+import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.engine.model.Vehicle.Wheel;
 import org.codefilarete.stalactite.engine.model.Village;
@@ -109,8 +109,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel), "CAR")
-								.addSubClass(subentityBuilder(Truk.class)
-										.map(Truk::getColor), "TRUK"))
+								.addSubClass(subentityBuilder(Truck.class)
+										.map(Truck::getColor), "TRUCK"))
 						.build(persistenceContext1),
 						persistenceContext1.getConnectionProvider() },
 				{	"joined tables",
@@ -121,8 +121,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel))
-								.addSubClass(subentityBuilder(Truk.class)
-										.map(Truk::getColor)))
+								.addSubClass(subentityBuilder(Truck.class)
+										.map(Truck::getColor)))
 						.build(persistenceContext2),
 						persistenceContext2.getConnectionProvider() },
 				{	"table per class",
@@ -133,8 +133,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 								.addSubClass(subentityBuilder(Car.class)
 										.map(Car::getModel))
-								.addSubClass(subentityBuilder(Truk.class)
-										.map(Truk::getColor)))
+								.addSubClass(subentityBuilder(Truck.class)
+										.map(Truck::getColor)))
 						.build(persistenceContext3),
 						persistenceContext3.getConnectionProvider() },
 		};
@@ -151,35 +151,35 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.setEngine(new Engine(100L));
-		Truk dummyTruk = new Truk(2L);
-		dummyTruk.setColor(new Color(42));
+		Truck dummyTruck = new Truck(2L);
+		dummyTruck.setColor(new Color(42));
 		
 		// insert test
-		persister.insert(Arrays.asList(dummyCar, dummyTruk));
+		persister.insert(Arrays.asList(dummyCar, dummyTruck));
 		
 		Car dummyCarModfied = new Car(1L);
 		dummyCarModfied.setModel("Peugeot");
 		dummyCarModfied.setEngine(new Engine(200L));
-		Truk dummyTrukModfied = new Truk(2L);
-		dummyTrukModfied.setColor(new Color(99));
+		Truck dummyTruckModfied = new Truck(2L);
+		dummyTruckModfied.setColor(new Color(99));
 		
 		persister.update(dummyCarModfied, dummyCar, true);
 		
-		persister.update(dummyTrukModfied, dummyTruk, true);
+		persister.update(dummyTruckModfied, dummyTruck, true);
 		
 		connectionProvider.giveConnection().commit();
 		persister.delete(dummyCarModfied);
-		persister.delete(dummyTrukModfied);
+		persister.delete(dummyTruckModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTruckModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
+		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModfied);
 		assertThat(persister.select(dummyCar.getId())).isEqualTo(dummyCarModfied);
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId())))).isEqualTo(Arrays.asSet(dummyCarModfied,
-				dummyTrukModfied));
+		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModfied,
+				dummyTruckModfied));
 	}
 	
 	static Object[][] polymorphism_trunkHasOneToMany_data() {
@@ -300,8 +300,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Radio::getSerialNumber, alreadyAssigned(Radio::markAsPersisted, Radio::isPersisted))
 														.map(Radio::getModel)).mappedBy(Radio::getCar), "CAR")
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor), "TRUK"))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor), "TRUCK"))
 								.build(persistenceContext1),
 							persistenceContext1.getConnectionProvider() },
 				{	"joined tables / one-to-one with mapped association",
@@ -315,8 +315,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Radio::getSerialNumber, alreadyAssigned(Radio::markAsPersisted, Radio::isPersisted))
 														.map(Radio::getModel)).mappedBy(Radio::getCar))
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor)))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor)))
 								.build(persistenceContext2),
 						persistenceContext2.getConnectionProvider() },
 //				{	"table per class",
@@ -327,8 +327,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 //						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 //								.addSubClass(subentityBuilder(Car.class)
 //										.map(Car::getModel))
-//								.addSubClass(subentityBuilder(Truk.class)
-//										.map(Truk::getColor)))
+//								.addSubClass(subentityBuilder(Truck.class)
+//										.map(Truck::getColor)))
 //						.build(persistenceContext3),
 //						persistenceContext3.getConnectionProvider() },
 		};
@@ -345,38 +345,38 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.setRadio(new Radio("XYZ-ABC-01"));
-		Truk dummyTruk = new Truk(2L);
-		dummyTruk.setColor(new Color(42));
+		Truck dummyTruck = new Truck(2L);
+		dummyTruck.setColor(new Color(42));
 		
 		// insert test
-		persister.insert(Arrays.asList(dummyCar, dummyTruk));
+		persister.insert(Arrays.asList(dummyCar, dummyTruck));
 		
 		Car dummyCarModfied = new Car(1L);
 		dummyCarModfied.setModel("Peugeot");
 		dummyCarModfied.setRadio(new Radio("XYZ-ABC-02"));
-		Truk dummyTrukModfied = new Truk(2L);
-		dummyTrukModfied.setColor(new Color(99));
+		Truck dummyTruckModfied = new Truck(2L);
+		dummyTruckModfied.setColor(new Color(99));
 		
 		persister.update(dummyCarModfied, dummyCar, true);
 		
-		persister.update(dummyTrukModfied, dummyTruk, true);
+		persister.update(dummyTruckModfied, dummyTruck, true);
 		
 		connectionProvider.giveConnection().commit();
 		persister.delete(dummyCarModfied);
-		persister.delete(dummyTrukModfied);
+		persister.delete(dummyTruckModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTruckModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
+		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
 		assertThat(selectedCar).isEqualTo(dummyCarModfied);
 		assertThat(((Car) selectedCar).getRadio().isPersisted()).isTrue();	// testing afterSelect listener of sub entities relations 
 		assertThat(((Car) selectedCar).getRadio()).isEqualTo(dummyCarModfied.getRadio());
-		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId())))).isEqualTo(Arrays.asSet(dummyCarModfied,
-				dummyTrukModfied));
+		assertThat(new HashSet<>(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId())))).isEqualTo(Arrays.asSet(dummyCarModfied,
+				dummyTruckModfied));
 	}
 	
 	static Object[][] polymorphism_subClassHasOneToMany_data() {
@@ -409,8 +409,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).reverselySetBy(Wheel::setVehicle), "CAR")
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor), "TRUK"))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor), "TRUCK"))
 								.build(persistenceContext1),
 						persistenceContext1.getConnectionProvider() },
 				{	"single table / one-to-many with mapped association",
@@ -426,8 +426,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).indexedBy(indexColumn1).mappedBy(Wheel::setVehicle), "CAR")
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor), "TRUK"))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor), "TRUCK"))
 								.build(persistenceContext2),
 						persistenceContext2.getConnectionProvider() },
 				{	"joined tables / one-to-many with association table",
@@ -441,8 +441,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).reverselySetBy(Wheel::setVehicle))
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor)))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor)))
 								.build(persistenceContext3),
 						persistenceContext3.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association",
@@ -456,8 +456,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).indexedBy(indexColumn2).mappedBy(Wheel::setVehicle))
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor)))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor)))
 								.build(persistenceContext4),
 						persistenceContext4.getConnectionProvider() },
 				{	"joined tables / one-to-many with mapped association / each subclass declares its association",
@@ -471,9 +471,9 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).indexedBy(indexColumn3).mappedBy(Wheel::setVehicle))
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor)
-												.mapOneToManyList(Truk::getWheels, entityBuilder(Wheel.class, String.class)
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor)
+												.mapOneToManyList(Truck::getWheels, entityBuilder(Wheel.class, String.class)
 														// please note that we use an already-assigned policy because it requires entities to be mark
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
@@ -493,8 +493,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel))
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor)))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor)))
 								.build(persistenceContext6),
 						persistenceContext6.getConnectionProvider() },
 //				{	"table per class",
@@ -505,8 +505,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 //						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 //								.addSubClass(subentityBuilder(Car.class)
 //										.map(Car::getModel))
-//								.addSubClass(subentityBuilder(Truk.class)
-//										.map(Truk::getColor)))
+//								.addSubClass(subentityBuilder(Truck.class)
+//										.map(Truck::getColor)))
 //						.build(persistenceContext6),
 //						persistenceContext6.getConnectionProvider() },
 		};
@@ -526,32 +526,32 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.addWheel(new Wheel("XYZ-ABC-01"));
-		Truk dummyTruk = new Truk(2L);
-		dummyTruk.setColor(new Color(42));
+		Truck dummyTruck = new Truck(2L);
+		dummyTruck.setColor(new Color(42));
 		
 		// insert test
-		persister.insert(Arrays.asList(dummyCar, dummyTruk));
+		persister.insert(Arrays.asList(dummyCar, dummyTruck));
 		
 		Car dummyCarModfied = new Car(1L);
 		dummyCarModfied.setModel("Peugeot");
 		dummyCarModfied.addWheel(new Wheel("XYZ-ABC-02"));
-		Truk dummyTrukModfied = new Truk(2L);
-		dummyTrukModfied.setColor(new Color(99));
+		Truck dummyTruckModfied = new Truck(2L);
+		dummyTruckModfied.setColor(new Color(99));
 		
 		persister.update(dummyCarModfied, dummyCar, true);
 		
-		persister.update(dummyTrukModfied, dummyTruk, true);
+		persister.update(dummyTruckModfied, dummyTruck, true);
 		
 		connectionProvider.giveConnection().commit();
 		persister.delete(dummyCarModfied);
-		persister.delete(dummyTrukModfied);
+		persister.delete(dummyTruckModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTruckModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
+		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
 		dummyCarModfied.getWheels().forEach(w -> w.setVehicle(dummyCarModfied));	// this is done only for equality check of reverse setting, because deletion set it to null (which must be fixed, bug see CollecctionUpdater)
 		assertThat(selectedCar).isEqualTo(dummyCarModfied);
@@ -559,7 +559,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		((Car) selectedCar).getWheels().forEach(wheel -> assertThat(wheel.isPersisted()).isTrue());
 			 
 		assertThat(((Car) selectedCar).getWheels()).isEqualTo(dummyCarModfied.getWheels());
-		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))).containsExactlyInAnyOrder(dummyCarModfied, dummyTrukModfied);
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId()))).containsExactlyInAnyOrder(dummyCarModfied, dummyTruckModfied);
 	}
 	
 	static Object[][] polymorphism_subClassHasElementCollection_data() {
@@ -575,8 +575,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 //						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 //								.addSubClass(subentityBuilder(Car.class)
 //										.map(Car::getModel), "CAR")
-//								.addSubClass(subentityBuilder(Truk.class)
-//										.map(Truk::getColor), "TRUK"))
+//								.addSubClass(subentityBuilder(Truck.class)
+//										.map(Truck::getColor), "TRUCK"))
 //						.build(persistenceContext1),
 //						persistenceContext1.getConnectionProvider() },
 				{	"joined tables / one-to-many with association table",
@@ -586,8 +586,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
 												.mapCollection(Car::getPlates, String.class))
-										.addSubClass(subentityBuilder(Truk.class)
-												.map(Truk::getColor)))
+										.addSubClass(subentityBuilder(Truck.class)
+												.map(Truck::getColor)))
 								.build(persistenceContext2),
 						persistenceContext2.getConnectionProvider() },
 //				{	"table per class",
@@ -598,8 +598,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 //						.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
 //								.addSubClass(subentityBuilder(Car.class)
 //										.map(Car::getModel))
-//								.addSubClass(subentityBuilder(Truk.class)
-//										.map(Truk::getColor)))
+//								.addSubClass(subentityBuilder(Truck.class)
+//										.map(Truck::getColor)))
 //						.build(persistenceContext3),
 //						persistenceContext3.getConnectionProvider() },
 		};
@@ -616,38 +616,38 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		Car dummyCar = new Car(1L);
 		dummyCar.setModel("Renault");
 		dummyCar.addPlate("XYZ-ABC-01");
-		Truk dummyTruk = new Truk(2L);
-		dummyTruk.setColor(new Color(42));
+		Truck dummyTruck = new Truck(2L);
+		dummyTruck.setColor(new Color(42));
 		
 		// insert test
-		persister.insert(Arrays.asList(dummyCar, dummyTruk));
+		persister.insert(Arrays.asList(dummyCar, dummyTruck));
 		
 		Car dummyCarModfied = new Car(1L);
 		dummyCarModfied.setModel("Peugeot");
 		dummyCarModfied.addPlate("XYZ-ABC-02");
-		Truk dummyTrukModfied = new Truk(2L);
-		dummyTrukModfied.setColor(new Color(99));
+		Truck dummyTruckModfied = new Truck(2L);
+		dummyTruckModfied.setColor(new Color(99));
 		
 		persister.update(dummyCarModfied, dummyCar, true);
 		
-		persister.update(dummyTrukModfied, dummyTruk, true);
+		persister.update(dummyTruckModfied, dummyTruck, true);
 		
 		connectionProvider.giveConnection().commit();
 		persister.delete(dummyCarModfied);
 		// nothing to delete because all was deleted by cascade
 		assertThat(connectionProvider.giveConnection().prepareStatement("delete from Car_plates").executeUpdate()).isEqualTo(0);
-		persister.delete(dummyTrukModfied);
+		persister.delete(dummyTruckModfied);
 		connectionProvider.giveConnection().rollback();
 		
-		persister.delete(Arrays.asList(dummyCarModfied, dummyTrukModfied));
+		persister.delete(Arrays.asList(dummyCarModfied, dummyTruckModfied));
 		
 		connectionProvider.giveConnection().rollback();
 		
-		assertThat(persister.select(dummyTruk.getId())).isEqualTo(dummyTrukModfied);
+		assertThat(persister.select(dummyTruck.getId())).isEqualTo(dummyTruckModfied);
 		AbstractVehicle selectedCar = persister.select(dummyCar.getId());
 		assertThat(selectedCar).isEqualTo(dummyCarModfied);
 		assertThat(((Car) selectedCar).getPlates()).containsExactlyInAnyOrder("XYZ-ABC-02");
-		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruk.getId()))).containsExactlyInAnyOrder(dummyCarModfied, dummyTrukModfied);
+		assertThat(persister.select(Arrays.asSet(dummyCar.getId(), dummyTruck.getId()))).containsExactlyInAnyOrder(dummyCarModfied, dummyTruckModfied);
 	}
 	
 	@Nested
@@ -729,8 +729,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							.addSubClass(subentityBuilder(Car.class)
 									.map(Car::getModel)
 									.map(Car::getColor), "CAR")
-							.addSubClass(subentityBuilder(Truk.class)
-									.map(Truk::getColor), "TRUK"))
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getColor), "TRUCK"))
 					.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
@@ -749,11 +749,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
-			Truk dummyTruk = new Truk(2L);
-			dummyTruk.setColor(new Color(42));
+			Truck dummyTruck = new Truck(2L);
+			dummyTruck.setColor(new Color(42));
 			
 			// insert test
-			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Duo<String, Integer>> modelQuery = persistenceContext.newQuery("select * from Vehicle", (Class<Duo<String, Integer>>) (Class) Duo.class)
 					.mapKey(Duo::new, "model", String.class, "color", Integer.class);
@@ -773,10 +773,10 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruk);
+			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
 			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruk);
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
@@ -784,7 +784,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			existingModels = modelQuery.execute();
 			assertThat(existingModels).containsExactlyInAnyOrder(new Duo<>(null, 42));
 			
-			abstractVehiclePersister.delete(dummyTruk);
+			abstractVehiclePersister.delete(dummyTruck);
 			existingModels = modelQuery.execute();
 			assertThat(existingModels).isEmpty();
 			
@@ -807,8 +807,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 							.addSubClass(subentityBuilder(Car.class)
 									.map(Car::getModel), "CAR")
-							.addSubClass(subentityBuilder(Truk.class),
-									"TRUK"))
+							.addSubClass(subentityBuilder(Truck.class),
+									"TRUCK"))
 					.build(persistenceContext);
 			
 			// Schema contains only one table : parent class one
@@ -827,12 +827,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
-			Truk dummyTruk = new Truk(2L);
+			Truck dummyTruck = new Truck(2L);
 			dummyCar.setEngine(new Engine(200L));
-			dummyTruk.setColor(new Color(42));
+			dummyTruck.setColor(new Color(42));
 			
 			// insert test
-			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='CAR'", Integer.class)
 					.mapKey("id", Integer.class);
@@ -840,11 +840,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
-			ExecutableBeanPropertyQueryMapper<Integer> trukIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='TRUK'", Integer.class)
+			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='TRUCK'", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> trukIds = trukIdQuery.execute();
-			assertThat(trukIds).containsExactly(2);
+			List<Integer> truckIds = truckIdQuery.execute();
+			assertThat(truckIds).containsExactly(2);
 			
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -860,16 +860,16 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruk);
+			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
 			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruk);
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
-			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
@@ -878,12 +878,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
-			ExecutableBeanPropertyQueryMapper<Integer> trukQuery = persistenceContext.newQuery("select"
-					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey("trukCount", Integer.class);
+			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
+					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					.mapKey("truckCount", Integer.class);
 			
-			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertThat(trukCount).isEqualTo(0);
+			Integer truckCount = Iterables.first(truckQuery.execute());
+			assertThat(truckCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableBeanPropertyQueryMapper<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
@@ -1026,14 +1026,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 									.map(Car::getId)
 									.map(Car::getModel)
 									.map(Car::getColor))
-							.addSubClass(subentityBuilder(Truk.class)
-									.map(Truk::getId)
-									.map(Truk::getColor)))
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getId)
+									.map(Truck::getColor)))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truk", "Engine");
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truck", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
 			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
@@ -1047,12 +1047,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
-			Truk dummyTruk = new Truk(2L);
+			Truck dummyTruck = new Truck(2L);
 			dummyCar.setEngine(new Engine(200L));
-			dummyTruk.setColor(new Color(42));
+			dummyTruck.setColor(new Color(42));
 			
 			// insert test
-			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
 					.mapKey("id", Integer.class);
@@ -1066,11 +1066,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
-			ExecutableBeanPropertyQueryMapper<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
+			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> trukIds = trukIdQuery.execute();
-			assertThat(trukIds).containsExactly(2);
+			List<Integer> truckIds = truckIdQuery.execute();
+			assertThat(truckIds).containsExactly(2);
 			
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1081,17 +1081,17 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruk);
+			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
 			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruk);
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
-			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> vehicleQuery = persistenceContext.newQuery("select"
 					+ " count(*) as vehicleCount from Vehicle where id in ("
-					+ dummyCar.getId().getSurrogate() + ", " + + dummyTruk.getId().getSurrogate() + ")", Integer.class)
+					+ dummyCar.getId().getSurrogate() + ", " + + dummyTruck.getId().getSurrogate() + ")", Integer.class)
 					.mapKey("vehicleCount", Integer.class);
 			
 			Integer vehicleCount = Iterables.first(vehicleQuery.execute());
@@ -1104,12 +1104,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
-			ExecutableBeanPropertyQueryMapper<Integer> trukQuery = persistenceContext.newQuery("select"
-					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey("trukCount", Integer.class);
+			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
+					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					.mapKey("truckCount", Integer.class);
 			
-			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertThat(trukCount).isEqualTo(0);
+			Integer truckCount = Iterables.first(truckQuery.execute());
+			assertThat(truckCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableBeanPropertyQueryMapper<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
@@ -1131,13 +1131,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 							.addSubClass(subentityBuilder(Car.class)
 									.map(Car::getModel))
-							.addSubClass(subentityBuilder(Truk.class)
+							.addSubClass(subentityBuilder(Truck.class)
 									))
 					.build(persistenceContext);
 			
 			// Schema contains main and children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truk", "Engine");
+			assertThat(tables).containsExactlyInAnyOrder("Vehicle", "Car", "Truck", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
 			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
@@ -1151,12 +1151,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 			
-			Truk dummyTruk = new Truk(2L);
+			Truck dummyTruck = new Truck(2L);
 			dummyCar.setEngine(new Engine(200L));
-			dummyTruk.setColor(new Color(42));
+			dummyTruck.setColor(new Color(42));
 			
 			// insert test
-			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
 					.mapKey("id", Integer.class);
@@ -1170,11 +1170,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
-			ExecutableBeanPropertyQueryMapper<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
+			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> trukIds = trukIdQuery.execute();
-			assertThat(trukIds).containsExactly(2);
+			List<Integer> truckIds = truckIdQuery.execute();
+			assertThat(truckIds).containsExactly(2);
 			
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1190,16 +1190,16 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			abstractVehiclePersister.update(dummyCar, loadedVehicle, false);
 			
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruk);
+			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
 			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruk);
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
 			
 			// delete test
-			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from Vehicle where id = " + dummyCar.getId().getSurrogate(), Integer.class)
@@ -1208,12 +1208,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 			
-			ExecutableBeanPropertyQueryMapper<Integer> trukQuery = persistenceContext.newQuery("select"
-					+ " count(*) as trukCount from Vehicle where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey("trukCount", Integer.class);
+			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
+					+ " count(*) as truckCount from Vehicle where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					.mapKey("truckCount", Integer.class);
 			
-			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertThat(trukCount).isEqualTo(0);
+			Integer truckCount = Iterables.first(truckQuery.execute());
+			assertThat(truckCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableBeanPropertyQueryMapper<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
@@ -1356,13 +1356,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							.addSubClass(subentityBuilder(Car.class)
 									.map(Car::getModel)
 									.map(Car::getColor))
-							.addSubClass(subentityBuilder(Truk.class)
-									.map(Truk::getColor)))
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getColor)))
 					.build(persistenceContext);
 
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertThat(tables).containsExactlyInAnyOrder("Car", "Truk", "Engine");
+			assertThat(tables).containsExactlyInAnyOrder("Car", "Truck", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
 			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
@@ -1376,12 +1376,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 
-			Truk dummyTruk = new Truk(2L);
+			Truck dummyTruck = new Truck(2L);
 			dummyCar.setEngine(new Engine(200L));
-			dummyTruk.setColor(new Color(42));
+			dummyTruck.setColor(new Color(42));
 
 			// insert test
-			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
 
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey("id", Integer.class);
@@ -1389,11 +1389,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 
-			ExecutableBeanPropertyQueryMapper<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
+			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
 
-			List<Integer> trukIds = trukIdQuery.execute();
-			assertThat(trukIds).containsExactly(2);
+			List<Integer> truckIds = truckIdQuery.execute();
+			assertThat(truckIds).containsExactly(2);
 
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1404,13 +1404,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruk);
+			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 
 			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectAll();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruk);
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
 
 			// delete test
-			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
@@ -1419,12 +1419,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 
-			ExecutableBeanPropertyQueryMapper<Integer> trukQuery = persistenceContext.newQuery("select"
-					+ " count(*) as trukCount from car where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey("trukCount", Integer.class);
+			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
+					+ " count(*) as truckCount from car where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					.mapKey("truckCount", Integer.class);
 
-			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertThat(trukCount).isEqualTo(0);
+			Integer truckCount = Iterables.first(truckQuery.execute());
+			assertThat(truckCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableBeanPropertyQueryMapper<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
@@ -1445,13 +1445,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 							.addSubClass(subentityBuilder(Car.class)
 									.map(Car::getModel))
-							.addSubClass(subentityBuilder(Truk.class)
+							.addSubClass(subentityBuilder(Truck.class)
 									))
 					.build(persistenceContext);
 
 			// Schema contains children tables
 			HashSet<String> tables = Iterables.collect(DDLDeployer.collectTables(persistenceContext), Table::getName, HashSet::new);
-			assertThat(tables).containsExactlyInAnyOrder("Car", "Truk", "Engine");
+			assertThat(tables).containsExactlyInAnyOrder("Car", "Truck", "Engine");
 			
 			// Subclasses are not present in context (because doing so they would be accessible but without wrong behavior since some are configured on parent's persister)
 			assertThat(persistenceContext.getPersisters()).extracting(EntityPersister::getClassToPersist).containsExactlyInAnyOrder(Vehicle.class, Engine.class);
@@ -1465,12 +1465,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			dummyCar.setEngine(new Engine(100L));
 			dummyCar.setColor(new Color(666));
 
-			Truk dummyTruk = new Truk(2L);
+			Truck dummyTruck = new Truck(2L);
 			dummyCar.setEngine(new Engine(200L));
-			dummyTruk.setColor(new Color(42));
+			dummyTruck.setColor(new Color(42));
 
 			// insert test
-			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
 
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey("id", Integer.class);
@@ -1478,11 +1478,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			List<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 
-			ExecutableBeanPropertyQueryMapper<Integer> trukIdQuery = persistenceContext.newQuery("select id from truk", Integer.class)
+			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
 
-			List<Integer> trukIds = trukIdQuery.execute();
-			assertThat(trukIds).containsExactly(2);
+			List<Integer> truckIds = truckIdQuery.execute();
+			assertThat(truckIds).containsExactly(2);
 
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -1493,16 +1493,16 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
-			assertThat(loadedVehicle).isEqualTo(dummyTruk);
+			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 
 			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
-			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruk);
+			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
 
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666))).execute();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar);
 
 			// delete test
-			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruk));
+			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
 
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
@@ -1511,12 +1511,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			Integer carCount = Iterables.first(carQuery.execute());
 			assertThat(carCount).isEqualTo(0);
 
-			ExecutableBeanPropertyQueryMapper<Integer> trukQuery = persistenceContext.newQuery("select"
-					+ " count(*) as trukCount from truk where id = " + dummyTruk.getId().getSurrogate(), Integer.class)
-					.mapKey("trukCount", Integer.class);
+			ExecutableBeanPropertyQueryMapper<Integer> truckQuery = persistenceContext.newQuery("select"
+					+ " count(*) as truckCount from truck where id = " + dummyTruck.getId().getSurrogate(), Integer.class)
+					.mapKey("truckCount", Integer.class);
 
-			Integer trukCount = Iterables.first(trukQuery.execute());
-			assertThat(trukCount).isEqualTo(0);
+			Integer truckCount = Iterables.first(truckQuery.execute());
+			assertThat(truckCount).isEqualTo(0);
 			
 			// because we asked for orphan removal, engine should not be present anymore
 			ExecutableBeanPropertyQueryMapper<Long> engineQuery = persistenceContext.newQuery("select id from Engine", Long.class)
@@ -1596,7 +1596,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					entityBuilder(Vehicle.class, LONG_TYPE)
 							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
-									.addSubClass(subentityBuilder(Truk.class))
+									.addSubClass(subentityBuilder(Truck.class))
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
@@ -1624,7 +1624,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating one-to-one relation
-			person.setVehicle(new Truk(666L));
+			person.setVehicle(new Truck(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1643,7 +1643,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// setting new one-to-one relation
-			person.setVehicle(new Truk(17L));
+			person.setVehicle(new Truck(17L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1669,7 +1669,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 					entityBuilder(Vehicle.class, LONG_TYPE)
 							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
-									.addSubClass(subentityBuilder(Truk.class))
+									.addSubClass(subentityBuilder(Truck.class))
 									.addSubClass(subentityBuilder(Car.class))
 							);
 			
@@ -1697,7 +1697,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedPerson).isEqualTo(person);
 			
 			// updating one-to-one relation
-			person.setVehicle(new Truk(666L));
+			person.setVehicle(new Truck(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1716,7 +1716,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// setting new one-to-one relation
-			person.setVehicle(new Truk(17L));
+			person.setVehicle(new Truck(17L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1743,7 +1743,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.map(Vehicle::getColor)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
-									.addSubClass(subentityBuilder(Truk.class), "T")
+									.addSubClass(subentityBuilder(Truck.class), "T")
 									.addSubClass(subentityBuilder(Car.class), "C")
 							);
 			
@@ -1796,7 +1796,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
 			
 			// updating one-to-one relation
-			person.setVehicle(new Truk(666L));
+			person.setVehicle(new Truck(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1818,7 +1818,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// setting new one-to-one relation
-			person.setVehicle(new Truk(17L));
+			person.setVehicle(new Truck(17L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1845,7 +1845,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 							.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
 							.map(Vehicle::getColor)
 							.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
-									.addSubClass(subentityBuilder(Truk.class), "T")
+									.addSubClass(subentityBuilder(Truck.class), "T")
 									.addSubClass(subentityBuilder(Car.class), "C")
 							);
 			
@@ -1898,7 +1898,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			assertThat(loadedPerson.getVehicle().getOwner()).isEqualTo(loadedPerson);
 			
 			// updating one-to-one relation
-			person.setVehicle(new Truk(666L));
+			person.setVehicle(new Truck(666L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
@@ -1920,7 +1920,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			
 			// setting new one-to-one relation
-			person.setVehicle(new Truk(17L));
+			person.setVehicle(new Truck(17L));
 			testInstance.update(person, loadedPerson, true);
 			
 			loadedPerson = testInstance.select(person.getId());
