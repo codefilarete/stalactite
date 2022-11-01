@@ -238,7 +238,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.execute()
 					.get(0)).isEqualTo("French president");
 			
-			// Changing country persident to check foreign key modification
+			// Changing country president to check foreign key modification
 			Person newPerson = new Person(new PersistableIdentifier<>(2L));
 			newPerson.setName("New French president");
 			// person must be persisted before usage because cascade is marked as READ_ONLY
@@ -303,7 +303,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	 */
 	@Test
 	public void lightOneToOne_relationIsPersisted() throws SQLException {
-		// we redifine th eDialcet to avoid polluting the instance one with some more mapping that is only the purpose of this test (avoid side effect)
+		// we redefine the Dialect to avoid polluting the instance one with some more mapping that is only the purpose of this test (avoid side effect)
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
@@ -717,7 +717,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		@Test
@@ -728,7 +728,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		@Test
@@ -739,7 +739,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::setCountry)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		@Test
@@ -758,7 +758,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy(countryId)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		/**
@@ -766,7 +766,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		 * Should have been done with a @ParameterizedTest but can't be done in such a way due to database commit between tests and cityPersister
 		 * dependency
 		 */
-		private void checkCascadeAll(EntityPersister<Country, Identifier<Long>> countryPersister) {
+		private void assertCascadeAll(EntityPersister<Country, Identifier<Long>> countryPersister) {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
@@ -1268,8 +1268,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 
 						+ " where id = 100");
 				assertThat(resultSet.next()).isFalse();
-				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person " 
-						+ "where id = 42");
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person" 
+						+ " where id = 42");
 				assertThat(resultSet.next()).isTrue();
 				// but we didn't delete everything !
 				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 

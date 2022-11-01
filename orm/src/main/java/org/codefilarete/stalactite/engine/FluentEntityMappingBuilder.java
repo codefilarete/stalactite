@@ -470,6 +470,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode);
+		
+		@Override
+		FluentMappingBuilderOneToOneOptions<C, I, T> fetchSeparately();
 	}
 	
 	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {

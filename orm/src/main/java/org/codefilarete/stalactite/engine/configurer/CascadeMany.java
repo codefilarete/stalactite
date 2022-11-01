@@ -179,7 +179,7 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.fetchSeparately = fetchSeparately;
 	}
 	
-	public void setLoadSeparately() {
+	public void fetchSeparately() {
 		setFetchSeparately(true);
 	}
 	

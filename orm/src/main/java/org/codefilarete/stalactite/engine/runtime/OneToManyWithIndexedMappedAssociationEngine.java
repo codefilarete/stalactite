@@ -68,8 +68,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					return identifier + "-" + targetEntityIndex;
 				},
 				EntityJoinTree.ROOT_STRATEGY_NAME,
-				relationOwner.isNullable(),
-				Arrays.asHashSet(indexingColumn, primaryKey),
+				Arrays.asHashSet(indexingColumn, primaryKey), relationOwner.isNullable(),
 				loadSeparately);
 		
 		addIndexSelection(joinNodeName, primaryKey);

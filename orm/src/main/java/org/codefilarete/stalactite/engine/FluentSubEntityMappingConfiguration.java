@@ -223,6 +223,9 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		@Override
 		FluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode);
+		
+		@Override
+		FluentMappingBuilderOneToOneOptions<C, I, T> fetchSeparately();
 	}
 	
 	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentSubEntityMappingConfiguration<C, I>, OneToManyOptions<C, I, O, S> {

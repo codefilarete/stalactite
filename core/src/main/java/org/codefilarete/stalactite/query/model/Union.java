@@ -2,9 +2,11 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
@@ -59,8 +61,8 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		// Quite close to Table.addertColumn(..)
 		PseudoColumn<O> existingColumn = findColumn(column.getExpression());
 		if (existingColumn != null && (!existingColumn.getJavaType().equals(column.getJavaType()))) {
-			throw new IllegalArgumentException("Trying to add a column that already exists with a different type : "
-													   + existingColumn.getExpression() + " vs " + column.getExpression());
+			throw new IllegalArgumentException("Trying to add a column '" + existingColumn.getExpression() + "' that already exists with a different type : "
+													   + Reflections.toString(existingColumn.getJavaType()) + " vs " + Reflections.toString(column.getJavaType()));
 		}
 		if (existingColumn == null) {
 			columns.add((PseudoColumn<Object>) column);
@@ -98,6 +100,23 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	
 	public UnionInFrom asPseudoTable(String name) {
 		return new UnionInFrom(name, this);
+	}
+	
+	/**
+	 * Overridden to use {@link PseudoColumn} type instead of {@link Column}
+	 *
+	 * @return columns of this instance per their name and alias
+	 */
+	@Override
+	public Map<String, ? extends Selectable<?>> mapColumnsOnName() {
+		Map<String, Selectable<?>> result = new HashMap<>();
+		for (PseudoColumn<?> column : getColumns()) {
+			result.put(column.getExpression(), column);
+		}
+		for (Entry<? extends Selectable<?>, String> alias : getAliases().entrySet()) {
+			result.put(alias.getValue(), alias.getKey());
+		}
+		return result;
 	}
 	
 	static public class UnionInFrom implements Fromable {
@@ -146,6 +165,16 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		@Override
 		public Map<Selectable<?>, String> getAliases() {
 			return this.aliases;
+		}
+		
+		/**
+		 * Overridden to use {@link PseudoColumn} type instead of {@link Column}
+		 * 
+		 * @return columns of this instance per their name and alias
+		 */
+		@Override
+		public Map<String, ? extends Selectable<?>> mapColumnsOnName() {
+			return union.mapColumnsOnName();
 		}
 	}
 	

@@ -52,4 +52,11 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * @return the global mapping configurer
 	 */
 	OneToOneOptions<C, I, T> mappedBy(Column<T, I> reverseLink);
+	
+	/**
+	 * Asks to load relation in some separate query (actually may use several queries according to association table presence or polymorphism)
+	 *
+	 * @return the global mapping configurer
+	 */
+	OneToOneOptions<C, I, T> fetchSeparately();
 }

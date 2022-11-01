@@ -136,8 +136,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 				&& (!existingColumn.getJavaType().equals(column.getJavaType())
 				|| !Predicates.equalOrNull(existingColumn.getSize(), column.getSize()))
 		) {
-			throw new IllegalArgumentException("Trying to add a column that already exists with a different type : "
-					+ column.getAbsoluteName() + " " + toString(existingColumn) + " vs " + toString(column));
+			throw new IllegalArgumentException("Trying to add column '"+column.getName()+"' to '" + this.getAbsoluteName() + "' but it already exists with a different type : "
+					+ typeToString(existingColumn) + " vs " + typeToString(column));
 		}
 		if (existingColumn == null) {
 			columns.add((Column<SELF, Object>) column);
@@ -286,7 +286,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		return hashCode;
 	}
 	
-	private static String toString(Column column) {
+	private static String typeToString(Column column) {
 		return Reflections.toString(column.getJavaType()) + (column.getSize() != null ? "(" + column.getSize() + ")" : "");
 	}
 	

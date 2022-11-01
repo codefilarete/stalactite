@@ -12,23 +12,12 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
-import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.tool.collection.Collections;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.bean.Objects;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderMap;
-import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.InsertExecutor;
+import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer;
@@ -47,13 +36,25 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
+import org.codefilarete.stalactite.query.EntityCriteriaSupport;
+import org.codefilarete.stalactite.query.RelationalEntityCriteria;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.exception.NotImplementedException;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
@@ -65,11 +66,11 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> DIFFERED_ENTITY_LOADER = new ThreadLocal<>();
 	
-	private final SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor;
-	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters;
 	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	private final Column<T, DTYPE> discriminatorColumn;
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
+	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters;
+	private final SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor;
 	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, DTYPE> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
@@ -310,17 +311,17 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 																				  Column<T2, JID> rightColumn,
 																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  boolean optional) {
-		
-		boolean loadSeparately = false;
+																				  boolean optional,
+																				  boolean loadSeparately) {
 		
 		if (loadSeparately) {
 			Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
+			SingleTableFirstPhaseRelationLoader singleTableFirstPhaseRelationLoader = new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
+					subclassPrimaryKey, selectExecutor,
+					(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER,
+					discriminatorColumn, subEntitiesPersisters::get);
 			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_STRATEGY_NAME,
-					new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
-							subclassPrimaryKey, selectExecutor,
-							DIFFERED_ENTITY_LOADER,
-							discriminatorColumn, subEntitiesPersisters::get),
+					(FirstPhaseRelationLoader<C, JID, T2>) singleTableFirstPhaseRelationLoader,
 					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
 			
 			
@@ -347,8 +348,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																				  String joinName,
-																				  boolean optional,
-																				  Set<Column<T2, ?>> selectableColumns,
+																				  Set<Column<T2, ?>> selectableColumns, boolean optional,
 																				  boolean loadSeparately) {
 		
 		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMapping().getTargetTable()).getPrimaryKey().getColumns());
@@ -370,12 +370,13 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		
 		if (loadSeparately) {
 			// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
+			SingleTableFirstPhaseRelationLoader singleTableFirstPhaseRelationLoader = new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
+					mainTablePK, selectExecutor,
+					(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER,
+					discriminatorColumn, subEntitiesPersisters::get);
 			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
-					new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
-							mainTablePK, selectExecutor,
-							DIFFERED_ENTITY_LOADER,
-							discriminatorColumn, subEntitiesPersisters::get),
-					(Column<T1, I>) leftColumn, (Column<T2, I>) rightColumn, JoinType.OUTER);
+					(FirstPhaseRelationLoader<C, ID, T2>) singleTableFirstPhaseRelationLoader,
+					leftColumn, rightColumn, JoinType.OUTER);
 			
 			// adding second phase loader
 			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
@@ -403,7 +404,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		throw new UnsupportedOperationException();
 	}
 	
-	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader {
+	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader<C, I, Table> {
 		private final Column<T, DTYPE> discriminatorColumn;
 		private final Function<Class, SelectExecutor> subtypeSelectors;
 		private final Set<DTYPE> discriminatorValues;
@@ -411,7 +412,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		private SingleTableFirstPhaseRelationLoader(IdMapping<C, I> subEntityIdMapping,
 													Column primaryKey,
 													SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor,
-													ThreadLocal<Queue<Set<RelationIds<Object, Object, Object>>>> relationIdsHolder,
+													ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>> relationIdsHolder,
 													Column<T, DTYPE> discriminatorColumn, Function<Class, SelectExecutor> subtypeSelectors) {
 			// Note that selectExecutor won't be used because we dynamically lookup for it in fillCurrentRelationIds
 			super(subEntityIdMapping, primaryKey, selectExecutor, relationIdsHolder);
@@ -424,17 +425,17 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		protected void fillCurrentRelationIds(Row row, Object bean, ColumnedRow columnedRow) {
 			DTYPE discriminator = columnedRow.getValue(discriminatorColumn, row);
 			// we avoid NPE on polymorphismPolicy.getClass(discriminator) caused by null discriminator in case of empty relation
-			// by only treating known discriminator values (prefered way to check against null because type can be primitive one)
+			// by only treating known discriminator values (preferred way to check against null because type can be primitive one)
 			if (discriminatorValues.contains(discriminator)) {
-				Set<RelationIds<Object, C, I>> relationIds = ((Queue<Set<RelationIds<Object, C, I>>>) relationIdsHolder.get()).peek();
-				relationIds.add(new RelationIds(giveSelector(discriminator),
+				Set<RelationIds<Object, C, I>> relationIds = relationIdsHolder.get().peek();
+				relationIds.add(new RelationIds<>(giveSelector(discriminator),
 												idMapping.getIdAccessor()::getId, bean, (I) columnedRow.getValue(primaryKey, row)));
 			}
 		}
 		
 		@Override
-		public Set<Column> getSelectableColumns() {
-			return Arrays.asSet(primaryKey, discriminatorColumn);
+		public Set<Selectable<Object>> getSelectableColumns() {
+			return (Set) Arrays.asSet(primaryKey, discriminatorColumn);
 		}
 		
 		private SelectExecutor giveSelector(DTYPE discriminator) {

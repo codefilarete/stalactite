@@ -336,6 +336,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param beanRelationFixer setter that fix relation ofthis instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * @param loadSeparately
 	 * @return created join name
 	 */
 	@Override
@@ -344,9 +345,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 																				  Column<T2, JID> rightColumn,
 																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  boolean optional) {
-		
-		boolean loadSeparately = false;
+																				  boolean optional, boolean loadSeparately) {
 		
 		if (loadSeparately) {
 			// because subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener) we add a passive join
@@ -358,7 +357,8 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 				Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
 				sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
-						new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
+						new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
+								(ThreadLocal<Queue<Set<RelationIds<Object,C,I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
 						primaryKey,
 						subclassPrimaryKey,
 						// since we don't know what kind of sub entity is present we must do an OUTER join between common truck and all sub tables
@@ -387,8 +387,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																				  String joinName,
-																				  boolean optional,
-																				  Set<Column<T2, ?>> selectableColumns,
+																				  Set<Column<T2, ?>> selectableColumns, boolean optional,
 																				  boolean loadSeparately) {
 		if (loadSeparately) {
 			String createdJoinName = sourcePersister.getEntityJoinTree().addPassiveJoin(joinName,
@@ -401,7 +400,8 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 				Column subclassPrimaryKey = (Column) Iterables.first(this.tablePerSubEntityType.get(c).getPrimaryKey().getColumns());
 				sourcePersister.getEntityJoinTree().addMergeJoin(createdJoinName,
-						new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor, CURRENT_2PHASES_LOAD_CONTEXT),
+						new FirstPhaseRelationLoader<C, I, T2>(idMappingStrategy, subclassPrimaryKey, mainSelectExecutor,
+								(ThreadLocal<Queue<Set<RelationIds<Object,C,I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
 						mainTablePrimaryKey,
 						subclassPrimaryKey,
 						// since we don't know what kind of sub entity is present we must do an OUTER join between common truck and all sub tables

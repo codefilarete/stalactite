@@ -1,8 +1,5 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.Test;
@@ -35,13 +32,12 @@ class TableTest {
 		// same column with other type throws exception
 		assertThatThrownBy(() -> testInstance.addColumn("xx", Integer.class))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Trying to add a column that already exists with a different type : toto.xx j.l.String vs"
-						+ " j.l.Integer");
+				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.Integer");
 		
 		// same column with other type throws exception
 		assertThatThrownBy(() -> testInstance.addColumn("xx", String.class, 12))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Trying to add a column that already exists with a different type : toto.xx j.l.String vs j.l.String(12)");
+				.hasMessage("Trying to add column 'xx' to 'toto' but it already exists with a different type : j.l.String vs j.l.String(12)");
 	}
 	
 	@Test

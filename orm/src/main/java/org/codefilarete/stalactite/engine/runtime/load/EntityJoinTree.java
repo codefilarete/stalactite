@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
@@ -25,11 +24,9 @@ import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
-import org.codefilarete.stalactite.query.model.Union;
-import org.codefilarete.stalactite.query.model.Union.PseudoColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -40,12 +37,8 @@ import org.codefilarete.tool.bean.Randomizer;
 import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.trace.ModifiableInt;
-
-import static org.codefilarete.stalactite.query.model.Operators.cast;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
@@ -216,108 +209,8 @@ public class EntityJoinTree<C, I> {
 				@Override
 				public MergeJoinRowConsumer<V> toConsumer(ColumnedRow columnedRow) {
 					PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
-							new PolymorphicMergeEntityInflater<>(mainPersister, localSubPersister), columnedRow);
+							new PolymorphicEntityInflater<>(mainPersister, localSubPersister), columnedRow);
 					mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer);
-					return joinRowConsumer;
-				}
-			});
-		});
-	}
-	
-	public <U, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE> String addTablePerClassPolymorphicRelationJoin(
-			String leftStrategyName,
-			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-			Column<T1, JOINCOLTYPE> leftJoinColumn,
-			Column<T2, JOINCOLTYPE> rightJoinColumn,
-			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
-			BeanRelationFixer<C, U> beanRelationFixer) {
-		
-		
-		// we build a union of all sub queries that will be joined in the main query
-		// To build the union we need columns that are common to all persisters
-		Set<Column<?, ?>> commonColumns = new KeepOrderSet<>();
-		commonColumns.addAll(mainPersister.getMapping().getSelectableColumns());
-		// TODO : right column is not in selected columns of class mapping : understand why (and if that's normal)
-		commonColumns.add(rightJoinColumn);
-		
-		Set<String> commonColumnsNames = commonColumns.stream().map(Column::getName).collect(Collectors.toSet());
-		
-		KeepOrderSet<Column<?, ?>> nonCommonColumns = new KeepOrderSet<>();
-		subPersisters.forEach(subPersister -> {
-			nonCommonColumns.addAll(subPersister.getMainTable().getColumns());
-		});
-		nonCommonColumns.removeIf(c -> commonColumnsNames.contains(c.getName()));
-		
-		Union subPersistersUnion = new Union();
-		String entityTypeDiscriminatorName = "clazz_";
-		PseudoColumn<Integer> discriminatorPseudoColumn = subPersistersUnion.registerColumn(entityTypeDiscriminatorName, Integer.class);
-		ModifiableInt discriminatorComputer = new ModifiableInt();
-		
-		subPersisters.forEach(subPersister -> {
-			Query subEntityQuery = new Query(subPersister.getMapping().getTargetTable());
-			subEntityQuery.select(String.valueOf(discriminatorComputer.increment()), Integer.class).as(entityTypeDiscriminatorName);
-			subPersistersUnion.unionAll(subEntityQuery);
-			
-			commonColumns.forEach(column -> {
-				subEntityQuery.select(column.getName(), column.getJavaType());
-				subPersistersUnion.registerColumn(column.getName(), column.getJavaType());
-			});
-			
-			nonCommonColumns.forEach(column -> {
-				Selectable<?> expression;
-				if (subPersister.getMapping().getSelectableColumns().contains(column)) {
-					expression = new SelectableString<>(column.getName(), column.getJavaType());
-				} else {
-					expression = cast(null, column.getJavaType());
-				}
-				// we put an alias else cast(..) as no name which makes it doesn't match official-column name, and then
-				// may cause an error since SQL in kind of invalid 
-				subEntityQuery.select(expression, column.getName());
-				subPersistersUnion.registerColumn(column.getName(), column.getJavaType());
-			});
-		});
-		
-		Holder<TablePerClassPolymorphicRelationJoinNode<U, T1, JOINCOLTYPE, ID>> createdJoinHolder = new Holder<>();
-		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
-			TablePerClassPolymorphicRelationJoinNode<U, T1, JOINCOLTYPE, ID> relationJoinNode = new TablePerClassPolymorphicRelationJoinNode<>(parent,
-					subPersistersUnion,
-					leftJoinColumn,
-					rightJoinColumn,
-					JoinType.OUTER,
-					subPersistersUnion.getColumns(),
-					mainPersister.getClassToPersist().getSimpleName(),
-					new EntityMappingAdapter<>(mainPersister.getMapping()),
-					(BeanRelationFixer<Object, U>) beanRelationFixer,
-					discriminatorPseudoColumn);
-			createdJoinHolder.set(relationJoinNode);
-			return relationJoinNode;
-		});
-		
-		this.addTablePerClassPolymorphicSubPersistersJoins(relationJoinName, mainPersister, createdJoinHolder.get(), subPersisters);
-		
-		return relationJoinName;
-	}
-	
-	private <U, V extends U, T1 extends Table, T2 extends Table, ID> void addTablePerClassPolymorphicSubPersistersJoins(String mainPolymorphicJoinNodeName,
-																														EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-																														TablePerClassPolymorphicRelationJoinNode<U, T1, ?, ID> mainPersisterJoin,
-																														Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters) {
-		
-		ModifiableInt discriminatorComputer = new ModifiableInt();
-		subPersisters.forEach(subPersister -> {
-			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
-			this.<T1>addJoin(mainPolymorphicJoinNodeName, parent -> new MergeJoinNode<V, T1, T2, ID>(
-					parent,
-					(Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns()),
-					(Column) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns()),
-					JoinType.OUTER,
-					null,
-					new EntityMergerAdapter<>(localSubPersister.getMapping())) {
-				@Override
-				public MergeJoinRowConsumer<V> toConsumer(ColumnedRow columnedRow) {
-					PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
-							new PolymorphicMergeEntityInflater<>(mainPersister, localSubPersister), columnedRow);
-					mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer, discriminatorComputer.increment());
 					return joinRowConsumer;
 				}
 			});
@@ -371,21 +264,21 @@ public class EntityJoinTree<C, I> {
 		subPersisters.forEach(subPersister -> {
 			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
 			PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<U, V, ID>(
-					new PolymorphicMergeEntityInflater<>(mainPersister, localSubPersister), columnedRow);
+					new PolymorphicEntityInflater<>(mainPersister, localSubPersister), columnedRow);
 			mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer, polymorphismPolicy.getDiscriminatorValue(localSubPersister.getClassToPersist()));
 		});
 	}
-
-
-
-	static class PolymorphicMergeEntityInflater<E, D extends E, I, T extends Table<T>> implements EntityInflater<D, I> {
+	
+	
+	
+	public static class PolymorphicEntityInflater<E, D extends E, I, T extends Table<T>> implements EntityInflater<D, I> {
 		
 		private final EntityConfiguredJoinedTablesPersister<E, I> mainPersister;
 		
 		private final EntityConfiguredJoinedTablesPersister<D, I> subPersister;
 		
-		PolymorphicMergeEntityInflater(EntityConfiguredJoinedTablesPersister<E, I> mainPersister,
-									   EntityConfiguredJoinedTablesPersister<D, I> subPersister) {
+		public PolymorphicEntityInflater(EntityConfiguredJoinedTablesPersister<E, I> mainPersister,
+								  EntityConfiguredJoinedTablesPersister<D, I> subPersister) {
 			this.mainPersister = mainPersister;
 			this.subPersister = subPersister;
 		}
@@ -411,13 +304,13 @@ public class EntityJoinTree<C, I> {
 		}
 	}
 	
-	static class PolymorphicMergeJoinRowConsumer<C, D extends C, I> extends MergeJoinRowConsumer<D> {
+	public static class PolymorphicMergeJoinRowConsumer<C, D extends C, I> extends MergeJoinRowConsumer<D> {
 		
 		private final BiFunction<Row, ColumnedRow, I> identifierProvider;
 		
 		private final ColumnedRow columnedRow;
 		
-		public PolymorphicMergeJoinRowConsumer(PolymorphicMergeEntityInflater<C, D, I, ?> entityInflater,
+		public PolymorphicMergeJoinRowConsumer(PolymorphicEntityInflater<C, D, I, ?> entityInflater,
 											   ColumnedRow columnedRow) {
 			super(entityInflater.copyTransformerWithAliases(columnedRow));
 			this.identifierProvider = entityInflater::giveIdentifier;
@@ -472,14 +365,30 @@ public class EntityJoinTree<C, I> {
 	 * @param joinType type of join to create
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
-																				   EntityMerger<U, T2> entityMerger,
-																				   Column<T1, ID> leftJoinColumn,
-																				   Column<T2, ID> rightJoinColumn,
-																				   JoinType joinType) {
+	public <U, T1 extends Table<T1>, T2 extends Fromable, ID> String addMergeJoin(String leftStrategyName,
+																				  EntityMerger<U, T2> entityMerger,
+																				  JoinLink<T1, ID> leftJoinColumn,
+																				  JoinLink<T2, ID> rightJoinColumn,
+																				  JoinType joinType) {
 		return this.<T1>addJoin(leftStrategyName, parent -> new MergeJoinNode<>(parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				null, entityMerger));
+	}
+	
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
+																				   EntityMerger<U, T2> entityMerger,
+																				   JoinLink<T1, ID> leftJoinColumn,
+																				   JoinLink<T2, ID> rightJoinColumn,
+																				   JoinType joinType,
+																				   Function<ColumnedRow, MergeJoinRowConsumer<U>> columnedRowConsumer) {
+		return this.<T1>addJoin(leftStrategyName, parent -> new MergeJoinNode<U, T1, T2, ID>(parent,
+				leftJoinColumn, rightJoinColumn, joinType,
+				null, entityMerger) {
+			@Override
+			public MergeJoinRowConsumer<U> toConsumer(ColumnedRow columnedRow) {
+				return columnedRowConsumer.apply(columnedRow);
+			}
+		});
 	}
 	
 	/**
@@ -533,7 +442,7 @@ public class EntityJoinTree<C, I> {
 				columnsToSelect, tableAlias).setTransformerListener((TransformerListener<Object>) transformerListener));
 	}
 	
-	private <T extends Table> String addJoin(String leftStrategyName, Function<JoinNode<T> /* parent node */, AbstractJoinNode> joinNodeSupplier) {
+	public <T extends Table> String addJoin(String leftStrategyName, Function<JoinNode<T> /* parent node */, AbstractJoinNode> joinNodeSupplier) {
 		JoinNode<T> owningJoin = getJoin(leftStrategyName);
 		if (owningJoin == null) {
 			throw new IllegalArgumentException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");

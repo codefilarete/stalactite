@@ -1,13 +1,15 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
@@ -17,17 +19,14 @@ import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identi
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SingleTablePolymorphismPersister;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.exception.NotImplementedException;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.exception.NotImplementedException;
 
 /**
  * @author Guillaume Mary
@@ -114,11 +113,11 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table, DTYPE> extends Abstr
 	@Override
 	protected void assertSubPolymorphismIsSupported(PolymorphismPolicy<? extends C> subPolymorphismPolicy) {
 		// Everything else than joined-tables is not implemented
-		// - single-table with single-table is non sensence
+		// - single-table with single-table needs analysis
 		// - single-table with table-per-class is not implemented
 		// Written as a negative condition to explicitly say what we support
 		if (!(subPolymorphismPolicy instanceof PolymorphismPolicy.JoinTablePolymorphism)) {
-			throw new NotImplementedException("Combining joined-tables polymorphism policy with " + Reflections.toString(subPolymorphismPolicy.getClass()));
+			throw new NotImplementedException("Combining single-table polymorphism policy with " + Reflections.toString(subPolymorphismPolicy.getClass()));
 		}
 	}
 	

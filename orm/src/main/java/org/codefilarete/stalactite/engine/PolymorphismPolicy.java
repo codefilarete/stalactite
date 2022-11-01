@@ -15,20 +15,64 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public interface PolymorphismPolicy<C> {
 	
+	/**
+	 * Starts a persistence configuration of a table-per-class polymorphic type.
+	 * As a difference with {@link #tablePerClass(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;tablePerClass()
+	 * </code>
+	 *
+	 * @return the configuration
+	 */
 	static <C> TablePerClassPolymorphism<C> tablePerClass() {
 		return new TablePerClassPolymorphism<>();
 	}
 	
+	/**
+	 * Starts a persistence configuration of a table-per-class polymorphic type 
+	 * 
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> TablePerClassPolymorphism<C> tablePerClass(Class<C> polymorphicType) {
+		return new TablePerClassPolymorphism<>();
+	}
+	
+	/**
+	 * Starts a persistence configuration of a join-table polymorphic type.
+	 * As a difference with {@link #joinTable(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;joinTable()
+	 * </code>
+	 *
+	 * @return the configuration
+	 */
 	static <C> JoinTablePolymorphism<C> joinTable() {
 		return new JoinTablePolymorphism<>();
 	}
 	
-	static <C> JoinTablePolymorphism<C> joinTable(Class<? extends C> c) {
+	/**
+	 * Starts a persistence configuration of a join-table polymorphic type 
+	 *
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> JoinTablePolymorphism<C> joinTable(Class<C> polymorphicType) {
 		return new JoinTablePolymorphism<>();
 	}
 	
 	/**
-	 * Creates a single-table polymorphism configuration with a default discriminating column names "DTYPE" of {@link String} type
+	 * Starts a persistence configuration of a single-table polymorphic type with a default discriminating column name "DTYPE" of {@link String} type
+	 * As a difference with {@link #singleTable(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;singleTable()
+	 * </code>
+	 * 
 	 * @param <C> entity type
 	 * @return a new {@link SingleTablePolymorphism} with "DTYPE" as String discriminator column
 	 */
@@ -36,7 +80,40 @@ public interface PolymorphismPolicy<C> {
 		return singleTable("DTYPE");
 	}
 	
+	/**
+	 * Starts a persistence configuration of a single-table polymorphic type with the give discriminating column name {@link String} type
+	 * As a difference with {@link #singleTable(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;singleTable()
+	 * </code>
+	 *
+	 * @param <C> entity type
+	 * @return a new {@link SingleTablePolymorphism} with "DTYPE" as String discriminator column
+	 */
 	static <C> SingleTablePolymorphism<C, String> singleTable(String discriminatorColumnName) {
+		return new SingleTablePolymorphism<>(discriminatorColumnName, String.class);
+	}
+	
+	/**
+	 * Starts a persistence configuration of a single-table polymorphic type with a default discriminating column name "DTYPE" of {@link String} type
+	 *
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> SingleTablePolymorphism<C, String> singleTable(Class<C> polymorphicType) {
+		return singleTable("DTYPE");
+	}
+	
+	/**
+	 * Starts a persistence configuration of a single-table polymorphic type with the give discriminating column name {@link String} type
+	 *
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> SingleTablePolymorphism<C, String> singleTable(Class<C> polymorphicType, String discriminatorColumnName) {
 		return new SingleTablePolymorphism<>(discriminatorColumnName, String.class);
 	}
 	

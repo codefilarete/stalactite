@@ -25,6 +25,8 @@ import org.codefilarete.tool.trace.ModifiableInt;
  */
 public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
+	private static final String UNION_ALL_SEPARATOR = ") union all (";
+	
 	private final Map<Class, Table> tablePerSubConfiguration;
 	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
 	private final ConnectionProvider connectionProvider;
@@ -67,7 +69,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 			
 			Where projectedWhere = new Where();
 			for(AbstractCriterion c : ((CriteriaChain<?>) where)) {
-				// TODO: take other types into acount
+				// TODO: take other types into account
 				if (c instanceof ColumnCriterion) {
 					ColumnCriterion columnCriterion = (ColumnCriterion) c;
 					Column projectedColumn = subEntityTable.getColumn(columnCriterion.getColumn().getName());
@@ -88,7 +90,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 		StringAppender unionSql = new StringAppender();
 		ModifiableInt parameterIndex = new ModifiableInt(1);
 		queries.forEach(preparedSQL -> {
-			unionSql.cat(preparedSQL.getSQL(), ") union all (");
+			unionSql.cat(preparedSQL.getSQL(), UNION_ALL_SEPARATOR);
 			preparedSQL.getValues().values().forEach(value -> {
 				// since ids are all
 				values.put(parameterIndex.getValue(), value);
@@ -98,8 +100,8 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 				parameterIndex.increment();
 			});
 		});
-		unionSql.cutTail(") union all (".length());
-		unionSql.wrap("(", ")");
+		unionSql.cutTail(UNION_ALL_SEPARATOR.length())
+				.wrap("(", ")");
 		
 		PreparedSQL preparedSQL = new PreparedSQL(unionSql.toString(), parameterBinders);
 		preparedSQL.setValues(values);

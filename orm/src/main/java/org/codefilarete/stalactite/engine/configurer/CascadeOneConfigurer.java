@@ -102,12 +102,13 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	}
 	
 	public void appendCascades(String tableAlias,
-							   PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
+							   PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder,
+							   boolean loadSeparately) {
 		EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				// please note that even if no table is found in configuration, build(..) will create one
 				.build(dialect, connectionConfiguration, persisterRegistry,
 						nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
-		this.configurer.appendCascades(tableAlias, targetPersister);
+		this.configurer.appendCascades(tableAlias, targetPersister, loadSeparately);
 	}
 	
 	public CascadeConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(
@@ -148,9 +149,10 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 		
 		public void appendCascades(String tableAlias,
-								   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+								   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+								   boolean loadSeparately) {
 			prepare(targetPersister);
-			addSelectCascade(tableAlias, targetPersister, beanRelationFixer);
+			addSelectCascade(tableAlias, targetPersister, beanRelationFixer, loadSeparately);
 			addWriteCascades(targetPersister);
 		}
 		
@@ -194,9 +196,10 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		protected void addSelectCascade(
 				String tableAlias,
 				ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-				BeanRelationFixer<SRC, TRGT> beanRelationFixer) {
+				BeanRelationFixer<SRC, TRGT> beanRelationFixer,
+				boolean loadSeparately) {
 			// we add target subgraph joins to the one that was created
-			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, tableAlias, beanRelationFixer, cascadeOne.isNullable());
+			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, tableAlias, beanRelationFixer, cascadeOne.isNullable(), loadSeparately);
 			
 			// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 			// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity

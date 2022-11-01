@@ -37,6 +37,11 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
 	
+	/**
+	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
+	 */
+	private boolean fetchSeparately;
+	
 	<T extends Table> CascadeOne(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this(targetProvider, () -> targetMappingConfiguration, table);
 	}
@@ -109,5 +114,17 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	 */
 	public boolean isRelationOwnedByTarget() {
 		return getReverseSetter() != null || getReverseGetter() != null || getReverseColumn() != null;
+	}
+	
+	public boolean isFetchSeparately() {
+		return fetchSeparately;
+	}
+	
+	public void setFetchSeparately(boolean fetchSeparately) {
+		this.fetchSeparately = fetchSeparately;
+	}
+	
+	public void fetchSeparately() {
+		setFetchSeparately(true);
 	}
 }

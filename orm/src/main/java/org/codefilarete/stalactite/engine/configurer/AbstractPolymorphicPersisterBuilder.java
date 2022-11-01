@@ -219,7 +219,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 				}
 				cycleSolver.addCycleSolver(relationName, cascadeOneConfigurer);
 			} else {
-				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()), cascadeOne.isFetchSeparately());
 			}
 		}
 		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {

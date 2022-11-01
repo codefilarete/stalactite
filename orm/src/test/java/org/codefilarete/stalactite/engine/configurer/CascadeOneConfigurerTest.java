@@ -144,7 +144,7 @@ class CascadeOneConfigurerTest {
 																														  mock(ConnectionConfiguration.class),
 																														  mock(PersisterRegistry.class),
 																														  ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
-		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration));
+		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
 		
 		// Then
 		assertThat(countryTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "capitalId", "name"));
@@ -243,7 +243,7 @@ class CascadeOneConfigurerTest {
 				mock(ConnectionConfiguration.class),
 				mock(PersisterRegistry.class),
 				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
-		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration));
+		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
 		
 		assertThat(cityTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "countryId", "name"));
 		assertThat(cityTable.getForeignKeys()).extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_city_countryId_country_id");

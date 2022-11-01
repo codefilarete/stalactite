@@ -36,6 +36,11 @@ public interface SelectablesPod {
 		return null;
 	}
 	
+	/**
+	 * Gives columns of this instance per their name and alias
+	 * 
+	 * @return columns of this instance per their name and alias
+	 */
 	default Map<String, ? extends Selectable<?>> mapColumnsOnName() {
 		Map<String, Selectable<?>> result = new HashMap<>();
 		for (Selectable<?> column : getColumns()) {

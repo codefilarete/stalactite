@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -16,7 +17,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
+public class MergeJoinNode<C, T1 extends Table, T2 extends Fromable, I> extends AbstractJoinNode<C, T1, T2, I> {
 	
 	private final EntityMerger<C, T2> merger;
 	
@@ -44,7 +45,7 @@ class MergeJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJo
 	 * 
 	 * @param <C>
 	 */
-	static class MergeJoinRowConsumer<C> implements JoinRowConsumer {
+	public static class MergeJoinRowConsumer<C> implements JoinRowConsumer {
 		
 		protected final RowTransformer<C> merger;
 		

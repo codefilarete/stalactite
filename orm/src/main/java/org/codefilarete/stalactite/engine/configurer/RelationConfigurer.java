@@ -88,7 +88,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 				}
 				cycleSolver.addCycleSolver(relationName, cascadeOneConfigurer);
 			} else {
-				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()), cascadeOne.isFetchSeparately());
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
 			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(cascadeOne.getTargetMappingConfiguration().getEntityType(),

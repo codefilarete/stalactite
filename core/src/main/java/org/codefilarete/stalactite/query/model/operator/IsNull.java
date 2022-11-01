@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
  * 
  * @author Guillaume Mary
  */
-public class IsNull extends UnitaryOperator {
+public class IsNull extends UnitaryOperator<Object> {
 	
 	public IsNull() {
 		super(null);

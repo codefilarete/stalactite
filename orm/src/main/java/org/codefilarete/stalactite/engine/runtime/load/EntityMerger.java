@@ -5,17 +5,18 @@ import java.util.Set;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Contract to merge a row to some bean property (no bean creation, only property completion)
  */
-public interface EntityMerger<E, T extends Table> {
+public interface EntityMerger<E, T extends Fromable> {
 	
 	RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
-	Set<Column<T, Object>> getSelectableColumns();
+	Set<Selectable<Object>> getSelectableColumns();
 	
 	/**
 	 * Adapter of a {@link EntityMapping} as a {@link EntityMerger}.
@@ -38,8 +39,8 @@ public interface EntityMerger<E, T extends Table> {
 		}
 		
 		@Override
-		public Set<Column<T, Object>> getSelectableColumns() {
-			return delegate.getSelectableColumns();
+		public Set<Selectable<Object>> getSelectableColumns() {
+			return (Set) delegate.getSelectableColumns();
 		}
 	}
 	

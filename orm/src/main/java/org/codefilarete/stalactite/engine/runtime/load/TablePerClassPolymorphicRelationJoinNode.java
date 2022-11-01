@@ -41,16 +41,16 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table, JOINC
 	private final UnionInFrom unionInFrom;
 	private final Union.PseudoColumn<Integer> discriminatorColumn;
 	
-	TablePerClassPolymorphicRelationJoinNode(JoinNode<T1> parent,
-											 Union subPersistersUnion,
-											 JoinLink<T1, JOINCOLTYPE> leftJoinColumn,
-											 JoinLink<?, JOINCOLTYPE> rightJoinColumn,
-											 JoinType joinType,
-											 Set<? extends Selectable<?>> columnsToSelect,
-											 @Nullable String tableAlias,
-											 EntityInflater<C, I> entityInflater,
-											 BeanRelationFixer<Object, C> beanRelationFixer,
-											 Union.PseudoColumn<Integer> discriminatorColumn) {
+	public TablePerClassPolymorphicRelationJoinNode(JoinNode<T1> parent,
+													Union subPersistersUnion,
+													JoinLink<T1, JOINCOLTYPE> leftJoinColumn,
+													JoinLink<?, JOINCOLTYPE> rightJoinColumn,
+													JoinType joinType,
+													Set<? extends Selectable<?>> columnsToSelect,
+													@Nullable String tableAlias,
+													EntityInflater<C, I> entityInflater,
+													BeanRelationFixer<Object, C> beanRelationFixer,
+													Union.PseudoColumn<Integer> discriminatorColumn) {
 		super(parent, leftJoinColumn, subPersistersUnion.findColumn(rightJoinColumn.getExpression()), joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
 		this.unionInFrom = subPersistersUnion.asPseudoTable(getTableAlias());
 		this.discriminatorColumn = discriminatorColumn;
@@ -148,12 +148,14 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table, JOINC
 		/* Optimized, from 530 000 nanos to 65 000 nanos at 1st exec, from 40 000 nanos to 12 000 nanos on usual run */
 		public <D extends C> RowIdentifier<D> giveIdentifier(Row row) {
 			// @Optimized : use for & return instead of stream().map().filter(notNull).findFirst()
-			int discriminatorValue = columnedRow.getValue(discriminatorColumn, row);
-			SubPersisterAndConsumer<C, D> discriminatorConsumer = (SubPersisterAndConsumer) Iterables.find(subPersisters, o -> o.discriminatorValue == discriminatorValue);
-			if (discriminatorConsumer != null) {
-				I assemble = discriminatorConsumer.subPersisterJoin.giveIdentifier(row);
-				if (assemble != null) {
-					return new RowIdentifier<>(assemble, discriminatorConsumer.subPersisterJoin, discriminatorConsumer.subPersister.getClassToPersist());
+			Integer discriminatorValue = columnedRow.getValue(discriminatorColumn, row);
+			if (discriminatorValue != null) {
+				SubPersisterAndConsumer<C, D> discriminatorConsumer = (SubPersisterAndConsumer) Iterables.find(subPersisters, o -> o.discriminatorValue == discriminatorValue);
+				if (discriminatorConsumer != null) {
+					I assemble = discriminatorConsumer.subPersisterJoin.giveIdentifier(row);
+					if (assemble != null) {
+						return new RowIdentifier<>(assemble, discriminatorConsumer.subPersisterJoin, discriminatorConsumer.subPersister.getClassToPersist());
+					}
 				}
 			}
 			return null;
@@ -161,7 +163,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table, JOINC
 		
 		@Override
 		public JoinRowConsumer giveNextConsumer() {
-			return currentlyFoundConsumer.get().rowConsumer;
+			return org.codefilarete.tool.Nullable.nullable(currentlyFoundConsumer.get()).map(rowIdentifier -> rowIdentifier.rowConsumer).get();
 		}
 		
 		private class RowIdentifier<D extends C> {

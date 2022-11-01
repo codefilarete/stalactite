@@ -550,11 +550,11 @@ public class PersistenceContext implements PersisterRegistry {
 		return execute(queryMapper);
 	}
 	
-	public <C> List<C> execute(QueryMapper<C> queryProvider) {
+	private <C> List<C> execute(QueryMapper<C> queryProvider) {
 		return queryProvider.execute(getConnectionProvider());
 	}
 	
-	public <C> C executeUnique(QueryMapper<C> queryProvider) {
+	private <C> C executeUnique(QueryMapper<C> queryProvider) {
 		return queryProvider.executeUnique(getConnectionProvider());
 	}
 	

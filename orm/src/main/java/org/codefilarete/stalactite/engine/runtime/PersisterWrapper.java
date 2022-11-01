@@ -172,8 +172,9 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 																				  Column<T2, JID> rightColumn,
 																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  boolean optional) {
-		return surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, rightTableAlias, beanRelationFixer, optional);
+																				  boolean optional,
+																				  boolean loadSeparately) {
+		return surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, rightTableAlias, beanRelationFixer, optional, loadSeparately);
 	}
 	
 	@Override
@@ -183,11 +184,10 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																				  String joinName,
-																				  boolean optional,
-																				  Set<Column<T2, ?>> selectableColumns,
+																				  Set<Column<T2, ?>> selectableColumns, boolean optional,
 																				  boolean loadSeparately) {
 		return surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
-				joinName, optional, selectableColumns, loadSeparately);
+				joinName, selectableColumns, optional, loadSeparately);
 	}
 	
 	@Override

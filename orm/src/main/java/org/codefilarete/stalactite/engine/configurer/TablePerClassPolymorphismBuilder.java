@@ -73,7 +73,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 		// registerSubEntitiesRelations(dialect, connectionConfiguration, persisterRegistry, persisterPerSubclass);
 		
 		return new TablePerClassPolymorphismPersister<>(
-				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect);
+				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
+				(TablePerClassPolymorphism<C>) polymorphismPolicy);
 	}
 	
 	private <D> SimpleRelationalEntityPersister<D, I, Table> buildSubclassPersister(Dialect dialect,
@@ -96,7 +97,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 																							  this.columnBinderRegistry, this.columnNameProvider);
 		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
-		addPrimarykey(subTable);
+		addPrimaryKey(subTable);
 		Map<ReversibleAccessor, Column> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
 		subEntityPropertiesMapping.putAll(projectedMainMapping);
 		Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
@@ -124,7 +125,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table> extends AbstractPo
 	}
 	
 	
-	private void addPrimarykey(Table table) {
+	private void addPrimaryKey(Table table) {
 		PersisterBuilderImpl.propagatePrimarykey(this.mainPersister.getMapping().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
 	}
 	

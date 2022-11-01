@@ -37,11 +37,12 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param <T2> right table type
 	 * @param <JID> join columns type, which can either be source persister identifier type (SRCID), or current instance identifier type (I)
 	 * @param sourcePersister source that needs this instance joins
-	 * @param leftColumn left part of the join, expected to be one of source table 
+	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * @param loadSeparately ask to make the target entities loaded in a separate query
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
 	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
@@ -49,7 +50,8 @@ public interface RelationalEntityPersister<C, I> {
 																		   Column<T2, JID> rightColumn,
 																		   String rightTableAlias,
 																		   BeanRelationFixer<SRC, C> beanRelationFixer,
-																		   boolean optional);
+																		   boolean optional,
+																		   boolean loadSeparately);
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
@@ -66,7 +68,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param joinName parent join node name on which join must be added,
 	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
-	 * @param loadSeparately
+	 * @param loadSeparately ask to make the target entities loaded in a separate query
 	 */
 	default <SRC, T1 extends Table, T2 extends Table, SRCID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																			   Column<T1, ?> leftColumn,
@@ -77,7 +79,7 @@ public interface RelationalEntityPersister<C, I> {
 																			   boolean optional,
 																			   boolean loadSeparately) {
 		return joinAsMany(sourcePersister, (Column) leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
-				joinName, optional, Collections.emptySet(), loadSeparately);
+				joinName, Collections.emptySet(), optional, loadSeparately);
 	}
 	
 	/**
@@ -94,9 +96,9 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
 	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
-	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param selectableColumns columns to be added to SQL select clause
-	 * @param loadSeparately
+	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * @param loadSeparately ask to make the target entities loaded in a separate query
 	 */
 	<SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																		   Column<T1, ID> leftColumn,
@@ -104,8 +106,7 @@ public interface RelationalEntityPersister<C, I> {
 																		   BeanRelationFixer<SRC, C> beanRelationFixer,
 																		   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
 																		   String joinName,
-																		   boolean optional,
-																		   Set<Column<T2, ?>> selectableColumns,
+																		   Set<Column<T2, ?>> selectableColumns, boolean optional,
 																		   boolean loadSeparately);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();

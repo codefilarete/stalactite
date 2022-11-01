@@ -125,11 +125,13 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 exte
 		public <D extends C> RowIdentifier<D> giveIdentifier(Row row) {
 			// @Optimized : use for & return instead of stream().map().filter(notNull).findFirst()
 			Object discriminatorValue = columnedRow.getValue(discriminatorColumn, row);
-			SubPersisterAndConsumer<C, D> discriminatorConsumer = (SubPersisterAndConsumer) Iterables.find(subPersisters, o -> o.discriminatorValue.equals(discriminatorValue));
-			if (discriminatorConsumer != null) {
-				I assemble = discriminatorConsumer.subPersisterJoin.giveIdentifier(row);
-				if (assemble != null) {
-					return new RowIdentifier<>(assemble, discriminatorConsumer.subPersisterJoin, discriminatorConsumer.subPersister.getClassToPersist());
+			if (discriminatorValue != null) {
+				SubPersisterAndConsumer<C, D> discriminatorConsumer = (SubPersisterAndConsumer) Iterables.find(subPersisters, o -> o.discriminatorValue.equals(discriminatorValue));
+				if (discriminatorConsumer != null) {
+					I assemble = discriminatorConsumer.subPersisterJoin.giveIdentifier(row);
+					if (assemble != null) {
+						return new RowIdentifier<>(assemble, discriminatorConsumer.subPersisterJoin, discriminatorConsumer.subPersister.getClassToPersist());
+					}
 				}
 			}
 			return null;

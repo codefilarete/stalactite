@@ -10,9 +10,9 @@ import org.codefilarete.stalactite.query.model.Query.FluentWhereClause;
  */
 public interface WhereAware extends GroupByAware {
 	
-	FluentWhereClause where(Column column, CharSequence condition);
+	<O> FluentWhereClause where(Column<?, O> column, CharSequence condition);
 	
-	FluentWhereClause where(Column column, ConditionalOperator condition);
+	<O> FluentWhereClause where(Column<?, O> column, ConditionalOperator<? super O> condition);
 	
 	FluentWhereClause where(Criteria criteria);
 	

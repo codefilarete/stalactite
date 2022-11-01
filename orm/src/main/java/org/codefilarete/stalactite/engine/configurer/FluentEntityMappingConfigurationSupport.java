@@ -523,6 +523,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						cascadeOne.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
+					
+					@Override
+					public OneToOneOptions fetchSeparately() {
+						cascadeOne.fetchSeparately();
+						return null;	// we can return null because dispatcher will return proxy
+					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderOneToOneOptions<C, I, T>>) (Class) FluentMappingBuilderOneToOneOptions.class);
@@ -1050,7 +1056,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately() {
-			cascadeMany.setLoadSeparately();
+			cascadeMany.fetchSeparately();
 			return null;	// we can return null because dispatcher will return proxy
 		}
 	}

@@ -48,7 +48,7 @@ import static java.util.Collections.emptyList;
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
  * {@link ClassMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
  * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean, boolean)} and
- * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Column, Column, String, BeanRelationFixer, boolean)}.
+ * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Column, Column, String, BeanRelationFixer, boolean, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
  * entity loading.
@@ -235,7 +235,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 																				  Column<T2, JID> rightColumn,
 																				  String rightTableAlias,
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  boolean optional) {
+																				  boolean optional,
+																				  boolean loadSeparately) {
 		
 		// We use our own select system since SelectListener is not aimed at joining table
 		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
@@ -266,8 +267,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 																				  BeanRelationFixer<SRC, C> beanRelationFixer,
 																				  @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider,
 																				  String joinName,
-																				  boolean optional,
-																				  Set<Column<T2, ?>> selectableColumns,
+																				  Set<Column<T2, ?>> selectableColumns, boolean optional,
 																				  boolean loadSeparately) {
 		
 		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());

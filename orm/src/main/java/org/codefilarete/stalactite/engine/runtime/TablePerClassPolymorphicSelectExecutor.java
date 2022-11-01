@@ -1,7 +1,13 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
@@ -27,11 +33,18 @@ import org.codefilarete.tool.trace.ModifiableInt;
  */
 public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> implements SelectExecutor<C, I> {
 	
+	private static final String UNION_ALL_SEPARATOR = ") union all (";
+	
 	private final Map<Class, Table> tablePerSubEntity;
 	private final Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	private final Table mainTable;
+	private final String discriminatorAlias;
+	private final String pkAlias;
+	private final Table<?> unionAllPseudoTable;
+	private final Map<Class, String> discriminatorValuePerSubType;
+	private final Map<String, Class> subTypePerDiscriminatorValue;
 	
 	public TablePerClassPolymorphicSelectExecutor(
 			Map<Class, Table> tablePerSubEntity,
@@ -45,6 +58,13 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.mainTable = mainTable;
+		this.discriminatorAlias = "Y";
+		this.pkAlias = "PK";
+		this.unionAllPseudoTable = new Table<>("unionAllPseudoTable");
+		
+		this.discriminatorValuePerSubType = Iterables.map(this.tablePerSubEntity.entrySet(), Entry::getKey, entry -> entry.getKey().getSimpleName());
+		
+		this.subTypePerDiscriminatorValue = Iterables.map(this.tablePerSubEntity.entrySet(), entry -> entry.getKey().getSimpleName(), Entry::getKey);
 	}
 	
 	@Override
@@ -55,24 +75,17 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 		// TODO : (with which listener ?)
 		
 		Set<PreparedSQL> queries = new HashSet<>();
-		Map<String, Class> discriminatorValues = new HashMap<>();
-		String discriminatorAlias = "Y";
-		String pkAlias = "PK";
 		Map<String, ResultSetReader> readers = new HashMap<>();
 		readers.put(discriminatorAlias, dialect.getColumnBinderRegistry().getBinder(String.class));
-		ParameterBinder pkBinder = dialect.getColumnBinderRegistry().getBinder(
-				(Column) Iterables.first(mainTable.getPrimaryKey().getColumns()));
+		ParameterBinder<I> pkBinder = dialect.getColumnBinderRegistry().getBinder(
+				(Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns()));
 		readers.put(pkAlias, pkBinder);
 		tablePerSubEntity.forEach((subEntityType, subEntityTable) -> {
 			Column<T, I> primaryKey = (Column<T, I>) Iterables.first(subEntityTable.getPrimaryKey().getColumns());
-			String discriminatorValue = subEntityType.getSimpleName();
-			discriminatorValues.put(discriminatorValue, subEntityType);
-			Query.FluentSelectClause select = QueryEase.
-					select(primaryKey, pkAlias);
-			select.add("'" + discriminatorValue + "'", String.class);
-			Query.FluentSelectClauseAliasableExpression add = select
-					.add("'" + discriminatorValue + "'", String.class);
-			Query query = add.as(discriminatorAlias)
+			String discriminatorValue = discriminatorValuePerSubType.get(subEntityType);
+			Query query = QueryEase
+					.select(primaryKey, pkAlias)
+					.add("'" + discriminatorValue + "'", String.class).as(discriminatorAlias)
 					.from(subEntityTable)
 					.where(primaryKey, Operators.in(ids)).getQuery();
 			QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
@@ -85,7 +98,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 		StringAppender unionSql = new StringAppender();
 		ModifiableInt parameterIndex = new ModifiableInt(1);
 		queries.forEach(preparedSQL -> {
-			unionSql.cat(preparedSQL.getSQL(), ") union all (");
+			unionSql.cat(preparedSQL.getSQL(), UNION_ALL_SEPARATOR);
 			preparedSQL.getValues().values().forEach(value -> {
 				// since ids are all
 				values.put(parameterIndex.getValue(), value);
@@ -94,7 +107,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 				parameterIndex.increment();
 			});
 		});
-		unionSql.cutTail(") union all (".length());
+		unionSql.cutTail(UNION_ALL_SEPARATOR.length());
 		unionSql.wrap("(", ")");
 		
 		PreparedSQL preparedSQL = new PreparedSQL(unionSql.toString(), parameterBinders);
@@ -110,7 +123,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
 				String discriminatorValue = (String) row.get(discriminatorAlias);
 				// NB: we trim because some database (as HSQLDB) adds some padding in order that all values get same length
-				Class<? extends C> entitySubclass = discriminatorValues.get(discriminatorValue.trim());
+				Class<? extends C> entitySubclass = subTypePerDiscriminatorValue.get(discriminatorValue.trim());
 				
 				// adding identifier to subclass' ids
 				idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())
