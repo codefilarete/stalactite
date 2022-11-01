@@ -42,7 +42,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
-	 * @param loadSeparately ask to make the target entities loaded in a separate query
+	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
 	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
@@ -68,7 +68,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param joinName parent join node name on which join must be added,
 	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
-	 * @param loadSeparately ask to make the target entities loaded in a separate query
+	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
 	default <SRC, T1 extends Table, T2 extends Table, SRCID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																			   Column<T1, ?> leftColumn,
@@ -98,7 +98,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param selectableColumns columns to be added to SQL select clause
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
-	 * @param loadSeparately ask to make the target entities loaded in a separate query
+	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
 	<SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
 																		   Column<T1, ID> leftColumn,

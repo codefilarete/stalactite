@@ -34,19 +34,19 @@ import static org.codefilarete.tool.Nullable.nullable;
  * 
  * @author Guillaume Mary
  */
-public class PolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, T2, JOINCOLTYPE, I> {
+public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, T2, JOINCOLTYPE, I> {
 	
 	private final Set<Duo<EntityConfiguredJoinedTablesPersister<? extends C, I>, PolymorphicMergeJoinRowConsumer<C, ? extends C, I>>> subPersisters = new HashSet<>();
 	
-	PolymorphicRelationJoinNode(JoinNode<T1> parent,
-								Column<T1, JOINCOLTYPE> leftJoinColumn,
-								Column<T2, JOINCOLTYPE> rightJoinColumn,
-								JoinType joinType,
-								Set<Column<T2, ?>> columnsToSelect,
-								@Nullable String tableAlias,
-								EntityInflater<C, I> entityInflater,
-								BeanRelationFixer<Object, C> beanRelationFixer,
-								@Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
+	public JoinTablePolymorphicRelationJoinNode(JoinNode<T1> parent,
+												Column<T1, JOINCOLTYPE> leftJoinColumn,
+												Column<T2, JOINCOLTYPE> rightJoinColumn,
+												JoinType joinType,
+												Set<Column<T2, ?>> columnsToSelect,
+												@Nullable String tableAlias,
+												EntityInflater<C, I> entityInflater,
+												BeanRelationFixer<Object, C> beanRelationFixer,
+												@Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, relationIdentifierProvider);
 	}
 	
@@ -102,7 +102,7 @@ public class PolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, 
 						parentRowConsumer.getRowTransformer().applyRowToBean(row, entity);
 						return entity;
 					});
-					getBeanRelationFixer().apply((C) parentJoinEntity, rightEntity);
+					getBeanRelationFixer().apply(parentJoinEntity, rightEntity);
 					if (this.transformerListener != null) {
 						this.transformerListener.onTransform(rightEntity, column -> columnedRow.getValue(column, row));
 					}

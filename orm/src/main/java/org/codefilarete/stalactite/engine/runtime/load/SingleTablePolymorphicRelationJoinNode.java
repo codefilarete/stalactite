@@ -38,7 +38,7 @@ public class SingleTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 exte
 	
 	private final Column<T2, DTYPE> discriminatorColumn;
 	
-	SingleTablePolymorphicRelationJoinNode(JoinNode<T1> parent,
+	public SingleTablePolymorphicRelationJoinNode(JoinNode<T1> parent,
 										   JoinLink<T1, JOINCOLTYPE> leftJoinColumn,
 										   JoinLink<T2, JOINCOLTYPE> rightJoinColumn,
 										   JoinType joinType,

@@ -356,7 +356,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 			
 			return createdJoinNodeName;
 		} else {
-			return joinAsOne(sourcePersister.getEntityJoinTree(), ROOT_STRATEGY_NAME,
+			return join(
+					sourcePersister.getEntityJoinTree(),
+					ROOT_STRATEGY_NAME,
 					mainPersister,
 					leftColumn,
 					rightColumn,
@@ -409,7 +411,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 			// FIXME : we shouldn't return null here but a created join node name: which one since we have several table to join ? see joinAsOne(..) maybe ?
 			return null;
 		} else {
-			return joinAsOne(sourcePersister.getEntityJoinTree(), joinName,
+			return join(
+					sourcePersister.getEntityJoinTree(),
+					joinName,
 					mainPersister,
 					leftColumn,
 					rightColumn,
@@ -418,7 +422,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		}
 	}
 
-	private <SRC, SRCID, U, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE> String joinAsOne(
+	private <SRC, SRCID, U, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE> String join(
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String leftStrategyName,
 			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,

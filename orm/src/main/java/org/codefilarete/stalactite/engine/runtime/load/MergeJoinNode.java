@@ -21,12 +21,12 @@ public class MergeJoinNode<C, T1 extends Table, T2 extends Fromable, I> extends 
 	
 	private final EntityMerger<C, T2> merger;
 	
-	MergeJoinNode(JoinNode<T1> parent,
-				  JoinLink<T1, I> leftJoinColumn,
-				  JoinLink<T2, I> rightJoinColumn,
-				  JoinType joinType,
-				  @Nullable String tableAlias,
-				  EntityMerger<C, T2> merger) {
+	public MergeJoinNode(JoinNode<T1> parent,
+							JoinLink<T1, I> leftJoinColumn,
+							JoinLink<T2, I> rightJoinColumn,
+							JoinType joinType,
+							@Nullable String tableAlias,
+							EntityMerger<C, T2> merger) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, (Set) merger.getSelectableColumns(), tableAlias);
 		this.merger = merger;
 	}

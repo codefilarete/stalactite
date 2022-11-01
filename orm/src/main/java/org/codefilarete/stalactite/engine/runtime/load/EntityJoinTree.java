@@ -14,10 +14,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
@@ -38,7 +35,6 @@ import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.ReadOnlyList;
-import org.codefilarete.tool.function.Hanger.Holder;
 
 /**
  * Tree representing joins of a from clause, nodes are {@link JoinNode}.
@@ -162,111 +158,6 @@ public class EntityJoinTree<C, I> {
 				inflater,
 				(BeanRelationFixer<Object, U>) beanRelationFixer,
 				relationIdentifierProvider));
-	}
-	
-	public <U, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE> String addPolymorphicRelationJoin(
-			String leftStrategyName,
-			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-			Column<T1, JOINCOLTYPE> leftJoinColumn,
-			Column<T2, JOINCOLTYPE> rightJoinColumn,
-			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
-			BeanRelationFixer<C, U> beanRelationFixer,
-			@Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
-		
-		Holder<PolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID>> createdJoinHolder = new Holder<>();
-		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
-			PolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID> polymorphicRelationJoinNode = new PolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID>(
-					parent,
-					(Column) leftJoinColumn,
-					(Column) rightJoinColumn,
-					JoinType.OUTER,
-					mainPersister.getMainTable().getColumns(),
-					null,
-					new EntityMappingAdapter<>(mainPersister.getMapping()),
-					(BeanRelationFixer<Object, U>) beanRelationFixer,
-					relationIdentifierProvider);
-			createdJoinHolder.set(polymorphicRelationJoinNode);
-			return polymorphicRelationJoinNode;
-		});
-		
-		this.addPolymorphicSubPersistersJoins(relationJoinName, mainPersister, createdJoinHolder.get(), subPersisters);
-		
-		return relationJoinName;
-	}
-	
-	private <U, V extends U, T1 extends Table, T2 extends Table, ID> void addPolymorphicSubPersistersJoins(String mainPolymorphicJoinNodeName,
-																										   EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-																										   PolymorphicRelationJoinNode<U, T1, T2, ?, ID> mainPersisterJoin,
-																										   Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters) {
-		subPersisters.forEach(subPersister -> {
-			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
-			this.<T1>addJoin(mainPolymorphicJoinNodeName, parent -> new MergeJoinNode<V, T1, T2, ID>(parent,
-					(Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns()),
-					(Column) Iterables.first(subPersister.getMainTable().getPrimaryKey().getColumns()),
-					JoinType.OUTER,
-					null,
-					new EntityMergerAdapter<>(localSubPersister.getMapping())) {
-				@Override
-				public MergeJoinRowConsumer<V> toConsumer(ColumnedRow columnedRow) {
-					PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<>(
-							new PolymorphicEntityInflater<>(mainPersister, localSubPersister), columnedRow);
-					mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer);
-					return joinRowConsumer;
-				}
-			});
-		});
-	}
-	
-	public <U, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE, DTYPE> String addSingleTablePolymorphicRelationJoin(
-			String leftStrategyName,
-			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-			Column<T1, JOINCOLTYPE> leftJoinColumn,
-			Column<T2, JOINCOLTYPE> rightJoinColumn,
-			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
-			BeanRelationFixer<C, U> beanRelationFixer,
-			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy,
-			Column<T2, DTYPE> discriminatorColumn) {
-		
-		Holder<SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>> createdJoinHolder = new Holder<>();
-		String relationJoinName = this.<T1>addJoin(leftStrategyName, parent -> {
-			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> polymorphicRelationJoinNode = new SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>(
-					parent,
-					(Column) leftJoinColumn,
-					(Column) rightJoinColumn,
-					JoinType.OUTER,
-					mainPersister.getMainTable().getColumns(),
-					null,
-					new EntityMappingAdapter<>(mainPersister.getMapping()),
-					(BeanRelationFixer<Object, U>) beanRelationFixer,
-					discriminatorColumn) {
-
-				@Override
-				public SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>.SingleTablePolymorphicRelationJoinRowConsumer toConsumer(ColumnedRow columnedRow) {
-					SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>.SingleTablePolymorphicRelationJoinRowConsumer joinTablePolymorphicRelationJoinRowConsumer = super.toConsumer(columnedRow);
-					addSingleTableSubPersistersJoin(mainPersister, this, subPersisters, columnedRow, polymorphismPolicy);
-					return joinTablePolymorphicRelationJoinRowConsumer;
-				}
-			};
-			createdJoinHolder.set(polymorphicRelationJoinNode);
-			return polymorphicRelationJoinNode;
-		});
-		
-		return relationJoinName;
-	}
-	
-	private <U, V extends U, T1 extends Table, T2 extends Table, JOINCOLTYPE, ID, DTYPE> void addSingleTableSubPersistersJoin(
-			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> mainPersisterJoin,
-			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
-			ColumnedRow columnedRow,
-			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy) {
-		
-		subPersisters.forEach(subPersister -> {
-			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
-			PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<U, V, ID>(
-					new PolymorphicEntityInflater<>(mainPersister, localSubPersister), columnedRow);
-			mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer, polymorphismPolicy.getDiscriminatorValue(localSubPersister.getClassToPersist()));
-		});
 	}
 	
 	

@@ -29,8 +29,12 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.PolymorphicEntityInflater;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.PolymorphicMergeJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.SingleTablePolymorphicRelationJoinNode;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -53,6 +57,7 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -249,6 +254,16 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	@Override
+	public EntityJoinTree<C, I> getEntityJoinTree() {
+		return mainPersister.getEntityJoinTree();
+	}
+	
+	@Override
+	public <E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName) {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
 	public void addInsertListener(InsertListener insertListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
 	}
@@ -330,7 +345,9 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 			
 			return createdJoinNodeName;
 		} else {
-			return sourcePersister.getEntityJoinTree().addSingleTablePolymorphicRelationJoin(ROOT_STRATEGY_NAME,
+			return join(
+					sourcePersister.getEntityJoinTree(),
+					ROOT_STRATEGY_NAME,
 					mainPersister,
 					leftColumn,
 					rightColumn,
@@ -383,7 +400,9 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 			
 			return createdJoinNodeName;
 		} else {
-			return sourcePersister.getEntityJoinTree().addSingleTablePolymorphicRelationJoin(joinName,
+			return join(
+					sourcePersister.getEntityJoinTree(),
+					joinName,
 					mainPersister,
 					leftColumn,
 					rightColumn,
@@ -394,14 +413,57 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		}
 	}
 	
-	@Override
-	public EntityJoinTree<C, I> getEntityJoinTree() {
-		return mainPersister.getEntityJoinTree();
+	private <SRC, SRCID, U extends C, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE, DTYPE> String join(
+			EntityJoinTree<SRC, SRCID> entityJoinTree,
+			String leftStrategyName,
+			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+			Column<T1, JOINCOLTYPE> leftJoinColumn,
+			Column<T2, JOINCOLTYPE> rightJoinColumn,
+			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
+			BeanRelationFixer<SRC, U> beanRelationFixer,
+			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy,
+			Column<T2, DTYPE> discriminatorColumn) {
+		
+		Holder<SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>> createdJoinHolder = new Holder<>();
+		String relationJoinName = entityJoinTree.<T1>addJoin(leftStrategyName, parent -> {
+			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> polymorphicRelationJoinNode = new SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>(
+					parent,
+					leftJoinColumn,
+					rightJoinColumn,
+					JoinType.OUTER,
+					mainPersister.getMainTable().getColumns(),
+					null,
+					new EntityMappingAdapter<>(mainPersister.getMapping()),
+					(BeanRelationFixer<Object, U>) beanRelationFixer,
+					discriminatorColumn) {
+				
+				@Override
+				public SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>.SingleTablePolymorphicRelationJoinRowConsumer toConsumer(ColumnedRow columnedRow) {
+					SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>.SingleTablePolymorphicRelationJoinRowConsumer joinTablePolymorphicRelationJoinRowConsumer = super.toConsumer(columnedRow);
+					addSingleTableSubPersistersJoin(mainPersister, this, subPersisters, columnedRow, polymorphismPolicy);
+					return joinTablePolymorphicRelationJoinRowConsumer;
+				}
+			};
+			createdJoinHolder.set(polymorphicRelationJoinNode);
+			return polymorphicRelationJoinNode;
+		});
+		
+		return relationJoinName;
 	}
 	
-	@Override
-	public <E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName) {
-		throw new UnsupportedOperationException();
+	private <U, V extends U, T1 extends Table, T2 extends Table, JOINCOLTYPE, ID, DTYPE> void addSingleTableSubPersistersJoin(
+			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> mainPersisterJoin,
+			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
+			ColumnedRow columnedRow,
+			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy) {
+		
+		subPersisters.forEach(subPersister -> {
+			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
+			PolymorphicMergeJoinRowConsumer<U, V, ID> joinRowConsumer = new PolymorphicMergeJoinRowConsumer<U, V, ID>(
+					new PolymorphicEntityInflater<>(mainPersister, localSubPersister), columnedRow);
+			mainPersisterJoin.addSubPersisterJoin(localSubPersister, joinRowConsumer, polymorphismPolicy.getDiscriminatorValue(localSubPersister.getClassToPersist()));
+		});
 	}
 	
 	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader<C, I, Table> {
