@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.ddl;
 
 import java.util.*;
 
+import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
@@ -85,19 +86,30 @@ public class DDLGenerator implements DDLProvider {
 		List<String> tableCreationScripts = new ArrayList<>();
 		List<String> foreignKeysCreationScripts = new ArrayList<>();
 		List<String> indexesCreationScripts = new ArrayList<>();
+		List<String> uniqueConstraintsCreationScripts = new ArrayList<>();
 		
 		for (Table table : tables) {
 			tableCreationScripts.add(generateCreationScript(table));
 			foreignKeysCreationScripts.addAll(getForeignKeyCreationScripts(table));
 			indexesCreationScripts.addAll(generateIndexCreationScripts(table));
+			uniqueConstraintsCreationScripts.addAll(generateUniqueConstraintCreationScripts(table));
 		}
 		
-		// foreign keys must be after table scripts, index is fine tuning
-		return Collections.cat(tableCreationScripts, foreignKeysCreationScripts, indexesCreationScripts);
+		// Foreign keys must be after constraints and indexes because some databases require foreign keys to have index on referenced column (MariaDB)
+		// Since that's only a matter for some databases and other don't care, we set it here, not in a vendor-dedicated DDLGenerator
+		return Collections.cat(tableCreationScripts, uniqueConstraintsCreationScripts, indexesCreationScripts, foreignKeysCreationScripts);
 	}
 	
 	protected String generateCreationScript(Table table) {
 		return this.ddlTableGenerator.generateCreateTable(table);
+	}
+	
+	protected List<String> generateUniqueConstraintCreationScripts(Table<?> table) {
+		List<String> uniqueConstraintCreationScripts = new ArrayList<>();
+		for (UniqueConstraint uniqueConstraint : table.getUniqueConstraints()) {
+			uniqueConstraintCreationScripts.add(generateCreationScript(uniqueConstraint));
+		}
+		return uniqueConstraintCreationScripts;
 	}
 	
 	protected List<String> generateIndexCreationScripts(Table<?> table) {
@@ -106,6 +118,10 @@ public class DDLGenerator implements DDLProvider {
 			indexesCreationScripts.add(generateCreationScript(index));
 		}
 		return indexesCreationScripts;
+	}
+	
+	protected String generateCreationScript(UniqueConstraint uniqueConstraint) {
+		return this.ddlTableGenerator.generateCreateUniqueConstraint(uniqueConstraint);
 	}
 	
 	protected String generateCreationScript(Index index) {

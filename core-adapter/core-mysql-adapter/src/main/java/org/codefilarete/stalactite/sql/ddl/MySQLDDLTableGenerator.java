@@ -1,7 +1,8 @@
-package org.codefilarete.stalactite.sql;
+package org.codefilarete.stalactite.sql.ddl;
 
 import java.util.Collections;
 
+import org.codefilarete.stalactite.sql.MySQLDMLNameProvier;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;

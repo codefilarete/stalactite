@@ -1,16 +1,14 @@
-package org.codefilarete.stalactite.sql;
+package org.codefilarete.stalactite.sql.ddl;
 
 
-import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
-import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * @author Guillaume Mary
  */
-public class DerbyTableGenerator extends DDLTableGenerator {
+public class DerbyDDLTableGenerator extends DDLTableGenerator {
 	
-	public DerbyTableGenerator(SqlTypeRegistry typeMapping) {
+	public DerbyDDLTableGenerator(SqlTypeRegistry typeMapping) {
 		super(typeMapping);
 	}
 	

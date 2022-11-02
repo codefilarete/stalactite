@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql;
 
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.MariaDBDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;

@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 import java.sql.SQLException;
 
 import org.assertj.core.api.Assertions;
-import org.codefilarete.stalactite.sql.MariaDBDialect;
 import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 import org.junit.jupiter.api.Test;
 

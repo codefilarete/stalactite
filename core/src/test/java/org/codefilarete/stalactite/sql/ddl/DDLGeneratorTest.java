@@ -2,13 +2,9 @@ package org.codefilarete.stalactite.sql.ddl;
 
 import java.util.List;
 
-import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
-import org.codefilarete.stalactite.sql.ddl.DDLProvider;
-import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,14 +50,35 @@ class DDLGeneratorTest {
 		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
 		typeMapping.put(String.class, "VARCHAR");
 		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping));
-		Table totoTable = new Table("toto");
-		Column idColumn = totoTable.addColumn("id", String.class);
+		Table totoTable = new Table<>("toto");
+		Column<Table, String> idColumn = totoTable.addColumn("id", String.class);
 		totoTable.addIndex("totoIDX", idColumn);
 		testInstance.addTables(totoTable);
 		
 		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList(
 				"create table toto(id VARCHAR)",
 				"create index totoIDX on toto(id)"
+		));
+		// by default indexes are not in final script because they are expected to be dropped with table
+		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList(
+				"drop table toto"
+		));
+	}
+	
+	@Test
+	void uniqueConstraintsAreInFinalScript() {
+		JavaTypeToSqlTypeMapping typeMapping = new JavaTypeToSqlTypeMapping();
+		typeMapping.put(String.class, "VARCHAR");
+		DDLGenerator testInstance = new DDLGenerator(new SqlTypeRegistry(typeMapping));
+		Table totoTable = new Table<>("toto");
+		Column<Table, String> idColumn = totoTable.addColumn("id", String.class);
+		Column<Table, String> lastNameColumn = totoTable.addColumn("lastName", String.class);
+		totoTable.addUniqueConstraint("UK_toto", idColumn, lastNameColumn);
+		testInstance.addTables(totoTable);
+		
+		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList(
+				"create table toto(id VARCHAR, lastName VARCHAR)",
+				"alter table toto add constraint UK_toto unique (id, lastName)"
 		));
 		// by default indexes are not in final script because they are expected to be dropped with table
 		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList(
@@ -105,24 +122,24 @@ class DDLGeneratorTest {
 		testInstance.addDDLGenerators(new DDLProvider() {
 			@Override
 			public List<String> getCreationScripts() {
-				return Arrays.asList("my wonderfull first SQL creation script", "my wonderfull second SQL creation script");
+				return Arrays.asList("my wonderful first SQL creation script", "my wonderful second SQL creation script");
 			}
 			
 			@Override
 			public List<String> getDropScripts() {
-				return Arrays.asList("my wonderfull first SQL drop script", "my wonderfull second SQL drop script");
+				return Arrays.asList("my wonderful first SQL drop script", "my wonderful second SQL drop script");
 			}
 		});
 		
 		assertThat(testInstance.getCreationScripts()).isEqualTo(Arrays.asList(
 				"create table toto(id VARCHAR)",
-				"my wonderfull first SQL creation script",
-				"my wonderfull second SQL creation script"
+				"my wonderful first SQL creation script",
+				"my wonderful second SQL creation script"
 		));
 		assertThat(testInstance.getDropScripts()).isEqualTo(Arrays.asList(
 				"drop table toto",
-				"my wonderfull first SQL drop script",
-				"my wonderfull second SQL drop script"
+				"my wonderful first SQL drop script",
+				"my wonderful second SQL drop script"
 		));
 	}
 	

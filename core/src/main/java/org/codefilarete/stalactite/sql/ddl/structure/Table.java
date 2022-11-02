@@ -15,7 +15,6 @@ import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
@@ -40,6 +39,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	private PrimaryKey<SELF> primaryKey;
 	
 	private final Set<Index> indexes = new HashSet<>();
+	
+	private final Set<UniqueConstraint> uniqueConstraints = new HashSet<>();
 	
 	private final Set<ForeignKey<SELF, ? extends Table<?>>> foreignKeys = new HashSet<>();
 	
@@ -187,10 +188,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		return Collections.unmodifiableSet(indexes);
 	}
 	
-	public Index addIndex(String name, Column column, Column ... columns) {
-		LinkedHashSet<Column> indexedColumns = Arrays.asSet(column);
-		indexedColumns.addAll(java.util.Arrays.asList(columns));
-		Index newIndex = new Index(name, indexedColumns);
+	public Index addIndex(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
+		Index newIndex = new Index(name, column, columns);
 		this.indexes.add(newIndex);
 		return newIndex;
 	}
@@ -199,8 +198,8 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		return Collections.unmodifiableSet(foreignKeys);
 	}
 	
-	public <T extends Table<T>, I> ForeignKey addForeignKey(BiFunction<Column, Column, String> namingFunction,
-															Column<SELF, I> column, Column<T, I> targetColumn) {
+	public <T extends Table<T>, I> ForeignKey<SELF, T> addForeignKey(BiFunction<Column<SELF, I>, Column<T, I>, String> namingFunction,
+																	 Column<SELF, I> column, Column<T, I> targetColumn) {
 		return this.addForeignKey(namingFunction.apply(column, targetColumn), column, targetColumn);
 	}
 	
@@ -215,7 +214,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @param <T> referenced table type
 	 * @return the created foreign key or the existing one
 	 */
-	public <T extends Table<T>, I> ForeignKey addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {
+	public <T extends Table<T>, I> ForeignKey<SELF, T> addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {
 		return addForeignKey(name, Collections.<Column<SELF, ?>>singletonList(column), Collections.<Column<T, ?>>singletonList(targetColumn));
 	}
 	
@@ -230,7 +229,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	 * @param <T> referenced table type
 	 * @return the created foreign key or the existing one
 	 */
-	public <T extends Table<T>> ForeignKey addForeignKey(String name, List<? extends Column<SELF, ?>> columns, List<? extends Column<T, ?>> targetColumns) {
+	public <T extends Table<T>> ForeignKey<SELF, T> addForeignKey(String name, List<? extends Column<SELF, ?>> columns, List<? extends Column<T, ?>> targetColumns) {
 		return addertForeignKey(new ForeignKey<>(name, new LinkedHashSet<>(columns), new LinkedHashSet<>(targetColumns)));
 	}
 	
@@ -256,6 +255,16 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		} else {
 			return existingForeignKey;
 		}
+	}
+	
+	public Set<UniqueConstraint> getUniqueConstraints() {
+		return uniqueConstraints;
+	}
+	
+	public UniqueConstraint addUniqueConstraint(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
+		UniqueConstraint newUniqueConstraint = new UniqueConstraint(name, column, columns);
+		this.uniqueConstraints.add(newUniqueConstraint);
+		return newUniqueConstraint;
 	}
 	
 	/**
