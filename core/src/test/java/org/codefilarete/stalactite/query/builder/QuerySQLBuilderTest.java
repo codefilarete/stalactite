@@ -13,9 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.eq;
-import static org.codefilarete.stalactite.query.model.Operators.gt;
-import static org.codefilarete.stalactite.query.model.Operators.sum;
+import static org.codefilarete.stalactite.query.model.Operators.*;
 import static org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC;
 import static org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC;
 import static org.codefilarete.stalactite.query.model.QueryEase.select;
@@ -94,6 +92,8 @@ public class QuerySQLBuilderTest {
 				// limit test
 				{ select(colTotoA, colTataB).from(tableToto).limit(2),
 						"select Toto.a, Tata.b from Toto limit 2" },
+				{ select(colTotoA, colTataB).from(tableToto).limit(2).unionAll(select(colTotoA, colTataB).from(tableToto).limit(2)),
+						"select Toto.a, Tata.b from Toto limit 2 union all select Toto.a, Tata.b from Toto limit 2" },
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = 1 limit 2" },
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, "= 1").orderBy(colTotoA).limit(2),

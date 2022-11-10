@@ -6,7 +6,7 @@ import java.util.function.BiFunction;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
-import org.codefilarete.stalactite.query.model.Query.FluentUnionClause;
+import org.codefilarete.stalactite.query.model.Query.FluentLimitClause;
 import org.codefilarete.stalactite.query.model.SelectChain.Aliasable;
 import org.codefilarete.stalactite.query.model.SelectChain.AliasableExpression;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -22,7 +22,7 @@ import org.codefilarete.tool.reflect.MethodDispatcher;
  * @see QuerySQLBuilder
  * @see QueryEase
  */
-public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware<FluentUnionClause>, QueryProvider<Query>,
+public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, LimitAware<FluentLimitClause>, QueryProvider<Query>,
 		QueryStatement, UnionAware {
 	
 	private final FluentSelectClause select;
@@ -341,9 +341,9 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public FluentUnionClause limit(int value) {
+	public FluentLimitClause limit(int value) {
 		this.limit.setValue(value);
-		return fluentUnionClause;
+		return limit;
 	}
 	
 	@Override
@@ -374,23 +374,23 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 		FluentSelectClause as(String alias);
 	}
 	
-	public interface FluentFromClause extends JoinChain<FluentFromClause>, WhereAware, GroupByAware, OrderByAware, LimitAware<FluentUnionClause>, QueryProvider<Query> {
+	public interface FluentFromClause extends JoinChain<FluentFromClause>, WhereAware, GroupByAware, OrderByAware, LimitAware<FluentLimitClause>, QueryProvider<Query> {
 		
 	}
 	
-	public interface FluentWhereClause extends CriteriaChain<FluentWhereClause>, GroupByAware, OrderByAware, LimitAware<FluentUnionClause>, UnionAware, QueryProvider<Query> {
+	public interface FluentWhereClause extends CriteriaChain<FluentWhereClause>, GroupByAware, OrderByAware, LimitAware<FluentLimitClause>, UnionAware, QueryProvider<Query> {
 		
 	}
 	
-	public interface FluentGroupByClause extends GroupByChain<FluentGroupByClause>, HavingAware, OrderByAware, LimitAware<FluentUnionClause>, UnionAware, QueryProvider<Query> {
+	public interface FluentGroupByClause extends GroupByChain<FluentGroupByClause>, HavingAware, OrderByAware, LimitAware<FluentLimitClause>, UnionAware, QueryProvider<Query> {
 		
 	}
 	
-	public interface FluentHavingClause extends CriteriaChain<FluentHavingClause>, OrderByAware, LimitAware<FluentUnionClause>, UnionAware, QueryProvider<Query> {
+	public interface FluentHavingClause extends CriteriaChain<FluentHavingClause>, OrderByAware, LimitAware<FluentLimitClause>, UnionAware, QueryProvider<Query> {
 		
 	}
 	
-	public interface FluentOrderByClause extends OrderByChain<FluentOrderByClause>, LimitAware<FluentUnionClause>, UnionAware, QueryProvider<Query> {
+	public interface FluentOrderByClause extends OrderByChain<FluentOrderByClause>, LimitAware<FluentLimitClause>, UnionAware, QueryProvider<Query> {
 		
 	}
 	
