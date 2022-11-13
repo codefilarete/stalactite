@@ -11,15 +11,15 @@ import java.util.Objects;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyKeyQueryMapper;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
-import org.codefilarete.stalactite.id.StatefulIdentifier;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifier;
+import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -27,11 +27,15 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.exception.Exceptions;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,11 +45,10 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.*;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
-import static org.codefilarete.stalactite.query.model.QueryEase.select;
+import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,7 +72,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	}
 	
 	@Test
-	void oneToManyList_insert_cascadeIsTriggered() {
+	void insert_cascadeIsTriggered() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -78,11 +81,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Choice::getName);
+				.mapKey(Choice::getId, ALREADY_ASSIGNED)
+				.map(Choice::getLabel);
 		
 		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
-				.mapKey(Question::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Question::getId, ALREADY_ASSIGNED)
 				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -96,13 +99,79 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				new Choice(30L)));
 		questionPersister.insert(newQuestion);
 		
-		List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
+		List<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute();
 		assertThat(Iterables.collectToList(persistedChoices, Result::getId)).isEqualTo(Arrays.asList(10L, 20L, 30L));
 		// stating that indexes are in same order than instances
 		assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(0, 1, 2));
+	}
+	
+	@Test
+	void crud_mappedBy() {
+		
+		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		Table choiceTable = new Table("Choice");
+		// we declare the column that will store our List index
+		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+		// since we won't ask for orphan deletion, index column will be set to null so it can't be a primitive type
+		Column<Table, Integer> idx = choiceTable.addColumn("idx", Integer.class);
+		
+		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+				.mapKey(Choice::getId, ALREADY_ASSIGNED)
+				.map(Choice::getLabel);
+		
+		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
+				.mapKey(Question::getId, ALREADY_ASSIGNED)
+				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Question question = new Question(new PersistableIdentifier<>(1L));
+		Choice choice1 = new Choice(new PersistableIdentifier<>(13L));
+		choice1.setLabel("Grenoble");
+		question.addChoice(choice1);
+		Choice choice2 = new Choice(new PersistableIdentifier<>(17L));
+		choice2.setLabel("Lyon");
+		question.addChoice(choice2);
+		questionPersister.insert(question);
+		
+		List<Long> choiceQuestionIds = persistenceContext.newQuery("select questionId from Choice", Long.class)
+				.mapKey(i -> i, "questionId", Long.class)
+				.execute();
+		
+		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getSurrogate());
+		
+		// testing select
+		Question loadedQuestion = questionPersister.select(question.getId());
+		assertThat(loadedQuestion.getChoices()).extracting(Choice::getLabel).containsExactlyInAnyOrder("Grenoble", "Lyon");
+		// ensuring that source is set on reverse side too
+		assertThat(Iterables.first(loadedQuestion.getChoices()).getQuestion()).isEqualTo(loadedQuestion);
+		
+		// testing update : removal of a choice, reversed column must be set to null
+		Question modifiedQuestion = new Question(question.getId());
+		modifiedQuestion.addChoice(Iterables.first(question.getChoices()));
+		
+		questionPersister.update(modifiedQuestion, question, false);
+		
+		choiceQuestionIds = persistenceContext.newQuery("select questionId from Choice", Long.class)
+				.mapKey(i -> i, "questionId", Long.class)
+				.execute();
+		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getSurrogate(), null);
+		
+		// testing delete
+		questionPersister.delete(modifiedQuestion);
+		// referencing columns must be set to null (we didn't ask for delete orphan)
+		choiceQuestionIds = persistenceContext.newQuery("select questionId from Choice", Long.class)
+				.mapKey(i -> i, "questionId", Long.class)
+				.execute();
+		ArrayList<Object> expectedResult = new ArrayList<>();
+		expectedResult.add(null);
+		assertThat(choiceQuestionIds).isEqualTo(expectedResult);
 	}
 	
 	@Nested
@@ -126,7 +195,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice2Clone, choice1Clone, choice3Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -158,7 +227,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			verify(updateListener).beforeUpdate(argThat(argument ->
 					Iterables.collect(argument, Duo::getLeft, HashSet::new).equals(new HashSet<>(modifiedQuestion.getChoices()))
 					&& Iterables.collect(argument, Duo::getRight, HashSet::new).equals(new HashSet<>(newQuestion.getChoices()))), eq(true));
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -186,7 +255,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice4, choice2Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -215,7 +284,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Copy, choice1Copy));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -246,7 +315,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -255,10 +324,64 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// choice 1 (10) is last, choice 3 (30) is first
 			assertThat(Iterables.collectToList(persistedChoices, Result::getIdx)).isEqualTo(Arrays.asList(1, 0));
 		}
+		
+		@Test
+		void update_withAssociationTable_associationRecordsMustBeUpdated_butNotTargetEntities_list() throws SQLException {
+			PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+			
+			FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
+			
+			EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
+					.map(Question::getLabel)
+					.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).cascading(ASSOCIATION_ONLY)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// we need to insert target choices because they won't be inserted by ASSOCIATION_ONLY cascade
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Choice(id) values (100), (200)");
+			
+			Question question = new Question(new PersistableIdentifier<>(42L));
+			Choice choice1 = new Choice(new PersistableIdentifier<>(100L));
+			Choice choice2 = new Choice(new PersistableIdentifier<>(200L));
+			question.addChoice(choice1);
+			question.addChoice(choice2);
+			
+			questionPersister.insert(question);
+			
+			// changing values before update
+			question.setLabel("What's your name ?");
+			choice1.setLabel("John");
+			questionPersister.update(question, questionPersister.select(question.getId()), true);
+			
+			ResultSet resultSet;
+			// Checking that country name was updated
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select label from Question where id = 42");
+			ResultSetIterator<Row> questionIterator = new RowIterator(resultSet, Maps.asMap("label", DefaultParameterBinders.STRING_BINDER));
+			assertThat(Iterables.collectToList(() -> questionIterator, row -> row.get("label"))).isEqualTo(Arrays.asList("What's your name ?"));
+			// .. but not its city name
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select label from Choice where id = 100");
+			ResultSetIterator<Row> choiceIterator = new RowIterator(resultSet, Maps.asMap("label", DefaultParameterBinders.STRING_BINDER));
+			assertThat(Iterables.collectToList(() -> choiceIterator, row -> row.get("label"))).isEqualTo(Arrays.asList((Object) null));
+			
+			// removing choice doesn't have any effect either
+			assertThat(question.getChoices().size()).isEqualTo(2);	// safeguard for unwanted regression on choice removal, because it would 
+			// totally corrupt this test
+			question.getChoices().remove(choice1);
+			assertThat(question.getChoices().size()).isEqualTo(1);	// safeguard for unwanted regression on choice removal, because it would totally corrupt this test
+			questionPersister.update(question, questionPersister.select(question.getId()), true);
+			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select label from Choice where id = 100");
+			ResultSetIterator<Row> choiceIterator2 = new RowIterator(resultSet, Maps.asMap("label", DefaultParameterBinders.STRING_BINDER));
+			assertThat(Iterables.collectToList(() -> choiceIterator2, row -> row.get("label"))).isEqualTo(Arrays.asList((Object) null));
+		}
 	}
 	
 	@Test
-	void oneToManyList_select() throws SQLException {
+	void select() throws SQLException {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -267,11 +390,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Choice::getName);
+				.mapKey(Choice::getId, ALREADY_ASSIGNED)
+				.map(Choice::getLabel);
 		
 		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
-				.mapKey(Question::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Question::getId, ALREADY_ASSIGNED)
 				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -291,7 +414,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	}
 	
 	@Test
-	void oneToManyList_delete_reverseSideIsNotMapped_relationRecordsMustBeDeleted() throws SQLException {
+	void delete_reverseSideIsNotMapped_relationRecordsMustBeDeleted() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		DuplicatesTestData duplicatesTestData = new DuplicatesTestData().build();
@@ -315,17 +438,19 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		answerPersister.delete(answer);
 		
 		ResultSet resultSet;
-		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Answer");
-		assertThat(resultSet.next()).isFalse();
-		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Answer_Choices");
-		assertThat(resultSet.next()).isFalse();
-		// NB: target entities are not deleted with ASSOCIATION_ONLY cascading
-		resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Choice");
-		assertThat(resultSet.next()).isTrue();
+		long answerCount = persistenceContext.newQuery("select count(id) as answerId from Answer", long.class)
+				.mapKey("answerId", long.class).singleResult().execute();
+		assertThat(answerCount).isEqualTo(0);
+		long relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_Choices", long.class)
+				.mapKey("relationCount", long.class).singleResult().execute();
+		assertThat(relationCount).isEqualTo(0);
+		long choiceCount = persistenceContext.newQuery("select count(id) as choiceCount from Choice", long.class)
+				.mapKey("choiceCount", long.class).singleResult().execute();
+		assertThat(choiceCount).isEqualTo(3);
 	}
 	
 	@Test
-	void oneToManyList_insert_mappedByNonExistingGetter_throwsException() {
+	void insert_mappedByNonExistingGetter_throwsException() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -334,10 +459,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Choice::getName);
+				.mapKey(Choice::getId, ALREADY_ASSIGNED)
+				.map(Choice::getLabel);
 		
-		EntityPersister<Question, Identifier<Long>> persisterWithNonExistingSetter = entityBuilder(Question.class, LONG_TYPE).mapKey(Question::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+		EntityPersister<Question, Identifier<Long>> persisterWithNonExistingSetter = entityBuilder(Question.class, LONG_TYPE).mapKey(Question::getId, ALREADY_ASSIGNED)
 				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestionWithNoGetter).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -356,7 +481,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	}
 		
 	@Test
-	void oneToManyList_insert_targetEntitiesAreNotLinked_throwsException() {
+	void insert_targetEntitiesAreNotLinked_throwsException() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -365,11 +490,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Choice::getName);
+				.mapKey(Choice::getId, ALREADY_ASSIGNED)
+				.map(Choice::getLabel);
 		
 		EntityPersister<Question, Identifier<Long>> persister = entityBuilder(Question.class, LONG_TYPE)
-				.mapKey(Question::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapKey(Question::getId, ALREADY_ASSIGNED)
 				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestion).cascading(ALL)
 				.build(persistenceContext);
 		
@@ -381,12 +506,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		assertThatThrownBy(() -> persister.insert(question))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeMappingException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Can't get index : Choice{id=4, question=null, name='null'} is not associated with a o.c.s.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
+				.hasMessage("Can't get index : Choice{id=4, question=null, label='null'} is not associated with a o.c.s.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
 						+ "o.c.s.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() returned null");
 	}
 		
 	@Test
-	void oneToManyList_withoutOwnerButWithIndexedBy_throwsException() {
+	void withoutOwnerButWithIndexedBy_throwsException() {
 		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 		
 		Table choiceTable = new Table("Choice");
@@ -395,12 +520,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
 		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(Choice::getName);
+				.mapKey(Choice::getId, ALREADY_ASSIGNED)
+				.map(Choice::getLabel);
 		
 		assertThatThrownBy(() ->
 				entityBuilder(Question.class, LONG_TYPE)
-						.mapKey(Question::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+						.mapKey(Question::getId, ALREADY_ASSIGNED)
 						// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
 						.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx)
 						.build(persistenceContext))
@@ -436,7 +561,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.insert(answer);
 			
 			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
-					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
@@ -457,7 +582,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			Question newQuestion = new Question(1L);
 			Choice choice1 = new Choice(10L);
-			choice1.setName("toto");
+			choice1.setLabel("toto");
 			Choice choice2 = new Choice(20L);
 			Choice choice3 = new Choice(30L);
 			newQuestion.setChoices(Arrays.asList(choice1, choice2, choice3));
@@ -473,11 +598,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
 			
 			assertThat(selectedAnswer.getId().getSurrogate()).isEqualTo((Long) 1L);
-			assertThat(selectedAnswer.getChoices()).extracting(AnswerChoice::getId, AnswerChoice::getName).containsExactly(
-					new Tuple(choice1.getId(), choice1.getName()),
-					new Tuple(choice2.getId(), choice2.getName()),
-					new Tuple(choice2.getId(), choice2.getName()),
-					new Tuple(choice3.getId(), choice3.getName()));
+			assertThat(selectedAnswer.getChoices()).extracting(AnswerChoice::getId, AnswerChoice::getLabel).containsExactly(
+					new Tuple(choice1.getId(), choice1.getLabel()),
+					new Tuple(choice2.getId(), choice2.getLabel()),
+					new Tuple(choice2.getId(), choice2.getLabel()),
+					new Tuple(choice3.getId(), choice3.getLabel()));
 		}
 		
 		/** Test to check that loading a target entity from its persister still work (no use of the aggregate persister) */
@@ -540,7 +665,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.delete(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c", long.class).from(answerChoicesTable), Long.class)
+			List<Long> persistedChoices = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable), Long.class)
 					.mapKey("c", long.class)
 					.execute();
 			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);
@@ -577,7 +702,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.deleteById(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			List<Long> persistedChoices = persistenceContext.newQuery(select("count(*) as c", long.class).from(answerChoicesTable).getQuery(), Long.class)
+			List<Long> persistedChoices = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable).getQuery(), Long.class)
 					.mapKey("c", long.class)
 					.execute();
 			assertThat(persistedChoices.get(0)).isEqualTo((Long) 0L);
@@ -629,7 +754,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.update(selectedAnswer, answer, true);
 			
 			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
-					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			List<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
@@ -644,7 +769,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.update(selectedAnswer1, selectedAnswer, true);
 			
 			query = persistenceContext.newQuery(
-					select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
+					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
 			persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
@@ -683,6 +808,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		private Identifier<Long> id;
 		
+		private String label;
+		
 		private List<Choice> choices = new ArrayList<>();
 		
 		private Question() {
@@ -699,6 +826,14 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		@Override
 		public Identifier<Long> getId() {
 			return id;
+		}
+		
+		public String getLabel() {
+			return label;
+		}
+		
+		public void setLabel(String label) {
+			this.label = label;
 		}
 		
 		public List<Choice> getChoices() {
@@ -761,14 +896,14 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		private Identifier<Long> id;
 		
-		private String name;
+		private String label;
 		
 		public AnswerChoice() {
 		}
 		
 		private AnswerChoice(Choice choice) {
 			this(choice.getId());
-			setName(choice.getName());
+			setLabel(choice.getLabel());
 		}
 		
 		private AnswerChoice(long id) {
@@ -784,17 +919,17 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			return id;
 		}
 		
-		public String getName() {
-			return name;
+		public String getLabel() {
+			return label;
 		}
 		
-		public void setName(String name) {
-			this.name = name;
+		public void setLabel(String label) {
+			this.label = label;
 		}
 		
 		@Override
 		public String toString() {
-			return "AnswerChoice{id=" + id.getSurrogate() + ", name='" + name + '\'' + '}';
+			return "AnswerChoice{id=" + id.getSurrogate() + ", label='" + label + '\'' + '}';
 		}
 		
 	}
@@ -850,7 +985,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		private Question questionWithNoGetter;
 		
-		private String name;
+		private String label;
 		
 		public Choice() {
 		}
@@ -881,12 +1016,12 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			questionWithNoGetter = question;
 		}
 		
-		public String getName() {
-			return name;
+		public String getLabel() {
+			return label;
 		}
 		
-		public void setName(String name) {
-			this.name = name;
+		public void setLabel(String label) {
+			this.label = label;
 		}
 		
 		@Override
@@ -904,7 +1039,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		@Override
 		public String toString() {
-			return "Choice{id=" + id.getSurrogate() + ", question=" + question + ", name='" + name + '\'' + '}';
+			return "Choice{id=" + id.getSurrogate() + ", question=" + question + ", label='" + label + '\'' + '}';
 		}
 	}
 	
@@ -959,11 +1094,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			idx = choiceTable.addColumn("idx", int.class);
 			
 			FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-					.mapKey(Choice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.map(Choice::getName);
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
-					.mapKey(Question::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
 					.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
 					.cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
@@ -979,7 +1114,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// creating initial state
 			questionPersister.insert(newQuestion);
 			
-			List<Result> persistedChoices = persistenceContext.newQuery(select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			List<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
@@ -1030,11 +1165,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 			
 			FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-					.mapKey(Choice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.map(Choice::getName);
+					.mapKey(Choice::getId, ALREADY_ASSIGNED)
+					.map(Choice::getLabel);
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
-					.mapKey(Question::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Question::getId, ALREADY_ASSIGNED)
 					.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
 					.cascading(ALL)
 					.build(persistenceContext);
@@ -1044,11 +1179,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// mapping. For instance there's no need of Question relationship mapping.
 			// BE AWARE THAT mapping Choice a second time is a bad practise
 			FluentMappingBuilderPropertyOptions<AnswerChoice, Identifier<Long>> answerChoiceMappingConfiguration = entityBuilder(AnswerChoice.class, LONG_TYPE)
-					.mapKey(AnswerChoice::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.map(AnswerChoice::getName);
+					.mapKey(AnswerChoice::getId, ALREADY_ASSIGNED)
+					.map(AnswerChoice::getLabel);
 			
 			answerPersister = entityBuilder(Answer.class, LONG_TYPE)
-					.mapKey(Answer::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.mapOneToManyList(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable).cascading(ALL)
 					.build(persistenceContext);
 			

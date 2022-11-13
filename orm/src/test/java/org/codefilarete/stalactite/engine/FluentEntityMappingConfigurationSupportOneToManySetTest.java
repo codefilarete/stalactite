@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -13,18 +12,18 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.State;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
@@ -52,10 +51,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.READ_ONLY;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.*;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 
@@ -177,66 +173,6 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				.mapKey(i -> i, "countryId", Long.class)
 				.execute();
 		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet((Long) null));
-	}
-	
-	@Test
-	void mappedBy_list_crud() {
-		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
-				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.map(City::getName);
-		
-		Table ancientCitiesTable = new Table("AncientCities");
-		Column<?, Integer> idx = ancientCitiesTable.addColumn("idx", Integer.class);
-		EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
-				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-				.mapOneToManyList(Country::getAncientCities, cityConfiguration)
-					.mappedBy(City::getCountry).indexedBy(idx).cascading(ALL)
-				.build(persistenceContext);
-
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-
-		Country country = new Country(new PersistableIdentifier<>(1L));
-		City grenoble = new City(new PersistableIdentifier<>(13L));
-		grenoble.setName("Grenoble");
-		country.addAncientCity(grenoble);
-		City lyon = new City(new PersistableIdentifier<>(17L));
-		lyon.setName("Lyon");
-		country.addAncientCity(lyon);
-		persister.insert(country);
-
-		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
-		
-		assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate());
-		
-		// testing select
-		Country loadedCountry = persister.select(country.getId());
-		assertThat(loadedCountry.getAncientCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Lyon");
-		// ensuring that source is set on reverse side too
-		assertThat(Iterables.first(loadedCountry.getAncientCities()).getCountry()).isEqualTo(loadedCountry);
-		
-		// testing update : removal of a city, reversed column must be set to null
-		Country modifiedCountry = new Country(country.getId());
-		modifiedCountry.addAncientCity(Iterables.first(country.getAncientCities()));
-		
-		persister.update(modifiedCountry, country, false);
-		
-		cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
-		assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate(), null);
-		
-		// testing delete
-		persister.delete(modifiedCountry);
-		// referencing columns must be set to null (we didn't ask for delete orphan)
-		cityCountryIds = persistenceContext.newQuery("select countryId from AncientCities", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
-		ArrayList<Object> expectedResult = new ArrayList<>();
-		expectedResult.add(null);
-		assertThat(cityCountryIds).isEqualTo(expectedResult);
 	}
 	
 	@Test
@@ -1112,55 +1048,6 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(Iterables.collectToList(() -> cityIterator2, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
 		}
 		
-		
-		@Test
-		void update_withAssociationTable_associationRecordsMustBeUpdated_butNotTargetEntities_list() throws SQLException {
-			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
-					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-					.map(Country::getName)
-					.map(Country::getDescription)
-					.mapOneToManyList(Country::getAncientCities, CITY_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
-					.build(persistenceContext);
-			
-			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-			ddlDeployer.deployDDL();
-			
-			// we need to insert target cities because they won't be inserted by ASSOCIATION_ONLY cascade
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200)");
-			
-			Country country1 = new Country(new PersistableIdentifier<>(42L));
-			City city1 = new City(new PersistableIdentifier<>(100L));
-			City city2 = new City(new PersistableIdentifier<>(200L));
-			country1.addAncientCity(city1);
-			country1.addAncientCity(city2);
-			
-			countryPersister.insert(country1);
-			
-			// changinf values before update
-			country1.setName("France");
-			city1.setName("Grenoble");
-			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
-			
-			ResultSet resultSet;
-			// Checking that country name was updated
-			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from Country where id = 42");
-			ResultSetIterator<Row> countryIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
-			assertThat(Iterables.collectToList(() -> countryIterator, row -> row.get("name"))).isEqualTo(Arrays.asList("France"));
-			// .. but not its city name
-			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City where id = 100");
-			ResultSetIterator<Row> cityIterator = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
-			assertThat(Iterables.collectToList(() -> cityIterator, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
-			
-			// removing city doesn't have any effect either
-			assertThat(country1.getAncientCities().size()).isEqualTo(2);	// safeguard for unwanted regression on city removal, because it would 
-			// totally corrupt this test
-			country1.getAncientCities().remove(city1);
-			assertThat(country1.getAncientCities().size()).isEqualTo(1);	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
-			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
-			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select name from City where id = 100");
-			ResultSetIterator<Row> cityIterator2 = new RowIterator(resultSet, Maps.asMap("name", DefaultParameterBinders.STRING_BINDER));
-			assertThat(Iterables.collectToList(() -> cityIterator2, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
-		}
 		
 		@Test
 		void delete_withAssociationTable_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
