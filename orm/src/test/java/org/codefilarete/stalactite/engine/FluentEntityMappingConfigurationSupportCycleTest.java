@@ -694,7 +694,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 						.reverselySetBy(Person::setFather)
 					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
-						.reverselySetBy(Person::setDirectNeighboor);
+						.reverselySetBy(Person::setDirectNeighbor);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
@@ -714,12 +714,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Person neighbour1 = new Person(123);
 			neighbour1.setName("Saca Do");
-			johnDo.addNeighboor(neighbour1);
-			neighbour1.setDirectNeighboor(johnDo);
+			johnDo.addNeighbor(neighbour1);
+			neighbour1.setDirectNeighbor(johnDo);
 			Person neighbour2 = new Person(456);
 			neighbour2.setName("Ban Do");
-			johnDo.addNeighboor(neighbour2);
-			neighbour2.setDirectNeighboor(johnDo);
+			johnDo.addNeighbor(neighbour2);
+			neighbour2.setDirectNeighbor(johnDo);
 			
 			personPersister.insert(johnDo);
 			
@@ -744,7 +744,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			// There must be :
 			// - one SQL statement for very first select
-			// - one SQL statement to select 2 children and 2 neighboors
+			// - one SQL statement to select 2 children and 2 neighbors
 			assertThat(capturedSQL)
 					.containsExactly(
 							"select" 
@@ -803,7 +803,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 						.mappedBy(Person::setFather)
 					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
-						.mappedBy(Person::setDirectNeighboor);
+						.mappedBy(Person::setDirectNeighbor);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
@@ -823,12 +823,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Person neighbour1 = new Person(123);
 			neighbour1.setName("Saca Do");
-			johnDo.addNeighboor(neighbour1);
-			neighbour1.setDirectNeighboor(johnDo);
+			johnDo.addNeighbor(neighbour1);
+			neighbour1.setDirectNeighbor(johnDo);
 			Person neighbour2 = new Person(456);
 			neighbour2.setName("Ban Do");
-			johnDo.addNeighboor(neighbour2);
-			neighbour2.setDirectNeighboor(johnDo);
+			johnDo.addNeighbor(neighbour2);
+			neighbour2.setDirectNeighbor(johnDo);
 			
 			personPersister.insert(johnDo);
 			
@@ -853,7 +853,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			// There must be :
 			// - one SQL statement for very first select
-			// - one SQL statement to select 2 children and 2 neighboors
+			// - one SQL statement to select 2 children and 2 neighbors
 			assertThat(capturedSQL)
 					.containsExactly(
 							"select" 
@@ -861,20 +861,20 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 									+ " Person.id as Person_id," 
 									+ " Person_children.id as Person_children_id," 
 									+ " Person_neighbours.id as Person_neighbours_id" 
-								+ " from Person" 
+							+ " from Person" 
 									+ " left outer join Person as Person_children on Person.id = Person_children.fatherId" 
-									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighboorId" 
-								+ " where" 
+									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighborId" 
+							+ " where" 
 									+ " Person.id in (?)",
 							"select"
 									+ " Person.name as Person_name,"
 									+ " Person.id as Person_id,"
 									+ " Person_children.id as Person_children_id,"
 									+ " Person_neighbours.id as Person_neighbours_id"
-									+ " from Person"
+							+ " from Person"
 									+ " left outer join Person as Person_children on Person.id = Person_children.fatherId"
-									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighboorId"
-									+ " where"
+									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighborId"
+							+ " where"
 									+ " Person.id in (?, ?, ?, ?)"
 					);
 			assertThat(capturedValues)
@@ -910,9 +910,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
-					.mappedBy(Person::setFather)
+					.reverselySetBy(Person::setFather)
 					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
-					.mappedBy(Person::setDirectNeighboor);
+					.reverselySetBy(Person::setDirectNeighbor);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 			
@@ -932,12 +932,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			
 			Person neighbour1 = new Person(123);
 			neighbour1.setName("Saca Do");
-			johnDo.addNeighboor(neighbour1);
-			neighbour1.setDirectNeighboor(johnDo);
+			johnDo.addNeighbor(neighbour1);
+			neighbour1.setDirectNeighbor(johnDo);
 			Person neighbour2 = new Person(456);
 			neighbour2.setName("Ban Do");
-			johnDo.addNeighboor(neighbour2);
-			neighbour2.setDirectNeighboor(johnDo);
+			johnDo.addNeighbor(neighbour2);
+			neighbour2.setDirectNeighbor(johnDo);
 			
 			personPersister.insert(johnDo);
 			
@@ -958,11 +958,120 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
 			
 			assertThat(johnDo.getChildren())
-					.containsExactlyElementsOf(loadedPerson.getChildren());
+					.containsExactlyInAnyOrderElementsOf(loadedPerson.getChildren());
 			
 			// There must be :
 			// - one SQL statement for very first select
-			// - one SQL statement to select 2 children and 2 neighboors
+			// - one SQL statement to select 2 children and 2 neighbors
+			assertThat(capturedSQL)
+					.containsExactly(
+							"select"
+									+ " Person.name as Person_name,"
+									+ " Person.id as Person_id,"
+									+ " Person_children.children_id as Person_children_children_id,"
+									+ " Person_neighbours.neighbour_id as Person_neighbours_neighbour_id"
+							+ " from Person"
+									+ " left outer join Person_children as Person_children on Person.id = Person_children.person_id"
+									+ " left outer join Person_neighbours as Person_neighbours on Person.id = Person_neighbours.person_id"
+							+ " where"
+									+ " Person.id in (?)",
+							"select"
+									+ " Person.name as Person_name,"
+									+ " Person.id as Person_id,"
+									+ " Person_children.children_id as Person_children_children_id,"
+									+ " Person_neighbours.neighbour_id as Person_neighbours_neighbour_id"
+							+ " from Person"
+									+ " left outer join Person_children as Person_children on Person.id = Person_children.person_id"
+									+ " left outer join Person_neighbours as Person_neighbours on Person.id = Person_neighbours.person_id"
+							+ " where"
+									+ " Person.id in (?, ?, ?, ?)"
+					);
+			assertThat(capturedValues)
+					.extracting(map -> {
+						Map<String, Object> result = new HashMap<>();
+						map.forEach((column, value) -> {
+							Object values;
+							if (value instanceof List) {
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+							} else {
+								values = ((StatefulIdentifier) value).getSurrogate();
+							}
+							result.put(column.getAbsoluteName(), values);
+						});
+						return result;
+					})
+					.containsExactly(
+							Maps.forHashMap(String.class, Object.class)
+									.add("Person.id", 42L),
+							Maps.forHashMap(String.class, Object.class)
+									.add("Person.id", Arrays.asList(888L, 456L, 666L, 123L))
+					);
+		}
+		
+		/**
+		 * Person -> Children
+		 * Person -> Neighbours
+		 */
+		@Test
+		void insertSelect_cycleIsDirect_ownedByTarget() {
+			// we need a holder to skip final variable problem 
+			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mappedBy(Person::setFather)
+					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
+					.mappedBy(Person::setDirectNeighbor);
+			
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person child1 = new Person(666);
+			child1.setName("Saca Do");
+			johnDo.addChild(child1);
+			child1.setFather(johnDo);
+			Person child2 = new Person(888);
+			child2.setName("Ban Do");
+			johnDo.addChild(child2);
+			child2.setFather(johnDo);
+			
+			Person neighbour1 = new Person(123);
+			neighbour1.setName("Saca Do");
+			johnDo.addNeighbor(neighbour1);
+			neighbour1.setDirectNeighbor(johnDo);
+			Person neighbour2 = new Person(456);
+			neighbour2.setName("Ban Do");
+			johnDo.addNeighbor(neighbour2);
+			neighbour2.setDirectNeighbor(johnDo);
+			
+			personPersister.insert(johnDo);
+			
+			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
+			List<String> capturedSQL = new ArrayList<>();
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+				@Override
+				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
+					capturedValues.add(values);
+				}
+				
+				@Override
+				public void onExecute(SQLStatement<Column<Table, Object>> sqlStatement) {
+					capturedSQL.add(sqlStatement.getSQL());
+				}
+			});
+			
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			
+			assertThat(johnDo.getChildren())
+					.containsExactlyInAnyOrderElementsOf(loadedPerson.getChildren());
+			
+			// There must be :
+			// - one SQL statement for very first select
+			// - one SQL statement to select 2 children and 2 neighbors
 			assertThat(capturedSQL)
 					.containsExactly(
 							"select"
@@ -970,20 +1079,293 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 									+ " Person.id as Person_id,"
 									+ " Person_children.id as Person_children_id,"
 									+ " Person_neighbours.id as Person_neighbours_id"
-								+ " from Person"
+							+ " from Person"
 									+ " left outer join Person as Person_children on Person.id = Person_children.fatherId"
-									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighboorId"
-								+ " where"
+									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighborId"
+							+ " where"
 									+ " Person.id in (?)",
 							"select"
 									+ " Person.name as Person_name,"
 									+ " Person.id as Person_id,"
 									+ " Person_children.id as Person_children_id,"
 									+ " Person_neighbours.id as Person_neighbours_id"
-								+ " from Person"
+							+ " from Person"
 									+ " left outer join Person as Person_children on Person.id = Person_children.fatherId"
-									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighboorId"
-								+ " where"
+									+ " left outer join Person as Person_neighbours on Person.id = Person_neighbours.directNeighborId"
+							+ " where"
+									+ " Person.id in (?, ?, ?, ?)"
+					);
+			assertThat(capturedValues)
+					.extracting(map -> {
+						Map<String, Object> result = new HashMap<>();
+						map.forEach((column, value) -> {
+							Object values;
+							if (value instanceof List) {
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+							} else {
+								values = ((StatefulIdentifier) value).getSurrogate();
+							}
+							result.put(column.getAbsoluteName(), values);
+						});
+						return result;
+					})
+					.containsExactly(
+							Maps.forHashMap(String.class, Object.class)
+									.add("Person.id", 42L),
+							Maps.forHashMap(String.class, Object.class)
+									.add("Person.id", Arrays.asList(888L, 456L, 666L, 123L))
+					);
+		}
+	}
+	
+	@Nested
+	public class ManyToMany {
+		
+		private PersistenceContext persistenceContext;
+		
+		private FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingConfiguration;
+		
+		@BeforeEach
+		public void initTest() {
+			persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			
+			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapManyToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration());
+		}
+		
+		/**
+		 * Person -> Children
+		 */
+		@Test
+		void insertSelect_cycleIsDirect_1Parent_1Child() {
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person child1 = new Person(666);
+			child1.setName("Saca Do");
+			johnDo.addChild(child1);
+			
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertThat(loadedPerson.getChildren()).isEqualTo(johnDo.getChildren());
+		}
+		
+		/**
+		 * Person -> Children
+		 */
+		@Test
+		void insertSelect_cycleIsDirect_1Parent_2Children() {
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person child1 = new Person(666);
+			child1.setName("Saca Do");
+			johnDo.addChild(child1);
+			Person child2 = new Person(888);
+			child2.setName("Ban Do");
+			johnDo.addChild(child2);
+
+			personPersister.insert(johnDo);
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+			assertThat(loadedPerson.getChildren()).isEqualTo(johnDo.getChildren());
+		}
+
+		/**
+		 * Person -> Children
+		 * Person -> Neighbours
+		 */
+		@Test
+		void insertSelect_sibling() {
+			// we need a holder to skip final variable problem 
+			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapManyToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapManyToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration());
+
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person child1 = new Person(666);
+			child1.setName("Saca Do");
+			johnDo.addChild(child1);
+			Person child2 = new Person(888);
+			child2.setName("Ban Do");
+			johnDo.addChild(child2);
+
+			Person neighbour1 = new Person(123);
+			neighbour1.setName("Saca Do");
+			johnDo.addNeighbor(neighbour1);
+			neighbour1.setDirectNeighbor(johnDo);
+			Person neighbour2 = new Person(456);
+			neighbour2.setName("Ban Do");
+			johnDo.addNeighbor(neighbour2);
+			neighbour2.setDirectNeighbor(johnDo);
+
+			personPersister.insert(johnDo);
+
+			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
+			List<String> capturedSQL = new ArrayList<>();
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+				@Override
+				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
+					capturedValues.add(values);
+				}
+
+				@Override
+				public void onExecute(SQLStatement<Column<Table, Object>> sqlStatement) {
+					capturedSQL.add(sqlStatement.getSQL());
+				}
+			});
+
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+
+			assertThat(johnDo.getChildren())
+					.containsExactlyInAnyOrderElementsOf(loadedPerson.getChildren());
+
+			// There must be :
+			// - one SQL statement for very first select
+			// - one SQL statement to select 2 children and 2 neighbors
+			assertThat(capturedSQL)
+					.containsExactly(
+							"select" 
+									+ " Person.name as Person_name," 
+									+ " Person.id as Person_id," 
+									+ " Person_children.children_id as Person_children_children_id," 
+									+ " Person_neighbours.neighbour_id as Person_neighbours_neighbour_id" 
+							+ " from Person" 
+									+ " left outer join Person_children as Person_children on Person.id = Person_children.person_id" 
+									+ " left outer join Person_neighbours as Person_neighbours on Person.id = Person_neighbours.person_id" 
+							+ " where" 
+									+ " Person.id in (?)",
+							"select" 
+									+ " Person.name as Person_name," 
+									+ " Person.id as Person_id," 
+									+ " Person_children.children_id as Person_children_children_id," 
+									+ " Person_neighbours.neighbour_id as Person_neighbours_neighbour_id" 
+							+ " from Person" 
+									+ " left outer join Person_children as Person_children on Person.id = Person_children.person_id" 
+									+ " left outer join Person_neighbours as Person_neighbours on Person.id = Person_neighbours.person_id" 
+							+ " where" 
+									+ " Person.id in (?, ?, ?, ?)"
+					);
+			assertThat(capturedValues)
+					.extracting(map -> {
+						Map<String, Object> result = new HashMap<>();
+						map.forEach((column, value) -> {
+							Object values;
+							if (value instanceof List) {
+								values = Iterables.collect((List<StatefulIdentifier>) value, StatefulIdentifier::getSurrogate, ArrayList::new);
+							} else {
+								values = ((StatefulIdentifier) value).getSurrogate();
+							}
+							result.put(column.getAbsoluteName(), values);
+						});
+						return result;
+					})
+					.containsExactly(
+							Maps.forHashMap(String.class, Object.class)
+									.add("Person.id", 42L),
+							Maps.forHashMap(String.class, Object.class)
+									.add("Person.id", Arrays.asList(888L, 456L, 666L, 123L))
+					);
+		}
+
+		/**
+		 * Person -> Children
+		 * Person -> Neighbours
+		 */
+		@Test
+		void insertSelect_cycleIsDirect() {
+			// we need a holder to skip final variable problem 
+			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapManyToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapManyToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration());
+
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Person johnDo = new Person(42);
+			johnDo.setName("John Do");
+			Person child1 = new Person(666);
+			child1.setName("Saca Do");
+			johnDo.addChild(child1);
+			Person child2 = new Person(888);
+			child2.setName("Ban Do");
+			johnDo.addChild(child2);
+
+			Person neighbour1 = new Person(123);
+			neighbour1.setName("Saca Do");
+			johnDo.addNeighbor(neighbour1);
+			neighbour1.setDirectNeighbor(johnDo);
+			Person neighbour2 = new Person(456);
+			neighbour2.setName("Ban Do");
+			johnDo.addNeighbor(neighbour2);
+			neighbour2.setDirectNeighbor(johnDo);
+
+			personPersister.insert(johnDo);
+
+			List<Map<Column<Table, Object>, ?>> capturedValues = new ArrayList<>();
+			List<String> capturedSQL = new ArrayList<>();
+			((SimpleRelationalEntityPersister) (((PersisterWrapper) personPersister).getDeepestSurrogate())).getSelectExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
+				@Override
+				public void onValuesSet(Map<Column<Table, Object>, ?> values) {
+					capturedValues.add(values);
+				}
+
+				@Override
+				public void onExecute(SQLStatement<Column<Table, Object>> sqlStatement) {
+					capturedSQL.add(sqlStatement.getSQL());
+				}
+			});
+
+			Person loadedPerson = personPersister.select(new PersistedIdentifier<>(42L));
+
+			assertThat(johnDo.getChildren())
+					.containsExactlyInAnyOrderElementsOf(loadedPerson.getChildren());
+
+			// There must be :
+			// - one SQL statement for very first select
+			// - one SQL statement to select 2 children and 2 neighbors
+			assertThat(capturedSQL)
+					.containsExactly(
+							"select"
+									+ " Person.name as Person_name,"
+									+ " Person.id as Person_id,"
+									+ " Person_children.children_id as Person_children_children_id,"
+									+ " Person_neighbours.neighbour_id as Person_neighbours_neighbour_id"
+							+ " from Person"
+									+ " left outer join Person_children as Person_children on Person.id = Person_children.person_id"
+									+ " left outer join Person_neighbours as Person_neighbours on Person.id = Person_neighbours.person_id"
+							+ " where"
+									+ " Person.id in (?)",
+							"select"
+									+ " Person.name as Person_name,"
+									+ " Person.id as Person_id,"
+									+ " Person_children.children_id as Person_children_children_id,"
+									+ " Person_neighbours.neighbour_id as Person_neighbours_neighbour_id"
+							+ " from Person"
+									+ " left outer join Person_children as Person_children on Person.id = Person_children.person_id"
+									+ " left outer join Person_neighbours as Person_neighbours on Person.id = Person_neighbours.person_id"
+							+ " where"
 									+ " Person.id in (?, ?, ?, ?)"
 					);
 			assertThat(capturedValues)
@@ -1021,7 +1403,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		
 		private final Set<Person> children = new HashSet<>();
 		
-		private Person directNeighboor;
+		private Person directNeighbor;
 		
 		private final Set<Person> neighbours = new HashSet<>();
 		
@@ -1079,8 +1461,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			this.children.add(person);
 		}
 		
-		public Person setDirectNeighboor(Person directNeighboor) {
-			this.directNeighboor = directNeighboor;
+		public Person setDirectNeighbor(Person directNeighbor) {
+			this.directNeighbor = directNeighbor;
 			return this;
 		}
 		
@@ -1088,7 +1470,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			return neighbours;
 		}
 		
-		public void addNeighboor(Person neighbour) {
+		public void addNeighbor(Person neighbour) {
 			this.neighbours.add(neighbour);
 		}
 		

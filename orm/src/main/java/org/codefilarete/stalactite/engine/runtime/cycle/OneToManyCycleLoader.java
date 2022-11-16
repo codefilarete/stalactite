@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
  * @param <TRGTID> cycling entity identifier type
  *
  */
-public class OneToManyCycleLoader<SRC, TRGT, TRGTID> extends AbstractOneCycleLoader<SRC, TRGT, TRGTID> {
+public class OneToManyCycleLoader<SRC, TRGT, TRGTID> extends AbstractCycleLoader<SRC, TRGT, TRGTID> {
 	
 	public OneToManyCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
 		super(targetPersister);

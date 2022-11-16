@@ -14,7 +14,7 @@ import org.codefilarete.tool.collection.Iterables;
 /**
  * @author Guillaume Mary
  */
-public abstract class AbstractOneCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TRGT, TRGTID> {
+public abstract class AbstractCycleLoader<SRC, TRGT, TRGTID> implements SelectListener<TRGT, TRGTID> {
 	
 	protected final EntityPersister<TRGT, TRGTID> targetPersister;
 	
@@ -27,7 +27,7 @@ public abstract class AbstractOneCycleLoader<SRC, TRGT, TRGTID> implements Selec
 	
 	protected final ThreadLocal<CycleLoadRuntimeContext<SRC, TRGT, TRGTID>> currentRuntimeContext = ThreadLocal.withInitial(CycleLoadRuntimeContext::new);
 	
-	protected AbstractOneCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
+	protected AbstractCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
 		this.targetPersister = targetPersister;
 	}
 	

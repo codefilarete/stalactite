@@ -2,24 +2,25 @@ package org.codefilarete.stalactite.engine.configurer;
 
 import java.util.Collection;
 
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleConfigurer;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleConfigurer;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * @author Guillaume Mary
@@ -134,7 +135,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		}
 		
 		for (ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>> manyToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToManyRelations()) {
-			ManyToManyRelationConfigurer<C, TRGT, I, TRGTID, Collection<TRGT>, Collection<C>> cascadeManyConfigurer = new ManyToManyRelationConfigurer<>(manyToManyRelation,
+			ManyToManyRelationConfigurer<C, TRGT, I, TRGTID, Collection<TRGT>, Collection<C>> manyRelationConfigurer = new ManyToManyRelationConfigurer<>(manyToManyRelation,
 					sourcePersister,
 					dialect,
 					connectionConfiguration,
@@ -144,13 +145,30 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					associationTableNamingStrategy,
 					indexColumnNamingStrategy);
 			
-			cascadeManyConfigurer.appendCascade(manyToManyRelation,
-					sourcePersister,
-					foreignKeyNamingStrategy,
-					joinColumnNamingStrategy,
-					indexColumnNamingStrategy,
-					associationTableNamingStrategy,
-					new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
+			String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionProvider()).getName();
+			
+			if (currentBuilderContext.isCycling(manyToManyRelation.getTargetMappingConfiguration())) {
+				// cycle detected
+				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
+				// fall into infinite loop (think to SQL generation of a cycling graph ...)
+				Class<TRGT> targetEntityType = manyToManyRelation.getTargetMappingConfiguration().getEntityType();
+				// adding the relation to an eventually already existing cycle configurer for the entity
+				ManyToManyCycleConfigurer<TRGT> cycleSolver = (ManyToManyCycleConfigurer<TRGT>)
+						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof ManyToManyCycleConfigurer && p.getEntityType() == targetEntityType);
+				if (cycleSolver == null) {
+					cycleSolver = new ManyToManyCycleConfigurer<>(targetEntityType);
+					currentBuilderContext.addPostInitializers(cycleSolver);
+				}
+				cycleSolver.addCycleSolver(relationName, manyRelationConfigurer);
+			} else {
+				manyRelationConfigurer.appendCascade(manyToManyRelation,
+						sourcePersister,
+						foreignKeyNamingStrategy,
+						joinColumnNamingStrategy,
+						indexColumnNamingStrategy,
+						associationTableNamingStrategy,
+						new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
+			}
 		}
 		
 		// taking element collections into account
