@@ -9,6 +9,7 @@ public interface CascadeOptions {
 	
 	/**
 	 * Specifies relationship maintenance mode.
+	 * Default is {@link RelationMode#ALL}
 	 * 
 	 * @param relationMode any {@link RelationMode}
 	 * @return the global mapping configurer
@@ -16,13 +17,17 @@ public interface CascadeOptions {
 	CascadeOptions cascading(RelationMode relationMode);
 	
 	enum RelationMode {
+		
 		/**
 		 * Will cascade any insert, update or delete order to target entities and any association record if present
 		 * (case of relation not owned by target entities). 
 		 * Will not delete orphan, see {@link #ALL_ORPHAN_REMOVAL} for such case.
+		 * It is the default value.
 		 */
 		ALL,
-		/** Same as {@link #ALL} but will delete target entities removed from the association (orphans). */
+		/**
+		 * Same as {@link #ALL} but will delete target entities removed from the association (orphans).
+		 */
 		ALL_ORPHAN_REMOVAL,
 		/**
 		 * Relevant only for one-to-many relationship with association table (between source entities and target ones).<br>

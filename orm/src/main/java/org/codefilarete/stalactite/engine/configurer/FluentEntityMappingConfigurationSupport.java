@@ -11,6 +11,17 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.AccessorByMethod;
+import org.codefilarete.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.MutatorByMethod;
+import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnOptions;
@@ -29,14 +40,18 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.ImportedEmbedWithColumnOptions;
 import org.codefilarete.stalactite.engine.IndexableCollectionOptions;
 import org.codefilarete.stalactite.engine.InheritanceOptions;
+import org.codefilarete.stalactite.engine.ManyToManyOptions;
 import org.codefilarete.stalactite.engine.OneToManyOptions;
 import org.codefilarete.stalactite.engine.OneToOneOptions;
+import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
+import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
@@ -45,23 +60,9 @@ import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.Serie;
 import org.codefilarete.tool.function.TriFunction;
 import org.codefilarete.tool.reflect.MethodDispatcher;
-import org.codefilarete.reflection.AccessorByMethod;
-import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.reflection.MutatorByMethod;
-import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPointByMethodReference;
-import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.VersioningStrategy;
-import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.tool.Reflections.propertyName;
 
@@ -85,6 +86,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private final List<CascadeOne<C, Object, Object>> cascadeOnes = new ArrayList<>();
 	
 	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
+	
+	private final List<ManyToManyRelation<C, ?, ?, ? extends Collection, ? extends Collection>> manyToManyRelations = new ArrayList<>();
 	
 	private final List<ElementCollectionLinkage<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
@@ -183,6 +186,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <TRGT, TRGTID> List<CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
 		return (List) cascadeManys;
+	}
+	
+	@Override
+	public <TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations() {
+		return (List) manyToManyRelations;
 	}
 	
 	@Override
@@ -581,6 +589,46 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);
+	}
+	
+	@Override
+	public <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToManySet(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
+		AccessorByMethodReference<C, S1> getterReference = Accessors.accessorByMethodReference(getter);
+		ReversibleAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
+				// we keep close to user demand : we keep its method reference ...
+				getterReference,
+				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
+				new AccessorByMethod<C, S1>(captureMethod(getter)).toMutator());
+		return mapManyToManySet(propertyAccessor, getterReference, mappingConfiguration, table);
+	}
+	
+	@Override
+	public <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToManySet(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
+		MutatorByMethodReference<C, S1> setterReference = Accessors.mutatorByMethodReference(setter);
+		PropertyAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
+				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
+				setterReference
+		);
+		return mapManyToManySet(propertyAccessor, setterReference, mappingConfiguration, table);
+	}
+	
+	private <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table> FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> mapManyToManySet(
+			ReversibleAccessor<C, S1> propertyAccessor,
+			ValueAccessPointByMethodReference methodReference,
+			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+			@javax.annotation.Nullable T table) {
+		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(
+				propertyAccessor, methodReference,
+				mappingConfiguration, table);
+		this.manyToManyRelations.add(manyToManyRelation);
+		return new MethodDispatcher()
+				.redirect(ManyToManyOptions.class, new ManyToManyOptionsSupport<>(manyToManyRelation), true)	// true to allow "return null" in implemented methods
+				.fallbackOn(this)
+				.build((Class<FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>>) (Class) FluentMappingBuilderManyToManyOptions.class);
 	}
 	
 	@Override
@@ -1057,6 +1105,43 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately() {
 			cascadeMany.fetchSeparately();
+			return null;	// we can return null because dispatcher will return proxy
+		}
+	}
+	
+	/**
+	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
+	 */
+	static class ManyToManyOptionsSupport<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>>
+			implements ManyToManyOptions<C, I, O, S1, S2> {
+		
+		private final ManyToManyRelation<C, O, I, S1, S2> manyToManyRelation;
+		
+		public ManyToManyOptionsSupport(ManyToManyRelation<C, O, I, S1, S2> manyToManyRelation) {
+			this.manyToManyRelation = manyToManyRelation;
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory) {
+			manyToManyRelation.setCollectionFactory(collectionFactory);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseInitializeWith(Supplier<S2> collectionFactory) {
+			manyToManyRelation.setReverseCollectionFactory(collectionFactory);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> cascading(RelationMode relationMode) {
+			manyToManyRelation.setRelationMode(relationMode);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> fetchSeparately() {
+			manyToManyRelation.fetchSeparately();
 			return null;	// we can return null because dispatcher will return proxy
 		}
 	}

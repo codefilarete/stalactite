@@ -133,6 +133,26 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					cascadeMany.getCollectionProvider()));
 		}
 		
+		for (ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>> manyToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToManyRelations()) {
+			ManyToManyRelationConfigurer<C, TRGT, I, TRGTID, Collection<TRGT>, Collection<C>> cascadeManyConfigurer = new ManyToManyRelationConfigurer<>(manyToManyRelation,
+					sourcePersister,
+					dialect,
+					connectionConfiguration,
+					persisterRegistry,
+					foreignKeyNamingStrategy,
+					joinColumnNamingStrategy,
+					associationTableNamingStrategy,
+					indexColumnNamingStrategy);
+			
+			cascadeManyConfigurer.appendCascade(manyToManyRelation,
+					sourcePersister,
+					foreignKeyNamingStrategy,
+					joinColumnNamingStrategy,
+					indexColumnNamingStrategy,
+					associationTableNamingStrategy,
+					new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
+		}
+		
 		// taking element collections into account
 		for (ElementCollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
 			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(dialect, connectionConfiguration);

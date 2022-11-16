@@ -350,11 +350,11 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Set}.
-	 * This method is dedicated to {@link Set} because generic types are erased so you can't defined a generic type extending {@link Set} and refine
-	 * return type or arguments in order to distinct it from a {@link List} version.
+	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
+	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
-	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities 
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
 	 * @param <O> type of {@link Set} element
 	 * @param <J> type of identifier of {@code O}
 	 * @param <S> refined {@link Set} type
@@ -372,6 +372,64 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O, J, S extends Set<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
 	mapOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	
+	/**
+	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
+	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
+	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
+	 * 
+	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
+	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
+	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
+	 * and, according to your data, load too many of them.
+	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
+	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
+	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 * 
+	 * @param getter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @return
+	 * @param <O> type of {@link Set} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S1> refined {@link Set} type
+	 * @param <S2>
+	 */
+	default <O, J, S1 extends Set<O>, S2 extends Set<C>>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToManySet(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+		return mapManyToManySet(getter, mappingConfiguration, null);
+	}
+	
+	/**
+	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
+	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
+	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
+	 * 
+	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
+	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
+	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
+	 * and, according to your data, load too many of them.
+	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
+	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
+	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 * 
+	 * @param getter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param table
+	 * @return
+	 * @param <O> type of {@link Set} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S1> refined {@link Set} type
+	 * @param <S2>
+	 * @param <T>
+	 */
+	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToManySet(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	
+	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToManySet(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
@@ -515,6 +573,21 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately();
+	}
+	
+	interface FluentMappingBuilderManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>> extends FluentEntityMappingBuilder<C, I>, ManyToManyOptions<C, I, O, S1, S2> {
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory);
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseInitializeWith(Supplier<S2> collectionFactory);
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> cascading(RelationMode relationMode);
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> fetchSeparately();
 	}
 	
 	/**

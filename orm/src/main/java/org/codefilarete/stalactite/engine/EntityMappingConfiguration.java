@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.configurer.ManyToManyRelation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -37,6 +38,8 @@ public interface EntityMappingConfiguration<C, I> {
 	<TRGT, TRGTID> List<CascadeOne<C, TRGT, TRGTID>> getOneToOnes();
 	
 	<TRGT, TRGTID> List<CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys();
+	
+	<TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations();
 	
 	List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
 		

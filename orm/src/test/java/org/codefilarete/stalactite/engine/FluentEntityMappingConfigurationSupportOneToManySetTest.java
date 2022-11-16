@@ -48,7 +48,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.*;
@@ -426,7 +425,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
 		assertThat(persistedCountry.getDescription()).isEqualTo("Smelly cheese !");
 		assertThat(persistedCountry.getCities().size()).isEqualTo(2);
-		assertThat(persistedCountry.getCities().stream().map(City::getName).collect(toSet())).isEqualTo(Arrays.asSet("Paris", "Lyon"));
+		assertThat(persistedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Paris", "Lyon");
 		
 		// Creating a new country with the same cities (!): the cities shouldn't be resaved
 		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
@@ -446,22 +445,19 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	class CascadeReadOnly {
 		
 		@Test
-		void testCascade_readOnly_reverseSideIsNotMapped() throws SQLException {
+		void insert_onlySourceEntitiesArePersisted() {
 			// mapping building thanks to fluent API
 			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Country::getName)
 					.map(Country::getDescription)
-					// no cascade, nor reverse side
-					.mapOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(READ_ONLY)
+					// cascade READ_ONLY, with relation table (no mappedBy)
+					.mapOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION)
+					.cascading(READ_ONLY)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
-			
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id, name) values (1, 'France')");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id, name) values (10, 'French president')");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id) values (1, 10)");
 			
 			LongProvider countryIdProvider = new LongProvider(1);
 			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
@@ -469,10 +465,24 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			LongProvider cityIdProvider = new LongProvider(10);
 			City city = new City(cityIdProvider.giveNewIdentifier());
 			city.setName("French president");
+			countryPersister.insert(dummyCountry);
 			
-			Country selectedCountry = countryPersister.select(dummyCountry.getId());
-			assertThat(selectedCountry.getName()).isEqualTo(dummyCountry.getName());
-			assertThat(Iterables.first(selectedCountry.getCities()).getName()).isEqualTo(city.getName());
+			List<Long> countryIds = persistenceContext.newQuery("select id from country", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(countryIds).containsExactlyInAnyOrder(dummyCountry.getId().getSurrogate());
+			
+			Long relationCount = persistenceContext.newQuery("select count(*) as relationCount from country_cities", Long.class)
+					.mapKey("relationCount", Long.class)
+					.singleResult()
+					.execute();
+			assertThat(relationCount).isEqualTo(0);
+			
+			Long cityCount = persistenceContext.newQuery("select count(*) as cityCount from city", Long.class)
+					.mapKey("cityCount", Long.class)
+					.singleResult()
+					.execute();
+			assertThat(cityCount).isEqualTo(0);
 		}
 	}
 	
@@ -608,7 +618,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			countryPersister.update(persistedCountry, dummyCountry, true);
 			
 			Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
-			// Checking deletion : we did'nt asked for deletion of removed entities so all of them must be there
+			// Checking deletion : we didn't asked for deletion of removed entities so all of them must be there
 			assertThat(persistedCountry2.getCities()).containsExactlyInAnyOrder(lyon, grenoble);
 			// Checking update is done too
 			assertThat(persistedCountry2.getCities()).extracting(City::getName).containsExactlyInAnyOrder("changed", "Grenoble");
@@ -676,11 +686,10 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(persistedCountry2.getCities()).isEqualTo(Arrays.asHashSet(lyon, grenoble));
 			assertThat(persistedCountry2.getStates()).isEqualTo(Arrays.asHashSet(ardeche, isere));
 			// Checking update is done too
-			assertThat(persistedCountry2.getCities().stream().map(City::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "Grenoble"
-			));
-			assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
+			assertThat(persistedCountry2.getCities()).extracting(City::getName).containsExactlyInAnyOrder("changed", "Grenoble");
+			assertThat(persistedCountry2.getStates()).extracting(State::getName).containsExactlyInAnyOrder("changed", "ardeche");
 			
-			// Ain should'nt have been deleted because we didn't asked for orphan removal
+			// Ain shouldn't have been deleted because we didn't ask for orphan removal
 			List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
@@ -721,7 +730,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			// memory owning side must have been updated too (even if user hasn't explicitly cut the link) because cascade ALL doesn't remove orphans
 			// but cut database link : memory should mirror this
 			assertThat(Iterables.collectToList(persistedCountry.getCities(), City::getCountry)).isEqualTo(Arrays.asList(null, null));
-			// but we did'nt delete everything !
+			// but we didn't delete everything !
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country " 
 					+ "where id = 666");
 			assertThat(resultSet.next()).isTrue();
@@ -778,7 +787,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				}
 			})).isEqualTo(Arrays.asList(100, 200));
 			
-			// but we did'nt delete everything !
+			// but we didn't delete everything !
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
@@ -845,11 +854,54 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			countryPersister.update(persistedCountry, dummyCountry, true);
 			
 			Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
-			// Checking deletion has been take into account : the reloaded instance contains cities that are the same as as the memory one
+			// Checking deletion has been take into account : the reloaded instance contains cities that are the same as the memory one
 			// (comparison are done on equals/hashCode => id)
 			assertThat(persistedCountry2.getCities()).isEqualTo(Arrays.asHashSet(lyon, grenoble));
 			// Checking update is done too
-			assertThat(persistedCountry2.getCities().stream().map(City::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "Grenoble"));
+			assertThat(persistedCountry2.getCities()).extracting(City::getName).containsExactlyInAnyOrder("changed", "Grenoble");
+		}
+		
+		@Test
+		void update_associationTable_removedElementsAreDeleted() {
+			EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.map(Country::getDescription)
+					.mapOneToManySet(Country::getCities, CITY_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			LongProvider countryIdProvider = new LongProvider();
+			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
+			dummyCountry.setName("France");
+			dummyCountry.setDescription("Smelly cheese !");
+			LongProvider cityIdProvider = new LongProvider();
+			City paris = new City(cityIdProvider.giveNewIdentifier());
+			paris.setName("Paris");
+			dummyCountry.addCity(paris);
+			City lyon = new City(cityIdProvider.giveNewIdentifier());
+			lyon.setName("Lyon");
+			dummyCountry.addCity(lyon);
+			countryPersister.insert(dummyCountry);
+			
+			// Changing country cities to see what happens when we save it to the database
+			Country persistedCountry = countryPersister.select(dummyCountry.getId());
+			persistedCountry.getCities().remove(paris);
+			City grenoble = new City(cityIdProvider.giveNewIdentifier());
+			grenoble.setName("Grenoble");
+			persistedCountry.addCity(grenoble);
+			Iterables.first(persistedCountry.getCities()).setName("changed");
+			
+			countryPersister.update(persistedCountry, dummyCountry, true);
+			
+			Country persistedCountry2 = countryPersister.select(dummyCountry.getId());
+			// Checking deletion has been take into account : the reloaded instance contains cities that are the same as the memory one
+			// (comparison are done on equals/hashCode => id)
+			assertThat(persistedCountry2.getCities()).isEqualTo(Arrays.asHashSet(lyon, grenoble));
+			// Checking update is done too
+			assertThat(persistedCountry2.getCities()).extracting(City::getName).containsExactlyInAnyOrder("changed", "Grenoble");
 		}
 		
 		@Test
@@ -875,7 +927,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(resultSet.next()).isFalse();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
 			assertThat(resultSet.next()).isFalse();
-			// but we did'nt delete everything !
+			// but we didn't delete everything !
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
@@ -922,7 +974,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
 			assertThat(resultSet.next()).isFalse();
 			
-			// but we did'nt delete everything !
+			// but we didn't delete everything !
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
@@ -992,7 +1044,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
-			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
+			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
@@ -1022,7 +1074,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			countryPersister.insert(country1);
 			
-			// changinf values before update
+			// changing values before update
 			country1.setName("France");
 			city1.setName("Grenoble");
 			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
@@ -1038,8 +1090,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(Iterables.collectToList(() -> cityIterator, row -> row.get("name"))).isEqualTo(Arrays.asList((Object) null));
 			
 			// removing city doesn't have any effect either
-			assertThat(country1.getCities().size()).isEqualTo(2);	// safeguard for unwanted regression on city removal, because it would totally 
-			// corrupt this test
+			assertThat(country1.getCities().size()).isEqualTo(2);	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
 			country1.getCities().remove(city1);
 			assertThat(country1.getCities().size()).isEqualTo(1);	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
 			countryPersister.update(country1, countryPersister.select(country1.getId()), true);
@@ -1082,13 +1133,13 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			// Checking that we deleted what we wanted
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 42");
 			assertThat(resultSet.next()).isFalse();
-			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
+			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 42");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are deleted when an association table exists
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id in (100, 200)");
 			assertThat(resultSet.next()).isTrue();
-			// but we did'nt delete everything !
+			// but we didn't delete everything !
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isTrue();
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from City where id = 300");
@@ -1098,7 +1149,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			countryPersister.delete(country2);
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country where id = 666");
 			assertThat(resultSet.next()).isFalse();
-			// this test is unnecessary because foreign keys should have been violated, left for more ensurance
+			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select * from Country_cities where country_Id = 666");
 			assertThat(resultSet.next()).isFalse();
 			// target entities are deleted when an association table exists

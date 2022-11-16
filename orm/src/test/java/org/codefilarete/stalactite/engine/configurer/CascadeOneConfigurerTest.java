@@ -122,6 +122,7 @@ class CascadeOneConfigurerTest {
 		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 
@@ -225,6 +226,7 @@ class CascadeOneConfigurerTest {
 		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
+		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
 		CascadeOne<Country, City, Identifier<Long>> countryCapitalRelation = new CascadeOne<>(capitalAccessPoint, cityMappingConfiguration, cityTable);
