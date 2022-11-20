@@ -5,7 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.configurer.ManyToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPe
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link ManyToManyRelationConfigurer}
- * {@link ManyToManyRelationConfigurer#appendCascadesWith2PhasesSelect(String, EntityConfiguredJoinedTablesPersister, FirstPhaseCycleLoadListener)} appendCascadesWith2PhasesSelect method}
+ * {@link ManyToManyRelationConfigurer#configureWithSelectIn2Phases(String, EntityConfiguredJoinedTablesPersister, FirstPhaseCycleLoadListener)} configureWithSelectIn2Phases method}
  * with a {@link ManyToManyCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link ManyToManyRelationConfigurer}
@@ -44,7 +44,7 @@ public class ManyToManyCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 		targetPersister.addSelectListener(manyToManyCycleLoader);
 		((Set<RelationConfigurer<SRC, ?, TRGTID>>) (Set) relations).forEach(c -> {
 			String tableAlias = c.relationName.replaceAll("\\W", "_");
-			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.cascadeManyConfigurer.appendCascadesWith2PhasesSelect(
+			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.cascadeManyConfigurer.configureWithSelectIn2Phases(
 					tableAlias, targetPersister, manyToManyCycleLoader.buildRowReader(c.relationName));
 			manyToManyCycleLoader.addRelation(c.relationName, configurationResult);
 		});

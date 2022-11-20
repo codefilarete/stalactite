@@ -24,7 +24,7 @@ import static org.codefilarete.tool.Reflections.propertyName;
  * 
  * @author Guillaume Mary
  */
-public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
+public class ElementCollectionRelation<SRC, TRGT, C extends Collection<TRGT>> {
 	
 	/** The method that gives the entities from the "root" entity */
 	private final ReversibleAccessor<SRC, C> collectionProvider;
@@ -52,9 +52,9 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	 * @param componentType element type in collection
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionLinkage(SerializableBiConsumer<SRC, C> setter,
-									Class<TRGT> componentType,
-									@Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
+	public ElementCollectionRelation(SerializableBiConsumer<SRC, C> setter,
+									 Class<TRGT> componentType,
+									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		MutatorByMethodReference<SRC, C> setterReference = Accessors.mutatorByMethodReference(setter);
 		this.collectionProvider = new PropertyAccessor<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
@@ -70,10 +70,10 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 	 * @param lambdaMethodUnsheller engine to capture getter method reference
 	 * @param embeddableConfigurationProvider complex type mapping, null when element is a simple type (String, Integer, ...)
 	 */
-	public ElementCollectionLinkage(SerializableFunction<SRC, C> getter,
-									Class<TRGT> componentType,
-									LambdaMethodUnsheller lambdaMethodUnsheller,
-									@Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
+	public ElementCollectionRelation(SerializableFunction<SRC, C> getter,
+									 Class<TRGT> componentType,
+									 LambdaMethodUnsheller lambdaMethodUnsheller,
+									 @Nullable EmbeddableMappingConfigurationProvider<TRGT> embeddableConfigurationProvider) {
 		AccessorByMethodReference<SRC, C> getterReference = Accessors.accessorByMethodReference(getter);
 		this.collectionProvider = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
@@ -92,7 +92,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		return collectionFactory;
 	}
 	
-	public ElementCollectionLinkage<SRC, TRGT, C> setCollectionFactory(Supplier<? extends C> collectionFactory) {
+	public ElementCollectionRelation<SRC, TRGT, C> setCollectionFactory(Supplier<? extends C> collectionFactory) {
 		this.collectionFactory = (Supplier<C>) collectionFactory;
 		return this;
 	}
@@ -121,7 +121,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		return targetTableName;
 	}
 	
-	public ElementCollectionLinkage<SRC, TRGT, C> setTargetTableName(String targetTableName) {
+	public ElementCollectionRelation<SRC, TRGT, C> setTargetTableName(String targetTableName) {
 		this.targetTableName = targetTableName;
 		return this;
 	}
@@ -138,7 +138,7 @@ public class ElementCollectionLinkage<SRC, TRGT, C extends Collection<TRGT>> {
 		return reverseColumnName;
 	}
 	
-	public ElementCollectionLinkage<SRC, TRGT, C> setReverseColumnName(String reverseColumnName) {
+	public ElementCollectionRelation<SRC, TRGT, C> setReverseColumnName(String reverseColumnName) {
 		this.reverseColumnName = reverseColumnName;
 		return this;
 	}

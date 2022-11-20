@@ -193,9 +193,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
-		for (CascadeOne<D, TRGT, Object> cascadeOne : (List<CascadeOne<D, TRGT, Object>>) (List) entityMappingConfiguration.getOneToOnes()) {
-			CascadeOneConfigurer<D, TRGT, I, Object> cascadeOneConfigurer = new CascadeOneConfigurer<>(
-					cascadeOne,
+		for (OneToOneRelation<D, TRGT, Object> oneToOneRelation : (List<OneToOneRelation<D, TRGT, Object>>) (List) entityMappingConfiguration.getOneToOnes()) {
+			OneToOneRelationConfigurer<D, TRGT, I, Object> oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(
+					oneToOneRelation,
 					sourcePersister,
 					dialect,
 					connectionConfiguration,
@@ -203,13 +203,13 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					this.foreignKeyNamingStrategy,
 					this.joinColumnNamingStrategy);
 			
-			String relationName = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
+			String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
 			
-			if (currentBuilderContext.isCycling(cascadeOne.getTargetMappingConfiguration())) {
+			if (currentBuilderContext.isCycling(oneToOneRelation.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
 				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = cascadeOne.getTargetMappingConfiguration().getEntityType();
+				Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
 						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToOneCycleConfigurer && p.getEntityType() == targetEntityType);
@@ -217,13 +217,13 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
 					currentBuilderContext.addPostInitializers(cycleSolver);
 				}
-				cycleSolver.addCycleSolver(relationName, cascadeOneConfigurer);
+				cycleSolver.addCycleSolver(relationName, oneToOneRelationConfigurer);
 			} else {
-				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()), cascadeOne.isFetchSeparately());
+				oneToOneRelationConfigurer.configure(relationName, new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration()), oneToOneRelation.isFetchSeparately());
 			}
 		}
-		for (CascadeMany<D, ?, ?, ? extends Collection> cascadeMany : entityMappingConfiguration.getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(cascadeMany, sourcePersister,
+		for (OneToManyRelation<D, ?, ?, ? extends Collection> oneToManyRelation : entityMappingConfiguration.getOneToManys()) {
+			OneToManyRelationConfigurer oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(oneToManyRelation, sourcePersister,
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
@@ -233,15 +233,15 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 					this.indexColumnNamingStrategy)
 					// we must give primary key else reverse foreign key will target subclass table, which creates 2 fk in case of reuse of target persister
 					.setSourcePrimaryKey((Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns()));
-			if (currentBuilderContext.isCycling(cascadeMany.getTargetMappingConfiguration())) {
+			if (currentBuilderContext.isCycling(oneToManyRelation.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
 				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be enhanced), and
 				// overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
-				PostInitializer postInitializer = new PostInitializer(cascadeMany.getTargetMappingConfiguration().getEntityType()) {
+				PostInitializer postInitializer = new PostInitializer(oneToManyRelation.getTargetMappingConfiguration().getEntityType()) {
 					@Override
 					public void consume(EntityConfiguredJoinedTablesPersister targetPersister) {
-						cascadeManyConfigurer.appendCascade(cascadeMany,
+						oneToManyRelationConfigurer.configure(oneToManyRelation,
 								sourcePersister,
 								foreignKeyNamingStrategy,
 								joinColumnNamingStrategy,
@@ -252,22 +252,22 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table> implem
 				};
 				PersisterBuilderContext.CURRENT.get().addPostInitializers(postInitializer);
 			} else {
-				cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
+				oneToManyRelationConfigurer.configure(oneToManyRelation, sourcePersister,
 						this.foreignKeyNamingStrategy,
 						this.joinColumnNamingStrategy,
 						this.indexColumnNamingStrategy,
 						this.associationTableNamingStrategy,
-						new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()));
+						new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));
 			}
 		}
 		// Please note that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
 		// is made in two phases, see JoinTablePolymorphismEntitySelectExecutor (instantiated in JoinTablePolymorphismPersister)
 		
 		// taking element collections into account
-		for (ElementCollectionLinkage<D, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
-			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(dialect,
+		for (ElementCollectionRelation<D, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
+			ElementCollectionRelationConfigurer elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer(dialect,
 					connectionConfiguration);
-			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, this.foreignKeyNamingStrategy,
+			elementCollectionRelationConfigurer.configure(elementCollection, sourcePersister, this.foreignKeyNamingStrategy,
 					this.columnNamingStrategy,
 					this.elementCollectionTableNamingStrategy);
 		}

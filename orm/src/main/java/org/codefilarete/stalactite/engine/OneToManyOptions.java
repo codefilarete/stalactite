@@ -5,7 +5,7 @@ import java.util.function.Supplier;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer;
+import org.codefilarete.stalactite.engine.configurer.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -19,7 +19,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 * No need to additionally call {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(Column)}.
 	 * 
 	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
-	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 * 
 	 * Signature note : given consumer accepts "? super C" to allow given method to return an abstraction of current mapping definition, especially
 	 * in case of inheritance where current mapping is made of inheritance and target entities only maps it as an upper (ancestor) class
@@ -34,7 +34,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)} or {@link #mappedBy(Column)}.
 	 *
 	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
-	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 *
 	 * Signature note : given function accepts "? super C" to allow given method to return an abstraction of current mapping definition, especially
@@ -51,7 +51,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 * Use this method to define unidirectional relationship.
 	 *
 	 * If the relationship is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
-	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 * 
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer

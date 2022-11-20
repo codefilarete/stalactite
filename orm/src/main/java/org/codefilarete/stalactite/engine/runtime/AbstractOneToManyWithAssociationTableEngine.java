@@ -24,7 +24,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.sql.order.DeleteCommandBuilder;
 import org.codefilarete.stalactite.sql.order.Delete;
-import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;

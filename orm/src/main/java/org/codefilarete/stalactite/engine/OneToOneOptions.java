@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer;
+import org.codefilarete.stalactite.engine.configurer.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -19,7 +19,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * No need to additionally call {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(Column)}.
 	 *
 	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableFunction)} then there's no
-	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (setter)
 	 * @param <O> owner type
@@ -32,7 +32,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)} or {@link #mappedBy(Column)}.
 	 *
 	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
-	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @param <O> owner type
@@ -46,7 +46,7 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * Use this method to define unidirectional relationship.
 	 *
 	 * If the relationship is already defined through {@link #mappedBy(SerializableFunction)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
-	 * guaranty about which one will be taken first. Algorithm is defined in {@link CascadeManyConfigurer}.
+	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer

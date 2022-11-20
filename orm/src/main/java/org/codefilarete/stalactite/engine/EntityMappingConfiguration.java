@@ -10,9 +10,9 @@ import org.codefilarete.stalactite.engine.configurer.ManyToManyRelation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.configurer.CascadeMany;
-import org.codefilarete.stalactite.engine.configurer.CascadeOne;
-import org.codefilarete.stalactite.engine.configurer.ElementCollectionLinkage;
+import org.codefilarete.stalactite.engine.configurer.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.OneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.ElementCollectionRelation;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -35,13 +35,13 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
-	<TRGT, TRGTID> List<CascadeOne<C, TRGT, TRGTID>> getOneToOnes();
+	<TRGT, TRGTID> List<OneToOneRelation<C, TRGT, TRGTID>> getOneToOnes();
 	
-	<TRGT, TRGTID> List<CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys();
+	<TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys();
 	
 	<TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations();
 	
-	List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections();
+	List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections();
 		
 	VersioningStrategy getOptimisticLockOption();
 	

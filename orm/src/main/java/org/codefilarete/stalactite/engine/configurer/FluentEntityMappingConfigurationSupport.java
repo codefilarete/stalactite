@@ -83,13 +83,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private final MethodReferenceCapturer methodSpy;
 	
-	private final List<CascadeOne<C, Object, Object>> cascadeOnes = new ArrayList<>();
+	private final List<OneToOneRelation<C, Object, Object>> oneToOneRelations = new ArrayList<>();
 	
-	private final List<CascadeMany<C, ?, ?, ? extends Collection>> cascadeManys = new ArrayList<>();
+	private final List<OneToManyRelation<C, ?, ?, ? extends Collection>> oneToManyRelations = new ArrayList<>();
 	
 	private final List<ManyToManyRelation<C, ?, ?, ? extends Collection, ? extends Collection>> manyToManyRelations = new ArrayList<>();
 	
-	private final List<ElementCollectionLinkage<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
+	private final List<ElementCollectionRelation<C, ?, ? extends Collection>> elementCollections = new ArrayList<>();
 	
 	private final EntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationSurrogate;
 	
@@ -179,13 +179,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <TRGT, TRGTID> List<CascadeOne<C, TRGT, TRGTID>> getOneToOnes() {
-		return (List) cascadeOnes;
+	public <TRGT, TRGTID> List<OneToOneRelation<C, TRGT, TRGTID>> getOneToOnes() {
+		return (List) oneToOneRelations;
 	}
 	
 	@Override
-	public <TRGT, TRGTID> List<CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
-		return (List) cascadeManys;
+	public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
+		return (List) oneToManyRelations;
 	}
 	
 	@Override
@@ -194,7 +194,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public List<ElementCollectionLinkage<C, ?, ? extends Collection>> getElementCollections() {
+	public List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections() {
 		return elementCollections;
 	}
 	
@@ -346,14 +346,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,
 																											   Class<O> componentType) {
-		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType,
 				propertiesMappingConfigurationSurrogate, null);
-		elementCollections.add(elementCollectionLinkage);
+		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentMappingBuilderElementCollectionOptions, String, FluentMappingBuilderElementCollectionOptions>)
 								FluentMappingBuilderElementCollectionOptions::override,
-						elementCollectionLinkage::overrideColumnName)
-				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+						elementCollectionRelation::overrideColumnName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionOptions.class);
 	}
@@ -361,13 +361,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
 																											   Class<O> componentType) {
-		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(setter, componentType, null);
-		elementCollections.add(elementCollectionLinkage);
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(setter, componentType, null);
+		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableBiFunction<FluentMappingBuilderElementCollectionOptions, String, FluentMappingBuilderElementCollectionOptions>)
 								FluentMappingBuilderElementCollectionOptions::override,
-						elementCollectionLinkage::overrideColumnName)
-				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+						elementCollectionRelation::overrideColumnName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionOptions.class);
 	}
@@ -376,15 +376,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,
 																														  Class<O> componentType,
 																														  EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
-		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(getter, componentType,
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(getter, componentType,
 				propertiesMappingConfigurationSurrogate,
 				embeddableConfiguration);
-		elementCollections.add(elementCollectionLinkage);
+		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableTriFunction<FluentMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, String, FluentMappingBuilderElementCollectionImportEmbedOptions>)
 								FluentMappingBuilderElementCollectionImportEmbedOptions::overrideName,
-						(BiConsumer<SerializableFunction, String>) elementCollectionLinkage::overrideName)
-				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+						(BiConsumer<SerializableFunction, String>) elementCollectionRelation::overrideName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionImportEmbedOptions.class);
 	}
@@ -393,41 +393,41 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter,
 																														  Class<O> componentType,
 																														  EmbeddableMappingConfigurationProvider<O> embeddableConfiguration) {
-		ElementCollectionLinkage<C, O, S> elementCollectionLinkage = new ElementCollectionLinkage<>(setter, componentType, embeddableConfiguration);
-		elementCollections.add(elementCollectionLinkage);
+		ElementCollectionRelation<C, O, S> elementCollectionRelation = new ElementCollectionRelation<>(setter, componentType, embeddableConfiguration);
+		elementCollections.add(elementCollectionRelation);
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableTriFunction<FluentMappingBuilderElementCollectionImportEmbedOptions, SerializableFunction, String, FluentMappingBuilderElementCollectionImportEmbedOptions>)
 								FluentMappingBuilderElementCollectionImportEmbedOptions::overrideName,
-						(BiConsumer<SerializableFunction, String>) elementCollectionLinkage::overrideName)
-				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionLinkage), true)
+						(BiConsumer<SerializableFunction, String>) elementCollectionRelation::overrideName)
+				.redirect(ElementCollectionOptions.class, wrapAsOptions(elementCollectionRelation), true)
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S>>) (Class) FluentMappingBuilderElementCollectionImportEmbedOptions.class);
 	}
 	
-	private <O, S extends Collection<O>> ElementCollectionOptions<C, O, S> wrapAsOptions(ElementCollectionLinkage<C, O, S> elementCollectionLinkage) {
+	private <O, S extends Collection<O>> ElementCollectionOptions<C, O, S> wrapAsOptions(ElementCollectionRelation<C, O, S> elementCollectionRelation) {
 		return new ElementCollectionOptions<C, O, S>() {
 			
 			@Override
 			public ElementCollectionOptions<C, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory) {
-				elementCollectionLinkage.setCollectionFactory(collectionFactory);
+				elementCollectionRelation.setCollectionFactory(collectionFactory);
 				return null;
 			}
 			
 			@Override
 			public FluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name) {
-				elementCollectionLinkage.setReverseColumnName(name);
+				elementCollectionRelation.setReverseColumnName(name);
 				return null;
 			}
 			
 			@Override
 			public ElementCollectionOptions<C, O, S> withTable(Table table) {
-				elementCollectionLinkage.setTargetTable(table);
+				elementCollectionRelation.setTargetTable(table);
 				return null;
 			}
 			
 			@Override
 			public ElementCollectionOptions<C, O, S> withTable(String tableName) {
-				elementCollectionLinkage.setTargetTableName(tableName);
+				elementCollectionRelation.setTargetTableName(tableName);
 				return null;
 			}
 			
@@ -477,9 +477,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				new MutatorByMethod<C, O>(captureMethod(setter)).toAccessor(),
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				mutatorByMethodReference);
-		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
-		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
-		return wrapForAdditionalOptions(cascadeOne);
+		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(propertyAccessor, mappingConfiguration.getConfiguration(), table);
+		this.oneToOneRelations.add((OneToOneRelation<C, Object, Object>) oneToOneRelation);
+		return wrapForAdditionalOptions(oneToOneRelation);
 	}
 	
 	@Override
@@ -493,48 +493,48 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				accessorByMethodReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, O>(captureMethod(getter)).toMutator());
-		CascadeOne<C, O, J> cascadeOne = new CascadeOne<>(propertyAccessor, mappingConfiguration, table);
-		this.cascadeOnes.add((CascadeOne<C, Object, Object>) cascadeOne);
-		return wrapForAdditionalOptions(cascadeOne);
+		OneToOneRelation<C, O, J> oneToOneRelation = new OneToOneRelation<>(propertyAccessor, mappingConfiguration, table);
+		this.oneToOneRelations.add((OneToOneRelation<C, Object, Object>) oneToOneRelation);
+		return wrapForAdditionalOptions(oneToOneRelation);
 	}
 	
-	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> wrapForAdditionalOptions(final CascadeOne<C, O, J> cascadeOne) {
+	private <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> wrapForAdditionalOptions(final OneToOneRelation<C, O, J> oneToOneRelation) {
 		// then we return an object that allows fluent settings over our OneToOne cascade instance
 		return new MethodDispatcher()
 				.redirect(OneToOneOptions.class, new OneToOneOptions() {
 					@Override
 					public OneToOneOptions cascading(RelationMode relationMode) {
-						cascadeOne.setRelationMode(relationMode);
+						oneToOneRelation.setRelationMode(relationMode);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public OneToOneOptions mandatory() {
-						cascadeOne.setNullable(false);
+						oneToOneRelation.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public OneToOneOptions mappedBy(SerializableFunction reverseLink) {
-						cascadeOne.setReverseGetter(reverseLink);
+						oneToOneRelation.setReverseGetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public OneToOneOptions mappedBy(SerializableBiConsumer reverseLink) {
-						cascadeOne.setReverseSetter(reverseLink);
+						oneToOneRelation.setReverseSetter(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public OneToOneOptions mappedBy(Column reverseLink) {
-						cascadeOne.setReverseColumn(reverseLink);
+						oneToOneRelation.setReverseColumn(reverseLink);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
 					public OneToOneOptions fetchSeparately() {
-						cascadeOne.fetchSeparately();
+						oneToOneRelation.fetchSeparately();
 						return null;	// we can return null because dispatcher will return proxy
 					}
 				}, true)	// true to allow "return null" in implemented methods
@@ -583,10 +583,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
-		CascadeMany<C, O, J, S> cascadeMany = new CascadeMany<>(propertyAccessor, methodReference, mappingConfiguration, table);
-		this.cascadeManys.add(cascadeMany);
+		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(propertyAccessor, methodReference, mappingConfiguration, table);
+		this.oneToManyRelations.add(oneToManyRelation);
 		return new MethodDispatcher()
-				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
+				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);
 	}
@@ -672,12 +672,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
-		CascadeManyList<C, O, J, ? extends List<O>> cascadeMany = new CascadeManyList<>(propertyAccessor, methodReference, mappingConfiguration.getConfiguration(), table);
-		this.cascadeManys.add(cascadeMany);
+		OneToManyListRelation<C, O, J, ? extends List<O>> oneToManyListRelation = new OneToManyListRelation<>(propertyAccessor, methodReference, mappingConfiguration.getConfiguration(), table);
+		this.oneToManyRelations.add(oneToManyListRelation);
 		return new MethodDispatcher()
-				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(cascadeMany), true)	// true to allow "return null" in implemented methods
+				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyListRelation), true)	// true to allow "return null" in implemented methods
 				.redirect(IndexableCollectionOptions.class, orderingColumn -> {
-					cascadeMany.setIndexingColumn(orderingColumn);
+					oneToManyListRelation.setIndexingColumn(orderingColumn);
 					return null;
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
@@ -1055,62 +1055,62 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	/**
-	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
+	 * A small class for one-to-many options storage into a {@link OneToManyRelation}. Acts as a wrapper over it.
 	 */
 	static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>>
 			implements OneToManyOptions<C, I, O, S> {
 		
-		private final CascadeMany<C, O, I, S> cascadeMany;
+		private final OneToManyRelation<C, O, I, S> oneToManyRelation;
 		
-		public OneToManyOptionsSupport(CascadeMany<C, O, I, S> cascadeMany) {
-			this.cascadeMany = cascadeMany;
+		public OneToManyOptionsSupport(OneToManyRelation<C, O, I, S> oneToManyRelation) {
+			this.oneToManyRelation = oneToManyRelation;
 		}
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink) {
-			cascadeMany.setReverseSetter(reverseLink);
+			oneToManyRelation.setReverseSetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink) {
-			cascadeMany.setReverseGetter(reverseLink);
+			oneToManyRelation.setReverseGetter(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink) {
-			cascadeMany.setReverseColumn(reverseLink);
+			oneToManyRelation.setReverseColumn(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
 		public OneToManyOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-			cascadeMany.setReverseLink(reverseLink);
+			oneToManyRelation.setReverseLink(reverseLink);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory) {
-			cascadeMany.setCollectionFactory(collectionFactory);
+			oneToManyRelation.setCollectionFactory(collectionFactory);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode) {
-			cascadeMany.setRelationMode(relationMode);
+			oneToManyRelation.setRelationMode(relationMode);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately() {
-			cascadeMany.fetchSeparately();
+			oneToManyRelation.fetchSeparately();
 			return null;	// we can return null because dispatcher will return proxy
 		}
 	}
 	
 	/**
-	 * A small class for one-to-many options storage into a {@link CascadeMany}. Acts as a wrapper over it.
+	 * A small class for one-to-many options storage into a {@link OneToManyRelation}. Acts as a wrapper over it.
 	 */
 	static class ManyToManyOptionsSupport<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>>
 			implements ManyToManyOptions<C, I, O, S1, S2> {

@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
-import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer;
+import org.codefilarete.stalactite.engine.configurer.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -299,7 +299,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	
 	/**
 	 * Overridden to capture {@link EntityMapping#addShadowColumnInsert(ShadowColumnValueProvider)} and
-	 * {@link EntityMapping#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link CascadeManyConfigurer})
+	 * {@link EntityMapping#addShadowColumnUpdate(ShadowColumnValueProvider)} (see {@link OneToManyRelationConfigurer})
 	 * Made to dispatch those methods subclass strategies since their persisters are in charge of managing their entities (not the parent one).
 	 * <p>
 	 * Design question : one may think that's not a good design to override a getter, caller should invoke an intention-clear method on

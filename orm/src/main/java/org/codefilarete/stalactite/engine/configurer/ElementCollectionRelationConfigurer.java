@@ -62,21 +62,21 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  * 
  * @author Guillaume Mary
  */
-public class ElementCollectionCascadeConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
+public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collection<TRGT>> {
 	
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
 	
-	public ElementCollectionCascadeConfigurer(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public ElementCollectionRelationConfigurer(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
-	public <T extends Table, TARGET_TABLE extends Table<?>> void appendCascade(ElementCollectionLinkage<SRC, TRGT, C> linkage,
-																			   EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
-																			   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-																			   ColumnNamingStrategy columnNamingStrategy,
-																			   ElementCollectionTableNamingStrategy tableNamingStrategy) {
+	public <T extends Table, TARGET_TABLE extends Table<?>> void configure(ElementCollectionRelation<SRC, TRGT, C> linkage,
+																		   EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+																		   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+																		   ColumnNamingStrategy columnNamingStrategy,
+																		   ElementCollectionTableNamingStrategy tableNamingStrategy) {
 		
 		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(linkage.getCollectionProvider());
 		// schema configuration

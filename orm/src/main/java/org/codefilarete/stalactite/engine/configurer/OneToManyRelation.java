@@ -22,7 +22,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * @param <TRGTID> identifier type of TRGT
  * @param <C> the "many" collection type
  */
-public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
+public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	/** The method that gives the "many" entities from the "one" entity */
 	private final ReversibleAccessor<SRC, C> collectionProvider;
@@ -61,10 +61,10 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @param targetTable optional table to be used to store target entities
 	 * @param <T>
 	 */
-	public <T extends Table> CascadeMany(ReversibleAccessor<SRC, C> collectionProvider,
-										 ValueAccessPointByMethodReference methodReference,
-										 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
-										 @Nullable T targetTable) {
+	public <T extends Table> OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
+											   ValueAccessPointByMethodReference methodReference,
+											   EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
+											   @Nullable T targetTable) {
 		this(collectionProvider, methodReference, () -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration, targetTable);
 	}
 	
@@ -78,10 +78,10 @@ public class CascadeMany<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @param targetTable
 	 * @param <T>
 	 */
-	public <T extends Table> CascadeMany(ReversibleAccessor<SRC, C> collectionProvider,
-										 ValueAccessPointByMethodReference methodReference,
-										 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
-										 @Nullable T targetTable) {
+	public <T extends Table> OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
+											   ValueAccessPointByMethodReference methodReference,
+											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+											   @Nullable T targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;

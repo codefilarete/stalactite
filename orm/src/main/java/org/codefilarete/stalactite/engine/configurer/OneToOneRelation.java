@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public class CascadeOne<SRC, TRGT, TRGTID> {
+public class OneToOneRelation<SRC, TRGT, TRGTID> {
 	
 	/** The method that gives the target entity from the source one */
 	private final ReversibleAccessor<SRC, TRGT> targetProvider;
@@ -42,11 +42,11 @@ public class CascadeOne<SRC, TRGT, TRGTID> {
 	 */
 	private boolean fetchSeparately;
 	
-	<T extends Table> CascadeOne(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
+	<T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfiguration<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this(targetProvider, () -> targetMappingConfiguration, table);
 	}
 	
-	<T extends Table> CascadeOne(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration, T table) {
+	<T extends Table> OneToOneRelation(ReversibleAccessor<SRC, TRGT> targetProvider, EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration, T table) {
 		this.targetMappingConfiguration = targetMappingConfiguration;
 		this.targetProvider = targetProvider;
 		this.targetTable = table;

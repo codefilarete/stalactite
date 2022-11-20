@@ -56,7 +56,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-class CascadeOneConfigurerTest {
+class OneToOneRelationConfigurerTest {
 	
 	@BeforeEach
 	void initEntityCandidates() {
@@ -69,7 +69,7 @@ class CascadeOneConfigurerTest {
 	}
 	
 	@Test
-	void tableStructure() throws SQLException {
+	void tableStructure_associationTable() throws SQLException {
 		// Given
 		// defining Country mapping
 		Table<?> countryTable = new Table<>("country");
@@ -85,8 +85,8 @@ class CascadeOneConfigurerTest {
 				Accessors.mutatorByField(Country.class, "id")
 		);
 		ClassMapping<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, Table>(Country.class, countryTable,
-																																		(Map) countryMapping, countryIdentifierAccessorByMethodReference,
-																																		(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
+				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
+				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
 		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
@@ -125,11 +125,11 @@ class CascadeOneConfigurerTest {
 		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
-
 		// defining Country -> City relation through capital property
 		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
 				new MutatorByMethodReference<>(Country::setCapital));
-		CascadeOne<Country, City, Identifier<Long>> countryCapitalRelation = new CascadeOne<>(capitalAccessPoint, cityMappingConfiguration, cityTable);
+		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, cityMappingConfiguration, cityTable);
+		// no reverse column declared, hence relation is maintained through an association table
 		
 		// Checking tables structure foreign key presence
 		Dialect dialect = new Dialect();
@@ -139,13 +139,13 @@ class CascadeOneConfigurerTest {
 		// When
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, Table> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
-		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
-																														  countryPersister,
-																														  dialect,
-																														  mock(ConnectionConfiguration.class),
-																														  mock(PersisterRegistry.class),
-																														  ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
-		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
+		OneToOneRelationConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(countryCapitalRelation,
+				countryPersister,
+				dialect,
+				mock(ConnectionConfiguration.class),
+				mock(PersisterRegistry.class),
+				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
+		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
 		
 		// Then
 		assertThat(countryTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "capitalId", "name"));
@@ -186,8 +186,8 @@ class CascadeOneConfigurerTest {
 				Accessors.mutatorByField(Country.class, "id")
 		);
 		ClassMapping<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, Table>(Country.class, countryTable,
-																																		(Map) countryMapping, countryIdentifierAccessorByMethodReference,
-																																		(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
+				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
+				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
 		// defining City mapping
 		Table<?> cityTable = new Table<>("city");
@@ -196,9 +196,6 @@ class CascadeOneConfigurerTest {
 				Accessors.accessorByMethodReference(City::getId),
 				Accessors.mutatorByField(City.class, "id")
 		);
-		// defining Country -> City relation through capital property
-		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
-				new MutatorByMethodReference<>(Country::setCapital));
 		
 		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(
 				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
@@ -229,7 +226,11 @@ class CascadeOneConfigurerTest {
 		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.inheritanceIterable()).thenAnswer(CALLS_REAL_METHODS);
 		
-		CascadeOne<Country, City, Identifier<Long>> countryCapitalRelation = new CascadeOne<>(capitalAccessPoint, cityMappingConfiguration, cityTable);
+		// defining Country -> City relation through capital property
+		PropertyAccessor<Country, City> capitalAccessPoint = new PropertyAccessor<>(new AccessorByMethodReference<>(Country::getCapital),
+				new MutatorByMethodReference<>(Country::setCapital));
+		OneToOneRelation<Country, City, Identifier<Long>> countryCapitalRelation = new OneToOneRelation<>(capitalAccessPoint, cityMappingConfiguration, cityTable);
+		// giving reverse column to declare a relation owned by target table (no association table)
 		countryCapitalRelation.setReverseColumn(cityTableCountryColumn);
 		
 		// Checking tables structure foreign key presence 
@@ -239,13 +240,13 @@ class CascadeOneConfigurerTest {
 		
 		SimpleRelationalEntityPersister<Country, Identifier<Long>, Table> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
-		CascadeOneConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new CascadeOneConfigurer<>(countryCapitalRelation,
+		OneToOneRelationConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(countryCapitalRelation,
 				countryPersister,
 				dialect,
 				mock(ConnectionConfiguration.class),
 				mock(PersisterRegistry.class),
 				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
-		testInstance.appendCascades("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
+		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
 		
 		assertThat(cityTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "countryId", "name"));
 		assertThat(cityTable.getForeignKeys()).extracting(ForeignKey::getName).containsExactlyInAnyOrder("FK_city_countryId_country_id");

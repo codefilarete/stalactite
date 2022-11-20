@@ -239,7 +239,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					.map(Mapping::getMappingConfiguration)
 					.filter(EntityMappingConfiguration.class::isInstance)
 					.map(EntityMappingConfiguration.class::cast)
-					.forEach(relationConfigurer::registerRelationCascades);
+					.forEach(relationConfigurer::configureRelations);
 		});
 		
 		EntityConfiguredJoinedTablesPersister<C, I> result = mainPersister;

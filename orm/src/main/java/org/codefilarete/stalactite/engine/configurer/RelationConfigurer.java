@@ -23,6 +23,12 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
+ * Main class that manage the configurations of all type of relations:
+ * - one-to-one
+ * - one-to-many
+ * - many-to-many
+ * - element collection
+ * 
  * @author Guillaume Mary
  */
 public class RelationConfigurer<C, I, T extends Table<T>> {
@@ -60,12 +66,12 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 	}
 	
-	<TRGT, TRGTID> void registerRelationCascades(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	<TRGT, TRGTID> void configureRelations(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
-		for (CascadeOne<C, TRGT, TRGTID> cascadeOne : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
-			CascadeOneConfigurer<C, TRGT, I, TRGTID> cascadeOneConfigurer = new CascadeOneConfigurer<>(cascadeOne,
+		for (OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
+			OneToOneRelationConfigurer<C, TRGT, I, TRGTID> oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(oneToOneRelation,
 					sourcePersister,
 					dialect,
 					connectionConfiguration,
@@ -73,13 +79,13 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					foreignKeyNamingStrategy,
 					joinColumnNamingStrategy);
 			
-			String relationName = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
+			String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
 			
-			if (currentBuilderContext.isCycling(cascadeOne.getTargetMappingConfiguration())) {
+			if (currentBuilderContext.isCycling(oneToOneRelation.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
 				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = cascadeOne.getTargetMappingConfiguration().getEntityType();
+				Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
 						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToOneCycleConfigurer && p.getEntityType() == targetEntityType);
@@ -87,16 +93,16 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
 					currentBuilderContext.addPostInitializers(cycleSolver);
 				}
-				cycleSolver.addCycleSolver(relationName, cascadeOneConfigurer);
+				cycleSolver.addCycleSolver(relationName, oneToOneRelationConfigurer);
 			} else {
-				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()), cascadeOne.isFetchSeparately());
+				oneToOneRelationConfigurer.configure(relationName, new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration()), oneToOneRelation.isFetchSeparately());
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(cascadeOne.getTargetMappingConfiguration().getEntityType(),
-					cascadeOne.getTargetProvider()));
+			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(oneToOneRelation.getTargetMappingConfiguration().getEntityType(),
+					oneToOneRelation.getTargetProvider()));
 		}
-		for (CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>> cascadeMany : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(cascadeMany,
+		for (OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
+			OneToManyRelationConfigurer oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(oneToManyRelation,
 					sourcePersister,
 					dialect,
 					connectionConfiguration,
@@ -106,13 +112,13 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					associationTableNamingStrategy,
 					indexColumnNamingStrategy);
 			
-			String relationName = AccessorDefinition.giveDefinition(cascadeMany.getCollectionProvider()).getName();
+			String relationName = AccessorDefinition.giveDefinition(oneToManyRelation.getCollectionProvider()).getName();
 			
-			if (currentBuilderContext.isCycling(cascadeMany.getTargetMappingConfiguration())) {
+			if (currentBuilderContext.isCycling(oneToManyRelation.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
 				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = cascadeMany.getTargetMappingConfiguration().getEntityType();
+				Class<TRGT> targetEntityType = oneToManyRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToManyCycleConfigurer<TRGT> cycleSolver = (OneToManyCycleConfigurer<TRGT>)
 						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToManyCycleConfigurer && p.getEntityType() == targetEntityType);
@@ -120,18 +126,18 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					cycleSolver = new OneToManyCycleConfigurer<>(targetEntityType);
 					currentBuilderContext.addPostInitializers(cycleSolver);
 				}
-				cycleSolver.addCycleSolver(relationName, cascadeManyConfigurer);
+				cycleSolver.addCycleSolver(relationName, oneToManyRelationConfigurer);
 			} else {
-				cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
+				oneToManyRelationConfigurer.configure(oneToManyRelation, sourcePersister,
 						foreignKeyNamingStrategy,
 						joinColumnNamingStrategy,
 						indexColumnNamingStrategy,
 						associationTableNamingStrategy,
-						new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()));
+						new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(cascadeMany.getTargetMappingConfiguration().getEntityType(),
-					cascadeMany.getCollectionProvider()));
+			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(oneToManyRelation.getTargetMappingConfiguration().getEntityType(),
+					oneToManyRelation.getCollectionProvider()));
 		}
 		
 		for (ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>> manyToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToManyRelations()) {
@@ -161,7 +167,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 				}
 				cycleSolver.addCycleSolver(relationName, manyRelationConfigurer);
 			} else {
-				manyRelationConfigurer.appendCascade(manyToManyRelation,
+				manyRelationConfigurer.configure(manyToManyRelation,
 						sourcePersister,
 						foreignKeyNamingStrategy,
 						joinColumnNamingStrategy,
@@ -172,9 +178,9 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		}
 		
 		// taking element collections into account
-		for (ElementCollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
-			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(dialect, connectionConfiguration);
-			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
+		for (ElementCollectionRelation<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
+			ElementCollectionRelationConfigurer elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer(dialect, connectionConfiguration);
+			elementCollectionRelationConfigurer.configure(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
 					elementCollectionTableNamingStrategy);
 		}
 	}

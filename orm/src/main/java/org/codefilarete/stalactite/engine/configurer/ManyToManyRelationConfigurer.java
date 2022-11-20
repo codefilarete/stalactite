@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.NotYetSupportedOperationException;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.runtime.AbstractOneToManyWithAssociationTableEngine;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
@@ -94,34 +94,34 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		return this;
 	}
 	
-	public void appendCascade(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation,
-												   EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-												   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-												   ColumnNamingStrategy joinColumnNamingStrategy,
-												   ColumnNamingStrategy indexColumnNamingStrategy,
-												   AssociationTableNamingStrategy associationTableNamingStrategy,
-												   PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
+	public void configure(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation,
+						  EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+						  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+						  ColumnNamingStrategy joinColumnNamingStrategy,
+						  ColumnNamingStrategy indexColumnNamingStrategy,
+						  AssociationTableNamingStrategy associationTableNamingStrategy,
+						  PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 		Table targetTable = determineTargetTable(manyToManyRelation);
 		EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				.build(dialect, connectionConfiguration, persisterRegistry, targetTable);
 		
-		appendCascade(manyToManyRelation, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy,
+		configure(manyToManyRelation, sourcePersister, foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy,
 				associationTableNamingStrategy, targetPersister);
 	}
 	
-	public CascadeConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(String tableAlias,
-																				 EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																				 FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		return this.configurer.appendCascadesWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
+	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
+																			  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+		return this.configurer.configureWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 	}
 	
-	void appendCascade(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation,
-					   EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-					   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-					   ColumnNamingStrategy joinColumnNamingStrategy,
-					   ColumnNamingStrategy indexColumnNamingStrategy,
-					   AssociationTableNamingStrategy associationTableNamingStrategy,
-					   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+	void configure(ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> manyToManyRelation,
+				   EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+				   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+				   ColumnNamingStrategy joinColumnNamingStrategy,
+				   ColumnNamingStrategy indexColumnNamingStrategy,
+				   AssociationTableNamingStrategy associationTableNamingStrategy,
+				   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 		Column leftPrimaryKey = nullable(sourcePrimaryKey).getOr(() -> lookupSourcePrimaryKey(sourcePersister));
 		
 		RelationMode maintenanceMode = manyToManyRelation.getRelationMode();
@@ -219,7 +219,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		/**
 		 * Gives the collection factory used to instantiate relation field.
 		 * 
-		 * @return the one given by {@link CascadeMany#getCollectionFactory()} or one deduced from member signature
+		 * @return the one given by {@link OneToManyRelation#getCollectionFactory()} or one deduced from member signature
 		 */
 		protected Supplier<C1> giveCollectionFactory() {
 			Supplier<C1> collectionFactory = manyToManyRelation.getCollectionFactory();
@@ -258,7 +258,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		
 		abstract void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister, boolean loadSeparately);
 		
-		public abstract CascadeConfigurationResult<SRC,TRGT> appendCascadesWithSelectIn2Phases(String tableAlias, EntityConfiguredJoinedTablesPersister<TRGT,
+		public abstract CascadeConfigurationResult<SRC,TRGT> configureWithSelectIn2Phases(String tableAlias, EntityConfiguredJoinedTablesPersister<TRGT,
 						TRGTID> targetPersister, FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
 	}
 	
@@ -314,9 +314,9 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 		}
 		
 		@Override
-		public CascadeConfigurationResult<SRC,TRGT> appendCascadesWithSelectIn2Phases(String tableAlias,
-																					  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																					  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+		public CascadeConfigurationResult<SRC,TRGT> configureWithSelectIn2Phases(String tableAlias,
+																				 EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																				 FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			prepare(targetPersister);
 			associationTableEngine.addSelectCascadeIn2Phases(firstPhaseCycleLoadListener);
 			addWriteCascades(associationTableEngine);

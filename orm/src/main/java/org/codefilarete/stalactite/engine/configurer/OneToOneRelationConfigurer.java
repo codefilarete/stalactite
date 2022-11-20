@@ -71,51 +71,51 @@ import static org.codefilarete.tool.function.Predicates.not;
  * @param <SRCID> identifier type of target entities
  * @author Guillaume Mary
  */
-public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
+public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
-	private final CascadeOne<SRC, TRGT, TRGTID> cascadeOne;
+	private final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ColumnNamingStrategy joinColumnNamingStrategy;
 	private final ConfigurerTemplate configurer;
 	
-	public CascadeOneConfigurer(CascadeOne<SRC, TRGT, TRGTID> cascadeOne,
-								EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-								Dialect dialect,
-								ConnectionConfiguration connectionConfiguration,
-								PersisterRegistry persisterRegistry,
-								ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-								ColumnNamingStrategy joinColumnNamingStrategy) {
-		this.cascadeOne = cascadeOne;
+	public OneToOneRelationConfigurer(OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
+									  EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+									  Dialect dialect,
+									  ConnectionConfiguration connectionConfiguration,
+									  PersisterRegistry persisterRegistry,
+									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+									  ColumnNamingStrategy joinColumnNamingStrategy) {
+		this.oneToOneRelation = oneToOneRelation;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.persisterRegistry = persisterRegistry;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
-		if (cascadeOne.isRelationOwnedByTarget()) {
+		if (oneToOneRelation.isRelationOwnedByTarget()) {
 			this.configurer = new RelationOwnedByTargetConfigurer(sourcePersister);
 		} else {
 			this.configurer = new RelationOwnedBySourceConfigurer(sourcePersister);
 		}
 	}
 	
-	public void appendCascades(String tableAlias,
-							   PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder,
-							   boolean loadSeparately) {
+	public void configure(String tableAlias,
+						  PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder,
+						  boolean loadSeparately) {
 		EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				// please note that even if no table is found in configuration, build(..) will create one
 				.build(dialect, connectionConfiguration, persisterRegistry,
-						nullable(cascadeOne.getTargetTable()).getOr(nullable(cascadeOne.getReverseColumn()).map(Column::getTable).get()));
-		this.configurer.appendCascades(tableAlias, targetPersister, loadSeparately);
+						nullable(oneToOneRelation.getTargetTable()).getOr(nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get()));
+		this.configurer.configure(tableAlias, targetPersister, loadSeparately);
 	}
 	
-	public CascadeConfigurationResult<SRC, TRGT> appendCascadesWith2PhasesSelect(
+	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(
 			String tableAlias,
 			EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
-		return this.configurer.appendCascadesWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
+		return this.configurer.configureWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 	}
 	
 	private abstract class ConfigurerTemplate {
@@ -132,7 +132,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		private void prepare(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
 			
-			RelationMode maintenanceMode = cascadeOne.getRelationMode();
+			RelationMode maintenanceMode = oneToOneRelation.getRelationMode();
 			if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
 				throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association");
 			}
@@ -148,26 +148,26 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			determineRelationFixer();
 		}
 		
-		public void appendCascades(String tableAlias,
-								   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-								   boolean loadSeparately) {
+		public void configure(String tableAlias,
+							  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+							  boolean loadSeparately) {
 			prepare(targetPersister);
-			addSelectCascade(tableAlias, targetPersister, beanRelationFixer, loadSeparately);
+			addSelectJoin(tableAlias, targetPersister, beanRelationFixer, loadSeparately);
 			addWriteCascades(targetPersister);
 		}
 		
-		public CascadeConfigurationResult<SRC, TRGT> appendCascadesWithSelectIn2Phases(String tableAlias,
-																					   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
-																					   FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
+		public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
+																				  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																				  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			prepare(targetPersister);
-			addSelectCascadeIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
+			addSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 			addWriteCascades(targetPersister);
 			return new CascadeConfigurationResult<>(beanRelationFixer, sourcePersister);
 		}
 		
 		protected void addWriteCascades(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
-			boolean orphanRemoval = cascadeOne.getRelationMode() == RelationMode.ALL_ORPHAN_REMOVAL;
-			boolean writeAuthorized = cascadeOne.getRelationMode() != RelationMode.READ_ONLY;
+			boolean orphanRemoval = oneToOneRelation.getRelationMode() == RelationMode.ALL_ORPHAN_REMOVAL;
+			boolean writeAuthorized = oneToOneRelation.getRelationMode() != RelationMode.READ_ONLY;
 			if (writeAuthorized) {
 				// NB: "delete removed" will be treated internally by updateCascade() and deleteCascade()
 				addInsertCascade(targetPersister);
@@ -184,8 +184,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		@SuppressWarnings("squid:S1172")	// argument targetPersister is used by subclasses
 		protected void addInsertCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
 			// if cascade is mandatory, then adding nullability checking before insert
-			if (!cascadeOne.isNullable()) {
-				sourcePersister.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(cascadeOne.getTargetProvider()));
+			if (!oneToOneRelation.isNullable()) {
+				sourcePersister.addInsertListener(new MandatoryRelationCheckingBeforeInsertListener<>(oneToOneRelation.getTargetProvider()));
 			}
 		}
 		
@@ -193,13 +193,13 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		protected abstract void addDeleteCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval);
 		
-		protected void addSelectCascade(
+		protected void addSelectJoin(
 				String tableAlias,
 				ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 				boolean loadSeparately) {
 			// we add target subgraph joins to the one that was created
-			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, tableAlias, beanRelationFixer, cascadeOne.isNullable(), loadSeparately);
+			targetPersister.joinAsOne(sourcePersister, leftColumn, rightColumn, tableAlias, beanRelationFixer, oneToOneRelation.isNullable(), loadSeparately);
 			
 			// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 			// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
@@ -213,7 +213,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 
 				@Override
 				public void afterSelect(Iterable<? extends SRC> result) {
-					List collect = Iterables.collectToList(result, cascadeOne.getTargetProvider()::get);
+					List collect = Iterables.collectToList(result, oneToOneRelation.getTargetProvider()::get);
 					// NB: entity can be null when loading relation, we skip nulls to prevent a NPE
 					collect.removeIf(Objects::isNull);
 					targetSelectListener.afterSelect(collect);
@@ -227,7 +227,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			});
 		}
 		
-		abstract protected void addSelectCascadeIn2Phases(
+		abstract protected void addSelectIn2Phases(
 				String tableAlias,
 				ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);
@@ -242,7 +242,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		@Override
 		protected void determineRelationFixer() {
-			Mutator<SRC, TRGT> targetSetter = cascadeOne.getTargetProvider().toMutator();
+			Mutator<SRC, TRGT> targetSetter = oneToOneRelation.getTargetProvider().toMutator();
 			this.beanRelationFixer = BeanRelationFixer.of(targetSetter::set);
 		}
 		
@@ -251,12 +251,12 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 												  EntityMapping<TRGT, TRGTID, ?> targetMappingStrategy) {
 			rightColumn = Iterables.first((Set<Column<?, Object>>) targetMappingStrategy.getTargetTable().getPrimaryKey().getColumns());
 			leftColumn = sourcePersister.getMapping().getTargetTable().addColumn(
-					joinColumnNamingStrategy.giveName(AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider())),
+					joinColumnNamingStrategy.giveName(AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider())),
 					rightColumn.getJavaType()
 			);
 			
 			// According to the nullable option, we specify the ddl schema option
-			leftColumn.nullable(cascadeOne.isNullable());
+			leftColumn.nullable(oneToOneRelation.isNullable());
 			
 			// adding foreign key constraint
 			String foreignKeyName = foreignKeyNamingStrategy.giveName(leftColumn, rightColumn);
@@ -264,14 +264,14 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 		
 		@Override
-		protected void addSelectCascadeIn2Phases(
+		protected void addSelectIn2Phases(
 				String tableAlias,
 				ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 			
 			Table targetTableClone = new Table(targetPersister.getMapping().getTargetTable().getName());
 			Column targetTableClonePK = targetTableClone.addColumn(rightColumn.getName(), rightColumn.getJavaType());
-			String tableCloneAlias = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
+			String tableCloneAlias = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
 			// This can't be done directly on root persister (took via persisterRegistry and targetPersister.getClassToPersist()) because
 			// TransformerListener would get root instance as source (aggregate root), not current source
 			String joinName = sourcePersister.getEntityJoinTree().addPassiveJoin(
@@ -279,7 +279,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					leftColumn,
 					targetTableClonePK,
 					tableAlias,
-					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(targetTableClonePK),
+					oneToOneRelation.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(targetTableClonePK),
 					(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(targetTableClonePK)),
 					true);
 			
@@ -298,7 +298,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		protected void addWriteCascades(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
 			// whatever kind of relation maintenance mode asked, we have to insert and update source-to-target link, because we are in relation-owned-by-source
 			Function<SRC, TRGTID> targetIdProvider = src -> {
-				TRGT trgt = cascadeOne.getTargetProvider().get(src);
+				TRGT trgt = oneToOneRelation.getTargetProvider().get(src);
 				return trgt == null ? null : targetPersister.getMapping().getId(trgt);
 			};
 			sourcePersister.getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<>(leftColumn, targetIdProvider));
@@ -311,18 +311,18 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		protected void addInsertCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
 			super.addInsertCascade(targetPersister);
 			// adding cascade treatment: before source insert, target is inserted to comply with foreign key constraint
-			sourcePersister.addInsertListener(new BeforeInsertSupport<>(targetPersister::persist, cascadeOne.getTargetProvider()::get, Objects::nonNull));
+			sourcePersister.addInsertListener(new BeforeInsertSupport<>(targetPersister::persist, oneToOneRelation.getTargetProvider()::get, Objects::nonNull));
 		}
 		
 		@Override
 		protected void addUpdateCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
-			if (!cascadeOne.isNullable()) {
-				sourcePersister.addUpdateListener(new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getTargetProvider()));
+			if (!oneToOneRelation.isNullable()) {
+				sourcePersister.addUpdateListener(new MandatoryRelationCheckingBeforeUpdateListener<>(oneToOneRelation.getTargetProvider()));
 			}
 			// adding cascade treatment
 			// - insert non-persisted target instances to fulfill foreign key requirement
-			Function<SRC, TRGT> targetProviderAsFunction = new NullProofFunction<>(cascadeOne.getTargetProvider()::get);
+			Function<SRC, TRGT> targetProviderAsFunction = new NullProofFunction<>(oneToOneRelation.getTargetProvider()::get);
 			sourcePersister.addUpdateListener(new BeforeUpdateSupport<>(
 					// we insert new instances
 					(it, b) -> targetPersister.insert(Iterables.collectToList(it, Duo::getLeft)),
@@ -348,11 +348,11 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				}
 				
 				private TRGT getTarget(SRC src) {
-					return cascadeOne.getTargetProvider().get(src);
+					return oneToOneRelation.getTargetProvider().get(src);
 				}
 			});
 			if (orphanRemoval) {
-				sourcePersister.addUpdateListener(new OrphanRemovalOnUpdate<>(targetPersister, cascadeOne.getTargetProvider()));
+				sourcePersister.addUpdateListener(new OrphanRemovalOnUpdate<>(targetPersister, oneToOneRelation.getTargetProvider()));
 			}
 		}
 		
@@ -361,9 +361,9 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			if (orphanRemoval) {
 				// adding cascade treatment: target is deleted after source deletion (because of foreign key constraint)
 				Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMapping().getIdMapping()::isNew));
-				sourcePersister.addDeleteListener(new AfterDeleteSupport<>(targetPersister::delete, cascadeOne.getTargetProvider()::get, deletionPredicate));
+				sourcePersister.addDeleteListener(new AfterDeleteSupport<>(targetPersister::delete, oneToOneRelation.getTargetProvider()::get, deletionPredicate));
 				// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-				sourcePersister.addDeleteByIdListener(new AfterDeleteByIdSupport<>(targetPersister::delete, cascadeOne.getTargetProvider()::get, deletionPredicate));
+				sourcePersister.addDeleteByIdListener(new AfterDeleteByIdSupport<>(targetPersister::delete, oneToOneRelation.getTargetProvider()::get, deletionPredicate));
 			} // else : no target entities deletion asked (no delete orphan) : nothing more to do than deleting the source entity
 		}
 	}
@@ -415,19 +415,19 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			// left column is always left table primary key
 			leftColumn = (Column<Table, SRCID>) Iterables.first(mappingStrategy.getTargetTable().getPrimaryKey().getColumns());
 			// right column depends on relation owner
-			if (cascadeOne.getReverseColumn() != null) {
-				rightColumn = cascadeOne.getReverseColumn();
+			if (oneToOneRelation.getReverseColumn() != null) {
+				rightColumn = oneToOneRelation.getReverseColumn();
 			}
-			if (cascadeOne.getReverseGetter() != null) {
-				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(cascadeOne.getReverseGetter());
+			if (oneToOneRelation.getReverseGetter() != null) {
+				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(oneToOneRelation.getReverseGetter());
 				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
 				// we add a column for reverse mapping if one is not already declared
-				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), localReverseGetter, accessorDefinition);
-			} else if (cascadeOne.getReverseSetter() != null) {
-				ValueAccessPoint reverseSetter = Accessors.mutatorByMethodReference(cascadeOne.getReverseSetter());
+				rightColumn = createOrUseReverseColumn(targetMappingStrategy, oneToOneRelation.getReverseColumn(), localReverseGetter, accessorDefinition);
+			} else if (oneToOneRelation.getReverseSetter() != null) {
+				ValueAccessPoint reverseSetter = Accessors.mutatorByMethodReference(oneToOneRelation.getReverseSetter());
 				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(reverseSetter);
 				// we add a column for reverse mapping if one is not already declared
-				rightColumn = createOrUseReverseColumn(targetMappingStrategy, cascadeOne.getReverseColumn(), reverseSetter, accessorDefinition);
+				rightColumn = createOrUseReverseColumn(targetMappingStrategy, oneToOneRelation.getReverseColumn(), reverseSetter, accessorDefinition);
 			}
 			
 			// adding foreign key constraint
@@ -458,7 +458,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		@Override
 		protected void addWriteCascades(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
-			boolean writeAuthorized = cascadeOne.getRelationMode() != RelationMode.READ_ONLY;
+			boolean writeAuthorized = oneToOneRelation.getRelationMode() != RelationMode.READ_ONLY;
 			if (writeAuthorized) {
 				super.addWriteCascades(targetPersister);
 			} else {
@@ -482,7 +482,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 						entities.forEach(e -> {
 							Map<UpwhereColumn<Table>, Object> values = new HashMap<>();
 							values.put(new UpwhereColumn<>(rightColumn, true), fkValueProvider.apply(e));
-							targetPersister.getMapping().getVersionedKeyValues(cascadeOne.getTargetProvider().get(sourceProvider.apply(e)))
+							targetPersister.getMapping().getVersionedKeyValues(oneToOneRelation.getTargetProvider().get(sourceProvider.apply(e)))
 									.forEach((c, o) -> values.put(new UpwhereColumn<>(c, false), o));
 							updateOrder.addBatch(values);
 						});
@@ -544,9 +544,9 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		
 		@Override
 		protected void determineRelationFixer() {
-			Mutator<SRC, TRGT> sourceIntoTargetFixer = cascadeOne.getTargetProvider().toMutator();
-			if (cascadeOne.getReverseGetter() != null) {
-				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(cascadeOne.getReverseGetter());
+			Mutator<SRC, TRGT> sourceIntoTargetFixer = oneToOneRelation.getTargetProvider().toMutator();
+			if (oneToOneRelation.getReverseGetter() != null) {
+				AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(oneToOneRelation.getReverseGetter());
 				AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
 				
 				// we take advantage of foreign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
@@ -559,11 +559,11 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					// fixing target on source
 					sourceIntoTargetFixer.set(src, target);
 				};
-			} else if (cascadeOne.getReverseSetter() != null) {
+			} else if (oneToOneRelation.getReverseSetter() != null) {
 				// we take advantage of forign key computing and presence of AccessorDefinition to build relation fixer which is needed lately in determineRelationFixer(..) 
 				this.beanRelationFixer = (target, input) -> {
 					// fixing target on source side
-					cascadeOne.getReverseSetter().accept(input, target);
+					oneToOneRelation.getReverseSetter().accept(input, target);
 					// fixing source on target side
 					sourceIntoTargetFixer.set(target, input);
 				};
@@ -576,7 +576,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		}
 		
 		@Override
-		protected void addSelectCascadeIn2Phases(
+		protected void addSelectIn2Phases(
 				String tableAlias,
 				ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
 				FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
@@ -591,7 +591,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 					leftColumn,
 					relationOwnerForeignKey,
 					tableAlias,
-					cascadeOne.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
+					oneToOneRelation.isNullable() ? JoinType.OUTER : JoinType.INNER, (Set) Arrays.asSet(relationOwnerPrimaryKey),
 					(src, rowValueProvider) -> firstPhaseCycleLoadListener.onFirstPhaseRowRead(src, (TRGTID) rowValueProvider.apply(relationOwnerPrimaryKey)),
 					true);
 			
@@ -615,7 +615,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			// equals/hashCode although this could be sufficient, identity seems safer and match our logic.
 			Collector<TRGT, ?, Set<TRGT>> identitySetProvider = Collectors.toCollection(org.codefilarete.tool.collection.Collections::newIdentitySet);
 			Consumer<Iterable<? extends SRC>> persistTargetCascader = entities -> {
-				targetPersister.persist(Iterables.stream(entities).map(cascadeOne.getTargetProvider()::get).filter(Objects::nonNull).collect(identitySetProvider));
+				targetPersister.persist(Iterables.stream(entities).map(oneToOneRelation.getTargetProvider()::get).filter(Objects::nonNull).collect(identitySetProvider));
 			};
 			// Please note that 1st implementation was to simply add persistTargetCascader, but it invokes persist() which may invoke update()
 			// and because we are in the relation-owned-by-target case targetPersister.update() needs foreign key value provider to be
@@ -630,7 +630,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				public void afterInsert(Iterable<? extends SRC> entities) {
 					ThreadLocals.doWithThreadLocal(currentForeignKeyValueProvider, ForeignKeyValueProvider::new, (Consumer<ForeignKeyValueProvider>) fkValueProvider -> {
 						for (SRC sourceEntity : entities) {
-							currentForeignKeyValueProvider.get().add(cascadeOne.getTargetProvider().get(sourceEntity), sourceEntity);
+							currentForeignKeyValueProvider.get().add(oneToOneRelation.getTargetProvider().get(sourceEntity), sourceEntity);
 						}
 						persistTargetCascader.accept(entities);
 					});
@@ -652,8 +652,8 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 		@Override
 		protected void addUpdateCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
 			// if cascade is mandatory, then adding nullability checking before insert
-			if (!cascadeOne.isNullable()) {
-				sourcePersister.addUpdateListener(new MandatoryRelationCheckingBeforeUpdateListener<>(cascadeOne.getTargetProvider()));
+			if (!oneToOneRelation.isNullable()) {
+				sourcePersister.addUpdateListener(new MandatoryRelationCheckingBeforeUpdateListener<>(oneToOneRelation.getTargetProvider()));
 			}
 			// adding cascade treatment, please note that this will also be used by insert cascade if target is already persisted
 			targetPersister.getMapping().addShadowColumnUpdate(new ShadowColumnValueProvider<>((Column<Table, SRCID>) rightColumn,
@@ -721,7 +721,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				}
 				
 				private TRGT getTarget(SRC src) {
-					return src == null ? null : cascadeOne.getTargetProvider().get(src);
+					return src == null ? null : oneToOneRelation.getTargetProvider().get(src);
 				}
 				
 				@Override
@@ -730,7 +730,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 				}
 			});
 			if (orphanRemoval) {
-				sourcePersister.addUpdateListener(new OrphanRemovalOnUpdate<>(targetPersister, cascadeOne.getTargetProvider()));
+				sourcePersister.addUpdateListener(new OrphanRemovalOnUpdate<>(targetPersister, oneToOneRelation.getTargetProvider()));
 			}
 		}
 		
@@ -739,22 +739,22 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			if (deleteTargetEntities) {
 				// adding cascade treatment: target is deleted before source deletion (because of foreign key constraint)
 				Predicate<TRGT> deletionPredicate = ((Predicate<TRGT>) Objects::nonNull).and(not(targetPersister.getMapping().getIdMapping()::isNew));
-				sourcePersister.addDeleteListener(new BeforeDeleteSupport<>(targetPersister::delete, cascadeOne.getTargetProvider()::get, deletionPredicate));
+				sourcePersister.addDeleteListener(new BeforeDeleteSupport<>(targetPersister::delete, oneToOneRelation.getTargetProvider()::get, deletionPredicate));
 				// we add the deleteById event since we suppose that if delete is required then there's no reason that rough delete is not
-				sourcePersister.addDeleteByIdListener(new BeforeDeleteByIdSupport<>(targetPersister::delete, cascadeOne.getTargetProvider()::get, deletionPredicate));
+				sourcePersister.addDeleteByIdListener(new BeforeDeleteByIdSupport<>(targetPersister::delete, oneToOneRelation.getTargetProvider()::get, deletionPredicate));
 			} else {
 				// no target entities deletion asked (no delete orphan) : we only need to nullify the relation
-				sourcePersister.addDeleteListener(new NullifyRelationColumnBeforeDelete(cascadeOne, targetPersister));
+				sourcePersister.addDeleteListener(new NullifyRelationColumnBeforeDelete(oneToOneRelation, targetPersister));
 			}
 		}
 		
 		private class NullifyRelationColumnBeforeDelete implements DeleteListener<SRC> {
 			
-			private final CascadeOne<SRC, TRGT, TRGTID> cascadeOne;
+			private final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
 			private final EntityConfiguredPersister<TRGT, TRGTID> targetPersister;
 			
-			private NullifyRelationColumnBeforeDelete(CascadeOne<SRC, TRGT, TRGTID> cascadeOne, EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
-				this.cascadeOne = cascadeOne;
+			private NullifyRelationColumnBeforeDelete(OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation, EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
+				this.oneToOneRelation = oneToOneRelation;
 				this.targetPersister = targetPersister;
 			}
 			
@@ -769,7 +769,7 @@ public class CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> {
 			}
 			
 			private TRGT getTarget(SRC src) {
-				TRGT target = cascadeOne.getTargetProvider().get(src);
+				TRGT target = oneToOneRelation.getTargetProvider().get(src);
 				// We only delete persisted instances (for logic and to prevent from non matching row count error)
 				return target != null && !targetPersister.getMapping().getIdMapping().isNew(target) ? target : null;
 			}
