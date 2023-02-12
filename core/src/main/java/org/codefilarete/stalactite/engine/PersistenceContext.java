@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,7 +51,6 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -135,11 +133,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, DialectResolver dialectResolver) {
 		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
-		try (Connection currentConnection = this.connectionConfiguration.giveConnection()) {
-			this.dialect = dialectResolver.determineDialect(currentConnection);
-		} catch (SQLException throwable) {
-			throw Exceptions.asRuntimeException(throwable);
-		}
+		this.dialect = dialectResolver.determineDialect(this.connectionConfiguration.giveConnection());
 	}
 	
 	/**
