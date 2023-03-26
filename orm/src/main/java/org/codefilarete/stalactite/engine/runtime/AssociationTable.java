@@ -1,85 +1,144 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nonnull;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy.ReferencedColumnNames;
+import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
+import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-public class AssociationTable<SELF extends AssociationTable<SELF>> extends Table<SELF> {
+public class AssociationTable<
+		SELF extends AssociationTable<SELF, LEFTTABLE, RIGHTTABLE, LEFTID, RIGHTID>,
+		LEFTTABLE extends Table<LEFTTABLE>,
+		RIGHTTABLE extends Table<RIGHTTABLE>,
+		LEFTID,
+		RIGHTID>
+		extends Table<SELF> {
 	
 	/**
-	 * Column pointing to left table primary key.
-	 * Expected to be joined with {@link #oneSidePrimaryKey}
+	 * Foreign key pointing to left table primary key
+	 * Expected to be joined with {@link #oneSideKey}
 	 */
-	private final Column<SELF, Object> oneSideKeyColumn;
+	private final ForeignKey<SELF, LEFTTABLE, LEFTID> oneSideForeignKey;
 	
 	/**
-	 * Primary key (one column for now) of the source entities, on the (undefined) target table.
-	 * Expected to be joined with {@link #oneSideKeyColumn}
+	 * Primary key of source entities table
+	 * Expected to be joined with {@link #oneSideForeignKey}
 	 */
-	private final Column oneSidePrimaryKey;
+	private final PrimaryKey<LEFTTABLE, LEFTID> oneSideKey;
 	
 	/**
-	 * Column pointing to right table primary key.
-	 * Expected to be joined with {@link #manySidePrimaryKey}
+	 * Foreign key pointing to right table primary key
+	 * Expected to be joined with {@link #manySideKey}
 	 */
-	private final Column<SELF, Object> manySideKeyColumn;
+	private final Key<SELF, RIGHTID> manySideForeignKey;
 	
 	/**
-	 * Primary key (one column for now) of the collection entities, on the (undefined) target table
-	 * Expected to be joined with {@link #manySideKeyColumn}
+	 * Primary key of collection entities table
+	 * Expected to be joined with {@link #manySideForeignKey}
 	 */
-	private final Column manySidePrimaryKey;
+	private final PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey;
 	
-	/**
-	 * Primary key of this table, contains {@link #oneSideKeyColumn} and {@link #manySideKeyColumn}
-	 */
-	private final PrimaryKey<SELF> primaryKey;
+	private final Map<Column<LEFTTABLE, Object>, Column<SELF, Object>> leftIdentifierColumnMapping = new HashMap<>();
+	
+	private final Map<Column<RIGHTTABLE, Object>, Column<SELF, Object>> rightIdentifierColumnMapping = new HashMap<>();
 	
 	public AssociationTable(Schema schema,
 							String name,
-							Column oneSidePrimaryKey,
-							Column manySidePrimaryKey,
+							PrimaryKey<LEFTTABLE, LEFTID> oneSideKey,
+							PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey,
+							AccessorDefinition accessorDefinition,
+							AssociationTableNamingStrategy namingStrategy,
+							ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+							boolean createManySideForeignKey) {
+		super(schema, name);
+		this.oneSideKey = oneSideKey;
+		this.manySideKey = manySideKey;
+		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = namingStrategy.giveColumnNames(accessorDefinition, oneSideKey, manySideKey);
+		KeyBuilder<SELF, LEFTID> leftForeignKeyBuilder = Key.from((SELF) this);
+		columnNames.foreachLeftColumn(entry -> {
+			Column<SELF, Object> column = addColumn(entry.getValue(), entry.getKey().getJavaType());
+			column.primaryKey();
+			leftForeignKeyBuilder.addColumn(column);
+			leftIdentifierColumnMapping.put(entry.getKey(), column);
+		});
+		Key<SELF, LEFTID> leftForeignKey = leftForeignKeyBuilder.build();
+		this.oneSideForeignKey = addForeignKey(foreignKeyNamingStrategy::giveName, leftForeignKey, oneSideKey);
+		
+		// building many side key (eventually foreign key) 
+		KeyBuilder<SELF, RIGHTID> rightForeignKeyBuilder = Key.from((SELF) this);
+		columnNames.foreachRightColumn(entry -> {
+			Column<SELF, Object> column = addColumn(entry.getValue(), entry.getKey().getJavaType());
+			column.primaryKey();
+			rightForeignKeyBuilder.addColumn(column);
+			rightIdentifierColumnMapping.put(entry.getKey(), column);
+		});
+		Key<SELF, RIGHTID> rightForeignKey = rightForeignKeyBuilder.build();
+		if (createManySideForeignKey) {
+			this.manySideForeignKey = addForeignKey(foreignKeyNamingStrategy::giveName, rightForeignKey, manySideKey);
+		} else {
+			this.manySideForeignKey = rightForeignKey;
+		}
+	}
+	
+	public AssociationTable(Schema schema,
+							String name,
+							PrimaryKey<LEFTTABLE, LEFTID> oneSideKey,
+							PrimaryKey<RIGHTTABLE, RIGHTID> manySideKey,
 							AccessorDefinition accessorDefinition,
 							AssociationTableNamingStrategy namingStrategy,
 							ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		super(schema, name);
-		this.oneSidePrimaryKey = oneSidePrimaryKey;
-		this.manySidePrimaryKey = manySidePrimaryKey;
-		Duo<String, String> columnNames = namingStrategy.giveColumnNames(accessorDefinition, oneSidePrimaryKey, manySidePrimaryKey);
-		this.oneSideKeyColumn = addColumn(columnNames.getLeft(), oneSidePrimaryKey.getJavaType()).primaryKey();
-		this.manySideKeyColumn = addColumn(columnNames.getRight(), manySidePrimaryKey.getJavaType()).primaryKey();
-		this.primaryKey = new PrimaryKey<>(oneSideKeyColumn, manySideKeyColumn);
+		this(schema, name, oneSideKey, manySideKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, true);
 	}
 	
-	public Column<SELF, Object> getOneSideKeyColumn() {
-		return oneSideKeyColumn;
+	/**
+	 * Gives the foreign key pointing to left table primary key. Expected to be joined with {@link #getOneSideKey()} 
+	 * @return the foreign key pointing to left table primary key
+	 */
+	public ForeignKey<SELF, LEFTTABLE, LEFTID> getOneSideForeignKey() {
+		return oneSideForeignKey;
 	}
 	
-	public Column getOneSidePrimaryKey() {
-		return oneSidePrimaryKey;
+	/**
+	 * Gives the primary key of source entities table. The one expected to be joined with {@link #getOneSideForeignKey()}
+	 * @return the primary key of source entities table
+	 */
+	public Key<LEFTTABLE, LEFTID> getOneSideKey() {
+		return oneSideKey;
 	}
 	
-	public Column<SELF, Object> getManySideKeyColumn() {
-		return manySideKeyColumn;
+	/**
+	 * Gives the foreign key pointing to right table primary key. Expected to be joined with {@link #getManySideKey()}
+	 * @return the foreign key pointing to right table primary key
+	 */
+	public Key<SELF, RIGHTID> getManySideForeignKey() {
+		return manySideForeignKey;
 	}
 	
-	public Column getManySidePrimaryKey() {
-		return manySidePrimaryKey;
+	/**
+	 * Gives the primary key of collection entities table. The one expected to be joined with {@link #getManySideForeignKey()}
+	 * @return the primary key of collection entities table
+	 */
+	public Key<RIGHTTABLE, RIGHTID> getManySideKey() {
+		return manySideKey;
 	}
 	
-	@Nonnull
-	@Override
-	public PrimaryKey<SELF> getPrimaryKey() {
-		return this.primaryKey;
+	public Map<Column<LEFTTABLE, Object>, Column<SELF, Object>> getLeftIdentifierColumnMapping() {
+		return leftIdentifierColumnMapping;
+	}
+	
+	public Map<Column<RIGHTTABLE, Object>, Column<SELF, Object>> getRightIdentifierColumnMapping() {
+		return rightIdentifierColumnMapping;
 	}
 }

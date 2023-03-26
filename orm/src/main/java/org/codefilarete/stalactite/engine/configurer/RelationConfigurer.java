@@ -10,8 +10,17 @@ import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleConfigurer;
@@ -40,7 +49,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	private final ColumnNamingStrategy columnNamingStrategy;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private final ColumnNamingStrategy joinColumnNamingStrategy;
+	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	
@@ -51,7 +60,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 							  ColumnNamingStrategy columnNamingStrategy,
 							  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 							  ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-							  ColumnNamingStrategy joinColumnNamingStrategy,
+							  JoinColumnNamingStrategy joinColumnNamingStrategy,
 							  ColumnNamingStrategy indexColumnNamingStrategy,
 							  AssociationTableNamingStrategy associationTableNamingStrategy) {
 		this.dialect = dialect;
@@ -128,12 +137,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 				}
 				cycleSolver.addCycleSolver(relationName, oneToManyRelationConfigurer);
 			} else {
-				oneToManyRelationConfigurer.configure(oneToManyRelation, sourcePersister,
-						foreignKeyNamingStrategy,
-						joinColumnNamingStrategy,
-						indexColumnNamingStrategy,
-						associationTableNamingStrategy,
-						new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));
+				oneToManyRelationConfigurer.configure(new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
 			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(oneToManyRelation.getTargetMappingConfiguration().getEntityType(),
@@ -148,8 +152,8 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					persisterRegistry,
 					foreignKeyNamingStrategy,
 					joinColumnNamingStrategy,
-					associationTableNamingStrategy,
-					indexColumnNamingStrategy);
+					associationTableNamingStrategy
+			);
 			
 			String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionProvider()).getName();
 			
@@ -171,7 +175,6 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 						sourcePersister,
 						foreignKeyNamingStrategy,
 						joinColumnNamingStrategy,
-						indexColumnNamingStrategy,
 						associationTableNamingStrategy,
 						new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
 			}
@@ -179,9 +182,15 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		
 		// taking element collections into account
 		for (ElementCollectionRelation<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
-			ElementCollectionRelationConfigurer elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer(dialect, connectionConfiguration);
-			elementCollectionRelationConfigurer.configure(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
-					elementCollectionTableNamingStrategy);
+			ElementCollectionRelationConfigurer<C, ?, I, ? extends Collection> elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer<>(
+					elementCollection,
+					sourcePersister,
+					foreignKeyNamingStrategy,
+					columnNamingStrategy,
+					elementCollectionTableNamingStrategy,
+					dialect,
+					connectionConfiguration);
+			elementCollectionRelationConfigurer.configure();
 		}
 	}
 	

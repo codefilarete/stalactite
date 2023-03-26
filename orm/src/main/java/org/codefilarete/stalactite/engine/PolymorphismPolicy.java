@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * @author Guillaume Mary
@@ -121,7 +121,8 @@ public interface PolymorphismPolicy<C> {
 	
 	class TablePerClassPolymorphism<C> implements PolymorphismPolicy<C> {
 		
-		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new HashSet<>();
+		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
 		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
@@ -134,7 +135,8 @@ public interface PolymorphismPolicy<C> {
 		}
 		
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
-			return Iterables.collect(subClasses, Duo::getLeft, HashSet::new);
+			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+			return Iterables.collect(subClasses, Duo::getLeft, KeepOrderSet::new);
 		}
 		
 		@Nullable
@@ -145,7 +147,8 @@ public interface PolymorphismPolicy<C> {
 	
 	class JoinTablePolymorphism<C> implements PolymorphismPolicy<C> {
 		
-		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new HashSet<>();
+		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
@@ -158,7 +161,8 @@ public interface PolymorphismPolicy<C> {
 		}
 		
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
-			return Iterables.collect(subClasses, Duo::getLeft, HashSet::new);
+			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+			return Iterables.collect(subClasses, Duo::getLeft, KeepOrderSet::new);
 		}
 		
 		@Nullable
@@ -173,7 +177,8 @@ public interface PolymorphismPolicy<C> {
 		
 		private final Class<D> discriminatorType;
 		
-		private final Map<D, SubEntityMappingConfiguration<? extends C>> subClasses = new HashMap<>();
+		// we use a KeepOrderMap for stability order (overall for test assertions), not a strong expectation
+		private final Map<D, SubEntityMappingConfiguration<? extends C>> subClasses = new KeepOrderMap<>();
 		
 		public SingleTablePolymorphism(String discriminatorColumn, Class<D> discriminatorType) {
 			this.discriminatorColumn = discriminatorColumn;
@@ -202,7 +207,8 @@ public interface PolymorphismPolicy<C> {
 		}
 		
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
-			return new HashSet<>(this.subClasses.values());
+			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+			return new KeepOrderSet<>(this.subClasses.values());
 		}
 	}
 }

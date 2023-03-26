@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
@@ -35,7 +36,6 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param <SRC> source entity type
 	 * @param <T1> left table type
 	 * @param <T2> right table type
-	 * @param <JID> join columns type, which can either be source persister identifier type (SRCID), or current instance identifier type (I)
 	 * @param sourcePersister source that needs this instance joins
 	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
@@ -45,13 +45,13 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
-	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																		   Column<T1, JID> leftColumn,
-																		   Column<T2, JID> rightColumn,
-																		   String rightTableAlias,
-																		   BeanRelationFixer<SRC, C> beanRelationFixer,
-																		   boolean optional,
-																		   boolean loadSeparately);
+	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																			  Key<T1, JOINID> leftColumn,
+																			  Key<T2, JOINID> rightColumn,
+																			  String rightTableAlias,
+																			  BeanRelationFixer<SRC, C> beanRelationFixer,
+																			  boolean optional,
+																			  boolean loadSeparately);
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
@@ -70,15 +70,15 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	default <SRC, T1 extends Table, T2 extends Table, SRCID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																			   Column<T1, ?> leftColumn,
-																			   Column<T2, ?> rightColumn,
-																			   BeanRelationFixer<SRC, C> beanRelationFixer,
-																			   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																			   String joinName,
-																			   boolean optional,
-																			   boolean loadSeparately) {
-		return joinAsMany(sourcePersister, (Column) leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
+	default <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							   Key<T1, JOINID> leftColumn,
+																							   Key<T2, JOINID> rightColumn,
+																							   BeanRelationFixer<SRC, C> beanRelationFixer,
+																							   @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																							   String joinName,
+																							   boolean optional,
+																							   boolean loadSeparately) {
+		return joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
 				joinName, Collections.emptySet(), optional, loadSeparately);
 	}
 	
@@ -100,14 +100,15 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
 	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	<SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																		   Column<T1, ID> leftColumn,
-																		   Column<T2, ID> rightColumn,
-																		   BeanRelationFixer<SRC, C> beanRelationFixer,
-																		   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																		   String joinName,
-																		   Set<Column<T2, ?>> selectableColumns, boolean optional,
-																		   boolean loadSeparately);
+	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																					   Key<T1, JOINID> leftColumn,
+																					   Key<T2, JOINID> rightColumn,
+																					   BeanRelationFixer<SRC, C> beanRelationFixer,
+																					   @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																					   String joinName,
+																					   Set<? extends Column<T2, Object>> selectableColumns,
+																					   boolean optional,
+																					   boolean loadSeparately);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();
 	

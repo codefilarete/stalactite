@@ -8,10 +8,10 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.tool.collection.ReadOnlyList;
 
 /**
@@ -19,13 +19,13 @@ import org.codefilarete.tool.collection.ReadOnlyList;
  * 
  * @author Guillaume Mary
  */
-public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINCOLTYPE> implements JoinNode<T2> {
+public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINTYPE> implements JoinNode<T2> {
 	
 	/** Join column with previous strategy table */
-	private final JoinLink<T1, JOINCOLTYPE> leftJoinColumn;
+	private final Key<T1, JOINTYPE> leftJoinLink;
 	
 	/** Join column with next strategy table */
-	private final JoinLink<T2, JOINCOLTYPE> rightJoinColumn;
+	private final Key<T2, JOINTYPE> rightJoinLink;
 	
 	/** Indicates if the join must be an inner or (left) outer join */
 	private final JoinType joinType;
@@ -41,17 +41,26 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	protected String tableAlias;
 	
 	@Nullable
-	private TransformerListener<C> transformerListener;
+	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 	
 	protected AbstractJoinNode(JoinNode<T1> parent,
-							   JoinLink<T1, JOINCOLTYPE> leftJoinColumn,
-							   JoinLink<T2, JOINCOLTYPE> rightJoinColumn,
+							   JoinLink<T1, JOINTYPE> leftJoinLink,
+							   JoinLink<T2, JOINTYPE> rightJoinLink,
+							   JoinType joinType,
+							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
+							   @Nullable String tableAlias) {
+		this(parent, Key.ofSingleColumn(leftJoinLink), Key.ofSingleColumn(rightJoinLink), joinType, columnsToSelect, tableAlias);
+	}
+	
+	protected AbstractJoinNode(JoinNode<T1> parent,
+							   Key<T1, JOINTYPE> leftJoinLink,
+							   Key<T2, JOINTYPE> rightJoinLink,
 							   JoinType joinType,
 							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
 							   @Nullable String tableAlias) {
 		this.parent = parent;
-		this.leftJoinColumn = leftJoinColumn;
-		this.rightJoinColumn = rightJoinColumn;
+		this.leftJoinLink = leftJoinLink;
+		this.rightJoinLink = rightJoinLink;
 		this.joinType = joinType;
 		this.columnsToSelect = (Set) columnsToSelect;
 		this.tableAlias = tableAlias;
@@ -62,7 +71,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	public <ROOT, ID> EntityJoinTree<ROOT, ID> getTree() {
 		// going up to the root to get tree from it because JoinRoot owns the information
 		JoinNodeHierarchyIterator joinNodeHierarchyIterator = new JoinNodeHierarchyIterator(this);
-		AbstractJoinNode currentNode = this;
+		AbstractJoinNode<?, ?, ?, ?> currentNode = this;
 		while (joinNodeHierarchyIterator.hasNext()) {
 			currentNode = joinNodeHierarchyIterator.next();
 		}
@@ -75,16 +84,16 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 	
 	@Override
-	public Fromable getTable() {
+	public T2 getTable() {
 		return getRightTable();
 	}
 	
-	public JoinLink<T1, JOINCOLTYPE> getLeftJoinColumn() {
-		return leftJoinColumn;
+	public Key<T1, JOINTYPE> getLeftJoinLink() {
+		return leftJoinLink;
 	}
 	
-	public JoinLink<T2, JOINCOLTYPE> getRightJoinColumn() {
-		return rightJoinColumn;
+	public Key<T2, JOINTYPE> getRightJoinLink() {
+		return rightJoinLink;
 	}
 	
 	public JoinType getJoinType() {
@@ -92,7 +101,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 	
 	@Override
-	public Set<Selectable<?>> getColumnsToSelect() {
+	public Set<Selectable<Object>> getColumnsToSelect() {
 		return (Set) columnsToSelect;
 	}
 	
@@ -102,12 +111,12 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 	
 	@Nullable
-	TransformerListener<C> getTransformerListener() {
-		return transformerListener;
+	EntityTreeJoinNodeConsumptionListener<C> getConsumptionListener() {
+		return consumptionListener;
 	}
 	
-	public AbstractJoinNode<C, T1, T2, JOINCOLTYPE> setTransformerListener(@Nullable TransformerListener<C> transformerListener) {
-		this.transformerListener = transformerListener;
+	public AbstractJoinNode<C, T1, T2, JOINTYPE> setConsumptionListener(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
+		this.consumptionListener = consumptionListener;
 		return this;
 	}
 	
@@ -127,7 +136,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 	
 	public T2 getRightTable() {
-		return this.rightJoinColumn.getOwner();
+		return this.rightJoinLink.getTable();
 	}
 	
 	/**

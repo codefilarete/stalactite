@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
@@ -12,12 +13,13 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.Fromable;
-import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Union.PseudoColumn;
 import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -74,32 +76,14 @@ public class EntityTreeQueryBuilder<C> {
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
 		Fromable rootTableClone = cloneTable(joinRoot);
 		tableClonePerJoinNode.put(joinRoot, rootTableClone);
-		From from = query.getFromSurrogate().setRoot(rootTableClone);
+		query.getFromSurrogate().setRoot(rootTableClone);
 		resultHelper.addColumnsToSelect(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
 		
 		// completing from clause
 		this.tree.foreachJoin(join -> {
 			tableClonePerJoinNode.put(join, cloneTable(join));
 		});
-		this.tree.foreachJoin(join -> {
-			String tableAlias = aliasBuilder.buildTableAlias(join);
-			resultHelper.addColumnsToSelect(join, tableAlias);
-			// we look for the cloned equivalent column of the original ones (from join node)
-			JoinLink leftJoinColumn = tableClonePerJoinNode.get(join.getParent()).findColumn(join.getLeftJoinColumn().getExpression());
-			
-			Fromable tableClone = tableClonePerJoinNode.get(join);
-			JoinLink rightJoinColumn = tableClone.findColumn(join.getRightJoinColumn().getExpression());
-			switch (join.getJoinType()) {
-				case INNER:
-					from.innerJoin(leftJoinColumn, rightJoinColumn);
-					break;
-				case OUTER:
-					from.leftOuterJoin(leftJoinColumn, rightJoinColumn);
-					break;
-			}
-			
-			from.setAlias(tableClone, tableAlias);
-		});
+		resultHelper.applyJoinTree(this.tree);
 		
 		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree(tree),
 																			columnAliases,
@@ -159,8 +143,45 @@ public class EntityTreeQueryBuilder<C> {
 			this.tablePerJoinNode = tablePerJoinNode;
 		}
 		
-		private <T1 extends Table<T1>> void addColumnsToSelect(JoinNode joinNode, String tableAlias) {
-			Iterable<Column<T1, Object>> selectableColumns = joinNode.getColumnsToSelect();
+		/**
+		 * Mimics given tree joins onto internal {@link Query} by using table clones (given at construction time)
+		 * 
+		 * @param tree join structure to be mimicked
+		 * @param <JOINTYPE> internal type of join to avoid weird cast or type loss
+		 */
+		private <JOINTYPE> void applyJoinTree(EntityJoinTree<?, ?> tree) {
+			From targetFrom = query.getFromSurrogate();
+			tree.foreachJoin(join -> {
+				String tableAlias = aliasBuilder.buildTableAlias(join);
+				addColumnsToSelect(join, tableAlias);
+				// we look for the cloned equivalent column of the original ones (from join node)
+				KeyBuilder<Fromable, JOINTYPE> leftJoinLinkClone = Key.from(tablePerJoinNode.get(join.getParent()));
+				join.getLeftJoinLink().getColumns().forEach(column -> {
+					leftJoinLinkClone.addColumn(tablePerJoinNode.get(join.getParent()).findColumn(column.getExpression()));
+				});
+				Key<Fromable, JOINTYPE> leftJoinColumn = leftJoinLinkClone.build();
+				
+				Fromable tableClone = tablePerJoinNode.get(join);
+				KeyBuilder<Fromable, JOINTYPE> rightJoinLinkClone = Key.from(tablePerJoinNode.get(join));
+				join.getRightJoinLink().getColumns().forEach(column -> {
+					rightJoinLinkClone.addColumn(tableClone.findColumn(column.getExpression()));
+				});
+				Key<Fromable, JOINTYPE> rightJoinColumn = rightJoinLinkClone.build();
+				switch (join.getJoinType()) {
+					case INNER:
+						targetFrom.innerJoin(leftJoinColumn, rightJoinColumn);
+						break;
+					case OUTER:
+						targetFrom.leftOuterJoin(leftJoinColumn, rightJoinColumn);
+						break;
+				}
+				
+				targetFrom.setAlias(tableClone, tableAlias);
+			});
+		}
+		
+		private <T1 extends Fromable> void addColumnsToSelect(JoinNode<T1> joinNode, String tableAlias) {
+			Set<Selectable<Object>> selectableColumns = joinNode.getColumnsToSelect();
 			for (Selectable selectableColumn : selectableColumns) {
 				if (selectableColumn instanceof Column) {
 					Column<?, ?> column = (Column<?, ?>) selectableColumn;

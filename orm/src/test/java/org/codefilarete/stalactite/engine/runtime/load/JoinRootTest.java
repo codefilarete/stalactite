@@ -4,7 +4,7 @@ import java.util.Collections;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
@@ -50,19 +50,23 @@ class JoinRootTest {
 	public void giveTables() {
 		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
+		totoTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey totoPrimaryKey = totoTable.getPrimaryKey();
 		
 		ClassMapping tataMappingMock = buildMappingStrategyMock("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
+		tataTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey tataPrimaryKey = tataTable.getPrimaryKey();
 		
 		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
-		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
+		tutuTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey tutuPrimaryKey = tutuTable.getPrimaryKey();
 		
 		ClassMapping titiMappingMock = buildMappingStrategyMock("Titi");
 		Table titiTable = titiMappingMock.getTargetTable();
-		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
+		titiTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey titiPrimaryKey = titiTable.getPrimaryKey();
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());

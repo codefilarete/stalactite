@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
  * 
  * @author Guillaume Mary
  */
-public abstract class WriteExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> {
+public abstract class WriteExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, T> {
 	
 	private final int batchSize;
 	private final WriteOperationFactory writeOperationFactory;

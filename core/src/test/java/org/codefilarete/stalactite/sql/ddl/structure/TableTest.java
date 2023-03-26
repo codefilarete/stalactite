@@ -67,7 +67,7 @@ class TableTest {
 		// same column with other type throws exception
 		assertThatThrownBy(() -> testInstance.addForeignKey("dummy FK name", xxColumn, yColumn))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("Trying to add a foreign key that already exists with different columns : dummy FK name "
+				.hasMessage("Trying to add a foreign key with same name than another with different columns : dummy FK name "
 						+ "toto.x -> tata.y vs toto.xx -> tata.y");
 	}
 	

@@ -5,16 +5,15 @@ import java.util.Set;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Contract to merge a row to some bean property (no bean creation, only property completion)
  */
-public interface EntityMerger<E, T extends Fromable> {
+public interface EntityMerger<C> {
 	
-	RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
+	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
 	Set<Selectable<Object>> getSelectableColumns();
 	
@@ -22,19 +21,19 @@ public interface EntityMerger<E, T extends Fromable> {
 	 * Adapter of a {@link EntityMapping} as a {@link EntityMerger}.
 	 * Implemented as a simple wrapper of a {@link EntityMapping} because methods are very close.
 	 *
-	 * @param <E> entity type
+	 * @param <C> entity type
 	 * @param <T> table type
 	 */
-	class EntityMergerAdapter<E, T extends Table> implements EntityMerger<E, T> {
+	class EntityMergerAdapter<C, T extends Table<T>> implements EntityMerger<C> {
 		
-		private final EntityMapping<E, ?, T> delegate;
+		private final EntityMapping<C, ?, T> delegate;
 		
-		public EntityMergerAdapter(EntityMapping<E, ?, T> delegate) {
+		public EntityMergerAdapter(EntityMapping<C, ?, T> delegate) {
 			this.delegate = delegate;
 		}
 		
 		@Override
-		public RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
+		public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
 			return delegate.copyTransformerWithAliases(columnedRow);
 		}
 		

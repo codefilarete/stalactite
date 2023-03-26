@@ -15,7 +15,8 @@ import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.Relation
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -28,10 +29,7 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
@@ -41,16 +39,19 @@ class EntityTreeInflaterTest {
 	@Test
 	void transform_doesntGoDeeperIfRelatedBeanIdIsNull() {
 		
-		Table leftTable = new Table("leftTable");
-		Column leftTablePk = leftTable.addColumn("pk", long.class);
+		Table<?> leftTable = new Table("leftTable");
+		leftTable.addColumn("pk", long.class).primaryKey();
+		PrimaryKey<?, Long> leftTablePk = leftTable.getPrimaryKey();
 		
-		Table rightTable = new Table("rightTable");
-		Column rightTablePk = leftTable.addColumn("pk", long.class);
-		Column rightTableFkToLeftTable = leftTable.addColumn("fkToLeftTable", long.class);
+		Table<?> rightTable = new Table("rightTable");
+		leftTable.addColumn("pk", long.class).primaryKey();
+		PrimaryKey<?, Long> rightTablePk = leftTable.getPrimaryKey();
+		Key<?, Long> rightTableFkToLeftTable = Key.ofSingleColumn(leftTable.addColumn("fkToLeftTable", long.class));
 		
-		Table rightMostTable = new Table("rightMostTable");
-		Column rightMostTablePk = leftTable.addColumn("pk", long.class);
-		Column rightMostTableFkToRightTable = leftTable.addColumn("fkToRightTable", long.class);
+		Table<?> rightMostTable = new Table("rightMostTable");
+		leftTable.addColumn("pk", long.class).primaryKey();
+		PrimaryKey<?, Long> rightMostTablePk = leftTable.getPrimaryKey();
+		Key<?, Long> rightMostTableFkToRightTable = Key.ofSingleColumn(leftTable.addColumn("fkToRightTable", long.class));
 		
 		EntityInflater leftEntityInflater = Mockito.mock(EntityInflater.class);
 		// these lines are needed to trigger "main bean instance" creation

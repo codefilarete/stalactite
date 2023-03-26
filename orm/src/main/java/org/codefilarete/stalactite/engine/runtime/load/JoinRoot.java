@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
+public class JoinRoot<C, I, T extends Table<T>> implements JoinNode<T> {
 
 	private final EntityJoinTree<C, I> tree;
 	
@@ -55,7 +55,7 @@ public class JoinRoot<C, I, T extends Table> implements JoinNode<T> {
 	}
 	
 	@Override
-	public Set<Selectable<?>> getColumnsToSelect() {
+	public Set<Selectable<Object>> getColumnsToSelect() {
 		return (Set) getEntityInflater().getSelectableColumns();
 	}
 	

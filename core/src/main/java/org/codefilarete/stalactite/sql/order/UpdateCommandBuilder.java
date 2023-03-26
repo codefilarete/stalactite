@@ -1,9 +1,18 @@
 package org.codefilarete.stalactite.sql.order;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
-import org.codefilarete.stalactite.query.builder.*;
+import org.codefilarete.stalactite.query.builder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -46,6 +55,15 @@ public class UpdateCommandBuilder implements SQLBuilder {
 					return cat("?");
 				} else {
 					return super.catValue(column, value);
+				}
+			}
+			
+			@Override
+			public StringAppenderWrapper catValue(Object value) {
+				if (value == UpdateColumn.PLACEHOLDER) {
+					return cat("?");
+				} else {
+					return super.catValue(value);
 				}
 			}
 		}, dmlNameProvider);

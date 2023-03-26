@@ -24,13 +24,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.AbstractCountry;
 import org.codefilarete.stalactite.engine.model.City;
@@ -39,13 +36,16 @@ import org.codefilarete.stalactite.engine.model.Gender;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.PersonWithGender;
 import org.codefilarete.stalactite.engine.model.Timestamp;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
@@ -209,9 +209,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void usingConstructor_1Arg_constructorIsInvoked_setterIsNotCalled() {
-			Table totoTable = new Table("Toto");
-			Column<Table<?>, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		<T extends Table<T>> void usingConstructor_1Arg_constructorIsInvoked_setterIsNotCalled() {
+			T totoTable = (T) new Table("Toto");
+			Column<T, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE).primaryKey();
 
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -260,10 +260,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void usingConstructor_2Args_constructorIsInvoked_setterIsNotCalled() {
-			Table totoTable = new Table("Toto");
-			Column<Table<?>, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE).primaryKey();
-			Column<Table<?>, String> nameColumn = totoTable.addColumn("name", String.class);
+		<T extends Table<T>> void usingConstructor_2Args_constructorIsInvoked_setterIsNotCalled() {
+			T totoTable = (T) new Table("Toto");
+			Column<T, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+			Column<T, String> nameColumn = totoTable.addColumn("name", String.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -348,9 +348,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void withConstructorSpecified_constructorIsInvoked_setterIsNotCalled() {
-			Table totoTable = new Table("Toto");
-			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE);
+		<T extends Table<T>> void withConstructorSpecified_constructorIsInvoked_setterIsNotCalled() {
+			T totoTable = (T) new Table("Toto");
+			Column<T, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -399,9 +399,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void setByConstructor_constructorIsInvoked_setterIsCalled() {
-			Table totoTable = new Table("Toto");
-			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE);
+		<T extends Table<T>> void setByConstructor_constructorIsInvoked_setterIsCalled() {
+			T totoTable = (T) new Table("Toto");
+			Column<T, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -425,10 +425,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void setByConstructor_withSeveralArguments() {
-			Table totoTable = new Table("Toto");
-			Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE);
-			Column<Table, String> nameColumn = totoTable.addColumn("name", String.class);
+		<T extends Table<T>> void setByConstructor_withSeveralArguments() {
+			T totoTable = (T) new Table("Toto");
+			Column<T, Identifier<UUID>> idColumn = totoTable.addColumn("id", UUID_TYPE);
+			Column<T, String> nameColumn = totoTable.addColumn("name", String.class);
 			
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
@@ -486,7 +486,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		Toto toto = new Toto();
 		assertThatThrownBy(() -> persister.insert(toto))
 				.isInstanceOf(RuntimeException.class)
-				.hasMessage("Error while inserting values for " + toto)
+				.hasMessage("Error while inserting values for " + toto + " in statement \"insert into Toto(firstName, id, name) values (?, ?, ?)\"")
 				.hasCause(new BindingException("Expected non null value for : Toto.firstName, Toto.name"));
 	}
 	
@@ -1364,7 +1364,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		assertThatThrownBy(() -> personPersister.insert(person))
 				.isInstanceOf(RuntimeException.class)
-				.hasMessage("Error while inserting values for " + person)
+				.hasMessage("Error while inserting values for " + person + " in statement \"insert into PersonWithGender(gender, id, name) values (?, ?, ?)\"")
 				.hasCause(new BindingException("Expected non null value for : PersonWithGender.gender"));
 	}
 	

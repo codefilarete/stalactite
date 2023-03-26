@@ -38,7 +38,7 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
  * 
  * @author Guillaume Mary
  */
-public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.UpdateExecutor<C> {
+public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.UpdateExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager<T> optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -141,7 +141,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @param updatePayloads data for SQL order
 	 * @see #updateMappedColumns(Iterable) 
 	 */
-	public void updateVariousColumns(Iterable<UpdatePayload<C, T>> updatePayloads) {
+	public void updateVariousColumns(Iterable<? extends UpdatePayload<C, T>> updatePayloads) {
 		// we update only entities that have values to be modified
 		List<UpdatePayload<C, T>> toUpdate = collectAndAssertNonNullValues(ReadOnlyIterator.wrap(updatePayloads));
 		if (!Iterables.isEmpty(toUpdate)) {
@@ -193,7 +193,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * @return a copy of the argument, without those which values are empty
 	 * @throws IllegalArgumentException
 	 */
-	private List<UpdatePayload<C, T>> collectAndAssertNonNullValues(ReadOnlyIterator<UpdatePayload<C, T>> updatePayloads) {
+	private List<UpdatePayload<C, T>> collectAndAssertNonNullValues(ReadOnlyIterator<? extends UpdatePayload<C, T>> updatePayloads) {
 		List<UpdatePayload<C, T>> result = new ArrayList<>(getBatchSize());	// we set a list size as a small performance improvement to prevent too many list extend
 		updatePayloads.forEachRemaining(payload -> {
 			if (!payload.getValues().isEmpty()) {
@@ -216,7 +216,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	 * differences on each couple therefore it generates multiple statements according to differences, hence an {@link Iterator} is not a good
 	 * candidate for current class design.
 	 */
-	private static class JDBCBatchingOperation<T extends Table> {
+	private static class JDBCBatchingOperation<T extends Table<T>> {
 		private final WriteOperation<UpwhereColumn<T>> writeOperation;
 		private final int batchSize;
 		private long stepCounter = 0;
@@ -244,7 +244,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		}
 	}
 	
-	private interface JDBCBatchingOperationProvider<T extends Table> {
+	private interface JDBCBatchingOperationProvider<T extends Table<T>> {
 		JDBCBatchingOperation<T> getJdbcBatchingOperation(Set<UpwhereColumn<T>> upwhereColumns);
 		Iterable<JDBCBatchingOperation<T>> getJdbcBatchingOperations();
 	}
@@ -337,7 +337,7 @@ public class UpdateExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 	/**
 	 * The contract for managing Optimistic Lock on update.
 	 */
-	interface OptimisticLockManager<T extends Table> {
+	interface OptimisticLockManager<T extends Table<T>> {
 		
 		OptimisticLockManager NOOP_OPTIMISTIC_LOCK_MANAGER = (o1, o2, m) -> {};
 		

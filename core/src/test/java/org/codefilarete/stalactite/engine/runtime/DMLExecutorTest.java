@@ -1,21 +1,22 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
+import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Maps;
@@ -25,12 +26,12 @@ import org.codefilarete.tool.collection.Maps;
  */
 abstract class DMLExecutorTest {
 	
-	protected static PersistenceConfiguration<Toto, Integer, Table> giveDefaultPersistenceConfiguration() {
-		PersistenceConfiguration<Toto, Integer, Table> toReturn = new PersistenceConfiguration<>();
+	protected static <T extends Table<T>> PersistenceConfiguration<Toto, Integer, T> giveDefaultPersistenceConfiguration() {
+		PersistenceConfiguration<Toto, Integer, T> toReturn = new PersistenceConfiguration<>();
 
-		Table targetTable = new Table("Toto");
+		T targetTable = (T) new Table("Toto");
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> mappedFileds = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFileds = persistentFieldHarverster.mapFields(Toto.class, targetTable);
 		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
 		persistentFieldHarverster.getColumn(primaryKeyAccessor).primaryKey();
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
@@ -50,8 +51,8 @@ abstract class DMLExecutorTest {
 	/**
 	 * Gives a persistence configuration of {@link Toto} class which id is composed of {@code Toto.a} and {@code Toto.b} fields
 	 */
-	protected static PersistenceConfiguration<Toto, Toto, Table> giveIdAsItselfPersistenceConfiguration() {
-		Table targetTable = new Table("Toto");
+	protected static <T extends Table<T>> PersistenceConfiguration<Toto, Toto, T> giveIdAsItselfPersistenceConfiguration() {
+		T targetTable = (T) new Table("Toto");
 		Column colA = targetTable.addColumn("a", Integer.class).primaryKey();
 		Column colB = targetTable.addColumn("b", Integer.class).primaryKey();
 		Column colC = targetTable.addColumn("c", Integer.class);
@@ -68,33 +69,34 @@ abstract class DMLExecutorTest {
 			}
 		};
 
-		ComposedIdentifierAssembler<Toto> composedIdentifierAssembler = new ComposedIdentifierAssembler<Toto>(targetTable.getPrimaryKey().getColumns()) {
+		ComposedIdentifierAssembler<Toto, ?> composedIdentifierAssembler = new ComposedIdentifierAssembler<Toto, T>(targetTable.getPrimaryKey()) {
 			@Override
-			protected Toto assemble(Map<Column, Object> primaryKeyElements) {
+			public Toto assemble(Function<Column<?, ?>, Object> columnValueProvider) {
 				// No need to be implemented because we're on a delete test case, but it may be something 
 				// like this :
-				return new Toto((Integer) primaryKeyElements.get(colA), (Integer) primaryKeyElements.get(colB), null);
+				return new Toto((Integer) columnValueProvider.apply(colA), (Integer) columnValueProvider.apply(colB), null);
 			}
 
 			@Override
-			public <T extends Table<T>> Map<Column<T, Object>, Object> getColumnValues(@Nonnull Toto id) {
-				return Maps.asMap((Column<T, Object>) colA, (Object) id.a).add(colB, id.b);
+			public Map<Column<T, Object>, Object> getColumnValues(Toto id) {
+				return Maps.forHashMap((Class<Column<Table, Object>>) (Class) Column.class, Object.class)
+						.add(colA, id.a).add(colB, id.b);
 			}
 		};
 
-		PersistenceConfiguration<Toto, Toto, Table> toReturn = new PersistenceConfiguration<>();
+		PersistenceConfiguration<Toto, Toto, T> toReturn = new PersistenceConfiguration<>();
 
 		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> mappedFileds = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFields = persistentFieldHarverster.mapFields(Toto.class, targetTable);
 		ComposedIdMapping<Toto, Toto> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
 																				  new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
 																				  composedIdentifierAssembler);
-
+		
 		toReturn.classMappingStrategy = new ClassMapping<>(
-			Toto.class,
-			targetTable,
-			mappedFileds,
-			idMappingStrategy);
+				Toto.class,
+				targetTable,
+				mappedFields,
+				idMappingStrategy);
 		toReturn.targetTable = targetTable;
 
 		return toReturn;
@@ -103,8 +105,8 @@ abstract class DMLExecutorTest {
 	/**
 	 * Gives a persistence configuration of {@link Tata} class which id is {@link ComposedId}
 	 */
-	protected static PersistenceConfiguration<Tata, ComposedId, Table> giveComposedIdPersistenceConfiguration() {
-		Table targetTable = new Table("Tata");
+	protected static <T extends Table<T>> PersistenceConfiguration<Tata, ComposedId, T> giveComposedIdPersistenceConfiguration() {
+		T targetTable = (T) new Table("Tata");
 		Column colA = targetTable.addColumn("a", Integer.class).primaryKey();
 		Column colB = targetTable.addColumn("b", Integer.class).primaryKey();
 		Column colC = targetTable.addColumn("c", Integer.class);
@@ -120,41 +122,43 @@ abstract class DMLExecutorTest {
 			}
 		};
 		
-		ComposedIdentifierAssembler<ComposedId> composedIdentifierAssembler = new ComposedIdentifierAssembler<ComposedId>(targetTable.getPrimaryKey().getColumns()) {
+		ComposedIdentifierAssembler<ComposedId, ?> composedIdentifierAssembler = new ComposedIdentifierAssembler<ComposedId, T>(targetTable.getPrimaryKey()) {
 			@Override
-			protected ComposedId assemble(Map<Column, Object> primaryKeyElements) {
+			public ComposedId assemble(Function<Column<?, ?>, Object> columnValueProvider) {
 				// No need to be implemented because we're on a delete test case, but it may be something 
 				// like this :
-				return new ComposedId((Integer) primaryKeyElements.get(colA), (Integer) primaryKeyElements.get(colB));
+				return new ComposedId((Integer) columnValueProvider.apply(colA), (Integer) columnValueProvider.apply(colB));
 			}
 
 			@Override
-			public <T extends Table<T>> Map<Column<T, Object>, Object> getColumnValues(@Nonnull ComposedId id) {
-				return Maps.asMap((Column<T, Object>) colA, (Object) id.a).add(colB, id.b);
+			public Map<Column<T, Object>, Object> getColumnValues(ComposedId id) {
+				return Maps.forHashMap((Class<Column<Table, Object>>) (Class) Column.class, Object.class)
+						.add(colA, id.a).add(colB, id.b);
 			}
 		};
 
-		PersistenceConfiguration<Tata, ComposedId, Table> toReturn = new PersistenceConfiguration<>();
+		PersistenceConfiguration<Tata, ComposedId, T> toReturn = new PersistenceConfiguration<>();
 
 		ComposedIdMapping<Tata, ComposedId> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
 																						new AlreadyAssignedIdentifierManager<>(ComposedId.class, c -> {}, c -> false),
 																						composedIdentifierAssembler);
-
+		
+		Map<AccessorByField<Tata, Object>, Column<T, Object>> mappedFields = Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC);
 		toReturn.classMappingStrategy = new ClassMapping<>(
-			Tata.class,
-			targetTable,
-			Maps.asMap(Accessors.accessorByField(Tata.class, "c"), colC),
-			idMappingStrategy);
+				Tata.class,
+				targetTable,
+				mappedFields,
+				idMappingStrategy);
 		toReturn.targetTable = targetTable;
 
 		return toReturn;
 	}
 
 
-	protected static class PersistenceConfiguration<C, I, T extends Table> {
+	protected static class PersistenceConfiguration<C, I, T extends Table<T>> {
 		
 		protected ClassMapping<C, I, T> classMappingStrategy;
-		protected Table targetTable;
+		protected T targetTable;
 	}
 	
 	/**

@@ -116,4 +116,15 @@ public class Dialect {
 	public <I> GeneratedKeysReader<I> buildGeneratedKeysReader(String keyName, Class<I> columnType) {
 		return new GeneratedKeysReader<>(keyName, getColumnBinderRegistry().getBinder(columnType));
 	}
+	
+	/**
+	 * Indicates if this dialect supports what ANSI-SQL terms "row value constructor" syntax, also called tuple syntax.
+	 * Basically, does it support syntax like <pre>"... where (FIRST_NAME, LAST_NAME) = ('John', 'Doe')"</pre>.
+	 *
+	 * @return true if this SQL dialect supports "row value constructor" syntax, false otherwise.
+	 */
+	public boolean supportsTupleCondition() {
+		// returning false by default since most databases don't support it
+		return false;
+	}
 }

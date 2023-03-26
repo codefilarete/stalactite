@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.sql.statement.WriteOperation;
  * 
  * @author Guillaume Mary
  */
-public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.DeleteExecutor<C, I> {
+public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.DeleteExecutor<C, I> {
 	
 	private SQLOperationListener<Column<T, Object>> operationListener;
 	
@@ -113,7 +113,7 @@ public class DeleteExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 		T targetTable = getMapping().getTargetTable();
 		
 		Set<Column<T, Object>> pkColumns = targetTable.getPrimaryKey().getColumns();
-		IdentifierAssembler<I> identifierAssembler = getMapping().getIdMapping().getIdentifierAssembler();
+		IdentifierAssembler<I, T> identifierAssembler = getMapping().getIdMapping().getIdentifierAssembler();
 		if (!parcels.isEmpty()) {
 			// creating the eventually tupled order "where (?, ?) in (?, ?)"  
 			deleteStatement = getDmlGenerator().buildDeleteByKey(targetTable, pkColumns, blockSize);

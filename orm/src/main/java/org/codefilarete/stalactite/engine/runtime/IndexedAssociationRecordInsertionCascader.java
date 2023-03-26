@@ -12,17 +12,17 @@ import org.codefilarete.tool.trace.ModifiableInt;
 /**
  * @author Guillaume Mary
  */
-class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
+public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, IndexedAssociationRecord> {
 	
 	private final Function<SRC, C> collectionGetter;
 	private final EntityMapping<SRC, SRCID, ?> mappingStrategy;
 	private final EntityMapping<TRGT, TRGTID, ?> targetStrategy;
 	
-	IndexedAssociationRecordInsertionCascader(AssociationRecordPersister<IndexedAssociationRecord, ?> persister,
-											  Function<SRC, C> collectionGetter,
-											  EntityMapping<SRC, SRCID, ?> mappingStrategy,
-											  EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
+	public IndexedAssociationRecordInsertionCascader(AssociationRecordPersister<IndexedAssociationRecord, ?> persister,
+													 Function<SRC, C> collectionGetter,
+													 EntityMapping<SRC, SRCID, ?> mappingStrategy,
+													 EntityMapping<TRGT, TRGTID, ?> targetStrategy) {
 		super(persister);
 		this.collectionGetter = collectionGetter;
 		this.mappingStrategy = mappingStrategy;

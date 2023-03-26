@@ -2,10 +2,6 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Objects;
 
-import org.codefilarete.reflection.ReversibleAccessor;
-
-import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
-
 /**
  * A container to store association table rows.
  * It will be used in one-to-many associations and as no reason to be used outside of it. 
@@ -13,9 +9,6 @@ import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
  * @author Guillaume Mary
  */
 public class AssociationRecord {
-	
-	public static final ReversibleAccessor<AssociationRecord, Object> LEFT_ACCESSOR = accessorByMethodReference(AssociationRecord::getLeft, AssociationRecord::setLeft);
-	public static final ReversibleAccessor<AssociationRecord, Object> RIGHT_ACCESSOR = accessorByMethodReference(AssociationRecord::getRight, AssociationRecord::setRight);
 	
 	private Object left;
 	private Object right;

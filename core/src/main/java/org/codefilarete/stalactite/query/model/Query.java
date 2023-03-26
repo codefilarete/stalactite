@@ -264,6 +264,12 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
+	public FluentWhereClause where(Object... criteria) {
+		this.whereSurrogate.and(criteria);
+		return where;
+	}
+	
+	@Override
 	public FluentGroupByClause groupBy(Column column, Column... columns) {
 		this.groupBySurrogate.add(column, columns);
 		return groupBy;

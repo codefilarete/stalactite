@@ -23,6 +23,8 @@ import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration.ColumnLinkageOptions;
 import org.codefilarete.stalactite.engine.EnumOptions;
 import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder;
 import org.codefilarete.stalactite.engine.ImportedEmbedOptions;
@@ -189,9 +191,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	<E> LinkageSupport<C, E> addMapping(ReversibleAccessor<C, E> propertyAccessor, @Nullable String columnName) {
-		LinkageSupport<C, E> linkage1 = new LinkageSupport<>(propertyAccessor);
-		linkage1.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
-		LinkageSupport<C, E> linkage = linkage1;
+		LinkageSupport<C, E> linkage = new LinkageSupport<>(propertyAccessor);
+		linkage.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
 		this.mapping.add(linkage);
 		return linkage;
 	}
@@ -318,7 +319,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	/**
-	 * Small constract for mapping definition storage. See add(..) methods.
+	 * Small contract for mapping definition storage. See add(..) methods.
 	 * 
 	 * @param <T> property owner type
 	 */
@@ -384,7 +385,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Nullable
 		@Override
 		public String getColumnName() {
-			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
+			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(EntityMappingConfiguration.ColumnLinkageOptions::getColumnName).get();
 		}
 		
 		@Override
@@ -393,13 +394,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 				? (Class<O>) ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
 				: AccessorDefinition.giveDefinition(this.function).getMemberType();
 		}
-	}
-	
-	interface ColumnLinkageOptions {
-		
-		@Nullable
-		String getColumnName();
-		
 	}
 	
 	static class ColumnLinkageOptionsByName implements ColumnLinkageOptions {

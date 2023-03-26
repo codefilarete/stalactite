@@ -37,7 +37,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
  * @author Guillaume Mary
  */
 @Nonnull
-public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, I> {
+public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<C, I> {
 	
 	private final EntityMapping<C, I, T> mappingStrategy;
 	private final ConnectionConfiguration connectionConfiguration;
@@ -68,7 +68,7 @@ public class Persister<C, I, T extends Table> implements ConfiguredPersister<C, 
 				writeOperationFactory, inOperatorMaxSize);
 		this.selectExecutor = newSelectExecutor(mappingStrategy, this.connectionConfiguration.getConnectionProvider(), dialect);
 		
-		// Transfering identifier manager InsertListerner to here
+		// Transferring identifier manager InsertListener to here
 		getPersisterListener().addInsertListener(
 			getMapping().getIdMapping().getIdentifierInsertionManager().getInsertListener());
 		getPersisterListener().addSelectListener(

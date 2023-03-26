@@ -1,22 +1,15 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.Accessors;
@@ -27,6 +20,11 @@ import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Predicates;
 
 /**
  * Persistence strategy for "embedded" bean (no identifier nor relation managed here) : straight mapping betwen some properties
@@ -34,7 +32,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMapping<C, T> {
+public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBeanMapping<C, T> {
 	
 	private final Class<C> classToPersist;
 	
@@ -59,16 +57,16 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	private DefaultValueDeterminer defaultValueDeterminer = new DefaultValueDeterminer() {};
 	
 	/**
-	 * Columns (and their value provider) which are not officially mapped by a bean property.
+	 * Columns and their value provider which are not officially mapped by a bean property.
 	 * Those are for insertion time.
 	 */
-	private final List<ShadowColumnValueProvider<C, Object, T>> shadowColumnsForInsert = new ArrayList<>();
+	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForInsert2 = new KeepOrderSet<>();
 	
 	/**
-	 * Columns (and their value provider) which are not officially mapped by a bean property.
+	 * Columns and their value provider which are not officially mapped by a bean property.
 	 * Those are for update time.
 	 */
-	private final List<ShadowColumnValueProvider<C, Object, T>> shadowColumnsForUpdate = new ArrayList<>();
+	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForUpdate2 = new KeepOrderSet<>();
 	
 	private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 	
@@ -80,26 +78,26 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	 * @param targetTable the persisting table
 	 * @param propertyToColumn a mapping between Field and Column, expected to be coherent (fields of same class, column of same table)
 	 */
-	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn) {
+	public EmbeddedClassMapping(Class<C> classToPersist, T targetTable, Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn) {
 		this(classToPersist, targetTable, propertyToColumn, row -> Reflections.newInstance(classToPersist));
 	}
 	
 	public EmbeddedClassMapping(Class<C> classToPersist,
 								T targetTable,
-								Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
-								Function<Function<Column, Object>, C> beanFactory) {
+								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
+								Function<Function<Column<?, ?>, Object>, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.propertyToColumn = new HashMap<>(propertyToColumn);
-		Map<Column<T, Object>, Mutator> columnToField = Iterables.map(propertyToColumn.entrySet(), Entry::getValue, e -> e.getKey().toMutator());
+		Map<Column<T, ?>, Mutator> columnToField = Iterables.map(propertyToColumn.entrySet(), Entry::getValue, e -> e.getKey().toMutator());
 		this.rowTransformer = new EmbeddedBeanRowTransformer(beanFactory, (Map) columnToField);
-		this.columns = new LinkedHashSet<>(propertyToColumn.values());
+		this.columns = (Set<Column<T, Object>>) (Set) new LinkedHashSet<>(propertyToColumn.values());
 		
 		// computing insertable columns
 		this.insertableColumns = new HashSet<>();
 		this.insertableProperties = new HashMap<>();
 		this.propertyToColumn.forEach((accessor, column) -> {
-			// autoincremented columns mustn't be inserted
+			// auto-incremented columns mustn't be inserted
 			if (!column.isAutoGenerated()) {
 				this.insertableColumns.add(column);
 				this.insertableProperties.put(accessor, column);
@@ -109,10 +107,9 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 		// computing updatable columns
 		this.updatableColumns = new HashSet<>();
 		this.updatableProperties = new HashMap<>();
-		Set<Column> columnsWithoutPrimaryKey = targetTable.getColumnsNoPrimaryKey();
-		// primarykey columns are not updatable
+		Set<Column<T, Object>> columnsWithoutPrimaryKey = targetTable.getColumnsNoPrimaryKey();
+		// primary key columns are not updatable
 		this.propertyToColumn.forEach((accessor, column) -> {
-			// primary key columns mustn't be updated
 			if (columnsWithoutPrimaryKey.contains(column)) {
 				this.updatableColumns.add(column);
 				this.updatableProperties.put(accessor, column);
@@ -139,7 +136,6 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	 * Gives mapped columns (can be a subset of the target table)
 	 * @return target mapped columns
 	 */
-	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return Collections.unmodifiableSet(columns);
@@ -167,13 +163,13 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
-		shadowColumnsForInsert.add((ShadowColumnValueProvider<C, Object, T>) valueProvider);
+	public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> valueProvider) {
+		shadowColumnsForInsert2.add(valueProvider);
 	}
 	
 	@Override
-	public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
-		shadowColumnsForUpdate.add((ShadowColumnValueProvider<C, Object, T>) valueProvider);
+	public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> valueProvider) {
+		shadowColumnsForUpdate2.add(valueProvider);
 	}
 	
 	@Override
@@ -181,12 +177,12 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 		columns.add((Column<T, Object>) column);
 	}
 	
-	Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForInsert() {
-		return Collections.unmodifiableCollection(shadowColumnsForInsert);
+	Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForInsert() {
+		return Collections.unmodifiableCollection(shadowColumnsForInsert2);
 	}
 	
-	Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForUpdate() {
-		return Collections.unmodifiableCollection(shadowColumnsForUpdate);
+	Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForUpdate() {
+		return Collections.unmodifiableCollection(shadowColumnsForUpdate2);
 	}
 	
 	@Override
@@ -194,23 +190,21 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 		this.propertiesSetByConstructor.add(accessor);
 	}
 	
-	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Map<Column<T, Object>, Object> result = new HashMap<>();
 		insertableProperties.forEach((prop, value) -> result.put(value, prop.get(c)));
-		shadowColumnsForInsert.forEach(shadowColumnValueProvider -> {
+		shadowColumnsForInsert2.forEach(shadowColumnValueProvider -> {
 			if (shadowColumnValueProvider.accept(c)) {
-				result.put(shadowColumnValueProvider.getColumn(), shadowColumnValueProvider.giveValue(c));
+				result.putAll(shadowColumnValueProvider.giveValue(c));
 			}
 		});
 		return result;
 	}
 	
-	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
-		Map<Column<T, Object>, Object> unmodifiedColumns = new HashMap<>();
+		Map<Column<T, ?>, Object> unmodifiedColumns = new HashMap<>();
 		// getting differences
 		Map<UpwhereColumn<T>, Object> modifiedFields = new HashMap<>();
 		this.updatableProperties.forEach((accessor, accessorColumn) -> {
@@ -227,28 +221,34 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 			}
 		});
 		
-		// getting values for silent columns
-		shadowColumnsForUpdate.forEach(shadowColumnValueProvider -> {
+		shadowColumnsForUpdate2.forEach(shadowColumnValueProvider -> {
 			if (shadowColumnValueProvider.accept(modified)) {
-
-				Object modifiedValue = shadowColumnValueProvider.giveValue(modified);
-				Object unmodifiedValue = unmodified == null ? null : shadowColumnValueProvider.giveValue(unmodified);
-				
-				if (!Predicates.equalOrNull(modifiedValue, unmodifiedValue)
-						// OR is here to take cases where getUpdateValues(..) gets only "modified" parameter (such as for updateById) and
-						// some modified properties are null, without this OR such properties won't be updated (set to null)
-						// and, overall, if they are all null, modifiedFields is empty then causing a statement without values 
-						|| unmodified == null) {
-					modifiedFields.put(new UpwhereColumn<>(shadowColumnValueProvider.getColumn(), true), modifiedValue);
-				} else {
-					unmodifiedColumns.put(shadowColumnValueProvider.getColumn(), modifiedValue);
+				if (modified != null && unmodified == null) {
+					Map<Column<T, Object>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
+					modifiedValues.forEach((col, value) -> modifiedFields.put(new UpwhereColumn<>(col, true), value));
+				} else if (modified == null && unmodified != null) {
+					Set<Column<T, Object>> shadowColumns = shadowColumnValueProvider.getColumns();
+					shadowColumns.forEach(col -> modifiedFields.put(new UpwhereColumn<>(col, true), null));
+				} else if (modified != null && unmodified != null) {
+					Map<Column<T, Object>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);
+					Map<Column<T, Object>, Object> unmodifiedValues = shadowColumnValueProvider.giveValue(unmodified);
+					
+					Set<Column<T, Object>> shadowColumns = shadowColumnValueProvider.getColumns();
+					shadowColumns.forEach(col -> {
+						Object modifiedValue = modifiedValues.get(col);
+						if (!Predicates.equalOrNull(modifiedValue, unmodifiedValues.get(col))) {
+							modifiedFields.put(new UpwhereColumn<>(col, true), modifiedValue);
+						} else {
+							unmodifiedColumns.put(col, modifiedValue);
+						}
+					});
 				}
 			}
 		});
 		
 		// adding complementary columns if necessary
 		if (!modifiedFields.isEmpty() && allColumns) {
-			for (Entry<Column<T, Object>, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
+			for (Entry<Column<T, ?>, Object> unmodifiedField : unmodifiedColumns.entrySet()) {
 				modifiedFields.put(new UpwhereColumn<>(unmodifiedField.getKey(), true), unmodifiedField.getValue());
 			}
 		}
@@ -257,7 +257,7 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	
 	@Override
 	public C transform(Row row) {
-		// NB: please note that this transfomer will determine intermediary bean instantiation through isDefaultValue(..)
+		// NB: please note that this transformer will determine intermediary bean instantiation through isDefaultValue(..)
 		return this.rowTransformer.transform(row);
 	}
 	
@@ -272,7 +272,7 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 	 */
 	private class EmbeddedBeanRowTransformer extends ToBeanRowTransformer<C> {
 		
-		public EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
+		public EmbeddedBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
 			super(beanFactory, columnToMember);
 		}
 		
@@ -283,7 +283,7 @@ public class EmbeddedClassMapping<C, T extends Table> implements EmbeddedBeanMap
 		 * @param columnedRow mapping between {@link Column} and their alias in given row to {@link #transform(Row)} 
 		 * @param rowTransformerListeners listeners that need notification of bean creation
 		 */
-		private EmbeddedBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
+		private EmbeddedBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
 										   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
 			super(beanFactory, columnToMember, columnedRow, rowTransformerListeners);
 		}

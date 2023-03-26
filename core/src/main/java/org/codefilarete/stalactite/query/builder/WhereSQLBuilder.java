@@ -5,6 +5,7 @@ import java.util.Map;
 import org.codefilarete.stalactite.query.model.*;
 import org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -85,7 +86,7 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		public WhereAppender(SQLAppender sql, DMLNameProvider dmlNameProvider, Dialect dialect) {
 			this.sql = sql;
-			this.operatorSqlBuilder = new OperatorSQLBuilder(dmlNameProvider);
+			this.operatorSqlBuilder = new OperatorSQLBuilder();
 			this.functionSQLBuilder = new FunctionSQLBuilder(dmlNameProvider, dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping());
 			this.dmlNameProvider = dmlNameProvider;
 		}
@@ -128,6 +129,8 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 					sql.cat(")");
 				} else if (o instanceof Column) {
 					cat((Column) o);
+				} else if (o instanceof TupleIn) {	// "if" to be done before "if" about ConditionalOperator to take inheritance into account  
+					catTupledIn((TupleIn) o);
 				} else if (o instanceof ConditionalOperator) {
 					cat((ConditionalOperator) o);
 				} else if (o instanceof SQLFunction) {	// made for having(sum(col), eq(..))
@@ -164,6 +167,10 @@ public class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		public void cat(ConditionalOperator operator) {
 			operatorSqlBuilder.cat(operator, sql);
+		}
+		
+		public void catTupledIn(TupleIn operator) {
+			operatorSqlBuilder.catTupledIn(operator, sql);
 		}
 		
 		public void cat(SQLFunction sqlFunction) {

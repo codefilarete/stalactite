@@ -1,13 +1,19 @@
 package org.codefilarete.stalactite.query.builder;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.operator.*;
+import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
+import org.codefilarete.stalactite.query.model.operator.Equals;
+import org.codefilarete.stalactite.query.model.operator.Greater;
+import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.IsNull;
+import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.query.model.operator.Lower;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
 
 /**
@@ -17,27 +23,20 @@ import org.codefilarete.tool.Reflections;
  */
 public class OperatorSQLBuilder {
 	
-	private final DMLNameProvider dmlNameProvider;
-	
 	public OperatorSQLBuilder() {
-		this(Collections.emptyMap());
-	}
-	
-	public OperatorSQLBuilder(Map<? extends Table, String> tableAliases) {
-		this(new DMLNameProvider(tableAliases));
-	}
-	
-	public OperatorSQLBuilder(DMLNameProvider dmlNameProvider) {
-		this.dmlNameProvider = dmlNameProvider;
-	}
-	
-	public void cat(ConditionalOperator operator, SQLAppender sql) {
-		cat(null, operator, sql);
 	}
 	
 	/**
 	 * Main entry point
 	 */
+	public void cat(ConditionalOperator operator, SQLAppender sql) {
+		if (operator instanceof TupleIn) {
+			catTupledIn((TupleIn) operator, sql);
+		} else {
+			cat(null, operator, sql);
+		}
+	}
+	
 	public void cat(Column column, ConditionalOperator operator, SQLAppender sql) {
 		if (operator.isNull()) {
 			catNullValue(operator.isNot(), sql);
@@ -88,6 +87,37 @@ public class OperatorSQLBuilder {
 		Iterable value = in.getValue();
 		sql.catIf(in.isNot(), "not ").cat("in (");
 		catInValue(value, sql, column);
+		sql.cat(")");
+	}
+	
+	void catTupledIn(TupleIn in, SQLAppender sql) {
+		// we take collection into account : iterating over it to cat all values
+		Column[] columns = in.getColumns();
+		Iterable<Object[]> values = in.getValue();
+		sql.catIf(in.isNot(), "not ");
+		sql.cat("(");
+		Iterator<Column> columnIterator = Arrays.stream(columns).iterator();
+		while (columnIterator.hasNext()) {
+			sql.catColumn(columnIterator.next()).catIf(columnIterator.hasNext(), ", ");
+		}
+		sql.cat(")");
+		
+		sql.cat(" in (");
+		if (values == null) {
+			for (int i = 0, columnCount = columns.length; i < columnCount; i++) {
+				sql.catValue(columns[i], null).catIf(i < columnCount-1, ", ");
+			}
+		} else {
+			Iterator<Object[]> valuesIterator = values.iterator();
+			while (valuesIterator.hasNext()) {
+				Object[] vals = valuesIterator.next();
+				sql.cat("(");
+				for (int i = 0, columnCount = columns.length; i < columnCount; i++) {
+					sql.catValue(columns[i], vals[i]).catIf(i < columnCount - 1, ", ");
+				}
+				sql.cat(")").catIf(valuesIterator.hasNext(), ", ");
+			}
+		}
 		sql.cat(")");
 	}
 	

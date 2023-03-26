@@ -1,20 +1,22 @@
 package org.codefilarete.stalactite.engine;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.configurer.ManyToManyRelation;
-import org.codefilarete.tool.Nullable;
-import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.configurer.OneToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.OneToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.ElementCollectionRelation;
+import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
 
 /**
  * Defines elements needed to configure a mapping of an entity class
@@ -25,13 +27,12 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	Class<C> getEntityType();
 	
-	EntityFactoryProvider<C> getEntityFactoryProvider();
+	@Nullable
+	EntityFactoryProvider<C, Table> getEntityFactoryProvider();
 	
 	TableNamingStrategy getTableNamingStrategy();
 	
-	IdentifierPolicy<I> getIdentifierPolicy();
-	
-	ReversibleAccessor<C, I> getIdentifierAccessor();
+	KeyMapping<C, I> getKeyMapping();
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
@@ -45,9 +46,9 @@ public interface EntityMappingConfiguration<C, I> {
 		
 	VersioningStrategy getOptimisticLockOption();
 	
-	/** Gives inheritance informations if inheritance has been defined, else returns null */
+	/** Gives inheritance information if inheritance has been defined, else returns null */
 	@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
-	@javax.annotation.Nullable
+	@Nullable
 	InheritanceConfiguration<? super C, I> getInheritanceConfiguration();
 	
 	ForeignKeyNamingStrategy getForeignKeyNamingStrategy();
@@ -56,7 +57,7 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	ElementCollectionTableNamingStrategy getElementCollectionTableNamingStrategy();
 	
-	ColumnNamingStrategy getJoinColumnNamingStrategy();
+	JoinColumnNamingStrategy getJoinColumnNamingStrategy();
 	
 	/**
 	 * Gives {@link ColumnNamingStrategy} for index column of one-to-many {@link List} association
@@ -87,15 +88,17 @@ public interface EntityMappingConfiguration<C, I> {
 					throw new NoSuchElementException();
 				}
 				EntityMappingConfiguration<? super C, I> result = this.next;
-				this.next = Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getConfiguration).get();
+				this.next = org.codefilarete.tool.Nullable.nullable(this.next.getInheritanceConfiguration()).map(InheritanceConfiguration::getConfiguration).get();
 				return result;
 			}
 		};
 	}
 
-	interface EntityFactoryProvider<C> {
+	interface EntityFactoryProvider<C, T extends Table> {
 
-		Function<Function<Column, Object>, C> giveEntityFactory(Table table);
+		Function<Function<Column<?, ?>, Object>, C> giveEntityFactory(T table);
+		
+		boolean isIdentifierSetByFactory();
 	}
 	
 	interface InheritanceConfiguration<E, I> {
@@ -107,5 +110,39 @@ public interface EntityMappingConfiguration<C, I> {
 		
 		/** Table to be used in case of joined tables ({@link #isJoinTable()} returns true) */
 		Table getTable();
+	}
+	
+	interface KeyMapping<C, I> {
+		
+		IdentifierPolicy<I> getIdentifierPolicy();
+		
+		ReversibleAccessor<C, I> getAccessor();
+		
+		boolean isSetByConstructor();
+	}
+	
+	interface SingleKeyMapping<C, I> extends KeyMapping<C, I> {
+		
+		@Nullable
+		ColumnLinkageOptions getColumnOptions();
+	}
+	
+	interface CompositeKeyMapping<C, I> extends KeyMapping<C, I> {
+		
+		@Nullable
+		CompositeKeyLinkageOptions getColumnsOptions();
+	}
+	
+	interface ColumnLinkageOptions {
+		
+		@Nullable
+		String getColumnName();
+		
+	}
+	
+	interface CompositeKeyLinkageOptions {
+		
+		Map<ValueAccessPoint, String> getColumnsNames();
+		
 	}
 }

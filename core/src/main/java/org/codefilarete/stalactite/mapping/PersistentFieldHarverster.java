@@ -34,7 +34,7 @@ public class PersistentFieldHarverster {
 		return fieldToColumn;
 	}
 	
-	public <C, T extends Table> Map<PropertyAccessor<C, Object>, Column<T, Object>> mapFields(Class<C> clazz, T targetTable) {
+	public <C, T extends Table<T>> Map<PropertyAccessor<C, Object>, Column<T, Object>> mapFields(Class<C> clazz, T targetTable) {
 		List<Field> fields = getFields(clazz);
 		Map<String, Column<T, Object>> mapColumnsOnName = targetTable.mapColumnsOnName();
 		fieldToColumn = new LinkedHashMap<>(5);

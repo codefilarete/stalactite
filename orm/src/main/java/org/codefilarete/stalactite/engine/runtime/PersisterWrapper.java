@@ -8,6 +8,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.tool.Duo;
@@ -167,25 +168,26 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																				  Column<T1, JID> leftColumn,
-																				  Column<T2, JID> rightColumn,
-																				  String rightTableAlias,
-																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  boolean optional,
-																				  boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																					 Key<T1, JOINID> leftColumn,
+																					 Key<T2, JOINID> rightColumn,
+																					 String rightTableAlias,
+																					 BeanRelationFixer<SRC, C> beanRelationFixer,
+																					 boolean optional,
+																					 boolean loadSeparately) {
 		return surrogate.joinAsOne(sourcePersister, leftColumn, rightColumn, rightTableAlias, beanRelationFixer, optional, loadSeparately);
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																				  Column<T1, ID> leftColumn,
-																				  Column<T2, ID> rightColumn,
-																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																				  String joinName,
-																				  Set<Column<T2, ?>> selectableColumns, boolean optional,
-																				  boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							  Key<T1, JOINID> leftColumn,
+																							  Key<T2, JOINID> rightColumn,
+																							  BeanRelationFixer<SRC, C> beanRelationFixer,
+																							  @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																							  String joinName,
+																							  Set<? extends Column<T2, Object>> selectableColumns,
+																							  boolean optional,
+																							  boolean loadSeparately) {
 		return surrogate.joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
 				joinName, selectableColumns, optional, loadSeparately);
 	}

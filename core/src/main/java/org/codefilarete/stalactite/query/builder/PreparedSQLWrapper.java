@@ -1,13 +1,14 @@
 package org.codefilarete.stalactite.query.builder;
 
+import javax.annotation.Nullable;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Supplier;
+
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.trace.ModifiableInt;
-
-import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * An appender to a {@link org.codefilarete.stalactite.sql.statement.PreparedSQL}
@@ -52,22 +53,36 @@ public class PreparedSQLWrapper implements SQLAppender {
 	 */
 	@Override
 	public PreparedSQLWrapper catValue(@Nullable Column column, Object value) {
-		ParameterBinder<?> binder;
+		return catValue(value, () -> column == null ? getParameterBinderFromRegistry(value) : parameterBinderRegistry.getBinder(column));
+	}
+	
+	@Override
+	public PreparedSQLWrapper catValue(Object value) {
+		return catValue(value, () -> getParameterBinderFromRegistry(value));
+	}
+	
+	private ParameterBinder<?> getParameterBinderFromRegistry(Object value) {
+		Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
+		return parameterBinderRegistry.getBinder(binderType);
+	}
+	
+	private PreparedSQLWrapper catValue(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
 		if (value instanceof Column) {
 			// Columns are simply appended (no binder needed nor index increment)
 			surrogate.cat(dmlNameProvider.getName((Column) value));
 		} else {
-			if (column != null) {
-				binder = parameterBinderRegistry.getBinder(column);
-			} else {
-				Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
-				binder = parameterBinderRegistry.getBinder(binderType);
-			}
 			surrogate.cat("?");
 			values.put(paramCounter.getValue(), value);
-			parameterBinders.put(paramCounter.getValue(), binder);
+			parameterBinders.put(paramCounter.getValue(), binderSupplier.get());
 			paramCounter.increment();
 		}
+		return this;
+	}
+	
+	@Override
+	public PreparedSQLWrapper catColumn(Column column) {
+		// Columns are simply appended (no binder needed nor index increment)
+		surrogate.cat(dmlNameProvider.getName(column));
 		return this;
 	}
 	

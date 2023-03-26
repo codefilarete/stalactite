@@ -3,36 +3,73 @@ package org.codefilarete.stalactite.engine.configurer;
 import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.*;
+import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
+import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
+import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration.ColumnLinkageOptions;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration.InheritanceConfiguration;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration.KeyMapping;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration.SingleKeyMapping;
+import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentEntityMappingBuilderKeyOptions;
+import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.PersisterBuilder;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
+import org.codefilarete.stalactite.engine.PolymorphismPolicy;
+import org.codefilarete.stalactite.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterUpdateSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
+import org.codefilarete.stalactite.engine.configurer.polymorphism.PolymorphismPersisterBuilder;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.runtime.*;
+import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsserter;
+import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
+import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.ComposedIdMapping;
+import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
@@ -45,16 +82,20 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 import static org.codefilarete.tool.Nullable.nullable;
+import static org.codefilarete.tool.bean.Objects.preventNull;
+import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * @author Guillaume Mary
@@ -70,7 +111,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private ColumnNamingStrategy columnNamingStrategy;
 	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private ColumnNamingStrategy joinColumnNamingStrategy;
+	private JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private ColumnNamingStrategy indexColumnNamingStrategy;
 	private AssociationTableNamingStrategy associationTableNamingStrategy;
 	private ColumnNameProvider columnNameProvider;
@@ -112,7 +153,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			@Override
 			protected String giveColumnName(Linkage linkage) {
 				if (PersisterBuilderContext.CURRENT.get().isEntity(linkage.getColumnType())) {
-					return joinColumnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor()));
+					return columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor()));
 				} else {
 					return super.giveColumnName(linkage);
 				}
@@ -194,7 +235,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@VisibleForTesting
-	EntityConfiguredJoinedTablesPersister<C, I> doBuild(@Nullable Table table,
+	<T extends Table<T>> EntityConfiguredJoinedTablesPersister<C, I> doBuild(@Nullable T table,
 														GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
 														Dialect dialect,
 														ConnectionConfiguration connectionConfiguration,
@@ -206,12 +247,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		Identification<C, I> identification = determineIdentification();
 		
 		// collecting mapping from inheritance
-		MappingPerTable inheritanceMappingPerTable = collectPropertiesMappingFromInheritance();
+		MappingPerTable<C> inheritanceMappingPerTable = collectPropertiesMappingFromInheritance();
 		// add primary key and foreign key to all tables
-		PrimaryKey primaryKey = addIdentifyingPrimarykey(identification, inheritanceMappingPerTable);
+		PrimaryKey<T, I> primaryKey = (PrimaryKey<T, I>) addIdentifyingPrimarykey(identification, inheritanceMappingPerTable);
 		Set<Table> inheritanceTables = inheritanceMappingPerTable.giveTables();
 		inheritanceTables.remove(primaryKey.getTable());	// not necessary thanks to addColumn & addPrimaryKey tolerance to duplicates, left for clarity
-		propagatePrimarykey(primaryKey, inheritanceTables);
+		propagatePrimaryKey(primaryKey, inheritanceTables);
 		List<Table> tables = new ArrayList<>(inheritanceTables);
 		Collections.reverse(tables);
 		applyForeignKeys(primaryKey, new KeepOrderSet<>(tables) );
@@ -220,8 +261,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		determineIdentifierManager(identification, inheritanceMappingPerTable, identification.getIdAccessor(), generatedKeysReaderBuilder);
 		
 		// Creating main persister 
-		Mapping mainMapping = Iterables.first(inheritanceMappingPerTable.getMappings());
-		SimpleRelationalEntityPersister<C, I, Table> mainPersister = buildMainPersister(identification, mainMapping, dialect, connectionConfiguration);
+		Mapping<C, T> mainMapping = (Mapping<C, T>) first(inheritanceMappingPerTable.getMappings());
+		SimpleRelationalEntityPersister<C, I, T> mainPersister = buildMainPersister(identification, mainMapping, dialect, connectionConfiguration);
 		PersisterBuilderContext.CURRENT.get().addEntity(mainPersister.getMapping().getClassToPersist());
 		
 		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, persisterRegistry, mainPersister,
@@ -246,18 +287,18 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		// polymorphism handling
 		PolymorphismPolicy<C> polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
-			PolymorphismPersisterBuilder<C, I, Table> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
+			PolymorphismPersisterBuilder<C, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
 					polymorphismPolicy, identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider,
 					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
 					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
-					this.associationTableNamingStrategy, (Map<ReversibleAccessor<C, ?>, Column<Table, ?>>) (Map) mainMapping.getMapping(), this.tableNamingStrategy);
+					this.associationTableNamingStrategy, (Map) mainMapping.getMapping(), this.tableNamingStrategy);
 			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		}
 		
 		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
 		// because user may forget to / can't mark it as such
-		if (entityMappingConfiguration.getIdentifierPolicy() instanceof AlreadyAssignedIdentifierPolicy) {
-			Consumer<C> asPersistedMarker = ((AlreadyAssignedIdentifierPolicy<C, I>) entityMappingConfiguration.getIdentifierPolicy()).getMarkAsPersistedFunction();
+		if (entityMappingConfiguration.getKeyMapping() != null && entityMappingConfiguration.getKeyMapping().getIdentifierPolicy() instanceof AlreadyAssignedIdentifierPolicy) {
+			Consumer<C> asPersistedMarker = ((AlreadyAssignedIdentifierPolicy<C, I>) entityMappingConfiguration.getKeyMapping().getIdentifierPolicy()).getMarkAsPersistedFunction();
 			result.addSelectListener(new SelectListener<C, I>() {
 				@Override
 				public void afterSelect(Iterable<? extends C> result) {
@@ -267,9 +308,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		
 		// parent persister must be kept in ascending order for further treatments
-		Iterator<Mapping> mappings = Iterables.filter(Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().getSurrogate()),
-				m -> !mainMapping.equals(m) && !m.mappedSuperClass);
-		KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> parentPersisters = buildParentPersisters(() -> mappings,
+		ReadOnlyIterator<Mapping<C, ?>> mappingReadOnlyIterator = Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().getSurrogate());
+		Iterator<Mapping<C, ?>> mappings = Iterables.filter(mappingReadOnlyIterator,
+				m -> !mainMapping.equals(m) && !m.isMappedSuperClass());
+		KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> parentPersisters = this.buildParentPersisters(() -> mappings,
 				identification, mainPersister, dialect, connectionConfiguration
 		);
 		
@@ -326,8 +368,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		void afterAllBuild();
 	}
 	
-	private <T extends Table> void handleVersioningStrategy(SimpleRelationalEntityPersister<C, I, T> result) {
-		VersioningStrategy versioningStrategy = this.entityMappingConfiguration.getOptimisticLockOption();
+	private <T extends Table<T>> void handleVersioningStrategy(SimpleRelationalEntityPersister<C, I, T> result) {
+		VersioningStrategy<C, ?> versioningStrategy = this.entityMappingConfiguration.getOptimisticLockOption();
 		if (versioningStrategy != null) {
 			// we have to declare it to the mapping strategy. To do that we must find the versioning column
 			Column column = result.getMapping().getPropertyToColumn().get(versioningStrategy.getVersionAccessor());
@@ -338,27 +380,27 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 	}
 	
-	private <T extends Table> KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> buildParentPersisters(Iterable<Mapping> mappings,
-																											   Identification<C, I> identification,
-																											   SimpleRelationalEntityPersister<C, I, T> mainPersister,
-																											   Dialect dialect,
-																											   ConnectionConfiguration connectionConfiguration) {
-		KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> parentPersisters = new KeepOrderSet<>();
-		Column superclassPK = (Column) Iterables.first(mainPersister.getMainTable().getPrimaryKey().getColumns());
+	private <T extends Table<T>, TT extends Table<TT>> KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> buildParentPersisters(Iterable<Mapping<C, ?>> mappings,
+																																	Identification<C, I> identification,
+																																	SimpleRelationalEntityPersister<C, I, T> mainPersister,
+																																	Dialect dialect,
+																																	ConnectionConfiguration connectionConfiguration) {
+		KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> parentPersisters = new KeepOrderSet<>();
+		PrimaryKey<T, I> superclassPK = mainPersister.getMainTable().getPrimaryKey();
 		Holder<Table> currentTable = new Holder<>(mainPersister.getMainTable());
 		mappings.forEach(mapping -> {
-			Column subclassPK = (Column) Iterables.first(mapping.targetTable.getPrimaryKey().getColumns());
-			mapping.mapping.put(identification.getIdAccessor(), subclassPK);
-			ClassMapping<C, I, Table> currentMappingStrategy = createClassMappingStrategy(
+			Mapping<C, TT> castedMapping = (Mapping<C, TT>) mapping;
+			PrimaryKey<TT, I> subclassPK = castedMapping.targetTable.getPrimaryKey();
+			ClassMapping<C, I, TT> currentMappingStrategy = this.createClassMappingStrategy(
 					identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration(),
-					mapping.targetTable,
-					mapping.mapping,
-					mapping.propertiesSetByConstructor,
+					castedMapping.targetTable,
+					castedMapping.getMapping(),
+					castedMapping.propertiesSetByConstructor,
 					identification,
 					mapping.giveEmbeddableConfiguration().getBeanType(),
 					null);
 			
-			SimpleRelationalEntityPersister<C, I, Table> currentPersister = new SimpleRelationalEntityPersister<>(currentMappingStrategy, dialect, connectionConfiguration);
+			SimpleRelationalEntityPersister<C, I, TT> currentPersister = new SimpleRelationalEntityPersister<>(currentMappingStrategy, dialect, connectionConfiguration);
 			parentPersisters.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
@@ -370,10 +412,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		return parentPersisters;
 	}
 	
-	private <T extends Table> SimpleRelationalEntityPersister<C, I, T> buildMainPersister(Identification<C, I> identification,
-																						  Mapping mapping,
-																						  Dialect dialect,
-																						  ConnectionConfiguration connectionConfiguration) {
+	private <T extends Table<T>> SimpleRelationalEntityPersister<C, I, T> buildMainPersister(Identification<C, I> identification,
+																							 Mapping<C, T> mapping,
+																							 Dialect dialect,
+																							 ConnectionConfiguration connectionConfiguration) {
 		EntityMappingConfiguration mappingConfiguration = (EntityMappingConfiguration) mapping.mappingConfiguration;
 		ClassMapping<C, I, T> parentMappingStrategy = createClassMappingStrategy(
 				identification.getIdentificationDefiner().getPropertiesMapping() == mappingConfiguration.getPropertiesMapping(),
@@ -387,33 +429,15 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	/**
-	 * Wide contract for {@link EntityConfiguredJoinedTablesPersister} builders.
-	 * @param <C> persisted entity type
-	 * @param <I> identifier type
-	 * @param <T> table type
-	 */
-	interface PolymorphismBuilder<C, I, T extends Table> {
-		
-		/**
-		 *
-		 * @param dialect the {@link Dialect} use for type binding
-		 * @param connectionConfiguration the connection configuration 
-		 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
-		 * @return a persister
-		 */
-		EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
-	}
-	
-	/**
 	 * 
 	 * @param mainPersister main persister
 	 * @param superPersisters persisters in ascending order
 	 */
-	private void addCascadesBetweenChildAndParentTable(SimpleRelationalEntityPersister<C, I, ? extends Table> mainPersister,
-													   KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> superPersisters) {
+	private <T extends Table<T>> void addCascadesBetweenChildAndParentTable(SimpleRelationalEntityPersister<C, I, T> mainPersister,
+																			KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> superPersisters) {
 		// we add cascade only on persister with different table : we keep the "lowest" one because it gets all inherited properties,
 		// upper ones are superfluous
-		KeepOrderSet<SimpleRelationalEntityPersister<C, I, Table>> superPersistersWithChangingTable = new KeepOrderSet<>();
+		KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> superPersistersWithChangingTable = new KeepOrderSet<>();
 		Holder<Table> lastTable = new Holder<>(mainPersister.getMainTable());
 		superPersisters.forEach(p -> {
 			if (!p.getMainTable().equals(lastTable.get())) {
@@ -438,7 +462,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 		});
 		
-		List<SimpleRelationalEntityPersister<C, I, Table>> copy = Iterables.copy(superPersistersWithChangingTable);
+		List<SimpleRelationalEntityPersister<C, I, ?>> copy = Iterables.copy(superPersistersWithChangingTable);
 		java.util.Collections.reverse(copy);
 		copy.forEach(superPersister -> {
 			// On child deletion, parent must be deleted after
@@ -511,13 +535,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 		this.foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
 		
-		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		org.codefilarete.tool.Nullable<JoinColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
 			if (configuration.getJoinColumnNamingStrategy() != null && !optionalJoinColumnNamingStrategy.isPresent()) {
 				optionalJoinColumnNamingStrategy.set(configuration.getJoinColumnNamingStrategy());
 			}
 		});
-		this.joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(ColumnNamingStrategy.JOIN_DEFAULT);
+		this.joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(JoinColumnNamingStrategy.JOIN_DEFAULT);
 		
 		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
 		visitInheritedEntityMappingConfigurations(configuration -> {
@@ -544,8 +568,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		this.elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
 	}
 	
-	static <C, I> void addIdentificationToMapping(Identification<C, I> identification, Iterable<Mapping> mappings) {
-		mappings.forEach(mapping -> mapping.addIdentifier(identification.getIdAccessor()));
+	public static <C, I> void addIdentificationToMapping(Identification<C, I> identification, Iterable<Mapping<C, ?>> mappings) {
+		mappings.forEach(mapping -> mapping.registerIdentifier(identification.getIdAccessor()));
 	}
 	
 	/**
@@ -555,8 +579,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param tables target tables on which primary keys must be added
 	 * @param primaryKey
 	 */
-	public static void propagatePrimarykey(PrimaryKey primaryKey, Set<Table> tables) {
-		Column pkColumn = (Column) Iterables.first(primaryKey.getColumns());
+	public static void propagatePrimaryKey(PrimaryKey primaryKey, Set<Table> tables) {
+		Column pkColumn = (Column) first(primaryKey.getColumns());
 		Holder<Column> previousPk = new Holder<>(pkColumn);
 		tables.forEach(t -> {
 			Column newColumn = t.addColumn(pkColumn.getName(), pkColumn.getJavaType());
@@ -566,11 +590,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 	}
 	
-	static void applyForeignKeys(PrimaryKey primaryKey, ForeignKeyNamingStrategy foreignKeyNamingStrategy, Set<Table> tables) {
-		Column pkColumn = (Column) Iterables.first(primaryKey.getColumns());
-		Holder<Column> previousPk = new Holder<>(pkColumn);
+	public static void applyForeignKeys(PrimaryKey primaryKey, ForeignKeyNamingStrategy foreignKeyNamingStrategy, Set<Table> tables) {
+		Holder<PrimaryKey> previousPk = new Holder<>(primaryKey);
 		tables.forEach(t -> {
-			Column currentPrimaryKey = (Column) Iterables.first(t.getPrimaryKey().getColumns());
+			PrimaryKey currentPrimaryKey = t.getPrimaryKey();
 			t.addForeignKey(foreignKeyNamingStrategy.giveName(currentPrimaryKey, previousPk.get()), currentPrimaryKey, previousPk.get());
 			previousPk.set(currentPrimaryKey);
 		});
@@ -580,22 +603,34 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	/**
 	 * Creates primary key on table owning identification
 	 * 
-	 * @param identification informations that allow to create primary key
+	 * @param identification information that allow to create primary key
 	 * @return the created {@link PrimaryKey}
 	 */
 	@VisibleForTesting
-	PrimaryKey addIdentifyingPrimarykey(Identification<C, I> identification, MappingPerTable inheritanceMappingPerTable) {
-		Table pkTable = this.tableMap.get(identification.identificationDefiner);
-		Column identifierColumn = inheritanceMappingPerTable.giveMapping(pkTable).get(identification.getIdAccessor());
-		Column primaryKey = nullable(identifierColumn)
-			.getOr(() -> {
-				AccessorDefinition identifierDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
-				return pkTable.addColumn(columnNamingStrategy.giveName(identifierDefinition), identifierDefinition.getMemberType());
+	PrimaryKey<?, I> addIdentifyingPrimarykey(Identification<C, I> identification, MappingPerTable<C> inheritanceMappingPerTable) {
+		Table<?> pkTable = this.tableMap.get(identification.identificationDefiner);
+		KeyMapping<C, I> keyLinkage = identification.getKeyLinkage();
+		AccessorDefinition identifierDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
+		if (keyLinkage instanceof EntityMappingConfiguration.SingleKeyMapping) {
+			String columnName = nullable(((SingleKeyMapping<C, I>) keyLinkage).getColumnOptions()).map(ColumnLinkageOptions::getColumnName).get();
+			if (columnName == null) {
+				columnName = columnNamingStrategy.giveName(identifierDefinition);
+			}
+			Column<?, I> primaryKey = pkTable.addColumn(columnName, identifierDefinition.getMemberType());
+			primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
+			primaryKey.primaryKey();
+			if (identification.getIdentifierPolicy() instanceof AfterInsertIdentifierPolicy) {
+				primaryKey.autoGenerated();
+			}
+		} else if (keyLinkage instanceof EntityMappingConfiguration.CompositeKeyMapping) {
+			PersistentFieldHarverster fieldHarverster = new PersistentFieldHarverster();
+			Map<PropertyAccessor<Object, Object>, Column<Table, Object>> propertyAccessorColumnMap = fieldHarverster.<Object, Table>mapFields(identifierDefinition.getDeclaringClass(), pkTable);
+			propertyAccessorColumnMap.values().forEach(column -> {
+				column.setNullable(false);	// may not be necessary because of primary key, let for principle
+				column.primaryKey();
 			});
-		primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
-		primaryKey.primaryKey();
-		if (identification.getIdentifierPolicy() instanceof AfterInsertIdentifierPolicy) {
-			primaryKey.autoGenerated();
+		} else {
+			throw new UnsupportedOperationException("Key linkage " + Reflections.toString(keyLinkage.getClass()) + " is not supported");
 		}
 		return pkTable.getPrimaryKey();
 	}
@@ -618,25 +653,26 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return the mapping between property accessor and their column in target tables, never null
 	 */
 	@VisibleForTesting
-	MappingPerTable collectPropertiesMappingFromInheritance() {
-		MappingPerTable result = new MappingPerTable();
-		BeanMappingBuilder beanMappingBuilder = new BeanMappingBuilder();
+	MappingPerTable<C> collectPropertiesMappingFromInheritance() {
+		MappingPerTable<C> result = new MappingPerTable<>();
 		
-		class MappingCollector implements Consumer<EmbeddableMappingConfiguration> {
+		class MappingCollector<T extends Table<T>> implements Consumer<EmbeddableMappingConfiguration<C>> {
 			
-			private Table currentTable;
+			private final BeanMappingBuilder<C, T> beanMappingBuilder = new BeanMappingBuilder<>();
 			
-			private Map<ReversibleAccessor, Column> currentColumnMap = new HashMap<>();
+			private T currentTable;
 			
-			private Mapping currentMapping;
+			private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentColumnMap = new HashMap<>();
+			
+			private Mapping<C, T> currentMapping;
 			
 			private Object currentKey;
 			
 			private boolean mappedSuperClass = false;
 			
 			@Override
-			public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
-				Map<ReversibleAccessor, Column> propertiesMapping = beanMappingBuilder.build(
+			public void accept(EmbeddableMappingConfiguration<C> embeddableMappingConfiguration) {
+				Map<ReversibleAccessor<C, Object>, Column<T, Object>> propertiesMapping = beanMappingBuilder.build(
 						embeddableMappingConfiguration,
 						this.currentTable,
 						PersisterBuilderImpl.this.columnBinderRegistry,
@@ -649,16 +685,16 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				});
 				currentColumnMap.putAll(propertiesMapping);
 				if (currentMapping == null) {
-					currentMapping = result.add(currentKey == null ? embeddableMappingConfiguration : currentKey, this.currentTable, currentColumnMap, this.mappedSuperClass);
+					currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable, currentColumnMap, mappedSuperClass);
 				} else {
-					currentMapping = result.add(embeddableMappingConfiguration, this.currentTable, currentColumnMap, this.mappedSuperClass);
+					currentMapping = result.add(embeddableMappingConfiguration, currentTable, currentColumnMap, mappedSuperClass);
 					currentMapping.getMapping().putAll(currentColumnMap);
 				}
-				((List<Linkage>) embeddableMappingConfiguration.getPropertiesMapping()).stream()
+				embeddableMappingConfiguration.getPropertiesMapping().stream()
 						.filter(Linkage::isSetByConstructor).map(Linkage::getAccessor).forEach(currentMapping.propertiesSetByConstructor::add);
 			}
 			
-			public void accept(EntityMappingConfiguration entityMappingConfiguration) {
+			public void accept(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 				accept(entityMappingConfiguration.getPropertiesMapping());
 			}
 		}
@@ -722,30 +758,30 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	/**
-	 * Looks for identifier as well as policy by going up through inheritance hierarchy.
+	 * Looks for {@link EntityMappingConfiguration} defining the identifier policy by going up through inheritance hierarchy.
 	 *
-	 * @return a couple that defines identification of the mapping
-	 * @throws UnsupportedOperationException when identifiation was not found, because it doesn't make sense to have an entity without identification
+	 * @return a wrapper of necessary elements to manage entity identifier
+	 * @throws UnsupportedOperationException when identification was not found, because it doesn't make sense to have an entity without identification
 	 */
 	private Identification<C, I> determineIdentification() {
 		if (entityMappingConfiguration.getInheritanceConfiguration() != null && entityMappingConfiguration.getPropertiesMapping().getMappedSuperClassConfiguration() != null) {
 			throw new MappingConfigurationException("Combination of mapped super class and inheritance is not supported, please remove one of them");
 		}
-		if (entityMappingConfiguration.getIdentifierAccessor() != null && entityMappingConfiguration.getInheritanceConfiguration() != null) {
+		if (entityMappingConfiguration.getKeyMapping() != null && entityMappingConfiguration.getInheritanceConfiguration() != null) {
 			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported : "
 					+ Reflections.toString(entityMappingConfiguration.getEntityType()) + " defines identifier "
-					+ AccessorDefinition.toString(entityMappingConfiguration.getIdentifierAccessor())
+					+ AccessorDefinition.toString(entityMappingConfiguration.getKeyMapping().getAccessor())
 					+ " while it inherits from " + Reflections.toString(entityMappingConfiguration.getInheritanceConfiguration().getConfiguration().getEntityType()));
 		}
 		
 		// if mappedSuperClass is used, then identifier is expected to be declared on the configuration
 		// because mappedSuperClass can't define it (it is an EmbeddableMappingConfiguration)
-		final Holder<EntityMappingConfiguration<C, I>> configurationDefiningIdentification = new Holder<>();
+		Holder<EntityMappingConfiguration<C, I>> configurationDefiningIdentification = new Holder<>();
 		// hierarchy must be scanned to find the very first configuration that defines identification
 		visitInheritedEntityMappingConfigurations(entityConfiguration -> {
-			if (entityConfiguration.getIdentifierPolicy() != null) {
+			if (entityConfiguration.getKeyMapping() != null && entityConfiguration.getKeyMapping().getIdentifierPolicy() != null) {
 				if (configurationDefiningIdentification.get() != null) {
-					throw new UnsupportedOperationException("Identifier policy is defined twice in hierachy : first by "
+					throw new UnsupportedOperationException("Identifier policy is defined twice in hierarchy : first by "
 							+ Reflections.toString(configurationDefiningIdentification.get().getEntityType())
 							+ ", then by " + Reflections.toString(entityConfiguration.getEntityType()));
 				} else {
@@ -769,21 +805,24 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param mappingPerTable necessary to get table and primary key to be read in after-insert policy
 	 * @param idAccessor id accessor to get and set identifier on entity (except for already-assigned strategy)
 	 * @param generatedKeysReaderBuilder reader for {@link AfterInsertIdentifierPolicy}
-	 * @param <X> entity type that defines identifier manager, used as internal, may be C or one of its ancestor
+	 * @param <E> entity type that defines identifier manager, used as internal, may be C or one of its ancestor
 	 */
-	private <X> void determineIdentifierManager(Identification<X, I> identification,
-												MappingPerTable mappingPerTable,
-												ReversibleAccessor<X, I> idAccessor,
+	private <E> void determineIdentifierManager(Identification<E, I> identification,
+												MappingPerTable<E> mappingPerTable,
+												ReversibleAccessor<E, I> idAccessor,
 												GeneratedKeysReaderBuilder generatedKeysReaderBuilder) {
-		IdentifierInsertionManager<X, I> identifierInsertionManager = null;
+		IdentifierInsertionManager<E, I> identifierInsertionManager = null;
 		IdentifierPolicy<I> identifierPolicy = identification.getIdentifierPolicy();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		Class<I> identifierType = idDefinition.getMemberType();
 		if (identifierPolicy instanceof AfterInsertIdentifierPolicy) {
 			// with identifier set by database generated key, identifier must be retrieved as soon as possible which means by the very first
 			// persister, which is current one, which is the first in order of mappings
-			Table targetTable = Iterables.first(mappingPerTable.getMappings()).targetTable;
-			Column primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
+			Table<?> targetTable = first(mappingPerTable.getMappings()).targetTable;
+			if (targetTable.getPrimaryKey().isComposed()) {
+				throw new UnsupportedOperationException("Composite primary key is not compatible with database-generated column");
+			}
+			Column<?, I> primaryKey = (Column<?, I>) first(targetTable.getPrimaryKey().getColumns());
 			identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
 					new SinglePropertyIdAccessor<>(idAccessor),
 					generatedKeysReaderBuilder.buildGeneratedKeysReader(primaryKey.getName(), primaryKey.getJavaType()),
@@ -793,7 +832,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			identifierInsertionManager = new BeforeInsertIdentifierManager<>(
 					new SinglePropertyIdAccessor<>(idAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
 		} else if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
-			AlreadyAssignedIdentifierPolicy<X, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<X, I>) identifierPolicy;
+			AlreadyAssignedIdentifierPolicy<E, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy;
 			identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(
 					identifierType,
 					alreadyAssignedPolicy.getMarkAsPersistedFunction(),
@@ -801,13 +840,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		
 		// Treating configurations that are not the identifying one (for child-class) : they get an already-assigned identifier manager
-		AlreadyAssignedIdentifierManager<X, I> fallbackMappingIdentifierManager;
+		AlreadyAssignedIdentifierManager<E, I> fallbackMappingIdentifierManager;
 		if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
 			fallbackMappingIdentifierManager = new AlreadyAssignedIdentifierManager<>(identifierType,
-					((AlreadyAssignedIdentifierPolicy<X, I>) identifierPolicy).getMarkAsPersistedFunction(),
-					((AlreadyAssignedIdentifierPolicy<X, I>) identifierPolicy).getIsPersistedFunction());
+					((AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy).getMarkAsPersistedFunction(),
+					((AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy).getIsPersistedFunction());
 		} else {
-			Function<X, Boolean> isPersistedFunction;
+			Function<E, Boolean> isPersistedFunction;
 			if (!identifierType.isPrimitive()) {
 				isPersistedFunction = c -> idAccessor.get(c) != null;
 			} else {
@@ -836,63 +875,107 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param identification {@link Identification} to use (see isIdentifyingConfiguration)
 	 * @param beanType entity type to be managed by created {@link ClassMapping}
 	 * @param entityFactoryProvider optional, if null default bean type constructor will be used
-	 * @param <X> entity type
+	 * @param <E> entity type
 	 * @param <I> identifier type
 	 * @param <T> {@link Table} type
 	 * @return a new {@link ClassMapping} built from all arguments
 	 */
-	static <X, I, T extends Table> ClassMapping<X, I, T> createClassMappingStrategy(
+	public static <E, I, T extends Table<T>> ClassMapping<E, I, T> createClassMappingStrategy(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
-			Map<? extends ReversibleAccessor, Column> mapping,
+			Map<ReversibleAccessor<E, Object>, Column<T, Object>> mapping,
 			ValueAccessPointSet propertiesSetByConstructor,
-			Identification<X, I> identification,
-			Class<X> beanType,
-			@Nullable EntityMappingConfiguration.EntityFactoryProvider<X> entityFactoryProvider) {
-
-		Column<T, I> primaryKey = (Column) Iterables.first(targetTable.getPrimaryKey().getColumns());
-		ReversibleAccessor<X, I> idAccessor = identification.getIdAccessor();
+			Identification<E, I> identification,
+			Class<E> beanType,
+			@Nullable EntityMappingConfiguration.EntityFactoryProvider<E, T> entityFactoryProvider) {
+		
+		PrimaryKey<T, I> primaryKey = targetTable.getPrimaryKey();
+		ReversibleAccessor<E, I> idAccessor = identification.getIdAccessor();
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		// Child class insertion manager is always an "Already assigned" one because parent manages it for her
-		IdentifierInsertionManager<X, I> identifierInsertionManager = isIdentifyingConfiguration
+		IdentifierInsertionManager<E, I> identifierInsertionManager = isIdentifyingConfiguration
 				? identification.insertionManager
 				: identification.fallbackInsertionManager;
-		SimpleIdMapping<X, I> simpleIdMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,
-																			  new SimpleIdentifierAssembler<>(primaryKey));
-		
-		Function<Function<Column, Object>, X> beanFactory;
+		IdMapping<E, I> idMappingStrategy;
+		if (primaryKey.isComposed()) {
+			Map<? extends ReversibleAccessor, Column> composedKeyMapping = null;
+			Class<I> keyType = idDefinition.getMemberType();
+			Constructor<I> defaultConstructor = Reflections.findConstructor(keyType);
+			ComposedIdentifierAssembler<I, T> composedIdentifierAssembler = new ComposedIdentifierAssembler<I, T>(targetTable) {
+				
+				@Override
+				public Map<Column<T, Object>, Object> getColumnValues(I id) {
+					Map<Column<T, Object>, Object> result = new HashMap<>();
+					composedKeyMapping.forEach((propertyAccessor, column) -> result.put(column, propertyAccessor.get(id)));
+					return result;
+				}
+				
+				@Nullable
+				@Override
+				public I assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+					// we should not return an id if any value is null
+					Function<Function<Column, Object>, I> keyFactory;
+					if (defaultConstructor == null) {
+						// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in inheritance
+						// path which currently won't be instanced at runtime (because its concrete subclass will be) so there's no reason to throw
+						// the exception now
+						keyFactory = keyValueProvider -> {
+							throw new MappingConfigurationException("Key class " + Reflections.toString(keyType) + " doesn't have a compatible accessible constructor,"
+									+ " please implement a no-arg constructor or " + Reflections.toString(idDefinition.getMemberType()) + "-arg constructor");
+						};
+					} else {
+						keyFactory = keyValueProvider -> Reflections.newInstance(defaultConstructor);
+					}
+					return keyFactory.apply(columnValueProvider::apply);
+				}
+			};
+			idMappingStrategy = new ComposedIdMapping<>(idAccessor, identifierInsertionManager, composedIdentifierAssembler);
+		} else {
+			idMappingStrategy = new SimpleIdMapping<>(idAccessor, identifierInsertionManager,
+					new SimpleIdentifierAssembler<>(first(primaryKey.getColumns())));
+		}
+
+		Function<Function<Column<?, ?>, Object>, E> beanFactory;
+		boolean identifierSetByBeanFactory = true;
 		if (entityFactoryProvider == null) {
-			Constructor<X> constructorById = Reflections.findConstructor(beanType, idDefinition.getMemberType());
+			Constructor<E> constructorById = Reflections.findConstructor(beanType, idDefinition.getMemberType());
 			if (constructorById == null) {
-				Constructor<X> defaultConstructor = Reflections.findConstructor(beanType);
+				// No constructor taking identifier as argument, we try with default constructor (no-arg one), and if
+				// not available, throws an exception since we can't find a compatible constructor : user should define one
+				Constructor<E> defaultConstructor = Reflections.findConstructor(beanType);
 				if (defaultConstructor == null) {
 					// we'll lately throw an exception (we could do it now) but the lack of constructor may be due to an abstract class in inheritance
 					// path which currently won't be instanced at runtime (because its concrete subclass will be) so there's no reason to throw
 					// the exception now
-					beanFactory = c -> {
+					beanFactory = columnValueProvider -> {
 						throw new MappingConfigurationException("Entity class " + Reflections.toString(beanType) + " doesn't have a compatible accessible constructor,"
 							+ " please implement a no-arg constructor or " + Reflections.toString(idDefinition.getMemberType()) + "-arg constructor");
 					};
 				} else {
-					beanFactory = c -> Reflections.newInstance(defaultConstructor);
+					beanFactory = columnValueProvider -> Reflections.newInstance(defaultConstructor);
+					identifierSetByBeanFactory = false;
 				}
 			} else {
-				beanFactory = c -> Reflections.newInstance(constructorById, c.apply(simpleIdMappingStrategy.getIdentifierAssembler().getColumn()));
+				// Constructor with identifier as argument found
+				IdentifierAssembler<I, T> identifierAssembler = idMappingStrategy.getIdentifierAssembler();
+				beanFactory = columnValueProvider -> Reflections.newInstance(constructorById, identifierAssembler.assemble(columnValueProvider));
 			}
 		} else {
 			beanFactory = entityFactoryProvider.giveEntityFactory(targetTable);
+			identifierSetByBeanFactory = entityFactoryProvider.isIdentifierSetByFactory();
 		}
 		
-		ClassMapping<X, I, T> result = new ClassMapping<X, I, T>(beanType, targetTable, (Map) mapping, simpleIdMappingStrategy, beanFactory);
+		ClassMapping<E, I, T> result = new ClassMapping<>(beanType, targetTable, mapping, idMappingStrategy, beanFactory, identifierSetByBeanFactory);
 		propertiesSetByConstructor.forEach(result::addPropertySetByConstructor);
 		return result;
 	}
 	
-	static class Identification<C, I> {
+	public static class Identification<C, I> {
 		
 		private final ReversibleAccessor<C, I> idAccessor;
 		private final IdentifierPolicy<I> identifierPolicy;
 		private final EntityMappingConfiguration<C, I> identificationDefiner;
+		private final KeyMapping<C, I> keyLinkage;
 		
 		/** Insertion manager for {@link ClassMapping} that owns identifier policy */
 		private IdentifierInsertionManager<C, I> insertionManager;
@@ -901,9 +984,14 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		
 		public Identification(EntityMappingConfiguration<C, I> identificationDefiner) {
-			this.idAccessor = identificationDefiner.getIdentifierAccessor();
-			this.identifierPolicy = identificationDefiner.getIdentifierPolicy();
+			this.keyLinkage = identificationDefiner.getKeyMapping();
+			this.idAccessor = identificationDefiner.getKeyMapping().getAccessor();
+			this.identifierPolicy = identificationDefiner.getKeyMapping().getIdentifierPolicy();
 			this.identificationDefiner = identificationDefiner;
+		}
+		
+		public KeyMapping<C, I> getKeyLinkage() {
+			return keyLinkage;
 		}
 		
 		public ReversibleAccessor<C, I> getIdAccessor() {
@@ -919,19 +1007,22 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 	}
 	
-	@org.codefilarete.tool.VisibleForTesting
-	static class MappingPerTable {
-		private final KeepOrderSet<Mapping> mappings = new KeepOrderSet<>();
+	public static class MappingPerTable<C> {
 		
-		Mapping add(Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration,
-					Table table, Map<ReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
-			Mapping newMapping = new Mapping(mappingConfiguration, table, mapping, mappedSuperClass);
+		private final KeepOrderSet<Mapping<C, ?>> mappings = new KeepOrderSet<>();
+		
+		<T extends Table<T>> Mapping<C, T> add(
+				Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration,
+				T table,
+				Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping,
+				boolean mappedSuperClass) {
+			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table, mapping, mappedSuperClass);
 			this.mappings.add(newMapping);
 			return newMapping;
 		}
 		
-		Map<ReversibleAccessor, Column> giveMapping(Table table) {
-			Mapping foundMapping = Iterables.find(this.mappings, m -> m.getTargetTable().equals(table));
+		<T extends Table<T>> Map<ReversibleAccessor<C, Object>, Column<T, Object>> giveMapping(T table) {
+			Mapping<C, T> foundMapping = (Mapping<C, T>) Iterables.find(this.mappings, m -> m.getTargetTable().equals(table));
 			if (foundMapping == null) {
 				throw new IllegalArgumentException("Can't find table '" + table.getAbsoluteName()
 						+ "' in " + Iterables.collectToList(this.mappings, Functions.chain(Mapping::getTargetTable, Table::getAbsoluteName)).toString());
@@ -946,21 +1037,22 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			return Iterables.collect(this.mappings, Mapping::getTargetTable, KeepOrderSet::new);
 		}
 		
-		public KeepOrderSet<Mapping> getMappings() {
+		public KeepOrderSet<Mapping<C, ?>> getMappings() {
 			return mappings;
 		}
 		
-		static class Mapping {
+		public static class Mapping<C, T extends Table<T>> {
 			private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
-			private final Table targetTable;
-			private final Map<ReversibleAccessor, Column> mapping;
+			private final T targetTable;
+			private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping;
 			private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 			private final boolean mappedSuperClass;
+			private Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> identifier;
 			
-			Mapping(Object mappingConfiguration, Table targetTable, Map<ReversibleAccessor, Column> mapping, boolean mappedSuperClass) {
+			public Mapping(Object mappingConfiguration, T targetTable, Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping, boolean mappedSuperClass) {
 				this.mappingConfiguration = mappingConfiguration;
 				this.targetTable = targetTable;
-				this.mapping = mapping;
+				this.mapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mapping;
 				this.mappedSuperClass = mappedSuperClass;
 			}
 			
@@ -972,25 +1064,28 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				return mappedSuperClass;
 			}
 			
-			public EmbeddableMappingConfiguration giveEmbeddableConfiguration() {
-				return (EmbeddableMappingConfiguration) (this.mappingConfiguration instanceof EmbeddableMappingConfiguration
+			public EmbeddableMappingConfiguration<C> giveEmbeddableConfiguration() {
+				return (EmbeddableMappingConfiguration<C>) (this.mappingConfiguration instanceof EmbeddableMappingConfiguration
 						? this.mappingConfiguration
 						: (this.mappingConfiguration instanceof EntityMappingConfiguration ?
-						((EntityMappingConfiguration) this.mappingConfiguration).getPropertiesMapping()
-						: null));
+							((EntityMappingConfiguration<C, T>) this.mappingConfiguration).getPropertiesMapping()
+							: null));
 			}
 			
-			private Table getTargetTable() {
+			private T getTargetTable() {
 				return targetTable;
 			}
 			
-			public Map<ReversibleAccessor, Column> getMapping() {
+			public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getMapping() {
 				return mapping;
 			}
 			
-			void addIdentifier(ReversibleAccessor identifierAccessor) {
-				Column primaryKey = (Column) Iterables.first(getTargetTable().getPrimaryKey().getColumns());
-				getMapping().put(identifierAccessor, primaryKey);
+			void registerIdentifier(ReversibleAccessor<C, ?> identifierAccessor) {
+				this.identifier = new Duo<>(identifierAccessor, getTargetTable().getPrimaryKey());
+			}
+			
+			public Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> getIdentifier() {
+				return identifier;
 			}
 		}
 	}

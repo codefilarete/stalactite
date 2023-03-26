@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.query.builder;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-
 import javax.annotation.Nullable;
+
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * The contract for printing a where clause : need to print a String and a value.
@@ -22,11 +22,28 @@ public interface SQLAppender {
 	 * Called when a value must be "printed" to the underlying result. Implementations will differ on this point depending on the target goal:
 	 * values printed in the SQL statement (bad practice because of SQL injection) or prepared statement
 	 *
-	 * @param column context of the value to be printed, can be null if operator doesn't
+	 * @param column context of the value to be printed
 	 * @param value the object to be added/printed to the statement
 	 * @return this
 	 */
 	SQLAppender catValue(@Nullable Column column, Object value);
+	
+	/**
+	 * Appends value to underlying statement. To be used when {@link #catValue(Column, Object)} can't be applied.
+	 * 
+	 * @param value the value to be printed
+	 * @return this
+	 */
+	SQLAppender catValue(Object value);
+	
+	/**
+	 * Appends column name to underlying SQL statement. To be used when {@link #catValue(Column, Object)} can't be
+	 * applied.
+	 *
+	 * @param column the column to be printed
+	 * @return this
+	 */
+	SQLAppender catColumn(Column column);
 	
 	default SQLAppender catIf(boolean condition, String s) {
 		if (condition) {

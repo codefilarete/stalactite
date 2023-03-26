@@ -33,7 +33,7 @@ import org.codefilarete.tool.collection.Iterables;
  *
  * @author Guillaume Mary
  */
-public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.InsertExecutor<C> {
+public class InsertExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I, T> implements org.codefilarete.stalactite.engine.InsertExecutor<C> {
 	
 	/** Entity lock manager, default is no operation as soon as a {@link VersioningStrategy} is given */
 	private OptimisticLockManager optimisticLockManager = OptimisticLockManager.NOOP_OPTIMISTIC_LOCK_MANAGER;
@@ -80,7 +80,7 @@ public class InsertExecutor<C, I, T extends Table> extends WriteExecutor<C, I, T
 			try {
 				addToBatch(entity, writeOperation);
 			} catch (RuntimeException e) {
-				throw new RuntimeException("Error while inserting values for " + entity, e);
+				throw new RuntimeException("Error while inserting values for " + entity + " in statement \"" + writeOperation.getSqlStatement().getSQL() + "\"", e);
 			}
 		});
 	}

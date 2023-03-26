@@ -1,25 +1,24 @@
 package org.codefilarete.stalactite.sql.order;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.PreparedSQLWrapper;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-
-import javax.annotation.Nullable;
+import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
  * A SQL builder for {@link Insert} objects
@@ -45,6 +44,15 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 					return cat("?");
 				} else {
 					return super.catValue(column, value);
+				}
+			}
+			
+			@Override
+			public StringAppenderWrapper catValue(Object value) {
+				if (value == UpdateColumn.PLACEHOLDER) {
+					return cat("?");
+				} else {
+					return super.catValue(value);
 				}
 			}
 		});

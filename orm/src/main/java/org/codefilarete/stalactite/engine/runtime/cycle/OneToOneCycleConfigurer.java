@@ -5,8 +5,8 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.configurer.OneToOneRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 
 /**

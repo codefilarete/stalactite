@@ -27,20 +27,20 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 	
 	private static final String UNION_ALL_SEPARATOR = ") union all (";
 	
-	private final Map<Class, Table> tablePerSubConfiguration;
-	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
+	private final Map<Class<? extends C>, Table> tablePerSubConfiguration;
+	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	private final Table mainTable;
 	
 	public TablePerClassPolymorphicEntitySelectExecutor(
-			Map<Class, Table> tablePerSubConfiguration,
-			Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
+			Map<Class<? extends C>, ? extends Table> tablePerSubConfiguration,
+			Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
-		this.tablePerSubConfiguration = tablePerSubConfiguration;
+		this.tablePerSubConfiguration = (Map<Class<? extends C>, Table>) tablePerSubConfiguration;
 		this.persisterPerSubclass = persisterPerSubclass;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;

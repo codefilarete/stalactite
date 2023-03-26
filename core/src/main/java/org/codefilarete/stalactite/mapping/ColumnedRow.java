@@ -9,12 +9,12 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
- * Class aimed at giving values of a {@link Row} from a {@link Column}, see {@link #getValue(Column, Row)}.
+ * Class aimed at giving values of a {@link Row} from a {@link Column}, see {@link #getValue(Selectable, Row)}.
  * By default values are took in the {@link Row} by {@link Column} name, but they may also be given by any aliasing function when using
  * {@link #ColumnedRow(Function)}.
  * 
  * @author Guillaume Mary
- * @see #getValue(Column, Row) 
+ * @see #getValue(Selectable, Row) 
  */
 public class ColumnedRow {
 	

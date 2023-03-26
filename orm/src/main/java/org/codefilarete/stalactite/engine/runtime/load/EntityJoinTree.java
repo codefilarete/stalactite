@@ -20,11 +20,11 @@ import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRo
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -55,10 +55,10 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * A mapping between a name and a join to find them when we want to join one with another new one
 	 * 
-	 * @see #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set)
+	 * @see #addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)
 	 * @see #indexKeyGenerator
 	 */
-	private final Map<String, JoinNode> joinIndex = new HashMap<>();
+	private final Map<String, JoinNode<?>> joinIndex = new HashMap<>();
 	
 	/**
 	 * The objet that will help to give node names / keys into the index (no impact on the generated SQL)
@@ -107,8 +107,8 @@ public class EntityJoinTree<C, I> {
 	 */
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
 																					  EntityInflater<U, ID> inflater,
-																					  Column<T1, ID> leftJoinColumn,
-																					  Column<T2, ID> rightJoinColumn,
+																					  Key<T1, ID> leftJoinColumn,
+																					  Key<T2, ID> rightJoinColumn,
 																					  String rightTableAlias,
 																					  JoinType joinType,
 																					  BeanRelationFixer<C, U> beanRelationFixer,
@@ -119,7 +119,7 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * Adds a join to this select.
 	 * Use for one-to-one or one-to-many cases when join is used to describe a related bean.
-	 * Difference with {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set)} is last
+	 * Difference with {@link #addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)} is last
 	 * parameter : an optional function which computes an identifier of a relation between 2 entities, this is required to prevent from fulfilling
 	 * twice the relation when SQL returns several times same identifier (when at least 2 collections are implied). By default this function is
 	 * made of parentEntityId + childEntityId and can be overwritten here (in particular when relation is a List, entity index is added to computation).
@@ -141,22 +141,24 @@ public class EntityJoinTree<C, I> {
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 * @see RelationJoinNode.RelationJoinRowConsumer#applyRelatedEntity(Object, Row, TreeInflationContext)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelationJoin(String leftStrategyName,
-																					  EntityInflater<U, ID> inflater,
-																					  Column<T1, ID> leftJoinColumn,
-																					  Column<T2, ID> rightJoinColumn,
-																					  @Nullable String rightTableAlias,
-																					  JoinType joinType,
-																					  BeanRelationFixer<C, U> beanRelationFixer,
-																					  Set<? extends Column<T2, ?>> additionalSelectableColumns,
-																					  @Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
-		return this.<T1>addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
-				parent,
-				leftJoinColumn, rightJoinColumn, joinType,
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINTYPE> String addRelationJoin(String leftStrategyName,
+																								EntityInflater<U, ID> inflater,
+																								Key<T1, JOINTYPE> leftJoinColumn,
+																								Key<T2, JOINTYPE> rightJoinColumn,
+																								@Nullable String rightTableAlias,
+																								JoinType joinType,
+																								BeanRelationFixer<C, U> beanRelationFixer,
+																								Set<? extends Column<T2, ?>> additionalSelectableColumns,
+																								@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider) {
+		return this.addJoin(leftStrategyName, parent -> new RelationJoinNode<>(
+				(JoinNode<T1>) (JoinNode) parent,
+				leftJoinColumn,
+				rightJoinColumn,
+				joinType,
 				new HashSet<>(Collections.cat(inflater.getSelectableColumns(), additionalSelectableColumns)),
 				rightTableAlias,
 				inflater,
-				(BeanRelationFixer<Object, U>) beanRelationFixer,
+				beanRelationFixer,
 				relationIdentifierProvider));
 	}
 	
@@ -169,7 +171,7 @@ public class EntityJoinTree<C, I> {
 		private final EntityConfiguredJoinedTablesPersister<D, I> subPersister;
 		
 		public PolymorphicEntityInflater(EntityConfiguredJoinedTablesPersister<E, I> mainPersister,
-								  EntityConfiguredJoinedTablesPersister<D, I> subPersister) {
+										 EntityConfiguredJoinedTablesPersister<D, I> subPersister) {
 			this.mainPersister = mainPersister;
 			this.subPersister = subPersister;
 		}
@@ -233,11 +235,11 @@ public class EntityJoinTree<C, I> {
 	 * @param rightJoinColumn the {@link Column} (of the strategy table) to be joined with {@code leftJoinColumn}
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
-																				   EntityMerger<U, T2> inflater,
-																				   Column<T1, ID> leftJoinColumn,
-																				   Column<T2, ID> rightJoinColumn) {
-		return this.<T1>addJoin(leftStrategyName, parent -> new MergeJoinNode<>(parent,
+	public <U, T1 extends Fromable, T2 extends Fromable, ID> String addMergeJoin(String leftStrategyName,
+																				 EntityMerger<U> inflater,
+																				 Key<T1, ID> leftJoinColumn,
+																				 Key<T2, ID> rightJoinColumn) {
+		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<>((JoinNode<T1>) parent,
 				leftJoinColumn, rightJoinColumn, JoinType.INNER,
 				null, inflater));
 	}
@@ -256,23 +258,23 @@ public class EntityJoinTree<C, I> {
 	 * @param joinType type of join to create
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <U, T1 extends Table<T1>, T2 extends Fromable, ID> String addMergeJoin(String leftStrategyName,
-																				  EntityMerger<U, T2> entityMerger,
-																				  JoinLink<T1, ID> leftJoinColumn,
-																				  JoinLink<T2, ID> rightJoinColumn,
-																				  JoinType joinType) {
-		return this.<T1>addJoin(leftStrategyName, parent -> new MergeJoinNode<>(parent,
+	public <U, T1 extends Fromable, T2 extends Fromable, ID> String addMergeJoin(String leftStrategyName,
+																				 EntityMerger<U> entityMerger,
+																				 Key<T1, ID> leftJoinColumn,
+																				 Key<T2, ID> rightJoinColumn,
+																				 JoinType joinType) {
+		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<>((JoinNode<T1>) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				null, entityMerger));
 	}
 	
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
-																				   EntityMerger<U, T2> entityMerger,
-																				   JoinLink<T1, ID> leftJoinColumn,
-																				   JoinLink<T2, ID> rightJoinColumn,
-																				   JoinType joinType,
-																				   Function<ColumnedRow, MergeJoinRowConsumer<U>> columnedRowConsumer) {
-		return this.<T1>addJoin(leftStrategyName, parent -> new MergeJoinNode<U, T1, T2, ID>(parent,
+	public <U, T1 extends Fromable, T2 extends Fromable, ID> String addMergeJoin(String leftStrategyName,
+																				 EntityMerger<U> entityMerger,
+																				 Key<T1, ID> leftJoinColumn,
+																				 Key<T2, ID> rightJoinColumn,
+																				 JoinType joinType,
+																				 Function<ColumnedRow, MergeJoinRowConsumer<U>> columnedRowConsumer) {
+		return this.addJoin(leftStrategyName, parent -> new MergeJoinNode<U, T1, T2, ID>((JoinNode<T1>) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				null, entityMerger) {
 			@Override
@@ -293,48 +295,48 @@ public class EntityJoinTree<C, I> {
 	 * @param columnsToSelect columns that must be added to final select
 	 * @param <T1> left table type
 	 * @param <T2> right table type
-	 * @param <ID> type of joined values
+	 * @param <JOINTYPE> type of joined values
 	 * @return the name of the created join, to be used as a key for other joins (through this method {@code leftStrategyName} argument)
 	 */
-	public <T1 extends Table<T1>, T2 extends Table<T2>, ID> String addPassiveJoin(String leftStrategyName,
-																				  Column<T1, ID> leftJoinColumn,
-																				  Column<T2, ID> rightJoinColumn,
-																				  JoinType joinType,
-																				  Set<Column<T2, ?>> columnsToSelect) {
-		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
+	public <T1 extends Table<T1>, T2 extends Table<T2>, JOINTYPE> String addPassiveJoin(String leftStrategyName,
+																						Key<T1, JOINTYPE> leftJoinColumn,
+																						Key<T2, JOINTYPE> rightJoinColumn,
+																						JoinType joinType,
+																						Set<? extends JoinLink<T2, Object>> columnsToSelect) {
+		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
 				columnsToSelect, null));
 	}
 	
-	public <T1 extends Table<T1>, T2 extends Table<T2>, ID> String addPassiveJoin(String leftStrategyName,
-																				  Column<T1, ID> leftJoinColumn,
-																				  Column<T2, ID> rightJoinColumn,
-																				  JoinType joinType,
-																				  Set<Column<T2, ?>> columnsToSelect,
-																				  TransformerListener<C> transformerListener) {
-		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
+	public <T1 extends Table<T1>, T2 extends Table<T2>, JOINTYPE> String addPassiveJoin(String leftStrategyName,
+																						Key<T1, JOINTYPE> leftJoinColumn,
+																						Key<T2, JOINTYPE> rightJoinColumn,
+																						JoinType joinType,
+																						Set<Column<T2, ?>> columnsToSelect,
+																						EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
+		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
-				columnsToSelect, null).setTransformerListener((TransformerListener<Object>) transformerListener));
+				columnsToSelect, null).setConsumptionListener(consumptionListener));
 	}
 	
-	public <T1 extends Table<T1>, T2 extends Table<T2>, ID> String addPassiveJoin(String leftStrategyName,
-																				  Column<T1, ID> leftJoinColumn,
-																				  Column<T2, ID> rightJoinColumn,
-																				  String tableAlias,
-																				  JoinType joinType,
-																				  Set<Column<T2, ?>> columnsToSelect,
-																				  TransformerListener<C> transformerListener,
-																				  boolean rightTableParticipatesToDDL) {
+	public <T1 extends Table<T1>, T2 extends Table<T2>, JOINTYPE> String addPassiveJoin(String leftStrategyName,
+																						Key<T1, JOINTYPE> leftJoinColumn,
+																						Key<T2, JOINTYPE> rightJoinColumn,
+																						String tableAlias,
+																						JoinType joinType,
+																						Set<Column<T2, ?>> columnsToSelect,
+																						EntityTreeJoinNodeConsumptionListener<C> consumptionListener,
+																						boolean rightTableParticipatesToDDL) {
 		if (rightTableParticipatesToDDL) {
 			tablesToBeExcludedFromDDL.add(rightJoinColumn.getTable());
 		}
-		return this.<T1>addJoin(leftStrategyName, parent -> new PassiveJoinNode<>(parent,
+		return this.addJoin(leftStrategyName, parent -> new PassiveJoinNode<C, T1, T2, JOINTYPE>((JoinNode<T1>) (JoinNode) parent,
 				leftJoinColumn, rightJoinColumn, joinType,
-				columnsToSelect, tableAlias).setTransformerListener((TransformerListener<Object>) transformerListener));
+				columnsToSelect, tableAlias).setConsumptionListener(consumptionListener));
 	}
 	
-	public <T extends Table> String addJoin(String leftStrategyName, Function<JoinNode<T> /* parent node */, AbstractJoinNode> joinNodeSupplier) {
-		JoinNode<T> owningJoin = getJoin(leftStrategyName);
+	public String addJoin(String leftStrategyName, Function<? super JoinNode<Fromable> /* parent node */, ? extends AbstractJoinNode<?, ?, ?, ?>> joinNodeSupplier) {
+		JoinNode<Fromable> owningJoin = getJoin(leftStrategyName);
 		if (owningJoin == null) {
 			throw new IllegalArgumentException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
 		}
@@ -346,7 +348,7 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * Gives a particular node of the joins graph by its name. Joins graph name are given in return of
-	 * {@link #addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, Set)}.
+	 * {@link #addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)}.
 	 * When {@link #ROOT_STRATEGY_NAME} is given, {@link #getRoot()} will be used, meanwhile, be aware that using this method to retreive root node
 	 * is not the recommended way : prefer usage of {@link #getRoot()} to prevent exposure of {@link #ROOT_STRATEGY_NAME}
 	 *
@@ -355,8 +357,8 @@ public class EntityJoinTree<C, I> {
 	 * @see #getRoot()
 	 */
 	@Nullable
-	public <T extends Table> JoinNode<T> getJoin(String leftStrategyName) {
-		return (JoinNode<T>) this.joinIndex.get(leftStrategyName);
+	public JoinNode<Fromable> getJoin(String leftStrategyName) {
+		return (JoinNode<Fromable>) this.joinIndex.get(leftStrategyName);
 	}
 	
 	/**
@@ -365,13 +367,15 @@ public class EntityJoinTree<C, I> {
 	 * join we use reference check.
 	 * Mainly done for testing purpose.
 	 * 
-	 * @param leftColumn a column to be compared to left columns of this tree
-	 * @param rightColumn a column to be compared to right columns of this tree
+	 * @param leftKey columns to be compared to left columns of this tree
+	 * @param rightKey columns to be compared to right columns of this tree
 	 * @return the join that as same left and right column as given ones, null if none exists
 	 */
 	@VisibleForTesting
-	<T1 extends Table, T2 extends Table, E, ID, O> AbstractJoinNode<E, T1, T2, ID> giveJoin(Column<T1, O> leftColumn, Column<T2, O> rightColumn) {
-		return Iterables.find(joinIterator(), node -> node.getLeftJoinColumn() == leftColumn && node.getRightJoinColumn() == rightColumn);
+	<T1 extends Table<T1>, T2 extends Table<T2>, E, ID, O> AbstractJoinNode<E, T1, T2, ID> giveJoin(Key<T1, O> leftKey, Key<T2, O> rightKey) {
+		return (AbstractJoinNode<E, T1, T2, ID>) Iterables.find(joinIterator(), node ->
+				node.getLeftJoinLink().getColumns().equals(leftKey.getColumns())
+				&& node.getRightJoinLink().getColumns().equals(rightKey.getColumns()));
 	}
 	
 	/**
@@ -399,7 +403,7 @@ public class EntityJoinTree<C, I> {
 	 * 
 	 * @param consumer a {@link AbstractJoinNode} consumer
 	 */
-	public void foreachJoin(Consumer<AbstractJoinNode> consumer) {
+	public void foreachJoin(Consumer<AbstractJoinNode<?, ?, ?, ?>> consumer) {
 		joinIterator().forEachRemaining(consumer);
 	}
 	
@@ -415,19 +419,21 @@ public class EntityJoinTree<C, I> {
 		projectTo(target.getJoin(joinNodeName));
 	}
 	
-	public void projectTo(JoinNode<Table> joinNode) {
+	public void projectTo(JoinNode<Fromable> joinNode) {
 		EntityJoinTree<?, ?> tree = joinNode.getTree();
 		foreachJoinWithDepth(joinNode, (targetOwner, currentNode) -> {
-			// cloning each node, the only difference lays on left column : target gets its matching column 
-			Column projectedLeftColumn = ((Table) targetOwner.getTable()).getColumn(currentNode.getLeftJoinColumn().getExpression());
-			if (projectedLeftColumn == null) {
-				throw new IllegalArgumentException("Expected column "
-						+ currentNode.getLeftJoinColumn().getExpression() + " to exist in target table " + targetOwner.getTable().getName());
-			}
-			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, projectedLeftColumn);
+			// cloning each node, the only difference lays on left column : target gets its matching column
+			currentNode.getLeftJoinLink().getColumns().forEach(leftColumn -> {
+				Column projectedLeftColumn = ((Table) targetOwner.getTable()).getColumn(leftColumn.getExpression());
+				if (projectedLeftColumn == null) {
+					throw new IllegalArgumentException("Expected column "
+							+ leftColumn.getExpression() + " to exist in target table " + targetOwner.getTable().getName());
+				}
+			});
+			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, currentNode.getLeftJoinLink());
 			// maintaining join names through trees : we add current node name to target one. Then nodes can be found across trees
-			Set<Map.Entry<String, JoinNode>> set = this.joinIndex.entrySet();
-			Entry<String, JoinNode> nodeName = Iterables.find(set, entry -> entry.getValue() == currentNode);
+			Set<Entry<String, JoinNode<?>>> set = this.joinIndex.entrySet();
+			Entry<String, JoinNode<?>> nodeName = Iterables.find(set, entry -> entry.getValue() == currentNode);
 			tree.joinIndex.put(nodeName.getKey(), nodeClone);
 			
 			return nodeClone;
@@ -439,7 +445,7 @@ public class EntityJoinTree<C, I> {
 	 * Consumer is invoked foreach node <strong>except root</strong> because it usually has a special treatment.
 	 * Traversal is made in pre-order : node is consumed first then its children.
 	 */
-	public Iterator<AbstractJoinNode> joinIterator() {
+	public Iterator<AbstractJoinNode<?, ?, ?, ?>> joinIterator() {
 		return new NodeIterator();
 	}
 	
@@ -453,7 +459,7 @@ public class EntityJoinTree<C, I> {
 	 * @param consumer producer of target tree node, gets node of this tree and parent node of target tree to add created node to it
 	 * @param <S> type of node of the equivalent tree
 	 */
-	<S> void foreachJoinWithDepth(S initialNode, BiFunction<S, AbstractJoinNode, S> consumer) {
+	<S> void foreachJoinWithDepth(S initialNode, BiFunction<S, AbstractJoinNode<?, ?, ?, ?>, S> consumer) {
 		Queue<S> targetPath = new ArrayDeque<>();
 		targetPath.add(initialNode);
 		NodeIteratorWithDepth<S> nodeIterator = new NodeIteratorWithDepth<>(targetPath, consumer);
@@ -468,7 +474,7 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * Internal class that focuses on nodes. Iteration node is made breadth-first.
 	 */
-	private class NodeIterator implements Iterator<AbstractJoinNode> {
+	private class NodeIterator implements Iterator<AbstractJoinNode<?, ?, ?, ?>> {
 		
 		protected final Queue<AbstractJoinNode> joinStack;
 		protected AbstractJoinNode currentNode;
@@ -498,18 +504,18 @@ public class EntityJoinTree<C, I> {
 	private class NodeIteratorWithDepth<S> extends NodeIterator {
 		
 		private final Queue<S> targetPath;
-		private final BiFunction<S, AbstractJoinNode, S> consumer;
+		private final BiFunction<S, AbstractJoinNode<Object, Fromable, Fromable, Object>, S> consumer;
 		
-		public NodeIteratorWithDepth(Queue<S> targetPath, BiFunction<S, AbstractJoinNode, S> consumer) {
+		public NodeIteratorWithDepth(Queue<S> targetPath, BiFunction<S, AbstractJoinNode<?, ?, ?, ?>, S> consumer) {
 			this.targetPath = targetPath;
-			this.consumer = consumer;
+			this.consumer = (BiFunction<S, AbstractJoinNode<Object, Fromable, Fromable, Object>, S>) (BiFunction) consumer;
 		}
 		
 		@Override
 		public AbstractJoinNode next() {
 			super.next();
 			S targetOwner = targetPath.peek();
-			S nodeClone = consumer.apply(targetOwner, currentNode);
+			S nodeClone = (S) consumer.apply(targetOwner, currentNode);
 			if (nextDepth) {
 				targetPath.add(nodeClone);
 			}
@@ -524,7 +530,7 @@ public class EntityJoinTree<C, I> {
 		}
 		
 		@Override
-		public void forEachRemaining(Consumer<? super AbstractJoinNode> action) {
+		public void forEachRemaining(Consumer<? super AbstractJoinNode<?, ?, ?, ?>> action) {
 			// this is not supported since a consumer is already given to constructor
 			throw new UnsupportedOperationException();
 		}
@@ -532,21 +538,21 @@ public class EntityJoinTree<C, I> {
 	
 	/**
 	 * Copies given node and set it as a child of given parent.
-	 * Could have been implemented by each node class itself but since this behavior is required only by the tree and a particular algorithm, decision
-	 * mas made to do it outside them.
+	 * Could have been implemented by each node class itself but since this behavior is required only by the tree
+	 * and a particular algorithm, decision was made to do it outside of them.
 	 * 
 	 * @param node node to be cloned
 	 * @param parent parent node target of the clone
-	 * @param leftColumn column to be used as the left one of the new node
+	 * @param leftColumn columns to be used as the left key of the new node
 	 * @return a copy of given node, put as child of parent, using leftColumn
 	 */
-	public static AbstractJoinNode copyNodeToParent(AbstractJoinNode node, JoinNode parent, Column leftColumn) {
+	public static AbstractJoinNode copyNodeToParent(AbstractJoinNode node, JoinNode parent, Key leftColumn) {
 		AbstractJoinNode nodeCopy;
 		if (node instanceof RelationJoinNode) {
 			nodeCopy = new RelationJoinNode(
 					parent,
 					leftColumn,
-					node.getRightJoinColumn(),
+					node.getRightJoinLink(),
 					node.getJoinType(),
 					node.getColumnsToSelect(),
 					node.getTableAlias(),
@@ -557,7 +563,7 @@ public class EntityJoinTree<C, I> {
 			nodeCopy = new MergeJoinNode(
 					parent,
 					leftColumn,
-					node.getRightJoinColumn(),
+					node.getRightJoinLink(),
 					node.getJoinType(),
 					node.getTableAlias(),
 					((MergeJoinNode) node).getMerger());
@@ -565,7 +571,7 @@ public class EntityJoinTree<C, I> {
 			nodeCopy = new PassiveJoinNode(
 					parent,
 					leftColumn,
-					node.getRightJoinColumn(),
+					node.getRightJoinLink(),
 					node.getJoinType(),
 					node.getColumnsToSelect(),
 					node.getTableAlias());
@@ -573,7 +579,7 @@ public class EntityJoinTree<C, I> {
 			throw new UnsupportedOperationException("Unexpected type of join : some algorithm has changed, please implement it here or fix it : "
 					+ Reflections.toString(node.getClass()));
 		}
-		nodeCopy.setTransformerListener(node.getTransformerListener());
+		nodeCopy.setConsumptionListener(node.getConsumptionListener());
 		
 		return nodeCopy;
 	}

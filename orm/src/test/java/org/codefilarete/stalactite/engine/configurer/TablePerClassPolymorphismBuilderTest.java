@@ -19,8 +19,7 @@ import org.codefilarete.tool.function.Sequence;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.codefilarete.stalactite.engine.MappingEase.*;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
@@ -81,22 +80,17 @@ class TablePerClassPolymorphismBuilderTest {
 	}
 	
 	@Test
-	void build_withAfterInsertIdentifierPolicy_entitiesMustHaveTheirIdSet() {
+	void build_withAfterInsertIdentifierPolicy_throwsUnsupportedOperationException() {
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		
 		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
-		EntityPersister<Element, Long> configuration = entityBuilder(Element.class, long.class)
+		FluentEntityMappingBuilder<Element, Long> mappingBuilder = entityBuilder(Element.class, long.class)
 				.mapKey(Element::getId, IdentifierPolicy.afterInsert())
-				.mapPolymorphism(POLYMORPHISM_POLICY)
-				.build(persistenceContext);
+				.mapPolymorphism(POLYMORPHISM_POLICY);
 		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Question theUltimateQuestion = new Question().setLabel("What's the answer to Life, the Universe and Everything ?");
-		configuration.persist(Arrays.asList(theUltimateQuestion));
-		
-		assertThat(theUltimateQuestion.getId()).isEqualTo(1);
+		assertThatCode(() -> mappingBuilder.build(persistenceContext))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 	}
 	
 	@Test

@@ -31,12 +31,12 @@ import org.codefilarete.tool.trace.ModifiableInt;
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> implements SelectExecutor<C, I> {
+public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> implements SelectExecutor<C, I> {
 	
 	private static final String UNION_ALL_SEPARATOR = ") union all (";
 	
-	private final Map<Class, Table> tablePerSubEntity;
-	private final Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors;
+	private final Map<Class<? extends C>, Table> tablePerSubEntity;
+	private final Map<Class<? extends C>, SelectExecutor<? extends C, I>> subEntitiesSelectors;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	private final Table mainTable;
@@ -47,13 +47,13 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table> imple
 	private final Map<String, Class> subTypePerDiscriminatorValue;
 	
 	public TablePerClassPolymorphicSelectExecutor(
-			Map<Class, Table> tablePerSubEntity,
-			Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors,
+			Map<Class<? extends C>, ? extends Table> tablePerSubEntity,
+			Map<Class<? extends C>, SelectExecutor<? extends C, I>> subEntitiesSelectors,
 			T mainTable,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
-		this.tablePerSubEntity = tablePerSubEntity;
+		this.tablePerSubEntity = (Map<Class<? extends C>, Table>) tablePerSubEntity;
 		this.subEntitiesSelectors = subEntitiesSelectors;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;

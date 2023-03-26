@@ -1,46 +1,53 @@
 package org.codefilarete.stalactite.engine.configurer;
 
+import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Map;
 
-import org.codefilarete.stalactite.engine.model.City;
-import org.codefilarete.stalactite.engine.model.Country;
-import org.codefilarete.stalactite.id.PersistableIdentifier;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration.ColumnLinkageOptions;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration.SingleKeyMapping;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.ColumnLinkageOptionsByName;
+import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
+import org.codefilarete.stalactite.engine.model.City;
+import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,10 +55,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
@@ -69,10 +73,10 @@ class OneToOneRelationConfigurerTest {
 	}
 	
 	@Test
-	void tableStructure_associationTable() throws SQLException {
+	<T extends Table<T>> void tableStructure_associationTable() throws SQLException {
 		// Given
 		// defining Country mapping
-		Table<?> countryTable = new Table<>("country");
+		T countryTable = (T) new Table("country");
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
 		Column countryTableNameColumn = countryTable.addColumn("name", String.class);
 		Column countryTableCapitalColumn = countryTable.addColumn("capitalId", Identifier.LONG_TYPE);
@@ -84,7 +88,7 @@ class OneToOneRelationConfigurerTest {
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
-		ClassMapping<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, Table>(Country.class, countryTable,
+		ClassMapping<Country, Identifier<Long>, T> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
@@ -118,8 +122,28 @@ class OneToOneRelationConfigurerTest {
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
-		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
+		when(cityMappingConfiguration.getKeyMapping()).thenReturn(new SingleKeyMapping<City, Identifier<Long>>() {
+			@Override
+			public IdentifierPolicy<Identifier<Long>> getIdentifierPolicy() {
+				return StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
+			}
+			
+			@Override
+			public ReversibleAccessor<City, Identifier<Long>> getAccessor() {
+				return cityIdentifierAccessorByMethodReference;
+			}
+			
+			@Nullable
+			@Override
+			public ColumnLinkageOptions getColumnOptions() {
+				return null;
+			}
+			
+			@Override
+			public boolean isSetByConstructor() {
+				return false;
+			}
+		});
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
@@ -137,14 +161,15 @@ class OneToOneRelationConfigurerTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		// When
-		SimpleRelationalEntityPersister<Country, Identifier<Long>, Table> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
+		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		OneToOneRelationConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(countryCapitalRelation,
 				countryPersister,
 				dialect,
 				mock(ConnectionConfiguration.class),
 				mock(PersisterRegistry.class),
-				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
+				ForeignKeyNamingStrategy.DEFAULT,
+				JoinColumnNamingStrategy.JOIN_DEFAULT);
 		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
 		
 		// Then
@@ -173,9 +198,9 @@ class OneToOneRelationConfigurerTest {
 	}
 	
 	@Test
-	void tableStructure_relationMappedByReverseSide() {
+	<T extends Table<T>> void tableStructure_relationMappedByReverseSide() {
 		// defining Country mapping
-		Table<?> countryTable = new Table<>("country");
+		T countryTable = (T) new Table("country");
 		Column countryTableIdColumn = countryTable.addColumn("id", long.class).primaryKey();
 		Column countryTableNameColumn = countryTable.addColumn("name", String.class);
 		Map<ReversibleAccessor, Column> countryMapping = Maps
@@ -185,7 +210,7 @@ class OneToOneRelationConfigurerTest {
 				Accessors.accessorByMethodReference(Country::getId),
 				Accessors.mutatorByField(Country.class, "id")
 		);
-		ClassMapping<Country, Identifier<Long>, Table> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, Table>(Country.class, countryTable,
+		ClassMapping<Country, Identifier<Long>, T> countryClassMappingStrategy = new ClassMapping<Country, Identifier<Long>, T>(Country.class, countryTable,
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
@@ -219,8 +244,28 @@ class OneToOneRelationConfigurerTest {
 		when(cityMappingConfiguration.getPropertiesMapping()).thenReturn(cityPropertiesMapping);
 		// preventing NullPointerException
 		when(cityMappingConfiguration.getTableNamingStrategy()).thenReturn(TableNamingStrategy.DEFAULT);
-		when(cityMappingConfiguration.getIdentifierAccessor()).thenReturn(cityIdentifierAccessorByMethodReference);
-		when(cityMappingConfiguration.getIdentifierPolicy()).thenReturn(StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
+		when(cityMappingConfiguration.getKeyMapping()).thenReturn(new SingleKeyMapping<City, Identifier<Long>>() {
+			@Override
+			public IdentifierPolicy<Identifier<Long>> getIdentifierPolicy() {
+				return StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
+			}
+			
+			@Override
+			public ReversibleAccessor<City, Identifier<Long>> getAccessor() {
+				return cityIdentifierAccessorByMethodReference;
+			}
+			
+			@Nullable
+			@Override
+			public ColumnLinkageOptions getColumnOptions() {
+				return null;
+			}
+			
+			@Override
+			public boolean isSetByConstructor() {
+				return false;
+			}
+		});
 		when(cityMappingConfiguration.getOneToOnes()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getOneToManys()).thenReturn(Collections.emptyList());
 		when(cityMappingConfiguration.getManyToManyRelations()).thenReturn(Collections.emptyList());
@@ -238,14 +283,15 @@ class OneToOneRelationConfigurerTest {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
-		SimpleRelationalEntityPersister<Country, Identifier<Long>, Table> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
+		SimpleRelationalEntityPersister<Country, Identifier<Long>, T> countryPersister = new SimpleRelationalEntityPersister<>(countryClassMappingStrategy, dialect,
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 10));
 		OneToOneRelationConfigurer<Country, City, Identifier<Long>, Identifier<Long>> testInstance = new OneToOneRelationConfigurer<>(countryCapitalRelation,
 				countryPersister,
 				dialect,
 				mock(ConnectionConfiguration.class),
 				mock(PersisterRegistry.class),
-				ForeignKeyNamingStrategy.DEFAULT, ColumnNamingStrategy.JOIN_DEFAULT);
+				ForeignKeyNamingStrategy.DEFAULT,
+				JoinColumnNamingStrategy.JOIN_DEFAULT);
 		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
 		
 		assertThat(cityTable.mapColumnsOnName().keySet()).isEqualTo(Arrays.asSet("id", "countryId", "name"));

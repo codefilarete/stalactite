@@ -142,7 +142,7 @@ public class QuerySQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		Limit limit = query.getLimitSurrogate();
 		if (limit.getValue() != null) {
 			sql.cat(" limit ");
-			preparedSQLWrapper.catValue(null, limit.getValue());
+			preparedSQLWrapper.catValue(limit.getValue());
 		}
 		
 		PreparedSQL result = new PreparedSQL(sql.toString(), preparedSQLWrapper.getParameterBinders());

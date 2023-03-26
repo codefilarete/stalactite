@@ -99,7 +99,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
 		assertThat(foundForeignKey).containsExactlyInAnyOrder(
 				new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
-				new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICE_ID_CHOICE_ID", "ANSWER_CHOICES", "CHOICE_ID", "CHOICE", "ID").getSignature()
+				new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_CHOICE_ID", "ANSWER_CHOICES", "CHOICES_ID", "CHOICE", "ID").getSignature()
 		);
 	}
 	
@@ -132,7 +132,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		Set<String> foundForeignKey = Iterables.collect(() -> fkChoiceIterator, JdbcForeignKey::getSignature, HashSet::new);
 		assertThat(foundForeignKey).containsExactlyInAnyOrder(
 				new JdbcForeignKey("FK_ANSWER_CHOICES_ANSWER_ID_ANSWER_ID", "ANSWER_CHOICES", "ANSWER_ID", "ANSWER", "ID").getSignature(),
-				new JdbcForeignKey("FK_ANSWER_CHOICES_MYCHOICE_ID_MYCHOICE_ID", "ANSWER_CHOICES", "MYCHOICE_ID", "MYCHOICE", "ID").getSignature()
+				new JdbcForeignKey("FK_ANSWER_CHOICES_CHOICES_ID_MYCHOICE_ID", "ANSWER_CHOICES", "CHOICES_ID", "MYCHOICE", "ID").getSignature()
 		);
 	}
 	
@@ -261,7 +261,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Answer(id) values (42)").execute();
 		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Choice(id, label) values (1, 'Paris')").execute();
 		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Choice(id, label) values (2, 'Lyon')").execute();
-		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Answer_Choices(answer_id, choice_id) values (42, 1), (42, 2)").execute();
+		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Answer_Choices(answer_id, choices_id) values (42, 1), (42, 2)").execute();
 
 		Answer loadedAnswer = answerPersister.select(new PersistedIdentifier<>(42L));
 		assertThat(loadedAnswer.getChoices().getClass()).isEqualTo(TreeSet.class);
@@ -364,7 +364,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer(id) values (42, 666)");
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Choice(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer_choices(answer_Id, choice_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer_choices(answer_Id, choices_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 
 			Answer answer1 = new Answer(new PersistedIdentifier<>(42L));
@@ -481,7 +481,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer(id) values (42, 666)");
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Choice(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer_choices(answer_Id, choice_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer_choices(answer_Id, choices_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 
 			Answer answer1 = new Answer(new PersistedIdentifier<>(42L));
@@ -578,8 +578,8 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 					.execute();
 			assertThat(answerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
-			List<Long> choicesInRelationIds = persistenceContext.newQuery("select choice_Id from Answer_choices where answer_id in (42, 666)", Long.class)
-					.mapKey("choice_id", Long.class)
+			List<Long> choicesInRelationIds = persistenceContext.newQuery("select choices_Id from Answer_choices where answer_id in (42, 666)", Long.class)
+					.mapKey("choices_id", Long.class)
 					.execute();
 			assertThat(choicesInRelationIds).containsExactlyInAnyOrder(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate());
 		}
@@ -646,7 +646,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer(id) values (42, 666)");
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Choice(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer_choices(answer_Id, choice_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Answer_choices(answer_Id, choices_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 
 			Answer answer1 = new Answer(new PersistedIdentifier<>(42L));

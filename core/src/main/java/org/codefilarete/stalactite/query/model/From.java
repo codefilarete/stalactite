@@ -8,11 +8,10 @@ import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.codefilarete.stalactite.query.model.From.Join;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.tool.Strings;
 
-import static org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection.INNER_JOIN;
-import static org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection.LEFT_OUTER_JOIN;
-import static org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection.RIGHT_OUTER_JOIN;
+import static org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection.*;
 
 /**
  * Class to ease From clause creation in a Select SQL statement.
@@ -88,8 +87,18 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	}
 	
 	@Override
+	public <JOINTYPE> From innerJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns) {
+		return addNewJoin(leftColumns, rightColumns, INNER_JOIN);
+	}
+	
+	@Override
 	public <I> From leftOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn) {
 		return addNewJoin(leftColumn, rightColumn, LEFT_OUTER_JOIN);
+	}
+	
+	@Override
+	public <JOINTYPE> From leftOuterJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns) {
+		return addNewJoin(leftColumns, rightColumns, LEFT_OUTER_JOIN);
 	}
 	
 	@Override
@@ -99,6 +108,10 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	
 	private <I> From addNewJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn, JoinDirection joinDirection) {
 		return add(new ColumnJoin<>(leftColumn, rightColumn, joinDirection));
+	}
+	
+	private <JOINTYPE> From addNewJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns, JoinDirection joinDirection) {
+		return add(new KeyJoin(leftColumns, rightColumns, joinDirection));
 	}
 	
 	@Override
@@ -316,6 +329,34 @@ public class From implements Iterable<Join>, JoinChain<From> {
 		@Override
 		public Fromable getRightTable() {
 			return rightColumn.getOwner();
+		}
+	}
+	
+	/**
+	 * Class that defines a join with {@link Column}
+	 */
+	public class KeyJoin<JOINTYPE> extends AbstractJoin {
+		
+		private final Key<?, JOINTYPE> leftKey;
+		private final Key<?, JOINTYPE> rightKey;
+		
+		private KeyJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns, JoinDirection joinDirection) {
+			super(joinDirection);
+			this.leftKey = leftColumns;
+			this.rightKey = rightColumns;
+		}
+		
+		public Key<?, JOINTYPE> getLeftKey() {
+			return leftKey;
+		}
+		
+		public Key<?, JOINTYPE> getRightKey() {
+			return rightKey;
+		}
+		
+		@Override
+		public Fromable getRightTable() {
+			return rightKey.getTable();
 		}
 	}
 }

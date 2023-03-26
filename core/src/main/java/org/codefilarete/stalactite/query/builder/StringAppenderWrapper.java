@@ -1,9 +1,9 @@
 package org.codefilarete.stalactite.query.builder;
 
+import javax.annotation.Nullable;
+
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.StringAppender;
-
-import javax.annotation.Nullable;
 
 /**
  * A basic appender to a {@link StringAppender}
@@ -35,6 +35,27 @@ public class StringAppenderWrapper implements SQLAppender {
 		} else {
 			surrogate.cat(value);
 		}
+		return this;
+	}
+	
+	@Override
+	public StringAppenderWrapper catValue(Object value) {
+		if (value instanceof CharSequence) {
+			// specialized case to escape single quotes
+			surrogate.cat("'", value.toString().replace("'", "''"), "'");
+		} else if (value instanceof Column) {
+			// Columns are simply appended (no binder needed nor index increment)
+			surrogate.cat(dmlNameProvider.getName((Column) value));
+		} else {
+			surrogate.cat(value);
+		}
+		return this;
+	}
+	
+	@Override
+	public StringAppenderWrapper catColumn(Column column) {
+		// Columns are simply appended (no binder needed nor index increment)
+		surrogate.cat(dmlNameProvider.getName(column));
 		return this;
 	}
 	

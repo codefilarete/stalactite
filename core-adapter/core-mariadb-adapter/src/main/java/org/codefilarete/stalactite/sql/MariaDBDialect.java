@@ -40,4 +40,8 @@ public class MariaDBDialect extends Dialect {
 		return new MariaDBWriteOperationFactory();
 	}
 	
+	@Override
+	public boolean supportsTupleCondition() {
+		return true;
+	}
 }

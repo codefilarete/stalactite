@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.sql.ConnectionConfiguration;
  * 
  * @author Guillaume Mary
  */
-public class AssociationRecordPersister<C extends AssociationRecord, T extends AssociationTable> extends Persister<C, C, T> {
+public class AssociationRecordPersister<C extends AssociationRecord, T extends AssociationTable<T, ?, ?, ?, ?>> extends Persister<C, C, T> {
 	
 	public AssociationRecordPersister(
 			ClassMapping<C, C, T> mappingStrategy,

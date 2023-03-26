@@ -201,8 +201,8 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		country.addCity(lyon);
 		persister.insert(country);
 		
-		List<Duo> associatedIds = persistenceContext.newQuery("select Country_id, city_id from Country_cities", Duo.class)
-				.mapKey(Duo::new, "Country_id", Long.class, "city_id", Long.class)
+		List<Duo> associatedIds = persistenceContext.newQuery("select Country_id, cities_id from Country_cities", Duo.class)
+				.mapKey(Duo::new, "Country_id", Long.class, "cities_id", Long.class)
 				.execute();
 		
 		assertThat(associatedIds).containsExactlyInAnyOrder(
@@ -268,7 +268,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		// preparing next tests by relating a city to the existing country
 		persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into City(id, name, countryId) values (1, 'Paris', 42)").execute();
 		
-		// select selects entity and relations
+		// select entity and relations
 		Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 		assertThat(loadedCountry.getName()).isEqualTo("France");
 		assertThat(Iterables.first(loadedCountry.getCities()).getName()).isEqualTo("Paris");
@@ -367,7 +367,8 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					ddlDeployer.deployDDL();
 					return countryPersister;
-				}},
+				},
+				true },
 				{ (ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 					EntityPersister<Country, Identifier<Long>> countryPersister = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
@@ -381,7 +382,8 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					ddlDeployer.deployDDL();
 					return countryPersister;
-				}},
+				},
+				true },
 				{ (ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException>) () -> {
 					PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 					Table cityTable = new Table("city");
@@ -397,13 +399,14 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 					DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 					ddlDeployer.deployDDL();
 					return countryPersister;
-				}},
+				},
+				false },
 		};
 	}
 	
 	@ParameterizedTest
 	@MethodSource("mappedBy_differentWays_data")
-	void mappedBy_differentWays(ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException> persisterSupplier) throws SQLException {
+	void mappedBy_differentWays(ThrowingSupplier<EntityPersister<Country, Identifier<Long>>, SQLException> persisterSupplier, boolean mappedByFunction) throws SQLException {
 		
 		EntityPersister<Country, Identifier<Long>> countryPersister = persisterSupplier.get();
 		
@@ -426,6 +429,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		assertThat(persistedCountry.getDescription()).isEqualTo("Smelly cheese !");
 		assertThat(persistedCountry.getCities().size()).isEqualTo(2);
 		assertThat(persistedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Paris", "Lyon");
+		if (mappedByFunction) {
+			assertThat(persistedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(persistedCountry, persistedCountry);
+		}
 		
 		// Creating a new country with the same cities (!): the cities shouldn't be resaved
 		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
@@ -753,7 +759,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, cities_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 			
 			Country country1 = new Country(new PersistedIdentifier<>(42L));
@@ -948,7 +954,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, cities_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 			
 			Country country1 = new Country(new PersistedIdentifier<>(42L));
@@ -1007,7 +1013,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
 					.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
-					.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent with an association table");
+					.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevant with an association table");
 		}
 		
 		@Test
@@ -1114,7 +1120,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country(id) values (42, 666)");
 			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into City(id) values (100), (200), (300)");
-			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, city_Id)" +
+			persistenceContext.getConnectionProvider().giveConnection().createStatement().executeUpdate("insert into Country_cities(country_Id, cities_Id)" +
 					" values (42, 100), (42, 200), (666, 300)");
 			
 			Country country1 = new Country(new PersistedIdentifier<>(42L));

@@ -138,8 +138,6 @@ public class PersisterBuilderImplTest {
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getId), mutatorByField(Car.class, "id")),
-						dummyTable.getColumn("id"))
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
@@ -177,14 +175,12 @@ public class PersisterBuilderImplTest {
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
-		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
+		MappingPerTable<?> mappingPerTable = testInstance.collectPropertiesMappingFromInheritance();
 		
 		// NB: AssertJ containsOnly() doesn't work : returns false whereas result is good
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getId), mutatorByField(Car.class, "id")),
-						dummyTable.getColumn("id"))
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
@@ -195,10 +191,10 @@ public class PersisterBuilderImplTest {
 						dummyTable.getColumn("modificationDate"))
 				.entrySet());
 		expected.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
-		assertThat(map.giveTables())
+		assertThat(mappingPerTable.giveTables())
 				.extracting(Table::getAbsoluteName)
 				.containsExactly("Car");
-		ArrayList<Entry<ReversibleAccessor, Column>> actual = new ArrayList<>(map.giveMapping(dummyTable).entrySet());
+		ArrayList<Entry<ReversibleAccessor, Column>> actual = new ArrayList<>(mappingPerTable.giveMapping(dummyTable).entrySet());
 		actual.sort((e1, e2) -> String.CASE_INSENSITIVE_ORDER.compare(e1.toString(), e2.toString()));
 		assertThat(actual)
 				// Objects are similar but not equals so we compare them through their footprint (truly comparing them is quite hard)
@@ -234,7 +230,7 @@ public class PersisterBuilderImplTest {
 				.setTableNamingStrategy(TableNamingStrategy.DEFAULT)
 				.mapEntityConfigurationPerTable();
 		
-		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
+		MappingPerTable<?> map = testInstance.collectPropertiesMappingFromInheritance();
 		
 		assertThat(map.giveTables())
 				.usingElementComparator(Comparator.comparing(Table::getAbsoluteName))
@@ -276,8 +272,6 @@ public class PersisterBuilderImplTest {
 		abstractVehicleTable = Iterables.find(map.giveTables(), abstractVehicleTable::equals);
 		List<Entry<ReversibleAccessor, Column>> expectedAbstractVehicleMapping = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getId), mutatorByField(Car.class, "id")),
-						abstractVehicleTable.getColumn("id"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(AbstractVehicle::getTimestamp), mutatorByMethodReference(AbstractVehicle::setTimestamp)),
 						new PropertyAccessor<>(accessorByMethodReference(Timestamp::getCreationDate), mutatorByMethodReference(Timestamp::setCreationDate))),
 						abstractVehicleTable.getColumn("creationDate"))
@@ -317,8 +311,6 @@ public class PersisterBuilderImplTest {
 		// (probably due to ValueAccessPoint Comparator not used by containsOnly() method)
 		ArrayList<Entry<ReversibleAccessor, Column>> expected = new ArrayList<>(Maps
 				.forHashMap(ReversibleAccessor.class, Column.class)
-				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getId), mutatorByField(Car.class, "id")),
-						dummyTable.getColumn("id"))
 				.add(new PropertyAccessor<>(accessorByMethodReference(Car::getModel), mutatorByField(Car.class, "model")),
 						dummyTable.getColumn("model"))
 				.add(new AccessorChain<>(new PropertyAccessor<>(accessorByMethodReference(Car::getTimestamp), mutatorByMethodReference(Car::setTimestamp)),
@@ -433,7 +425,7 @@ public class PersisterBuilderImplTest {
 		
 		Table tableB = new Table("Vehicle");
 		Table tableC = new Table("Car");
-		PersisterBuilderImpl.propagatePrimarykey(mainTable.getPrimaryKey(), Arrays.asSet(tableB, tableC));
+		PersisterBuilderImpl.propagatePrimaryKey(mainTable.getPrimaryKey(), Arrays.asSet(tableB, tableC));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -474,7 +466,7 @@ public class PersisterBuilderImplTest {
 		Table tableB = new Table("Vehicle");
 		Table tableC = new Table("Car");
 		PrimaryKey primaryKey = testInstance.addIdentifyingPrimarykey(new Identification(identifyingConfiguration), testInstance.collectPropertiesMappingFromInheritance());
-		PersisterBuilderImpl.propagatePrimarykey(primaryKey, Arrays.asSet(tableB, tableC));
+		PersisterBuilderImpl.propagatePrimaryKey(primaryKey, Arrays.asSet(tableB, tableC));
 		testInstance.applyForeignKeys(primaryKey, Arrays.asSet(tableB, tableC));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -647,11 +639,11 @@ public class PersisterBuilderImplTest {
 			assertThat(selectCaptor.getAllValues()).containsExactly(
 				// the expected select may change in future as we don't care about select order nor joins order, tested in case of huge regression
 				"select"
-					+ " Car.id as Car_id,"
 					+ " Car.model as Car_model,"
+					+ " Car.id as Car_id,"
 					+ " AbstractVehicle.creationDate as AbstractVehicle_creationDate,"
-					+ " AbstractVehicle.id as AbstractVehicle_id,"
 					+ " AbstractVehicle.modificationDate as AbstractVehicle_modificationDate,"
+					+ " AbstractVehicle.id as AbstractVehicle_id,"
 					+ " Vehicle.color as Vehicle_color,"
 					+ " Vehicle.id as Vehicle_id"
 					+ " from Car inner join AbstractVehicle as AbstractVehicle on Car.id = AbstractVehicle.id"
@@ -660,7 +652,7 @@ public class PersisterBuilderImplTest {
 		}
 		
 		@Test
-		void build_createsAnInstanceThatDoesntRequiresTwoSelectsOnItsUpdateMethod() throws SQLException {
+		void build_createsAnInstanceThatDoesntRequireTwoSelectsOnItsUpdateMethod() throws SQLException {
 			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.LONG_TYPE)
 					.mapKey(Car::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
@@ -688,7 +680,7 @@ public class PersisterBuilderImplTest {
 			// only 1 select was done whereas entity was updated
 			assertThat(insertCaptor.getAllValues()).containsExactly(
 				"insert into Car(id, model) values (?, ?)",
-				"select Car.id as Car_id, Car.model as Car_model from Car where Car.id in (?)",
+				"select Car.model as Car_model, Car.id as Car_id from Car where Car.id in (?)",
 				"update Car set model = ? where id = ?"
 			);
 			ArgumentCaptor<Integer> valueIndexCaptor = ArgumentCaptor.forClass(int.class);

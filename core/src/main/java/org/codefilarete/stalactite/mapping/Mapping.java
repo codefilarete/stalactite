@@ -1,12 +1,10 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -20,7 +18,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public interface Mapping<C, T extends Table> {
+public interface Mapping<C, T extends Table<T>> {
 	
 	/**
 	 * Returns columns that must be inserted
@@ -29,7 +27,6 @@ public interface Mapping<C, T extends Table> {
 	 * 					may be null when this method is called to manage relationship
 	 * @return a mapping between columns that must be put in the SQL insert order and there values
 	 */
-	@Nonnull
 	Map<Column<T, Object>, Object> getInsertValues(C c);
 	
 	/**
@@ -44,7 +41,6 @@ public interface Mapping<C, T extends Table> {
 	 * 			thus a distinction between columns to be updated and columns necessary to the where clause must be done, this is done through {@link UpwhereColumn},
 	 * 			so returned value may contain duplicates regarding {@link Column} (they can be in update & where part, especially for optimist lock columns)	
 	 */
-	@Nonnull
 	Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns);
 	
 	/**
@@ -68,9 +64,8 @@ public interface Mapping<C, T extends Table> {
 	 * This method might have no purpose for many classes implementing {@link Mapping}.
 	 * 
 	 * @param valueProvider the column value provider
-	 * @param <O> Java type of the column value 
 	 */
-	default <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
+	default void addShadowColumnInsert(ShadowColumnValueProvider<C, T> valueProvider) {
 		// does nothing by default
 	}
 	
@@ -86,9 +81,8 @@ public interface Mapping<C, T extends Table> {
 	 * This method might have no purpose for many classes implementing {@link Mapping}.
 	 *
 	 * @param valueProvider the column value provider
-	 * @param <O> Java type of the column value 
 	 */
-	default <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
+	default void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> valueProvider) {
 		// does nothing by default
 	}
 	
@@ -108,7 +102,7 @@ public interface Mapping<C, T extends Table> {
 	
 	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
 	
-	AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
+	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
 	/**
 	 * Adds a transformer listener, optional operation
@@ -121,7 +115,7 @@ public interface Mapping<C, T extends Table> {
 	/**
 	 * Wrapper for {@link Column} placed in an update statement so it can distinguish if it's for the Update or Where part 
 	 */
-	class UpwhereColumn<T extends Table> {
+	class UpwhereColumn<T extends Table<T>> {
 		
 		/**
 		 * Collects all columns from a set of {@link UpwhereColumn}. Helper method.
@@ -129,7 +123,7 @@ public interface Mapping<C, T extends Table> {
 		 * @param set a non null set
 		 * @return all columns of the set
 		 */
-		public static <T extends Table> Set<Column<T, Object>> getUpdateColumns(@Nonnull Set<UpwhereColumn<T>> set) {
+		public static <T extends Table<T>> Set<Column<T, Object>> getUpdateColumns(Set<? extends UpwhereColumn<T>> set) {
 			Set<Column<T, ?>> updateColumns = new HashSet<>();
 			for (UpwhereColumn<T> upwhereColumn : set) {
 				if (upwhereColumn.update) {
@@ -145,9 +139,9 @@ public interface Mapping<C, T extends Table> {
 		 * @param map a non null map
 		 * @return all columns to be updated
 		 */
-		public static <T extends Table> Map<Column<T, Object>, Object> getUpdateColumns(@Nonnull Map<UpwhereColumn<T>, Object> map) {
+		public static <T extends Table<T>> Map<Column<T, Object>, Object> getUpdateColumns(Map<? extends UpwhereColumn<T>, Object> map) {
 			Map<Column<T, Object>, Object> updateColumns = new HashMap<>();
-			for (Entry<UpwhereColumn<T>, Object> entry : map.entrySet()) {
+			for (Entry<? extends UpwhereColumn<T>, Object> entry : map.entrySet()) {
 				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (upwhereColumn.update) {
 					updateColumns.put((Column<T, Object>) upwhereColumn.column, entry.getValue());
@@ -162,22 +156,22 @@ public interface Mapping<C, T extends Table> {
 		 * @param map a non null map
 		 * @return all columns for the where clause
 		 */
-		public static <T extends Table> Map<Column<T, Object>, Object> getWhereColumns(@Nonnull Map<UpwhereColumn<T>, ?> map) {
+		public static <T extends Table<T>> Map<Column<T, Object>, Object> getWhereColumns(Map<? extends UpwhereColumn<T>, Object> map) {
 			Map<Column<T, Object>, Object> updateColumns = new HashMap<>();
-			for (Entry<UpwhereColumn<T>, ?> entry : map.entrySet()) {
+			for (Entry<? extends UpwhereColumn<T>, Object> entry : map.entrySet()) {
 				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (!upwhereColumn.update) {
-					updateColumns.put((Column<T, Object>) upwhereColumn.column, entry.getValue());
+					updateColumns.put(upwhereColumn.column, entry.getValue());
 				}
 			}
 			return updateColumns;
 		}
 		
-		private final Column<T, ?> column;
+		private final Column<T, Object> column;
 		private final boolean update;
 		
 		public UpwhereColumn(Column<T, ?> column, boolean update) {
-			this.column = column;
+			this.column = (Column<T, Object>) column;
 			this.update = update;
 		}
 		
@@ -226,50 +220,44 @@ public interface Mapping<C, T extends Table> {
 	}
 	
 	/**
-	 * Contract to provide a value of a "non official" {@link Column} of a mapping strategy at insert and update time : those columns are not
-	 * expected to be one of those mapped for properties but can be discriminator, list index, etc...
+	 * Contract to provide values of some "non official" {@link Column}s out of a mapping strategy at insert and update
+	 * time : those columns are not expected to be one of those mapped by properties but can be discriminator, list
+	 * index, etc...
 	 * <br/>
-	 * An instance may reject to provide a value in some circumstances by overriding {@link #accept(Object)} (which returns true by default).
-	 * 
-	 * Reader may be interested in getting {@link Column} value in select phase, then he may use {@link Mapping#addShadowColumnSelect(Column)}
-	 * 
+	 * An instance may reject to provide a value in some circumstances by overriding {@link #accept(Object)} (which
+	 * returns true by default).
+	 *
+	 * Reader may be interested in getting {@link Column} value in select phase, then he may use
+	 * {@link Mapping#addShadowColumnSelect(Column)}
+	 *
 	 * @param <C> bean type to read value from
-	 * @param <V> value type
 	 * @param <T> table type
-	 * @see #giveValue(Object) 
+	 * @see #giveValue(Object)
 	 * @see #accept(Object)
 	 */
-	class ShadowColumnValueProvider<C, V, T extends Table> {
-		
-		private final Column<T, V> column;
-		
-		private final Function<C, V> valueProvider;
+	interface ShadowColumnValueProvider<C, T extends Table<T>> {
 		
 		/**
-		 * Default and only constructor, with mandatory parameters
-		 * 
-		 * @param column the {@link Column} to give a value for 
-		 * @param valueProvider the {@link Function} that can get a value from a bean (which is the one to be inserted / updated)
+		 * Made to determine if current column provider must be included to insert / update statement
+		 * @param entity entity being persisted
+		 * @return true if {@link #giveValue(Object)} must be call
 		 */
-		public ShadowColumnValueProvider(Column<T, V> column, Function<C, V> valueProvider) {
-			this.column = column;
-			this.valueProvider = valueProvider;
-		}
-		
-		public Column<T, V> getColumn() {
-			return column;
-		}
-		
-		public Function<C, V> getValueProvider() {
-			return valueProvider;
-		}
-		
-		public boolean accept(C entity) {
+		default boolean accept(C entity) {
 			return true;
 		}
 		
-		public V giveValue(C entity) {
-			return valueProvider.apply(entity);
-		}
+		/**
+		 * Gives the columns to be appended to the insert or update SQL statement.
+		 * 
+		 * @return columns to be appended to the insert or update SQL statement.
+		 */
+		Set<Column<T, Object>> getColumns();
+		
+		/**
+		 * Expected to give values to be set in insert or update SQL Statement for given entity
+		 * @param bean the entity that is being persisted
+		 * @return values per {@link Column} (must be same column instances that were given to {@link #getColumns()})
+		 */
+		Map<Column<T, Object>, Object> giveValue(C bean);
 	}
 }

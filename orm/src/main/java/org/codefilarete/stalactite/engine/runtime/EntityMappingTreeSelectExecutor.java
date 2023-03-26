@@ -26,11 +26,13 @@ import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.DDLAppender;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -41,7 +43,6 @@ import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.ParameterizedWhere;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
@@ -58,17 +59,17 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I>, JoinableSelectExecutor {
+public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I>, JoinableSelectExecutor {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final Dialect dialect;
 	private final int blockSize;
 	
-	private final PrimaryKey<T> primaryKey;
+	private final PrimaryKey<T, I> primaryKey;
 	private final WhereClauseDMLNameProvider whereClauseDMLNameProvider;
 	private final ConnectionProvider connectionProvider;
-	private final IdentifierAssembler<I> identifierAssembler;
+	private final IdentifierAssembler<I, T> identifierAssembler;
 	
 	protected SQLOperationListener<Column<T, Object>> operationListener;
 	
@@ -117,7 +118,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
+	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
@@ -134,16 +135,19 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 			String leftStrategyName,
 			EntityMapping<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
-			Column<T1, ID> leftJoinColumn,
-			Column<T2, ID> rightJoinColumn) {
+			Key<T1, ID> leftJoinColumn,
+			Key<T2, ID> rightJoinColumn) {
 		// we outer join nullable columns
-		boolean isOuterJoin = rightJoinColumn.isNullable();
+		boolean isOuterJoin = true;
+		for (JoinLink<T2, Object> joinLink : rightJoinColumn.getColumns()) {
+			isOuterJoin &= joinLink instanceof Column && ((Column<T2, Object>) joinLink).isNullable();
+		}
 		return addRelation(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 
 	/**
 	 * Adds a join to this executor.
-	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
+	 * Shortcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
@@ -162,10 +166,10 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 			String leftStrategyName,
 			EntityMapping<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
-			Column<T1, ID> leftJoinColumn,
-			Column<T2, ID> rightJoinColumn,
+			Key<T1, ID> leftJoinColumn,
+			Key<T2, ID> rightJoinColumn,
 			boolean isOuterJoin) {
-		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingAdapter<>(strategy), leftJoinColumn, rightJoinColumn,
+		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingAdapter<U, ID, T2>(strategy), leftJoinColumn, rightJoinColumn,
 											  null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, java.util.Collections.emptySet());
 	}
 	
@@ -186,8 +190,8 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> implements o
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(
 			String leftStrategyName,
 			EntityMapping<U, ID, T2> strategy,
-			Column<T1, ID> leftJoinColumn,
-			Column<T2, ID> rightJoinColumn) {
+			Key<T1, ID> leftJoinColumn,
+			Key<T2, ID> rightJoinColumn) {
 		return entityJoinTree.addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy), leftJoinColumn, rightJoinColumn);
 	}
 	

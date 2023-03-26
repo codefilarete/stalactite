@@ -25,16 +25,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.test.PairSetList.pairSetList;
 import static org.mockito.Mockito.*;
 
-class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
+class DeleteExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
 	
-	private DeleteExecutor<Toto, Integer, Table> testInstance;
+	private DeleteExecutor<Toto, Integer, T> testInstance;
 	
 	@BeforeEach
 	void setUp() {
-		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 											new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
@@ -55,11 +55,11 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void listenerIsCalled() {
-		SQLOperationListener<Column<Table, Object>> listenerMock = mock(SQLOperationListener.class);
-		testInstance.setOperationListener(listenerMock);
+		SQLOperationListener<Column<?, Object>> listenerMock = mock(SQLOperationListener.class);
+		testInstance.setOperationListener((SQLOperationListener) listenerMock);
 		
-		ArgumentCaptor<Map<Column<Table, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
-		ArgumentCaptor<SQLStatement<Column<Table, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
+		ArgumentCaptor<Map<Column<?, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
+		ArgumentCaptor<SQLStatement<Column<?, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
 		
 		try {
 			testInstance.delete(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31)));
@@ -159,9 +159,9 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void deleteById_composedId_multiple_lastBlockContainsOneValue() throws Exception {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, ?> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
+		DeleteExecutor<Toto, Toto, ?> testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
 		testInstance.deleteById(Arrays.asList(
@@ -185,9 +185,9 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void deleteById_composedId_multiple_lastBlockContainsMultipleValue() throws Exception {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, ?> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		DeleteExecutor<Toto, Toto, Table> testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
+		DeleteExecutor<Toto, Toto, ?> testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
 		testInstance.deleteById(Arrays.asList(
@@ -215,9 +215,9 @@ class DeleteExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void deleteById_composedId_multiple_lastBlockSizeIsInOperatorSize() throws Exception {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, ?> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		DeleteExecutor<Toto, Toto, Table>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
+		DeleteExecutor<Toto, Toto, ?>testInstance = new DeleteExecutor<>(persistenceConfiguration.classMappingStrategy,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 		
 		testInstance.deleteById(Arrays.asList(

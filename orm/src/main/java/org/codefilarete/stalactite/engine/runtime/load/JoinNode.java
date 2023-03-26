@@ -13,9 +13,9 @@ import org.codefilarete.tool.collection.ReadOnlyList;
  */
 public interface JoinNode<T extends Fromable> {
 	
-	Fromable getTable();
+	T getTable();
 	
-	Set<Selectable<?>> getColumnsToSelect();
+	Set<Selectable<Object>> getColumnsToSelect();
 	
 	@Nullable
 	String getTableAlias();

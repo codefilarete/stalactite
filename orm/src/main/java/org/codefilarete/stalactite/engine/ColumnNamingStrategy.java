@@ -19,18 +19,11 @@ public interface ColumnNamingStrategy {
 	 */
 	String giveName(AccessorDefinition accessorDefinition);
 	
-	String DEFAULT_JOIN_COLUMN_SUFFIX = "Id";
-	
 	/**
 	 * Strategy to give property name as the column name, property name is taken from method according to the Java Bean naming convention
 	 */
 	ColumnNamingStrategy DEFAULT = accessor -> Strings.uncapitalize(Reflections.onJavaBeanPropertyWrapperNameGeneric(accessor.getName(), accessor.getName(),
 			GET_SET_PREFIX_REMOVER, GET_SET_PREFIX_REMOVER, IS_PREFIX_REMOVER, s -> s));
-	
-	/**
-	 * Adds {@value #DEFAULT_JOIN_COLUMN_SUFFIX} to the {@link #DEFAULT} naming strategy 
-	 */
-	ColumnNamingStrategy JOIN_DEFAULT = accessor -> DEFAULT.giveName(accessor) + DEFAULT_JOIN_COLUMN_SUFFIX;
 	
 	/**
 	 * Default naming for index column in one-to-many {@link java.util.List} association

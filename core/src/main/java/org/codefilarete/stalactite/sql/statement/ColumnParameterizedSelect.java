@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterI
  * 
  * @author Guillaume Mary
  */
-public class ColumnParameterizedSelect<T extends Table> extends ColumnParameterizedSQL<T> {
+public class ColumnParameterizedSelect<T extends Table<T>> extends ColumnParameterizedSQL<T> {
 	
 	private final ParameterBinderIndex<String, ParameterBinder> selectParameterBinders;
 	

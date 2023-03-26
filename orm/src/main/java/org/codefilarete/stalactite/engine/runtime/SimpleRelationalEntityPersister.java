@@ -16,9 +16,9 @@ import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
@@ -33,6 +33,7 @@ import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -47,8 +48,8 @@ import static java.util.Collections.emptyList;
  * Persister that registers relations of entities joined on "foreign key = primary key".
  * This does not handle inheritance nor entities mapped on several tables, it focuses on select part : a main table is defined by
  * {@link ClassMapping} passed to constructor which then it can be added to some other {@link RelationalEntityPersister} thanks to
- * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Column, Column, BeanRelationFixer, BiFunction, String, boolean, boolean)} and
- * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Column, Column, String, BeanRelationFixer, boolean, boolean)}.
+ * {@link RelationalEntityPersister#joinAsMany(RelationalEntityPersister, Key, Key, BeanRelationFixer, BiFunction, String, boolean, boolean)} and
+ * {@link RelationalEntityPersister#joinAsOne(RelationalEntityPersister, Key, Key, String, BeanRelationFixer, boolean, boolean)}.
  * 
  * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
  * entity loading.
@@ -61,7 +62,7 @@ import static java.util.Collections.emptyList;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class SimpleRelationalEntityPersister<C, I, T extends Table> implements EntityConfiguredJoinedTablesPersister<C, I> {
+public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implements EntityConfiguredJoinedTablesPersister<C, I> {
 	
 	private final Persister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
@@ -230,13 +231,13 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	 * @return created join name
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																				  Column<T1, JID> leftColumn,
-																				  Column<T2, JID> rightColumn,
-																				  String rightTableAlias,
-																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  boolean optional,
-																				  boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																					 Key<T1, JOINID> leftColumn,
+																					 Key<T2, JOINID> rightColumn,
+																					 String rightTableAlias,
+																					 BeanRelationFixer<SRC, C> beanRelationFixer,
+																					 boolean optional,
+																					 boolean loadSeparately) {
 		
 		// We use our own select system since SelectListener is not aimed at joining table
 		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
@@ -261,21 +262,22 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table> implements E
 	 * Implementation for simple one-to-many cases : we add our joins to given persister
 	 */
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																				  Column<T1, ID> leftColumn,
-																				  Column<T2, ID> rightColumn,
-																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider,
-																				  String joinName,
-																				  Set<Column<T2, ?>> selectableColumns, boolean optional,
-																				  boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							  Key<T1, JOINID> leftColumn,
+																							  Key<T2, JOINID> rightColumn,
+																							  BeanRelationFixer<SRC, C> beanRelationFixer,
+																							  @Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider,
+																							  String joinName,
+																							  Set<? extends Column<T2, Object>> selectableColumns,
+																							  boolean optional,
+																							  boolean loadSeparately) {
 		
 		EntityMappingAdapter<C, I, T> strategy = new EntityMappingAdapter<>(getMapping());
 		String createdJoinNodeName = sourcePersister.getEntityJoinTree().addRelationJoin(
 				joinName,
-				(EntityInflater) strategy,
-				(Column) leftColumn,
-				(Column) rightColumn,
+				strategy,
+				leftColumn,
+				rightColumn,
 				null,
 				optional ? JoinType.OUTER : JoinType.INNER,
 				beanRelationFixer,

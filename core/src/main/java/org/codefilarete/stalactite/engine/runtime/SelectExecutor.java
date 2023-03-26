@@ -31,7 +31,7 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
+public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, T> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I> {
 	
 	private final InternalExecutor<C, I, T> internalExecutor;
 	
@@ -82,7 +82,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	@SuppressWarnings("java:S2095")	// ReadOperation is close at execution time and is not used in this method
 	private ReadOperation<Column<T, Object>> newReadOperation(T targetTable, Set<Column<T, Object>> columnsToRead, int blockSize,
 												   ConnectionProvider connectionProvider) {
-		PrimaryKey<T> primaryKey = targetTable.getPrimaryKey();
+		PrimaryKey<T, ?> primaryKey = targetTable.getPrimaryKey();
 		ColumnParameterizedSelect<T> selectStatement = getDmlGenerator().buildSelectByKey(targetTable, columnsToRead, primaryKey.getColumns(), blockSize);
 		ReadOperation<Column<T, Object>> readOperation = new ReadOperation<>(selectStatement, connectionProvider);
 		readOperation.setListener(this.operationListener);
@@ -93,9 +93,9 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 	 * Small class that focuses on operation execution and entity creation from its result.
 	 */
 	@VisibleForTesting
-	static class InternalExecutor<C, I, T extends Table> {
+	static class InternalExecutor<C, I, T extends Table<T>> {
 		
-		private final IdentifierAssembler<I> primaryKeyProvider;
+		private final IdentifierAssembler<I, T> primaryKeyProvider;
 		private final Function<Row, C> transformer;
 		
 		InternalExecutor(EntityMapping<C, I, T> mapping) {
@@ -106,7 +106,7 @@ public class SelectExecutor<C, I, T extends Table> extends DMLExecutor<C, I, T> 
 		 * @param primaryKeyProvider will provide entity ids necessary to set parameters of {@link ReadOperation} before its execution 
 		 * @param transformer will transform result given by {@link ReadOperation} execution
 		 */
-		InternalExecutor(IdentifierAssembler<I> primaryKeyProvider, Function<Row, C> transformer) {
+		InternalExecutor(IdentifierAssembler<I, T> primaryKeyProvider, Function<Row, C> transformer) {
 			this.primaryKeyProvider = primaryKeyProvider;
 			this.transformer = transformer;
 		}

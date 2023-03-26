@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -11,18 +10,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Predicates;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * A mapping strategy to persist a {@link ZonedDateTime} : requires 2 columns, one for the date-time part, another for the timezone.
@@ -36,7 +35,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class ZonedDateTimeMapping<T extends Table> implements EmbeddedBeanMapping<ZonedDateTime, T> {
+public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMapping<ZonedDateTime, T> {
 	
 	private final Column<T, LocalDateTime> dateTimeColumn;
 	private final Column<T, ZoneId> zoneColumn;
@@ -68,7 +67,6 @@ public class ZonedDateTimeMapping<T extends Table> implements EmbeddedBeanMappin
 		this.zonedDateTimeRowTransformer = new ZonedDateTimeToBeanRowTransformer();
 	}
 	
-	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return (Set) columns;
@@ -79,16 +77,14 @@ public class ZonedDateTimeMapping<T extends Table> implements EmbeddedBeanMappin
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
-	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(ZonedDateTime zonedDateTime) {
 		Map<Column<T, ?>, Object> result = new HashMap<>();
 		result.put(dateTimeColumn, zonedDateTime.toLocalDateTime());
 		result.put(zoneColumn, zonedDateTime.getZone());
-		return (Map) result;
+		return (Map<Column<T, Object>, Object>) (Map) result;
 	}
 	
-	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(ZonedDateTime modified, ZonedDateTime unmodified, boolean allColumns) {
 		Map<Column<T, ?>, Object> unmodifiedColumns = new HashMap<>();

@@ -4,9 +4,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.configurer.OneToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.ElementCollectionRelation;
-import org.codefilarete.stalactite.engine.configurer.OneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**

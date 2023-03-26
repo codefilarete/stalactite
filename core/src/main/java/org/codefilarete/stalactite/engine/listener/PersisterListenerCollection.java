@@ -40,27 +40,27 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	public <R> R doWithInsertListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		insertListener.beforeInsert(entities);
 		R result;
 		try {
+			insertListener.beforeInsert(entities);
 			result = delegate.execute();
+			insertListener.afterInsert(entities);
 		} catch (RuntimeException e) {
 			insertListener.onError(entities, e);
 			throw e;
 		}
-		insertListener.afterInsert(entities);
 		return result;
 	}
 	
 	public void doWithInsertListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		insertListener.beforeInsert(entities);
 		try {
+			insertListener.beforeInsert(entities);
 			delegate.run();
+			insertListener.afterInsert(entities);
 		} catch (RuntimeException e) {
 			insertListener.onError(entities, e);
 			throw e;
 		}
-		insertListener.afterInsert(entities);
 	}
 	
 	public UpdateByIdListenerCollection<C> getUpdateByIdListener() {
@@ -73,16 +73,27 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	public <R> R doWithUpdateByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		updateByIdListener.beforeUpdateById(entities);
-		R result = execute(delegate, entities, updateByIdListener::onError);
-		updateByIdListener.afterUpdateById(entities);
+		R result;
+		try {
+			updateByIdListener.beforeUpdateById(entities);
+			result = delegate.execute();
+			updateByIdListener.afterUpdateById(entities);
+		} catch (RuntimeException e) {
+			updateByIdListener.onError(entities, e);
+			throw e;
+		}
 		return result;
 	}
 	
 	public void doWithUpdateByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		updateByIdListener.beforeUpdateById(entities);
-		execute(delegate, entities, updateByIdListener::onError);
-		updateByIdListener.afterUpdateById(entities);
+		try {
+			updateByIdListener.beforeUpdateById(entities);
+			delegate.run();
+			updateByIdListener.afterUpdateById(entities);
+		} catch (RuntimeException e) {
+			updateByIdListener.onError(entities, e);
+			throw e;
+		}
 	}
 	
 	public UpdateListenerCollection<C> getUpdateListener() {
@@ -96,28 +107,28 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	
 	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
 														  BiFunction<Iterable<? extends Duo<C, C>>, Boolean, R> delegate) {
-		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		R result;
 		try {
+			updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 			result = delegate.apply(differencesIterable, allColumnsStatement);
+			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
 			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
-		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		return result;
 	}
 	
 	public <T extends Table<T>> void doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
 														  BiConsumer<Iterable<? extends Duo<C, C>>, Boolean> delegate) {
-		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		try {
+			updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 			delegate.accept(differencesIterable, allColumnsStatement);
+			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
 			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
-		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 	}
 	
 	public DeleteListenerCollection<C> getDeleteListener() {
@@ -134,16 +145,27 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	public <R> R doWithDeleteListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		deleteListener.beforeDelete(entities);
-		R result = execute(delegate, entities, deleteListener::onError);
-		deleteListener.afterDelete(entities);
+		R result;
+		try {
+			deleteListener.beforeDelete(entities);
+			result = delegate.execute();
+			deleteListener.afterDelete(entities);
+		} catch (RuntimeException e) {
+			deleteListener.onError(entities, e);
+			throw e;
+		}
 		return result;
 	}
 	
 	public void doWithDeleteListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		deleteListener.beforeDelete(entities);
-		execute(delegate, entities, deleteListener::onError);
-		deleteListener.afterDelete(entities);
+		try {
+			deleteListener.beforeDelete(entities);
+			delegate.run();
+			deleteListener.afterDelete(entities);
+		} catch (RuntimeException e) {
+			deleteListener.onError(entities, e);
+			throw e;
+		}
 	}
 	
 	@Override
@@ -152,16 +174,27 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	public <R> R doWithDeleteByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		deleteByIdListener.beforeDeleteById(entities);
-		R result = execute(delegate, entities, deleteByIdListener::onError);
-		deleteByIdListener.afterDeleteById(entities);
+		R result;
+		try {
+			deleteByIdListener.beforeDeleteById(entities);
+			result = delegate.execute();
+			deleteByIdListener.afterDeleteById(entities);
+		} catch (RuntimeException e) {
+			deleteByIdListener.onError(entities, e);
+			throw e;
+		}
 		return result;
 	}
 	
 	public void doWithDeleteByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		deleteByIdListener.beforeDeleteById(entities);
-		execute(delegate, entities, deleteByIdListener::onError);
-		deleteByIdListener.afterDeleteById(entities);
+		try {
+			deleteByIdListener.beforeDeleteById(entities);
+			delegate.run();
+			deleteByIdListener.afterDeleteById(entities);
+		} catch (RuntimeException e) {
+			deleteByIdListener.onError(entities, e);
+			throw e;
+		}
 	}
 	
 	public SelectListenerCollection<C, I> getSelectListener() {
@@ -174,30 +207,16 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	public List<C> doWithSelectListener(Iterable<I> ids, ThrowingExecutable<List<C>, RuntimeException> delegate) {
-		selectListener.beforeSelect(ids);
-		List<C> result = execute(delegate, ids, selectListener::onError);
-		selectListener.afterSelect(result);
+		List<C> result;
+		try {
+			selectListener.beforeSelect(ids);
+			result = delegate.execute();
+			selectListener.afterSelect(result);
+		} catch (RuntimeException e) {
+			selectListener.onError(ids, e);
+			throw e;
+		}
 		return result;
-	}
-	
-	private <X, R> R execute(ThrowingExecutable<R, RuntimeException> delegate, Iterable<X> entities,
-								 BiConsumer<Iterable<X>, RuntimeException> errorHandler) {
-		try {
-			return delegate.execute();
-		} catch (RuntimeException e) {
-			errorHandler.accept(entities, e);
-			throw e;
-		}
-	}
-	
-	private <X> void execute(ThrowingRunnable<RuntimeException> delegate, Iterable<X> entities,
-								 BiConsumer<Iterable<X>, RuntimeException> errorHandler) {
-		try {
-			delegate.run();
-		} catch (RuntimeException e) {
-			errorHandler.accept(entities, e);
-			throw e;
-		}
 	}
 	
 	/**

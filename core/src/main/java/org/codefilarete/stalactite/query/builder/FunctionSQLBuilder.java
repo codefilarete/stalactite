@@ -1,13 +1,13 @@
 package org.codefilarete.stalactite.query.builder;
 
+import java.util.Collections;
+
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.tool.VisibleForTesting;
-
-import java.util.Collections;
 
 /**
  * A class made to print a {@link SQLFunction}
@@ -57,7 +57,7 @@ public class FunctionSQLBuilder {
 		if (cast.getCastTarget() instanceof SQLFunction) {
 			this.cat((SQLFunction) cast.getCastTarget(), sqlAppender);
 		} else {
-			sqlAppender.catValue(null, cast.getCastTarget());
+			sqlAppender.catValue(cast.getCastTarget());
 		}
 		sqlAppender.cat(" as " , javaTypeToSqlTypeMapping.getTypeName(cast.getJavaType(), cast.getTypeSize()), ")");
 	}

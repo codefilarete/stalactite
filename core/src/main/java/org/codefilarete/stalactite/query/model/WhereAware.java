@@ -16,4 +16,6 @@ public interface WhereAware extends GroupByAware {
 	
 	FluentWhereClause where(Criteria criteria);
 	
+	FluentWhereClause where(Object... criteria);
+	
 }

@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  *
  * @author Guillaume Mary
  */
-public interface EntityMapping<C, I, T extends Table> extends Mapping<C, T>, IdAccessor<C, I> {
+public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, IdAccessor<C, I> {
 	
 	T getTargetTable();
 	

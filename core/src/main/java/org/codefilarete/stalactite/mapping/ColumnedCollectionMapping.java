@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -11,6 +10,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.Duo;
@@ -22,11 +26,6 @@ import org.codefilarete.tool.collection.PairIterator.EmptyIterator;
 import org.codefilarete.tool.collection.PairIterator.InfiniteIterator;
 import org.codefilarete.tool.collection.PairIterator.UntilBothIterator;
 import org.codefilarete.tool.function.Predicates;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * A class that "roughly" persists a {@link Collection} to some {@link Column}s : {@link Collection} values are written to given {@link Column}s.
@@ -34,7 +33,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Table> implements EmbeddedBeanMapping<C, T> {
+public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Table<T>> implements EmbeddedBeanMapping<C, T> {
 	
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;
@@ -63,7 +62,6 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 		return targetTable;
 	}
 	
-	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return columns;
@@ -74,7 +72,6 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
-	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Collection<O> toIterate = c;
@@ -87,7 +84,6 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 		return Iterables.map(() -> valueColumnPairIterator, Duo::getLeft, e -> toDatabaseValue(e.getRight()));
 	}
 	
-	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
@@ -183,7 +179,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 			this.databaseValueConverter = databaseValueConverter;
 		}
 		
-		private LocalToCollectionRowTransformer(Function<Function<Column, Object>, C> beanFactory, ColumnedRow columnedRow,
+		private LocalToCollectionRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow,
 												Iterable<Column> columns, Function<Object, Object> databaseValueConverter) {
 			super(beanFactory, columnedRow);
 			this.columns = columns;

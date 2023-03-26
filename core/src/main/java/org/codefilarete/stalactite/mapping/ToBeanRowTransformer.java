@@ -64,12 +64,12 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	 * @param beanFactory factory to be used to instantiate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
-	public ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
+	public ToBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
 		super(beanFactory, new ColumnedRow());
 		this.columnToMember = columnToMember;
 	}
 	
-	protected ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
+	protected ToBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
 								   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
 		super(beanFactory, columnedRow, rowTransformerListeners);
 		this.columnToMember = columnToMember;

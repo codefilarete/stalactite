@@ -40,4 +40,8 @@ public class PostgreSQLDialect extends Dialect {
 		}
 	}
 	
+	@Override
+	public boolean supportsTupleCondition() {
+		return true;
+	}
 }

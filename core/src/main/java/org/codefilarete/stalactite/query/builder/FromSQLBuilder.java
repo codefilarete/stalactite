@@ -8,8 +8,10 @@ import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
 import org.codefilarete.stalactite.query.model.From.ColumnJoin;
 import org.codefilarete.stalactite.query.model.From.CrossJoin;
 import org.codefilarete.stalactite.query.model.From.Join;
+import org.codefilarete.stalactite.query.model.From.KeyJoin;
 import org.codefilarete.stalactite.query.model.From.RawTableJoin;
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -17,6 +19,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.PairIterator;
 
 /**
  * @author Guillaume Mary
@@ -129,6 +132,15 @@ public class FromSQLBuilder implements SQLBuilder {
 				CharSequence leftPrefix = getAliasOrDefault(columnJoin.getLeftColumn().getOwner());
 				CharSequence rightPrefix = getAliasOrDefault(columnJoin.getRightColumn().getOwner());
 				cat(leftPrefix, ".", columnJoin.getLeftColumn().getExpression(), " = ", rightPrefix, ".", columnJoin.getRightColumn().getExpression());
+			} else if (join instanceof KeyJoin) {
+				KeyJoin keyJoin = (KeyJoin) join;
+				PairIterator<JoinLink<?, ?>, JoinLink<?, ?>> joinColumnsPairs = new PairIterator<>(keyJoin.getLeftKey().getColumns(), keyJoin.getRightKey().getColumns());
+				joinColumnsPairs.forEachRemaining(duo -> {
+					CharSequence leftPrefix = getAliasOrDefault(duo.getLeft().getOwner());
+					CharSequence rightPrefix = getAliasOrDefault(duo.getRight().getOwner());
+					cat(leftPrefix, ".", duo.getLeft().getExpression(), " = ", rightPrefix, ".", duo.getRight().getExpression(), " and ");
+				});
+				cutTail(" and ".length());
 			} else {
 				// did I miss something ?
 				throw new UnsupportedOperationException("From building is not implemented for " + join.getClass().getName());

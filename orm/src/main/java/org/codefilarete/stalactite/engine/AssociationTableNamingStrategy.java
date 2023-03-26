@@ -1,12 +1,17 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.annotation.Nonnull;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Consumer;
 
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.Strings;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Strings;
 
 /**
  * Contract for giving a name to an association table (one-to-many cases)
@@ -17,14 +22,58 @@ public interface AssociationTableNamingStrategy {
 	
 	/**
 	 * Gives association table name
-	 * @param accessorDefinition a representation of the method (getter or setter) that gives the collection to be persisted
-	 * @param source column that maps "one" side (on source table)
-	 * @param target column that maps "many" side (on target table)
+	 * @param accessorDefinition a representation of the method (getter or setter) that gives the collection to be persisted,
+	 * given to contextualize method call and help to decide which naming to apply
+	 * @param source columns that maps "one" side (on source table)
+	 * @param target columns that maps "many" side (on target table)
 	 * @return table name for association table
 	 */
-	String giveName(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column source, @Nonnull Column target);
+	<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
+	String giveName(AccessorDefinition accessorDefinition, PrimaryKey<LEFTTABLE, ?> source, PrimaryKey<RIGHTTABLE, ?> target);
 	
-	Duo<String, String> giveColumnNames(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column leftPrimaryKey, @Nonnull Column rightPrimaryKey);
+	/**
+	 * Gives column names referenced by given keys
+	 *
+	 * @param accessorDefinition a representation of the method (getter or setter) that gives the collection to be persisted,
+	 * given to contextualize method call and help to decide which naming to apply
+	 * @param leftPrimaryKey primary key of left-side-entity table 
+	 * @param rightPrimaryKey primary key of right-side-entity table
+	 * @return a mapping between each left and right primary key columns and the names of the ones that should be created in association table 
+	 */
+	<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, LEFTID, RIGHTID> ReferencedColumnNames<LEFTTABLE, RIGHTTABLE>
+	giveColumnNames(AccessorDefinition accessorDefinition, PrimaryKey<LEFTTABLE, LEFTID> leftPrimaryKey, PrimaryKey<RIGHTTABLE, RIGHTID> rightPrimaryKey);
+	
+	class ReferencedColumnNames<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
+		
+		private final Map<Column<LEFTTABLE, Object>, String> leftColumnNames = new HashMap<>();
+		
+		private final Map<Column<RIGHTTABLE, Object>, String> rightColumnNames = new HashMap<>();
+		
+		public void setLeftColumnName(Column<LEFTTABLE, ?> column, String name) {
+			this.leftColumnNames.put((Column<LEFTTABLE, Object>) column, name);
+		}
+		
+		public String getLeftColumnName(Column<LEFTTABLE, ?> column) {
+			return leftColumnNames.get(column);
+		}
+		
+		public void foreachLeftColumn(Consumer<Entry<Column<LEFTTABLE, Object>, String>> consumer) {
+			this.leftColumnNames.entrySet().forEach(consumer);
+		}
+		
+		public void setRightColumnName(Column<RIGHTTABLE, ?> column, String name) {
+			this.rightColumnNames.put((Column<RIGHTTABLE, Object>) column, name);
+		}
+		
+		public String getRightColumnName(Column<RIGHTTABLE, ?> column) {
+			return rightColumnNames.get(column);
+		}
+		
+		public void foreachRightColumn(Consumer<Entry<Column<RIGHTTABLE, Object>, String>> consumer) {
+			this.rightColumnNames.entrySet().forEach(consumer);
+		}
+	}
+	
 	
 	AssociationTableNamingStrategy DEFAULT = new DefaultAssociationTableNamingStrategy();
 	
@@ -40,29 +89,38 @@ public interface AssociationTableNamingStrategy {
 	class DefaultAssociationTableNamingStrategy implements AssociationTableNamingStrategy {
 		
 		@Override
-		public String giveName(@Nonnull AccessorDefinition accessor, @Nonnull Column source, @Nonnull Column target) {
+		public <LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
+		String giveName(AccessorDefinition accessor, PrimaryKey<LEFTTABLE, ?> source, PrimaryKey<RIGHTTABLE, ?> target) {
 			return accessor.getDeclaringClass().getSimpleName() + "_" + accessor.getName();
 		}
 		
 		@Override
-		public Duo<String, String> giveColumnNames(@Nonnull AccessorDefinition accessorDefinition, @Nonnull Column leftPrimaryKey, @Nonnull Column rightPrimaryKey) {
-			String oneSideColumnName = Strings.uncapitalize(leftPrimaryKey.getTable().getName()) + "_" + leftPrimaryKey.getName();
-			String manySideColumnName = Strings.uncapitalize(rightPrimaryKey.getTable().getName()) + "_" + rightPrimaryKey.getName();
-			if (manySideColumnName.equalsIgnoreCase(oneSideColumnName)) {
-				String propertyName = accessorDefinition.getName();
-				// removing ending "s" if present, for good english if project speaks english (not a strong rule, could be removed, overall because
-				// the strategy can be replaced by whatever needed)
-				if (propertyName.endsWith("s")) {
-					propertyName = Strings.cutTail(propertyName, 1).toString();
-				}
-				manySideColumnName = propertyName + "_" + rightPrimaryKey.getName();
-				
-				if (manySideColumnName.equalsIgnoreCase(oneSideColumnName)) {
+		public <LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, LEFTID, RIGHTID>
+		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> giveColumnNames(AccessorDefinition accessorDefinition,
+																	 PrimaryKey<LEFTTABLE, LEFTID> leftPrimaryKey,
+																	 PrimaryKey<RIGHTTABLE, RIGHTID> rightPrimaryKey) {
+			
+			ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> result = new ReferencedColumnNames<>();
+			
+			// columns pointing to left table get same names as original ones
+			leftPrimaryKey.getColumns().forEach(column -> {
+				String leftColumnName = Strings.uncapitalize(leftPrimaryKey.getTable().getName()) + "_" + column.getName();
+				result.setLeftColumnName(column, leftColumnName);
+			});
+			Set<String> existingColumns = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+			existingColumns.addAll(result.leftColumnNames.values());
+			
+			// columns pointing to right table get a name that contains accessor definition name
+			String rightSideColumnNamePrefix = accessorDefinition.getName();
+			rightPrimaryKey.getColumns().forEach(column -> {
+				String rightColumnName = Strings.uncapitalize(rightSideColumnNamePrefix + "_" + column.getName());
+				if (existingColumns.contains(rightColumnName)) {
 					throw new MappingConfigurationException("Identical column names in association table of collection "
-							+ Reflections.toString(accessorDefinition.getDeclaringClass()) + "." + accessorDefinition.getName());
+							+ accessorDefinition + " : " + rightColumnName);
 				}
-			}
-			return new Duo<>(oneSideColumnName, manySideColumnName);
+				result.setRightColumnName(column, rightColumnName);
+			});
+			return result;
 		}
 	}
 }

@@ -119,7 +119,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * @param input column to use for retrieving value to be given as constructor argument
 		 * @return this
 		 */
-		<T extends Table> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
+		<T extends Table<T>> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
 		
 		/**
 		 * Variant of {@link #usingConstructor(Function, Column)} with only column name.
@@ -140,9 +140,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * @param input1 first column to use for retrieving value to be given as constructor argument
 		 * @param input2 second column to use for retrieving value to be given as constructor argument
 		 */
-		<X, T extends Table> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
-															   Column<T, I> input1,
-															   Column<T, X> input2);
+		<X, T extends Table<T>> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+																  Column<T, I> input1,
+																  Column<T, X> input2);
 		
 		/**
 		 * Variant of {@link #usingConstructor(BiFunction, Column, Column)} with only column names.
@@ -167,10 +167,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * @param input2 second column to use for retrieving value to be given as constructor argument
 		 * @param input3 third column to use for retrieving value to be given as constructor argument
 		 */
-		<X, Y, T extends Table> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
-																  Column<T, I> input1,
-																  Column<T, X> input2,
-																  Column<T, Y> input3);
+		<X, Y, T extends Table<T>> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+																	 Column<T, I> input1,
+																	 Column<T, X> input2,
+																	 Column<T, Y> input3);
 		
 		/**
 		 * Variant of {@link #usingConstructor(TriFunction, Column, Column, Column)} with only column names.
@@ -198,7 +198,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 */
 		// signature note : the generics wildcard ? are actually expected to be of same type, but left it as it is because setting a generics type
 		// for it makes usage of Function::apply quite difficult (lot of cast) because the generics type car hardly be something else than Object  
-		<T extends Table> KeyOptions<C, I> usingFactory(Function<Function<Column<T, ?>, ?>, C> factory);
+		KeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory);
 		
 	}
 	
@@ -211,15 +211,15 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory);
 		
 		@Override
-		<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
+		<T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
 		
 		@Override
 		FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName);
 		
 		@Override
-		<X, T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
-																						 Column<T, I> input1,
-																						 Column<T, X> input2);
+		<X, T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+																							Column<T, I> input1,
+																							Column<T, X> input2);
 		
 		@Override
 		<X> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
@@ -227,10 +227,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 																		String columnName2);
 		
 		@Override
-		<X, Y, T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
-																							Column<T, I> input1,
-																							Column<T, X> input2,
-																							Column<T, Y> input3);
+		<X, Y, T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+																							   Column<T, I> input1,
+																							   Column<T, X> input2,
+																							   Column<T, Y> input3);
 		
 		@Override
 		<X, Y> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
@@ -239,7 +239,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 																		   String columnName3);
 		
 		@Override
-		<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingFactory(Function<Function<Column<T, ?>, ?>, C> factory);
+		FluentEntityMappingBuilderKeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory);
 	}
 	
 	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter);
@@ -278,7 +278,11 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	FluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
+	FluentEntityMappingBuilder<C, I> withJoinColumnNaming(JoinColumnNamingStrategy joinColumnNamingStrategy);
+	
 	FluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
+	
+	FluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
 	/**
 	 * Declares the inherited mapping.
@@ -459,10 +463,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
-	
-	FluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
-	
-	FluentEntityMappingBuilder<C, I> withJoinColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Sets {@link ColumnNamingStrategy} for index column of one-to-many {@link List} association

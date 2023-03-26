@@ -30,7 +30,7 @@ public class ColumnedMapMappingTest {
 	private static Map<Integer, Column> columnToKey;
 	private static Map<Column, Integer> keyToColumn;
 	
-	public static void setUpClass() {
+	static void setUpClass() {
 		totoTable = new Table(null, "Toto");
 		final int nbCol = 5;
 		columnToKey = new HashMap<>();
@@ -50,11 +50,11 @@ public class ColumnedMapMappingTest {
 		col5 = namedColumns.get("col_5");
 	}
 	
-	private ColumnedMapMapping<Map<Integer, String>, Integer, String, Table> testInstance;
+	private ColumnedMapMapping<Map<Integer, String>, Integer, String, ?> testInstance;
 	
 	@BeforeEach
-	public void setUp() {
-		testInstance = new ColumnedMapMapping<Map<Integer, String>, Integer, String, Table>(totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
+	<T extends Table<T>> void setUp() {
+		testInstance = new ColumnedMapMapping<Map<Integer, String>, Integer, String, T>((T) totoTable, totoTable.getColumns(), (Class<Map<Integer, String>>) (Class) HashMap.class) {
 			@Override
 			protected Column getColumn(Integer key) {
 				if (key > 5) {
@@ -74,8 +74,8 @@ public class ColumnedMapMappingTest {
 			}
 			
 			@Override
-			protected String toMapValue(Integer key, Object s) {
-				return s == null ? null : s.toString();
+			protected String toMapValue(Integer key, Object o) {
+				return o == null ? null : o.toString();
 			}
 			
 			@Override
@@ -86,7 +86,7 @@ public class ColumnedMapMappingTest {
 		
 	}
 	
-	public static Object[][] testGetInsertValuesData() {
+	static Object[][] getInsertValuesData() {
 		setUpClass();
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(col1, "a").add(col2, "b").add(col3, "c").add(col4, null).add(col5, null) },
@@ -96,13 +96,13 @@ public class ColumnedMapMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetInsertValuesData")
-	public void testGetInsertValues(ChainingMap<Integer, String> toInsert, ChainingMap<Column, String> expected) {
-		Map<Column<Table, Object>, Object> insertValues = testInstance.getInsertValues(toInsert);
+	@MethodSource("getInsertValuesData")
+	void getInsertValues(ChainingMap<Integer, String> toInsert, ChainingMap<Column, String> expected) {
+		Map<Column<?, ?>, Object> insertValues = (Map) testInstance.getInsertValues(toInsert);
 		assertThat(insertValues).isEqualTo(expected);
 	}
 	
-	public static Object[][] testGetUpdateValues_diffOnlyData() {
+	static Object[][] getUpdateValues_diffOnlyData() {
 		setUpClass();
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(1, "x").add(2, "y").add(3, "z"),
@@ -121,15 +121,15 @@ public class ColumnedMapMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetUpdateValues_diffOnlyData")
-	public void testGetUpdateValues_diffOnly(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
-		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, false);
+	@MethodSource("getUpdateValues_diffOnlyData")
+	<T extends Table<T>> void getUpdateValues_diffOnly(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
+		Map<UpwhereColumn<T>, Object> updateValues = (Map) testInstance.getUpdateValues(modified, unmodified, false);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertThat(updateValues).isEqualTo(expectationWithUpwhereColumn);
 	}
 	
-	public static Object[][] testGetUpdateValues_allColumnsData() {
+	static Object[][] getUpdateValues_allColumnsData() {
 		setUpClass();
 		return new Object[][] {
 				{ Maps.asMap(1, "a").add(2, "b").add(3, "c"), Maps.asMap(1, "x").add(2, "y").add(3, "z"),
@@ -150,16 +150,16 @@ public class ColumnedMapMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetUpdateValues_allColumnsData")
-	public void testGetUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
-		Map<UpwhereColumn<Table>, Object> updateValues = testInstance.getUpdateValues(modified, unmodified, true);
+	@MethodSource("getUpdateValues_allColumnsData")
+	<T extends Table<T>> void getUpdateValues_allColumns(HashMap<Integer, String> modified, HashMap<Integer, String> unmodified, Map<Column, String> expected) {
+		Map<UpwhereColumn<T>, Object> updateValues = (Map) testInstance.getUpdateValues(modified, unmodified, true);
 		Map<UpwhereColumn, Object> expectationWithUpwhereColumn = new HashMap<>();
 		expected.forEach((c, s) -> expectationWithUpwhereColumn.put(new UpwhereColumn(c, true), s));
 		assertThat(updateValues).isEqualTo(expectationWithUpwhereColumn);
 	}
 	
 	@Test
-	public void testTransform() {
+	void transform() {
 		Row row = new Row();
 		row.put(col1.getName(), "a");
 		row.put(col2.getName(), "b");

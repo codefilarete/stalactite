@@ -12,10 +12,10 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.Relati
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.bean.Objects;
@@ -25,7 +25,7 @@ import org.codefilarete.tool.bean.Objects;
  * 
  * @author Guillaume Mary
  */
-public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINCOLTYPE, I> extends AbstractJoinNode<C, T1, T2, JOINCOLTYPE> {
+public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINTYPE, I> extends AbstractJoinNode<C, T1, T2, JOINTYPE> {
 	
 	/** The right part of the join */
 	private final EntityInflater<C, I> entityInflater;
@@ -37,17 +37,32 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINC
 	private final BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider;
 	
 	RelationJoinNode(JoinNode<T1> parent,
-					 JoinLink<T1, JOINCOLTYPE> leftJoinColumn,
-					 JoinLink<T2, JOINCOLTYPE> rightJoinColumn,
+					 JoinLink<T1, JOINTYPE> leftJoinColumn,
+					 JoinLink<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
 					 Set<? extends Selectable<?>> columnsToSelect,	// Of T2
 					 @Nullable String tableAlias,
 					 EntityInflater<C, I> entityInflater,
-					 BeanRelationFixer<Object, C> beanRelationFixer,
+					 BeanRelationFixer<?, C> beanRelationFixer,
 					 @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
-		this.beanRelationFixer = beanRelationFixer;
+		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
+		this.relationIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) relationIdentifierProvider;
+	}
+	
+	RelationJoinNode(JoinNode<T1> parent,
+					 Key<T1, JOINTYPE> leftJoinColumn,
+					 Key<T2, JOINTYPE> rightJoinColumn,
+					 JoinType joinType,
+					 Set<? extends Selectable<?>> columnsToSelect,	// Of T2
+					 @Nullable String tableAlias,
+					 EntityInflater<C, I> entityInflater,
+					 BeanRelationFixer<?, C> beanRelationFixer,
+					 @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
+		this.entityInflater = entityInflater;
+		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
 		this.relationIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) relationIdentifierProvider;
 	}
 	
@@ -69,7 +84,7 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINC
 	
 	@Override
 	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
-		return new DefaultRelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, relationIdentifierProvider, getTransformerListener());
+		return new DefaultRelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, relationIdentifierProvider, getConsumptionListener());
 	}
 	
 	interface RelationJoinRowConsumer<C, I> extends JoinRowConsumer {
@@ -94,20 +109,20 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINC
 		
 		/** Optional listener of ResultSet decoding */
 		@Nullable
-		private final TransformerListener<C> transformerListener;
+		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 		
 		DefaultRelationJoinRowConsumer(EntityInflater<C, I> entityInflater,
 									   BeanRelationFixer<Object, C> beanRelationFixer,
 									   ColumnedRow columnedRow,
 									   @Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer,
-									   @Nullable TransformerListener<C> transformerListener) {
+									   @Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 			this.entityType = entityInflater.getEntityType();
 			this.identifierProvider = entityInflater::giveIdentifier;
 			this.beanRelationFixer = beanRelationFixer;
 			this.columnedRow = columnedRow;
 			this.relationIdentifierComputer = (BiFunction<Row, ColumnedRow, Object>) Objects.preventNull(relationIdentifierComputer, this.identifierProvider);
 			this.rowTransformer = entityInflater.copyTransformerWithAliases(columnedRow);
-			this.transformerListener = transformerListener;
+			this.consumptionListener = consumptionListener;
 		}
 		
 		RowTransformer<C> getRowTransformer() {
@@ -126,8 +141,8 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINC
 			if (rightIdentifier != null && context.isTreatedOrAppend(eventuallyApplied)) {
 				C rightEntity = (C) context.giveEntityFromCache(entityType, rightIdentifier, () -> rowTransformer.transform(row));
 				beanRelationFixer.apply(parentJoinEntity, rightEntity);
-				if (this.transformerListener != null) {
-					this.transformerListener.onTransform(rightEntity, column -> columnedRow.getValue(column, row));
+				if (this.consumptionListener != null) {
+					this.consumptionListener.onNodeConsumption(rightEntity, col -> columnedRow.getValue(col, row));
 				}
 				return rightEntity;
 			}

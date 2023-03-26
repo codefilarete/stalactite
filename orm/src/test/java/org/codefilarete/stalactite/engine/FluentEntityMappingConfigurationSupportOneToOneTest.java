@@ -90,7 +90,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
 					.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
-					.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association");
+					.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevant for one-to-many association");
 		}
 		
 		@Test
@@ -166,7 +166,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
 			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
 			
-			// select selects entity and relation
+			// select entity and relation
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedCountry.getName()).isEqualTo("France");
 			assertThat(loadedCountry.getPresident().getName()).isEqualTo("French president");
@@ -223,7 +223,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// insert doesn't throw integrity constraint and will update foreign key in Person table making relation available on load
 			countryPersister.insert(dummyCountry);
 			
-			// select selects entity and relation
+			// select entity and relation
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedCountry.getName()).isEqualTo("France");
 			assertThat(loadedCountry.getPresident().getName()).isEqualTo("French president");
@@ -443,7 +443,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_city_state_Country_id", "city", "state", "Country", "id");
 			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
-			assertThat((Set<ForeignKey<? extends Table, ?>>) cityTable.getForeignKeys()).extracting(JdbcForeignKey::new)
+			assertThat((Set<ForeignKey<? extends Table, ?, ?>>) cityTable.getForeignKeys()).extracting(JdbcForeignKey::new)
 					.usingElementComparator(comparing)
 					.containsExactlyInAnyOrder(expectedForeignKey);
 			

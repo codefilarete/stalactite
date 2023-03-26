@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.mapping;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Contract about entity identifier mapping.
@@ -33,7 +34,7 @@ public interface IdMapping<C, I> {
 	
 	IdAccessor<C, I> getIdAccessor();
 	
-	IdentifierAssembler<I> getIdentifierAssembler();
+	<T extends Table<T>> IdentifierAssembler<I, T> getIdentifierAssembler();
 	
 	IdentifierInsertionManager<C, I> getIdentifierInsertionManager();
 }

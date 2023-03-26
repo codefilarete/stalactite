@@ -7,6 +7,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Entry point for single value (hence single-column primary key), as opposed to composed, about entity identifier mapping.
@@ -23,7 +24,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	
 	private final IsNewDeterminer<C> isNewDeterminer;
 	
-	private final SimpleIdentifierAssembler<I> identifierMarshaller;
+	private final SimpleIdentifierAssembler<I, ?> identifierMarshaller;
 	
 	/**
 	 * Main constructor
@@ -34,7 +35,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	 */
 	public SimpleIdMapping(SinglePropertyIdAccessor<C, I> idAccessor,
 						   IdentifierInsertionManager<C, I> identifierInsertionManager,
-						   SimpleIdentifierAssembler<I> identifierMarshaller) {
+						   SimpleIdentifierAssembler<I, ?> identifierMarshaller) {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;
@@ -69,8 +70,8 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	}
 	
 	@Override
-	public SimpleIdentifierAssembler<I> getIdentifierAssembler() {
-		return identifierMarshaller;
+	public <T extends Table<T>> SimpleIdentifierAssembler<I, T> getIdentifierAssembler() {
+		return (SimpleIdentifierAssembler<I, T>) identifierMarshaller;
 	}
 	
 	/**

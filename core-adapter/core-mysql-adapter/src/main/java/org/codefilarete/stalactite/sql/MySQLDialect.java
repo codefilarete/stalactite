@@ -40,4 +40,8 @@ public class MySQLDialect extends Dialect {
 		return new MySQLWriteOperationFactory();
 	}
 	
+	@Override
+	public boolean supportsTupleCondition() {
+		return true;
+	}
 }

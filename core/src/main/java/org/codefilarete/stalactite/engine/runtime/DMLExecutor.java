@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
  * 
  * @author Guillaume Mary
  */
-public abstract class DMLExecutor<C, I, T extends Table> {
+public abstract class DMLExecutor<C, I, T extends Table<T>> {
 	
 	private final EntityMapping<C, I, T> mapping;
 	private final ConnectionProvider connectionProvider;

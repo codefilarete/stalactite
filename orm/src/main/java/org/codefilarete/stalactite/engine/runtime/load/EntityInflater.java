@@ -12,13 +12,13 @@ import org.codefilarete.stalactite.sql.result.Row;
 /**
  * Contract to deserialize a database row to a bean
  */
-public interface EntityInflater<E, I> {
+public interface EntityInflater<C, I> {
 	
-	Class<E> getEntityType();
+	Class<C> getEntityType();
 	
 	I giveIdentifier(Row row, ColumnedRow columnedRow);
 	
-	RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow);
+	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
 	Set<Selectable<?>> getSelectableColumns();
 	
@@ -26,20 +26,20 @@ public interface EntityInflater<E, I> {
 	 * Adapter of a {@link EntityMapping} as a {@link EntityInflater}.
 	 * Implemented as a simple wrapper of a {@link EntityMapping} because methods are very close.
 	 *
-	 * @param <E> entity type
+	 * @param <C> entity type
 	 * @param <I> identifier type
 	 * @param <T> table type
 	 */
-	class EntityMappingAdapter<E, I, T extends Table> implements EntityInflater<E, I> {
+	class EntityMappingAdapter<C, I, T extends Table<T>> implements EntityInflater<C, I> {
 		
-		private final EntityMapping<E, I, T> delegate;
+		private final EntityMapping<C, I, T> delegate;
 		
-		public EntityMappingAdapter(EntityMapping<E, I, T> delegate) {
+		public EntityMappingAdapter(EntityMapping<C, I, T> delegate) {
 			this.delegate = delegate;
 		}
 		
 		@Override
-		public Class<E> getEntityType() {
+		public Class<C> getEntityType() {
 			return this.delegate.getClassToPersist();
 		}
 		
@@ -49,7 +49,7 @@ public interface EntityInflater<E, I> {
 		}
 		
 		@Override
-		public RowTransformer<E> copyTransformerWithAliases(ColumnedRow columnedRow) {
+		public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
 			return this.delegate.copyTransformerWithAliases(columnedRow);
 		}
 		

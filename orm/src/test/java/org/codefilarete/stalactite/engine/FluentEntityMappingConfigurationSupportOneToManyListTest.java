@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyKeyQueryMapper;
@@ -36,7 +35,6 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.exception.Exceptions;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -448,67 +446,6 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				.mapKey("choiceCount", long.class).singleResult().execute();
 		assertThat(choiceCount).isEqualTo(3);
 	}
-	
-	@Test
-	void insert_mappedByNonExistingGetter_throwsException() {
-		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		
-		Table choiceTable = new Table("Choice");
-		// we declare the column that will store our List index
-		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
-		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
-		
-		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, ALREADY_ASSIGNED)
-				.map(Choice::getLabel);
-		
-		EntityPersister<Question, Identifier<Long>> persisterWithNonExistingSetter = entityBuilder(Question.class, LONG_TYPE).mapKey(Question::getId, ALREADY_ASSIGNED)
-				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestionWithNoGetter).cascading(ALL)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Question question = new Question(1L);
-		Choice choice = new Choice(4L);
-		question.addChoice(choice);
-		
-		assertThatThrownBy(() -> persisterWithNonExistingSetter.insert(question))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeMappingException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Can't get index : " + choice.toString() + " is not associated with a o.c.s.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
-				+ "accessor for field" +
-				" o.c.s.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.questionWithNoGetter returned null");
-	}
-		
-	@Test
-	void insert_targetEntitiesAreNotLinked_throwsException() {
-		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		
-		Table choiceTable = new Table("Choice");
-		// we declare the column that will store our List index
-		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
-		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
-		
-		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, ALREADY_ASSIGNED)
-				.map(Choice::getLabel);
-		
-		EntityPersister<Question, Identifier<Long>> persister = entityBuilder(Question.class, LONG_TYPE)
-				.mapKey(Question::getId, ALREADY_ASSIGNED)
-				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx).mappedBy(Choice::setQuestion).cascading(ALL)
-				.build(persistenceContext);
-		
-		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-		ddlDeployer.deployDDL();
-		
-		Question question = new Question(1L);
-		question.getChoices().add(new Choice(4L));
-		
-		assertThatThrownBy(() -> persister.insert(question))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeMappingException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Can't get index : Choice{id=4, question=null, label='null'} is not associated with a o.c.s.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Question : "
-						+ "o.c.s.e.FluentEntityMappingConfigurationSupportOneToManyListTest$Choice.getQuestion() returned null");
-	}
 		
 	@Test
 	void withoutOwnerButWithIndexedBy_throwsException() {
@@ -747,7 +684,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// test with addition of entity
 			Choice newChoice = new Choice(50L);
 			newChoice.setQuestion(newQuestion);
-			persistenceContext.getPersister(Choice.class).persist(newChoice);
+			newQuestion.setChoices(Arrays.asList(choice1, choice2, choice3, choice4, newChoice));
+			questionPersister.update(newQuestion);
 			Answer selectedAnswer = answerPersister.select(new PersistableIdentifier<>(1L));
 			// NB: difference with previous state is addition on newChoice (in the middle), choice1 & choice4 to the end
 			selectedAnswer.takeChoices(Arrays.asList(choice1, choice2, newChoice, choice2, choice3, choice1, choice4));
@@ -1192,7 +1130,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerChoicesTable = new Table("Answer_Choices");
 			answerChoicesTableId = answerChoicesTable.addColumn("answer_Id", Identifier.class).primaryKey();
 			answerChoicesTableIdx = answerChoicesTable.addColumn("idx", Integer.class).primaryKey();
-			answerChoicesTableChoiceId = answerChoicesTable.addColumn("choice_Id", Identifier.class).primaryKey();
+			answerChoicesTableChoiceId = answerChoicesTable.addColumn("choices_Id", Identifier.class).primaryKey();
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.getDdlGenerator().addTables(answerChoicesTable);

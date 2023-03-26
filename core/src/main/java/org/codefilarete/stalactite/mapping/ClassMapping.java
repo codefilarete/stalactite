@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
@@ -13,20 +12,20 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.tool.Reflections;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
-import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
 
 /**
  * <p>
@@ -55,7 +54,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * @author Guillaume Mary
  * @see org.codefilarete.stalactite.query.model.Query
  */
-public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, T> {
+public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, I, T> {
 	
 	private final EmbeddedClassMapping<C, T> mainMapping;
 	
@@ -69,7 +68,9 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	
 	private final IdMapping<C, I> idMapping;
 	
-	private final Map<ReversibleAccessor, Column<T, Object>> versioningMapping = new HashMap<>();
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> versioningMapping = new HashMap<>();
+	
+	private final boolean identifierSetByBeanFactory;
 	
 	/**
 	 * Main constructor
@@ -85,7 +86,7 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	 */
 	public ClassMapping(Class<C> classToPersist,
 						T targetTable,
-						Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
 						ReversibleAccessor<C, I> identifierProperty,
 						IdentifierInsertionManager<C, I> identifierInsertionManager) {
 		if (identifierProperty == null) {
@@ -95,9 +96,6 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 			throw new UnsupportedOperationException("No primary key column defined for " + targetTable.getAbsoluteName());
 		}
 		this.mainMapping = new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn);
-		fillInsertableColumns();
-		fillUpdatableColumns();
-		fillSelectableColumns();
 		// identifierAccessor must be the same instance as those stored in propertyToColumn for Map.remove method used in foreach()
 		Column<T, I> identifierColumn = (Column<T, I>) propertyToColumn.get(identifierProperty);
 		if (identifierColumn == null) {
@@ -105,9 +103,13 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 		}
 		if (!identifierColumn.isPrimaryKey()) {
 			throw new UnsupportedOperationException("Accessor '" + AccessorDefinition.toString(identifierProperty)
-					+ "' is declared as identifier but mapped column " + identifierColumn.toString() + " is not the primary key of table");
+					+ "' is declared as identifier but mapped column " + identifierColumn + " is not the primary key of table");
 		}
 		this.idMapping = new SimpleIdMapping<>(identifierProperty, identifierInsertionManager, new SimpleIdentifierAssembler<>(identifierColumn));
+		this.identifierSetByBeanFactory = false;
+		fillInsertableColumns();
+		fillUpdatableColumns();
+		fillSelectableColumns();
 	}
 	
 	/**
@@ -125,7 +127,7 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 						T targetTable,
 						Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
 						IdMapping<C, I> idMapping) {
-		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn), idMapping);
+		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn), idMapping, false);
 	}
 	
 	/**
@@ -141,13 +143,14 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	 */
 	public ClassMapping(Class<C> classToPersist,
 						T targetTable,
-						Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn,
+						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
 						IdMapping<C, I> idMapping,
-						Function<Function<Column, Object>, C> entityFactory) {
-		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, entityFactory), idMapping);
+						Function<Function<Column<?, ?>, Object>, C> entityFactory,
+						boolean identifierSetByBeanFactory) {
+		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, entityFactory), idMapping, identifierSetByBeanFactory);
 	}
 	
-	private ClassMapping(EmbeddedClassMapping<C, T> mainMapping, IdMapping<C, I> idMapping) {
+	private ClassMapping(EmbeddedClassMapping<C, T> mainMapping, IdMapping<C, I> idMapping, boolean identifierSetByBeanFactory) {
 		if (idMapping.getIdAccessor() == null) {
 			throw new UnsupportedOperationException("No identifier property defined for " + Reflections.toString(mainMapping.getClassToPersist()));
 		}
@@ -155,10 +158,11 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 			throw new UnsupportedOperationException("No primary key column defined for " + mainMapping.getTargetTable().getAbsoluteName());
 		}
 		this.mainMapping = mainMapping;
+		this.idMapping = idMapping;
+		this.identifierSetByBeanFactory = identifierSetByBeanFactory;
 		fillInsertableColumns();
 		fillUpdatableColumns();
 		fillSelectableColumns();
-		this.idMapping = idMapping;
 	}
 	
 	public Class<C> getClassToPersist() {
@@ -227,11 +231,11 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 		return idMapping;
 	}
 	
-	public Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForInsert() {
+	public Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForInsert() {
 		return Collections.unmodifiableCollection(this.mainMapping.getShadowColumnsForInsert());
 	}
 	
-	public Collection<ShadowColumnValueProvider<C, Object, T>> getShadowColumnsForUpdate() {
+	public Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForUpdate() {
 		return Collections.unmodifiableCollection(this.mainMapping.getShadowColumnsForUpdate());
 	}
 	
@@ -245,19 +249,19 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	}
 	
 	@Override
-	public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
+	public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
 		mainMapping.addShadowColumnInsert(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
-		insertableColumns.add((Column<T, Object>) valueProvider.getColumn());
+		insertableColumns.addAll(valueProvider.getColumns());
 	}
 	
 	@Override
-	public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
+	public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> valueProvider) {
 		// we delegate value computation to the default mapping strategy
 		mainMapping.addShadowColumnUpdate(valueProvider);
 		// we must register it as an insertable column so we'll generate the right SQL order
-		updatableColumns.add((Column<T, Object>) valueProvider.getColumn());
+		updatableColumns.addAll(valueProvider.getColumns());
 	}
 	
 	@Override
@@ -286,7 +290,6 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 		addSelectableColumns(mappingStrategy);
 	}
 	
-	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Map<Column<T, Object>, Object> insertValues = mainMapping.getInsertValues(c);
@@ -302,7 +305,6 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 		return insertValues;
 	}
 	
-	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<UpwhereColumn<T>, Object> toReturn;
@@ -344,6 +346,7 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	private void fillInsertableColumns() {
 		insertableColumns.clear();
 		addInsertableColumns(mainMapping);
+		insertableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
 		mappingStrategies.values().forEach(this::addInsertableColumns);
 		insertableColumns.addAll(versioningMapping.values());
 		// NB : generated keys are never inserted but left because DMLGenerator needs its presence to detect it
@@ -374,7 +377,7 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	private void fillSelectableColumns() {
 		selectableColumns.clear();
 		addSelectableColumns(mainMapping);
-		selectableColumns.addAll(getTargetTable().getPrimaryKey().getColumns());
+		selectableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
 		selectableColumns.addAll(versioningMapping.values());
 		mappingStrategies.values().forEach(this::addSelectableColumns);
 	}
@@ -386,14 +389,14 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	@Override
 	public Map<Column<T, Object>, Object> getVersionedKeyValues(C c) {
 		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
-		toReturn.putAll(getIdMapping().getIdentifierAssembler().getColumnValues(getId(c)));
+		toReturn.putAll(getIdMapping().<T>getIdentifierAssembler().getColumnValues(getId(c)));
 		toReturn.putAll(getVersionedColumnsValues(c));
 		return toReturn;
 	}
 	
 	private Map<Column<T, Object>, Object> getVersionedColumnsValues(C c) {
 		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
-		for (Entry<ReversibleAccessor, Column<T, Object>> columnEntry : versioningMapping.entrySet()) {
+		for (Entry<ReversibleAccessor<C, Object>, Column<T, Object>> columnEntry : versioningMapping.entrySet()) {
 			toReturn.put(columnEntry.getValue(), columnEntry.getKey().get(c));
 		}
 		return toReturn;
@@ -401,9 +404,8 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	
 	@Override
 	public Iterable<Column<T, Object>> getVersionedKeys() {
-		HashSet<Column<T, Object>> columns = new HashSet<>(versioningMapping.values());
-		Set<Column<T, Object>> keyColumns = getTargetTable().getPrimaryKey().getColumns();
-		columns.addAll(keyColumns);
+		Set<Column<T, Object>> columns = new HashSet<>(versioningMapping.values());
+		columns.addAll(getTargetTable().getPrimaryKey().getColumns());
 		return Collections.unmodifiableSet(columns);
 	}
 	
@@ -429,7 +431,9 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 		// Note : this may be done twice in single column primary key case, because constructor expects that the column must be present in the
 		// mapping, then it is used by the SimpleIdentifierAssembler
 		ColumnedRow columnedRow = new ColumnedRow();
-		setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row, columnedRow));
+		if (!identifierSetByBeanFactory) {
+			setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row, columnedRow));
+		}
 		// filling other properties
 		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategyEntry : mappingStrategies.entrySet()) {
 			mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
@@ -438,8 +442,34 @@ public class ClassMapping<C, I, T extends Table> implements EntityMapping<C, I, 
 	}
 	
 	@Override
-	public ToBeanRowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
-		return getRowTransformer().copyWithAliases(columnedRow);
+	public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
+		ToBeanRowTransformer<C> mainRowTransformer = getRowTransformer().copyWithAliases(columnedRow);
+		return new RowTransformer<C>() {
+			@Override
+			public C transform(Row row) {
+				C result = mainRowTransformer.transform(row);
+				if (!identifierSetByBeanFactory) {
+					setId(result, getIdMapping().getIdentifierAssembler().assemble(row, columnedRow));
+				}
+				return result;
+			}
+			
+			@Override
+			public void applyRowToBean(Row row, C bean) {
+				mainRowTransformer.applyRowToBean(row, bean);
+			}
+			
+			@Override
+			public AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow) {
+				// safeguard against unexpected behavior
+				throw new IllegalStateException("copyWithAliases(..) is not expected to be called twice");
+			}
+			
+			@Override
+			public void addTransformerListener(TransformerListener<C> listener) {
+				mainRowTransformer.addTransformerListener(listener);
+			}
+		};
 	}
 	
 	public ToBeanRowTransformer<C> getRowTransformer() {

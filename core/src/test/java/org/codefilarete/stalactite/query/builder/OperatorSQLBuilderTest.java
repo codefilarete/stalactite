@@ -1,13 +1,17 @@
 package org.codefilarete.stalactite.query.builder;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.StringAppender;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,7 +20,7 @@ import static org.codefilarete.stalactite.query.model.Operators.*;
 /**
  * @author Guillaume Mary
  */
-public class OperatorSQLBuilderTest {
+class OperatorSQLBuilderTest {
 	
 	private final DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap());
 	
@@ -104,6 +108,41 @@ public class OperatorSQLBuilderTest {
 		result = new StringAppender();
 		testInstance.cat(in((Object) null), new StringAppenderWrapper(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("in (null)");
+	}
+	
+	@Test
+	public void catIn_tupled() {
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		StringAppender result = new StringAppender();
+		
+		Table dummyTable = new Table("dummyTable");
+		Column firstName = dummyTable.addColumn("firstName", String.class);
+		Column lastName = dummyTable.addColumn("lastName", String.class);
+		
+		TupleIn tupleIn = new TupleIn(new Column[] { firstName, lastName }, Arrays.asList(
+				new Object[] { "John", "Doe" },
+				new Object[] { "Paul", "Smith" }));
+		testInstance.cat(tupleIn, new StringAppenderWrapper(result, dmlNameProvider));
+		assertThat(result.toString()).isEqualTo("(dummyTable.firstName, dummyTable.lastName) in (('John', 'Doe'), ('Paul', 'Smith'))");
+		
+		// next test is meant to record the behavior, not to approve it
+		result = new StringAppender();
+		tupleIn = new TupleIn(new Column[] { firstName, lastName }, Collections.emptyList());
+		testInstance.cat(tupleIn, new StringAppenderWrapper(result, dmlNameProvider));
+		assertThat(result.toString()).isEqualTo("(dummyTable.firstName, dummyTable.lastName) in ()");
+		
+		// next test is meant to record the behavior, not to approve it
+		result = new StringAppender();
+		tupleIn = new TupleIn(new Column[] { firstName, lastName }, null);
+		testInstance.cat(tupleIn, new StringAppenderWrapper(result, dmlNameProvider));
+		assertThat(result.toString()).isEqualTo("(dummyTable.firstName, dummyTable.lastName) in (null, null)");
+		
+		result = new StringAppender();
+		List<Object[]> input = new ArrayList<>();
+		input.add(new Object[] { "John", null });
+		tupleIn = new TupleIn(new Column[] { firstName, lastName }, input);
+		testInstance.cat(tupleIn, new StringAppenderWrapper(result, dmlNameProvider));
+		assertThat(result.toString()).isEqualTo("(dummyTable.firstName, dummyTable.lastName) in (('John', null))");
 	}
 	
 	@Test

@@ -114,7 +114,7 @@ public class PersisterBuilderContext {
 	 * @param entityMappingConfiguration configuration to be checked for cycle
 	 * @return true if given configuration was already processed
 	 */
-	boolean isCycling(EntityMappingConfiguration<?, ?> entityMappingConfiguration) {
+	public boolean isCycling(EntityMappingConfiguration<?, ?> entityMappingConfiguration) {
 		return treatedConfigurations.contains(entityMappingConfiguration.getEntityType());
 	}
 }

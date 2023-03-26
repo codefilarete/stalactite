@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
-import org.codefilarete.stalactite.engine.configurer.OneToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -34,6 +34,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.PolymorphicEntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.PolymorphicMergeJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.JoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.SingleTablePolymorphicRelationJoinNode;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -47,6 +48,9 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -90,8 +94,20 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		this.polymorphismPolicy = polymorphismPolicy;
 		
 		this.subEntitiesPersisters = subEntitiesPersisters;
-		ShadowColumnValueProvider<C, DTYPE, T> discriminatorValueProvider = new ShadowColumnValueProvider<>(discriminatorColumn,
-				c -> polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) c.getClass()));
+		ShadowColumnValueProvider<C, T> discriminatorValueProvider = new ShadowColumnValueProvider<C, T>() {
+			
+			@Override
+			public Set<Column<T, Object>> getColumns() {
+				return Arrays.asHashSet((Column<T, Object>) discriminatorColumn);
+			}
+			
+			@Override
+			public Map<Column<T, Object>, Object> giveValue(C bean) {
+				Map<Column<T, Object>, Object> result = new HashMap<>();
+				result.put((Column<T, Object>) discriminatorColumn, polymorphismPolicy.getDiscriminatorValue((Class<? extends C>) bean.getClass()));
+				return result;
+			}
+		};
 		this.subEntitiesPersisters.values().forEach(subclassPersister -> ((EntityMapping) subclassPersister.getMapping())
 				.addShadowColumnInsert(discriminatorValueProvider));
 		
@@ -309,34 +325,33 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 			}
 			
 			@Override
-			public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> provider) {
+			public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addShadowColumnInsert(provider));
 			}
 			
 			@Override
-			public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> provider) {
+			public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> provider) {
 				subEntitiesPersisters.values().forEach(p -> ((EntityMapping) p.getMapping()).addShadowColumnUpdate(provider));
 			}
 		};
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																				  Column<T1, JID> leftColumn,
-																				  Column<T2, JID> rightColumn,
-																				  String rightTableAlias,
-																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  boolean optional,
-																				  boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																					 Key<T1, JOINID> leftColumn,
+																					 Key<T2, JOINID> rightColumn,
+																					 String rightTableAlias,
+																					 BeanRelationFixer<SRC, C> beanRelationFixer,
+																					 boolean optional,
+																					 boolean loadSeparately) {
 		
 		if (loadSeparately) {
-			Column subclassPrimaryKey = (Column) Iterables.first(mainPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
 			SingleTableFirstPhaseRelationLoader singleTableFirstPhaseRelationLoader = new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
-					subclassPrimaryKey, selectExecutor,
+					selectExecutor,
 					(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER,
 					discriminatorColumn, subEntitiesPersisters::get);
 			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(ROOT_STRATEGY_NAME,
-					(FirstPhaseRelationLoader<C, JID, T2>) singleTableFirstPhaseRelationLoader,
+					singleTableFirstPhaseRelationLoader,
 					leftColumn, rightColumn, optional ? JoinType.OUTER : JoinType.INNER);
 			
 			
@@ -359,40 +374,38 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	@Override
-	public <SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																				  Column<T1, ID> leftColumn,
-																				  Column<T2, ID> rightColumn,
-																				  BeanRelationFixer<SRC, C> beanRelationFixer,
-																				  @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																				  String joinName,
-																				  Set<Column<T2, ?>> selectableColumns, boolean optional,
-																				  boolean loadSeparately) {
+	public <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							  Key<T1, JOINID> leftColumn,
+																							  Key<T2, JOINID> rightColumn,
+																							  BeanRelationFixer<SRC, C> beanRelationFixer,
+																							  @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																							  String joinName,
+																							  Set<? extends Column<T2, Object>> selectableColumns, boolean optional,
+																							  boolean loadSeparately) {
 		
-		Column<T, Object> mainTablePK = Iterables.first(((T) mainPersister.getMapping().getTargetTable()).getPrimaryKey().getColumns());
-		Map<EntityConfiguredJoinedTablesPersister, Column> joinColumnPerSubPersister = new HashMap<>();
+		PrimaryKey<T, ?> mainTablePK = mainPersister.<T>getMapping().getTargetTable().getPrimaryKey();
+		Map<EntityConfiguredJoinedTablesPersister, Key> joinColumnPerSubPersister = new HashMap<>();
 		if (rightColumn.equals(mainTablePK)) {
 			// join is made on primary key => case is association table
 			subEntitiesPersisters.forEach((c, subPersister) -> {
-				Column<T, Object> column = Iterables.first((Set<Column>) subPersister.getMapping().getTargetTable().getPrimaryKey().getColumns());
-				joinColumnPerSubPersister.put(subPersister, column);
+				joinColumnPerSubPersister.put(subPersister, subPersister.getMapping().getTargetTable().getPrimaryKey());
 			});
 		} else {
 			// join is made on a foreign key => case of relation owned by reverse side
 			subEntitiesPersisters.forEach((c, subPersister) -> {
-				Column<T, ?> column = subPersister.getMapping().getTargetTable().addColumn(rightColumn.getName(), rightColumn.getJavaType());
-				subPersister.getMapping().addShadowColumnSelect((Column) column);
-				joinColumnPerSubPersister.put(subPersister, column);
+				KeyBuilder<?, Object> reverseKey = projectPrimaryKey(rightColumn, subPersister);
+				joinColumnPerSubPersister.put(subPersister, reverseKey.build());
 			});
 		}
 		
 		if (loadSeparately) {
 			// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 			SingleTableFirstPhaseRelationLoader singleTableFirstPhaseRelationLoader = new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
-					mainTablePK, selectExecutor,
+					selectExecutor,
 					(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) DIFFERED_ENTITY_LOADER,
 					discriminatorColumn, subEntitiesPersisters::get);
 			String createdJoinNodeName = sourcePersister.getEntityJoinTree().addMergeJoin(joinName,
-					(FirstPhaseRelationLoader<C, ID, T2>) singleTableFirstPhaseRelationLoader,
+					singleTableFirstPhaseRelationLoader,
 					leftColumn, rightColumn, JoinType.OUTER);
 			
 			// adding second phase loader
@@ -413,27 +426,39 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		}
 	}
 	
-	private <SRC, SRCID, U extends C, T1 extends Table, T2 extends Table, ID, JOINCOLTYPE, DTYPE> String join(
+	private <MAINTABLE extends Table<MAINTABLE>, SUBTABLE extends Table<SUBTABLE>, JOINID> KeyBuilder<SUBTABLE, Object>
+	projectPrimaryKey(Key<MAINTABLE, JOINID> rightColumn, EntityConfiguredJoinedTablesPersister<? extends C, I> subPersister) {
+		EntityMapping<? extends C, I, SUBTABLE> subTypeMapping = subPersister.getMapping();
+		KeyBuilder<SUBTABLE, Object> reverseKey = Key.from(subTypeMapping.getTargetTable());
+		rightColumn.getColumns().forEach(col -> {
+			Column<SUBTABLE, Object> column = subTypeMapping.getTargetTable().addColumn(col.getExpression(), col.getJavaType());
+			subTypeMapping.addShadowColumnSelect(column);
+			reverseKey.addColumn(column);
+		});
+		return reverseKey;
+	}
+	
+	private <SRC, SRCID, U extends C, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINCOLTYPE> String join(
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String leftStrategyName,
 			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
-			Column<T1, JOINCOLTYPE> leftJoinColumn,
-			Column<T2, JOINCOLTYPE> rightJoinColumn,
+			Key<T1, JOINCOLTYPE> leftJoinColumn,
+			Key<T2, JOINCOLTYPE> rightJoinColumn,
 			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
 			BeanRelationFixer<SRC, U> beanRelationFixer,
 			SingleTablePolymorphism<U, DTYPE> polymorphismPolicy,
 			Column<T2, DTYPE> discriminatorColumn) {
 		
 		Holder<SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>> createdJoinHolder = new Holder<>();
-		String relationJoinName = entityJoinTree.<T1>addJoin(leftStrategyName, parent -> {
+		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
 			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> polymorphicRelationJoinNode = new SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE>(
-					parent,
+					(JoinNode<T1>) (JoinNode) parent,
 					leftJoinColumn,
 					rightJoinColumn,
 					JoinType.OUTER,
 					mainPersister.getMainTable().getColumns(),
 					null,
-					new EntityMappingAdapter<>(mainPersister.getMapping()),
+					new EntityMappingAdapter<>(mainPersister.<T>getMapping()),
 					(BeanRelationFixer<Object, U>) beanRelationFixer,
 					discriminatorColumn) {
 				
@@ -451,7 +476,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		return relationJoinName;
 	}
 	
-	private <U, V extends U, T1 extends Table, T2 extends Table, JOINCOLTYPE, ID, DTYPE> void addSingleTableSubPersistersJoin(
+	private <U, V extends U, T1 extends Table<T1>, T2 extends Table<T2>, JOINCOLTYPE, ID> void addSingleTableSubPersistersJoin(
 			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
 			SingleTablePolymorphicRelationJoinNode<U, T1, T2, JOINCOLTYPE, ID, DTYPE> mainPersisterJoin,
 			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
@@ -466,18 +491,17 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		});
 	}
 	
-	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader<C, I, Table> {
+	private class SingleTableFirstPhaseRelationLoader extends FirstPhaseRelationLoader<C, I> {
 		private final Column<T, DTYPE> discriminatorColumn;
 		private final Function<Class, SelectExecutor> subtypeSelectors;
 		private final Set<DTYPE> discriminatorValues;
 		
 		private SingleTableFirstPhaseRelationLoader(IdMapping<C, I> subEntityIdMapping,
-													Column primaryKey,
 													SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor,
 													ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>> relationIdsHolder,
 													Column<T, DTYPE> discriminatorColumn, Function<Class, SelectExecutor> subtypeSelectors) {
 			// Note that selectExecutor won't be used because we dynamically lookup for it in fillCurrentRelationIds
-			super(subEntityIdMapping, primaryKey, selectExecutor, relationIdsHolder);
+			super(subEntityIdMapping, selectExecutor, relationIdsHolder);
 			this.discriminatorColumn = discriminatorColumn;
 			this.subtypeSelectors = subtypeSelectors;
 			this.discriminatorValues = Iterables.collect(polymorphismPolicy.getSubClasses(), conf -> polymorphismPolicy.getDiscriminatorValue(conf.getEntityType()), HashSet::new);
@@ -490,14 +514,16 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 			// by only treating known discriminator values (preferred way to check against null because type can be primitive one)
 			if (discriminatorValues.contains(discriminator)) {
 				Set<RelationIds<Object, C, I>> relationIds = relationIdsHolder.get().peek();
-				relationIds.add(new RelationIds<>(giveSelector(discriminator),
-												idMapping.getIdAccessor()::getId, bean, (I) columnedRow.getValue(primaryKey, row)));
+				I id = idMapping.getIdentifierAssembler().assemble(row, columnedRow);
+				relationIds.add(new RelationIds<>(giveSelector(discriminator), idMapping.getIdAccessor()::getId, bean, id));
 			}
 		}
 		
 		@Override
 		public Set<Selectable<Object>> getSelectableColumns() {
-			return (Set) Arrays.asSet(primaryKey, discriminatorColumn);
+			Set<Selectable<Object>> result = new HashSet<>(idMapping.getIdentifierAssembler().getColumns());
+			result.add((Selectable) discriminatorColumn);
+			return result;
 		}
 		
 		private SelectExecutor giveSelector(DTYPE discriminator) {

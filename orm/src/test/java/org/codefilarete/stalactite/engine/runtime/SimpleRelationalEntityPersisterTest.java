@@ -43,6 +43,7 @@ import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -62,11 +63,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
@@ -79,10 +76,10 @@ class SimpleRelationalEntityPersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMapping<Toto, Identifier<Integer>, Table> totoClassMappingStrategy_ontoTable1;
+	private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy_ontoTable1;
 	private Dialect dialect;
-	private Column leftJoinColumn;
-	private Column rightJoinColumn;
+	private Key<Table, Identifier<Integer>> leftJoinColumn;
+	private Key<Table, Identifier<Integer>> rightJoinColumn;
 	private final EffectiveBatchedRowCount effectiveBatchedRowCount = new EffectiveBatchedRowCount();
 	private final Holder<Long> expectedRowCountForUpdate = new Holder<>();
 	private Connection connection;
@@ -107,7 +104,7 @@ class SimpleRelationalEntityPersisterTest {
 		Field fieldB = Reflections.getField(Toto.class, "b");
 		
 		Table totoClassTable1 = new Table("Toto1");
-		leftJoinColumn = totoClassTable1.addColumn("id", fieldId.getType());
+		leftJoinColumn = Key.ofSingleColumn(totoClassTable1.addColumn("id", fieldId.getType()));
 		totoClassTable1.addColumn("a", fieldA.getType());
 		totoClassTable1.addColumn("b", fieldB.getType());
 		Map<String, Column> columnMap1 = totoClassTable1.mapColumnsOnName();
@@ -452,7 +449,7 @@ class SimpleRelationalEntityPersisterTest {
 	@Nested
 	class CRUD_WithListener {
 		
-		private ClassMapping<Toto, Identifier<Integer>, Table> totoClassMappingStrategy2_ontoTable2;
+		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy2_ontoTable2;
 		private Persister<Toto, Identifier<Integer>, ?> persister2;
 		
 		@BeforeEach
@@ -479,7 +476,7 @@ class SimpleRelationalEntityPersisterTest {
 			Field fieldZ = Reflections.getField(Toto.class, "z");
 			
 			Table totoClassTable2 = new Table("Toto2");
-			rightJoinColumn = totoClassTable2.addColumn("id", fieldId.getType());
+			rightJoinColumn = Key.ofSingleColumn(totoClassTable2.addColumn("id", fieldId.getType()));
 			totoClassTable2.addColumn("x", fieldX.getType());
 			totoClassTable2.addColumn("y", fieldY.getType());
 			totoClassTable2.addColumn("z", fieldZ.getType());

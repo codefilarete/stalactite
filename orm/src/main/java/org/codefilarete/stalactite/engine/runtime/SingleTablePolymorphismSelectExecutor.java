@@ -25,6 +25,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.RowIterator;
@@ -115,8 +116,8 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addRelation(String leftStrategyName,
 																				  EntityMapping<U, ID, T2> strategy,
 																				  BeanRelationFixer beanRelationFixer,
-																				  Column<T1, ID> leftJoinColumn,
-																				  Column<T2, ID> rightJoinColumn,
+																				  Key<T1, ID> leftJoinColumn,
+																				  Key<T2, ID> rightJoinColumn,
 																				  boolean isOuterJoin) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
@@ -137,8 +138,8 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 	@Override
 	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(String leftStrategyName,
 																				   EntityMapping<U, ID, T2> strategy,
-																				   Column<T1, ID> leftJoinColumn,
-																				   Column<T2, ID> rightJoinColumn) {
+																				   Key<T1, ID> leftJoinColumn,
+																				   Key<T2, ID> rightJoinColumn) {
 		Set<String> joinNames = new HashSet<>();
 		subEntitiesPersisters.forEach((entityClass, persister) -> {
 			String joinName = persister.getEntityJoinTree().addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy),

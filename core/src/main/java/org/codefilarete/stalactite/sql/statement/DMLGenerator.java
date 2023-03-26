@@ -79,7 +79,7 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement
 	 */
-	public <T extends Table> ColumnParameterizedSQL<T> buildInsert(Iterable<? extends Column<T, Object>> columns) {
+	public <T extends Table<T>> ColumnParameterizedSQL<T> buildInsert(Iterable<? extends Column<T, Object>> columns) {
 		Iterable<Column> sortedColumns = sort(columns);
 		Table table = Iterables.first(sortedColumns).getTable();
 		DDLAppender sqlInsert = new DDLAppender(dmlNameProvider, "insert into ", table, "(");
@@ -113,7 +113,7 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement
 	 */
-	public <T extends Table> PreparedUpdate<T> buildUpdate(Iterable<? extends Column<T, Object>> columns, Iterable<? extends Column<T, Object>> where) {
+	public <T extends Table<T>> PreparedUpdate<T> buildUpdate(Iterable<? extends Column<T, Object>> columns, Iterable<? extends Column<T, Object>> where) {
 		Iterable<Column> sortedColumns = sort(columns);
 		Table table = Iterables.first(sortedColumns).getTable();
 		DDLAppender sqlUpdate = new DDLAppender(dmlNameProvider, "update ", table, " set ");
@@ -145,7 +145,7 @@ public class DMLGenerator {
 	 * @param <T> table type
 	 * @return a (kind of) prepared statement parameterized by {@link Column}
 	 */
-	public <T extends Table> ColumnParameterizedSQL<T> buildDelete(T table, Iterable<? extends Column<T, Object>> where) {
+	public <T extends Table<T>> ColumnParameterizedSQL<T> buildDelete(T table, Iterable<? extends Column<T, Object>> where) {
 		DDLAppender sqlDelete = new DDLAppender(dmlNameProvider, "delete from ", table);
 		sqlDelete.cat(" where ");
 		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlDelete, where);
