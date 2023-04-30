@@ -67,8 +67,8 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 	
 	@Override
 	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass =
-				(Map) collectSubClassPersister(dialect, connectionConfiguration);
+		Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass =
+				collectSubClassPersister(dialect, connectionConfiguration);
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		

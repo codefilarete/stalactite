@@ -6,27 +6,27 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class InsertListenerCollection<T> implements InsertListener<T> {
+public class InsertListenerCollection<C> implements InsertListener<C> {
 	
-	private List<InsertListener<T>> insertListeners = new ArrayList<>();
+	private final List<InsertListener<C>> insertListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeInsert(Iterable<? extends T> entities) {
+	public void beforeInsert(Iterable<? extends C> entities) {
 		insertListeners.forEach(listener -> listener.beforeInsert(entities));
 	}
 	
 	@Override
-	public void afterInsert(Iterable<? extends T> entities) {
+	public void afterInsert(Iterable<? extends C> entities) {
 		insertListeners.forEach(listener -> listener.afterInsert(entities));
 	}
 	
 	@Override
-	public void onError(Iterable<? extends T> entities, RuntimeException runtimeException) {
+	public void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		insertListeners.forEach(listener -> listener.onError(entities, runtimeException));
 	}
 	
-	public void add(InsertListener<T> insertListener) {
-		this.insertListeners.add(insertListener);
+	public void add(InsertListener<? extends C> insertListener) {
+		this.insertListeners.add((InsertListener<C>) insertListener);
 	}
 	
 	/**
@@ -36,7 +36,7 @@ public class InsertListenerCollection<T> implements InsertListener<T> {
 	 *
 	 * @param insertListener the target listener on which the one of current instance must be moved to.
 	 */
-	public void moveTo(InsertListenerCollection<T> insertListener) {
+	public void moveTo(InsertListenerCollection<C> insertListener) {
 		insertListener.insertListeners.addAll(this.insertListeners);
 		this.insertListeners.clear();
 	}

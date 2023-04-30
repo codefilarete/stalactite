@@ -522,21 +522,21 @@ class SimpleRelationalEntityPersisterTest {
 			});
 			testInstance.getPersisterListener().addUpdateByIdListener(new UpdateByIdListener<Toto>() {
 				@Override
-				public void afterUpdateById(Iterable<Toto> entities) {
+				public void afterUpdateById(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
 					persister2.updateById(entities);
 				}
 			});
 			testInstance.getPersisterListener().addDeleteListener(new DeleteListener<Toto>() {
 				@Override
-				public void beforeDelete(Iterable<Toto> entities) {
+				public void beforeDelete(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
 					persister2.delete(entities);
 				}
 			});
 			testInstance.getPersisterListener().addDeleteByIdListener(new DeleteByIdListener<Toto>() {
 				@Override
-				public void beforeDeleteById(Iterable<Toto> entities) {
+				public void beforeDeleteById(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
 					persister2.deleteById(entities);
 				}

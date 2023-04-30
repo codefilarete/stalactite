@@ -3,17 +3,17 @@ package org.codefilarete.stalactite.engine.listener;
 /**
  * @author Guillaume Mary
  */
-public interface UpdateByIdListener<T> {
+public interface UpdateByIdListener<C> {
 	
-	default void beforeUpdateById(Iterable<T> entities) {
+	default void beforeUpdateById(Iterable<? extends C> entities) {
 		
 	}
 	
-	default void afterUpdateById(Iterable<T> entities) {
+	default void afterUpdateById(Iterable<? extends C> entities) {
 		
 	}
 	
-	default void onError(Iterable<T> entities, RuntimeException runtimeException) {
+	default void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		
 	}
 }

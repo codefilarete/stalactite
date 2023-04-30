@@ -91,13 +91,13 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		assertPersisterManagesEntities(entities);
 		super.updateById(entities);
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		// we clear asserter input from null because it doesn't support it, and it may happen in update cases of nullified one-to-one relation
 		List<C> nonNullEntities = Iterables.stream(entities).filter(Objects::nonNull).collect(Collectors.toList());
 		assertPersisterManagesEntities(nonNullEntities);
@@ -105,7 +105,7 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		assertPersisterManagesEntities(entities);
 		super.deleteById(entities);
 	}

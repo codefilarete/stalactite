@@ -302,7 +302,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			 * Implemented to nullify target owning column before insert.
 			 */
 			@Override
-			public void beforeDelete(Iterable<SRC> entities) {
+			public void beforeDelete(Iterable<? extends SRC> entities) {
 				WriteOperation<UpwhereColumn<RIGHTTABLE>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.getOperation();
 				foreignKeyUpdateOrderProvider.<SRC>addValuesToUpdateBatch(
 						entities,
@@ -326,7 +326,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		}
 		
 		@Override
-		public void beforeDelete(Iterable<SRC> entities) {
+		public void beforeDelete(Iterable<? extends SRC> entities) {
 			ensureRelationStorageContext();
 			List<TRGT> targetEntities = stream(entities)
 					.map(this::getTarget)

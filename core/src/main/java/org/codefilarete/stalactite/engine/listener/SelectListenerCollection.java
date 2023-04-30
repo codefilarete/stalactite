@@ -6,9 +6,9 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
+public class SelectListenerCollection<C, I> implements SelectListener<C, I> {
 	
-	private List<SelectListener<T, I>> selectListeners = new ArrayList<>();
+	private List<SelectListener<C, I>> selectListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeSelect(Iterable<I> ids) {
@@ -16,7 +16,7 @@ public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 	}
 	
 	@Override
-	public void afterSelect(Iterable<? extends T> entities) {
+	public void afterSelect(Iterable<? extends C> entities) {
 		selectListeners.forEach(listener -> listener.afterSelect(entities));
 	}
 	
@@ -25,8 +25,8 @@ public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 		selectListeners.forEach(listener -> listener.onError(ids, exception));
 	}
 	
-	public void add(SelectListener<T, I> selectListener) {
-		this.selectListeners.add(selectListener);
+	public void add(SelectListener<? extends C, I> selectListener) {
+		this.selectListeners.add((SelectListener<C, I>) selectListener);
 	}
 	
 	/**
@@ -36,7 +36,7 @@ public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 	 *
 	 * @param selectListener the target listener on which the one of current instance must be moved to.
 	 */
-	public void moveTo(SelectListenerCollection<T, I> selectListener) {
+	public void moveTo(SelectListenerCollection<C, I> selectListener) {
 		selectListener.selectListeners.addAll(this.selectListeners);
 		this.selectListeners.clear();
 	}

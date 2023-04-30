@@ -296,12 +296,12 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		persister.delete(entities);
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		persister.deleteById(entities);
 	}
 	
@@ -311,7 +311,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		persister.updateById(entities);
 	}
 	
@@ -321,27 +321,27 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener<C> insertListener) {
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		persister.addInsertListener(insertListener);
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener<C> updateListener) {
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		persister.addUpdateListener(updateListener);
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener<C, I> selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		persister.addSelectListener(selectListener);
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener<C> deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		persister.addDeleteListener(deleteListener);
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener<C> deleteListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		persister.addDeleteByIdListener(deleteListener);
 	}
 	

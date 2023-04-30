@@ -27,8 +27,8 @@ public abstract class BeforeDeleteCollectionCascader<TRIGGER, TARGET> implements
 		this.persister = persister;
 		this.persister.addDeleteListener(new DeleteListener<TARGET>() {
 			@Override
-			public void afterDelete(Iterable<TARGET> entities) {
-				postTargetDelete(entities);
+			public void afterDelete(Iterable<? extends TARGET> entities) {
+				postTargetDelete((Iterable<TARGET>) entities);
 			}
 		});
 	}
@@ -43,7 +43,7 @@ public abstract class BeforeDeleteCollectionCascader<TRIGGER, TARGET> implements
 	 * @param entities source entities previously deleted
 	 */
 	@Override
-	public void beforeDelete(Iterable<TRIGGER> entities) {
+	public void beforeDelete(Iterable<? extends TRIGGER> entities) {
 		this.persister.delete(Iterables.stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
 	}
 	

@@ -35,20 +35,20 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	private static final String PRIMARY_KEY_ALIAS = "PK";
 	
-	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass;
+	private final Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass,
+	public SingleTablePolymorphismEntitySelectExecutor(Map<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
 												Column<T, DTYPE> discriminatorColumn,
 												SingleTablePolymorphism polymorphismPolicy,
 												EntityJoinTree<C, I> mainEntityJoinTree,
 												ConnectionProvider connectionProvider,
 												Dialect dialect) {
-		this.persisterPerSubclass = (Map) persisterPerSubclass;
+		this.persisterPerSubclass = (Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>>) persisterPerSubclass;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.entityJoinTree = mainEntityJoinTree;

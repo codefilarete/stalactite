@@ -223,27 +223,27 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener insertListener) {
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		getPersisterListener().addInsertListener(insertListener);
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener updateListener) {
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		getPersisterListener().addUpdateListener(updateListener);
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		getPersisterListener().addSelectListener(selectListener);
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		getPersisterListener().addDeleteListener(deleteListener);
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		getPersisterListener().addDeleteByIdListener(deleteListener);
 	}
 	
@@ -274,13 +274,13 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if rows weren't found in database)
 	 */
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
 			getPersisterListener().doWithUpdateByIdListener(entities, () -> doUpdateById(entities));
 		}
 	}
 	
-	protected void doUpdateById(Iterable<C> entities) {
+	protected void doUpdateById(Iterable<? extends C> entities) {
 		updateExecutor.updateById(entities);
 	}
 	
@@ -313,30 +313,30 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	 * @throws StaleStateObjectException if deleted row count differs from entities count
 	 */
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
 			getPersisterListener().doWithDeleteListener(entities, () -> doDelete(entities));
 		}
 	}
 	
-	protected void doDelete(Iterable<C> entities) {
+	protected void doDelete(Iterable<? extends C> entities) {
 		deleteExecutor.delete(entities);
 	}
 	
 	/**
 	 * Will delete instances only by their identifier.
-	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 * This method will not take optimistic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
-	 * @param entities entites to be deleted
+	 * @param entities entities to be deleted
 	 */
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
 			getPersisterListener().doWithDeleteByIdListener(entities, () -> doDeleteById(entities));
 		}
 	}
 	
-	protected void doDeleteById(Iterable<C> entities) {
+	protected void doDeleteById(Iterable<? extends C> entities) {
 		deleteExecutor.deleteById(entities);
 	}
 	

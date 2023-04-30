@@ -26,7 +26,7 @@ public interface UpdateExecutor<C> {
 	 * @apiNote used internally by
 	 * {@link org.codefilarete.stalactite.engine.runtime.CollectionUpdater#onRemovedTarget(org.codefilarete.stalactite.engine.runtime.CollectionUpdater.UpdateContext, org.codefilarete.stalactite.engine.diff.AbstractDiff)}
 	 */
-	void updateById(Iterable<C> entities);
+	void updateById(Iterable<? extends C> entities);
 	
 	void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement);
 }

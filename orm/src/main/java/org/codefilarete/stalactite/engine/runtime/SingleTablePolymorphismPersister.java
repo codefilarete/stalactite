@@ -78,13 +78,13 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	private final Column<T, DTYPE> discriminatorColumn;
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
-	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters;
+	private final Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	private final SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor;
 	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, DTYPE> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public SingleTablePolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-											Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters,
+											Map<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
 											ConnectionProvider connectionProvider,
 											Dialect dialect,
 											Column<T, DTYPE> discriminatorColumn,
@@ -93,7 +93,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
 		
-		this.subEntitiesPersisters = subEntitiesPersisters;
+		this.subEntitiesPersisters = (Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>>) subEntitiesPersisters;
 		ShadowColumnValueProvider<C, T> discriminatorValueProvider = new ShadowColumnValueProvider<C, T>() {
 			
 			@Override
@@ -170,7 +170,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach((updateExecutor, cs) -> updateExecutor.updateById(cs));
 	}
@@ -196,13 +196,13 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::delete);
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::deleteById);
 	}
@@ -280,27 +280,27 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener insertListener) {
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener updateListener) {
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addUpdateListener(updateListener));
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addSelectListener(selectListener));
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addDeleteListener(deleteListener));
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addDeleteByIdListener(deleteListener));
 	}
 	

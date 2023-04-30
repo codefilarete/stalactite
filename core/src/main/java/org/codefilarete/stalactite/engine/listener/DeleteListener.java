@@ -5,15 +5,15 @@ package org.codefilarete.stalactite.engine.listener;
  */
 public interface DeleteListener<C> {
 	
-	default void beforeDelete(Iterable<C> entities) {
+	default void beforeDelete(Iterable<? extends C> entities) {
 		
 	}
 	
-	default void afterDelete(Iterable<C> entities) {
+	default void afterDelete(Iterable<? extends C> entities) {
 		
 	}
 	
-	default void onError(Iterable<C> entities, RuntimeException runtimeException) {
+	default void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		
 	}
 	

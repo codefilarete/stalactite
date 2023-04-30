@@ -60,8 +60,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	
 	@Override
 	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass =
-				(Map) collectSubClassPersister(dialect, connectionConfiguration);
+		Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass =
+				collectSubClassPersister(dialect, connectionConfiguration);
 		
 		Column<T, DTYPE> discriminatorColumn = ensureDiscriminatorColumn();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then

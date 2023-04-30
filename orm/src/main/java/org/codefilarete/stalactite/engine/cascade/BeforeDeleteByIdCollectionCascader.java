@@ -27,8 +27,8 @@ public abstract class BeforeDeleteByIdCollectionCascader<TRIGGER, TARGET> implem
 		this.persister = persister;
 		this.persister.addDeleteByIdListener(new DeleteByIdListener<TARGET>() {
 			@Override
-			public void afterDeleteById(Iterable<TARGET> entities) {
-				postTargetDelete(entities);
+			public void afterDeleteById(Iterable<? extends TARGET> entities) {
+				postTargetDelete((Iterable<TARGET>) entities);
 			}
 		});
 	}
@@ -43,7 +43,7 @@ public abstract class BeforeDeleteByIdCollectionCascader<TRIGGER, TARGET> implem
 	 * @param entities source entities previously deleted
 	 */
 	@Override
-	public void beforeDeleteById(Iterable<TRIGGER> entities) {
+	public void beforeDeleteById(Iterable<? extends TRIGGER> entities) {
 		this.persister.deleteById(Iterables.stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
 	}
 	

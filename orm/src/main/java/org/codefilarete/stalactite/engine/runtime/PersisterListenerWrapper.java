@@ -29,27 +29,27 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener insertListener) {
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		this.persisterListener.addInsertListener(insertListener);
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener updateListener) {
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		this.persisterListener.addUpdateListener(updateListener);
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		this.persisterListener.addSelectListener(selectListener);
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		this.persisterListener.addDeleteListener(deleteListener);
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		this.persisterListener.addDeleteByIdListener(deleteListener);
 	}
 	
@@ -59,12 +59,12 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		persisterListener.doWithDeleteListener(entities, () -> surrogate.delete(entities));
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		persisterListener.doWithDeleteByIdListener(entities, () -> surrogate.deleteById(entities));
 	}
 	
@@ -85,7 +85,7 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
 			persisterListener.doWithUpdateByIdListener(entities, () -> surrogate.updateById(entities));
 		}

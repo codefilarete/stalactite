@@ -79,7 +79,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 	
-	private final Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final Map<? extends Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load */
 	private final JoinTablePolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
 	private final Class<C> parentClass;
@@ -91,7 +91,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
 	
 	public JoinTablePolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-										  Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> subEntitiesPersisters,
+										  Map<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
 										  ConnectionProvider connectionProvider,
 										  Dialect dialect) {
 		this.mainPersister = mainPersister;
@@ -99,8 +99,8 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 		Table<?> mainTable = mainPersister.<Table>getMapping().getTargetTable();
 		this.mainTablePrimaryKey = mainTable.getPrimaryKey();
 		
-		this.subEntitiesPersisters = (Map) subEntitiesPersisters;
-		Set<Entry<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
+		this.subEntitiesPersisters = (Map<? extends Class<C>, EntityConfiguredJoinedTablesPersister<C, I>>) subEntitiesPersisters;
+		Set<? extends Entry<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
 		Map<Class<? extends C>, SelectExecutor<? extends C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
 				Entry::getValue);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
@@ -164,7 +164,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		mainPersister.updateById(entities);
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(UpdateExecutor::updateById);
@@ -212,14 +212,14 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::delete);
 		mainPersister.delete(entities);
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::deleteById);
 		mainPersister.deleteById(entities);
@@ -231,7 +231,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 		throw new NotImplementedException("This class doesn't need to implement this method because it is handled by wrapper");
 	}
 	
-	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<C> entities) {
+	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
@@ -298,27 +298,27 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener insertListener) {
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener updateListener) {
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addUpdateListener(updateListener));
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addSelectListener(selectListener));
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addDeleteListener(deleteListener));
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addDeleteByIdListener(deleteListener));
 	}
 	

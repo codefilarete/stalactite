@@ -214,7 +214,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		// we delete association records
 		persisterListener.addDeleteListener(new DeleteListener<SRC>() {
 			@Override
-			public void beforeDelete(Iterable<SRC> entities) {
+			public void beforeDelete(Iterable<? extends SRC> entities) {
 				// To be coherent with DeleteListener, we'll delete the association records by ... themselves, not by id.
 				// We could have deleted them with a delete order but this requires a binder registry which is given by a Dialect
 				// so it requires that this configurer holds the Dialect which is not the case, but could have.
@@ -235,7 +235,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		persisterListener.addDeleteByIdListener(new DeleteByIdListener<SRC>() {
 			
 			@Override
-			public void beforeDeleteById(Iterable<SRC> entities) {
+			public void beforeDeleteById(Iterable<? extends SRC> entities) {
 				// We delete association records by entity keys, not their id because we don't have them (it is themselves and we don't have the full
 				// entities, only their id)
 				// We do it thanks to a SQL delete order ... not very coherent with beforeDelete(..) !

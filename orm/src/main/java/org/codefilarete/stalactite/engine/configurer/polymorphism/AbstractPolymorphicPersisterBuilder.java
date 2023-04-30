@@ -118,7 +118,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param connectionConfiguration the connection configuration
 	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 */
-	protected <D extends C> void registerCascades(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass,
+	protected <D extends C> void registerCascades(Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> persisterPerSubclass,
 												  Dialect dialect,
 												  ConnectionConfiguration connectionConfiguration,
 												  PersisterRegistry persisterRegistry) {
@@ -127,7 +127,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 		// subconfigurations using same entity in their relation 
 		PersisterBuilderContext.CURRENT.get().runInContext(mainPersister, () -> {
 			for (SubEntityMappingConfiguration<D> subConfiguration : (Set<SubEntityMappingConfiguration<D>>) (Set) this.polymorphismPolicy.getSubClasses()) {
-				EntityConfiguredJoinedTablesPersister<D, I> subEntityPersister = (EntityConfiguredJoinedTablesPersister<D, I>) persisterPerSubclass.get(subConfiguration.getEntityType());
+				EntityConfiguredJoinedTablesPersister<D, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 				
 				if (subConfiguration.getPolymorphismPolicy() != null) {
 					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry, subConfiguration, subEntityPersister);
@@ -144,7 +144,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 		});
 	}
 	
-	private <D extends C> void registerPolymorphismCascades(Map<Class<? extends C>, EntityConfiguredJoinedTablesPersister<? extends C, I>> persisterPerSubclass,
+	private <D extends C> void registerPolymorphismCascades(Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> persisterPerSubclass,
 															Dialect dialect,
 															ConnectionConfiguration connectionConfiguration,
 															PersisterRegistry persisterRegistry,

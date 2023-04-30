@@ -49,11 +49,11 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	 * Deletes instances.
 	 * Takes optimistic lock into account.
 	 * 
-	 * @param entities entites to be deleted
+	 * @param entities entities to be deleted
 	 * @throws StaleStateObjectException if deleted row count differs from entities count
 	 */
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		ColumnParameterizedSQL<T> deleteStatement = getDmlGenerator().buildDelete(getMapping().getTargetTable(), getMapping().getVersionedKeys());
 		List<? extends C> entitiesCopy = Iterables.copy(entities);
 		ExpectedBatchedRowCountsSupplier expectedBatchedRowCountsSupplier = new ExpectedBatchedRowCountsSupplier(entitiesCopy.size(), getBatchSize());
@@ -76,12 +76,12 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	/**
 	 * Will delete instances only by their identifier.
-	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 * This method will not take optimistic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
-	 * @param entities entites to be deleted
+	 * @param entities entities to be deleted
 	 */
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		// get ids before passing them to deleteFromId
 		Set<I> ids = Iterables.collect(entities, getMapping()::getId, HashSet::new);
 		deleteFromId(ids);
@@ -89,9 +89,9 @@ public class DeleteExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	
 	/**
 	 * Will delete entities only from their identifier.
-	 * This method will not take optimisic lock (versioned entity) into account, so it will delete database rows "roughly".
+	 * This method will not take optimistic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 * 
-	 * Can't be named "deleteById" due to generics type erasure that generates same signature as {@link #deleteById(Iterable)}
+	 * Can't be named "deleteById" due to generics type erasure that generates same signature as {@link org.codefilarete.stalactite.engine.DeleteExecutor#deleteById(Iterable)}
 	 * 
 	 * @param ids entities identifiers
 	 */

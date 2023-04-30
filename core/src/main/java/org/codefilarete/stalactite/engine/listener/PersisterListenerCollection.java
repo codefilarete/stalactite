@@ -35,7 +35,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener<C> insertListener) {
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		this.insertListener.add(insertListener);
 	}
 	
@@ -72,7 +72,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return this;
 	}
 	
-	public <R> R doWithUpdateByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+	public <R> R doWithUpdateByIdListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
 		R result;
 		try {
 			updateByIdListener.beforeUpdateById(entities);
@@ -85,7 +85,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return result;
 	}
 	
-	public void doWithUpdateByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
+	public void doWithUpdateByIdListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
 		try {
 			updateByIdListener.beforeUpdateById(entities);
 			delegate.run();
@@ -101,8 +101,8 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener<C> updateListener) {
-		this.updateListener.add(updateListener);
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
+		this.updateListener.add((UpdateListener<C>) updateListener);
 	}
 	
 	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
@@ -140,11 +140,11 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener<C> deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		this.deleteListener.add(deleteListener);
 	}
 	
-	public <R> R doWithDeleteListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+	public <R> R doWithDeleteListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
 		R result;
 		try {
 			deleteListener.beforeDelete(entities);
@@ -157,7 +157,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return result;
 	}
 	
-	public void doWithDeleteListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
+	public void doWithDeleteListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
 		try {
 			deleteListener.beforeDelete(entities);
 			delegate.run();
@@ -169,11 +169,11 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener<C> deleteByIdListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteByIdListener) {
 		this.deleteByIdListener.add(deleteByIdListener);
 	}
 	
-	public <R> R doWithDeleteByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+	public <R> R doWithDeleteByIdListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
 		R result;
 		try {
 			deleteByIdListener.beforeDeleteById(entities);
@@ -186,7 +186,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return result;
 	}
 	
-	public void doWithDeleteByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
+	public void doWithDeleteByIdListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
 		try {
 			deleteByIdListener.beforeDeleteById(entities);
 			delegate.run();
@@ -202,7 +202,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener<C, I> selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		this.selectListener.add(selectListener);
 	}
 	

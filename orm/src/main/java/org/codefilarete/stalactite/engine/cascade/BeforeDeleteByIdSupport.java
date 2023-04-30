@@ -31,7 +31,7 @@ public class BeforeDeleteByIdSupport<TRIGGER, TARGET> implements DeleteByIdListe
 	}
 
 	@Override
-	public void beforeDeleteById(Iterable<TRIGGER> entities) {
+	public void beforeDeleteById(Iterable<? extends TRIGGER> entities) {
 		beforeDeleteAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toList()));
 	}
 }

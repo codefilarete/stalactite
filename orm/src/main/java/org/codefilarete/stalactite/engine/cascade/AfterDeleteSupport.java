@@ -31,7 +31,7 @@ public class AfterDeleteSupport<TRIGGER, TARGET> implements DeleteListener<TRIGG
 	}
 
 	@Override
-	public void afterDelete(Iterable<TRIGGER> entities) {
+	public void afterDelete(Iterable<? extends TRIGGER> entities) {
 		afterDeleteAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toList()));
 	}
 }

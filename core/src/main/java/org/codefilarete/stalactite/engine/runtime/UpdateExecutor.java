@@ -85,7 +85,7 @@ public class UpdateExecutor<C, I, T extends Table<T>> extends WriteExecutor<C, I
 	 * @param entities iterable of entities
 	 */
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		Set<Column<T, Object>> columnsToUpdate = getMapping().getUpdatableColumns();
 		if (!columnsToUpdate.isEmpty()) {
 			PreparedUpdate<T> updateOperation = getDmlGenerator().buildUpdate(columnsToUpdate, getMapping().getVersionedKeys());

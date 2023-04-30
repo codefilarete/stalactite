@@ -216,13 +216,13 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		sourcePersister.addDeleteListener(new DeleteListener<SRC>() {
 			
 			@Override
-			public void beforeDelete(Iterable<SRC> entities) {
+			public void beforeDelete(Iterable<? extends SRC> entities) {
 				storeTargetToSourceRelation(entities, true);
 			}
 		});
 		sourcePersister.addDeleteByIdListener(new DeleteByIdListener<SRC>() {
 			@Override
-			public void beforeDeleteById(Iterable<SRC> entities) {
+			public void beforeDeleteById(Iterable<? extends SRC> entities) {
 				storeTargetToSourceRelation(entities, true);
 			}
 		});
@@ -246,7 +246,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					}
 					
 					@Override
-					public void beforeDelete(Iterable<SRC> entities) {
+					public void beforeDelete(Iterable<? extends SRC> entities) {
 						List<TRGT> targets = stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList());
 						targets.forEach(e -> manyRelationDescriptor.getReverseSetter().accept(e, null));
 						targetPersister.updateById(targets);
@@ -264,13 +264,13 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			}
 		sourcePersister.addDeleteListener(new DeleteListener<SRC>() {
 			@Override
-			public void afterDelete(Iterable<SRC> entities) {
+			public void afterDelete(Iterable<? extends SRC> entities) {
 				clearRelationStorageContext();
 			}
 		});
 		sourcePersister.addDeleteByIdListener(new DeleteByIdListener<SRC>() {
 			@Override
-			public void afterDeleteById(Iterable<SRC> entities) {
+			public void afterDeleteById(Iterable<? extends SRC> entities) {
 				clearRelationStorageContext();
 			}
 		});

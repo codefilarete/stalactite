@@ -98,27 +98,27 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener insertListener) {
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		this.surrogate.addInsertListener(insertListener);
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener updateListener) {
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		this.surrogate.addUpdateListener(updateListener);
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		this.surrogate.addSelectListener(selectListener);
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		this.surrogate.addDeleteListener(deleteListener);
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		this.surrogate.addDeleteByIdListener(deleteListener);
 	}
 	
@@ -138,12 +138,12 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		surrogate.delete(entities);
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		surrogate.deleteById(entities);
 	}
 	
@@ -158,7 +158,7 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		surrogate.updateById(entities);
 	}
 	

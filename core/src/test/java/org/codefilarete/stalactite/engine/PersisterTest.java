@@ -67,7 +67,7 @@ class PersisterTest {
 			
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected void doUpdateById(Iterable<Toto> entities) {
+			protected void doUpdateById(Iterable<? extends Toto> entities) {
 			}
 		};
 		
@@ -264,7 +264,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected void doUpdateById(Iterable entities) {
+			protected void doUpdateById(Iterable<? extends Toto> entities) {
 			}
 		};
 		
@@ -303,7 +303,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected void doDelete(Iterable entities) {
+			protected void doDelete(Iterable<? extends Toto> entities) {
 			}
 		};
 		
@@ -339,7 +339,7 @@ class PersisterTest {
 				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 0)) {
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected void doDeleteById(Iterable entities) {
+			protected void doDeleteById(Iterable<? extends Toto> entities) {
 			}
 		};
 		
