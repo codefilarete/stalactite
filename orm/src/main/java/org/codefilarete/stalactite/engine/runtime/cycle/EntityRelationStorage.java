@@ -5,8 +5,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
 
 /**
  * Mapping between left part of a relation and identifiers of its right part

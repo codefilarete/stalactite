@@ -25,7 +25,6 @@ import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -34,6 +33,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedUpdate;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Maps;
 
 import static org.codefilarete.tool.Nullable.nullable;

@@ -23,7 +23,6 @@ import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPe
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -31,6 +30,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
 
 /**

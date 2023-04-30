@@ -21,7 +21,6 @@ import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJo
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.BasicEntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -32,6 +31,7 @@ import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.IdentityMap;
 
 /**
  * Bean graph creator from database rows. Based on a tree of {@link ConsumerNode}s which wraps some {@link JoinRowConsumer}.
@@ -389,7 +389,7 @@ public class EntityTreeInflater<C> {
 				// This is more for debugging purpose than for a real production goal, may be removed later
 				throw new MappingConfigurationException("Can't find node named " + joinNodeName + " in joins : " + this.tablePerJoinNodeName);
 			}
-			Column<T, O> columnClone = (Column<T, O>) table.findColumn(column.getName());
+			Column<T, O> columnClone = table.findColumn(column.getName());
 			return (O) row.get(columnAliases.get(columnClone));
 		}
 	}
