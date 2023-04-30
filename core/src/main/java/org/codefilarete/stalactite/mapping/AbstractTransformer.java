@@ -57,8 +57,8 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	}
 	
 	@Override
-	public void addTransformerListener(TransformerListener<C> listener) {
-		this.rowTransformerListeners.add(listener);
+	public void addTransformerListener(TransformerListener<? extends C> listener) {
+		this.rowTransformerListeners.add((TransformerListener<C>) listener);
 	}
 	
 	@Override

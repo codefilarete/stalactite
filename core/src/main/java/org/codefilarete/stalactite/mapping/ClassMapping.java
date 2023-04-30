@@ -466,7 +466,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 			}
 			
 			@Override
-			public void addTransformerListener(TransformerListener<C> listener) {
+			public void addTransformerListener(TransformerListener<? extends C> listener) {
 				mainRowTransformer.addTransformerListener(listener);
 			}
 		};
