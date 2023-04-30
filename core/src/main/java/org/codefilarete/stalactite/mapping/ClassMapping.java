@@ -44,7 +44,7 @@ import org.codefilarete.tool.Reflections;
  * </p>
  *
  * <p>
- * Mapping definition can be eased thanks to {@link PersistentFieldHarverster} or {@link Accessors}
+ * Mapping definition can be eased thanks to {@link PersistentFieldHarvester} or {@link Accessors}
  * </p>
  * 
  * <br/>

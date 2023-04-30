@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 /**
  * @author Guillaume Mary
  */
-public class PersistentFieldHarverster {
+public class PersistentFieldHarvester {
 	
 	private Map<PropertyAccessor, Column> fieldToColumn;
 	

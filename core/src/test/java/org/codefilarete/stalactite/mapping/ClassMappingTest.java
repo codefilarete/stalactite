@@ -40,7 +40,7 @@ class ClassMappingTest {
 	private static Column colE2;
 	private static Map<? extends ReversibleAccessor<Toto, Object>, ? extends Column<?, Object>> classMapping;
 	private static Table targetTable;
-	private static PersistentFieldHarverster persistentFieldHarverster;
+	private static PersistentFieldHarvester persistentFieldHarvester;
 	private static Map<String, Column> columnMapOnName;
 	private static PropertyAccessor<Toto, List<String>> myListField;
 	private static PropertyAccessor<Toto, Map<String, String>> myMapField;
@@ -49,9 +49,9 @@ class ClassMappingTest {
 	
 	@BeforeAll
 	static void setUpClass() {
-		persistentFieldHarverster = new PersistentFieldHarverster();
+		persistentFieldHarvester = new PersistentFieldHarvester();
 		targetTable = new Table<>("Toto");
-		classMapping = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		classMapping = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		
 		
 		columnMapOnName = targetTable.mapColumnsOnName();
@@ -77,7 +77,7 @@ class ClassMappingTest {
 				Toto.class,
 				(T) targetTable,
 				(Map<? extends ReversibleAccessor<Toto, Object>, ? extends Column<T, Object>>) classMapping,
-				Accessors.propertyAccessor(persistentFieldHarverster.getField("a")),
+				Accessors.propertyAccessor(persistentFieldHarvester.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
 				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {
 				}, c -> false));
@@ -263,7 +263,7 @@ class ClassMappingTest {
 	
 	@Test
 	<T extends Table<T>> void beanKeyIsPresent() {
-		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
+		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		assertThatExceptionOfType(IllegalArgumentException.class).as("Bean identifier '" + identifierAccesor + "' must have its matching column in "
 				+ "the mapping").isThrownBy(() -> new ClassMapping<>(Toto.class,
 				(T) targetTable,

@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
-import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
+import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
@@ -30,10 +30,10 @@ abstract class DMLExecutorTest {
 		PersistenceConfiguration<Toto, Integer, T> toReturn = new PersistenceConfiguration<>();
 
 		T targetTable = (T) new Table("Toto");
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFileds = persistentFieldHarverster.mapFields(Toto.class, targetTable);
-		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
-		persistentFieldHarverster.getColumn(primaryKeyAccessor).primaryKey();
+		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
+		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
+		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
 			new SinglePropertyIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
 
@@ -86,8 +86,8 @@ abstract class DMLExecutorTest {
 
 		PersistenceConfiguration<Toto, Toto, T> toReturn = new PersistenceConfiguration<>();
 
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFields = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
+		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFields = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		ComposedIdMapping<Toto, Toto> idMappingStrategy = new ComposedIdMapping<>(idAccessor,
 																				  new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false),
 																				  composedIdentifierAssembler);

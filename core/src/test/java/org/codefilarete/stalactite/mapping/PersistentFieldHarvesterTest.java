@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 
-import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -14,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Guillaume Mary
  */
-public class PersistentFieldHarversterTest {
+public class PersistentFieldHarvesterTest {
 	
 	public static Object[][] testNextMethodsData() {
 		return new Object[][] {
@@ -27,7 +26,7 @@ public class PersistentFieldHarversterTest {
 	@ParameterizedTest
 	@MethodSource("testNextMethodsData")
 	public void testGetFields(Class clazz, List<String> expectedFields) {
-		PersistentFieldHarverster testInstance = new PersistentFieldHarverster();
+		PersistentFieldHarvester testInstance = new PersistentFieldHarvester();
 		Iterable<Field> fields = testInstance.getFields(clazz);
 		Iterator<Field> fieldsIterator = fields.iterator();
 		assertThat(fieldsIterator.hasNext()).isTrue();

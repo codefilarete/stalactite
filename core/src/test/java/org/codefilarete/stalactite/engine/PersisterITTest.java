@@ -11,7 +11,7 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.runtime.Persister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
+import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -42,14 +42,14 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 	@BeforeEach
 	void setUp() {
 		TotoTable totoClassTable = new TotoTable(null, "Toto");
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor<Toto, Object>, Column<TotoTable, Object>> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
+		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
+		Map<PropertyAccessor<Toto, Object>, Column<TotoTable, Object>> totoClassMapping = persistentFieldHarvester.mapFields(Toto.class, totoClassTable);
 		Map<String, Column<TotoTable, Object>> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		// defining a test instance that maps Toto class onto TotoTable with "a" field as identifier
-		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
+		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		ClassMapping<Toto, Integer, TotoTable> totoClassMappingStrategy = new ClassMapping<>(
 				Toto.class,
 				totoClassTable,
