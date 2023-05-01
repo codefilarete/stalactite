@@ -46,7 +46,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			result = delegate.execute();
 			insertListener.afterInsert(entities);
 		} catch (RuntimeException e) {
-			insertListener.onError(entities, e);
+			insertListener.onInsertError(entities, e);
 			throw e;
 		}
 		return result;
@@ -58,7 +58,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			delegate.run();
 			insertListener.afterInsert(entities);
 		} catch (RuntimeException e) {
-			insertListener.onError(entities, e);
+			insertListener.onInsertError(entities, e);
 			throw e;
 		}
 	}
@@ -79,7 +79,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			result = delegate.execute();
 			updateByIdListener.afterUpdateById(entities);
 		} catch (RuntimeException e) {
-			updateByIdListener.onError(entities, e);
+			updateByIdListener.onUpdateError(entities, e);
 			throw e;
 		}
 		return result;
@@ -91,7 +91,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			delegate.run();
 			updateByIdListener.afterUpdateById(entities);
 		} catch (RuntimeException e) {
-			updateByIdListener.onError(entities, e);
+			updateByIdListener.onUpdateError(entities, e);
 			throw e;
 		}
 	}
@@ -113,7 +113,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			result = delegate.apply(differencesIterable, allColumnsStatement);
 			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
-			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
+			updateListener.onUpdateError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
 		return result;
@@ -126,7 +126,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			delegate.accept(differencesIterable, allColumnsStatement);
 			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
-			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
+			updateListener.onUpdateError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
 	}
@@ -151,7 +151,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			result = delegate.execute();
 			deleteListener.afterDelete(entities);
 		} catch (RuntimeException e) {
-			deleteListener.onError(entities, e);
+			deleteListener.onDeleteError(entities, e);
 			throw e;
 		}
 		return result;
@@ -163,7 +163,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			delegate.run();
 			deleteListener.afterDelete(entities);
 		} catch (RuntimeException e) {
-			deleteListener.onError(entities, e);
+			deleteListener.onDeleteError(entities, e);
 			throw e;
 		}
 	}
@@ -180,7 +180,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			result = delegate.execute();
 			deleteByIdListener.afterDeleteById(entities);
 		} catch (RuntimeException e) {
-			deleteByIdListener.onError(entities, e);
+			deleteByIdListener.onDeleteError(entities, e);
 			throw e;
 		}
 		return result;
@@ -192,7 +192,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			delegate.run();
 			deleteByIdListener.afterDeleteById(entities);
 		} catch (RuntimeException e) {
-			deleteByIdListener.onError(entities, e);
+			deleteByIdListener.onDeleteError(entities, e);
 			throw e;
 		}
 	}
@@ -213,7 +213,7 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 			result = delegate.execute();
 			selectListener.afterSelect(result);
 		} catch (RuntimeException e) {
-			selectListener.onError(ids, e);
+			selectListener.onSelectError(ids, e);
 			throw e;
 		}
 		return result;

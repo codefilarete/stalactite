@@ -81,7 +81,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 	}
 	
 	@Override
-	public void onError(Iterable<ID> ids, RuntimeException exception) {
+	public void onSelectError(Iterable<ID> ids, RuntimeException exception) {
 		relationIdsHolder.remove();
 	}
 }

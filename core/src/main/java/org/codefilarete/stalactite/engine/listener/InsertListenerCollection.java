@@ -21,8 +21,8 @@ public class InsertListenerCollection<C> implements InsertListener<C> {
 	}
 	
 	@Override
-	public void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
-		insertListeners.forEach(listener -> listener.onError(entities, runtimeException));
+	public void onInsertError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+		insertListeners.forEach(listener -> listener.onInsertError(entities, runtimeException));
 	}
 	
 	public void add(InsertListener<? extends C> insertListener) {

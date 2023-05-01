@@ -21,8 +21,8 @@ public class UpdateByIdListenerCollection<C> implements UpdateByIdListener<C> {
 	}
 	
 	@Override
-	public void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
-		updateByIdListeners.forEach(listener -> listener.onError(entities, runtimeException));
+	public void onUpdateError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+		updateByIdListeners.forEach(listener -> listener.onUpdateError(entities, runtimeException));
 	}
 	
 	public void add(UpdateByIdListener<C> updateByIdListener) {

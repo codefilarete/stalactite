@@ -21,8 +21,8 @@ public class SelectListenerCollection<C, I> implements SelectListener<C, I> {
 	}
 	
 	@Override
-	public void onError(Iterable<I> ids, RuntimeException exception) {
-		selectListeners.forEach(listener -> listener.onError(ids, exception));
+	public void onSelectError(Iterable<I> ids, RuntimeException exception) {
+		selectListeners.forEach(listener -> listener.onSelectError(ids, exception));
 	}
 	
 	public void add(SelectListener<? extends C, I> selectListener) {

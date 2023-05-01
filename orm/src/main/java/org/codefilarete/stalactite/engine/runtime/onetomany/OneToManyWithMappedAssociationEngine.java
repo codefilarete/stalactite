@@ -168,9 +168,9 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			}
 
 			@Override
-			public void onError(Iterable<SRCID> ids, RuntimeException exception) {
+			public void onSelectError(Iterable<SRCID> ids, RuntimeException exception) {
 				// since ids are not those of its entities, we should not pass them as argument
-				targetSelectListener.onError(Collections.emptyList(), exception);
+				targetSelectListener.onSelectError(Collections.emptyList(), exception);
 			}
 		});
 	}

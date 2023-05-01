@@ -21,8 +21,8 @@ public class DeleteListenerCollection<C> implements DeleteListener<C> {
 	}
 	
 	@Override
-	public void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
-		deleteListeners.forEach(listener -> listener.onError(entities, runtimeException));
+	public void onDeleteError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+		deleteListeners.forEach(listener -> listener.onDeleteError(entities, runtimeException));
 	}
 	
 	public void add(DeleteListener<? extends C> deleteListener) {

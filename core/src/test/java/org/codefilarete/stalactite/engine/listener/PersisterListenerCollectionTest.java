@@ -4,13 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
-import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
@@ -58,7 +51,7 @@ public class PersisterListenerCollectionTest {
 				})).isSameAs(error);
 		
 		verify(listenerMock).beforeSelect(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onSelectError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterSelect(anyIterable());
 	}
 	
@@ -89,7 +82,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeInsert(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onInsertError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterInsert(anyIterable());
 	}
 	
@@ -121,7 +114,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeUpdate(eq(entities), eq(true));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onUpdateError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterUpdate(anyIterable(), eq(true));
 	}
 	
@@ -152,7 +145,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeUpdateById(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onUpdateError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterUpdateById(anyIterable());
 	}
 	
@@ -183,7 +176,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeDelete(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onDeleteError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterDelete(anyIterable());
 	}
 	
@@ -214,7 +207,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeDeleteById(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onDeleteError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterDeleteById(anyIterable());
 	}
 	

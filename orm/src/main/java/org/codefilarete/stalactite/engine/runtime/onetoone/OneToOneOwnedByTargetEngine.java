@@ -123,7 +123,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			}
 			
 			@Override
-			public void onError(Iterable<? extends SRC> entities, RuntimeException runtimeException) {
+			public void onInsertError(Iterable<? extends SRC> entities, RuntimeException runtimeException) {
 				clearRelationStorageContext();
 			}
 		});
@@ -232,7 +232,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 			}
 			
 			@Override
-			public void onError(Iterable<? extends SRC> entities, RuntimeException runtimeException) {
+			public void onUpdateError(Iterable<? extends SRC> entities, RuntimeException runtimeException) {
 				clearRelationStorageContext();
 			}
 		});

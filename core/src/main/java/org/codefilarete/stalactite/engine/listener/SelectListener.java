@@ -13,7 +13,7 @@ public interface SelectListener<C, I> {
 		
 	}
 	
-	default void onError(Iterable<I> ids, RuntimeException exception) {
+	default void onSelectError(Iterable<I> ids, RuntimeException exception) {
 		
 	}
 	

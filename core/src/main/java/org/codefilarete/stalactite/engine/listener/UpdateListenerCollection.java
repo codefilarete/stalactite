@@ -23,8 +23,8 @@ public class UpdateListenerCollection<E> implements UpdateListener<E> {
 	}
 	
 	@Override
-	public void onError(Iterable<? extends E> entities, RuntimeException runtimeException) {
-		updateListeners.forEach(listener -> listener.onError(entities, runtimeException));
+	public void onUpdateError(Iterable<? extends E> entities, RuntimeException runtimeException) {
+		updateListeners.forEach(listener -> listener.onUpdateError(entities, runtimeException));
 	}
 	
 	public void add(UpdateListener<E> updateListener) {

@@ -13,7 +13,7 @@ public interface InsertListener<C> {
 		
 	}
 	
-	default void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+	default void onInsertError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		
 	}
 	

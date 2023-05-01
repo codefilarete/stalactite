@@ -22,7 +22,7 @@ public interface UpdateListener<C> {
 		
 	}
 	
-	default void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+	default void onUpdateError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		
 	}
 	

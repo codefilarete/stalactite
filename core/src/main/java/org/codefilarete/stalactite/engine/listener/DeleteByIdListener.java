@@ -13,7 +13,7 @@ public interface DeleteByIdListener<C> {
 		
 	}
 	
-	default void onError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+	default void onDeleteError(Iterable<? extends C> entities, RuntimeException runtimeException) {
 		
 	}
 }

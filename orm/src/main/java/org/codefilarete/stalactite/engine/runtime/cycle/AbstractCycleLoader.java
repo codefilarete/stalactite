@@ -69,7 +69,7 @@ public abstract class AbstractCycleLoader<SRC, TRGT, TRGTID> implements SelectLi
 												  Map<TRGTID, TRGT> targetPerId);
 	
 	@Override
-	public void onError(Iterable<TRGTID> ids, RuntimeException exception) {
+	public void onSelectError(Iterable<TRGTID> ids, RuntimeException exception) {
 		this.currentRuntimeContext.remove();
 		throw exception;
 	}
