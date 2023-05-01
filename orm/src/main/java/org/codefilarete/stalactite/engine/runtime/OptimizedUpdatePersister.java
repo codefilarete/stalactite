@@ -51,10 +51,10 @@ import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
 
 /**
  * Persister with optimized {@link #update(Object, Consumer)} method by leveraging an internal cache so only one select is really executed. 
- * Acts as a proxy over a delegate {@link EntityConfiguredJoinedTablesPersister persister} to enhance its {@link #update(Object, Consumer)}
+ * Acts as a proxy over a delegate {@link ConfiguredRelationalPersister persister} to enhance its {@link #update(Object, Consumer)}
  * method.
  * <strong>
- * It requires that given {@link EntityConfiguredJoinedTablesPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
+ * It requires that given {@link ConfiguredRelationalPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
  * ({@link PersisterBuilderImpl}) by calling {@link #wrapWithQueryCache(ConnectionConfiguration)}.
  * </strong>
  * 
@@ -90,7 +90,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		return new ConnectionConfigurationSupport(connectionProvider, connectionConfiguration.getBatchSize());
 	}
 	
-	public OptimizedUpdatePersister(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public OptimizedUpdatePersister(ConfiguredRelationalPersister<C, I> surrogate) {
 		super(surrogate);
 	}
 	

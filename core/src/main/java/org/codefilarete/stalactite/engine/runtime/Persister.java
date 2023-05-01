@@ -1,43 +1,41 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.StaleStateObjectException;
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.exception.NotImplementedException;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * CRUD Persistent features dedicated to an entity class. Entry point for persistent operations on entities.
  * 
  * @author Guillaume Mary
  */
-@Nonnull
-public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<C, I> {
+public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPersister<C, I> {
 	
 	private final EntityMapping<C, I, T> mappingStrategy;
 	private final ConnectionConfiguration connectionConfiguration;
@@ -159,19 +157,18 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 		return Collections.singleton(getMainTable());
 	}
 	
+	/**
+	 * Set listener of each CRUD method.
+	 * 
+	 * @param persisterListener any {@link PersisterListenerCollection}, if null then it won't be set to avoid internal "if" on each CRUD method
+	 */
 	public void setPersisterListener(PersisterListenerCollection<C, I> persisterListener) {
-		// prevent from null instance
+		// prevent from null instance to avoid an "if" on each CRUD method
 		if (persisterListener != null) {
 			this.persisterListener = persisterListener;
 		}
 	}
 	
-	/**
-	 * should never be null for simplicity (skip "if" on each CRUD method)
-	 * 
-	 * @return not null
-	 */
-	@Nonnull
 	@Override
 	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return persisterListener;
@@ -197,10 +194,9 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	 * Saves given entities : will apply insert or update according to entities persistent state.
 	 * Triggers cascade on relations. Please note that in case of already-persisted entities (not new), entities will be reloaded from database
 	 * to compute differences and cascade only modifications.
-	 * If one already has a copy of the "unmodified" instance, you may prefer to direcly use {@link #update(Object, Object, boolean)}
+	 * If one already has a copy of the "unmodified" instance, you may prefer to directly use {@link #update(Object, Object, boolean)}
 	 * 
 	 * @param entities some entities, can be a mix of none-persistent or already-persisted entities
-	 * @return number of rows inserted and updated (relation-less counter) (maximum is argument size, may be 0 if no modifications were found between memory and database)
 	 */
 	@Override
 	public void persist(Iterable<? extends C> entities) {
@@ -251,10 +247,9 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	 * Saves given entity : will apply insert or update according to entity persistent state.
 	 * Triggers cascade on relations. Please note that in case of already-persisted entity (not new), entity will be reloaded from database
 	 * to compute differences and cascade only modifications.
-	 * If one already has a copy of the "unmodified" instance, you may prefer to direcly use {@link #update(Object, Object, boolean)}
+	 * If one already has a copy of the "unmodified" instance, you may prefer to directly use {@link #update(Object, Object, boolean)}
 	 *
 	 * @param entities entities, none-persistent or already-persisted
-	 * @return number of rows inserted (relation-less counter) (maximum is argument size)
 	 */
 	@Override
 	public void insert(Iterable<? extends C> entities) {
@@ -271,7 +266,6 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	 * Updates roughly some entities: no differences are computed, only update statements (full column) are applied.
 	 * 
 	 * @param entities iterable of entities
-	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if rows weren't found in database)
 	 */
 	@Override
 	public void updateById(Iterable<? extends C> entities) {
@@ -291,7 +285,6 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	 * 
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
-	 * @return number of rows updated (relation-less counter) (maximum is argument size, may be 0 if row wasn't found in database)
 	 */
 	@Override
 	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
@@ -351,11 +344,6 @@ public class Persister<C, I, T extends Table<T>> implements ConfiguredPersister<
 	@Override
 	public boolean isNew(C c) {
 		return mappingStrategy.isNew(c);
-	}
-	
-	@Override
-	public I getId(C entity) {
-		return mappingStrategy.getId(entity);
 	}
 	
 	@Override

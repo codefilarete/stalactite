@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymo
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterListenerWrapper;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -35,7 +35,7 @@ import org.codefilarete.tool.exception.NotImplementedException;
 public class PolymorphismPersisterBuilder<C, I, T extends Table> implements PolymorphismBuilder<C, I, T> {
 	
 	private final PolymorphismPolicy<C> polymorphismPolicy;
-	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
+	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Identification<C, I> identification;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final ColumnNameProvider columnNameProvider;
@@ -50,18 +50,18 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	private final TableNamingStrategy tableNamingStrategy;
 	
 	public PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
-								 Identification<C, I> identification,
-								 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-								 ColumnBinderRegistry columnBinderRegistry,
-								 ColumnNameProvider columnNameProvider,
-								 ColumnNamingStrategy columnNamingStrategy,
-								 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-								 ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-								 JoinColumnNamingStrategy joinColumnNamingStrategy,
-								 ColumnNamingStrategy indexColumnNamingStrategy,
-								 AssociationTableNamingStrategy associationTableNamingStrategy,
-								 Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
-								 TableNamingStrategy tableNamingStrategy) {
+										Identification<C, I> identification,
+										ConfiguredRelationalPersister<C, I> mainPersister,
+										ColumnBinderRegistry columnBinderRegistry,
+										ColumnNameProvider columnNameProvider,
+										ColumnNamingStrategy columnNamingStrategy,
+										ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+										ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
+										JoinColumnNamingStrategy joinColumnNamingStrategy,
+										ColumnNamingStrategy indexColumnNamingStrategy,
+										AssociationTableNamingStrategy associationTableNamingStrategy,
+										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
+										TableNamingStrategy tableNamingStrategy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
 		this.mainPersister = mainPersister;
@@ -78,7 +78,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	}
 	
 	@Override
-	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
 		PolymorphismBuilder<C, I, T> polymorphismBuilder;
 		if (polymorphismPolicy instanceof PolymorphismPolicy.SingleTablePolymorphism) {
 			polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, ?>) polymorphismPolicy,
@@ -102,7 +102,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 			// this exception is more to satisfy Sonar than for real case
 			throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);
 		}
-		EntityConfiguredJoinedTablesPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration, persisterRegistry);
+		ConfiguredRelationalPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		result = new PersisterListenerWrapper<>(result);
 		// We transfer listeners so that all actions are made in the same "event listener context" : all listeners are aggregated in a top level one.
 		// Made in particular for already-assigned mark-as-persisted mechanism and relation cascade triggering.

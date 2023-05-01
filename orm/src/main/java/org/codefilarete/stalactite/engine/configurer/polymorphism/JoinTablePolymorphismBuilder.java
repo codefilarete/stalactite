@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNa
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.JoinTablePolymorphismPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -49,7 +49,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 	
 	JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
 								 Identification<C, I> identification,
-								 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+								 ConfiguredRelationalPersister<C, I> mainPersister,
 								 ColumnBinderRegistry columnBinderRegistry,
 								 ColumnNameProvider columnNameProvider,
 								 TableNamingStrategy tableNamingStrategy,
@@ -66,8 +66,8 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 	}
 	
 	@Override
-	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass =
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass =
 				collectSubClassPersister(dialect, connectionConfiguration);
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
@@ -78,8 +78,8 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 		return surrogate;
 	}
 	
-	private <D extends C> Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> persisterPerSubclass = new HashMap<>();
+	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder<D, ?> beanMappingBuilder = new BeanMappingBuilder<>();
 		for (SubEntityMappingConfiguration<D> subConfiguration : ((Set<SubEntityMappingConfiguration<D>>) (Set) joinTablePolymorphism.getSubClasses())) {
@@ -89,10 +89,10 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 		return persisterPerSubclass;
 	}
 	
-	private <D, SUBT extends Table<SUBT>> EntityConfiguredJoinedTablesPersister<D, I> buildSubclassPersister(Dialect dialect,
-																											 ConnectionConfiguration connectionConfiguration,
-																											 BeanMappingBuilder<D, SUBT> beanMappingBuilder,
-																											 SubEntityMappingConfiguration<D> subConfiguration) {
+	private <D, SUBT extends Table<SUBT>> ConfiguredRelationalPersister<D, I> buildSubclassPersister(Dialect dialect,
+																										   ConnectionConfiguration connectionConfiguration,
+																										   BeanMappingBuilder<D, SUBT> beanMappingBuilder,
+																										   SubEntityMappingConfiguration<D> subConfiguration) {
 		// first we'll use table of columns defined in embedded override
 		// then the one defined by inheritance
 		// if both are null we'll create a new one
@@ -122,7 +122,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 		
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
-		EntityConfiguredJoinedTablesPersister<D, I> subclassPersister = new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
+		ConfiguredRelationalPersister<D, I> subclassPersister = new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
 		
 		// Adding join with parent table to select
 		subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,

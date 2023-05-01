@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -34,7 +34,7 @@ import static org.codefilarete.tool.Nullable.nullable;
 public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>> {
 	
 	private final OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation;
-	private final EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
@@ -44,7 +44,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	
 	public OneToManyRelationConfigurer(OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation,
-									   EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+									   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									   Dialect dialect,
 									   ConnectionConfiguration connectionConfiguration,
 									   PersisterRegistry persisterRegistry,
@@ -66,14 +66,14 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 	
 	public <T extends Table<T>> void configure(PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 		Table targetTable = determineTargetTable(oneToManyRelation);
-		EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
+		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				.build(dialect, connectionConfiguration, persisterRegistry, targetTable);
 		
 		configure(targetPersister);
 	}
 	
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		PrimaryKey<?, SRCID> leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
 		
@@ -105,7 +105,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		return configurer.configureWithSelectIn2Phases(tableAlias, firstPhaseCycleLoadListener);
 	}
 	
-	void configure(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+	void configure(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		PrimaryKey<?, SRCID> leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
 		
 		RelationMode maintenanceMode = oneToManyRelation.getRelationMode();
@@ -161,7 +161,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		return nullable(oneToManyRelation.getTargetTable()).elseSet(reverseTable).elseSet(indexingTable).get();
 	}
 	
-	protected PrimaryKey<?, SRCID> lookupSourcePrimaryKey(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister) {
+	protected PrimaryKey<?, SRCID> lookupSourcePrimaryKey(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
 		return sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 	

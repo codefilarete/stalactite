@@ -43,7 +43,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	 * @param shouldDeleteRemoved true to delete orphans
 	 */
 	public CollectionUpdater(Function<I, C> collectionGetter,
-							 EntityConfiguredPersister<O, ?> targetPersister,
+							 ConfiguredPersister<O, ?> targetPersister,
 							 @Nullable BiConsumer<O, I> reverseSetter,
 							 boolean shouldDeleteRemoved) {
 		this(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, targetPersister.getMapping()::getId);

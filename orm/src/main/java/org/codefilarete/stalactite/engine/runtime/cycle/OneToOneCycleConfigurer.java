@@ -3,18 +3,18 @@ package org.codefilarete.stalactite.engine.runtime.cycle;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 
 /**
  * Container of {@link OneToOneRelationConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).
  * Expected to exist as a one-per-entity-type.
  * 
  * As a {@link PostInitializer}, will invoke every registered {@link OneToOneRelationConfigurer}
- * {@link OneToOneRelationConfigurer#configureWithSelectIn2Phases(String, EntityConfiguredJoinedTablesPersister, FirstPhaseCycleLoadListener) configureWithSelectIn2Phases method}
+ * {@link OneToOneRelationConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener) configureWithSelectIn2Phases method}
  * with a {@link OneToOneCycleLoader}.
  * 
  * @param <TRGT> type of all registered {@link OneToOneRelationConfigurer}
@@ -34,11 +34,11 @@ public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	@Override
-	public void consume(EntityConfiguredJoinedTablesPersister<TRGT, ?> targetPersister) {
+	public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
 		registerRelationLoader(targetPersister);
 	}
 	
-	private <SRC, TRGTID> void registerRelationLoader(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+	private <SRC, TRGTID> void registerRelationLoader(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		OneToOneCycleLoader<SRC, TRGT, TRGTID> oneToOneCycleLoader = new OneToOneCycleLoader<>(targetPersister);
 		targetPersister.addSelectListener(oneToOneCycleLoader);
 		relations.forEach((RelationConfigurer c) -> {

@@ -14,7 +14,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.AbstractTransformer;
@@ -166,12 +166,12 @@ public class EntityJoinTree<C, I> {
 	
 	public static class PolymorphicEntityInflater<E, D extends E, I, T extends Table<T>> implements EntityInflater<D, I> {
 		
-		private final EntityConfiguredJoinedTablesPersister<E, I> mainPersister;
+		private final ConfiguredRelationalPersister<E, I> mainPersister;
 		
-		private final EntityConfiguredJoinedTablesPersister<D, I> subPersister;
+		private final ConfiguredRelationalPersister<D, I> subPersister;
 		
-		public PolymorphicEntityInflater(EntityConfiguredJoinedTablesPersister<E, I> mainPersister,
-										 EntityConfiguredJoinedTablesPersister<D, I> subPersister) {
+		public PolymorphicEntityInflater(ConfiguredRelationalPersister<E, I> mainPersister,
+										 ConfiguredRelationalPersister<D, I> subPersister) {
 			this.mainPersister = mainPersister;
 			this.subPersister = subPersister;
 		}

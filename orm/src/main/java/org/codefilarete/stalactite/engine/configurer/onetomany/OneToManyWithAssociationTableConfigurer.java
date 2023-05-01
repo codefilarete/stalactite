@@ -8,13 +8,13 @@ import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
+import org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine;
 import org.codefilarete.stalactite.engine.runtime.onetomany.ManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithAssociationTableEngine;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedAssociationTableEngine;
@@ -38,7 +38,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	private AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, ? extends AssociationRecord, ?> associationTableEngine;
 	
 	OneToManyWithAssociationTableConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
-											EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+											ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 											boolean loadSeparately,
 											AssociationTableNamingStrategy associationTableNamingStrategy,
 											boolean maintainAssociationOnly,
@@ -97,7 +97,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 			String associationTableName,
 			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
-			EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which is not allowed by databases
@@ -136,7 +136,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	void assignEngineForIndexedAssociation(PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 										   String associationTableName,
 										   ManyRelationDescriptor manyRelationDescriptor,
-										   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+										   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		if (((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn() != null) {
 			throw new UnsupportedOperationException("Indexing column is defined without owner : relation is only declared by "

@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SingleTablePolymorphismPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
@@ -41,7 +41,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 								   Identification<C, I> identification,
-								   EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+								   ConfiguredRelationalPersister<C, I> mainPersister,
 								   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainMapping,
 								   ColumnBinderRegistry columnBinderRegistry,
 								   ColumnNameProvider columnNameProvider,
@@ -59,8 +59,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	}
 	
 	@Override
-	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass =
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass =
 				collectSubClassPersister(dialect, connectionConfiguration);
 		
 		Column<T, DTYPE> discriminatorColumn = ensureDiscriminatorColumn();
@@ -75,8 +75,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		return result;
 	}
 	
-	private <D extends C> Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> persisterPerSubclass = new HashMap<>();
+	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder<D, T> beanMappingBuilder = new BeanMappingBuilder<>();
 		T mainTable = (T) mainPersister.getMapping().getTargetTable();

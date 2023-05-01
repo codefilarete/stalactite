@@ -7,8 +7,7 @@ import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordInsertionCascader;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 
@@ -18,8 +17,8 @@ import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 public class OneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, T extends AssociationTable<T, ?, ?, SRCID, TRGTID>>
 		extends AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C, AssociationRecord, T> {
 	
-	public OneToManyWithAssociationTableEngine(ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-											   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+											   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 											   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 											   AssociationRecordPersister<AssociationRecord, T> associationPersister,
 											   WriteOperationFactory writeOperationFactory) {

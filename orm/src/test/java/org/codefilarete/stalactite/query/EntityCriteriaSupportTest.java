@@ -1,10 +1,6 @@
 package org.codefilarete.stalactite.query;
 
-import java.util.HashMap;
-
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
@@ -13,18 +9,18 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport.EntityGraphNode;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
-import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -111,7 +107,7 @@ class EntityCriteriaSupportTest {
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
-				((EntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
+				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCapital), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
 	}
 	
@@ -138,7 +134,7 @@ class EntityCriteriaSupportTest {
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
-				((EntityConfiguredPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
+				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCities), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
 	}
 	

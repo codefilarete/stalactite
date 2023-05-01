@@ -16,9 +16,8 @@ import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationCo
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -28,17 +27,17 @@ import org.codefilarete.tool.collection.Iterables;
 
 public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
 	
-	protected final EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	protected final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	
 	protected final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
 	
-	protected OneToOneConfigurerTemplate(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister, OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation) {
+	protected OneToOneConfigurerTemplate(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation) {
 		this.sourcePersister = sourcePersister;
 		this.oneToOneRelation = oneToOneRelation;
 	}
 	
 	public void configure(String tableAlias,
-						  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+						  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 						  boolean loadSeparately) {
 		assertConfigurationIsSupported();
 		
@@ -53,7 +52,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	}
 	
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(String tableAlias,
-																			  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+																			  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 																			  FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		assertConfigurationIsSupported();
 		
@@ -85,7 +84,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	protected abstract BeanRelationFixer<SRC, TRGT> determineRelationFixer();
 	
-	protected void addWriteCascades(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
+	protected void addWriteCascades(ConfiguredPersister<TRGT, TRGTID> targetPersister) {
 		boolean orphanRemoval = oneToOneRelation.getRelationMode() == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = oneToOneRelation.getRelationMode() != RelationMode.READ_ONLY;
 		if (writeAuthorized) {
@@ -97,25 +96,25 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	}
 	
 	@SuppressWarnings("squid:S1172")    // argument targetPersister is used by subclasses
-	protected void addInsertCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
+	protected void addInsertCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister) {
 		// if cascade is mandatory, then adding nullability checking before insert
 		if (!oneToOneRelation.isNullable()) {
 			sourcePersister.addInsertListener(new MandatoryRelationAssertBeforeInsertListener<>(oneToOneRelation.getTargetProvider()));
 		}
 	}
 	
-	protected void addUpdateCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
+	protected void addUpdateCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
 		// if cascade is mandatory, then adding nullability checking before insert
 		if (!oneToOneRelation.isNullable()) {
 			sourcePersister.addUpdateListener(new MandatoryRelationAssertBeforeUpdateListener<>(oneToOneRelation.getTargetProvider()));
 		}
 	}
 	
-	protected abstract void addDeleteCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval);
+	protected abstract void addDeleteCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval);
 	
 	protected void addSelectJoin(
 			String tableAlias,
-			ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			BeanRelationFixer<SRC, TRGT> beanRelationFixer,
@@ -151,7 +150,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	
 	abstract protected void addSelectIn2Phases(
 			String tableAlias,
-			ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener);

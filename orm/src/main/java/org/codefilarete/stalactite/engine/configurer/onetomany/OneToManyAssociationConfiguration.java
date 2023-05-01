@@ -8,7 +8,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>> {
 	
 	private final OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation;
-	private final EntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersister;
+	private final ConfiguredRelationalPersister<SRC, SRCID> srcPersister;
 	private final PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
@@ -30,7 +30,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private final boolean writeAuthorized;
 	
 	OneToManyAssociationConfiguration(OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation,
-									  EntityConfiguredJoinedTablesPersister<SRC, SRCID> srcPersister,
+									  ConfiguredRelationalPersister<SRC, SRCID> srcPersister,
 									  PrimaryKey<LEFTTABLE, SRCID> leftPrimaryKey,
 									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									  JoinColumnNamingStrategy joinColumnNamingStrategy,
@@ -55,7 +55,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		return oneToManyRelation;
 	}
 	
-	public EntityConfiguredJoinedTablesPersister<SRC, SRCID> getSrcPersister() {
+	public ConfiguredRelationalPersister<SRC, SRCID> getSrcPersister() {
 		return srcPersister;
 	}
 	

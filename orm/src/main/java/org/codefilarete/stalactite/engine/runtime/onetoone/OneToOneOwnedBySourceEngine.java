@@ -15,8 +15,7 @@ import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeUpdateSupport;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -33,8 +32,8 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	
 	private final ShadowColumnValueProvider<SRC, LEFTTABLE> foreignKeyValueProvider;
 	
-	public OneToOneOwnedBySourceEngine(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-									   EntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+	public OneToOneOwnedBySourceEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
+									   ConfiguredPersister<TRGT, TRGTID> targetPersister,
 									   Accessor<SRC, TRGT> targetAccessor,
 									   Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping) {
 		super(sourcePersister, targetPersister, targetAccessor, keyColumnsMapping);

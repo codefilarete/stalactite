@@ -19,7 +19,7 @@ import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
@@ -47,9 +47,9 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	 */
 	private final ThreadLocal<IdentityMap<TRGTID, Integer>> currentSelectedIndexes = new ThreadLocal<>();
 	
-	public OneToManyWithIndexedMappedAssociationEngine(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithIndexedMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													   IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition,
-													   EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+													   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 													   Set<Column<RIGHTTABLE, Object>> mappedReverseColumns,
 													   Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider) {
 		super(targetPersister, manyRelationDefinition, sourcePersister, mappedReverseColumns, reverseColumnsValueProvider);
@@ -250,11 +250,11 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		private final Column<Table, Integer> indexingColumn;
 		
 		private ListCollectionUpdater(Function<SRC, C> collectionGetter,
-									 EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister,
-									 @Nullable BiConsumer<TRGT, SRC> reverseSetter,
-									 boolean shouldDeleteRemoved,
-									 Function<TRGT, ?> idProvider,
-									 Column indexingColumn) {
+									  ConfiguredRelationalPersister<TRGT, ID> targetPersister,
+									  @Nullable BiConsumer<TRGT, SRC> reverseSetter,
+									  boolean shouldDeleteRemoved,
+									  Function<TRGT, ?> idProvider,
+									  Column indexingColumn) {
 			super(collectionGetter, targetPersister, reverseSetter, shouldDeleteRemoved, idProvider);
 			this.indexingColumn = indexingColumn;
 			addShadowIndexInsert(targetPersister);
@@ -262,7 +262,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 		}
 		
-		private <TARGETTABLE extends Table<TARGETTABLE>> void addShadowIndexUpdate(EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
+		private <TARGETTABLE extends Table<TARGETTABLE>> void addShadowIndexUpdate(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
 			targetPersister.<TARGETTABLE>getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 				
 				@Override
@@ -284,7 +284,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			});
 		}
 		
-		private <TARGETTABLE extends Table<TARGETTABLE>> void addShadowIndexInsert(EntityConfiguredJoinedTablesPersister<TRGT, ID> targetPersister) {
+		private <TARGETTABLE extends Table<TARGETTABLE>> void addShadowIndexInsert(ConfiguredRelationalPersister<TRGT, ID> targetPersister) {
 			// adding index insert/update to strategy
 			targetPersister.<TARGETTABLE>getMapping().addShadowColumnInsert(new ShadowColumnValueProvider<TRGT, TARGETTABLE>() {
 				

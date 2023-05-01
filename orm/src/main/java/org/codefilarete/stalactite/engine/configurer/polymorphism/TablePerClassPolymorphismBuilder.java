@@ -22,7 +22,7 @@ import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNa
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.TablePerClassPolymorphismPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
@@ -45,7 +45,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
 									 Identification<C, I> identification,
-									 EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+									 ConfiguredRelationalPersister<C, I> mainPersister,
 									 Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
 									 ColumnBinderRegistry columnBinderRegistry,
 									 ColumnNameProvider columnNameProvider,
@@ -62,7 +62,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	}
 	
 	@Override
-	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
 		if (this.identification.getIdentifierPolicy() instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
@@ -91,8 +91,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		return result;
 	}
 	
-	private <D extends C> Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
-		Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> persisterPerSubclass = new HashMap<>();
+	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
 		
 		BeanMappingBuilder<D, T> beanMappingBuilder = new BeanMappingBuilder<>();
 		for (SubEntityMappingConfiguration<D> subConfiguration : ((Set<SubEntityMappingConfiguration<D>>) (Set) polymorphismPolicy.getSubClasses())) {

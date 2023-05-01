@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
@@ -36,7 +36,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extends Table, JOINTYPE, I> extends RelationJoinNode<C, T1, T2, JOINTYPE, I> {
 	
-	private final Set<Duo<EntityConfiguredJoinedTablesPersister<? extends C, I>, PolymorphicMergeJoinRowConsumer<C, ? extends C, I>>> subPersisters = new HashSet<>();
+	private final Set<Duo<ConfiguredRelationalPersister<? extends C, I>, PolymorphicMergeJoinRowConsumer<C, ? extends C, I>>> subPersisters = new HashSet<>();
 	
 	public JoinTablePolymorphicRelationJoinNode(JoinNode<T1> parent,
 												Key<T1, JOINTYPE> leftJoinColumn,
@@ -56,7 +56,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 		return new JoinTablePolymorphicRelationJoinRowConsumer(columnedRow, parentRowConsumer, getConsumptionListener());
 	}
 	
-	public <D extends C> void addSubPersisterJoin(EntityConfiguredJoinedTablesPersister<D, I> subPersister, PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin) {
+	public <D extends C> void addSubPersisterJoin(ConfiguredRelationalPersister<D, I> subPersister, PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin) {
 		this.subPersisters.add(new Duo<>(subPersister, subPersisterJoin));
 	}
 	
@@ -116,7 +116,7 @@ public class JoinTablePolymorphicRelationJoinNode<C, T1 extends Table, T2 extend
 		/* Optimized, from 530 000 nanos to 65 000 nanos at 1st exec, from 40 000 nanos to 12 000 nanos on usual run */
 		public Duo<I, ? extends PolymorphicMergeJoinRowConsumer<C, ? extends C, I>> giveIdentifier(Row row) {
 			// @Optimized : use for & return instead of stream().map().filter(notNull).findFirst()
-			for (Duo<EntityConfiguredJoinedTablesPersister<? extends C, I>, PolymorphicMergeJoinRowConsumer<C, ? extends C, I>> duo : subPersisters) {
+			for (Duo<ConfiguredRelationalPersister<? extends C, I>, PolymorphicMergeJoinRowConsumer<C, ? extends C, I>> duo : subPersisters) {
 				I assemble = duo.getRight().giveIdentifier(row);
 				if (assemble != null) {
 					return new Duo<>(assemble, duo.getRight());

@@ -56,8 +56,7 @@ import org.codefilarete.stalactite.engine.configurer.polymorphism.PolymorphismPe
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsserter;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -168,12 +167,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@Override
-	public EntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext) {
+	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
 		return build(persistenceContext, null);
 	}
 	
 	@Override
-	public EntityConfiguredPersister<C, I> build(PersistenceContext persistenceContext, @Nullable Table table) {
+	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext, @Nullable Table table) {
 		return build(
 				persistenceContext.getDialect(),
 				OptimizedUpdatePersister.wrapWithQueryCache(persistenceContext.getConnectionConfiguration()),
@@ -190,10 +189,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param table persistence target table
 	 * @return the built persister, never null
 	 */
-	public EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect,
-															 ConnectionConfiguration connectionConfiguration,
-															 PersisterRegistry persisterRegistry,
-															 @Nullable Table table) {
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect,
+														   ConnectionConfiguration connectionConfiguration,
+														   PersisterRegistry persisterRegistry,
+														   @Nullable Table table) {
 		boolean isInitiator = PersisterBuilderContext.CURRENT.get() == null;
 		
 		if (isInitiator) {
@@ -207,9 +206,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			EntityPersister<C, Object> existingPersister = persisterRegistry.getPersister(this.entityMappingConfiguration.getEntityType());
 			if (existingPersister != null) {
 				// we can cast because all persisters we registered implement the interface
-				return (EntityConfiguredJoinedTablesPersister<C, I>) existingPersister;
+				return (ConfiguredRelationalPersister<C, I>) existingPersister;
 			}
-			EntityConfiguredJoinedTablesPersister<C, I> result = doBuild(table, dialect::buildGeneratedKeysReader,
+			ConfiguredRelationalPersister<C, I> result = doBuild(table, dialect::buildGeneratedKeysReader,
 					dialect, connectionConfiguration, persisterRegistry);
 			
 			if (isInitiator) {	
@@ -218,7 +217,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				// because persistence configuration is made with a deep-first algorithm, this code (after doBuild()) will be called at the very end.
 				PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(invocation -> {
 					try {
-						invocation.consume((EntityConfiguredJoinedTablesPersister) persisterRegistry.getPersister(invocation.getEntityType()));
+						invocation.consume((ConfiguredRelationalPersister) persisterRegistry.getPersister(invocation.getEntityType()));
 					} catch (RuntimeException e) {
 						throw new MappingConfigurationException("Error while post processing persister of type "
 								+ Reflections.toString(invocation.getEntityType()), e);
@@ -235,11 +234,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@VisibleForTesting
-	<T extends Table<T>> EntityConfiguredJoinedTablesPersister<C, I> doBuild(@Nullable T table,
-														GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
-														Dialect dialect,
-														ConnectionConfiguration connectionConfiguration,
-														PersisterRegistry persisterRegistry) {
+	<T extends Table<T>> ConfiguredRelationalPersister<C, I> doBuild(@Nullable T table,
+																	 GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
+																	 Dialect dialect,
+																	 ConnectionConfiguration connectionConfiguration,
+																	 PersisterRegistry persisterRegistry) {
 		init(dialect.getColumnBinderRegistry(), table);
 		
 		mapEntityConfigurationPerTable();
@@ -283,7 +282,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					.forEach(relationConfigurer::configureRelations);
 		});
 		
-		EntityConfiguredJoinedTablesPersister<C, I> result = mainPersister;
+		ConfiguredRelationalPersister<C, I> result = mainPersister;
 		// polymorphism handling
 		PolymorphismPolicy<C> polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
@@ -337,7 +336,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * Used in particular to deal with bean cycle load.
 	 * 
 	 * @param <P> entity type to be persisted
-	 * @see #consume(EntityConfiguredJoinedTablesPersister) 
+	 * @see #consume(ConfiguredRelationalPersister) 
 	 */
 	public static abstract class PostInitializer<P> {
 		
@@ -357,7 +356,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		 * 
 		 * @param persister entity type persister
 		 */
-		public abstract void consume(EntityConfiguredJoinedTablesPersister<P, ?> persister);
+		public abstract void consume(ConfiguredRelationalPersister<P, ?> persister);
 	}
 	
 	public interface BuildLifeCycleListener {

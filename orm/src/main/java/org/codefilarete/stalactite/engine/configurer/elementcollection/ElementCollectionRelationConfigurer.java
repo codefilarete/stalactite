@@ -30,7 +30,7 @@ import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNa
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -74,7 +74,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 	private static final AccessorDefinition ELEMENT_RECORD_ID_ACCESSOR_DEFINITION = AccessorDefinition.giveDefinition(new AccessorByMethodReference<>(ElementRecord<Object, Object>::getId));
 	
 	private final ElementCollectionRelation<SRC, TRGT, C> linkage;
-	private final EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister;
+	private final ConfiguredRelationalPersister<SRC, ID> sourcePersister;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final ColumnNamingStrategy columnNamingStrategy;
 	private final ElementCollectionTableNamingStrategy tableNamingStrategy;
@@ -82,7 +82,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 	private final ConnectionConfiguration connectionConfiguration;
 	
 	public ElementCollectionRelationConfigurer(ElementCollectionRelation<SRC, TRGT, C> linkage,
-											   EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+											   ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 											   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 											   ColumnNamingStrategy columnNamingStrategy,
 											   ElementCollectionTableNamingStrategy tableNamingStrategy,
@@ -200,7 +200,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		});
 	}
 	
-	private void addInsertCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+	private void addInsertCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 								  EntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> wrapperPersister,
 								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProviderForInsert = collectionProvider(
@@ -211,7 +211,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		sourcePersister.addInsertListener(new TargetInstancesInsertCascader(wrapperPersister, collectionProviderForInsert));
 	}
 	
-	private void addUpdateCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+	private void addUpdateCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 								  EntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> wrapperPersister,
 								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProviderAsPersistedInstances = collectionProvider(
@@ -239,7 +239,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		sourcePersister.addUpdateListener(new TargetInstancesUpdateCascader<>(wrapperPersister, updateListener));
 	}
 	
-	private void addDeleteCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+	private void addDeleteCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 								  EntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> wrapperPersister,
 								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProviderAsPersistedInstances = collectionProvider(
@@ -250,7 +250,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
 	}
 	
-	private void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, ID> sourcePersister,
+	private void addSelectCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
 								  RelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> elementRecordPersister,
 								  PrimaryKey<?, ID> sourcePK,
 								  ForeignKey<?, ?, ID> elementRecordToSourceForeignKey,

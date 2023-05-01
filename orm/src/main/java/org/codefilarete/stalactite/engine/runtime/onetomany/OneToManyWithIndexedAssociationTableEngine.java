@@ -14,14 +14,13 @@ import org.codefilarete.stalactite.engine.diff.IndexedDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecordInsertionCascader;
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
-import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
+import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -52,8 +51,8 @@ public class OneToManyWithIndexedAssociationTableEngine<
 	
 	private final Column<ASSOCIATIONTABLE, Integer> indexColumn;
 	
-	public OneToManyWithIndexedAssociationTableEngine(ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-													  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithIndexedAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													  ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													  AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> associationPersister,
 													  Column<ASSOCIATIONTABLE, Integer> indexColumn,
@@ -62,7 +61,8 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		this.indexColumn = indexColumn;
 	}
 	
-	public void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
+	@Override
+	public void addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
 		
 		// we join on the association table and add bean association in memory
 		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,

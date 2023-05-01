@@ -5,7 +5,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface EntityConfiguredJoinedTablesPersister<C, I> extends ConfiguredJoinedTablesPersister<C, I>, EntityConfiguredPersister<C, I> {
+public interface ConfiguredRelationalPersister<C, I> extends ConfiguredPersister<C, I>, RelationalEntityPersister<C, I> {
 	
 	default Table getMainTable() {
 		return getEntityJoinTree().getRoot().getTable();

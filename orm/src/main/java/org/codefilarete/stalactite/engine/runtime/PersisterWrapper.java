@@ -28,20 +28,20 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 
 /**
- * {@link EntityConfiguredJoinedTablesPersister} that wraps another {@link EntityConfiguredJoinedTablesPersister}.
+ * {@link ConfiguredRelationalPersister} that wraps another {@link ConfiguredRelationalPersister}.
  * Made to override only some targeted methods. 
  * 
  * @author Guillaume Mary
  */
-public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersister<C, I> {
+public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, I> {
 	
-	protected final EntityConfiguredJoinedTablesPersister<C, I> surrogate;
+	protected final ConfiguredRelationalPersister<C, I> surrogate;
 	
-	public PersisterWrapper(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public PersisterWrapper(ConfiguredRelationalPersister<C, I> surrogate) {
 		this.surrogate = surrogate;
 	}
 	
-	public EntityConfiguredJoinedTablesPersister<C, I> getSurrogate() {
+	public ConfiguredRelationalPersister<C, I> getSurrogate() {
 		return surrogate;
 	}
 	
@@ -49,12 +49,17 @@ public class PersisterWrapper<C, I> implements EntityConfiguredJoinedTablesPersi
 	 * Gets the last (in depth) delegate of this potential chain of wrapper
 	 * @return at least the delegate of this instance
 	 */
-	public EntityConfiguredJoinedTablesPersister<C, I> getDeepestSurrogate() {
-		EntityConfiguredJoinedTablesPersister<C, I> result = this;
+	public ConfiguredRelationalPersister<C, I> getDeepestSurrogate() {
+		ConfiguredRelationalPersister<C, I> result = this;
 		while(result instanceof PersisterWrapper && ((PersisterWrapper<C, I>) result).getSurrogate() != null) {
 			result = ((PersisterWrapper<C, I>) result).getSurrogate();
 		}
 		return result;
+	}
+	
+	@Override
+	public I getId(C entity) {
+		return surrogate.getId(entity);
 	}
 	
 	@Override

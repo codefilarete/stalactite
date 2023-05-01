@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 
 /**
- * Class for wrapping calls to {@link EntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into
+ * Class for wrapping calls to {@link ConfiguredRelationalPersister#insert(Object)} and other update, delete, etc methods into
  * {@link InsertListener#beforeInsert(Iterable)} and {@link InsertListener#afterInsert(Iterable)} (and corresponding methods for other methods),
  * this is made through an internal {@link PersisterListenerCollection}.
  * 
@@ -24,7 +24,7 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	
 	private final PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	
-	public PersisterListenerWrapper(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public PersisterListenerWrapper(ConfiguredRelationalPersister<C, I> surrogate) {
 		super(surrogate);
 	}
 	

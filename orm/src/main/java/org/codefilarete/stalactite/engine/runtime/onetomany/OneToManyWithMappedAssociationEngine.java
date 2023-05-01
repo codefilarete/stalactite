@@ -25,7 +25,7 @@ import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
@@ -50,9 +50,9 @@ import static org.codefilarete.tool.collection.Iterables.stream;
  */
 public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 	
-	protected final EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	protected final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	
-	protected final EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
+	protected final ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor;
 	
@@ -91,9 +91,9 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 	
 	protected final ShadowColumnValueProvider<TRGT, RIGHTTABLE> foreignKeyValueProvider;
 	
-	public OneToManyWithMappedAssociationEngine(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public OneToManyWithMappedAssociationEngine(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 												MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDescriptor,
-												EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+												ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 												Set<Column<RIGHTTABLE, Object>> mappedReverseColumns,
 												Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider) {
 		this.targetPersister = targetPersister;

@@ -61,7 +61,7 @@ class EntityIsManagedByPersisterAsserterTest {
 	@ParameterizedTest
 	@MethodSource
 	void assertMethodIsInvoked(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
-		EntityConfiguredJoinedTablesPersister surrogateMock = mock(EntityConfiguredJoinedTablesPersister.class);
+		ConfiguredRelationalPersister surrogateMock = mock(ConfiguredRelationalPersister.class);
 		when(surrogateMock.getClassToPersist()).thenReturn(Vehicle.class);
 		when(surrogateMock.getId(args[0])).thenReturn(42L);
 		EntityMapping mappingStrategyMock = mock(EntityMapping.class);
@@ -80,7 +80,7 @@ class EntityIsManagedByPersisterAsserterTest {
 	@ParameterizedTest
 	@MethodSource("assertMethodIsInvoked")
 	void assertMethodIsInvoked_withPolymorphicPersisterAtInit(Method invokedMethod, Object[] args) throws InvocationTargetException, IllegalAccessException {
-		EntityConfiguredJoinedTablesPersister surrogateMock = mock(EntityConfiguredJoinedTablesPersister.class, withSettings().extraInterfaces(PolymorphicPersister.class));
+		ConfiguredRelationalPersister surrogateMock = mock(ConfiguredRelationalPersister.class, withSettings().extraInterfaces(PolymorphicPersister.class));
 		when(((PolymorphicPersister) surrogateMock).getSupportedEntityTypes()).thenReturn(Arrays.asSet(Vehicle.class));
 		when(surrogateMock.getId(args[0])).thenReturn(42L);
 		EntityMapping mappingStrategyMock = mock(EntityMapping.class);

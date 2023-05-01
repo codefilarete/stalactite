@@ -37,8 +37,7 @@ import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.PersonWithGender;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identified;
@@ -454,7 +453,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void add_withoutName_targetedPropertyNameIsTaken() {
-		EntityConfiguredPersister<Toto, Identifier<UUID>> persister = (EntityConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName)
 				.build(persistenceContext);
@@ -492,7 +491,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void add_mandatory_columnConstraintIsAdded() {
-		EntityConfiguredJoinedTablesPersister<Toto, Identifier<UUID>> totoPersister = (EntityConfiguredJoinedTablesPersister<Toto, Identifier<UUID>>)
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>> totoPersister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>)
 				MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).mandatory()

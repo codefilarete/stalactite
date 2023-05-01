@@ -5,7 +5,7 @@ import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -29,7 +29,7 @@ public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	private final OneToOneConfigurerTemplate configurer;
 	
 	public OneToOneRelationConfigurer(OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
-									  EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+									  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									  Dialect dialect,
 									  ConnectionConfiguration connectionConfiguration,
 									  PersisterRegistry persisterRegistry,
@@ -59,7 +59,7 @@ public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	public void configure(String tableAlias,
 						  PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder,
 						  boolean loadSeparately) {
-		EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
+		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				// please note that even if no table is found in configuration, build(..) will create one
 				.build(dialect, connectionConfiguration, persisterRegistry,
 						nullable(oneToOneRelation.getTargetTable()).getOr(nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get()));
@@ -68,7 +68,7 @@ public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	
 	public CascadeConfigurationResult<SRC, TRGT> configureWithSelectIn2Phases(
 			String tableAlias,
-			EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
 		return this.configurer.configureWithSelectIn2Phases(tableAlias, targetPersister, firstPhaseCycleLoadListener);
 	}

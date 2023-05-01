@@ -5,16 +5,16 @@ import java.util.List;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.tool.Duo;
 
 public class OrphanRemovalOnUpdate<SRC, TRGT> implements UpdateListener<SRC> {
 	
-	private final EntityConfiguredPersister<TRGT, ?> targetPersister;
+	private final ConfiguredPersister<TRGT, ?> targetPersister;
 	private final Accessor<SRC, TRGT> targetAccessor;
 	private final Accessor<TRGT, ?> targetIdAccessor;
 	
-	public OrphanRemovalOnUpdate(EntityConfiguredPersister<TRGT, ?> targetPersister, Accessor<SRC, TRGT> targetAccessor) {
+	public OrphanRemovalOnUpdate(ConfiguredPersister<TRGT, ?> targetPersister, Accessor<SRC, TRGT> targetAccessor) {
 		this.targetPersister = targetPersister;
 		this.targetAccessor = targetAccessor;
 		this.targetIdAccessor = targetPersister.getMapping().getIdMapping().getIdAccessor()::getId;

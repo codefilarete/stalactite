@@ -33,18 +33,18 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
-	private final Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass;
+	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	private final T mainTable;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinTablePolymorphismEntitySelectExecutor(Map<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>> persisterPerSubclass,
+	public JoinTablePolymorphismEntitySelectExecutor(Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 													 T mainTable,
 													 EntityJoinTree<C, I> entityJoinTree,
 													 ConnectionProvider connectionProvider,
 													 Dialect dialect) {
-		this.persisterPerSubclass = (Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>>) persisterPerSubclass;
+		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
 		this.mainTable = mainTable;
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
@@ -95,8 +95,8 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
 				Class<? extends C> entitySubclass;
-				Set<Entry<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>>> entries = persisterPerSubclass.entrySet();
-				Entry<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> subclassEntityOnRow = Iterables.find(entries,
+				Set<Entry<Class<C>, ConfiguredRelationalPersister<C, I>>> entries = persisterPerSubclass.entrySet();
+				Entry<Class<C>, ConfiguredRelationalPersister<C, I>> subclassEntityOnRow = Iterables.find(entries,
 						e -> {
 							boolean isPKEmpty = true;
 							Iterator<Column> columnIt = e.getValue().getMainTable().getPrimaryKey().getColumns().iterator();

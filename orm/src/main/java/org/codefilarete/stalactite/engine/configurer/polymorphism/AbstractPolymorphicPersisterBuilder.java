@@ -27,7 +27,7 @@ import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -68,7 +68,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	}
 	
 	protected final PolymorphismPolicy<C> polymorphismPolicy;
-	protected final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
+	protected final ConfiguredRelationalPersister<C, I> mainPersister;
 	protected final Identification<C, I> identification;
 	protected final ColumnBinderRegistry columnBinderRegistry;
 	protected final ColumnNameProvider columnNameProvider;
@@ -83,7 +83,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	
 	protected AbstractPolymorphicPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
 												  Identification<C, I> identification,
-												  EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
+												  ConfiguredRelationalPersister<C, I> mainPersister,
 												  ColumnBinderRegistry columnBinderRegistry,
 												  ColumnNameProvider columnNameProvider,
 												  ColumnNamingStrategy columnNamingStrategy,
@@ -118,7 +118,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param connectionConfiguration the connection configuration
 	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 */
-	protected <D extends C> void registerCascades(Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> persisterPerSubclass,
+	protected <D extends C> void registerCascades(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
 												  Dialect dialect,
 												  ConnectionConfiguration connectionConfiguration,
 												  PersisterRegistry persisterRegistry) {
@@ -127,7 +127,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 		// subconfigurations using same entity in their relation 
 		PersisterBuilderContext.CURRENT.get().runInContext(mainPersister, () -> {
 			for (SubEntityMappingConfiguration<D> subConfiguration : (Set<SubEntityMappingConfiguration<D>>) (Set) this.polymorphismPolicy.getSubClasses()) {
-				EntityConfiguredJoinedTablesPersister<D, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
+				ConfiguredRelationalPersister<D, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 				
 				if (subConfiguration.getPolymorphismPolicy() != null) {
 					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry, subConfiguration, subEntityPersister);
@@ -144,14 +144,14 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 		});
 	}
 	
-	private <D extends C> void registerPolymorphismCascades(Map<Class<D>, EntityConfiguredJoinedTablesPersister<D, I>> persisterPerSubclass,
+	private <D extends C> void registerPolymorphismCascades(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
 															Dialect dialect,
 															ConnectionConfiguration connectionConfiguration,
 															PersisterRegistry persisterRegistry,
 															SubEntityMappingConfiguration<D> subConfiguration,
-															EntityConfiguredJoinedTablesPersister<D, I> subEntityPersister) {
+															ConfiguredRelationalPersister<D, I> subEntityPersister) {
 		assertSubPolymorphismIsSupported(subConfiguration.getPolymorphismPolicy());
-		EntityConfiguredJoinedTablesPersister<D, I> subclassPersister =
+		ConfiguredRelationalPersister<D, I> subclassPersister =
 				buildSubPolymorphicPersister(subEntityPersister, subConfiguration.getPolymorphismPolicy(), dialect, connectionConfiguration,
 						persisterRegistry);
 		persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
@@ -168,11 +168,11 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param connectionConfiguration the connection configuration
 	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 */
-	private <D extends C> EntityConfiguredJoinedTablesPersister<D, I> buildSubPolymorphicPersister(EntityConfiguredJoinedTablesPersister<D, I> subPersister,
-																								   PolymorphismPolicy<D> subPolymorphismPolicy,
-																								   Dialect dialect,
-																								   ConnectionConfiguration connectionConfiguration,
-																								   PersisterRegistry persisterRegistry) {
+	private <D extends C> ConfiguredRelationalPersister<D, I> buildSubPolymorphicPersister(ConfiguredRelationalPersister<D, I> subPersister,
+																								 PolymorphismPolicy<D> subPolymorphismPolicy,
+																								 Dialect dialect,
+																								 ConnectionConfiguration connectionConfiguration,
+																								 PersisterRegistry persisterRegistry) {
 		// we only have to call a polymorphic builder with given methods arguments, and same configuration values as this instance
 		PolymorphismPersisterBuilder<D, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
 			subPolymorphismPolicy,
@@ -195,7 +195,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 															  Dialect dialect,
 															  ConnectionConfiguration connectionConfiguration,
 															  PersisterRegistry persisterRegistry,
-															  EntityConfiguredJoinedTablesPersister<D, I> subEntityPersister) {
+															  ConfiguredRelationalPersister<D, I> subEntityPersister) {
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
@@ -244,7 +244,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				// overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
 				PostInitializer postInitializer = new PostInitializer(oneToManyRelation.getTargetMappingConfiguration().getEntityType()) {
 					@Override
-					public void consume(EntityConfiguredJoinedTablesPersister targetPersister) {
+					public void consume(ConfiguredRelationalPersister targetPersister) {
 						oneToManyRelationConfigurer.configure((PersisterBuilderImpl) targetPersister);
 					}
 				};

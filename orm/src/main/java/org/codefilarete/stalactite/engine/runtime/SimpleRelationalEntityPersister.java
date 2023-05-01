@@ -62,7 +62,7 @@ import static java.util.Collections.emptyList;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implements EntityConfiguredJoinedTablesPersister<C, I> {
+public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implements ConfiguredRelationalPersister<C, I> {
 	
 	private final Persister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
@@ -103,6 +103,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	 */
 	public EntityMappingTreeSelectExecutor<C, I, T> getEntityMappingTreeSelectExecutor() {
 		return this.selectGraphExecutor;
+	}
+	
+	@Override
+	public I getId(C entity) {
+		return this.persister.getId(entity);
 	}
 	
 	@Override

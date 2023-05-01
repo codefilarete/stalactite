@@ -9,9 +9,8 @@ import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode;
@@ -37,7 +36,7 @@ class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 	
 	private OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE> engine;
 	
-	OneToOneOwnedBySourceConfigurer(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
+	OneToOneOwnedBySourceConfigurer(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation,
 									JoinColumnNamingStrategy joinColumnNamingStrategy,
 									ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
@@ -77,7 +76,7 @@ class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 	@Override
 	protected void addSelectIn2Phases(
 			String tableAlias,
-			ConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 			Key<LEFTTABLE, JOINID> leftKey,
 			Key<RIGHTTABLE, JOINID> rightKey,
 			FirstPhaseCycleLoadListener<SRC, TRGTID> firstPhaseCycleLoadListener) {
@@ -108,7 +107,7 @@ class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 	}
 	
 	@Override
-	protected void addWriteCascades(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
+	protected void addWriteCascades(ConfiguredPersister<TRGT, TRGTID> targetPersister) {
 		this.engine = new OneToOneOwnedBySourceEngine<>(sourcePersister, targetPersister, oneToOneRelation.getTargetProvider(), keyColumnsMapping);
 		boolean writeAuthorized = oneToOneRelation.getRelationMode() != RelationMode.READ_ONLY;
 		if (writeAuthorized) {
@@ -120,19 +119,19 @@ class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 	}
 	
 	@Override
-	protected void addInsertCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
+	protected void addInsertCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister) {
 		super.addInsertCascade(targetPersister);
 		engine.addInsertCascade();
 	}
 	
 	@Override
-	protected void addUpdateCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
+	protected void addUpdateCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
 		super.addUpdateCascade(targetPersister, orphanRemoval);
 		engine.addUpdateCascade(orphanRemoval);
 	}
 	
 	@Override
-	protected void addDeleteCascade(EntityConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
+	protected void addDeleteCascade(ConfiguredPersister<TRGT, TRGTID> targetPersister, boolean orphanRemoval) {
 		engine.addDeleteCascade(orphanRemoval);
 	}
 }

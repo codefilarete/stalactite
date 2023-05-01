@@ -5,7 +5,7 @@ import java.util.Collection;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
@@ -22,7 +22,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 public abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, LEFTTABLE extends Table<LEFTTABLE>> {
 	
 	protected final OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration;
-	protected final EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
+	protected final ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister;
 	protected final boolean loadSeparately;
 	
 	/**
@@ -32,7 +32,7 @@ public abstract class OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C ex
 	protected AccessorDefinition accessorDefinition;
 	
 	protected OneToManyConfigurerTemplate(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
-										  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+										  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 										  boolean loadSeparately) {
 		this.associationConfiguration = associationConfiguration;
 		this.targetPersister = targetPersister;

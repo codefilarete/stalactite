@@ -4,23 +4,22 @@ import java.util.Map;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OrphanRemovalOnUpdate;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 public class AbstractOneToOneEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 	
-	protected final EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	protected final ConfiguredPersister<SRC, SRCID> sourcePersister;
 	
-	protected final EntityConfiguredPersister<TRGT, TRGTID> targetPersister;
+	protected final ConfiguredPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping;
 	
 	protected final Accessor<SRC, TRGT> targetAccessor;
 	
-	public AbstractOneToOneEngine(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-								  EntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+	public AbstractOneToOneEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
+								  ConfiguredPersister<TRGT, TRGTID> targetPersister,
 								  Accessor<SRC, TRGT> targetAccessor,
 								  Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping) {
 		this.sourcePersister = sourcePersister;

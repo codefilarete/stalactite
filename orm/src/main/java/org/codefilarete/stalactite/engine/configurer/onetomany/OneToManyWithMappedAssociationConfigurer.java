@@ -17,7 +17,7 @@ import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedMappedManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.MappedManyRelationDescriptor;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedMappedAssociationEngine;
@@ -48,7 +48,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	private  Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider;
 	
 	OneToManyWithMappedAssociationConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
-											 EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+											 ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 											 boolean loadSeparately) {
 		super(associationConfiguration, targetPersister, loadSeparately);
 	}
@@ -214,7 +214,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	}
 	
 	private void assignEngineForNonIndexedAssociation(Key<?, SRCID> reverseColumn,
-													  EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+													  ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													  @Nullable BiConsumer<TRGT, SRC> reverseSetter) {
 		MappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new MappedManyRelationDescriptor<>(
 				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
@@ -231,7 +231,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	private void assignEngineForIndexedAssociation(@Nullable BiConsumer<TRGT, SRC> reverseSetter,
 												   Key<?, SRCID> reverseColumn,
 												   @Nullable Column<?, Integer> indexingColumn,
-												   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (indexingColumn == null) {
 			String indexingColumnName = associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinition);
 			indexingColumn = targetPersister.getMapping().getTargetTable().addColumn(indexingColumnName, int.class);

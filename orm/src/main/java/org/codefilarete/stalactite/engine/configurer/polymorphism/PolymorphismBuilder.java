@@ -1,13 +1,13 @@
 package org.codefilarete.stalactite.engine.configurer.polymorphism;
 
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
- * Wide contract for {@link EntityConfiguredJoinedTablesPersister} builders.
+ * Wide contract for {@link ConfiguredRelationalPersister} builders.
  *
  * @param <C> persisted entity type
  * @param <I> identifier type
@@ -21,5 +21,5 @@ interface PolymorphismBuilder<C, I, T extends Table> {
 	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 * @return a persister
 	 */
-	EntityConfiguredJoinedTablesPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
+	ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry);
 }

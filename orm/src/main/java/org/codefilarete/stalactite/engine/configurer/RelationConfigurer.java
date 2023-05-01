@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleConfigurer;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleConfigurer;
@@ -209,7 +209,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		}
 		
 		@Override
-		public void consume(EntityConfiguredJoinedTablesPersister<TRGT, ?> targetPersister) {
+		public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
 			sourcePersister.getCriteriaSupport().getRootConfiguration().registerRelation(targetEntityAccessor, targetPersister.getMapping());
 		}
 	}

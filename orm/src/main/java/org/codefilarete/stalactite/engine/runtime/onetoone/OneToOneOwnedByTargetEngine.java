@@ -20,8 +20,7 @@ import org.codefilarete.stalactite.engine.cascade.BeforeDeleteSupport;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
@@ -71,8 +70,8 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		}
 	}
 	
-	public OneToOneOwnedByTargetEngine(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-									   EntityConfiguredPersister<TRGT, TRGTID> targetPersister,
+	public OneToOneOwnedByTargetEngine(ConfiguredPersister<SRC, SRCID> sourcePersister,
+									   ConfiguredPersister<TRGT, TRGTID> targetPersister,
 									   Accessor<SRC, TRGT> targetAccessor,
 									   Map<Column<LEFTTABLE, Object>, Column<RIGHTTABLE, Object>> keyColumnsMapping) {
 		super(sourcePersister, targetPersister, targetAccessor, keyColumnsMapping);
@@ -317,10 +316,10 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 	
 	private class NullifyRelationColumnBeforeDelete implements DeleteListener<SRC> {
 		
-		private final EntityConfiguredPersister<TRGT, TRGTID> targetPersister;
+		private final ConfiguredPersister<TRGT, TRGTID> targetPersister;
 		private final Accessor<SRC, TRGT> targetEntityProvider;
 		
-		private NullifyRelationColumnBeforeDelete(Accessor<SRC, TRGT> targetEntityProvider, EntityConfiguredPersister<TRGT, TRGTID> targetPersister) {
+		private NullifyRelationColumnBeforeDelete(Accessor<SRC, TRGT> targetEntityProvider, ConfiguredPersister<TRGT, TRGTID> targetPersister) {
 			this.targetPersister = targetPersister;
 			this.targetEntityProvider = targetEntityProvider;
 		}

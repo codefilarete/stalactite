@@ -23,8 +23,7 @@ import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.Persister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
@@ -58,16 +57,16 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	
 	protected final PersisterListenerCollection<SRC, SRCID> persisterListener;
 	
-	protected final ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister;
+	protected final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	
-	protected final EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister;
+	protected final ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister;
 	
 	protected final ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor;
 	
 	private final WriteOperationFactory writeOperationFactory;
 	
-	public AbstractOneToManyWithAssociationTableEngine(ConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister,
-													   EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister,
+	public AbstractOneToManyWithAssociationTableEngine(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+													   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
 													   ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 													   AssociationRecordPersister<R, T> associationPersister,
 													   WriteOperationFactory writeOperationFactory) {
@@ -83,7 +82,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		return manyRelationDescriptor;
 	}
 	
-	public void addSelectCascade(EntityConfiguredJoinedTablesPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
+	public void addSelectCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, boolean loadSeparately) {
 		
 		// we join on the association table and add bean association in memory
 		String associationTableJoinNodeName = sourcePersister.getEntityJoinTree().addPassiveJoin(ROOT_STRATEGY_NAME,

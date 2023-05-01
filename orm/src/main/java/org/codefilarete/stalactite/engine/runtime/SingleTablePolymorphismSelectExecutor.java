@@ -41,14 +41,14 @@ import org.codefilarete.tool.collection.Iterables;
 public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 		implements SelectExecutor<C, I>, JoinableSelectExecutor {
 	
-	private final Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	private final Column discriminatorColumn;
 	private final SingleTablePolymorphism polymorphismPolicy;
 	private final T table;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismSelectExecutor(Map<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+	public SingleTablePolymorphismSelectExecutor(Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters,
 												 Column<T, DTYPE> discriminatorColumn,
 												 SingleTablePolymorphism polymorphismPolicy,
 												 T table,
@@ -59,7 +59,7 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table, DTYPE>
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.discriminatorColumn = discriminatorColumn;
-		this.subEntitiesPersisters = (Map<Class<C>, EntityConfiguredJoinedTablesPersister<C, I>>) subEntitiesPersisters;
+		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 	}
 	
 	@Override

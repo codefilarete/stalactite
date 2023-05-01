@@ -69,7 +69,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  * 
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoinedTablesPersister<C, I>, PolymorphicPersister<C> {
+public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationalPersister<C, I>, PolymorphicPersister<C> {
 	
 	/**
 	 * Current storage of entities to be loaded during the 2-Phases load algorithm.
@@ -79,7 +79,7 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 	
-	private final Map<? extends Class<C>, EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters;
+	private final Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load */
 	private final JoinTablePolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
 	private final Class<C> parentClass;
@@ -88,10 +88,10 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	private final PrimaryKey<?, I> mainTablePrimaryKey;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final JoinTablePolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
-	private final EntityConfiguredJoinedTablesPersister<C, I> mainPersister;
+	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	
-	public JoinTablePolymorphismPersister(EntityConfiguredJoinedTablesPersister<C, I> mainPersister,
-										  Map<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>> subEntitiesPersisters,
+	public JoinTablePolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
+										  Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters,
 										  ConnectionProvider connectionProvider,
 										  Dialect dialect) {
 		this.mainPersister = mainPersister;
@@ -99,8 +99,8 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 		Table<?> mainTable = mainPersister.<Table>getMapping().getTargetTable();
 		this.mainTablePrimaryKey = mainTable.getPrimaryKey();
 		
-		this.subEntitiesPersisters = (Map<? extends Class<C>, EntityConfiguredJoinedTablesPersister<C, I>>) subEntitiesPersisters;
-		Set<? extends Entry<? extends Class<C>, ? extends EntityConfiguredJoinedTablesPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
+		this.subEntitiesPersisters = (Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
+		Set<? extends Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
 		Map<Class<? extends C>, SelectExecutor<? extends C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
 				Entry::getValue);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
@@ -154,6 +154,11 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	@Override
 	public PersisterListenerCollection<C, I> getPersisterListener() {
 		return mainPersister.getPersisterListener();
+	}
+	
+	@Override
+	public I getId(C entity) {
+		return mainPersister.getId(entity);
 	}
 	
 	@Override
@@ -437,10 +442,10 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	private <SRC, SRCID, U, T1 extends Table<T1>, T2 extends Table<T2>, ID, JOINID> String join(
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String leftStrategyName,
-			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+			ConfiguredRelationalPersister<U, ID> mainPersister,
 			Key<T1, JOINID> leftJoinColumn,
 			Key<T2, JOINID> rightJoinColumn,
-			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters,
+			Set<ConfiguredRelationalPersister<? extends U, ID>> subPersisters,
 			BeanRelationFixer<SRC, U> beanRelationFixer,
 			@Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
 		
@@ -468,12 +473,12 @@ public class JoinTablePolymorphismPersister<C, I> implements EntityConfiguredJoi
 	private <SRC, SRCID, U, V extends U, T1 extends Table<T1>, T2 extends Table<T2>, ID> void addPolymorphicSubPersistersJoins(
 			EntityJoinTree<SRC, SRCID> entityJoinTree,
 			String mainPolymorphicJoinNodeName,
-			EntityConfiguredJoinedTablesPersister<U, ID> mainPersister,
+			ConfiguredRelationalPersister<U, ID> mainPersister,
 			JoinTablePolymorphicRelationJoinNode<U, T1, T2, ?, ID> mainPersisterJoin,
-			Set<EntityConfiguredJoinedTablesPersister<? extends U, ID>> subPersisters) {
+			Set<ConfiguredRelationalPersister<? extends U, ID>> subPersisters) {
 		
 		subPersisters.forEach(subPersister -> {
-			EntityConfiguredJoinedTablesPersister<V, ID> localSubPersister = (EntityConfiguredJoinedTablesPersister<V, ID>) subPersister;
+			ConfiguredRelationalPersister<V, ID> localSubPersister = (ConfiguredRelationalPersister<V, ID>) subPersister;
 			entityJoinTree.addJoin(mainPolymorphicJoinNodeName, parent -> new MergeJoinNode<V, T1, T2, ID>(
 					(JoinNode<T1>) (JoinNode) parent,
 					mainPersister.getMainTable().getPrimaryKey(),

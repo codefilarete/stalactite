@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.PolymorphicMergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
@@ -75,17 +75,17 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 		return new JoinTablePolymorphicRelationJoinRowConsumer(columnedRow, discriminatorColumn, getConsumptionListener());
 	}
 	
-	public <D extends C> void addSubPersisterJoin(EntityConfiguredJoinedTablesPersister<D, I> subPersister, PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin, int discriminatorValue) {
+	public <D extends C> void addSubPersisterJoin(ConfiguredRelationalPersister<D, I> subPersister, PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin, int discriminatorValue) {
 		this.subPersisters.add(new SubPersisterAndConsumer<>(subPersister, subPersisterJoin, discriminatorValue));
 	}
 	
 	private class SubPersisterAndConsumer<C, D extends C> {
 		
-		private final EntityConfiguredJoinedTablesPersister<D, I> subPersister;
+		private final ConfiguredRelationalPersister<D, I> subPersister;
 		private final EntityJoinTree.PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin;
 		private final int discriminatorValue;
 		
-		public SubPersisterAndConsumer(EntityConfiguredJoinedTablesPersister<D, I> subPersister, PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin, int discriminatorValue) {
+		public SubPersisterAndConsumer(ConfiguredRelationalPersister<D, I> subPersister, PolymorphicMergeJoinRowConsumer<C, D, I> subPersisterJoin, int discriminatorValue) {
 			this.subPersister = subPersister;
 			this.subPersisterJoin = subPersisterJoin;
 			this.discriminatorValue = discriminatorValue;
