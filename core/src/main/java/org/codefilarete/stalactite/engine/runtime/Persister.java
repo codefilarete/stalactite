@@ -5,14 +5,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -190,19 +192,6 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 		return selectExecutor;
 	}
 	
-	/**
-	 * Saves given entities : will apply insert or update according to entities persistent state.
-	 * Triggers cascade on relations. Please note that in case of already-persisted entities (not new), entities will be reloaded from database
-	 * to compute differences and cascade only modifications.
-	 * If one already has a copy of the "unmodified" instance, you may prefer to directly use {@link #update(Object, Object, boolean)}
-	 * 
-	 * @param entities some entities, can be a mix of none-persistent or already-persisted entities
-	 */
-	@Override
-	public void persist(Iterable<? extends C> entities) {
-		EntityPersister.persist(entities, this::isNew, this, this, this, getMapping()::getId);
-	}
-	
 	@Override
 	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		throw new NotImplementedException("Not yet implemented");
@@ -219,6 +208,11 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	}
 	
 	@Override
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		getPersisterListener().addPersistListener(persistListener);
+	}
+	
+	@Override
 	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		getPersisterListener().addInsertListener(insertListener);
 	}
@@ -226,6 +220,11 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	@Override
 	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		getPersisterListener().addUpdateListener(updateListener);
+	}
+	
+	@Override
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		getPersisterListener().addUpdateByIdListener(updateByIdListener);
 	}
 	
 	@Override
@@ -241,6 +240,25 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	@Override
 	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		getPersisterListener().addDeleteByIdListener(deleteListener);
+	}
+	
+	/**
+	 * Saves given entities : will apply insert or update according to entities persistent state.
+	 * Triggers cascade on relations. Please note that in case of already-persisted entities (not new), entities will be reloaded from database
+	 * to compute differences and cascade only modifications.
+	 * If one already has a copy of the "unmodified" instance, you may prefer to directly use {@link #update(Object, Object, boolean)}
+	 *
+	 * @param entities some entities, can be a mix of none-persistent or already-persisted entities
+	 */
+	@Override
+	public void persist(Iterable<? extends C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			getPersisterListener().doWithPersistListener(entities, () -> doPersist(entities));
+		}
+	}
+	
+	protected void doPersist(Iterable<? extends C> entities) {
+		PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
 	}
 	
 	/**
@@ -302,7 +320,6 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	 * Takes optimistic lock into account.
 	 *
 	 * @param entities entites to be deleted
-	 * @return deleted row count
 	 * @throws StaleStateObjectException if deleted row count differs from entities count
 	 */
 	@Override

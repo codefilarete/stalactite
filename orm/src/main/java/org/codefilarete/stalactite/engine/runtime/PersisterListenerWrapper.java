@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+import org.codefilarete.stalactite.engine.listener.PersistListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
@@ -29,6 +31,11 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		this.persisterListener.addPersistListener(persistListener);
+	}
+	
+	@Override
 	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		this.persisterListener.addInsertListener(insertListener);
 	}
@@ -36,6 +43,11 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	@Override
 	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		this.persisterListener.addUpdateListener(updateListener);
+	}
+	
+	@Override
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		this.surrogate.addUpdateByIdListener(updateByIdListener);
 	}
 	
 	@Override

@@ -13,8 +13,10 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
@@ -326,6 +328,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		persister.addPersistListener(persistListener);
+	}
+	
+	@Override
 	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		persister.addInsertListener(insertListener);
 	}
@@ -333,6 +340,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	@Override
 	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		persister.addUpdateListener(updateListener);
+	}
+	
+	@Override
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		persister.addUpdateByIdListener(updateByIdListener);
 	}
 	
 	@Override

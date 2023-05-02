@@ -6,25 +6,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Experimental;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * @author Guillaume Mary
  */
-public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor<C>, SelectExecutor<C, I>, DeleteExecutor<C, I>, PersisterListener<C, I> {
+public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecutor<C>, UpdateExecutor<C>, SelectExecutor<C, I>, DeleteExecutor<C, I>, PersisterListener<C, I> {
 	
 	/**
 	 * Persists an instance either it is already persisted or not (insert or update).
@@ -44,41 +42,6 @@ public interface EntityPersister<C, I> extends InsertExecutor<C>, UpdateExecutor
 	}
 	
 	void persist(Iterable<? extends C> entities);
-	
-	
-	static <C, I> void persist(Iterable<? extends C> entities,
-							   Predicate<C> isNewProvider,
-							   SelectExecutor<C, I> selector,
-							   UpdateExecutor<C> updater,
-							   InsertExecutor<C> inserter,
-							   Function<C, I> idProvider) {
-		if (Iterables.isEmpty(entities)) {
-			return;
-		}
-		// determine insert or update operation
-		List<C> toInsert = new ArrayList<>(20);
-		List<C> toUpdate = new ArrayList<>(20);
-		for (C c : entities) {
-			if (isNewProvider.test(c)) {
-				toInsert.add(c);
-			} else {
-				toUpdate.add(c);
-			}
-		}
-		if (!toInsert.isEmpty()) {
-			inserter.insert(toInsert);
-		}
-		if (!toUpdate.isEmpty()) {
-			// creating couple of modified and unmodified entities
-			List<C> loadedEntities = selector.select(toUpdate.stream().map(idProvider).collect(Collectors.toList()));
-			Map<I, C> loadedEntitiesPerId = Iterables.map(loadedEntities, idProvider);
-			Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, idProvider);
-			Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, loadedEntitiesPerId);
-			List<Duo<C, C>> updateArg = new ArrayList<>();
-			modifiedVSunmodified.forEach((k, v) -> updateArg.add(new Duo<>(k , v)));
-			updater.update(updateArg, true);
-		}
-	}
 	
 	default void insert(C entity) {
 		insert(Collections.singletonList(entity));

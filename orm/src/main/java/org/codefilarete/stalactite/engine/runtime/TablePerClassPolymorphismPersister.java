@@ -24,9 +24,11 @@ import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
@@ -306,6 +308,11 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		subEntitiesPersisters.values().forEach(p -> p.addPersistListener(persistListener));
+	}
+	
+	@Override
 	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addInsertListener(insertListener));
 	}
@@ -313,6 +320,11 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	@Override
 	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		subEntitiesPersisters.values().forEach(p -> p.addUpdateListener(updateListener));
+	}
+	
+	@Override
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		subEntitiesPersisters.values().forEach(p -> p.addUpdateByIdListener(updateByIdListener));
 	}
 	
 	@Override

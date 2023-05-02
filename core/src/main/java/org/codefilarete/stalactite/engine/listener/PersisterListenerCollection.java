@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class PersisterListenerCollection<C, I> implements PersisterListener<C, I> {
 	
+	private final PersistListenerCollection<C> persistListener = new PersistListenerCollection<>();
 	private final InsertListenerCollection<C> insertListener = new InsertListenerCollection<>();
 	private final UpdateByIdListenerCollection<C> updateByIdListener = new UpdateByIdListenerCollection<>();
 	private final UpdateListenerCollection<C> updateListener = new UpdateListenerCollection<>();
@@ -32,6 +33,35 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	
 	public InsertListenerCollection<C> getInsertListener() {
 		return insertListener;
+	}
+	
+	@Override
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		this.persistListener.add(persistListener);
+	}
+	
+	public <R> R doWithPersistListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+		R result;
+		try {
+			persistListener.beforePersist(entities);
+			result = delegate.execute();
+			persistListener.afterPersist(entities);
+		} catch (RuntimeException e) {
+			persistListener.onPersistError(entities, e);
+			throw e;
+		}
+		return result;
+	}
+	
+	public void doWithPersistListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		try {
+			persistListener.beforePersist(entities);
+			delegate.run();
+			persistListener.afterPersist(entities);
+		} catch (RuntimeException e) {
+			persistListener.onPersistError(entities, e);
+			throw e;
+		}
 	}
 	
 	@Override
@@ -67,9 +97,9 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		return updateByIdListener;
 	}
 	
-	public PersisterListenerCollection<C, I> addUpdateByIdListener(UpdateByIdListener<C> updateByIdListener) {
-		this.updateByIdListener.add(updateByIdListener);
-		return this;
+	@Override
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		this.updateByIdListener.add((UpdateByIdListener<C>) updateByIdListener);
 	}
 	
 	public <R> R doWithUpdateByIdListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {

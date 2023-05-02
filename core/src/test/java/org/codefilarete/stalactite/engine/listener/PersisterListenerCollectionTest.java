@@ -56,6 +56,37 @@ public class PersisterListenerCollectionTest {
 	}
 	
 	@Test
+	public void doWithPersistListener() {
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
+		PersistListener listenerMock = mock(PersistListener.class);
+		testInstance.addPersistListener(listenerMock);
+		
+		ArrayList<Object> entities = new ArrayList<>();
+		ArrayList<Object> result = new ArrayList<>();
+		assertThat(testInstance.doWithPersistListener(entities, () -> result)).isEqualTo(result);
+		
+		verify(listenerMock).beforePersist(eq(entities));
+		verify(listenerMock).afterPersist(eq(result));
+	}
+	
+	@Test
+	public void doWithPersistListener_onError() {
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
+		PersistListener listenerMock = mock(PersistListener.class);
+		testInstance.addPersistListener(listenerMock);
+		
+		ArrayList<Object> entities = new ArrayList<>();
+		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
+		assertThatThrownBy(() -> testInstance.doWithPersistListener(entities, () -> {
+			throw error;
+		})).isSameAs(error);
+		
+		verify(listenerMock).beforePersist(eq(entities));
+		verify(listenerMock).onPersistError(eq(entities), eq(error));
+		verify(listenerMock, never()).afterPersist(anyIterable());
+	}
+	
+	@Test
 	public void doWithInsertListener() {
 		PersisterListenerCollection testInstance = new PersisterListenerCollection();
 		InsertListener listenerMock = mock(InsertListener.class);

@@ -7,25 +7,27 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Duo;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * {@link ConfiguredRelationalPersister} that wraps another {@link ConfiguredRelationalPersister}.
@@ -64,7 +66,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	
 	@Override
 	public void persist(Iterable<? extends C> entities) {
-		EntityPersister.persist(entities, this::isNew, this, this, this, this::getId);
+		PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
 	}
 	
 	@Override
@@ -103,6 +105,11 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		this.surrogate.addPersistListener(persistListener);
+	}
+	
+	@Override
 	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		this.surrogate.addInsertListener(insertListener);
 	}
@@ -110,6 +117,11 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	@Override
 	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		this.surrogate.addUpdateListener(updateListener);
+	}
+	
+	@Override
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		this.surrogate.addUpdateByIdListener(updateByIdListener);
 	}
 	
 	@Override

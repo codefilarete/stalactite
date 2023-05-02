@@ -3,12 +3,6 @@ package org.codefilarete.stalactite.engine;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.PersisterITTest.Toto;
@@ -16,16 +10,23 @@ import org.codefilarete.stalactite.engine.PersisterITTest.TotoTable;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
@@ -33,12 +34,7 @@ import org.mockito.ArgumentMatchers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
@@ -111,12 +107,15 @@ class PersisterTest {
 		};
 		
 		
+		PersistListener persistListener = mock(PersistListener.class);
+		testInstance.getPersisterListener().addPersistListener(persistListener);
 		InsertListener insertListener = mock(InsertListener.class);
 		testInstance.getPersisterListener().addInsertListener(insertListener);
 		UpdateListener updateListener = mock(UpdateListener.class);
 		testInstance.getPersisterListener().addUpdateListener(updateListener);
 		
 		testInstance.persist(Arrays.asList());
+		verifyNoMoreInteractions(persistListener);
 		verifyNoMoreInteractions(insertListener);
 		verifyNoMoreInteractions(updateListener);
 		verifyNoMoreInteractions(identifierManagerInsertListenerMock);
@@ -128,6 +127,8 @@ class PersisterTest {
 		mockedSelectAnswer.set(persisted);	// filling mock
 		
 		testInstance.persist(unPersisted);
+		verify(persistListener).beforePersist(eq(Arrays.asSet(unPersisted)));
+		verify(persistListener).afterPersist(eq(Arrays.asSet(unPersisted)));
 		verify(insertListener).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
