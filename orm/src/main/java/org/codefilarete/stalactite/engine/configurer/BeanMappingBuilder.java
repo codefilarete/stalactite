@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
@@ -21,6 +22,7 @@ import java.util.stream.Stream;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
@@ -28,17 +30,20 @@ import org.codefilarete.reflection.ValueAccessPointComparator;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
+import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.Inset;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Inset;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
 
@@ -47,17 +52,17 @@ import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.stream;
 
 /**
- * Engine that converts mapping definition of a {@link EmbeddableMappingConfiguration} to a simple {@link Map}.
+ * Engine that converts mapping definition of a {@link BeanMappingConfiguration} to a simple {@link Map}.
  * Designed as such as its instances can be reused (no constructor, attributes are set through
- * {@link #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}
+ * {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}
  * therefore they are not thread-safe. This was made to avoid extra instance creation because this class is used in some loops.
  * 
- * Whereas it consumes an {@link EmbeddableMappingConfiguration} it doesn't mean that its goal is to manage embedded beans of an entity : as its
+ * Whereas it consumes an {@link BeanMappingConfiguration} it doesn't mean that its goal is to manage embedded beans of an entity : as its
  * name says it's aimed at collecting mapping of any beans, without the entity part (understanding identification and inheritance which is targeted
  * by {@link PersisterBuilderImpl})
  * 
  * @author Guillaume Mary
- * @see #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)    
+ * @see #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)    
  */
 public class BeanMappingBuilder<C, T extends Table<T>> {
 	
@@ -72,13 +77,13 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		Holder<Table> result = new Holder<>();
 		
 		// algorithm close to the one of includeEmbeddedMapping(..)
-		Queue<Inset> stack = new ArrayDeque<>(mappingConfiguration.getInsets());
+		Queue<Inset> stack = new ArrayDeque<>(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration).getInsets());
 		while (!stack.isEmpty()) {
 			Inset<?, ?> inset = stack.poll();
 			inset.getOverriddenColumns().forEach((valueAccessPoint, targetColumn) ->
 				assertHolderIsFilledWithTargetTable(result, targetColumn, valueAccessPoint)
 			);
-			EmbeddableMappingConfiguration<?> configuration = inset.getBeanMappingBuilder().getConfiguration();
+			BeanMappingConfiguration<?> configuration = inset.getConfiguration();
 			stack.addAll(configuration.getInsets());
 		}
 		return result.get();
@@ -93,22 +98,41 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 	}
 	
-	private EmbeddableMappingConfiguration<C> mappingConfiguration;
+	private BeanMappingConfiguration<C> mappingConfiguration;
 	private T targetTable;
 	private ColumnNameProvider columnNameProvider;
 	private ColumnBinderRegistry columnBinderRegistry;
-	/** Result of {@link #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}, shared between methods */
+	/** Result of {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}, shared between methods */
 	private Map<ReversibleAccessor<C, Object>, Column<T, Object>> result;
 	
 	/**
-	 * Converts mapping definition of a {@link EmbeddableMappingConfiguration} into a simple {@link Map}
+	 * Converts mapping definition of a {@link BeanMappingConfiguration} into a simple {@link Map}
 	 *
-	 * @return a {@link Map} representing the definition of the mapping declared by the {@link EmbeddableMappingConfiguration}
+	 * @return a {@link Map} representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
 	 */
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> build(EmbeddableMappingConfiguration<C> mappingConfiguration,
-													  T targetTable,
-													  ColumnBinderRegistry columnBinderRegistry,
-													  ColumnNameProvider columnNameProvider) {
+																	   T targetTable,
+																	   ColumnBinderRegistry columnBinderRegistry,
+																	   ColumnNameProvider columnNameProvider) {
+		return build(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration), targetTable, columnBinderRegistry, columnNameProvider);
+	}
+	
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> build(CompositeKeyMappingConfiguration<C> mappingConfiguration,
+																	   T targetTable,
+																	   ColumnBinderRegistry columnBinderRegistry,
+																	   ColumnNameProvider columnNameProvider) {
+		return build(BeanMappingConfiguration.fromCompositeKeyMappingConfiguration(mappingConfiguration), targetTable, columnBinderRegistry, columnNameProvider);
+	}
+	
+	/**
+	 * Converts mapping definition of a {@link BeanMappingConfiguration} into a simple {@link Map}
+	 *
+	 * @return a {@link Map} representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
+	 */
+	private Map<ReversibleAccessor<C, Object>, Column<T, Object>> build(BeanMappingConfiguration<C> mappingConfiguration,
+																	   T targetTable,
+																	   ColumnBinderRegistry columnBinderRegistry,
+																	   ColumnNameProvider columnNameProvider) {
 		this.mappingConfiguration = mappingConfiguration;
 		this.columnNameProvider = columnNameProvider;
 		this.columnBinderRegistry = columnBinderRegistry;
@@ -125,7 +149,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		return targetTable;
 	}
 	
-	protected void includeDirectMapping(EmbeddableMappingConfiguration<?> givenConfiguration,
+	protected void includeDirectMapping(BeanMappingConfiguration<?> givenConfiguration,
 										@Nullable ValueAccessPoint accessorPrefix,
 										ValueAccessPointMap<String> overriddenColumnNames,
 										ValueAccessPointMap<Column<T, ?>> overriddenColumns,
@@ -138,7 +162,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	}
 	
 	protected <O> void includeMapping(Linkage<C, O> linkage,
-									  EmbeddableMappingConfiguration<?> mappingConfiguration,
+									  BeanMappingConfiguration<?> mappingConfiguration,
 									  @Nullable ValueAccessPoint accessorPrefix,
 									  @Nullable String overriddenColumnName,
 									  @Nullable Column<T, O> overriddenColumn) {
@@ -155,11 +179,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		result.put((ReversibleAccessor<C, Object>) accessor, (Column<T, Object>) column);
 	}
 	
-	protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, EmbeddableMappingConfiguration<?> mappingConfiguration) {
+	protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, BeanMappingConfiguration<?> mappingConfiguration) {
 		DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(linkage.getAccessor(), columnNameToCheck, columnNameProvider);
 		stream(mappingConfiguration.inheritanceIterable())
 				.flatMap(configuration -> (Stream<Linkage>) configuration.getPropertiesMapping().stream())
-				// not using equals() is voluntary since we want referencial checking here to exclude same instance, prevent equals() override to break this algorithm
+				// not using equals() is voluntary since we want reference checking here to exclude same instance, prevent equals() override to break this algorithm
 				.filter(pawn -> linkage != pawn)
 				.forEach(duplicateDefinitionChecker);
 	}
@@ -185,8 +209,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	 * Creates equivalent {@link Column}s of those of given {@link Map} values on the given target table. May do nothing if columns already exist.
 	 *
 	 * @param propertyToColumn mapping between some property accessors and {@link Column}s from default target {@link Table}
-	 * 							(the one given at {@link #build(EmbeddableMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}
-	 * 							time)
+	 * (the one given at {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)} time)
 	 * @param localTargetTable the table on which columns must be added
 	 * @return a mapping between properties of given {@link Map} keys and their column in given {@link Table}
 	 */
@@ -217,7 +240,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			
 			assertNotAlreadyDeclared(inset, treatedInsets);
 			
-			EmbeddableMappingConfiguration<C> configuration = (EmbeddableMappingConfiguration<C>) inset.getBeanMappingBuilder().getConfiguration();
+			BeanMappingConfiguration<C> configuration = (BeanMappingConfiguration<C>) inset.getConfiguration();
 			ValueAccessPoint mappingPrefix = null;
 			if (inset.getAccessor() != null) {
 				accessorPath.add(inset.getAccessor());
@@ -228,7 +251,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					mappingPrefix = AccessorChain.forModel(new ArrayList<>(accessorPath));
 				}
 			}
-			EmbeddableMappingConfiguration<? super C> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
+			BeanMappingConfiguration<? super C> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
 			if (superClassConfiguration != null) {
 				includeMappedSuperClassMapping(inset, accessorPath, superClassConfiguration);
 			}
@@ -244,12 +267,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 	}
 	
-	private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, EmbeddableMappingConfiguration<? super C> superClassConfiguration) {
+	private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, BeanMappingConfiguration<? super C> superClassConfiguration) {
 		// we include super type mapping by using a new instance of BeanMappingBuilder, this is the simplest (but maybe not the most
 		// debuggable) and allows to manage inheritance of several mappedSuperClass 
-		Map<ReversibleAccessor<C, Object>, Column<T, Object>> superMapping = new BeanMappingBuilder<C, T>().build((EmbeddableMappingConfiguration<C>) superClassConfiguration, targetTable,
+		Map<ReversibleAccessor<C, Object>, Column<T, Object>> superMapping = new BeanMappingBuilder<C, T>().build((BeanMappingConfiguration<C>) superClassConfiguration, targetTable,
 				this.columnBinderRegistry, this.columnNameProvider);
-		Class<?> insetBeanType = inset.getBeanMappingBuilder().getConfiguration().getBeanType();
+		Class<?> insetBeanType = inset.getConfiguration().getBeanType();
 		superMapping.forEach((accessor, column) -> {
 			AccessorChain prefix;
 			List<Accessor> accessors;
@@ -320,22 +343,23 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				throw new MappingConfigurationException(currentMethodReference + " is already mapped");
 			}
 			
-			Map<String, ValueAccessPoint> columNamePerAccessPoint1 = new HashMap<>();
-			inset.getBeanMappingBuilder().getConfiguration().getPropertiesMapping().forEach(linkage -> {
+			Map<String, ValueAccessPoint> columNamePerAccessPoint = new HashMap<>();
+			BeanMappingConfiguration<?> insetConfiguration = inset.getConfiguration();
+			insetConfiguration.getPropertiesMapping().forEach(linkage -> {
 				if (!inset.getExcludedProperties().contains(linkage.getAccessor())) {
 					String columnName = determineColumnName(linkage, inset.getOverriddenColumnNames().get(linkage.getAccessor()));
-					columNamePerAccessPoint1.put(columnName, linkage.getAccessor());
+					columNamePerAccessPoint.put(columnName, linkage.getAccessor());
 				}
 			});
 			Inset<?, ?> abstractInset = alreadyMappedType.get();
 			Map<String, ValueAccessPoint> columNamePerAccessPoint2 = new HashMap<>();
-			inset.getBeanMappingBuilder().getConfiguration().getPropertiesMapping().forEach(linkage -> {
+			insetConfiguration.getPropertiesMapping().forEach(linkage -> {
 				if (!abstractInset.getExcludedProperties().contains(linkage.getAccessor())) {
 					String columnName = determineColumnName(linkage, abstractInset.getOverriddenColumnNames().get(linkage.getAccessor()));
 					columNamePerAccessPoint2.put(columnName, linkage.getAccessor());
 				}
 			});
-			Map<ValueAccessPoint, ValueAccessPoint> join = Maps.innerJoin(columNamePerAccessPoint1,
+			Map<ValueAccessPoint, ValueAccessPoint> join = Maps.innerJoin(columNamePerAccessPoint,
 					columNamePerAccessPoint2);
 			if (!join.isEmpty()) {
 				String currentMethodReference = toMethodReferenceString(inset.getInsetAccessor());
@@ -390,8 +414,274 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				throw new MappingConfigurationException("Mapping is already defined by method " + AccessorDefinition.toString(propertyAccessor));
 			} else if (columnNameToCheck.equals(nullable(pawn.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(pawn)))) {
 				throw new MappingConfigurationException("Column '" + columnNameToCheck + "' of mapping '" + AccessorDefinition.toString(propertyAccessor)
-						+ "' is already targetted by '" + AccessorDefinition.toString(pawn.getAccessor()) + "'");
+						+ "' is already targeted by '" + AccessorDefinition.toString(pawn.getAccessor()) + "'");
 			}
+		}
+	}
+	
+	public interface BeanMappingConfiguration<C> {
+		
+		static <C> BeanMappingConfiguration<C> fromCompositeKeyMappingConfiguration(CompositeKeyMappingConfiguration<C> compositeKeyMappingConfiguration) {
+			return new BeanMappingConfiguration<C>() {
+				
+				private final List<Linkage> linkages = Iterables.collectToList(compositeKeyMappingConfiguration.getPropertiesMapping(), embeddableLinkage -> new Linkage() {
+					@Override
+					public ReversibleAccessor getAccessor() {
+						return embeddableLinkage.getAccessor();
+					}
+					
+					@Nullable
+					@Override
+					public String getColumnName() {
+						return embeddableLinkage.getColumnName();
+					}
+					
+					@Override
+					public Class getColumnType() {
+						return embeddableLinkage.getColumnType();
+					}
+					
+					@Override
+					public ParameterBinder getParameterBinder() {
+						return embeddableLinkage.getParameterBinder();
+					}
+					
+					@Override
+					public boolean isNullable() {
+						return false;
+					}
+				});
+				
+				@Override
+				public Class<C> getBeanType() {
+					return compositeKeyMappingConfiguration.getBeanType();
+				}
+				
+				@Override
+				@Nullable
+				public BeanMappingConfiguration<? super C> getMappedSuperClassConfiguration() {
+					return org.codefilarete.tool.Nullable.nullable(compositeKeyMappingConfiguration.getMappedSuperClassConfiguration())
+							.map(BeanMappingConfiguration::fromCompositeKeyMappingConfiguration)
+							.get();
+				}
+				
+				@Override
+				public List<Linkage> getPropertiesMapping() {
+					return linkages;
+				}
+				
+				@Override
+				public Collection<Inset<C, Object>> getInsets() {
+					return Iterables.collectToList(compositeKeyMappingConfiguration.getInsets(), compositeInset -> new Inset<C, Object>() {
+						@Override
+						public PropertyAccessor<C, Object> getAccessor() {
+							return compositeInset.getAccessor();
+						}
+						
+						@Override
+						public Method getInsetAccessor() {
+							return compositeInset.getInsetAccessor();
+						}
+						
+						@Override
+						public Class<Object> getEmbeddedClass() {
+							return compositeInset.getEmbeddedClass();
+						}
+						
+						@Override
+						public ValueAccessPointSet getExcludedProperties() {
+							return compositeInset.getExcludedProperties();
+						}
+						
+						@Override
+						public ValueAccessPointMap<String> getOverriddenColumnNames() {
+							return compositeInset.getOverriddenColumnNames();
+						}
+						
+						@Override
+						public ValueAccessPointMap<Column> getOverriddenColumns() {
+							return compositeInset.getOverriddenColumns();
+						}
+						
+						@Override
+						public BeanMappingConfiguration<Object> getConfiguration() {
+							return fromCompositeKeyMappingConfiguration(compositeInset.getConfigurationProvider().getConfiguration());
+						}
+					});
+				}
+			};
+		}
+		
+		static <C> BeanMappingConfiguration<C> fromEmbeddableMappingConfiguration(EmbeddableMappingConfiguration<C> embeddableMappingConfiguration) {
+			return new BeanMappingConfiguration<C>() {
+				
+				private final List<Linkage> linkages = Iterables.collectToList(embeddableMappingConfiguration.getPropertiesMapping(), embeddableLinkage -> new Linkage() {
+					@Override
+					public ReversibleAccessor getAccessor() {
+						return embeddableLinkage.getAccessor();
+					}
+					
+					@Nullable
+					@Override
+					public String getColumnName() {
+						return embeddableLinkage.getColumnName();
+					}
+					
+					@Override
+					public Class getColumnType() {
+						return embeddableLinkage.getColumnType();
+					}
+					
+					@Override
+					public ParameterBinder getParameterBinder() {
+						return embeddableLinkage.getParameterBinder();
+					}
+					
+					@Override
+					public boolean isNullable() {
+						return embeddableLinkage.isNullable();
+					}
+				});
+				
+				@Override
+				public Class<C> getBeanType() {
+					return embeddableMappingConfiguration.getBeanType();
+				}
+				
+				@Override
+				@Nullable
+				public BeanMappingConfiguration<? super C> getMappedSuperClassConfiguration() {
+					return org.codefilarete.tool.Nullable.nullable(embeddableMappingConfiguration.getMappedSuperClassConfiguration())
+							.map(BeanMappingConfiguration::fromEmbeddableMappingConfiguration)
+							.get();
+				}
+				
+				@Override
+				public List<Linkage> getPropertiesMapping() {
+					return linkages;
+				}
+				
+				@Override
+				public Collection<Inset<C, Object>> getInsets() {
+					return Iterables.collectToList(embeddableMappingConfiguration.getInsets(), embeddableInset -> new Inset<C, Object>() {
+						@Override
+						public PropertyAccessor<C, Object> getAccessor() {
+							return embeddableInset.getAccessor();
+						}
+						
+						@Override
+						public Method getInsetAccessor() {
+							return embeddableInset.getInsetAccessor();
+						}
+						
+						@Override
+						public Class<Object> getEmbeddedClass() {
+							return embeddableInset.getEmbeddedClass();
+						}
+						
+						@Override
+						public ValueAccessPointSet getExcludedProperties() {
+							return embeddableInset.getExcludedProperties();
+						}
+						
+						@Override
+						public ValueAccessPointMap<String> getOverriddenColumnNames() {
+							return embeddableInset.getOverriddenColumnNames();
+						}
+						
+						@Override
+						public ValueAccessPointMap<Column> getOverriddenColumns() {
+							return embeddableInset.getOverriddenColumns();
+						}
+						
+						@Override
+						public BeanMappingConfiguration<Object> getConfiguration() {
+							return fromEmbeddableMappingConfiguration(embeddableInset.getConfigurationProvider().getConfiguration());
+						}
+					});
+				}
+			};
+		}
+		
+		
+		Class<C> getBeanType();
+		
+		@SuppressWarnings("squid:S1452" /* Can't remove wildcard here because it requires to create a local generic "super" type which is forbidden */)
+		@Nullable
+		BeanMappingConfiguration<? super C> getMappedSuperClassConfiguration();
+		
+		List<Linkage> getPropertiesMapping();
+		
+		Collection<Inset<C, Object>> getInsets();
+		
+		/**
+		 * @return an iterable for all inheritance configurations, including this
+		 */
+		default Iterable<BeanMappingConfiguration> inheritanceIterable() {
+			
+			return () -> new ReadOnlyIterator<BeanMappingConfiguration>() {
+				
+				private BeanMappingConfiguration next = BeanMappingConfiguration.this;
+				
+				@Override
+				public boolean hasNext() {
+					return next != null;
+				}
+				
+				@Override
+				public BeanMappingConfiguration next() {
+					if (!hasNext()) {
+						// comply with next() method contract
+						throw new NoSuchElementException();
+					}
+					BeanMappingConfiguration result = this.next;
+					this.next = this.next.getMappedSuperClassConfiguration();
+					return result;
+				}
+			};
+		}
+		
+		interface Inset<SRC, TRGT> {
+			
+			/**
+			 * Equivalent of {@link #getInsetAccessor()} as a {@link PropertyAccessor}
+			 */
+			PropertyAccessor<SRC, TRGT> getAccessor();
+			
+			/**
+			 * Equivalent of given getter or setter at construction time as a {@link Method}
+			 */
+			Method getInsetAccessor();
+			
+			Class<TRGT> getEmbeddedClass();
+			
+			ValueAccessPointSet getExcludedProperties();
+			
+			ValueAccessPointMap<String> getOverriddenColumnNames();
+			
+			ValueAccessPointMap<Column> getOverriddenColumns();
+			
+			BeanMappingConfiguration<TRGT> getConfiguration();
+		}
+		
+		/**
+		 * Small contract for defining property configuration storage
+		 *
+		 * @param <C> property owner type
+		 * @param <O> property type
+		 */
+		interface Linkage<C, O> {
+			
+			ReversibleAccessor<C, O> getAccessor();
+			
+			@Nullable
+			String getColumnName();
+			
+			Class<O> getColumnType();
+			
+			ParameterBinder<O> getParameterBinder();
+			
+			boolean isNullable();
 		}
 	}
 }

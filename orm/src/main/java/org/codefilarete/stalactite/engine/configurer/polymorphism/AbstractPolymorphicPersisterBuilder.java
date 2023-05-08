@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
@@ -69,7 +70,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	
 	protected final PolymorphismPolicy<C> polymorphismPolicy;
 	protected final ConfiguredRelationalPersister<C, I> mainPersister;
-	protected final Identification<C, I> identification;
+	protected final AbstractIdentification<C, I> identification;
 	protected final ColumnBinderRegistry columnBinderRegistry;
 	protected final ColumnNameProvider columnNameProvider;
 	
@@ -82,7 +83,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	protected final TableNamingStrategy tableNamingStrategy;
 	
 	protected AbstractPolymorphicPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
-												  Identification<C, I> identification,
+												  AbstractIdentification<C, I> identification,
 												  ConfiguredRelationalPersister<C, I> mainPersister,
 												  ColumnBinderRegistry columnBinderRegistry,
 												  ColumnNameProvider columnNameProvider,

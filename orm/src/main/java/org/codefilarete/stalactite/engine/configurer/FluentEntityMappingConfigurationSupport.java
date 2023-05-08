@@ -26,6 +26,8 @@ import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration.CompositeKeyLinkage;
+import org.codefilarete.stalactite.engine.CompositeKeyMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.ElementCollectionOptions;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
@@ -230,39 +232,45 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
-		KeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy);
+		SingleKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
 	public <T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy,
 																			   Column<T, I> column) {
-		KeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy, column);
+		SingleKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
 	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy,
 																			   String columnName) {
-		KeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy, columnName);
+		SingleKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(getter, identifierPolicy, columnName);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
 	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
-		KeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy);
+		SingleKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
 	public <T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<T, I> column) {
-		KeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy, column);
+		SingleKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy, column);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
 	@Override
 	public FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
-		KeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy, columnName);
+		SingleKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addKeyMapping(setter, identifierPolicy, columnName);
+		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
+	}
+	
+	@Override
+	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		CompositeKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addCompositeKeyMapping(getter, compositeKeyMappingBuilder);
 		return this.propertiesMappingConfigurationSurrogate.wrapForKeyOptions(mapping);
 	}
 	
@@ -890,34 +898,34 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					.build((Class<FluentMappingBuilderPropertyOptions<C, I>>) (Class) FluentMappingBuilderPropertyOptions.class);
 		}
 		
-		KeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
+		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy) {
 			return addKeyMapping(Accessors.accessor(getter), identifierPolicy);
 		}
 		
-		KeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
-			KeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
+		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
+			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 			return linkage;
 		}
 		
-		KeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName) {
-			KeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
+		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableFunction<C, I> getter, IdentifierPolicy<I> identifierPolicy, String columnName) {
+			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.accessor(getter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
 			return linkage;
 		}
 		
-		KeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
+		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy) {
 			return addKeyMapping(Accessors.mutator(setter), identifierPolicy);
 		}
 		
-		KeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
-			KeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
+		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, Column<?, I> column) {
+			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 			return linkage;
 		}
 		
-		KeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
-			KeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
+		SingleKeyLinkageSupport<C, I> addKeyMapping(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName) {
+			SingleKeyLinkageSupport<C, I> linkage = addKeyMapping(Accessors.mutator(setter), identifierPolicy);
 			linkage.setColumnOptions(new ColumnLinkageOptionsByName(columnName));
 			return linkage;
 		}
@@ -928,18 +936,38 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		 * @param identifierPolicy
 		 * @return
 		 */
-		KeyLinkageSupport<C, I> addKeyMapping(ReversibleAccessor<C, I> propertyAccessor, IdentifierPolicy<I> identifierPolicy) {
+		private SingleKeyLinkageSupport<C, I> addKeyMapping(ReversibleAccessor<C, I> propertyAccessor, IdentifierPolicy<I> identifierPolicy) {
 			
 			// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
 			if (entityConfigurationSupport.keyMapping != null) {
 				throw new IllegalArgumentException("Identifier is already defined by " + AccessorDefinition.toString(entityConfigurationSupport.keyMapping.getAccessor()));
 			}
-			KeyLinkageSupport<C, I> newLinkage = new KeyLinkageSupport<>(propertyAccessor, identifierPolicy);
+			SingleKeyLinkageSupport<C, I> newLinkage = new SingleKeyLinkageSupport<>(propertyAccessor, identifierPolicy);
 			entityConfigurationSupport.keyMapping = newLinkage;
 			return newLinkage;
 		}
 		
-		private FluentEntityMappingBuilderKeyOptions<C, I> wrapForKeyOptions(KeyLinkageSupport<C, I> keyMapping) {
+		CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+			return addCompositeKeyMapping(Accessors.accessor(getter), compositeKeyMappingBuilder);
+		}
+		
+		/**
+		 *
+		 * @param propertyAccessor
+		 * @return
+		 */
+		private CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(ReversibleAccessor<C, I> propertyAccessor, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+			
+			// Please note that we don't check for any id presence in inheritance since this will override parent one (see final build()) 
+			if (entityConfigurationSupport.keyMapping != null) {
+				throw new IllegalArgumentException("Identifier is already defined by " + AccessorDefinition.toString(entityConfigurationSupport.keyMapping.getAccessor()));
+			}
+			CompositeKeyLinkageSupport<C, I> newLinkage = new CompositeKeyLinkageSupport<>(propertyAccessor, compositeKeyMappingBuilder);
+			entityConfigurationSupport.keyMapping = newLinkage;
+			return newLinkage;
+		}
+		
+		private FluentEntityMappingBuilderKeyOptions<C, I> wrapForKeyOptions(SingleKeyLinkageSupport<C, I> keyMapping) {
 			return new MethodDispatcher()
 					.redirect(KeyOptions.class, new KeyOptions<C, I>() {
 						
@@ -1045,6 +1073,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
 					.build((Class<FluentEntityMappingBuilderKeyOptions<C, I>>) (Class) FluentEntityMappingBuilderKeyOptions.class);
+		}
+		
+		private FluentEntityMappingBuilderCompositeKeyOptions<C, I> wrapForKeyOptions(CompositeKeyLinkageSupport<C, I> keyMapping) {
+			return new MethodDispatcher()
+					.redirect(CompositeKeyOptions.class, new CompositeKeyOptions<C, I>() {
+						
+					}, true)
+					.fallbackOn(entityConfigurationSupport)
+					.build((Class<FluentEntityMappingBuilderCompositeKeyOptions<C, I>>) (Class) FluentEntityMappingBuilderCompositeKeyOptions.class);
 		}
 	}
 	
@@ -1190,10 +1227,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		}
 	}
 	
+	protected interface KeyLinkageSupport<C, I> extends KeyMapping<C, I> {
+		
+	}
+	
 	/**
-	 * Small contract for mapping definition storage. See add(..) methods.
+	 * Storage for single key mapping definition. See {@link #mapKey(SerializableFunction, IdentifierPolicy)} methods.
 	 */
-	protected static class KeyLinkageSupport<C, I> implements SingleKeyMapping<C, I> {
+	protected static class SingleKeyLinkageSupport<C, I> implements KeyLinkageSupport<C, I>, SingleKeyMapping<C, I> {
 		
 		private final ReversibleAccessor<C, I> accessor;
 		
@@ -1204,7 +1245,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		
 		private boolean setByConstructor;
 		
-		public KeyLinkageSupport(ReversibleAccessor<C, I> accessor, IdentifierPolicy<I> identifierPolicy) {
+		public SingleKeyLinkageSupport(ReversibleAccessor<C, I> accessor, IdentifierPolicy<I> identifierPolicy) {
 			this.accessor = accessor;
 			this.identifierPolicy = identifierPolicy;
 		}
@@ -1235,6 +1276,57 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		@Override
 		public boolean isSetByConstructor() {
 			return setByConstructor;
+		}
+	}
+	
+	/**
+	 * Storage for composite key mapping definition. See {@link #mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider)} methods.
+	 */
+	protected static class CompositeKeyLinkageSupport<C, I> implements KeyLinkageSupport<C, I>, CompositeKeyMapping<C, I> {
+		
+		private final ReversibleAccessor<C, I> accessor;
+		private final CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder;
+		
+		@javax.annotation.Nullable
+		private CompositeKeyLinkageOptions columnOptions;
+		
+		private boolean setByConstructor;
+		
+		public CompositeKeyLinkageSupport(ReversibleAccessor<C, I> accessor, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+			this.accessor = accessor;
+			this.compositeKeyMappingBuilder = compositeKeyMappingBuilder;
+		}
+		
+		public CompositeKeyMappingConfigurationProvider<I> getCompositeKeyMappingBuilder() {
+			return compositeKeyMappingBuilder;
+		}
+		
+		@Override
+		public ReversibleAccessor<C, I> getAccessor() {
+			return accessor;
+		}
+		
+		public void setColumnOptions(CompositeKeyLinkageOptions columnOptions) {
+			this.columnOptions = columnOptions;
+		}
+		
+		public void setByConstructor() {
+			this.setByConstructor = true;
+		}
+		
+		@Override
+		public boolean isSetByConstructor() {
+			return setByConstructor;
+		}
+		
+		public List<CompositeKeyLinkage> getPropertiesMapping() {
+			return compositeKeyMappingBuilder.getConfiguration().getPropertiesMapping();
+		}
+		
+		@javax.annotation.Nullable
+		@Override
+		public CompositeKeyLinkageOptions getColumnsOptions() {
+			return columnOptions;
 		}
 	}
 	

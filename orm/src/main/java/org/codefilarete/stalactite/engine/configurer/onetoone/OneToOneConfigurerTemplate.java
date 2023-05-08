@@ -68,14 +68,9 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 	}
 	
 	private void assertConfigurationIsSupported() {
-		
 		RelationMode maintenanceMode = oneToOneRelation.getRelationMode();
 		if (maintenanceMode == RelationMode.ASSOCIATION_ONLY) {
 			throw new MappingConfigurationException(RelationMode.ASSOCIATION_ONLY + " is only relevant for one-to-many association");
-		}
-		EntityMapping<SRC, SRCID, LEFTTABLE> mappingStrategy = sourcePersister.getMapping();
-		if (mappingStrategy.getTargetTable().getPrimaryKey().getColumns().size() > 1) {
-			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
 		}
 	}
 	

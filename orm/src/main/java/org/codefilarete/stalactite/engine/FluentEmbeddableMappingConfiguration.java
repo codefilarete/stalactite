@@ -63,8 +63,8 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	
 	/**
 	 * Please note that we can't create a generic type for {@code ? super C} by prefixing the method signature with {@code <X super C>}
-	 * because it is not syntaxically valid (in Java 8). So it can't be mutualized between the 2 arguments {@code superType} and
-	 * {@code mappingStrategy}. So user must be carefful to ensure by himself that both types are equal.
+	 * because it is not syntactically valid (in Java 8). So it can't be mutualized between the 2 arguments {@code superType} and
+	 * {@code mappingStrategy}. So user must be careful to ensure by himself that both types are equal.
 	 */
 	FluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
 	

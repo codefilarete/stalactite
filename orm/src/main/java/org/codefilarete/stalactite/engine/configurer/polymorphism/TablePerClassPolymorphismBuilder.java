@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -44,7 +45,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
-									 Identification<C, I> identification,
+									 AbstractIdentification<C, I> identification,
 									 ConfiguredRelationalPersister<C, I> mainPersister,
 									 Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
 									 ColumnBinderRegistry columnBinderRegistry,
@@ -63,7 +64,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		if (this.identification.getIdentifierPolicy() instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
+		if (this.identification instanceof Identification && ((Identification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
 		Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass =
@@ -75,8 +76,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		registerCascades((Map) persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		
 		TablePerClassPolymorphismPersister<C, I, T> result = new TablePerClassPolymorphismPersister<>(
-				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
-				(TablePerClassPolymorphism<C>) polymorphismPolicy);
+				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect);
 		
 		// we propagate shadow columns through TablePerClassPolymorphismPersister.getMapping() because it has a
 		// mechanism that projects them to sub-persisters (but columns were added in buildSubclassPersister()
@@ -159,7 +159,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		PersisterBuilderImpl.propagatePrimaryKey(this.mainPersister.getMapping().getTargetTable().getPrimaryKey(), Arrays.asSet(table));
 	}
 	
-	private void addIdentificationToMapping(Identification<C, I> identification, Mapping mapping) {
+	private void addIdentificationToMapping(AbstractIdentification<C, I> identification, Mapping mapping) {
 		PersisterBuilderImpl.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 	}
 	

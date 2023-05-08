@@ -114,14 +114,14 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	interface KeyMapping<C, I> {
 		
-		IdentifierPolicy<I> getIdentifierPolicy();
-		
 		ReversibleAccessor<C, I> getAccessor();
 		
 		boolean isSetByConstructor();
 	}
 	
 	interface SingleKeyMapping<C, I> extends KeyMapping<C, I> {
+		
+		IdentifierPolicy<I> getIdentifierPolicy();
 		
 		@Nullable
 		ColumnLinkageOptions getColumnOptions();

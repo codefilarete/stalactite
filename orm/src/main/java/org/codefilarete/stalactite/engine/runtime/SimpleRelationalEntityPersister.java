@@ -73,15 +73,15 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
 	
-	public SimpleRelationalEntityPersister(PersistenceContext persistenceContext, ClassMapping<C, I, T> mainMappingStrategy) {
-		this(mainMappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
-	}
-	
 	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy, Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
-		this.persister = new Persister<>(mainMappingStrategy, dialect, connectionConfiguration);
-		this.criteriaSupport = new EntityCriteriaSupport<>(getMapping());
-		this.selectGraphExecutor = newSelectExecutor(mainMappingStrategy, connectionConfiguration.getConnectionProvider(), dialect);
+		this(new Persister<>(mainMappingStrategy, dialect, connectionConfiguration), dialect, connectionConfiguration);
+	}
+	
+	public SimpleRelationalEntityPersister(Persister<C, I, T> persister, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		this.persister = persister;
+		this.criteriaSupport = new EntityCriteriaSupport<>(persister.getMapping());
+		this.selectGraphExecutor = newSelectExecutor(persister.getMapping(), connectionConfiguration.getConnectionProvider(), dialect);
 		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
 	}
 	

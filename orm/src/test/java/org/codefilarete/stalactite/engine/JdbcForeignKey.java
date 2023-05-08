@@ -33,6 +33,26 @@ class JdbcForeignKey {
 				Iterables.first(fk.getTargetColumns()).getName());
 	}
 	
+	public String getName() {
+		return name;
+	}
+
+	public String getSrcColumnName() {
+		return srcColumnName;
+	}
+
+	public String getSrcTableName() {
+		return srcTableName;
+	}
+
+	public String getTargetColumnName() {
+		return targetColumnName;
+	}
+
+	public String getTargetTableName() {
+		return targetTableName;
+	}
+	
 	String getSignature() {
 		return "JdbcForeignKey{" +
 				"name='" + name + '\'' +

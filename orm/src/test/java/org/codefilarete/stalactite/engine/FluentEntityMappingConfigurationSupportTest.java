@@ -567,7 +567,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Toto::getFirstName, "xyz")
 					.build(persistenceContext))
 				.isInstanceOf(MappingConfigurationException.class)
-				.hasMessage("Column 'xyz' of mapping 'Toto::getName' is already targetted by 'Toto::getFirstName'");
+				.hasMessage("Column 'xyz' of mapping 'Toto::getName' is already targeted by 'Toto::getFirstName'");
 	}
 	
 	@Test
@@ -669,7 +669,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.overrideName(Timestamp::getCreationDate, "modificationDate")
 					.build(persistenceContext))
 				.isInstanceOf(MappingConfigurationException.class)
-				.hasMessage("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'");
+				.hasMessage("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targeted by 'Timestamp::getModificationDate'");
 	}
 	
 	@Test
@@ -1171,7 +1171,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.overrideName(Timestamp::getCreationDate, "modificationDate")
 					.build(persistenceContext))
 					.isInstanceOf(MappingConfigurationException.class)
-					.hasMessage("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targetted by 'Timestamp::getModificationDate'");
+					.hasMessage("Column 'modificationDate' of mapping 'Timestamp::getCreationDate' is already targeted by 'Timestamp::getModificationDate'");
 		}
 		
 		@Test

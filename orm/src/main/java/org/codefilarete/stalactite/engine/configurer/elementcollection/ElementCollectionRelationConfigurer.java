@@ -20,7 +20,6 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
@@ -61,6 +60,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
 
+import static org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.*;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.bean.Objects.preventNull;
 

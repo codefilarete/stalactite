@@ -12,7 +12,7 @@ import org.codefilarete.reflection.AccessorChain;
  */
 public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappingConfiguration<C>, EmbeddableMappingConfigurationProvider<C> {
 	
-	/* Overwritting methods signature to return a type that aggregates options of this class */
+	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
 	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
 	

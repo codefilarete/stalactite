@@ -21,14 +21,11 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
+import org.codefilarete.stalactite.engine.CompositeKeyMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration.ColumnLinkageOptions;
-import org.codefilarete.stalactite.engine.EnumOptions;
-import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder;
+import org.codefilarete.stalactite.engine.FluentCompositeKeyMappingBuilder;
 import org.codefilarete.stalactite.engine.ImportedEmbedOptions;
-import org.codefilarete.stalactite.engine.PropertyOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
@@ -40,10 +37,10 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 /**
  * @author Guillaume Mary
  */
-public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmbeddableMappingBuilder<C>, LambdaMethodUnsheller,
-		EmbeddableMappingConfiguration<C> {
+public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentCompositeKeyMappingBuilder<C>, LambdaMethodUnsheller,
+		CompositeKeyMappingConfiguration<C> {
 	
-	private EmbeddableMappingConfigurationProvider<? super C> superMappingBuilder;
+	private CompositeKeyMappingConfigurationProvider<? super C> superMappingBuilder;
 	
 	/** Owning class of mapped properties */
 	private final Class<C> classToPersist;
@@ -52,10 +49,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	private ColumnNamingStrategy columnNamingStrategy;
 	
 	/** Mapping definitions */
-	protected final List<Linkage> mapping = new ArrayList<>();
+	protected final List<CompositeKeyLinkage> mapping = new ArrayList<>();
 	
 	/** Collection of embedded elements, even inner ones to help final build process */
-	private final Collection<Inset<C, Object>> insets = new ArrayList<>();
+	private final Collection<Inset<C, ?>> insets = new ArrayList<>();
 	
 	/** Last embedded element, introduced to help inner embedding registration (kind of algorithm help). Has no purpose in whole mapping configuration. */
 	private Inset<C, ?> currentInset;
@@ -68,7 +65,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 *
 	 * @param classToPersist the class to create a mapping for
 	 */
-	public FluentEmbeddableMappingConfigurationSupport(Class<C> classToPersist) {
+	public FluentCompositeKeyMappingConfigurationSupport(Class<C> classToPersist) {
 		this.classToPersist = classToPersist;
 		
 		// Helper to capture Method behind method reference
@@ -82,11 +79,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	@Override
 	public Collection<Inset<C, Object>> getInsets() {
-		return insets;
+		return (Collection) insets;
 	}
 	
 	@Override
-	public EmbeddableMappingConfiguration<? super C> getMappedSuperClassConfiguration() {
+	public CompositeKeyMappingConfiguration<? super C> getMappedSuperClassConfiguration() {
 		return superMappingBuilder == null ? null : superMappingBuilder.getConfiguration();
 	}
 	
@@ -97,12 +94,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public List<Linkage> getPropertiesMapping() {
+	public List<CompositeKeyLinkage> getPropertiesMapping() {
 		return mapping;
 	}
 	
 	@Override
-	public EmbeddableMappingConfiguration<C> getConfiguration() {
+	public CompositeKeyMappingConfiguration<C> getConfiguration() {
 		return this;
 	}
 	
@@ -117,69 +114,54 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public FluentEmbeddableMappingConfigurationSupport<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
+	public FluentCompositeKeyMappingConfigurationSupport<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
 		this.columnNamingStrategy = columnNamingStrategy;
 		return this;
 	}
 	
 	/**
 	 * Gives access to currently configured {@link Inset}. Made so one can access features of {@link Inset} which are wider than
-	 * the one available through {@link FluentEmbeddableMappingBuilder}.
+	 * the one available through {@link FluentCompositeKeyMappingBuilder}.
 	 * 
-	 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction, EmbeddableMappingConfigurationProvider)}
-	 * or {@link #newInset(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
+	 * @return the last {@link Inset} built by {@link #newInset(SerializableFunction, CompositeKeyMappingConfigurationProvider)}
+	 * or {@link #newInset(SerializableBiConsumer, CompositeKeyMappingConfigurationProvider)}
 	 */
 	protected Inset<C, ?> currentInset() {
 		return currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
-		currentInset = Inset.fromGetter(getter, embeddableMappingBuilder, this);
+	protected <O> Inset<C, O> newInset(SerializableFunction<C, O> getter, CompositeKeyMappingConfigurationProvider<? extends O> CompositeKeyMappingBuilder) {
+		currentInset = new Inset<>(getter, CompositeKeyMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
 	}
 	
-	protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
-		currentInset = Inset.fromSetter(setter, embeddableMappingBuilder, this);
+	protected <O> Inset<C, O> newInset(SerializableBiConsumer<C, O> setter, CompositeKeyMappingConfigurationProvider<? extends O> CompositeKeyMappingBuilder) {
+		currentInset = new Inset<>(setter, CompositeKeyMappingBuilder, this);
 		return (Inset<C, O>) currentInset;
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter) {
-		return addPropertyOptions(addMapping(setter, null));
+	public <O> FluentCompositeKeyMappingBuilder<C> map(SerializableBiConsumer<C, O> setter) {
+		addMapping(setter, null);
+		return this;
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter) {
-		return addPropertyOptions(addMapping(getter, null));
+	public <O> FluentCompositeKeyMappingBuilder<C> map(SerializableFunction<C, O> getter) {
+		addMapping(getter, null);
+		return this;
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter, String columnName) {
-		return addPropertyOptions(addMapping(setter, columnName));
+	public <O> FluentCompositeKeyMappingBuilder<C> map(SerializableBiConsumer<C, O> setter, String columnName) {
+		addMapping(setter, columnName);
+		return this;
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter, String columnName) {
-		return addPropertyOptions(addMapping(getter, columnName));
-	}
-	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> addPropertyOptions(LinkageSupport<C, O> linkage) {
-		return new MethodReferenceDispatcher()
-				.redirect(PropertyOptions.class, new PropertyOptions() {
-					@Override
-					public PropertyOptions mandatory() {
-						linkage.setNullable(false);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public PropertyOptions setByConstructor() {
-						linkage.setByConstructor();
-						return null;
-					}
-				}, true)
-				.fallbackOn(this)
-				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
+	public <O> FluentCompositeKeyMappingBuilder<C> map(SerializableFunction<C, O> getter, String columnName) {
+		addMapping(getter, columnName);
+		return this;
 	}
 	
 	<E> LinkageSupport<C, E> addMapping(SerializableBiConsumer<C, E> setter, @Nullable String columnName) {
@@ -198,41 +180,41 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter) {
+	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter) {
 		LinkageSupport<C, E> linkage = addMapping(setter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter) {
+	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter) {
 		LinkageSupport<C, E> linkage = addMapping(getter, null);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName) {
+	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName) {
 		LinkageSupport<C, E> linkage = addMapping(setter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName) {
+	public <E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName) {
 		LinkageSupport<C, E> linkage = addMapping(getter, columnName);
 		return addEnumOptions(linkage);
 	}
 	
-	<O extends Enum> FluentEmbeddableMappingBuilderEnumOptions<C> addEnumOptions(LinkageSupport<C, O> linkage) {
+	<O extends Enum> FluentCompositeKeyMappingBuilderEnumOptions<C> addEnumOptions(LinkageSupport<C, O> linkage) {
 		return new MethodReferenceDispatcher()
-				.redirect(EnumOptions.class, new EnumOptions() {
+				.redirect(CompositeKeyEnumOptions.class, new CompositeKeyEnumOptions() {
 					
 					@Override
-					public EnumOptions byName() {
+					public CompositeKeyEnumOptions byName() {
 						setLinkageParameterBinder(EnumBindType.NAME);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public EnumOptions byOrdinal() {
+					public CompositeKeyEnumOptions byOrdinal() {
 						setLinkageParameterBinder(EnumBindType.ORDINAL);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -240,52 +222,42 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					private void setLinkageParameterBinder(EnumBindType ordinal) {
 						linkage.setParameterBinder(ordinal.newParameterBinder(linkage.getColumnType()));
 					}
-					
-					@Override
-					public EnumOptions mandatory() {
-						linkage.setNullable(false);
-						return null;	// we can return null because dispatcher will return proxy
-					}
-					
-					@Override
-					public PropertyOptions setByConstructor() {
-						linkage.setByConstructor();
-						return null;
-					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<FluentEmbeddableMappingBuilderEnumOptions<C>>) (Class) FluentEmbeddableMappingBuilderEnumOptions.class);
+				.build((Class<FluentCompositeKeyMappingBuilderEnumOptions<C>>) (Class) FluentCompositeKeyMappingBuilderEnumOptions.class);
 	}
 	
 	@Override
-	public FluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration) {
+	public FluentCompositeKeyMappingBuilder<C> mapSuperClass(CompositeKeyMappingConfigurationProvider<? super C> superMappingConfiguration) {
 		this.superMappingBuilder = superMappingConfiguration;
 		return this;
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
-																											EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
-		return addImportedInset(newInset(getter, embeddableMappingBuilder));
+	public <O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> embed(
+			SerializableFunction<C, O> getter,
+			CompositeKeyMappingConfigurationProvider<? extends O> compositeKeyMappingBuilder) {
+		return addImportedInset(newInset(getter, compositeKeyMappingBuilder));
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
-																											EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder) {
-		return addImportedInset(newInset(setter, embeddableMappingBuilder));
+	public <O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> embed(
+			SerializableBiConsumer<C, O> setter,
+			CompositeKeyMappingConfigurationProvider<? extends O> compositeKeyMappingBuilder) {
+		return addImportedInset(newInset(setter, compositeKeyMappingBuilder));
 	}
 	
-	private <O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
-		insets.add((Inset<C, Object>) inset);
+	private <O> FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> addImportedInset(Inset<C, O> inset) {
+		insets.add(inset);
 		return new MethodReferenceDispatcher()
 				// Why capturing overrideName(AccessorChain, String) this way ? (I mean with the "one method" capture instead of the usual "interface methods capture")
 				// Because of ... lazyness ;) : "interface method capture" (such as done with ImportedEmbedOptions) would have required a dedicated
 				// interface (inheriting from ImportedEmbedOptions) to define overrideName(AccessorChain, String)
-				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableFunction, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-						FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
+				.redirect((SerializableTriFunction<FluentCompositeKeyMappingConfigurationImportedEmbedOptions, SerializableFunction, String, FluentCompositeKeyMappingConfigurationImportedEmbedOptions>)
+						FluentCompositeKeyMappingConfigurationImportedEmbedOptions::overrideName,
 						(BiConsumer<SerializableFunction, String>) inset::overrideName)
-				.redirect((SerializableTriFunction<FluentEmbeddableMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, FluentEmbeddableMappingConfigurationImportedEmbedOptions>)
-						FluentEmbeddableMappingConfigurationImportedEmbedOptions::overrideName,
+				.redirect((SerializableTriFunction<FluentCompositeKeyMappingConfigurationImportedEmbedOptions, SerializableBiConsumer, String, FluentCompositeKeyMappingConfigurationImportedEmbedOptions>)
+						FluentCompositeKeyMappingConfigurationImportedEmbedOptions::overrideName,
 						(BiConsumer<SerializableBiConsumer, String>) inset::overrideName)
 				.redirect(ImportedEmbedOptions.class, new ImportedEmbedOptions<C>() {
 
@@ -315,7 +287,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					
 				}, true)
 				.fallbackOn(this)
-				.build((Class<FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>>) (Class) FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions.class);
+				.build((Class<FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O>>) (Class) FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions.class);
 	}
 	
 	/**
@@ -323,14 +295,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 * 
 	 * @param <T> property owner type
 	 */
-	protected static class LinkageSupport<T, O> implements Linkage<T, O> {
+	protected static class LinkageSupport<T, O> implements CompositeKeyLinkage<T, O> {
 		
 		/** Optional binder for this mapping */
 		private ParameterBinder<O> parameterBinder;
-		
-		private boolean nullable = true;
-		
-		private boolean setByConstructor = false;
 		
 		@Nullable
 		private ColumnLinkageOptions columnOptions;
@@ -350,24 +318,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return parameterBinder;
 		}
 		
-		@Override
-		public boolean isNullable() {
-			return nullable;
-		}
-		
-		public void setNullable(boolean nullable) {
-			this.nullable = nullable;
-		}
-		
-		public void setByConstructor() {
-			this.setByConstructor = true;
-		}
-		
-		@Override
-		public boolean isSetByConstructor() {
-			return setByConstructor;
-		}
-		
 		@Nullable
 		public ColumnLinkageOptions getColumnOptions() {
 			return columnOptions;
@@ -385,7 +335,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Nullable
 		@Override
 		public String getColumnName() {
-			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(EntityMappingConfiguration.ColumnLinkageOptions::getColumnName).get();
+			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
 		}
 		
 		@Override
@@ -435,50 +385,27 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	/**
-	 * Information storage of embedded mapping defined externally by an {@link EmbeddableMappingConfigurationProvider},
-	 * see {@link #embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
+	 * Information storage of embedded mapping defined externally by an {@link CompositeKeyMappingConfigurationProvider},
+	 * see {@link #embed(SerializableFunction, CompositeKeyMappingConfigurationProvider)}
 	 *
 	 * @param <SRC>
 	 * @param <TRGT>
-	 * @see #embed(SerializableFunction, EmbeddableMappingConfigurationProvider)}
-	 * @see #embed(SerializableBiConsumer, EmbeddableMappingConfigurationProvider)}
+	 * @see #embed(SerializableFunction, CompositeKeyMappingConfigurationProvider)}
+	 * @see #embed(SerializableBiConsumer, CompositeKeyMappingConfigurationProvider)}
 	 */
 	public static class Inset<SRC, TRGT> {
-		
-		static <SRC, TRGT> Inset<SRC, TRGT> fromSetter(SerializableBiConsumer<SRC, TRGT> targetSetter,
-													   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
-													   LambdaMethodUnsheller lambdaMethodUnsheller) {
-			Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
-			return new Inset<>(insetAccessor,
-					new PropertyAccessor<>(
-							new MutatorByMethod<SRC, TRGT>(insetAccessor).toAccessor(),
-							new MutatorByMethodReference<>(targetSetter)),
-					beanMappingBuilder);
-		}
-		
-		static <SRC, TRGT> Inset<SRC, TRGT> fromGetter(SerializableFunction<SRC, TRGT> targetGetter,
-													   EmbeddableMappingConfigurationProvider<? extends TRGT> beanMappingBuilder,
-													   LambdaMethodUnsheller lambdaMethodUnsheller) {
-			Method insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
-			return new Inset<>(insetAccessor,
-					new PropertyAccessor<>(
-							new AccessorByMethodReference<>(targetGetter),
-							new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator()),
-					beanMappingBuilder);
-		}
-		
 		private final Class<TRGT> embeddedClass;
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<String> overriddenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
-		private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
+		private final CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider;
 		private final ValueAccessPointMap<Column> overriddenColumns = new ValueAccessPointMap<>();
 		
 		
 		Inset(SerializableBiConsumer<SRC, TRGT> targetSetter,
-			  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider,
+			  CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider,
 			  LambdaMethodUnsheller lambdaMethodUnsheller) {
 			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetSetter);
 			this.accessor = new PropertyAccessor<>(
@@ -488,14 +415,16 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 			this.configurationProvider = configurationProvider;
 		}
-
-		Inset(Method insetAccessor,
-			  PropertyAccessor<SRC, TRGT> accessor,
-			  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider) {
-			this.insetAccessor = insetAccessor;
+		
+		Inset(SerializableFunction<SRC, TRGT> targetGetter,
+			  CompositeKeyMappingConfigurationProvider<? extends TRGT> configurationProvider,
+			  LambdaMethodUnsheller lambdaMethodUnsheller) {
+			this.insetAccessor = lambdaMethodUnsheller.captureLambdaMethod(targetGetter);
+			this.accessor = new PropertyAccessor<>(
+					new AccessorByMethodReference<>(targetGetter),
+					new AccessorByMethod<SRC, TRGT>(insetAccessor).toMutator());
 			// looking for the target type because it's necessary to find its persister (and other objects)
-			this.embeddedClass = Reflections.javaBeanTargetType(insetAccessor);
-			this.accessor = accessor;
+			this.embeddedClass = Reflections.javaBeanTargetType(getInsetAccessor());
 			this.configurationProvider = configurationProvider;
 		}
 		
@@ -529,8 +458,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return overriddenColumns;
 		}
 		
-		public EmbeddableMappingConfigurationProvider<TRGT> getConfigurationProvider() {
-			return (EmbeddableMappingConfigurationProvider<TRGT>) configurationProvider;
+		public CompositeKeyMappingConfigurationProvider<TRGT> getConfigurationProvider() {
+			return (CompositeKeyMappingConfigurationProvider<TRGT>) configurationProvider;
 		}
 		
 		public void overrideName(SerializableFunction methodRef, String columnName) {

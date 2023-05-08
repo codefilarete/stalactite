@@ -1,10 +1,12 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.stalactite.engine.configurer.FluentCompositeKeyMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentSubEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Declares a simple entry point to start configuring a persistence mapping.
@@ -45,6 +47,18 @@ public final class MappingEase {
 	 */
 	public static <T> FluentEmbeddableMappingBuilder<T> embeddableBuilder(Class<T> persistedClass) {
 		return new FluentEmbeddableMappingConfigurationSupport<>(persistedClass);
+	}
+	
+	/**
+	 * Starts a {@link FluentCompositeKeyMappingBuilder} for a given class.
+	 * To be used with {@link FluentEntityMappingBuilder#mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider)}
+	 *
+	 * @param persistedClass the class to be persisted by the {@link EmbeddedClassMapping}
+	 * @param <T> any type to be persisted
+	 * @return a new {@link FluentEmbeddableMappingBuilder}
+	 */
+	public static <T> FluentCompositeKeyMappingBuilder<T> compositeKeyBuilder(Class<T> persistedClass) {
+		return new FluentCompositeKeyMappingConfigurationSupport<>(persistedClass);
 	}
 	
 	private MappingEase() {

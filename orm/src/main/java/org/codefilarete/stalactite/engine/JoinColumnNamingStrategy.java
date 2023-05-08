@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.Strings;
 
 public interface JoinColumnNamingStrategy {
 	
@@ -15,11 +16,9 @@ public interface JoinColumnNamingStrategy {
 	 */
 	String giveName(AccessorDefinition accessorDefinition, Column<?, ?> targetColumn);
 	
-	String DEFAULT_JOIN_COLUMN_SUFFIX = "Id";
-	
 	/**
-	 * Adds {@value #DEFAULT_JOIN_COLUMN_SUFFIX} to the {@link ColumnNamingStrategy#DEFAULT} naming strategy 
+	 * Adds given column {@link Column#getName} capitalized to the {@link ColumnNamingStrategy#DEFAULT} naming strategy 
 	 */
-	JoinColumnNamingStrategy JOIN_DEFAULT = (accessor, targetColumn) -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + DEFAULT_JOIN_COLUMN_SUFFIX;
+	JoinColumnNamingStrategy JOIN_DEFAULT = (accessor, targetColumn) -> ColumnNamingStrategy.DEFAULT.giveName(accessor) + Strings.capitalize(targetColumn.getName());
 	
 }

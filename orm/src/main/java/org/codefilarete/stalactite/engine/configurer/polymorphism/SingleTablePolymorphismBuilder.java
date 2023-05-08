@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -40,7 +41,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
-								   Identification<C, I> identification,
+								   AbstractIdentification<C, I> identification,
 								   ConfiguredRelationalPersister<C, I> mainPersister,
 								   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainMapping,
 								   ColumnBinderRegistry columnBinderRegistry,

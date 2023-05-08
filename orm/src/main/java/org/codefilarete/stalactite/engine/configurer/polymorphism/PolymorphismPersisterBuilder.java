@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorp
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.AbstractIdentification;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterListenerWrapper;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -36,7 +36,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	
 	private final PolymorphismPolicy<C> polymorphismPolicy;
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
-	private final Identification<C, I> identification;
+	private final AbstractIdentification<C, I> identification;
 	private final ColumnBinderRegistry columnBinderRegistry;
 	private final ColumnNameProvider columnNameProvider;
 	
@@ -50,7 +50,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	private final TableNamingStrategy tableNamingStrategy;
 	
 	public PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
-										Identification<C, I> identification,
+										AbstractIdentification<C, I> identification,
 										ConfiguredRelationalPersister<C, I> mainPersister,
 										ColumnBinderRegistry columnBinderRegistry,
 										ColumnNameProvider columnNameProvider,

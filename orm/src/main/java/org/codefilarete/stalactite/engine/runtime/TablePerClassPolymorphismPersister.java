@@ -96,8 +96,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	public TablePerClassPolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
 											  Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
 											  ConnectionProvider connectionProvider,
-											  Dialect dialect,
-											  TablePerClassPolymorphism<C> polymorphismPolicy) {
+											  Dialect dialect) {
 		this.mainPersister = mainPersister;
 		Set<Entry<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>>> entries = subEntitiesPersisters.entrySet();
 		this.subclassUpdateExecutors = Iterables.map(entries, Entry::getKey, Entry::getValue, KeepOrderMap::new);

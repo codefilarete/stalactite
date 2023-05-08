@@ -24,7 +24,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	
 	List<Linkage> getPropertiesMapping();
 	
-	Collection<Inset<C, ?>> getInsets();
+	Collection<Inset<C, Object>> getInsets();
 	
 	@Nullable
 	ColumnNamingStrategy getColumnNamingStrategy();

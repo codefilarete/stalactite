@@ -89,6 +89,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName);
 	
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder);
+	
 	/**
 	 * Interface for {@link #mapKey(SerializableFunction, IdentifierPolicy)} family methods return. Aimed at chaining to configure entity key mapping. 
 	 * @param <C> entity type
@@ -199,6 +201,14 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		// signature note : the generics wildcard ? are actually expected to be of same type, but left it as it is because setting a generics type
 		// for it makes usage of Function::apply quite difficult (lot of cast) because the generics type car hardly be something else than Object  
 		KeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory);
+		
+	}
+	
+	interface CompositeKeyOptions<C, I> {
+		
+	}
+	
+	interface FluentEntityMappingBuilderCompositeKeyOptions<C, I> extends FluentEntityMappingBuilder<C, I>, CompositeKeyOptions<C, I> {
 		
 	}
 	

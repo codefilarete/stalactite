@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -48,7 +49,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 	private final PrimaryKey<T, I> mainTablePrimaryKey;
 	
 	JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
-								 Identification<C, I> identification,
+								 AbstractIdentification<C, I> identification,
 								 ConfiguredRelationalPersister<C, I> mainPersister,
 								 ColumnBinderRegistry columnBinderRegistry,
 								 ColumnNameProvider columnNameProvider,
@@ -150,7 +151,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 		PersisterBuilderImpl.applyForeignKeys(this.mainTablePrimaryKey, this.foreignKeyNamingStrategy, Arrays.asSet(table));
 	}
 	
-	private void addIdentificationToMapping(Identification<C, I> identification, Mapping mapping) {
+	private void addIdentificationToMapping(AbstractIdentification<C, I> identification, Mapping mapping) {
 		PersisterBuilderImpl.addIdentificationToMapping(identification, Arrays.asSet(mapping));
 	}
 }
