@@ -5,14 +5,18 @@ import org.codefilarete.stalactite.engine.model.compositekey.House;
 import org.codefilarete.stalactite.engine.model.compositekey.House.HouseId;
 import org.codefilarete.stalactite.engine.model.compositekey.Person;
 import org.codefilarete.stalactite.engine.model.compositekey.Person.PersonId;
+import org.codefilarete.stalactite.engine.model.compositekey.Pet;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Iterables;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -21,8 +25,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -147,5 +150,42 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_D2936B99", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
+	}
+
+	@Test
+	void crud_oneToOne_ownedByTarget() {
+		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getLastName)
+						.map(PersonId::getAddress))
+				.map(Person::getAge)
+				.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Long.class)
+						.mapKey(House::getId, IdentifierPolicy.afterInsert()))
+				.mappedBy(House::getOwner)
+				.build(persistenceContext);
+
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.setHouse(new House());
+		dummyPerson.setAge(35);
+
+		personPersister.insert(dummyPerson);
+
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		assertThat(loadedPerson.getHouse().getId()).isEqualTo(1);
+
+		dummyPerson.setAge(36);
+		personPersister.update(dummyPerson, loadedPerson, true);
+		Table personTable = new Table("Person");
+		Column<Table, Integer> age = personTable.addColumn("age", int.class);
+		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		assertThat(ages).containsExactly(36);
+
+		personPersister.delete(dummyPerson);
+		ages = persistenceContext.select(SerializableFunction.identity(), age);
+		assertThat(ages).isEmpty();
 	}
 }
