@@ -9,7 +9,6 @@ import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
-import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -56,7 +55,7 @@ import static java.util.Collections.emptyList;
  * Entity load is defined by a select that joins all tables, each {@link ClassMapping} is called to complete
  * entity loading.
  * 
- * In the orm module this class replace {@link Persister} in case of single table, because it has methods for join support whereas {@link Persister}
+ * In the orm module this class replace {@link BeanPersister} in case of single table, because it has methods for join support whereas {@link BeanPersister}
  * doesn't.
  * 
  * @param <C> the main class to be persisted
@@ -66,7 +65,7 @@ import static java.util.Collections.emptyList;
  */
 public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implements ConfiguredRelationalPersister<C, I> {
 	
-	private final Persister<C, I, T> persister;
+	private final BeanPersister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
 	private final EntitySelectExecutor<C> entitySelectExecutor;
 	/** Support for defining Entity criteria on {@link #newWhere()} */
@@ -75,10 +74,10 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy, Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
-		this(new Persister<>(mainMappingStrategy, dialect, connectionConfiguration), dialect, connectionConfiguration);
+		this(new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration), dialect, connectionConfiguration);
 	}
 	
-	public SimpleRelationalEntityPersister(Persister<C, I, T> persister, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public SimpleRelationalEntityPersister(BeanPersister<C, I, T> persister, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.persister = persister;
 		this.criteriaSupport = new EntityCriteriaSupport<>(persister.getMapping());
 		this.selectGraphExecutor = newSelectExecutor(persister.getMapping(), connectionConfiguration.getConnectionProvider(), dialect);
@@ -175,11 +174,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	private EntityCriteriaSupport<C> newWhere() {
 		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
 		return new EntityCriteriaSupport<>(criteriaSupport);
-	}
-	
-	@Override
-	public void persist(Iterable<? extends C> entities) {
-		persister.persist(entities);
 	}
 	
 	@Override
@@ -315,6 +309,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	@Override
 	public void insert(Iterable<? extends C> entities) {
 		persister.insert(entities);
+	}
+
+	@Override
+	public void persist(Iterable<? extends C> entities) {
+		persister.persist(entities);
 	}
 	
 	@Override

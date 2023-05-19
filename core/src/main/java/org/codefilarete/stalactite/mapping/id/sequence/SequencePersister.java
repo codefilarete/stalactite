@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.mapping.id.sequence;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.tool.collection.Maps;
@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class SequencePersister extends Persister<Sequence, String, SequenceTable> {
+public class SequencePersister extends BeanPersister<Sequence, String, SequenceTable> {
 	
 	/**
 	 * Constructor with default table and column names.

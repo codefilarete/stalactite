@@ -57,10 +57,10 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 		asserter.accept(entity);
 	}
 	
-	/* Please note that some methods were not overridden for calling assertion because there super implementation invokes some methods that do it,
+	/* Please note that some methods were not overriden for calling assertion because there super implementation invokes some methods that do it,
 	 * hence by such a way we avoid multiple calls to assertion. Meanwhile a Unit Test checks all of them. 
 	 * Here they are:
-	 * - persist(Iterable<? extends C> entities)
+	 * - persist(entity)
 	 * - insert(C entity)
 	 * - update(C modified, C unmodified, boolean allColumnsStatement)
 	 * - update(C entity)
@@ -71,9 +71,9 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	 */
 	
 	@Override
-	public void persist(C entity) {
-		assertPersisterManagesEntity(entity);
-		super.persist(entity);
+	public void persist(Iterable<? extends C> entities) {
+		assertPersisterManagesEntities(entities);
+		super.persist(entities);
 	}
 	
 	@Override

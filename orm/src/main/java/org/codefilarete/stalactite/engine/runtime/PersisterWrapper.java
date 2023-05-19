@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -62,11 +61,6 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	@Override
 	public I getId(C entity) {
 		return surrogate.getId(entity);
-	}
-	
-	@Override
-	public void persist(Iterable<? extends C> entities) {
-		PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
 	}
 	
 	@Override
@@ -168,7 +162,12 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	public void insert(Iterable<? extends C> entities) {
 		surrogate.insert(entities);
 	}
-	
+
+	@Override
+	public void persist(Iterable<? extends C> entities) {
+		surrogate.persist(entities);
+	}
+
 	@Override
 	public List<C> select(Iterable<I> ids) {
 		return surrogate.select(ids);

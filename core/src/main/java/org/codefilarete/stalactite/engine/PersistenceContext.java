@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
@@ -59,7 +59,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
 
 /**
- * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
+ * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link BeanPersister}s.
  *
  * @author Guillaume Mary
  * @see #PersistenceContext(DataSource)
@@ -180,11 +180,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param classMappingStrategy the persistence configuration
 	 * @param <C> the entity type that is configured for persistence
 	 * @param <I> the identifier type of the entity
-	 * @return the newly created {@link Persister} for the configuration
+	 * @return the newly created {@link BeanPersister} for the configuration
 	 */
-	public <C, I, T extends Table<T>> Persister<C, I, T> add(ClassMapping<C, I, T> classMappingStrategy) {
+	public <C, I, T extends Table<T>> BeanPersister<C, I, T> add(ClassMapping<C, I, T> classMappingStrategy) {
 		mapping.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
-		Persister<C, I, T> persister = new Persister<>(classMappingStrategy, this);
+		BeanPersister<C, I, T> persister = new BeanPersister<>(classMappingStrategy, this);
 		addPersister(persister);
 		return persister;
 	}
@@ -195,9 +195,9 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	/**
-	 * Returns the {@link Persister} mapped for a class.
+	 * Returns the {@link BeanPersister} mapped for a class.
 	 * 
-	 * @param clazz the class for which the {@link Persister} must be given
+	 * @param clazz the class for which the {@link BeanPersister} must be given
 	 * @param <C> the type of the persisted entity
 	 * @return null if class has no persister registered
 	 */
@@ -206,9 +206,9 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	/**
-	 * Registers a {@link Persister} on this instance. May overwrite an existing one
+	 * Registers a {@link BeanPersister} on this instance. May overwrite an existing one
 	 * 
-	 * @param persister any {@link Persister}
+	 * @param persister any {@link BeanPersister}
 	 * @param <C> type of persisted bean
 	 * @throws IllegalArgumentException if a persister already exists for class persisted by given persister
 	 */

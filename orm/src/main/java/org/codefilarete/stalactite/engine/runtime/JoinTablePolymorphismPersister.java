@@ -58,7 +58,6 @@ import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
-import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -230,12 +229,6 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(DeleteExecutor::deleteById);
 		mainPersister.deleteById(entities);
-	}
-	
-	@Override
-	public void persist(Iterable<? extends C> entities) {
-		// This class doesn't need to implement this method because it is better handled by wrapper, especially in triggering event
-		throw new NotImplementedException("This class doesn't need to implement this method because it is handled by wrapper");
 	}
 	
 	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {

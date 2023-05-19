@@ -338,11 +338,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		@Override
 		protected Collection<TRGT> getTargets(SRC source) {
-			Collection<TRGT> targets = collectionGetter.apply(source);
-			// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
-			return Iterables.stream(targets)
-					.filter(getPersister()::isNew)
-					.collect(Collectors.toList());
+			return collectionGetter.apply(source);
 		}
 	}
 	

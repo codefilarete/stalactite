@@ -25,6 +25,7 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
@@ -33,40 +34,66 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
- * CRUD Persistent features dedicated to an entity class. Entry point for persistent operations on entities.
+ * Main class for CRUD operations of an entity class. Doesn't manage relation between entities.
+ * Delegates SQL operations to {@link InsertExecutor}, {@link UpdateExecutor}, {@link DeleteExecutor} and
+ * {@link SelectExecutor}.
+ * Will wrap every CRUD operation with dedicated listener before / after method invokation.
  * 
+ * @param <C> entity type
+ * @param <I> identifier type
+ * @param <T> target table type
  * @author Guillaume Mary
  */
-public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPersister<C, I> {
-	
+public class BeanPersister<C, I, T extends Table<T>> implements EntityConfiguredPersister<C, I> {
+
+	/**
+	 * Property mapping on which SQL executors will refer to build their SQL operation
+	 */
 	private final EntityMapping<C, I, T> mappingStrategy;
+
+	/**
+	 * Connection on which SQL operations will be run
+	 */
 	private final ConnectionConfiguration connectionConfiguration;
+
+	/**
+	 * SQL generator for CRUD operations
+	 */
 	private final DMLGenerator dmlGenerator;
+
+	/**
+	 * Factory of {@link WriteOperation}
+	 */
 	private final WriteOperationFactory writeOperationFactory;
+
+	/**
+	 * Size of "in" operator max size (depends on database vendor). Useful for select statement only.
+	 */
 	private final int inOperatorMaxSize;
+	
 	private PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	private final InsertExecutor<C, I, T> insertExecutor;
 	private final UpdateExecutor<C, I, T> updateExecutor;
 	private final DeleteExecutor<C, I, T> deleteExecutor;
 	private final org.codefilarete.stalactite.engine.SelectExecutor<C, I> selectExecutor;
 	
-	public Persister(EntityMapping<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
+	public BeanPersister(EntityMapping<C, I, T> mappingStrategy, PersistenceContext persistenceContext) {
 		this(mappingStrategy, persistenceContext.getDialect(), persistenceContext.getConnectionConfiguration());
 	}
 	
-	public Persister(EntityMapping<C, I, T> mappingStrategy, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public BeanPersister(EntityMapping<C, I, T> mappingStrategy, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dialect.getDmlGenerator();
 		this.writeOperationFactory = dialect.getWriteOperationFactory();
 		this.inOperatorMaxSize = dialect.getInOperatorMaxSize();
-		this.insertExecutor = newInsertExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
+		this.insertExecutor = newInsertExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationFactory, inOperatorMaxSize);
-		this.updateExecutor = newUpdateExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
+		this.updateExecutor = newUpdateExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationFactory, inOperatorMaxSize);
-		this.deleteExecutor = newDeleteExecutor(mappingStrategy, this.connectionConfiguration, dmlGenerator,
+		this.deleteExecutor = newDeleteExecutor(this.mappingStrategy, this.connectionConfiguration, dmlGenerator,
 				writeOperationFactory, inOperatorMaxSize);
-		this.selectExecutor = newSelectExecutor(mappingStrategy, this.connectionConfiguration.getConnectionProvider(), dialect);
+		this.selectExecutor = newSelectExecutor(this.mappingStrategy, this.connectionConfiguration.getConnectionProvider(), dialect);
 		
 		// Transferring identifier manager InsertListener to here
 		getPersisterListener().addInsertListener(
@@ -75,9 +102,15 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 			getMapping().getIdMapping().getIdentifierInsertionManager().getSelectListener());
 	}
 	
-	public Persister(ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory,
-					 int inOperatorMaxSize, EntityMapping<C, I, T> mappingStrategy, InsertExecutor<C, I, T> insertExecutor,
-					 UpdateExecutor<C, I, T> updateExecutor, DeleteExecutor<C, I, T> deleteExecutor, org.codefilarete.stalactite.engine.SelectExecutor<C, I> selectExecutor) {
+	public BeanPersister(ConnectionConfiguration connectionConfiguration,
+						 DMLGenerator dmlGenerator,
+						 WriteOperationFactory writeOperationFactory,
+						 int inOperatorMaxSize,
+						 EntityMapping<C, I, T> mappingStrategy,
+						 InsertExecutor<C, I, T> insertExecutor,
+						 UpdateExecutor<C, I, T> updateExecutor,
+						 DeleteExecutor<C, I, T> deleteExecutor,
+						 org.codefilarete.stalactite.engine.SelectExecutor<C, I> selectExecutor) {
 		this.mappingStrategy = mappingStrategy;
 		this.connectionConfiguration = connectionConfiguration;
 		this.dmlGenerator = dmlGenerator;
@@ -150,7 +183,7 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	
 	/**
 	 * Gives all tables implied in the persistence of the entity such as joined tables or duplicating tables (depending
-	 * on the implementation of this {@link Persister})
+	 * on the implementation of this {@link BeanPersister})
 	 * Useful to generate schema creation script.
 	 * 
 	 * @return a {@link Set} of implied tables, not expected to be writable
@@ -262,12 +295,9 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	}
 	
 	/**
-	 * Saves given entity : will apply insert or update according to entity persistent state.
-	 * Triggers cascade on relations. Please note that in case of already-persisted entity (not new), entity will be reloaded from database
-	 * to compute differences and cascade only modifications.
-	 * If one already has a copy of the "unmodified" instance, you may prefer to directly use {@link #update(Object, Object, boolean)}
+	 * Insert given entities.
 	 *
-	 * @param entities entities, none-persistent or already-persisted
+	 * @param entities some entities expected to be not persisted yet since inserting them again should cause some primary key constraint failure
 	 */
 	@Override
 	public void insert(Iterable<? extends C> entities) {
@@ -297,9 +327,9 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	}
 	
 	/**
-	 * Updates instances that may have changes.
-	 * Groups statements to benefit from JDBC batch. Useful overall when allColumnsStatement
-	 * is set to false.
+	 * Update given entities that may have changes.
+	 * Takes optimistic lock into account.
+	 * Groups statements to benefit from JDBC batch. Useful overall when allColumnsStatement is set to false.
 	 * 
 	 * @param differencesIterable pairs of modified-unmodified instances, used to compute differences side by side
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
@@ -316,7 +346,7 @@ public class Persister<C, I, T extends Table<T>> implements EntityConfiguredPers
 	}
 	
 	/**
-	 * Deletes instances.
+	 * Delete given entities.
 	 * Takes optimistic lock into account.
 	 *
 	 * @param entities entites to be deleted

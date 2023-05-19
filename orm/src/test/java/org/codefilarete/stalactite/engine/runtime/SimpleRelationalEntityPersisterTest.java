@@ -450,7 +450,7 @@ class SimpleRelationalEntityPersisterTest {
 	class CRUD_WithListener {
 		
 		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy2_ontoTable2;
-		private Persister<Toto, Identifier<Integer>, ?> persister2;
+		private BeanPersister<Toto, Identifier<Integer>, ?> persister2;
 		
 		@BeforeEach
 		void setUp() throws SQLException {
@@ -502,7 +502,7 @@ class SimpleRelationalEntityPersisterTest {
 			SimpleRelationalEntityPersisterTest.this.initTest();
 			
 			// we add a copier onto a another table
-			persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+			persister2 = new BeanPersister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 			testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
 															 new EntityMappingAdapter<>(persister2.getMapping()),
 															 leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());

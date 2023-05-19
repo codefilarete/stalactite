@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
@@ -201,10 +201,10 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	}
 	
 	/**
-	 * Add deletion of association records on {@link Persister#delete} and {@link Persister#deleteById} events.
+	 * Add deletion of association records on {@link BeanPersister#delete} and {@link BeanPersister#deleteById} events.
 	 * If {@code deleteTargetEntities} is true, then will also delete target (many side) entities.
 	 * 
-	 * In case of {@link Persister#deleteById}, association records will be deleted only by source entity keys.
+	 * In case of {@link BeanPersister#deleteById}, association records will be deleted only by source entity keys.
 	 * 
 	 * @param deleteTargetEntities true to delete many-side entities, false to only delete association records
 	 * @param dialect necessary to build valid SQL for deleteById action

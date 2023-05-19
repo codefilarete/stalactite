@@ -433,18 +433,20 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(persistedCountry.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(persistedCountry, persistedCountry);
 		}
 		
-		// Creating a new country with the same cities (!): the cities shouldn't be resaved
+		// Creating a new country with the same cities (!): the cities should be associated to new country
 		Country dummyCountry2 = new Country(countryIdProvider.giveNewIdentifier());
 		dummyCountry2.setName("France 2");
 		dummyCountry2.addCity(paris);
 		dummyCountry2.addCity(lyon);
 		countryPersister.insert(dummyCountry2);
 
-		// Checking that the country is persisted but not the cities since they have been previously
+		// Checking that the country is associated to cities
 		Country persistedCountry2 = countryPersister.select(dummyCountry2.getId());
 		assertThat(persistedCountry2.getId()).isEqualTo(new PersistedIdentifier<>(1L));
-		// the reloaded country has no cities because those haven't been updated in database so the link is "broken" and still onto country 1
-		assertThat(persistedCountry2.getCities()).isEqualTo(null);
+		assertThat(persistedCountry2.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Paris", "Lyon");
+		if (mappedByFunction) {
+			assertThat(persistedCountry2.getCities()).extracting(City::getCountry).containsExactlyInAnyOrder(persistedCountry2, persistedCountry2);
+		}
 	}
 	
 	@Nested

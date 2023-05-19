@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.engine.configurer;
+package org.codefilarete.stalactite.mapping.id.manager;
 
 import java.util.Set;
 import java.util.function.Consumer;
@@ -8,7 +8,6 @@ import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.WriteExecutor.JDBCBatchingIterator;
-import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;

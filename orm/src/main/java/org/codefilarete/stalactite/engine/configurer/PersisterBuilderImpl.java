@@ -60,7 +60,7 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.CompositeKeyPersister;
+import org.codefilarete.stalactite.engine.runtime.CompositeKeyedBeanPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsserter;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -73,10 +73,7 @@ import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.*;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -429,7 +426,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				mappingConfiguration.getEntityFactoryProvider());
 		if (identification instanceof CompositeKeyIdentification) {
 			CompositeKeyAlreadyAssignedIdentifierInsertionManager insertionManager = (CompositeKeyAlreadyAssignedIdentifierInsertionManager) identification.insertionManager;
-			CompositeKeyPersister<C, I, T> compositeKeyPersister = new CompositeKeyPersister<>(mappingStrategy, insertionManager, dialect, connectionConfiguration);
+			CompositeKeyedBeanPersister<C, I, T> compositeKeyPersister = new CompositeKeyedBeanPersister<>(mappingStrategy, insertionManager, dialect, connectionConfiguration);
 			return new SimpleRelationalEntityPersister<>(compositeKeyPersister, dialect, connectionConfiguration);
 		} else {
 			return new SimpleRelationalEntityPersister<>(mappingStrategy, dialect, connectionConfiguration);

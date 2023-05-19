@@ -8,7 +8,7 @@ import java.util.Map;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
@@ -36,7 +36,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 
 	abstract Dialect createDialect();
 	
-	private Persister<Toto, Integer, TotoTable> testInstance;
+	private BeanPersister<Toto, Integer, TotoTable> testInstance;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	
 	@BeforeEach
@@ -63,7 +63,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		// reset id counter between 2 tests else id "overflows"
 		identifierGenerator.reset();
 		
-		testInstance = new Persister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
+		testInstance = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));

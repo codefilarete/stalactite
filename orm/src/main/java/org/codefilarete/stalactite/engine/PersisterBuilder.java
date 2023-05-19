@@ -1,12 +1,10 @@
 package org.codefilarete.stalactite.engine;
 
-import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.PersistenceContext;
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
- * Builder of an {@link Persister}
+ * Builder of an {@link BeanPersister}
  * 
  * @author Guillaume Mary
  * @see #build(PersistenceContext)

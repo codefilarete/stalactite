@@ -10,10 +10,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.codefilarete.stalactite.engine.PersistExecutor;
-import org.codefilarete.stalactite.engine.configurer.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -33,7 +33,15 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Predicates;
 
-public class CompositeKeyPersister<C, I, T extends Table<T>> extends Persister<C, I, T> {
+/**
+ * Persister for bean whose key is a composite one.
+ * 
+ * @param <C> entity type
+ * @param <I> identifier type (complex / composite one)
+ * @param <T> target table type
+ * @author Guillaume Mary
+ */
+public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanPersister<C, I, T> {
 	
 	private final SelectCompositeKeyExecutor<I, T> selectCompositeKeyExecutor;
 	
@@ -41,7 +49,7 @@ public class CompositeKeyPersister<C, I, T extends Table<T>> extends Persister<C
 	
 	private final CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> compositeKeyInsertionManager;
 	
-	public CompositeKeyPersister(EntityMapping<C, I, T> mappingStrategy, CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> compositeKeyInsertionManager, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+	public CompositeKeyedBeanPersister(EntityMapping<C, I, T> mappingStrategy, CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> compositeKeyInsertionManager, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		super(mappingStrategy, dialect, connectionConfiguration);
 		IdentifierAssembler<I, T> identifierAssembler = mappingStrategy.getIdMapping().getIdentifierAssembler();
 		this.selectCompositeKeyExecutor = new SelectCompositeKeyExecutor<>(identifierAssembler);
@@ -49,28 +57,22 @@ public class CompositeKeyPersister<C, I, T extends Table<T>> extends Persister<C
 		addPersistListener(this.compositeKeyInsertionManager.getPersistListener());
 	}
 	
-//	@Override
-//	public void persist(Iterable<? extends C> entities) {
-//		doPersist(excludePersistedEntities(entities));
-//	}
-	
 	@Override
 	protected void doPersist(Iterable<? extends C> entities) {
 		entities = excludePersistedEntities(entities);
-//		super.persist(entities);
 		PersistExecutor.persist(entities, this::isNew, this,
 				new org.codefilarete.stalactite.engine.UpdateExecutor<C>() {
 					@Override
 					public void updateById(Iterable<? extends C> entities) {
-						CompositeKeyPersister.this.updateById(entities);
+						CompositeKeyedBeanPersister.this.updateById(entities);
 					}
 
 					@Override
 					public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-						CompositeKeyPersister.this.doUpdate(differencesIterable, allColumnsStatement);
+						CompositeKeyedBeanPersister.this.doUpdate(differencesIterable, allColumnsStatement);
 					}
 				},
-				entities1 -> CompositeKeyPersister.this.doInsert(entities1), getMapping()::getId);
+				entities1 -> CompositeKeyedBeanPersister.this.doInsert(entities1), getMapping()::getId);
 	}
 	
 	private Iterable<? extends C> excludePersistedEntities(Iterable<? extends C> entities) {

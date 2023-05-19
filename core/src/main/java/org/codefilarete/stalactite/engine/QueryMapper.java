@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
@@ -44,8 +44,8 @@ import static org.codefilarete.stalactite.sql.statement.binder.NullAwareParamete
 
 /**
  * A class aimed at querying the database and creating Java beans from it.
- * Beans resulting of it are not expected to be used as entity and given to {@link Persister}, noticibly for insert
- * or update, because one should ensure that fields read from its query must be the same as those done by {@link Persister}, otherwise it may
+ * Beans resulting of it are not expected to be used as entity and given to {@link BeanPersister}, noticibly for insert
+ * or update, because one should ensure that fields read from its query must be the same as those done by {@link BeanPersister}, otherwise it may
  * result in column value erasure.
  * 
  * @author Guillaume Mary

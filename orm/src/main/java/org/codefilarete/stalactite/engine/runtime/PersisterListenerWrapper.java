@@ -4,16 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Class for wrapping calls to {@link ConfiguredRelationalPersister#insert(Object)} and other update, delete, etc methods into
@@ -87,6 +88,20 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 		}
 	}
 	
+	/**
+	 * Overriden to wrap invokations with persister listeners
+	 * @param entities
+	 */
+	@Override
+	public void persist(Iterable<? extends C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			persisterListener.doWithPersistListener(entities, () -> {
+				// we redirect all invokations to ourselves because targetted methods invoke their listeners
+				PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
+			});
+		}
+	}
+
 	@Override
 	public List<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
