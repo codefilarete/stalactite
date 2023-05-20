@@ -67,22 +67,22 @@ public class AssociationTable<
 		this.manySideKey = manySideKey;
 		ReferencedColumnNames<LEFTTABLE, RIGHTTABLE> columnNames = namingStrategy.giveColumnNames(accessorDefinition, oneSideKey, manySideKey);
 		KeyBuilder<SELF, LEFTID> leftForeignKeyBuilder = Key.from((SELF) this);
-		columnNames.foreachLeftColumn(entry -> {
-			Column<SELF, Object> column = addColumn(entry.getValue(), entry.getKey().getJavaType());
+		oneSideKey.getColumns().forEach(oneSideKeyColumn -> {
+			Column<SELF, Object> column = addColumn(columnNames.getLeftColumnName(oneSideKeyColumn), oneSideKeyColumn.getJavaType());
 			column.primaryKey();
 			leftForeignKeyBuilder.addColumn(column);
-			leftIdentifierColumnMapping.put(entry.getKey(), column);
+			leftIdentifierColumnMapping.put(oneSideKeyColumn, column);
 		});
 		Key<SELF, LEFTID> leftForeignKey = leftForeignKeyBuilder.build();
 		this.oneSideForeignKey = addForeignKey(foreignKeyNamingStrategy::giveName, leftForeignKey, oneSideKey);
 		
 		// building many side key (eventually foreign key) 
 		KeyBuilder<SELF, RIGHTID> rightForeignKeyBuilder = Key.from((SELF) this);
-		columnNames.foreachRightColumn(entry -> {
-			Column<SELF, Object> column = addColumn(entry.getValue(), entry.getKey().getJavaType());
+		manySideKey.getColumns().forEach(manySideKeyColumn -> {
+			Column<SELF, Object> column = addColumn(columnNames.getRightColumnName(manySideKeyColumn), manySideKeyColumn.getJavaType());
 			column.primaryKey();
 			rightForeignKeyBuilder.addColumn(column);
-			rightIdentifierColumnMapping.put(entry.getKey(), column);
+			rightIdentifierColumnMapping.put(manySideKeyColumn, column);
 		});
 		Key<SELF, RIGHTID> rightForeignKey = rightForeignKeyBuilder.build();
 		if (createManySideForeignKey) {

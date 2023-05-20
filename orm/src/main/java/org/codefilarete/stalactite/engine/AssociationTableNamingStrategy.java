@@ -2,10 +2,8 @@ package org.codefilarete.stalactite.engine;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -43,34 +41,50 @@ public interface AssociationTableNamingStrategy {
 	<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, LEFTID, RIGHTID> ReferencedColumnNames<LEFTTABLE, RIGHTTABLE>
 	giveColumnNames(AccessorDefinition accessorDefinition, PrimaryKey<LEFTTABLE, LEFTID> leftPrimaryKey, PrimaryKey<RIGHTTABLE, RIGHTID> rightPrimaryKey);
 	
+	/**
+	 * Small structure that stores column names of association with their matching exported key column in left and right tables 
+	 * 
+	 * @param <LEFTTABLE> left table type
+	 * @param <RIGHTTABLE> right table type
+	 */
 	class ReferencedColumnNames<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> {
 		
 		private final Map<Column<LEFTTABLE, Object>, String> leftColumnNames = new HashMap<>();
 		
 		private final Map<Column<RIGHTTABLE, Object>, String> rightColumnNames = new HashMap<>();
 		
+		/**
+		 * Set left column name in association table that matches given left-table column
+		 * @param column the column coming from left table
+		 * @param name name of association table column for given left-table column
+		 */
 		public void setLeftColumnName(Column<LEFTTABLE, ?> column, String name) {
 			this.leftColumnNames.put((Column<LEFTTABLE, Object>) column, name);
 		}
 		
+		/**
+		 * Give left column name in association table that matches given left-table column
+		 * @param column the left-table column 
+		 */
 		public String getLeftColumnName(Column<LEFTTABLE, ?> column) {
 			return leftColumnNames.get(column);
 		}
 		
-		public void foreachLeftColumn(Consumer<Entry<Column<LEFTTABLE, Object>, String>> consumer) {
-			this.leftColumnNames.entrySet().forEach(consumer);
-		}
-		
+		/**
+		 * Set right column name in association table that matches given right-table column
+		 * @param column the column coming from left table
+		 * @param name name of association table column for given left-table column
+		 */
 		public void setRightColumnName(Column<RIGHTTABLE, ?> column, String name) {
 			this.rightColumnNames.put((Column<RIGHTTABLE, Object>) column, name);
 		}
 		
+		/**
+		 * Give right column name in association table that matches given right-table column
+		 * @param column the right-table column
+		 */
 		public String getRightColumnName(Column<RIGHTTABLE, ?> column) {
 			return rightColumnNames.get(column);
-		}
-		
-		public void foreachRightColumn(Consumer<Entry<Column<RIGHTTABLE, Object>, String>> consumer) {
-			this.rightColumnNames.entrySet().forEach(consumer);
 		}
 	}
 	

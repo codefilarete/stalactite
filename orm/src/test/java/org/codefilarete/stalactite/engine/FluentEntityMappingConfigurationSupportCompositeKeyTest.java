@@ -25,6 +25,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	class ForeignKeyCreation {
 		
 		@Test
-		void compositeToSingleKey_relationOwnedBySource() throws SQLException {
+		void oneToOne_compositeToSingleKey_relationOwnedBySource() throws SQLException {
 			MappingEase.entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -67,41 +68,16 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			ddlDeployer.deployDDL();
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			Map<String, JdbcForeignKey> foreignKeyPerName = new HashMap<>();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
 					((ConfiguredPersister) persistenceContext.getPersister(House.class)).getMapping().getTargetTable().getName().toUpperCase());
-			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(exportedKeysForPersonTable) {
-				@Override
-				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-					String fkName = rs.getString("FK_NAME");
-					String fktableName = rs.getString("FKTABLE_NAME");
-					String fkcolumnName = rs.getString("FKCOLUMN_NAME");
-					String pktableName = rs.getString("PKTABLE_NAME");
-					String pkcolumnName = rs.getString("PKCOLUMN_NAME");
-					return new JdbcForeignKey(
-							fkName,
-							fktableName, fkcolumnName,
-							pktableName, pkcolumnName);
-				}
-			};
-			fkPersonIterator.forEachRemaining(jdbcForeignKey -> {
-				String fkName = jdbcForeignKey.getName();
-				String fktableName = jdbcForeignKey.getSrcTableName();
-				String fkcolumnName = jdbcForeignKey.getSrcColumnName();
-				String pktableName = jdbcForeignKey.getTargetTableName();
-				String pkcolumnName = jdbcForeignKey.getTargetColumnName();
-				foreignKeyPerName.compute(fkName, (k, fk) -> fk == null
-						? new JdbcForeignKey(fkName, fktableName, fkcolumnName, pktableName, pkcolumnName)
-						: new JdbcForeignKey(fkName, fktableName, fk.getSrcColumnName() + ", " + fkcolumnName, pktableName, fk.getTargetColumnName() + ", " + pkcolumnName));
-				
-			});
+			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_PERSON_HOUSEID_HOUSE_ID", "PERSON", "HOUSEID", "HOUSE", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 
 		@Test
-		void compositeToSingleKey_relationOwnedByTarget() throws SQLException {
+		void oneToOne_compositeToSingleKey_relationOwnedByTarget() throws SQLException {
 			MappingEase.entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -118,40 +94,16 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			ddlDeployer.deployDDL();
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			Map<String, JdbcForeignKey> foreignKeyPerName = new HashMap<>();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
 					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
-			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(exportedKeysForPersonTable) {
-				@Override
-				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-					String fkName = rs.getString("FK_NAME");
-					String fktableName = rs.getString("FKTABLE_NAME");
-					String fkcolumnName = rs.getString("FKCOLUMN_NAME");
-					String pktableName = rs.getString("PKTABLE_NAME");
-					String pkcolumnName = rs.getString("PKCOLUMN_NAME");
-					return new JdbcForeignKey(
-							fkName,
-							fktableName, fkcolumnName,
-							pktableName, pkcolumnName);
-				}
-			};
-			fkPersonIterator.forEachRemaining(jdbcForeignKey -> {
-				String fkName = jdbcForeignKey.getName();
-				String fktableName = jdbcForeignKey.getSrcTableName();
-				String fkcolumnName = jdbcForeignKey.getSrcColumnName();
-				String pktableName = jdbcForeignKey.getTargetTableName();
-				String pkcolumnName = jdbcForeignKey.getTargetColumnName();
-				foreignKeyPerName.compute(fkName, (k, fk) -> fk == null
-						? new JdbcForeignKey(fkName, fktableName, fkcolumnName, pktableName, pkcolumnName)
-						: new JdbcForeignKey(fkName, fktableName, fk.getSrcColumnName() + ", " + fkcolumnName, pktableName, fk.getTargetColumnName() + ", " + pkcolumnName));
-			});
+			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_D2936B99", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 		
 		@Test
-		void compositeToCompositeKey_relationOwnedBySource() throws SQLException {
+		void oneToOne_compositeToCompositeKey_relationOwnedBySource() throws SQLException {
 			MappingEase.entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -171,40 +123,16 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			ddlDeployer.deployDDL();
 
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			Map<String, JdbcForeignKey> foreignKeyPerName = new HashMap<>();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
 					((ConfiguredPersister) persistenceContext.getPersister(House.class)).getMapping().getTargetTable().getName().toUpperCase());
-			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(exportedKeysForPersonTable) {
-				@Override
-				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
-					String fkName = rs.getString("FK_NAME");
-					String fktableName = rs.getString("FKTABLE_NAME");
-					String fkcolumnName = rs.getString("FKCOLUMN_NAME");
-					String pktableName = rs.getString("PKTABLE_NAME");
-					String pkcolumnName = rs.getString("PKCOLUMN_NAME");
-					return new JdbcForeignKey(
-							fkName,
-							fktableName, fkcolumnName,
-							pktableName, pkcolumnName);
-				}
-			};
-			fkPersonIterator.forEachRemaining(jdbcForeignKey -> {
-				String fkName = jdbcForeignKey.getName();
-				String fktableName = jdbcForeignKey.getSrcTableName();
-				String fkcolumnName = jdbcForeignKey.getSrcColumnName();
-				String pktableName = jdbcForeignKey.getTargetTableName();
-				String pkcolumnName = jdbcForeignKey.getTargetColumnName();
-				foreignKeyPerName.compute(fkName, (k, fk) -> fk == null
-						? new JdbcForeignKey(fkName, fktableName, fkcolumnName, pktableName, pkcolumnName)
-						: new JdbcForeignKey(fkName, fktableName, fk.getSrcColumnName() + ", " + fkcolumnName, pktableName, fk.getTargetColumnName() + ", " + pkcolumnName));
-			});
+			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
 			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_3D70E04A", "PERSON", "HOUSENUMBER, HOUSESTREET, HOUSEZIPCODE, HOUSECITY", "HOUSE", "NUMBER, STREET, ZIPCODE, CITY");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 		
 		@Test
-		void compositeToCompositeKey_relationOwnedByTarget() throws SQLException {
+		void oneToOne_compositeToCompositeKey_relationOwnedByTarget() throws SQLException {
 			MappingEase.entityBuilder(Person.class, PersonId.class)
 					// setting a foreign key naming strategy to be tested
 					.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
@@ -225,9 +153,50 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 			ddlDeployer.deployDDL();
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			Map<String, JdbcForeignKey> foreignKeyPerName = new HashMap<>();
 			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
 					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
+			Map<String, JdbcForeignKey> foreignKeyPerName = giveForeignKeys(exportedKeysForPersonTable);
+			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_D2936B99", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+		}
+		
+		@Test
+		void oneToMany_compositeToCompositeKey_withAssociationTable() throws SQLException {
+			EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
+					.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+							.map(PersonId::getFirstName)
+							.map(PersonId::getLastName)
+							.map(PersonId::getAddress))
+					.map(Person::getAge)
+					.mapOneToManySet(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
+							.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+									.map(Pet.PetId::getName)
+									.map(Pet.PetId::getRace)
+									.map(Pet.PetId::getAge)))
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			ResultSet exportedKeysForPersonTable = currentConnection.getMetaData().getExportedKeys(null, null,
+					((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase());
+			Map<String, JdbcForeignKey> foreignKeyPerName =  giveForeignKeys(exportedKeysForPersonTable);
+			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_D2936B99", "PERSON_PETS", "PERSON_FIRSTNAME, PERSON_LASTNAME, PERSON_ADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+			
+			ResultSet exportedKeysForPetTable = currentConnection.getMetaData().getExportedKeys(null, null,
+					((ConfiguredPersister) persistenceContext.getPersister(Pet.class)).getMapping().getTargetTable().getName().toUpperCase());
+			foreignKeyPerName =  giveForeignKeys(exportedKeysForPetTable);
+			foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
+			expectedForeignKey = new JdbcForeignKey("FK_BF8CB44", "PERSON_PETS", "PETS_NAME, PETS_RACE, PETS_AGE", "PET", "NAME, RACE, AGE");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+		}
+		
+		private Map<String, JdbcForeignKey> giveForeignKeys(ResultSet exportedKeysForPersonTable) {
+			Map<String, JdbcForeignKey> result = new HashMap<>();
 			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(exportedKeysForPersonTable) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
@@ -248,13 +217,11 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 				String fkcolumnName = jdbcForeignKey.getSrcColumnName();
 				String pktableName = jdbcForeignKey.getTargetTableName();
 				String pkcolumnName = jdbcForeignKey.getTargetColumnName();
-				foreignKeyPerName.compute(fkName, (k, fk) -> fk == null
+				result.compute(fkName, (k, fk) -> fk == null
 						? new JdbcForeignKey(fkName, fktableName, fkcolumnName, pktableName, pkcolumnName)
 						: new JdbcForeignKey(fkName, fktableName, fk.getSrcColumnName() + ", " + fkcolumnName, pktableName, fk.getTargetColumnName() + ", " + pkcolumnName));
 			});
-			JdbcForeignKey foundForeignKey = Iterables.first(foreignKeyPerName).getValue();
-			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_D2936B99", "HOUSE", "OWNERFIRSTNAME, OWNERLASTNAME, OWNERADDRESS", "PERSON", "FIRSTNAME, LASTNAME, ADDRESS");
-			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+			return result;
 		}
 	}
 	
