@@ -46,6 +46,10 @@ public class House {
 		private String zipCode;
 		private String city;
 		
+		public HouseId() {
+			
+		}
+		
 		public HouseId(int number, String street, String zipCode, String city) {
 			this.number = number;
 			this.street = street;
