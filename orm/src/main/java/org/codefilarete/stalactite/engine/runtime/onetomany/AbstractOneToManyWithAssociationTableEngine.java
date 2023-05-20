@@ -326,11 +326,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 		
 		@Override
 		protected Collection<O> getTargets(I source) {
-			Collection<O> targets = collectionGetter.apply(source);
-			// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
-			return Iterables.stream(targets)
-					.filter(getPersister()::isNew)
-					.collect(Collectors.toList());
+			return collectionGetter.apply(source);
 		}
 	}
 }

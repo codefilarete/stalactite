@@ -432,4 +432,49 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		List<PersonId> persons = persistenceContext.select(PersonId::new, firstNameColumn, lastNameColumn, addressColumn);
 		assertThat(persons).isEmpty();
 	}
+	
+	@Test
+	void crud_oneToMany_withAssociationTable() {
+		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getLastName)
+						.map(PersonId::getAddress))
+				.map(Person::getAge)
+				.mapOneToManySet(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
+						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+								.map(Pet.PetId::getName)
+								.map(Pet.PetId::getRace)
+								.map(Pet.PetId::getAge)))
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.addPet(new Pet(new Pet.PetId("Pluto", "Dog", 4)));
+		dummyPerson.addPet(new Pet(new Pet.PetId("Rantanplan", "Dog", 5)));
+		dummyPerson.setAge(35);
+		
+		personPersister.insert(dummyPerson);
+		
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		assertThat(loadedPerson.getPets())
+				.usingRecursiveFieldByFieldElementComparatorIgnoringFields("owner")
+				.containsExactlyInAnyOrderElementsOf(dummyPerson.getPets());
+		
+		dummyPerson.setAge(36);
+		personPersister.update(dummyPerson, loadedPerson, true);
+		Table personTable = new Table("Person");
+		Column<Table, Integer> age = personTable.addColumn("age", int.class);
+		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		assertThat(ages).containsExactly(36);
+		
+		personPersister.delete(dummyPerson);
+		Column<Table, String> firstNameColumn = personTable.addColumn("firstName", String.class);
+		Column<Table, String> lastNameColumn = personTable.addColumn("lastName", String.class);
+		Column<Table, String> addressColumn = personTable.addColumn("address", String.class);
+		List<PersonId> persons = persistenceContext.select(PersonId::new, firstNameColumn, lastNameColumn, addressColumn);
+		assertThat(persons).isEmpty();
+	}
 }
