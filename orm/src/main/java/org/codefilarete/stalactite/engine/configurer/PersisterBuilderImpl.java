@@ -461,7 +461,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			persisterListener.addUpdateByIdListener(new UpdateByIdListener<C>() {
 				@Override
 				public void afterUpdateById(Iterable<? extends C> entities) {
-					superPersister.updateById((Iterable<C>) entities);
+					superPersister.updateById(entities);
 				}
 			});
 			

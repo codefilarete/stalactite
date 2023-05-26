@@ -14,11 +14,11 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public interface UpdateListener<C> {
 	
-	default void beforeUpdate(Iterable<? extends Duo<? extends C, ? extends C>> payloads, boolean allColumnsStatement) {
+	default void beforeUpdate(Iterable<? extends Duo<C, C>> payloads, boolean allColumnsStatement) {
 		
 	}
 	
-	default void afterUpdate(Iterable<? extends Duo<? extends C, ? extends C>> entities, boolean allColumnsStatement) {
+	default void afterUpdate(Iterable<? extends Duo<C, C>> entities, boolean allColumnsStatement) {
 		
 	}
 	

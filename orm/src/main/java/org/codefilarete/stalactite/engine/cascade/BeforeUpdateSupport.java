@@ -32,7 +32,7 @@ public class BeforeUpdateSupport<TRIGGER, TARGET> implements UpdateListener<TRIG
 	}
 	
 	@Override
-	public void beforeUpdate(Iterable<? extends Duo<? extends TRIGGER, ? extends TRIGGER>> entities, boolean allColumnsStatement) {
+	public void beforeUpdate(Iterable<? extends Duo<TRIGGER, TRIGGER>> entities, boolean allColumnsStatement) {
 		beforeUpdateAction.accept(Iterables.stream(entities)
 						.map(e -> new Duo<>(targetProvider.apply(e.getLeft()), targetProvider.apply(e.getRight())))
 						.filter(targetFilter).collect(Collectors.toList()),

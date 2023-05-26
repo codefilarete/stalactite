@@ -21,7 +21,7 @@ public class PersistableIdentifier<T> extends AbstractIdentifier<T> {
 	}
 	
 	/**
-	 * Changes the peristed state of this identifier. Expected to be used post-commit.
+	 * Changes the persisted state of this identifier. Expected to be used post-commit.
 	 */
 	@Override
 	public void setPersisted() {

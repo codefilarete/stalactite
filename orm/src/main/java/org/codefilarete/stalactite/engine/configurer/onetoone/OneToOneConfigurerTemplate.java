@@ -9,7 +9,6 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.NotYetSupportedOperationException;
 import org.codefilarete.stalactite.engine.RuntimeMappingException;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
@@ -179,7 +178,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		}
 		
 		@Override
-		public void beforeUpdate(Iterable<? extends Duo<? extends C, ? extends C>> payloads, boolean allColumnsStatement) {
+		public void beforeUpdate(Iterable<? extends Duo<C, C>> payloads, boolean allColumnsStatement) {
 			for (Duo<? extends C, ? extends C> payload : payloads) {
 				C modifiedEntity = payload.getLeft();
 				Object modifiedTarget = targetAccessor.get(modifiedEntity);

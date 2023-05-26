@@ -449,8 +449,8 @@ class SimpleRelationalEntityPersisterTest {
 	@Nested
 	class CRUD_WithListener {
 		
-		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy2_ontoTable2;
-		private BeanPersister<Toto, Identifier<Integer>, ?> persister2;
+		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy;
+		private BeanPersister<Toto, Identifier<Integer>, ?> persister;
 		
 		@BeforeEach
 		void setUp() throws SQLException {
@@ -475,12 +475,12 @@ class SimpleRelationalEntityPersisterTest {
 			Field fieldY = Reflections.getField(Toto.class, "y");
 			Field fieldZ = Reflections.getField(Toto.class, "z");
 			
-			Table totoClassTable2 = new Table("Toto2");
-			rightJoinColumn = Key.ofSingleColumn(totoClassTable2.addColumn("id", fieldId.getType()));
-			totoClassTable2.addColumn("x", fieldX.getType());
-			totoClassTable2.addColumn("y", fieldY.getType());
-			totoClassTable2.addColumn("z", fieldZ.getType());
-			Map<String, Column> columnMap2 = totoClassTable2.mapColumnsOnName();
+			Table totoClassTable = new Table("Toto2");
+			rightJoinColumn = Key.ofSingleColumn(totoClassTable.addColumn("id", fieldId.getType()));
+			totoClassTable.addColumn("x", fieldX.getType());
+			totoClassTable.addColumn("y", fieldY.getType());
+			totoClassTable.addColumn("z", fieldZ.getType());
+			Map<String, Column> columnMap2 = totoClassTable.mapColumnsOnName();
 			columnMap2.get("id").setPrimaryKey(true);
 			
 			PropertyAccessor<Toto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
@@ -493,52 +493,50 @@ class SimpleRelationalEntityPersisterTest {
 			AlreadyAssignedIdentifierManager<Toto, Identifier<Integer>> identifierManager =
 					new AlreadyAssignedIdentifierManager<>((Class<Identifier<Integer>>) (Class) Identifier.class,
 														   c -> c.getId().setPersisted(), c -> c.getId().isPersisted());
-			totoClassMappingStrategy2_ontoTable2 = new ClassMapping<>(Toto.class, totoClassTable2,
-																	  totoClassMapping2, identifierAccessor,
-																	  identifierManager);
+			totoClassMappingStrategy = new ClassMapping<>(Toto.class, totoClassTable, totoClassMapping2, identifierAccessor, identifierManager);
 		}
 		
 		protected void initTest() throws SQLException {
 			SimpleRelationalEntityPersisterTest.this.initTest();
 			
 			// we add a copier onto a another table
-			persister2 = new BeanPersister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+			persister = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 			testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-															 new EntityMappingAdapter<>(persister2.getMapping()),
+															 new EntityMappingAdapter<>(persister.getMapping()),
 															 leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());
 			testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 				@Override
 				public void afterInsert(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.insert(entities);
+					persister.insert(entities);
 				}
 			});
 			testInstance.getPersisterListener().addUpdateListener(new UpdateListener<Toto>() {
 				@Override
-				public void afterUpdate(Iterable<? extends Duo<? extends Toto, ? extends Toto>> entities, boolean allColumnsStatement) {
+				public void afterUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.update((Iterable<? extends Duo<Toto, Toto>>) entities, allColumnsStatement);
+					persister.update(entities, allColumnsStatement);
 				}
 			});
 			testInstance.getPersisterListener().addUpdateByIdListener(new UpdateByIdListener<Toto>() {
 				@Override
 				public void afterUpdateById(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.updateById(entities);
+					persister.updateById(entities);
 				}
 			});
 			testInstance.getPersisterListener().addDeleteListener(new DeleteListener<Toto>() {
 				@Override
 				public void beforeDelete(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.delete(entities);
+					persister.delete(entities);
 				}
 			});
 			testInstance.getPersisterListener().addDeleteByIdListener(new DeleteByIdListener<Toto>() {
 				@Override
 				public void beforeDeleteById(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.deleteById(entities);
+					persister.deleteById(entities);
 				}
 			});
 		}
@@ -850,7 +848,7 @@ class SimpleRelationalEntityPersisterTest {
 		 * It has no real purpose, it only exists to fulfill the relational mapping between tables Toto and Toto2 and avoid a NullPointerException
 		 * when associating 2 results of RowTransformer
 		 * 
-		 * @param another a bean coming from the persister2
+		 * @param another a bean coming from the persister
 		 */
 		void merge(Toto another) {
 			this.x = another.x;

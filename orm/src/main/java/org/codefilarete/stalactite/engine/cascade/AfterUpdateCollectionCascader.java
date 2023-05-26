@@ -25,7 +25,7 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 		this.persister = persister;
 		this.persister.addUpdateListener(new UpdateListener<TARGET>() {
 			@Override
-			public void afterUpdate(Iterable<? extends Duo<? extends TARGET, ? extends TARGET>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<? extends Duo<TARGET, TARGET>> entities, boolean allColumnsStatement) {
 				postTargetUpdate(entities);
 			}
 		});
@@ -41,7 +41,7 @@ public abstract class AfterUpdateCollectionCascader<TRIGGER, TARGET> implements 
 	 * @param allColumnsStatement true if all columns must be updated, false if only changed ones must be in the update statement
 	 */
 	@Override
-	public void afterUpdate(Iterable<? extends Duo<? extends TRIGGER, ? extends TRIGGER>> entities, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<? extends Duo<TRIGGER, TRIGGER>> entities, boolean allColumnsStatement) {
 		this.persister.update(Iterables.stream(entities).flatMap(e -> getTargets(e.getLeft(), e.getRight()).stream()).filter(Objects::nonNull)
 				.collect(Collectors.toList()), allColumnsStatement);
 	}

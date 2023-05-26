@@ -82,7 +82,7 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			
 			@Override
-			public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> payloads, boolean allColumnsStatement) {
 				List<Duo<TRGT, TRGT>> targetsToUpdate = Iterables.collect(payloads,
 						// targets of nullified relations don't need to be updated 
 						e -> getTarget(e.getLeft()) != null,

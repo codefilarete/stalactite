@@ -172,7 +172,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			
 			@Override
-			public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> payloads, boolean allColumnsStatement) {
 				ensureRelationStorageContext();
 				List<TRGT> newObjects = new ArrayList<>();
 				List<Duo<TRGT, TRGT>> existingEntities = new ArrayList<>();
@@ -279,7 +279,7 @@ public class OneToOneOwnedByTargetEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		sourcePersister.getPersisterListener().addUpdateListener(new UpdateListener<SRC>() {
 			
 			@Override
-			public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> entities, boolean allColumnsStatement) {
 				WriteOperation<UpwhereColumn<RIGHTTABLE>> upwhereColumnWriteOperation = foreignKeyUpdateOrderProvider.getOperation();
 				foreignKeyUpdateOrderProvider.<Duo<SRC, SRC>>addValuesToUpdateBatch((Iterable<? extends Duo<SRC, SRC>>) entities,
 						duo -> sourcePersister.getId(duo.getLeft()),

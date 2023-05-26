@@ -21,7 +21,7 @@ public class OrphanRemovalOnUpdate<SRC, TRGT> implements UpdateListener<SRC> {
 	}
 	
 	@Override
-	public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> payloads, boolean allColumnsStatement) {
+	public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> payloads, boolean allColumnsStatement) {
 		List<TRGT> targetsToDeleteUpdate = new ArrayList<>();
 		payloads.forEach(duo -> {
 			TRGT newTarget = getTarget(duo.getLeft());

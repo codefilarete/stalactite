@@ -60,13 +60,13 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 * Columns and their value provider which are not officially mapped by a bean property.
 	 * Those are for insertion time.
 	 */
-	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForInsert2 = new KeepOrderSet<>();
+	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForInsert = new KeepOrderSet<>();
 	
 	/**
 	 * Columns and their value provider which are not officially mapped by a bean property.
 	 * Those are for update time.
 	 */
-	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForUpdate2 = new KeepOrderSet<>();
+	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForUpdate = new KeepOrderSet<>();
 	
 	private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
 	
@@ -164,12 +164,12 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	
 	@Override
 	public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> valueProvider) {
-		shadowColumnsForInsert2.add(valueProvider);
+		shadowColumnsForInsert.add(valueProvider);
 	}
 	
 	@Override
 	public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> valueProvider) {
-		shadowColumnsForUpdate2.add(valueProvider);
+		shadowColumnsForUpdate.add(valueProvider);
 	}
 	
 	@Override
@@ -178,11 +178,11 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	}
 	
 	Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForInsert() {
-		return Collections.unmodifiableCollection(shadowColumnsForInsert2);
+		return Collections.unmodifiableCollection(shadowColumnsForInsert);
 	}
 	
 	Collection<ShadowColumnValueProvider<C, T>> getShadowColumnsForUpdate() {
-		return Collections.unmodifiableCollection(shadowColumnsForUpdate2);
+		return Collections.unmodifiableCollection(shadowColumnsForUpdate);
 	}
 	
 	@Override
@@ -194,7 +194,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		Map<Column<T, Object>, Object> result = new HashMap<>();
 		insertableProperties.forEach((prop, value) -> result.put(value, prop.get(c)));
-		shadowColumnsForInsert2.forEach(shadowColumnValueProvider -> {
+		shadowColumnsForInsert.forEach(shadowColumnValueProvider -> {
 			if (shadowColumnValueProvider.accept(c)) {
 				result.putAll(shadowColumnValueProvider.giveValue(c));
 			}
@@ -221,7 +221,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 			}
 		});
 		
-		shadowColumnsForUpdate2.forEach(shadowColumnValueProvider -> {
+		shadowColumnsForUpdate.forEach(shadowColumnValueProvider -> {
 			if (shadowColumnValueProvider.accept(modified)) {
 				if (modified != null && unmodified == null) {
 					Map<Column<T, Object>, Object> modifiedValues = shadowColumnValueProvider.giveValue(modified);

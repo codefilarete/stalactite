@@ -188,7 +188,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			 * Made AFTER insert to benefit from id when set by database with IdentifierPolicy is {@link AfterInsertIdentifierPolicy}
 			 */
 			@Override
-			public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> entities, boolean allColumnsStatement) {
 				storeTargetToSourceRelation(Iterables.mappingIterator(entities, Duo::getLeft), false);
 			}
 			
@@ -204,7 +204,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		addTargetInstancesUpdateCascader(shouldDeleteRemoved);
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			@Override
-			public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> entities, boolean allColumnsStatement) {
+			public void afterUpdate(Iterable<? extends Duo<SRC, SRC>> entities, boolean allColumnsStatement) {
 				clearRelationStorageContext();
 			}
 			
@@ -373,7 +373,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		}
 		
 		@Override
-		public void afterUpdate(Iterable<? extends Duo<? extends I, ? extends I>> entities, boolean allColumnsStatement) {
+		public void afterUpdate(Iterable<? extends Duo<I, I>> entities, boolean allColumnsStatement) {
 			entities.forEach(entry -> afterUpdateListener.accept(entry, allColumnsStatement));
 		}
 	}
