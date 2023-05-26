@@ -49,6 +49,10 @@ public class Person {
 		this.pets.add(pet);
 	}
 	
+	public void removePet(Pet.PetId petId) {
+		this.pets.removeIf(pet -> pet.getId().equals(petId));
+	}
+	
 	@Override
 	public String toString() {
 		return "Person{" +

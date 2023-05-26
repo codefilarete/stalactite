@@ -477,4 +477,54 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		List<PersonId> persons = persistenceContext.select(PersonId::new, firstNameColumn, lastNameColumn, addressColumn);
 		assertThat(persons).isEmpty();
 	}
+	
+	@Test
+	void persist_oneToMany_ownedByTarget() {
+		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getLastName)
+						.map(PersonId::getAddress))
+				.map(Person::getAge)
+				.mapOneToManySet(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
+						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+								.map(Pet.PetId::getName)
+								.map(Pet.PetId::getRace)
+								.map(Pet.PetId::getAge)))
+				.mappedBy(Pet::getOwner)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.addPet(new Pet(new Pet.PetId("Pluto", "Dog", 4)));
+		dummyPerson.addPet(new Pet(new Pet.PetId("Rantanplan", "Dog", 5)));
+		dummyPerson.setAge(35);
+		
+		personPersister.persist(dummyPerson);
+		
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		assertThat(loadedPerson.getPets())
+				// we don't take "owner" into account because Person doesn't implement equals/hashcode
+				.usingRecursiveFieldByFieldElementComparatorIgnoringFields("owner")
+				.containsExactlyInAnyOrderElementsOf(dummyPerson.getPets());
+		Set<PersonId> personIds = Iterables.collect(loadedPerson.getPets(), pet -> pet.getOwner().getId(), HashSet::new);
+		assertThat(personIds).containsExactly(dummyPerson.getId());
+		
+		// changing value to check for database update
+		loadedPerson.setAge(36);
+		loadedPerson.addPet(new Pet(new Pet.PetId("Schrodinger", "Cat", -42)));
+		loadedPerson.removePet(new Pet.PetId("Rantanplan", "Dog", 5));
+		personPersister.persist(loadedPerson);
+		
+		loadedPerson = personPersister.select(dummyPerson.getId());
+		assertThat(loadedPerson.getAge()).isEqualTo(36);
+		assertThat(loadedPerson.getPets())
+				// we don't take "owner" into account because Person doesn't implement equals/hashcode
+				.usingRecursiveFieldByFieldElementComparatorIgnoringFields("owner")
+				.containsExactlyInAnyOrder(
+				new Pet(new Pet.PetId("Pluto", "Dog", 4)),
+				new Pet(new Pet.PetId("Schrodinger", "Cat", -42)));
+	}
 }

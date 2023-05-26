@@ -9,8 +9,10 @@ import java.util.List;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.stalactite.engine.model.Engine;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
@@ -47,7 +49,9 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -393,10 +397,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			dummyCar.setModel("Renault");
 			dummyCar.setColor(new Color(666));
 			
+			PersistListener persistListenerMock = mock(PersistListener.class);
 			InsertListener insertListenerMock = mock(InsertListener.class);
 			UpdateListener updateListenerMock = mock(UpdateListener.class);
 			SelectListener selectListenerMock = mock(SelectListener.class);
 			DeleteListener deleteListenerMock = mock(DeleteListener.class);
+			abstractVehiclePersister.addPersistListener(persistListenerMock);
 			abstractVehiclePersister.addInsertListener(insertListenerMock);
 			abstractVehiclePersister.addUpdateListener(updateListenerMock);
 			abstractVehiclePersister.addSelectListener(selectListenerMock);
@@ -408,20 +414,42 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
 			
 			// update test
-			dummyCar.setModel("Peugeot");
-			abstractVehiclePersister.persist(dummyCar);
+			abstractVehiclePersister.update(dummyCar, dummyCar, true);
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
-			
-			// select test
-			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			verify(selectListenerMock).beforeSelect(Arrays.asList(new PersistedIdentifier<>(1L)));
-			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
 			verify(deleteListenerMock).beforeDelete(Arrays.asList(dummyCar));
 			verify(deleteListenerMock).afterDelete(Arrays.asList(dummyCar));
+			
+			// persist test
+			// We need to cleanup previous mocks interactions because persist(..) will trigger them again, this avoids "times(2)" in verify(..)
+			clearInvocations(insertListenerMock, updateListenerMock, selectListenerMock);
+			// Recreating a dummy Car since previous one is deleted and we can't simulate a new instance through car.getId().markNotPersisted()
+			// because it doesn't exist and we don't want to create it for this particular use case.
+			dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
+			dummyCar.setColor(new Color(666));
+			abstractVehiclePersister.persist(dummyCar);
+			verify(persistListenerMock).beforePersist(Arrays.asHashSet(dummyCar));
+			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
+			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
+			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
+			verify(selectListenerMock, times(0)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			
+			dummyCar.setModel("Peugeot");
+			abstractVehiclePersister.persist(dummyCar);
+			verify(updateListenerMock).beforeUpdate(any(), eq(true));
+			verify(updateListenerMock).afterUpdate(any(), eq(true));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			
+			// select test
+			clearInvocations(selectListenerMock);
+			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
+			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
 		}
 	}
 	
@@ -690,10 +718,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			dummyCar.setModel("Renault");
 			dummyCar.setColor(new Color(666));
 			
+			PersistListener persistListenerMock = mock(PersistListener.class);
 			InsertListener insertListenerMock = mock(InsertListener.class);
 			UpdateListener updateListenerMock = mock(UpdateListener.class);
 			SelectListener selectListenerMock = mock(SelectListener.class);
 			DeleteListener deleteListenerMock = mock(DeleteListener.class);
+			abstractVehiclePersister.addPersistListener(persistListenerMock);
 			abstractVehiclePersister.addInsertListener(insertListenerMock);
 			abstractVehiclePersister.addUpdateListener(updateListenerMock);
 			abstractVehiclePersister.addSelectListener(selectListenerMock);
@@ -705,20 +735,42 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
 			
 			// update test
-			dummyCar.setModel("Peugeot");
-			abstractVehiclePersister.persist(dummyCar);
+			abstractVehiclePersister.update(dummyCar, dummyCar, true);
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
-			
-			// select test
-			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			verify(selectListenerMock).beforeSelect(Arrays.asList(new PersistedIdentifier<>(1L)));
-			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
 			verify(deleteListenerMock).beforeDelete(Arrays.asList(dummyCar));
 			verify(deleteListenerMock).afterDelete(Arrays.asList(dummyCar));
+			
+			// persist test
+			// We need to cleanup previous mocks interactions because persist(..) will trigger them again, this avoids "times(2)" in verify(..)
+			clearInvocations(insertListenerMock, updateListenerMock, selectListenerMock);
+			// Recreating a dummy Car since previous one is deleted and we can't simulate a new instance through car.getId().markNotPersisted()
+			// because it doesn't exist and we don't want to create it for this particular use case.
+			dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
+			dummyCar.setColor(new Color(666));
+			abstractVehiclePersister.persist(dummyCar);
+			verify(persistListenerMock).beforePersist(Arrays.asHashSet(dummyCar));
+			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
+			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
+			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
+			verify(selectListenerMock, times(0)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			
+			dummyCar.setModel("Peugeot");
+			abstractVehiclePersister.persist(dummyCar);
+			verify(updateListenerMock).beforeUpdate(any(), eq(true));
+			verify(updateListenerMock).afterUpdate(any(), eq(true));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			
+			// select test
+			clearInvocations(selectListenerMock);
+			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
+			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
 		}
 	}
 	
@@ -957,10 +1009,12 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			dummyCar.setModel("Renault");
 			dummyCar.setColor(new Color(666));
 			
+			PersistListener persistListenerMock = mock(PersistListener.class);
 			InsertListener insertListenerMock = mock(InsertListener.class);
 			UpdateListener updateListenerMock = mock(UpdateListener.class);
 			SelectListener selectListenerMock = mock(SelectListener.class);
 			DeleteListener deleteListenerMock = mock(DeleteListener.class);
+			abstractVehiclePersister.addPersistListener(persistListenerMock);
 			abstractVehiclePersister.addInsertListener(insertListenerMock);
 			abstractVehiclePersister.addUpdateListener(updateListenerMock);
 			abstractVehiclePersister.addSelectListener(selectListenerMock);
@@ -972,20 +1026,42 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
 			
 			// update test
-			dummyCar.setModel("Peugeot");
-			abstractVehiclePersister.persist(dummyCar);
+			abstractVehiclePersister.update(dummyCar, dummyCar, true);
 			verify(updateListenerMock).beforeUpdate(any(), eq(true));
 			verify(updateListenerMock).afterUpdate(any(), eq(true));
-			
-			// select test
-			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
-			verify(selectListenerMock).beforeSelect(Arrays.asList(new PersistedIdentifier<>(1L)));
-			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
 			
 			// delete test
 			abstractVehiclePersister.delete(dummyCar);
 			verify(deleteListenerMock).beforeDelete(Arrays.asList(dummyCar));
 			verify(deleteListenerMock).afterDelete(Arrays.asList(dummyCar));
+			
+			// persist test
+			// We need to cleanup previous mocks interactions because persist(..) will trigger them again, this avoids "times(2)" in verify(..)
+			clearInvocations(insertListenerMock, updateListenerMock, selectListenerMock);
+			// Recreating a dummy Car since previous one is deleted and we can't simulate a new instance through car.getId().markNotPersisted()
+			// because it doesn't exist and we don't want to create it for this particular use case.
+			dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setEngine(new Engine(100L));
+			dummyCar.setColor(new Color(666));
+			abstractVehiclePersister.persist(dummyCar);
+			verify(persistListenerMock).beforePersist(Arrays.asHashSet(dummyCar));
+			verify(persistListenerMock).afterPersist(Arrays.asHashSet(dummyCar));
+			verify(insertListenerMock).beforeInsert(Arrays.asList(dummyCar));
+			verify(insertListenerMock).afterInsert(Arrays.asList(dummyCar));
+			verify(selectListenerMock, times(0)).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			
+			dummyCar.setModel("Peugeot");
+			abstractVehiclePersister.persist(dummyCar);
+			verify(updateListenerMock).beforeUpdate(any(), eq(true));
+			verify(updateListenerMock).afterUpdate(any(), eq(true));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(dummyCar.getId()));
+			
+			// select test
+			clearInvocations(selectListenerMock);
+			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
+			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
+			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
 		}
 	}
 	

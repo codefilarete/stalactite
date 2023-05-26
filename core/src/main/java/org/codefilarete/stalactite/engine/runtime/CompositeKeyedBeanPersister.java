@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,6 @@ import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
@@ -59,28 +59,25 @@ public class CompositeKeyedBeanPersister<C, I, T extends Table<T>> extends BeanP
 	
 	@Override
 	protected void doPersist(Iterable<? extends C> entities) {
-		entities = excludePersistedEntities(entities);
-		PersistExecutor.persist(entities, this::isNew, this,
-				new org.codefilarete.stalactite.engine.UpdateExecutor<C>() {
-					@Override
-					public void updateById(Iterable<? extends C> entities) {
-						CompositeKeyedBeanPersister.this.updateById(entities);
-					}
-
-					@Override
-					public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-						CompositeKeyedBeanPersister.this.doUpdate(differencesIterable, allColumnsStatement);
-					}
-				},
-				entities1 -> CompositeKeyedBeanPersister.this.doInsert(entities1), getMapping()::getId);
+		Set<? extends C> newEntities = excludePersistedEntities(entities);
+		// Please note that it doesn't matter if we use this instance as select executor (it only loads direct properties, not relations)
+		// since current updater does the same : it doesn't update relations
+		PersistExecutor.persist(entities, newEntities::contains, this, this, this, getMapping()::getId);
 	}
 	
-	private Iterable<? extends C> excludePersistedEntities(Iterable<? extends C> entities) {
+	/**
+	 * Excludes existing entities in database from those given as argument.
+	 * Will proceed by looking for entity identifiers in database, whole entities won't be loaded : acts as a given collection filter.
+	 * 
+	 * @param entities entities that may already exist in database
+	 * @return an {@link Iterable} containing only non persisted entities (kind of subset of input, same instance references)
+	 */
+	private Set<? extends C> excludePersistedEntities(Iterable<? extends C> entities) {
 		Map<I, ? extends C> entitiesPerId = Iterables.map(entities, getMapping()::getId);
 		List<I> existingEntities = selectIds(entitiesPerId.keySet());
 		Predicate<Object> doesExist = Predicates.predicate(existingEntities::contains);
 		entitiesPerId.keySet().removeIf(doesExist);
-		return entitiesPerId.values();
+		return new HashSet<>(entitiesPerId.values());
 	}
 	
 	@Override

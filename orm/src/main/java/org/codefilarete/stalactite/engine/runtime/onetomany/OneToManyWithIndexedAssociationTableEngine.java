@@ -20,7 +20,7 @@ import org.codefilarete.stalactite.engine.runtime.IndexedAssociationRecordInsert
 import org.codefilarete.stalactite.engine.runtime.IndexedAssociationTable;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
-import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -112,7 +112,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<SRC, TRGT, C> updateListener = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
+		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			
 			@Override
 			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
@@ -120,8 +120,8 @@ public class OneToManyWithIndexedAssociationTableEngine<
 			}
 			
 			@Override
-			protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-				super.onHeldTarget(updateContext, diff);
+			protected void onHeldElements(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+				super.onHeldElements(updateContext, diff);
 				IndexedDiff indexedDiff = (IndexedDiff) diff;
 				Set<Integer> minus = minus(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 				Integer index = first(minus);
@@ -143,8 +143,8 @@ public class OneToManyWithIndexedAssociationTableEngine<
 			}
 			
 			@Override
-			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-				super.onAddedTarget(updateContext, diff);
+			protected void onAddedElements(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+				super.onAddedElements(updateContext, diff);
 				SRC leftIdentifier = updateContext.getPayload().getLeft();
 				((IndexedDiff<TRGT>) diff).getReplacerIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(
@@ -152,8 +152,8 @@ public class OneToManyWithIndexedAssociationTableEngine<
 			}
 			
 			@Override
-			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-				super.onRemovedTarget(updateContext, diff);
+			protected void onRemovedElements(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+				super.onRemovedElements(updateContext, diff);
 				SRC leftIdentifier = updateContext.getPayload().getLeft();
 				((IndexedDiff<TRGT>) diff).getSourceIndexes().forEach(idx ->
 						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(
@@ -208,7 +208,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		
 		// Can we cascade update on target entities ? it depends on relation maintenance mode
 		if (!maintainAssociationOnly) {
-			persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+			persisterListener.addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 		}
 	}
 	

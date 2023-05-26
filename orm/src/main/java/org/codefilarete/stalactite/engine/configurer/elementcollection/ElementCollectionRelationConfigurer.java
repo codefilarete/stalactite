@@ -8,7 +8,6 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethodReference;
@@ -26,7 +25,6 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -34,7 +32,7 @@ import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
-import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
@@ -212,31 +210,35 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 	}
 	
 	private void addUpdateCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  EntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> wrapperPersister,
+								  EntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>> elementRecordPersister,
 								  Accessor<SRC, C> collectionAccessor) {
 		Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProviderAsPersistedInstances = collectionProvider(
 			collectionAccessor,
 			sourcePersister.getMapping(),
 			true);
 		
-		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new CollectionUpdater<SRC, ElementRecord<TRGT, ID>, Collection<ElementRecord<TRGT, ID>>>(
+		BiConsumer<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<SRC, ElementRecord<TRGT, ID>, Collection<ElementRecord<TRGT, ID>>>(
 				collectionProviderAsPersistedInstances,
-				wrapperPersister,
+				elementRecordPersister,
 				(o, i) -> { /* no reverse setter because we store only raw values */ },
 				true,
 				// we base our id policy on a particular identifier because Id is all the same for ElementCollection (it is source bean id)
 				ElementRecord::footprint) {
 			
 			/**
-			 * Override to mark for insertion given instance because parent implementation is based on IsNew which is always true
+			 * Overridden to force insertion of added entities because as a difference with default behavior (parent class), collection elements are
+			 * not entities, so they can't be moved from a collection to another, hence they don't need to be updated, therefore there's no need to
+			 * use {@code getElementPersister().persist(..)} mechanism. Even more : it is counterproductive (meaning false) because
+			 * {@code persist(..)} uses {@code update(..)} when entities are considered already persisted (not {@code isNew()}), which is always the
+			 * case for new {@link ElementRecord}
 			 */
 			@Override
-			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<ElementRecord<TRGT, ID>> diff) {
-				updateContext.getEntitiesToBeInserted().add(diff.getReplacingInstance());
+			protected void insertTargets(UpdateContext updateContext) {
+				getElementPersister().insert(updateContext.getAddedElements());
 			}
 		};
 		
-		sourcePersister.addUpdateListener(new TargetInstancesUpdateCascader<>(wrapperPersister, updateListener));
+		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
 	private void addDeleteCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
@@ -553,11 +555,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		
 		@Override
 		protected Collection<ElementRecord<TRGT, ID>> getTargets(SRC source) {
-			Collection<ElementRecord<TRGT, ID>> targets = collectionGetter.apply(source);
-			// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
-			return Iterables.stream(targets)
-					.filter(getPersister()::isNew)
-					.collect(Collectors.toList());
+			return collectionGetter.apply(source);
 		}
 	}
 }

@@ -218,14 +218,14 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 	
 	@Override
 	protected void addTargetInstancesUpdateCascader(boolean shouldDeleteRemoved) {
-		BiConsumer<Duo<SRC, SRC>, Boolean> updateListener = new ListCollectionUpdater<>(
+		BiConsumer<Duo<SRC, SRC>, Boolean> collectionUpdater = new ListCollectionUpdater<>(
 				this.manyRelationDescriptor.getCollectionGetter(),
 				this.targetPersister,
 				this.manyRelationDescriptor.getReverseSetter(),
 				shouldDeleteRemoved,
 				this.targetPersister.getMapping()::getId,
 				getManyRelationDescriptor().getIndexingColumn());
-		sourcePersister.getPersisterListener().addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+		sourcePersister.getPersisterListener().addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
 	private static class ListCollectionUpdater<SRC, TRGT, ID, C extends List<TRGT>> extends CollectionUpdater<SRC, TRGT, C> {
@@ -318,14 +318,14 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		}
 		
 		@Override
-		protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-			super.onAddedTarget(updateContext, diff);
+		protected void onAddedElements(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+			super.onAddedElements(updateContext, diff);
 			addNewIndexToContext((IndexedDiff<TRGT>) diff, (IndexedMappedAssociationUpdateContext) updateContext);
 		}
 		
 		@Override
-		protected void onHeldTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-			super.onHeldTarget(updateContext, diff);
+		protected void onHeldElements(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+			super.onHeldElements(updateContext, diff);
 			addNewIndexToContext((IndexedDiff<TRGT>) diff, (IndexedMappedAssociationUpdateContext) updateContext);
 		}
 		

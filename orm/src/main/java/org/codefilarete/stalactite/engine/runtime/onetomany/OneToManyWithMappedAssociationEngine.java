@@ -16,7 +16,6 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.cascade.AfterUpdateCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteByIdCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
@@ -114,7 +113,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					result = new HashMap<>();
 					getColumns().forEach(col -> result.put(col, null));
 				} else {
-					SRCID srcid = (SRCID) giveRelationStorageContext().giveSourceId(trgt);
+					SRCID srcid = giveRelationStorageContext().giveSourceId(trgt);
 					result = reverseColumnsValueProvider.apply(srcid);
 				}
 				return result;
@@ -192,12 +191,30 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> entities, boolean allColumnsStatement) {
 				storeTargetToSourceRelation(Iterables.mappingIterator(entities, Duo::getLeft), false);
 			}
+			
+			/**
+			 * Overridden to help debug
+			 * @return targetToSourceRelationStorer
+			 */
+			@Override
+			public String toString() {
+				return "targetToSourceRelationStorer";
+			}
 		});
 		addTargetInstancesUpdateCascader(shouldDeleteRemoved);
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			@Override
 			public void afterUpdate(Iterable<? extends Duo<? extends SRC, ? extends SRC>> entities, boolean allColumnsStatement) {
 				clearRelationStorageContext();
+			}
+			
+			/**
+			 * Overridden to help debug
+			 * @return targetToSourceRelationStorageCleaner
+			 */
+			@Override
+			public String toString() {
+				return "targetToSourceRelationStorageCleaner";
 			}
 		});
 	}
@@ -209,7 +226,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				manyRelationDescriptor.getReverseSetter(),
 				shouldDeleteRemoved);
 		sourcePersister.addUpdateListener(
-				new TargetInstancesUpdateCascader<>(targetPersister, collectionUpdater));
+				new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
 	public void addDeleteCascade(boolean shouldDeleteRemoved) {
@@ -342,28 +359,22 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		}
 	}
 	
-	public static class TargetInstancesUpdateCascader<I, O> extends AfterUpdateCollectionCascader<I, O> {
+	/**
+	 * Triggers given consumer after update
+	 * 
+	 * @param <I>
+	 */
+	public static class AfterUpdateTrigger<I> implements UpdateListener<I> {
 		
-		private final BiConsumer<Duo<? extends I, ? extends I>, Boolean> updateListener;
+		private final BiConsumer<Duo<? extends I, ? extends I>, Boolean> afterUpdateListener;
 		
-		public TargetInstancesUpdateCascader(EntityPersister<O, ?> targetPersister, BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> updateListener) {
-			super(targetPersister);
-			this.updateListener = (BiConsumer<Duo<? extends I, ? extends I>, Boolean>) updateListener;
+		public AfterUpdateTrigger(BiConsumer<? extends Duo<? extends I, ? extends I>, Boolean> afterUpdateListener) {
+			this.afterUpdateListener = (BiConsumer<Duo<? extends I, ? extends I>, Boolean>) afterUpdateListener;
 		}
 		
 		@Override
 		public void afterUpdate(Iterable<? extends Duo<? extends I, ? extends I>> entities, boolean allColumnsStatement) {
-			entities.forEach(entry -> updateListener.accept(entry, allColumnsStatement));
-		}
-		
-		@Override
-		protected void postTargetUpdate(Iterable<? extends Duo<? extends O, ? extends O>> entities) {
-			// Nothing to do
-		}
-		
-		@Override
-		protected Collection<Duo<O, O>> getTargets(I modifiedTrigger, I unmodifiedTrigger) {
-			throw new UnsupportedOperationException();
+			entities.forEach(entry -> afterUpdateListener.accept(entry, allColumnsStatement));
 		}
 	}
 	

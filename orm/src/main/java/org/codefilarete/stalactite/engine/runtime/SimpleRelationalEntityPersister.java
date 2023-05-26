@@ -9,6 +9,7 @@ import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
+import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -313,7 +314,21 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 
 	@Override
 	public void persist(Iterable<? extends C> entities) {
-		persister.persist(entities);
+		if (persister instanceof CompositeKeyedBeanPersister) {
+			// TODO : review this : CompositeKeyedBeanPersister implements a doPersist() with some identifier loading mechanism for a right isNew
+			// TODO : implementation but it is finally not so good because its load doesn't take into account relation, so, when caller modify any
+			// TODO : related entity (one-to-one / one-to-many) they are not updated because they weren't loaded (collection is empty).
+			// TODO : Below code fix it by correctly loading entities but it bypass CompositeKeyedBeanPersister algorithm which should handle it.
+			// TODO : but since it is in core module it doesn't handle relation, so ... find a right solution. Don't forget to take into account
+			// TODO : CompositeKeyAlreadyAssignedIdentifierInsertionManager which was made to keep track of identifier.
+			getPersisterListener().doWithPersistListener(entities, () -> {
+				PersistExecutor.persist(entities, this, this, this, this::getId);
+			});
+		} else {
+			getPersisterListener().doWithPersistListener(entities, () -> {
+				PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
+			});
+		}
 	}
 	
 	@Override

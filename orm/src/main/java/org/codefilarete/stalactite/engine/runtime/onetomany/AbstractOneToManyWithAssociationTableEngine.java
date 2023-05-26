@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
-import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.TargetInstancesUpdateCascader;
+import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.model.Operators;
@@ -136,67 +136,65 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	}
 	
 	public void addUpdateCascade(boolean shouldDeleteRemoved, boolean maintainAssociationOnly) {
-		
 		// NB: we don't have any reverseSetter (for applying source entity to reverse side (target entity)), because this is only relevant
 		// when association is mapped without intermediary table (owned by "many-side" entity)
-		CollectionUpdater<SRC, TRGT, C> updateListener = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
-			
+		CollectionUpdater<SRC, TRGT, C> collectionUpdater = new CollectionUpdater<SRC, TRGT, C>(manyRelationDescriptor.getCollectionGetter(), targetPersister, null, shouldDeleteRemoved) {
 			@Override
 			protected AssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
 				return new AssociationTableUpdateContext(updatePayload);
 			}
 			
 			@Override
-			protected void onAddedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-				super.onAddedTarget(updateContext, diff);
+			protected void onAddedElements(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+				super.onAddedElements(updateContext, diff);
 				R associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance(), 0);
-				((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(associationRecord);
+				((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted().add(associationRecord);
 			}
 			
 			@Override
-			protected void onRemovedTarget(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
-				super.onRemovedTarget(updateContext, diff);
+			protected void onRemovedElements(UpdateContext updateContext, AbstractDiff<TRGT> diff) {
+				super.onRemovedElements(updateContext, diff);
 				
 				R associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance(), 0);
-				((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(associationRecord);
+				((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted().add(associationRecord);
 			}
 			
 			@Override
 			protected void insertTargets(UpdateContext updateContext) {
 				// we insert association records after targets to satisfy integrity constraint
 				super.insertTargets(updateContext);
-				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted());
+				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
 			}
 			
 			@Override
 			protected void deleteTargets(UpdateContext updateContext) {
 				// we delete association records before targets to satisfy integrity constraint
-				associationPersister.delete(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted());
+				associationPersister.delete(((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
 				super.deleteTargets(updateContext);
 			}
 			
 			class AssociationTableUpdateContext extends UpdateContext {
 				
-				private final List<R> associationRecordstoBeInserted = new ArrayList<>();
-				private final List<R> associationRecordstoBeDeleted = new ArrayList<>();
+				private final List<R> associationRecordsToBeInserted = new ArrayList<>();
+				private final List<R> associationRecordsToBeDeleted = new ArrayList<>();
 				
 				public AssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
 					super(updatePayload);
 				}
 				
-				public List<R> getAssociationRecordstoBeInserted() {
-					return associationRecordstoBeInserted;
+				public List<R> getAssociationRecordsToBeInserted() {
+					return associationRecordsToBeInserted;
 				}
 				
-				public List<R> getAssociationRecordstoBeDeleted() {
-					return associationRecordstoBeDeleted;
+				public List<R> getAssociationRecordsToBeDeleted() {
+					return associationRecordsToBeDeleted;
 				}
 			}
 		};
 		
 		// Can we cascade update on target entities ? it depends on relation maintenance mode
 		if (!maintainAssociationOnly) {
-			persisterListener.addUpdateListener(new TargetInstancesUpdateCascader<>(targetPersister, updateListener));
+			persisterListener.addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 		}
 	}
 	

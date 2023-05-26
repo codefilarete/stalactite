@@ -156,7 +156,7 @@ class BeanPersisterTest {
 		verify(insertListener).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
-		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asList(1)));
+		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asHashSet(1)));
 		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asList(totoInDatabase)));
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
 		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(totoModifiedFromDatabase, totoInDatabase));
