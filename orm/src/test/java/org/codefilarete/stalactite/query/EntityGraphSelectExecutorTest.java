@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
@@ -86,7 +87,7 @@ class EntityGraphSelectExecutorTest {
 		expectedCountry.setCities(Arrays.asSet(paris, lyon, grenoble));
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
-		List<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
+		Set<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
 				testInstance.loadGraph(((CriteriaProvider) countryEntityCriteriaSupport).getCriteria())
 		);
 		
@@ -125,7 +126,7 @@ class EntityGraphSelectExecutorTest {
 				.andMany(Country::getCities, City::getName, eq("Grenoble"));
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
-		List<Country> select = countryEntityCriteriaSupport.execute();
+		Set<Country> select = countryEntityCriteriaSupport.execute();
 		
 		assertThat(select).isEmpty();
 	}

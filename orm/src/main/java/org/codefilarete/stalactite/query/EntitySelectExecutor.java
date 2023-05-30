@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query;
 
-import java.util.List;
+import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.sql.Dialect;
  */
 public interface EntitySelectExecutor<C> {
 	
-	List<C> loadGraph(CriteriaChain where);
+	Set<C> loadGraph(CriteriaChain where);
 	
 	static QuerySQLBuilder createQueryBuilder(CriteriaChain where, Query query, Dialect dialect) {
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);

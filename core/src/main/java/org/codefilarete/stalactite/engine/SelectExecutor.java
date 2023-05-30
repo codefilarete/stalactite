@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * Simple interface defining what's expected from selector 
@@ -9,5 +9,5 @@ import java.util.List;
  */
 public interface SelectExecutor<C, I> {
 	
-	List<C> select(Iterable<I> ids);
+	Set<C> select(Iterable<I> ids);
 }

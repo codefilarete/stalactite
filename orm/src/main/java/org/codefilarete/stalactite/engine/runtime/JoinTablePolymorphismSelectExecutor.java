@@ -55,7 +55,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		// 2 possibilities :
 		// - execute a request that join all tables and all relations, then give result to transformer
 		//   Pros : one request, simple approach
@@ -115,7 +115,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 			});
 		}
 		
-		List<C> result = new ArrayList<>();
+		Set<C> result = new HashSet<>();
 		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesSelectors.get(subclass).select(subclassIds)));
 		
 		return result;

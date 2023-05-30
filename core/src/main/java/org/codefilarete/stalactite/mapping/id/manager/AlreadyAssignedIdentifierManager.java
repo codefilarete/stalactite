@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.mapping.id.manager;
 
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -86,7 +87,7 @@ public class AlreadyAssignedIdentifierManager<C, I> implements IdentifierInserti
 	private class SetPersistedFlagAfterSelectListener implements SelectListener<C, I> {
 		
 		@Override
-		public void afterSelect(Iterable<? extends C> entities) {
+		public void afterSelect(Set<? extends C> entities) {
 			markAsPersisted(entities);
 		}
 	}

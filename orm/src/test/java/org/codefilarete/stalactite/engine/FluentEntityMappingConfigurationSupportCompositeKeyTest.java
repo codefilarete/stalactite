@@ -253,7 +253,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		personPersister.update(dummyPerson, loadedPerson, true);
 		Table personTable = new Table("Person");
 		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		Set<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
 		assertThat(ages).containsExactly(36);
 		
 		personPersister.delete(dummyPerson);
@@ -290,7 +290,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		personPersister.update(dummyPerson, loadedPerson, true);
 		Table personTable = new Table("Person");
 		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		Set<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
 		assertThat(ages).containsExactly(36);
 		
 		personPersister.delete(dummyPerson);
@@ -333,7 +333,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		personPersister.update(dummyPerson, loadedPerson, true);
 		Table personTable = new Table("Person");
 		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		Set<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
 		assertThat(ages).containsExactly(36);
 		
 		personPersister.delete(dummyPerson);
@@ -377,7 +377,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		personPersister.update(dummyPerson, loadedPerson, true);
 		Table personTable = new Table("Person");
 		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		Set<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
 		assertThat(ages).containsExactly(36);
 		
 		personPersister.delete(dummyPerson);
@@ -422,14 +422,14 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		personPersister.update(dummyPerson, loadedPerson, true);
 		Table personTable = new Table("Person");
 		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		Set<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
 		assertThat(ages).containsExactly(36);
 		
 		personPersister.delete(dummyPerson);
 		Column<Table, String> firstNameColumn = personTable.addColumn("firstName", String.class);
 		Column<Table, String> lastNameColumn = personTable.addColumn("lastName", String.class);
 		Column<Table, String> addressColumn = personTable.addColumn("address", String.class);
-		List<PersonId> persons = persistenceContext.select(PersonId::new, firstNameColumn, lastNameColumn, addressColumn);
+		Set<PersonId> persons = persistenceContext.select(PersonId::new, firstNameColumn, lastNameColumn, addressColumn);
 		assertThat(persons).isEmpty();
 	}
 	
@@ -467,14 +467,14 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		personPersister.update(dummyPerson, loadedPerson, true);
 		Table personTable = new Table("Person");
 		Column<Table, Integer> age = personTable.addColumn("age", int.class);
-		List<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		Set<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
 		assertThat(ages).containsExactly(36);
 		
 		personPersister.delete(dummyPerson);
 		Column<Table, String> firstNameColumn = personTable.addColumn("firstName", String.class);
 		Column<Table, String> lastNameColumn = personTable.addColumn("lastName", String.class);
 		Column<Table, String> addressColumn = personTable.addColumn("address", String.class);
-		List<PersonId> persons = persistenceContext.select(PersonId::new, firstNameColumn, lastNameColumn, addressColumn);
+		Set<PersonId> persons = persistenceContext.select(PersonId::new, firstNameColumn, lastNameColumn, addressColumn);
 		assertThat(persons).isEmpty();
 	}
 	

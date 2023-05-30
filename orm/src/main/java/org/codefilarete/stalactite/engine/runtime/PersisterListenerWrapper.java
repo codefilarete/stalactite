@@ -1,7 +1,9 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.codefilarete.stalactite.engine.PersistExecutor;
@@ -103,9 +105,9 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
-			return new ArrayList<>();
+			return new HashSet<>();
 		} else {
 			return persisterListener.doWithSelectListener(ids, () -> surrogate.select(ids));
 		}

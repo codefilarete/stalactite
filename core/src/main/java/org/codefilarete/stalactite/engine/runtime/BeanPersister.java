@@ -1,8 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.PersistExecutor;
@@ -236,7 +235,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	}
 	
 	@Override
-	public List<C> selectAll() {
+	public Set<C> selectAll() {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	
@@ -394,15 +393,15 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
-			return new ArrayList<>();
+			return new HashSet<>();
 		} else {
 			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
 		}
 	}
 	
-	protected List<C> doSelect(Iterable<I> ids) {
+	protected Set<C> doSelect(Iterable<I> ids) {
 		return selectExecutor.select(ids);
 	}
 }

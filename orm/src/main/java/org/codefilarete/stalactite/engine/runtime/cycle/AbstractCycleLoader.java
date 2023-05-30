@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime.cycle;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,7 +40,7 @@ public abstract class AbstractCycleLoader<SRC, TRGT, TRGTID> implements SelectLi
 	}
 	
 	@Override
-	public void afterSelect(Iterable<? extends TRGT> result) {
+	public void afterSelect(Set<? extends TRGT> result) {
 		CycleLoadRuntimeContext<SRC, TRGT, TRGTID> runtimeContext = this.currentRuntimeContext.get();
 		try {
 			Set<TRGTID> targetIds = runtimeContext.giveIdentifiersToLoad();
@@ -50,7 +49,7 @@ public abstract class AbstractCycleLoader<SRC, TRGT, TRGTID> implements SelectLi
 			// - and algorithm of Set.remove(..) depends on List.contains() (if List is smaller than Set) which is not efficient
 			result.forEach(o -> targetIds.remove(targetPersister.getId(o)));
 			// WARN : this select may be recursive if targetPersister is the same as source one or owns a relation of same type as source one
-			List<TRGT> targets = targetPersister.select(targetIds);
+			Set<TRGT> targets = targetPersister.select(targetIds);
 			Map<TRGTID, TRGT> targetPerId = Iterables.map(targets, targetPersister::getId);
 			relations.forEach((relationName, configurationResult) -> {
 				EntityRelationStorage<SRC, TRGT, TRGTID> targetIdsPerSource = runtimeContext.getEntitiesToFulFill(relationName);

@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine.listener;
 
+import java.util.Set;
+
 /**
  * @author Guillaume Mary
  */
@@ -9,7 +11,7 @@ public interface SelectListener<C, I> {
 		
 	}
 	
-	default void afterSelect(Iterable<? extends C> result) {
+	default void afterSelect(Set<? extends C> result) {
 		
 	}
 	

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -97,7 +98,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	default void update(Iterable<C> entities) {
 		List<I> ids = Iterables.collect(entities, this::getId, ArrayList::new);
-		List<C> entitiesFromDb = select(ids);
+		Set<C> entitiesFromDb = select(ids);
 		// Given entities may not be in same order than loaded ones from DB, whereas order is required for comparison (else everything is different !)
 		// so we join them by their id to make them match
 		Map<C, I> idPerEntity = Iterables.map(entities, Function.identity(), this::getId);
@@ -127,8 +128,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	@Experimental
 	default void update(Iterable<I> ids, Consumer<C> entityConsumer) {
-		List<C> unmodified = select(ids);
-		List<C> modified = select(ids);
+		Set<C> unmodified = select(ids);
+		Set<C> modified = select(ids);
 		modified.forEach(entityConsumer);
 		update(() -> new PairIterator<>(modified, unmodified), true);
 	}
@@ -180,7 +181,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 	
-	List<C> selectAll();
+	Set<C> selectAll();
 	
 	boolean isNew(C entity);
 	

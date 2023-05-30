@@ -1,7 +1,9 @@
 package org.codefilarete.stalactite.engine.listener;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.codefilarete.tool.Duo;
@@ -13,6 +15,7 @@ import org.mockito.Mockito;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyIterable;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -31,7 +34,7 @@ public class PersisterListenerCollectionTest {
 		testInstance.addSelectListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
-		ArrayList<Object> result = new ArrayList<>();
+		Set<Object> result = new HashSet<>();
 		assertThat(testInstance.doWithSelectListener(entities, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeSelect(eq(entities));
@@ -52,7 +55,7 @@ public class PersisterListenerCollectionTest {
 		
 		verify(listenerMock).beforeSelect(eq(entities));
 		verify(listenerMock).onSelectError(eq(entities), eq(error));
-		verify(listenerMock, never()).afterSelect(anyIterable());
+		verify(listenerMock, never()).afterSelect(anySet());
 	}
 	
 	@Test
@@ -281,7 +284,7 @@ public class PersisterListenerCollectionTest {
 		Mockito.verify(expectedDeleteByIdListener, times(0)).beforeDeleteById(eq(entities));
 		Mockito.verify(expectedDeleteByIdListener, times(0)).afterDeleteById(eq(entities));
 		List<Object> entitiesIds = Arrays.asList(new Object());
-		List loadedEntities = new ArrayList();
+		Set loadedEntities = new HashSet();
 		testInstance.doWithSelectListener(entitiesIds, () -> loadedEntities);
 		Mockito.verify(expectedSelectListener, times(0)).beforeSelect(eq(entitiesIds));
 		Mockito.verify(expectedSelectListener, times(0)).afterSelect(eq(loadedEntities));

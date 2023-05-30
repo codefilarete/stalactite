@@ -1,7 +1,8 @@
 package org.codefilarete.stalactite.engine;
 
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -34,7 +35,13 @@ import org.mockito.ArgumentMatchers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -101,8 +108,8 @@ class BeanPersisterTest {
 			}
 			
 			@Override
-			protected List<Toto> doSelect(Iterable<Integer> ids) {
-				return Iterables.collectToList(ids, id -> mockedSelectAnswer.get());
+			protected Set<Toto> doSelect(Iterable<Integer> ids) {
+				return Iterables.collect(ids, id -> mockedSelectAnswer.get(), HashSet::new);
 			}
 		};
 		
@@ -135,7 +142,7 @@ class BeanPersisterTest {
 		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
 		// no invocation of select listener because target of persist(..) method wasn't persisted
 		verify(identifierManagerSelectListenerMock, never()).beforeSelect(anyIterable());
-		verify(identifierManagerSelectListenerMock, never()).afterSelect(anyIterable());
+		verify(identifierManagerSelectListenerMock, never()).afterSelect(anySet());
 		
 		// On persist of a already persisted instance (with id), "rough update" chain must be invoked
 		testInstance.persist(persisted);
@@ -157,7 +164,7 @@ class BeanPersisterTest {
 		verify(identifierManagerInsertListenerMock).beforeInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerInsertListenerMock).afterInsert(eq(Arrays.asList(unPersisted)));
 		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asHashSet(1)));
-		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asList(totoInDatabase)));
+		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asHashSet(totoInDatabase)));
 		verify(updateListener).beforeUpdate(updateArgCaptor.capture(), eq(true));
 		assertThat(updateArgCaptor.getValue()).containsExactly(new Duo<>(totoModifiedFromDatabase, totoInDatabase));
 		verify(updateListener).afterUpdate(updateArgCaptor.capture(), eq(true));
@@ -386,13 +393,13 @@ class BeanPersisterTest {
 			
 			/** Overridden to prevent from building real world SQL statement because ConnectionProvider is mocked */
 			@Override
-			protected List<Toto> doSelect(Iterable<Integer> ids) {
-				return Iterables.collectToList(ids, id -> new Toto(id, null, null));
+			protected Set<Toto> doSelect(Iterable<Integer> ids) {
+				return Iterables.collect(ids, id -> new Toto(id, null, null), HashSet::new);
 			}
 		};
 		
 		Toto selectedToto = testInstance.select(1);
 		verify(identifierManagerSelectListenerMock).beforeSelect(eq(Arrays.asSet(1)));
-		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asList(selectedToto)));
+		verify(identifierManagerSelectListenerMock).afterSelect(eq(Arrays.asHashSet(selectedToto)));
 	}
 }

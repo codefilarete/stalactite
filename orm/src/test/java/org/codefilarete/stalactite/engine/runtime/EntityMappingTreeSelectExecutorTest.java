@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessors;
@@ -304,7 +305,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		// Checking that selected entities by their id are those expected
 		EntityMappingTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, new HSQLDBDialect(), connectionProvider);
 		testInstance.prepareQuery();
-		List<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
+		Set<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
 		assertThat(select.toString()).isEqualTo(Arrays.asList(entity1).toString());
 		
 		select = testInstance.select(Arrays.asList(new Toto(100, 1), new Toto(200, 2)));

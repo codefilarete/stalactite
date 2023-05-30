@@ -194,11 +194,11 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		subEntitiesPersisters.forEach((subclass, subEntityPersister) ->
 				subEntityPersister.getPersisterListener().getSelectListener().beforeSelect(ids));
 		
-		List<C> result = mainSelectExecutor.select(ids);
+		Set<C> result = mainSelectExecutor.select(ids);
 		
 		// Then we call sub entities afterSelect listeners else they are not invoked. Done in particular for relation on sub entities that have
 		// an already-assigned identifier which requires marking entities as persisted (to prevent them from trying to be inserted whereas they 
@@ -260,7 +260,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableFunction<ExecutableQuery, List<C>>) ExecutableQuery::execute,
+				.redirect((SerializableFunction<ExecutableQuery, Set<C>>) ExecutableQuery::execute,
 						() -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
@@ -273,7 +273,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	}
 	
 	@Override
-	public List<C> selectAll() {
+	public Set<C> selectAll() {
 		return entitySelectExecutor.loadGraph(newWhere().getCriteria());
 	}
 	

@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -45,6 +46,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
@@ -139,9 +141,9 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
-			return new ArrayList<>();
+			return new HashSet<>();
 		} else {
 			return getPersisterListener().doWithSelectListener(ids, () -> doSelect(ids));
 		}
@@ -151,9 +153,9 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	 * Overridden to implement a load by joining tables
 	 * 
 	 * @param ids entity identifiers
-	 * @return a List of loaded entities corresponding to identifiers passed as parameter
+	 * @return a Set of loaded entities corresponding to identifiers passed as parameter
 	 */
-	protected List<C> doSelect(Iterable<I> ids) {
+	protected Set<C> doSelect(Iterable<I> ids) {
 		return selectGraphExecutor.select(ids);
 	}
 	
@@ -194,8 +196,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableFunction<ExecutableQuery, List<C>>) ExecutableQuery::execute,
-						() -> getPersisterListener().doWithSelectListener(emptyList(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria())))
+				.redirect((SerializableFunction<ExecutableQuery, Set<C>>) ExecutableQuery::execute,
+						() -> getPersisterListener().doWithSelectListener(emptySet(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria())))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
@@ -207,7 +209,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	 * @return all instance found in database
 	 */
 	@Override
-	public List<C> selectAll() {
+	public Set<C> selectAll() {
 		return getPersisterListener().doWithSelectListener(emptyList(), () ->
 				entitySelectExecutor.loadGraph(newWhere().getCriteria())
 		);

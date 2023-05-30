@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.engine.listener;
 
-import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.ThrowingExecutable;
 import org.codefilarete.tool.function.ThrowingRunnable;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Simple class that centralizes persistence event listener registration as well as execution of some code wrapped between event triggering.
@@ -236,8 +236,8 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 		this.selectListener.add(selectListener);
 	}
 	
-	public List<C> doWithSelectListener(Iterable<I> ids, ThrowingExecutable<List<C>, RuntimeException> delegate) {
-		List<C> result;
+	public Set<C> doWithSelectListener(Iterable<I> ids, ThrowingExecutable<Set<C>, RuntimeException> delegate) {
+		Set<C> result;
 		try {
 			selectListener.beforeSelect(ids);
 			result = delegate.execute();

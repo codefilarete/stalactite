@@ -1,8 +1,10 @@
 package org.codefilarete.stalactite.engine.configurer.onetoone;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
@@ -118,7 +120,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		
 		// We trigger subgraph load event (via targetSelectListener) on loading of our graph.
 		// Done for instance for event consumers that initialize some things, because given ids of methods are those of source entity
-		SelectListener targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
+		SelectListener<TRGT, TRGTID> targetSelectListener = targetPersister.getPersisterListener().getSelectListener();
 		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
@@ -127,8 +129,8 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 			}
 			
 			@Override
-			public void afterSelect(Iterable<? extends SRC> result) {
-				List collect = Iterables.collectToList(result, oneToOneRelation.getTargetProvider()::get);
+			public void afterSelect(Set<? extends SRC> result) {
+				Set<TRGT> collect = Iterables.collect(result, oneToOneRelation.getTargetProvider()::get, HashSet::new);
 				// NB: entity can be null when loading relation, we skip nulls to prevent a NPE
 				collect.removeIf(Objects::isNull);
 				targetSelectListener.afterSelect(collect);

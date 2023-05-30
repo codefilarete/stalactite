@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.SelectExecutor.InternalExecutor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
@@ -168,7 +169,7 @@ class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(jdbcMock.preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		List<Toto> result = testInstance.select(Arrays.asList());
+		Set<Toto> result = testInstance.select(Arrays.asList());
 		
 		assertThat(result.isEmpty()).isTrue();
 		

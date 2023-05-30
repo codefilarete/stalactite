@@ -153,8 +153,8 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		lyon.setLabel("Lyon");
 		answer.addChoices(grenoble, lyon);
 		persister.insert(answer);
-
-		List<Long> choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+		
+		Set<Long> choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
 				.mapKey("answer_id", Long.class)
 				.execute();
 
@@ -176,7 +176,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
 		
 		// referenced Choices must not be deleted (we didn't ask for delete orphan)
-		List<Long> choiceIds = persistenceContext.newQuery("select id from choice", Long.class)
+		Set<Long> choiceIds = persistenceContext.newQuery("select id from choice", Long.class)
 				.mapKey("id", Long.class)
 				.execute();
 		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
@@ -208,8 +208,8 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		answer1.addChoices(grenoble, lyon);
 		answer2.addChoices(grenoble, lyon);
 		persister.insert(Arrays.asList(answer1, answer2));
-
-		List<Long> choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+		
+		Set<Long> choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
 				.mapKey("answer_id", Long.class)
 				.execute();
 
@@ -231,7 +231,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
 		
 		// referenced Choices must not be deleted (we didn't ask for orphan deletion)
-		List<Long> choiceIds = persistenceContext.newQuery("select id from choice", Long.class)
+		Set<Long> choiceIds = persistenceContext.newQuery("select id from choice", Long.class)
 				.mapKey("id", Long.class)
 				.execute();
 		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
@@ -291,7 +291,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			answer.addChoices(grenoble, lyon);
 			answerPersister.insert(answer);
 			
-			List<Long> answerIds = persistenceContext.newQuery("select id from answer", Long.class)
+			Set<Long> answerIds = persistenceContext.newQuery("select id from answer", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(answerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
@@ -391,13 +391,13 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 					.execute();
 			assertThat(relationCount).isEqualTo(0);
 			// target entities are not deleted with cascade All
-			List<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
+			Set<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(choiceIds).containsExactlyInAnyOrder(100L, 200L);
 
 			// but we didn't delete everything !
-			List<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
+			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(answerIds).containsExactlyInAnyOrder(666L);
@@ -508,13 +508,13 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 					.execute();
 			assertThat(relationCount).isEqualTo(0);
 			// target entities are not deleted with cascade All
-			List<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
+			Set<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(choiceIds).isEmpty();
 			
 			// but we didn't delete everything !
-			List<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
+			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(answerIds).containsExactlyInAnyOrder(666L);
@@ -573,12 +573,12 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			answerPersister.insert(Arrays.asList(answer1, answer2));
 			
 			// Checking that we inserted what we wanted
-			List<Long> answerIds = persistenceContext.newQuery("select id from Answer where id in (42, 666)", Long.class)
+			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id in (42, 666)", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(answerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
-			List<Long> choicesInRelationIds = persistenceContext.newQuery("select choices_Id from Answer_choices where answer_id in (42, 666)", Long.class)
+			Set<Long> choicesInRelationIds = persistenceContext.newQuery("select choices_Id from Answer_choices where answer_id in (42, 666)", Long.class)
 					.mapKey("choices_id", Long.class)
 					.execute();
 			assertThat(choicesInRelationIds).containsExactlyInAnyOrder(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate());
@@ -618,7 +618,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 					.execute();
 			assertThat(answerComment).isEqualTo(answer1.getComment());
 			// .. but not its city name
-			List<String> choiceLabels = persistenceContext.newQuery("select label from Choice where id = 100", String.class)
+			Set<String> choiceLabels = persistenceContext.newQuery("select label from Choice where id = 100", String.class)
 					.mapKey("label", String.class)
 					.execute();
 			assertThat(choiceLabels).containsExactlyInAnyOrder((String) null);
@@ -673,13 +673,13 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 					.execute();
 			assertThat(relationCount).isEqualTo(0);
 			// ... but target entities are not deleted with ASSOCIATION_ONLY
-			List<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
+			Set<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(choiceIds).containsExactlyInAnyOrder(100L, 200L);
 			
 			// but we didn't delete everything !
-			List<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
+			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(answerIds).containsExactlyInAnyOrder(666L);

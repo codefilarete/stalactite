@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import javax.sql.DataSource;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
@@ -52,11 +53,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
@@ -85,11 +86,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		carPersister.insert(dummyCar);
 		assertThat(dummyCar.getEngine().getId()).isNotNull();
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
@@ -128,11 +129,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
@@ -173,11 +174,11 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);

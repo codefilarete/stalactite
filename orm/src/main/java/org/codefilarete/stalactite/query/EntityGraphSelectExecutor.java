@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.EntityMappingTreeSelectExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -66,7 +67,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 	 * @return root beans of aggregates that match criteria
 	 */
 	@Override
-	public List<C> loadGraph(CriteriaChain where) {
+	public Set<C> loadGraph(CriteriaChain where) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
@@ -80,7 +81,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		
 		if (ids.isEmpty()) {
 			// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
-			return Collections.emptyList();
+			return Collections.emptySet();
 		} else {
 			// Second phase : selecting elements by main table pk (adding necessary columns)
 			query.getSelectSurrogate().remove(pk);    // previous pk selection removal
@@ -115,13 +116,13 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 			this.entityTreeQuery = entityTreeQuery;
 		}
 		
-		protected List<C> execute(PreparedSQL query) {
+		protected Set<C> execute(PreparedSQL query) {
 			try (ReadOperation<Integer> readOperation = new ReadOperation<>(query, connectionProvider)) {
 				return execute(readOperation);
 			}
 		}
 		
-		private List<C> execute(ReadOperation<Integer> operation) {
+		private Set<C> execute(ReadOperation<Integer> operation) {
 			try (ReadOperation<Integer> closeableOperation = operation) {
 				return transform(closeableOperation);
 			} catch (RuntimeException e) {
@@ -129,14 +130,14 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 			}
 		}
 		
-		protected List<C> transform(ReadOperation<Integer> closeableOperation) {
+		protected Set<C> transform(ReadOperation<Integer> closeableOperation) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
 			return transform(rowIterator);
 		}
 		
-		protected List<C> transform(Iterator<Row> rowIterator) {
+		protected Set<C> transform(Iterator<Row> rowIterator) {
 			return this.entityTreeQuery.getInflater().transform(() -> rowIterator, 50);
 		}
 	}

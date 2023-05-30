@@ -68,7 +68,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		// Doing this in 2 phases
 		// - make a select with id + discriminator in select clause and ids in where to determine ids per subclass type
 		// - call the right subclass joinExecutor with dedicated ids
@@ -131,7 +131,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 			});
 		}
 		
-		List<C> result = new ArrayList<>();
+		Set<C> result = new HashSet<>();
 		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesSelectors.get(subclass).select(subclassIds)));
 		
 		return result;

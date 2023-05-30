@@ -4,9 +4,11 @@ import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
@@ -196,10 +198,10 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		// cutting ids into pieces, adjusting expected result size
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		List<C> result = new ArrayList<>(parcels.size() * blockSize);
+		Set<C> result = new HashSet<>(parcels.size() * blockSize);
 		if (!parcels.isEmpty()) {
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instantiation
 			DDLAppender identifierCriteria = new JoinDDLAppender(whereClauseDMLNameProvider);
@@ -257,7 +259,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 			// we pass null as transformer because we override transform(..) method
 			this.executor = new SelectExecutor.InternalExecutor<C, I, T>(identifierAssembler, null) {
 				@Override
-				protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
+				protected Set<C> transform(Iterator<Row> rowIterator, int resultSize) {
 					return entityTreeInflater.transform(() -> rowIterator, resultSize);
 				}
 			};

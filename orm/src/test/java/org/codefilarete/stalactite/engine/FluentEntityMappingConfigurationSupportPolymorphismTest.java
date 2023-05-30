@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -199,14 +200,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
 					.mapKey("model", String.class);
 			
-			List<String> allCars = modelQuery.execute();
+			Set<String> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactly("Renault");
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
-			List<String> existingModels = modelQuery.execute();
+			Set<String> existingModels = modelQuery.execute();
 			assertThat(existingModels).containsExactly("Peugeot");
 			
 			// select test
@@ -259,14 +260,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableBeanPropertyQueryMapper<Duo<String, Integer>> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", (Class<Duo<String, Integer>>) (Class) Duo.class)
 					.mapKey(Duo::new, "model", String.class, "color", Integer.class);
 			
-			List<Duo<String, Integer>> allCars = modelQuery.execute();
+			Set<Duo<String, Integer>> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactlyInAnyOrder(new Duo<>("Renault", 666), new Duo<>(null, 42));
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
-			List<Duo<String, Integer>> existingModels = modelQuery.execute();
+			Set<Duo<String, Integer>> existingModels = modelQuery.execute();
 			assertThat(existingModels).containsExactlyInAnyOrder(new Duo<>("Peugeot", 666), new Duo<>(null, 42));
 			
 			// select test
@@ -276,7 +277,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
-			List<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
+			Set<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
@@ -328,13 +329,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='CAR'", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> carIds = carIdQuery.execute();
+			Set<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from Vehicle where DTYPE ='TRUCK'", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> truckIds = truckIdQuery.execute();
+			Set<Integer> truckIds = truckIdQuery.execute();
 			assertThat(truckIds).containsExactly(2);
 			
 			// update test
@@ -353,7 +354,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
-			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
+			Set<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
@@ -449,7 +450,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			clearInvocations(selectListenerMock);
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
-			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
+			verify(selectListenerMock).afterSelect(Arrays.asHashSet(loadedCar));
 		}
 	}
 	
@@ -489,14 +490,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
 					.mapKey("model", String.class);
 			
-			List<String> allCars = modelQuery.execute();
+			Set<String> allCars = modelQuery.execute();
 			assertThat(allCars).containsExactly("Renault");
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
-			List<String> existingModels = modelQuery.execute();
+			Set<String> existingModels = modelQuery.execute();
 			assertThat(existingModels).containsExactly("Peugeot");
 			
 			// select test
@@ -549,19 +550,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableBeanPropertyQueryMapper<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from abstractVehicle", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> vehicleIds = vehicleIdQuery.execute();
+			Set<Integer> vehicleIds = vehicleIdQuery.execute();
 			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> carIds = carIdQuery.execute();
+			Set<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> truckIds = truckIdQuery.execute();
+			Set<Integer> truckIds = truckIdQuery.execute();
 			assertThat(truckIds).containsExactly(2);
 			
 			// update test
@@ -575,7 +576,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
-			List<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
+			Set<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyCar, dummyTruck);
 			
 			// delete test
@@ -643,19 +644,19 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableBeanPropertyQueryMapper<Integer> vehicleIdQuery = persistenceContext.newQuery("select id from Vehicle", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> vehicleIds = vehicleIdQuery.execute();
+			Set<Integer> vehicleIds = vehicleIdQuery.execute();
 			assertThat(vehicleIds).containsExactly(1, 2);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> carIds = carIdQuery.execute();
+			Set<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 			
 			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
 			
-			List<Integer> truckIds = truckIdQuery.execute();
+			Set<Integer> truckIds = truckIdQuery.execute();
 			assertThat(truckIds).containsExactly(2);
 			
 			// update test
@@ -674,7 +675,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 			
-			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
+			Set<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
 			
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(256))).execute();
@@ -770,7 +771,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			clearInvocations(selectListenerMock);
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
-			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
+			verify(selectListenerMock).afterSelect(Arrays.asHashSet(loadedCar));
 		}
 	}
 	
@@ -809,14 +810,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
 					.mapKey("model", String.class);
 			
-			List<String> allCars = modelQuery.execute();
-			assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
+			Set<String> allCars = modelQuery.execute();
+			assertThat(allCars).containsExactly("Renault");
 			
 			// update test
 			dummyCar.setModel("Peugeot");
 			abstractVehiclePersister.persist(dummyCar);
 			
-			List<String> existingModels = modelQuery.execute();
+			Set<String> existingModels = modelQuery.execute();
 			assertThat(existingModels).containsExactly("Peugeot");
 			
 			// select test
@@ -827,7 +828,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.delete(dummyCar);
 			
 			existingModels = modelQuery.execute();
-			assertThat(existingModels).isEqualTo(Collections.emptyList());
+			assertThat(existingModels).isEmpty();
 		}
 		
 		@Test
@@ -866,15 +867,15 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey("id", Integer.class);
-
-			List<Integer> carIds = carIdQuery.execute();
-			assertThat(carIds).isEqualTo(Arrays.asList(1));
+			
+			Set<Integer> carIds = carIdQuery.execute();
+			assertThat(carIds).containsExactly(1);
 
 			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
-
-			List<Integer> truckIds = truckIdQuery.execute();
-			assertThat(truckIds).isEqualTo(Arrays.asList(2));
+			
+			Set<Integer> truckIds = truckIdQuery.execute();
+			assertThat(truckIds).containsExactly(2);
 
 			// update test
 			dummyCar.setModel("Peugeot");
@@ -886,13 +887,13 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertThat(loadedVehicle).isEqualTo(dummyCar);
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruck);
-
-			List<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
+			
+			Set<AbstractVehicle> loadedVehicles = abstractVehiclePersister.selectAll();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck, dummyCar);
-
+			
 			// delete test
 			abstractVehiclePersister.delete(Arrays.asList(dummyCar, dummyTruck));
-
+			
 			ExecutableBeanPropertyQueryMapper<Integer> carQuery = persistenceContext.newQuery("select"
 					+ " count(*) as carCount from car where id = " + dummyCar.getId().getSurrogate(), Integer.class)
 					.mapKey("carCount", Integer.class);
@@ -944,14 +945,14 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 
 			ExecutableBeanPropertyQueryMapper<Integer> carIdQuery = persistenceContext.newQuery("select id from car", Integer.class)
 					.mapKey("id", Integer.class);
-
-			List<Integer> carIds = carIdQuery.execute();
+			
+			Set<Integer> carIds = carIdQuery.execute();
 			assertThat(carIds).containsExactly(1);
 
 			ExecutableBeanPropertyQueryMapper<Integer> truckIdQuery = persistenceContext.newQuery("select id from truck", Integer.class)
 					.mapKey("id", Integer.class);
-
-			List<Integer> truckIds = truckIdQuery.execute();
+			
+			Set<Integer> truckIds = truckIdQuery.execute();
 			assertThat(truckIds).containsExactly(2);
 
 			// update test
@@ -965,7 +966,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			loadedVehicle = abstractVehiclePersister.select(new PersistedIdentifier<>(2L));
 			assertThat(loadedVehicle).isEqualTo(dummyTruck);
 
-			List<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
+			Set<Vehicle> loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(42))).execute();
 			assertThat(loadedVehicles).containsExactlyInAnyOrder(dummyTruck);
 
 			loadedVehicles = abstractVehiclePersister.selectWhere(Vehicle::getColor, Operators.eq(new Color(666))).execute();
@@ -1061,7 +1062,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			clearInvocations(selectListenerMock);
 			AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
 			verify(selectListenerMock).beforeSelect(Arrays.asHashSet(new PersistedIdentifier<>(1L)));
-			verify(selectListenerMock).afterSelect(Arrays.asList(loadedCar));
+			verify(selectListenerMock).afterSelect(Arrays.asHashSet(loadedCar));
 		}
 	}
 	

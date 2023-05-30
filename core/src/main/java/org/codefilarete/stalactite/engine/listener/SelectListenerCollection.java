@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.listener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Guillaume Mary
@@ -16,7 +17,7 @@ public class SelectListenerCollection<C, I> implements SelectListener<C, I> {
 	}
 	
 	@Override
-	public void afterSelect(Iterable<? extends C> entities) {
+	public void afterSelect(Set<? extends C> entities) {
 		selectListeners.forEach(listener -> listener.afterSelect(entities));
 	}
 	

@@ -115,10 +115,10 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
-			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
-			assertThat(allPersons).isEqualTo(Collections.emptyList());
+			assertThat(allPersons).isEmpty();
 		}
 		
 		/**
@@ -172,10 +172,10 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
-			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
-			assertThat(allPersons).isEqualTo(Collections.emptyList());
+			assertThat(allPersons).isEmpty();
 		}
 		
 		/**
@@ -292,11 +292,11 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
-			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
-			// previous partner is the only Person remainig because we asked for orphan removal
-			assertThat(allPersons).isEqualTo(Arrays.asList(666L));
+			// previous partner is the only Person remaining because we asked for orphan removal
+			assertThat(allPersons).containsExactlyInAnyOrder(666L);
 		}
 		
 		/**
@@ -357,11 +357,11 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			assertThat(loadedPerson.getHouse().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
-			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
-			// previous partner is the only Person remainig because we asked for orphan removal
-			assertThat(allPersons).isEqualTo(Arrays.asList(666L));
+			// previous partner is the only Person remaining because we asked for orphan removal
+			assertThat(allPersons).containsExactlyInAnyOrder(666L);
 		}
 		
 		/**
@@ -578,11 +578,11 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			assertThat(loadedPerson.getHouse1().getGardener().getName()).isEqualTo("Dandelion");
 			
 			personPersister.delete(johnDo);
-			List<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
+			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
-			// previous partner is the only Person remainig because we asked for orphan removal
-			assertThat(allPersons).isEqualTo(Arrays.asList(666L));
+			// previous partner is the only Person remaining because we asked for orphan removal
+			assertThat(allPersons).containsExactlyInAnyOrder(666L);
 		}
 	}
 	

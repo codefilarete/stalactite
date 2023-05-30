@@ -371,7 +371,7 @@ class SimpleRelationalEntityPersisterTest {
 			));
 			when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 			
-			List<Toto> select = testInstance.select(Arrays.asList(
+			Set<Toto> select = testInstance.select(Arrays.asList(
 					new PersistableIdentifier<>(7),
 					new PersistableIdentifier<>(13),
 					new PersistableIdentifier<>(17),
@@ -426,7 +426,7 @@ class SimpleRelationalEntityPersisterTest {
 			});
 			
 			RelationalExecutableEntityQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectWhere(Toto::getA, Operators.eq(42));
-			List<Toto> select = totoRelationalExecutableEntityQuery.execute();
+			Set<Toto> select = totoRelationalExecutableEntityQuery.execute();
 			
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
@@ -759,7 +759,7 @@ class SimpleRelationalEntityPersisterTest {
 			));
 			when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 			
-			List<Toto> select = testInstance.select(Arrays.asList(
+			Set<Toto> select = testInstance.select(Arrays.asList(
 					new PersistableIdentifier<>(7),
 					new PersistableIdentifier<>(13),
 					new PersistableIdentifier<>(17),

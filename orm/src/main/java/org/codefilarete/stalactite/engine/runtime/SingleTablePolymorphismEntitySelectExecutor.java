@@ -57,7 +57,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 	}
 	
 	@Override
-	public List<C> loadGraph(CriteriaChain where) {
+	public Set<C> loadGraph(CriteriaChain where) {
 		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
 		
 		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query, dialect);
@@ -71,7 +71,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table, 
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		ids.forEach(id -> idsPerSubclass.computeIfAbsent(polymorphismPolicy.getClass(id.getRight()), k -> new HashSet<>()).add(id.getLeft()));
 		
-		List<C> result = new ArrayList<>();
+		Set<C> result = new HashSet<>();
 		
 		idsPerSubclass.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;

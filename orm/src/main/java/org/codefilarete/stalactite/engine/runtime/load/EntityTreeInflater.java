@@ -82,9 +82,9 @@ public class EntityTreeInflater<C> {
 	 * @param resultSize expected result size, only for resulting list optimization
 	 * @return a list of root beans, built from given rows by asking internal strategy joins to instantiate and complete them
 	 */
-	public List<C> transform(Iterable<Row> rows, int resultSize) {
-		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> this.new TreeInflationContext(), (Function<EntityTreeInflater<?>.TreeInflationContext, List<C>>) context ->
-						new ArrayList<>(transform(rows, resultSize, context)));
+	public Set<C> transform(Iterable<Row> rows, int resultSize) {
+		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> this.new TreeInflationContext(), (Function<EntityTreeInflater<?>.TreeInflationContext, Set<C>>) context ->
+						transform(rows, resultSize, context));
 	}
 	
 	private Set<C> transform(Iterable<Row> rows, int resultSize, EntityTreeInflater<?>.TreeInflationContext context) {

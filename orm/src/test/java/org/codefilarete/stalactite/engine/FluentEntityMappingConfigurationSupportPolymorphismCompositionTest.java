@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.FluentEntityMappingConfigurationSupportPolymorphismTest.ElectricCar;
@@ -103,15 +104,15 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
 				.mapKey("model", String.class);
 		
-		List<String> allCars = modelQuery.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
+		Set<String> allCars = modelQuery.execute();
+		assertThat(allCars).containsExactly("Renault");
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
-		List<String> existingModels = modelQuery.execute();
-		assertThat(existingModels).isEqualTo(Arrays.asList("Peugeot"));
+		Set<String> existingModels = modelQuery.execute();
+		assertThat(existingModels).containsExactly("Peugeot");
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
@@ -121,7 +122,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		abstractVehiclePersister.delete(dummyCar);
 		
 		existingModels = modelQuery.execute();
-		assertThat(existingModels).isEqualTo(Collections.emptyList());
+		assertThat(existingModels).isEmpty();
 	}
 	
 	
@@ -164,15 +165,15 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
 				.mapKey("model", String.class);
 		
-		List<String> allCars = modelQuery.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
+		Set<String> allCars = modelQuery.execute();
+		assertThat(allCars).containsExactly("Renault");
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
-		List<String> existingModels = modelQuery.execute();
-		assertThat(existingModels).isEqualTo(Arrays.asList("Peugeot"));
+		Set<String> existingModels = modelQuery.execute();
+		assertThat(existingModels).containsExactly("Peugeot");
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
@@ -182,7 +183,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		abstractVehiclePersister.delete(dummyCar);
 		
 		existingModels = modelQuery.execute();
-		assertThat(existingModels).isEqualTo(Collections.emptyList());
+		assertThat(existingModels).isEmpty();
 	}
 	
 	@Test
@@ -244,15 +245,15 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
 				.mapKey("model", String.class);
 		
-		List<String> allCars = modelQuery.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList("Renault"));
+		Set<String> allCars = modelQuery.execute();
+		assertThat(allCars).containsExactly("Renault");
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
-		List<String> existingModels = modelQuery.execute();
-		assertThat(existingModels).isEqualTo(Arrays.asList("Peugeot"));
+		Set<String> existingModels = modelQuery.execute();
+		assertThat(existingModels).containsExactly("Peugeot");
 		
 		// select test
 		AbstractVehicle loadedCar = abstractVehiclePersister.select(new PersistedIdentifier<>(1L));
@@ -262,7 +263,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		abstractVehiclePersister.delete(dummyCar);
 		
 		existingModels = modelQuery.execute();
-		assertThat(existingModels).isEqualTo(Collections.emptyList());
+		assertThat(existingModels).isEmpty();
 	}
 	
 	@Test

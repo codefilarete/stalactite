@@ -300,7 +300,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			Consumer<C> asPersistedMarker = ((AlreadyAssignedIdentifierPolicy<C, I>) ((Identification<C, I>) identification).getIdentifierPolicy()).getMarkAsPersistedFunction();
 			result.addSelectListener(new SelectListener<C, I>() {
 				@Override
-				public void afterSelect(Iterable<? extends C> result) {
+				public void afterSelect(Set<? extends C> result) {
 					Iterables.filter(result, Objects::nonNull).forEach(asPersistedMarker);
 				}
 			});

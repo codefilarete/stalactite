@@ -276,7 +276,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		return copyWithAliases(columnMapping::get);
 	}
 	
-	public List<C> transformAll(ResultSet resultSet) {
+	public Set<C> transformAll(ResultSet resultSet) {
 		// We convert the ResultSet with an iteration over a ResultSetIterator that uses the transform(ResultSet) method
 		ResultSetIterator<C> resultSetIterator = new ResultSetIterator<C>(resultSet) {
 			@Override
@@ -289,7 +289,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		Map<C, Integer> resultWithoutDuplicates = new IdentityHashMap<>(convertedResult.size());	// we use identity to avoid relying on equals() implementation
 		ModifiableInt index = new ModifiableInt();
 		convertedResult.forEach(c -> resultWithoutDuplicates.putIfAbsent(c, index.increment()));
-		return resultWithoutDuplicates.entrySet().stream().sorted(Entry.comparingByValue()).map(Entry::getKey).collect(Collectors.toList());
+		return resultWithoutDuplicates.entrySet().stream().sorted(Entry.comparingByValue()).map(Entry::getKey).collect(Collectors.toSet());
 	}
 	
 	/**

@@ -40,7 +40,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 	}
 	
 	@Override
-	public void afterSelect(Iterable<? extends SRC> result) {
+	public void afterSelect(Set<? extends SRC> result) {
 		selectTargetEntities(result);
 		relationIdsHolder.remove();
 	}
@@ -67,7 +67,7 @@ public class SecondPhaseRelationLoader<SRC, TRGT, ID> implements SelectListener<
 		});
 		
 		// we load target entities from their ids, and map them per their loader
-		Map<SelectExecutor, List<TRGT>> targetsPerSelector = new HashMap<>();
+		Map<SelectExecutor, Set<TRGT>> targetsPerSelector = new HashMap<>();
 		selectsToExecute.forEach((selectExecutor, ids) -> targetsPerSelector.put(selectExecutor, selectExecutor.select(ids)));
 		// then we apply them onto their source entities, to remember which target applies to which source, we use target id
 		Map<TRGTID, TRGT> targetPerId = new HashMap<>();

@@ -48,7 +48,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 	}
 	
 	@Override
-	public List<C> loadGraph(CriteriaChain where) {
+	public Set<C> loadGraph(CriteriaChain where) {
 		Set<PreparedSQL> queries = new HashSet<>();
 		Map<String, Class> discriminatorValues = new HashMap<>();
 		String discriminatorAlias = "Y";
@@ -124,7 +124,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 			});
 		}
 		
-		List<C> result = new ArrayList<>();
+		Set<C> result = new HashSet<>();
 		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
 		
 		return result;

@@ -50,7 +50,7 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		SelectExecutor<Toto, Integer, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
 		
 		// test with 1 id
-		List<Toto> totos = testInstance.select(Arrays.asList(1));
+		Set<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
 		assertThat((Object) t.a).isEqualTo(1);
 		assertThat((Object) t.b).isEqualTo(10);
@@ -58,11 +58,12 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		
 		// test with 3 ids
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
-		List<Toto> expectedResult = Arrays.asList(
-			new Toto(2, 20, 200),
-			new Toto(3, 30, 300),
-			new Toto(4, 40, 400));
-		assertThat(totos.toString()).isEqualTo(expectedResult.toString());
+		assertThat(totos)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(2, 20, 200),
+						new Toto(3, 30, 300),
+						new Toto(4, 40, 400));
 	}
 	
 	@Test
@@ -81,13 +82,14 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		
 		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
-		List<Toto> result = testInstance.select(Arrays.asList(new Toto(1, 10, null), new Toto(2, 20, null), new Toto(3, 30, null), new Toto(4, 40, null)));
-		List<Toto> expectedResult = Arrays.asList(
-			new Toto(1, 10, 100),
-			new Toto(2, 20, 200),
-			new Toto(3, 30, 300),
-			new Toto(4, 40, 400));
-		assertThat(result.toString()).isEqualTo(expectedResult.toString());
+		Set<Toto> result = testInstance.select(Arrays.asList(new Toto(1, 10, null), new Toto(2, 20, null), new Toto(3, 30, null), new Toto(4, 40, null)));
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(1, 10, 100),
+						new Toto(2, 20, 200),
+						new Toto(3, 30, 300),
+						new Toto(4, 40, 400));
 	}
 	
 	@Test
@@ -106,7 +108,7 @@ abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrat
 		connection.prepareStatement("insert into Tata(a, b, c) values (4, 40, 400)").execute();
 		
 		SelectExecutor<Tata, ComposedId, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
-		List<Tata> result = testInstance.select(Arrays.asList(new ComposedId(1, 10), new ComposedId(2, 20), new ComposedId(3, 30), new ComposedId(4, 40)));
+		Set<Tata> result = testInstance.select(Arrays.asList(new ComposedId(1, 10), new ComposedId(2, 20), new ComposedId(3, 30), new ComposedId(4, 40)));
 		Set<Tata> expectedResult = Arrays.asHashSet(
 			new Tata(1, 10, 100),
 			new Tata(2, 20, 200),

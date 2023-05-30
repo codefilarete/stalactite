@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
@@ -32,6 +33,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.tool.collection.Iterables.*;
 
 /**
  * @author Guillaume Mary
@@ -91,7 +93,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				);
 			}
 		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey foundForeignKey = first(fkPersonIterator);
 		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_PRESIDENTID_PERSON_ID", "COUNTRY", "PRESIDENTID", "PERSON", "ID");
 		assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		
@@ -106,7 +108,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				);
 			}
 		};
-		foundForeignKey = Iterables.first(fkCityIterator);
+		foundForeignKey = first(fkCityIterator);
 		expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 		assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 	}
@@ -142,9 +144,9 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
 		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
 		assertThat(persistedCountry.getPresident().getName()).isEqualTo("French president");
-		assertThat(Iterables.first(persistedCountry.getCities()).getName()).isEqualTo("Paris");
+		assertThat(first(persistedCountry.getCities()).getName()).isEqualTo("Paris");
 		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
-		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
+		assertThat(first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 		
 		// testing update cascade
 		persistedCountry.getPresident().setName("New french president");
@@ -158,7 +160,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry.getPresident().getName()).isEqualTo("New french president");
 		assertThat(persistedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Paris");
 		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
-		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
+		assertThat(first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 	}
 	
 	
@@ -207,13 +209,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		City grenoble = new City(cityIdProvider.giveNewIdentifier());
 		grenoble.setName("Grenoble");
 		persistedCountry.addCity(grenoble);
-		Iterables.first(persistedCountry.getCities()).setName("changed");
+		first(persistedCountry.getCities()).setName("changed");
 		
 		persistedCountry.getStates().remove(ain);
 		State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
 		ardeche.setName("ardeche");
 		persistedCountry.addState(ardeche);
-		Iterables.first(persistedCountry.getStates()).setName("changed");
+		first(persistedCountry.getStates()).setName("changed");
 		
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
@@ -227,11 +229,11 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry2.getCities().stream().map(City::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "Grenoble"));
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
-		// Ain should'nt have been deleted because we didn't asked for orphan removal
-		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+		// Ain shouldn't have been deleted because we didn't asked for orphan removal
+		Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 				.mapKey(Long::new, "id", long.class)
 				.execute();
-		assertThat(Iterables.first(loadedAin)).isNotNull();
+		assertThat(first(loadedAin)).isNotNull();
 	}
 	
 	@Test
@@ -282,13 +284,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		City grenoble = new City(cityIdProvider.giveNewIdentifier());
 		grenoble.setName("Grenoble");
 		persistedCountry.addAncientCity(grenoble);
-		Iterables.first(persistedCountry.getAncientCities()).setName("changed");
+		first(persistedCountry.getAncientCities()).setName("changed");
 		
 		persistedCountry.getStates().remove(ain);
 		State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
 		ardeche.setName("ardeche");
 		persistedCountry.addState(ardeche);
-		Iterables.first(persistedCountry.getStates()).setName("changed");
+		first(persistedCountry.getStates()).setName("changed");
 		
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
@@ -303,10 +305,10 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				"Grenoble"));
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
-		// Ain should'nt have been deleted because we didn't asked for orphan removal
-		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+		// Ain shouldn't have been deleted because we didn't asked for orphan removal
+		Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 				.mapKey(Long::new, "id", long.class)
 				.execute();
-		assertThat(Iterables.first(loadedAin)).isNotNull();
+		assertThat(first(loadedAin)).isNotNull();
 	}
 }

@@ -75,6 +75,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.codefilarete.tool.collection.Iterables.*;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -543,9 +544,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		toto.setName("toto");
 		persister.persist(toto);
 		
-		List<Duo> select = persistenceContext.select(Duo::new, id, name);
+		Set<Duo> select = persistenceContext.select(Duo::new, id, name);
 		assertThat(select.size()).isEqualTo(1);
-		assertThat(((Identifier) select.get(0).getLeft()).getSurrogate().toString()).isEqualTo(toto.getId().getSurrogate().toString());
+		assertThat(((Identifier) first(select).getLeft()).getSurrogate().toString()).isEqualTo(toto.getId().getSurrogate().toString());
 	}
 	
 	@Test
@@ -985,7 +986,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
@@ -1006,8 +1007,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
+			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
@@ -1028,7 +1029,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
@@ -1053,8 +1054,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
-			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
+			Set<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
+			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
@@ -1075,7 +1076,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
@@ -1101,8 +1102,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			List<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
-			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
+			Set<TimestampWithLocale> select = persistenceContext.select(TimestampWithLocale::new, creationDate, modificationDate, localeColumn);
+			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
@@ -1144,8 +1145,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
+			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
@@ -1159,7 +1160,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate);
@@ -1183,7 +1184,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate, "creation")
 					.map(Timestamp::getModificationDate);
@@ -1205,8 +1206,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
+			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
@@ -1220,7 +1221,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate)
 					.map(Timestamp::getModificationDate)
@@ -1242,7 +1243,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate, "creation")
 					.map(Timestamp::getModificationDate);
@@ -1281,7 +1282,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			
-			// embeddeable mapping to be reused
+			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
 					.map(Timestamp::getCreationDate, "creation")
 					.map(Timestamp::getModificationDate);
@@ -1306,8 +1307,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			persister.insert(toto);
 			
 			// Is everything fine in database ?
-			List<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
-			assertThat(select.get(0)).isEqualTo(toto.getTimestamp());
+			Set<Timestamp> select = persistenceContext.select(Timestamp::new, creationDate, modificationDate);
+			assertThat(first(select)).isEqualTo(toto.getTimestamp());
 			
 			// Is loading is fine too ?
 			Toto loadedToto = persister.select(toto.getId());
@@ -1336,10 +1337,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that name was used
-		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+		Set<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
 				.mapKey(Integer::new, "gender", Integer.class)
 				.execute();
-		assertThat(result).isEqualTo(Arrays.asList(1));
+		assertThat(result).containsExactly(1);
 	}
 	
 	@Test
@@ -1399,10 +1400,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that ordinal was used
-		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+		Set<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
 				.mapKey(Integer::valueOf, "gender", String.class)
 				.execute();
-		assertThat(result).isEqualTo(Arrays.asList(person.getGender().ordinal()));
+		assertThat(result).containsExactly(person.getGender().ordinal());
 	}
 	
 	@Test
@@ -1427,10 +1428,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that ordinal was used
-		List<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+		Set<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
 				.mapKey(Integer::valueOf, "gender", String.class)
 				.execute();
-		assertThat(result).isEqualTo(Arrays.asList(person.getGender().ordinal()));
+		assertThat(result).containsExactly(person.getGender().ordinal());
 	}
 	
 	@Test
@@ -1467,7 +1468,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender)
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1492,7 +1493,7 @@ class FluentEntityMappingConfigurationSupportTest {
 				.mapEnum(PersonWithGender::getGender)
 				.build(persistenceContext);
 		
-		Column gender = (Column) personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
+		Column gender = personPersister.getMapping().getTargetTable().mapColumnsOnName().get("gender");
 		dialect.getSqlTypeRegistry().put(gender, "VARCHAR(255)");
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1612,10 +1613,10 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			Person loadedPerson = personPersister.select(person.getId());
 			personPersister.delete(loadedPerson);
-			List<String> remainingNickNames = persistenceContext.newQuery("select nickNames from Person_nicknames", String.class)
+			Set<String> remainingNickNames = persistenceContext.newQuery("select nickNames from Person_nicknames", String.class)
 					.mapKey("nickNames", String.class)
 					.execute();
-			assertThat(remainingNickNames).isEqualTo(Collections.emptyList());
+			assertThat(remainingNickNames).isEmpty();
 		}
 		
 		@Test
@@ -1657,7 +1658,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Map<String, Table> tablePerName = map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Person_nicknames");
 			
@@ -1685,7 +1686,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Map<String, Table> tablePerName = map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Person_nicknames");
 			assertThat(nickNamesTable).isNotNull();
@@ -1713,7 +1714,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Map<String, Table> tablePerName = map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Toto");
 			assertThat(nickNamesTable).isNotNull();
@@ -1743,7 +1744,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Map<String, Table> tablePerName = map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			
 			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -1769,7 +1770,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Map<String, Table> tablePerName = map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Toto");
 			assertThat(nickNamesTable).isNotNull();
@@ -1797,7 +1798,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.build(persistenceContext);
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Map<String, Table> tablePerName = map(tables, Table::getName);
 			Table personTable = tablePerName.get("Person");
 			Table nickNamesTable = tablePerName.get("Person_nicknames");
 			
@@ -1883,7 +1884,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			ddlDeployer.deployDDL();
 			
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-			Map<String, Table> tablePerName = Iterables.map(tables, Table::getName);
+			Map<String, Table> tablePerName = map(tables, Table::getName);
 			Table totoTimesTable = tablePerName.get("Toto_times");
 			Map<String, Column> timesTableColumn = totoTimesTable.mapColumnsOnName();
 			assertThat(timesTableColumn.get("createdAt")).isNotNull();

@@ -119,7 +119,7 @@ public class CompositeKeyAlreadyAssignedIdentifierInsertionManager<C, I> impleme
 		}
 		
 		@Override
-		public void afterSelect(Iterable<? extends C> result) {
+		public void afterSelect(Set<? extends C> result) {
 			clearCurrentEntitySet();
 		}
 		

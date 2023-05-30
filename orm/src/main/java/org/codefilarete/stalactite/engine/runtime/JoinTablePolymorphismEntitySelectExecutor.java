@@ -52,7 +52,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 	}
 	
 	@Override
-	public List<C> loadGraph(CriteriaChain where) {
+	public Set<C> loadGraph(CriteriaChain where) {
 		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
 		
 		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
@@ -77,7 +77,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, columnReaders, primaryKey, columnedRow);
 		
-		List<C> result = new ArrayList<>();
+		Set<C> result = new HashSet<>();
 		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}

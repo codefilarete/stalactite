@@ -74,7 +74,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public List<C> selectAll() {
+	public Set<C> selectAll() {
 		return surrogate.selectAll();
 	}
 	
@@ -169,7 +169,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		return surrogate.select(ids);
 	}
 	

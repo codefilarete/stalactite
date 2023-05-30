@@ -430,9 +430,9 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * and {@link #map(String, SerializableBiConsumer)} methods.
 	 *
 	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
-	 * @return a {@link List} filled by the instances built
+	 * @return a {@link Set} filled by the instances built
 	 */
-	public List<C> execute(ConnectionProvider connectionProvider) {
+	public Set<C> execute(ConnectionProvider connectionProvider) {
 		return execute(WholeResultSetTransformer::transformAll, connectionProvider);
 	}
 	

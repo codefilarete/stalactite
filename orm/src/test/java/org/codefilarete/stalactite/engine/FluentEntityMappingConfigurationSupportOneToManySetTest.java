@@ -142,7 +142,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		country.addCity(lyon);
 		persister.insert(country);
 		
-		List<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
+		Set<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
 				.mapKey(i -> i, "countryId", Long.class)
 				.execute();
 		
@@ -201,7 +201,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		country.addCity(lyon);
 		persister.insert(country);
 		
-		List<Duo> associatedIds = persistenceContext.newQuery("select Country_id, cities_id from Country_cities", Duo.class)
+		Set<Duo> associatedIds = persistenceContext.newQuery("select Country_id, cities_id from Country_cities", Duo.class)
 				.mapKey(Duo::new, "Country_id", Long.class, "cities_id", Long.class)
 				.execute();
 		
@@ -221,7 +221,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		persister.update(modifiedCountry, country, false);
 		// there's only 1 relation in table
-		List<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
+		Set<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
 				.mapKey(i -> i, "Country_id", Long.class)
 				.execute();
 		assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate());
@@ -229,7 +229,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		// testing delete
 		persister.delete(modifiedCountry);
 		// Cities shouldn't be deleted (we didn't ask for delete orphan)
-		List<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
+		Set<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
 				.mapKey(i -> i, "id", Long.class)
 				.execute();
 		assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
@@ -280,26 +280,29 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey("name", String.class)
-				.execute()
-				.get(0)).isEqualTo("Paris");
+				.singleResult()
+				.execute())
+				.isEqualTo("Paris");
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey("name", String.class)
-				.execute()
-				.get(0)).isEqualTo("touched France");
+				.singleResult()
+				.execute())
+				.isEqualTo("touched France");
 		
 		// testing delete
 		countryPersister.delete(loadedCountry);
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey("name", String.class)
-				.execute()).isEqualTo(Collections.emptyList());
+				.execute()).isEmpty();
 		
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey("name", String.class)
-				.execute()
-				.get(0)).isEqualTo("Paris");
+				.singleResult()
+				.execute())
+				.isEqualTo("Paris");
 	}
 	
 	@Test
@@ -475,7 +478,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			city.setName("French president");
 			countryPersister.insert(dummyCountry);
 			
-			List<Long> countryIds = persistenceContext.newQuery("select id from country", Long.class)
+			Set<Long> countryIds = persistenceContext.newQuery("select id from country", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
 			assertThat(countryIds).containsExactlyInAnyOrder(dummyCountry.getId().getSurrogate());
@@ -698,7 +701,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(persistedCountry2.getStates()).extracting(State::getName).containsExactlyInAnyOrder("changed", "ardeche");
 			
 			// Ain shouldn't have been deleted because we didn't ask for orphan removal
-			List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+			Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 					.mapKey(Long::new, "id", long.class)
 					.execute();
 			assertThat(Iterables.first(loadedAin)).isNotNull();

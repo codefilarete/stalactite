@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -211,10 +212,10 @@ public class WholeResultSetTransformerTest {
 						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null)
 		));
 		
-		List<Chicken> result = testInstance.transformAll(resultSet);
+		Set<Chicken> result = testInstance.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		
-		Chicken rooster = result.get(0);
+		Chicken rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Two colors on left : red and black
 		assertThat(rooster.getLeftWing().getFeathers().stream()
@@ -298,10 +299,10 @@ public class WholeResultSetTransformerTest {
 						.add(translatingColumnFunction.apply(sneakyFeatherColorColumnName), "pink")
 		));
 		
-		List<Chicken> result = testInstance.transformAll(resultSet);
+		Set<Chicken> result = testInstance.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		
-		Chicken rooster = result.get(0);
+		Chicken rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Colors on left : red, black and pink put by dummy row transformer
 		assertThat(rooster.getLeftWing().getFeathers().stream()
@@ -358,11 +359,11 @@ public class WholeResultSetTransformerTest {
 						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null).add("chicks", 3)
 		));
 		
-		List<Rooster> result = testInstanceCopy.transformAll(resultSet);
+		Set<Rooster> result = testInstanceCopy.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
-		Rooster rooster = result.get(0);
+		Rooster rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		assertThat(rooster.getChickCount()).isEqualTo(3);
 		// Colors on left : red, black, and as many as were added by 
@@ -403,11 +404,11 @@ public class WholeResultSetTransformerTest {
 						.add(chickenInstantiationColumnName, "rooster")
 		));
 		
-		List<Chicken> result = testInstance.transformAll(resultSet);
+		Set<Chicken> result = testInstance.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
-		Chicken rooster = result.get(0);
+		Chicken rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Colors on left : red, black, and as many as were added by 
 		assertThat(rooster.getLeftWing().getFeathers().stream()
@@ -428,9 +429,9 @@ public class WholeResultSetTransformerTest {
 						.add("name", "paul").add("address", "rue Menon")
 		));
 		
-		List<Person> result = testInstance.transformAll(resultSet);
-		assertThat(result.get(0).getName()).isEqualTo("paul");
-		assertThat(result.get(0).getAddresses()).isEqualTo(Arrays.asList("rue Vaugirard", "rue Menon"));
+		Set<Person> result = testInstance.transformAll(resultSet);
+		assertThat(Iterables.first(result).getName()).isEqualTo("paul");
+		assertThat(Iterables.first(result).getAddresses()).isEqualTo(Arrays.asList("rue Vaugirard", "rue Menon"));
 	}
 	
 	public static class Chicken {

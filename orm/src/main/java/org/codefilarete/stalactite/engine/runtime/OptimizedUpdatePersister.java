@@ -123,8 +123,8 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	@Experimental
 	@Override
 	public void update(Iterable<I> ids, Consumer<C> entityConsumer) {
-		Holder<List<C>> referenceEntity = new Holder<>();
-		Holder<List<C>> entityToModify = new Holder<>();
+		Holder<Set<C>> referenceEntity = new Holder<>();
+		Holder<Set<C>> entityToModify = new Holder<>();
 		ThreadLocals.doWithThreadLocal(QUERY_CACHE, HashMap::new, (Runnable) () -> {
 			// Thanks to query cache this first select will be executed and its result put into QUERY_CACHE
 			referenceEntity.set(select(ids));

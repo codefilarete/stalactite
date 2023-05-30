@@ -57,7 +57,7 @@ class QueryMapperTest {
 		Column<Table, String> name = totoTable.addColumn("name", String.class);
 		Column<Table, Boolean> active = totoTable.addColumn("active", boolean.class);
 		
-		List<Toto> expected = Arrays.asList(
+		Set<Toto> expected = Arrays.asSet(
 				new Toto(42, "coucou", true),
 				new Toto(43, "hello", false)
 		);
@@ -107,14 +107,14 @@ class QueryMapperTest {
 				{	// with Java Bean constructor with 1 argument
 						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", long.class),
-						Arrays.asList(
+						Arrays.asSet(
 								new Toto(42, null, false),
 								new Toto(43, null, false)
 						) },
 				{	// with Java Bean constructor with 2 arguments
 						new QueryMapper<>(Toto.class, dummySql, columnBinderRegistry)
 						.mapKey(Toto::new, "id", long.class, "name", String.class),
-						Arrays.asList(
+						Arrays.asSet(
 								new Toto(42, "coucou", false),
 								new Toto(43, "hello", false)
 						) },
@@ -158,15 +158,17 @@ class QueryMapperTest {
 	
 	@ParameterizedTest
 	@MethodSource("queryMapperAPI_basicUsage")
-	void queryMapperAPI_basicUsage(QueryMapper<Toto> queryMapper, List<Toto> expected) {
+	void queryMapperAPI_basicUsage(QueryMapper<Toto> queryMapper, Set<Toto> expected) {
 		List<Map<String, Object>> resultSetData = Arrays.asList(
 				newRow().add("id", 42L).add("name", "coucou").add("active", true),
 				newRow().add("id", 43L).add("name", "hello").add("active", false)
 		);
 		
-		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		Set<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
-		assertThat(result.toString()).isEqualTo(expected.toString());
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrderElementsOf(expected);
 	}
 	
 	public static Object[][] queryMapperAPI_basicUsageWithConverter() {
@@ -199,13 +201,13 @@ class QueryMapperTest {
 				newRow().add("id", 43L).add("name", "oziuoie").add("active", false)
 		);
 		
-		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		Set<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
-		List<Toto> expected = Arrays.asList(
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
 				new Toto(42, "coucou", false),
-				new Toto(43, "coucou", false)
-		);
-		assertThat(result.toString()).isEqualTo(expected.toString());
+				new Toto(43, "coucou", false));
 	}
 	
 	@Test
@@ -226,16 +228,16 @@ class QueryMapperTest {
 			.map("name", Toto::setName, String.class)
 			.map("active", Toto::setActive);
 		
-		List<Toto> expected = Arrays.asList(
-			new Toto(-1, "coucou", true),
-			new Toto(-1, "hello", false),
-			new Toto(-1, "hola", false),
-			new Toto(-1, "salut", false)
-		);
+		Set<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
 		
-		List<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
-		
-		assertThat(result.toString()).isEqualTo(expected.toString());
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(-1, "coucou", true),
+						new Toto(-1, "hello", false),
+						new Toto(-1, "hola", false),
+						new Toto(-1, "salut", false)
+				);
 	}
 	
 	/**
@@ -245,7 +247,7 @@ class QueryMapperTest {
 	 * @param resultSetData data to be returned by connection statement
 	 * @return bean instances created by {@link QueryMapper#execute(ConnectionProvider)} 
 	 */
-	private <C> List<C> invokeExecuteWithData(QueryMapper<C> queryMapper, List<? extends Map<? extends String, ? extends Object>> resultSetData) {
+	private <C> Set<C> invokeExecuteWithData(QueryMapper<C> queryMapper, List<? extends Map<? extends String, ? extends Object>> resultSetData) {
 		// creation of a Connection that will give our test case data
 		Connection connectionMock = mock(Connection.class);
 		try {
@@ -285,7 +287,7 @@ class QueryMapperTest {
 			throw Exceptions.asRuntimeException(e);
 		}
 		
-		List<Toto> result = queryMapper.execute(() -> mock);
+		Set<Toto> result = queryMapper.execute(() -> mock);
 		// Checking that setters were called
 		verify(statementMock, times(2)).setInt(anyInt(), captor.capture());
 		assertThat(captor.getAllValues()).isEqualTo(Arrays.asList(1, 2));
@@ -307,13 +309,16 @@ class QueryMapperTest {
 				newRow().add("id", 42L).add("name", "ghoeihvoih")
 		);
 		
-		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		Set<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
 		List<Toto> expected = Arrays.asList(
-				new Toto(42, "ghoeihvoih3", false),	// counter is expected to be run on each row : last overwrites previous
-				new Toto(43, "oziuoie2", false)
 		);
-		assertThat(result.toString()).isEqualTo(expected.toString());
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(42, "ghoeihvoih3", false),	// counter is expected to be run on each row : last overwrites previous
+						new Toto(43, "oziuoie2", false)
+				);
 	}
 	
 	@Test
@@ -330,13 +335,14 @@ class QueryMapperTest {
 				newRow().add("id", 42L).add("name", "ghoeihvoih")
 		);
 		
-		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		Set<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
-		List<Toto> expected = Arrays.asList(
-				new Toto(42, "ghoeihvoih1", false),	// counter is expected to be run once per bean : first survives to next
-				new Toto(43, "oziuoie2", false)
-		);
-		assertThat(result.toString()).isEqualTo(expected.toString());
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(42, "ghoeihvoih1", false),	// counter is expected to be run once per bean : first survives to next
+						new Toto(43, "oziuoie2", false)
+				);
 	}
 	
 	@Test
@@ -353,14 +359,15 @@ class QueryMapperTest {
 				newRow().add("id", 42L).add("name", "John").add("tataName", "you")
 				);
 		
-		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		Set<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
-		List<Toto> expected = Arrays.asList(
-				new Toto(42, "John", false).setTata(new Tata("you")),
-				new Toto(43, "Bob", false).setTata(new Tata("me"))
-		);
 		// Checking content by values
-		assertThat(result.toString()).isEqualTo(expected.toString());
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(42, "John", false).setTata(new Tata("you")),
+						new Toto(43, "Bob", false).setTata(new Tata("me"))
+				);
 	}
 	
 	@Test
@@ -380,14 +387,15 @@ class QueryMapperTest {
 				newRow().add("id", 42L).add("name", "John").add("tataName", "you").add("titiName", "titi")
 				);
 		
-		List<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
+		Set<Toto> result = invokeExecuteWithData(queryMapper, resultSetData);
 		
-		List<Toto> expected = Arrays.asList(
-				new Toto(42, "John", false).setTata(new Tata("you").setTitis(Arrays.asHashSet(new Titi("titi")))),
-				new Toto(43, "Bob", false).setTata(new Tata("me"))
-		);
 		// Checking content by values
-		assertThat(result.toString()).isEqualTo(expected.toString());
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(42, "John", false).setTata(new Tata("you").setTitis(Arrays.asHashSet(new Titi("titi")))),
+						new Toto(43, "Bob", false).setTata(new Tata("me"))
+				);
 	}
 	
 	@Test
@@ -404,7 +412,7 @@ class QueryMapperTest {
 			.map("name", Toto::setName, String.class)
 			.map("active", Toto::setActive);
 		
-		List<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
+		Set<Toto> result = invokeExecuteWithData(testInstance, resultSetData);
 		
 		assertThat(result).isEmpty();
 	}
@@ -525,7 +533,7 @@ class QueryMapperTest {
 		}
 		
 		/**
-		 * Implemented to ease debug and represention of failing test cases
+		 * Implemented to ease debug and representation of failing test cases
 		 * @return a chain containing attributes foot print
 		 */
 		@Override

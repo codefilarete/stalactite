@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
@@ -181,19 +182,19 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		
-		List<Toto> totos = testInstance.select(Arrays.asList(1));
+		Set<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
 		assertThat((Object) t.a).isEqualTo(1);
 		assertThat((Object) t.b).isEqualTo(10);
 		assertThat((Object) t.c).isEqualTo(100);
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
 		
-		List<Toto> expectedResult = Arrays.asList(
-				new Toto(2, 20, 200),
-				new Toto(3, 30, 300),
-				new Toto(4, 40, 400));
-		
-		assertThat(totos.toString()).isEqualTo(expectedResult.toString());
+		assertThat(totos)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(2, 20, 200),
+						new Toto(3, 30, 300),
+						new Toto(4, 40, 400));
 	}
 	
 	static class Toto {

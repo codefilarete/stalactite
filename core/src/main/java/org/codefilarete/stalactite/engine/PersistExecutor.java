@@ -62,7 +62,7 @@ public interface PersistExecutor<C> {
 		}
 		if (!toUpdate.isEmpty()) {
 			// creating couples of modified and unmodified entities
-			List<C> loadedEntities = selector.select(Iterables.collect(toUpdate, idProvider, HashSet::new));
+			Set<C> loadedEntities = selector.select(Iterables.collect(toUpdate, idProvider, HashSet::new));
 			Map<I, C> loadedEntitiesPerId = Iterables.map(loadedEntities, idProvider);
 			Map<I, C> modifiedEntitiesPerId = Iterables.map(toUpdate, idProvider);
 			Map<C, C> modifiedVSunmodified = Maps.innerJoin(modifiedEntitiesPerId, loadedEntitiesPerId);
@@ -95,7 +95,7 @@ public interface PersistExecutor<C> {
 		}
 		
 		Set<I> entitiesIds = Iterables.collect(entities, idProvider::apply, HashSet::new);
-		List<C> loadedEntities = selector.select(entitiesIds);
+		Set<C> loadedEntities = selector.select(entitiesIds);
 		Set<I> existingEntitiesIds = Iterables.collect(loadedEntities, idProvider::apply, HashSet::new);
 		Predicate<C> isNewProvider = c -> !existingEntitiesIds.contains(idProvider.apply(c));
 		persist(entities, isNewProvider, ids -> loadedEntities, updater, inserter, idProvider);

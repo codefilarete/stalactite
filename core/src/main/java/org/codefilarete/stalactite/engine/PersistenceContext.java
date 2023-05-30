@@ -4,7 +4,6 @@ import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,6 +49,7 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
@@ -312,15 +312,15 @@ public class PersistenceContext implements PersisterRegistry {
 	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 * 
 	 * @param factory a one-argument bean constructor
-	 * @param column any table column (primary key may be prefered because its result is given to bean constructor but it is not expected)
+	 * @param column any table column (primary key may be preferred because its result is given to bean constructor but it is not expected)
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class) 
 	 */
-	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
+	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
 		Executable constructor = new MethodReferenceCapturer().findExecutable(factory);
 		return newQuery(QueryEase
 				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
@@ -342,11 +342,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <I> constructor first-arg type and first column type
 	 * @param <J> constructor second-arg type and second column type
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
+	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2)
@@ -369,11 +369,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <J> constructor second-arg type and second column type
 	 * @param <K> constructor third-arg type and third column type
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, K, T extends Table> List<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
+	public <C, I, J, K, T extends Table> Set<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2, column3)
@@ -391,11 +391,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param factory a two-arguments bean constructor
 	 * @param <C> type of created beans
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping) {
+	public <C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, selectMapping, where -> {});
 	}
 	
@@ -413,11 +413,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping) {
+	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, column, selectMapping, where -> {});
 	}
 	
@@ -436,11 +436,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
 													 Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, column1, column2, selectMapping, where -> {});
 	}
@@ -455,14 +455,14 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param factory a two-arguments bean constructor
 	 * @param <C> type of created beans
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
+	public <C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
 							  Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory), Collections.emptyList(), selectMapping, where);
+		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory), Collections.emptySet(), selectMapping, where);
 	}
 	
 	/**
@@ -478,14 +478,14 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
+	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
 												  Consumer<SelectMapping<C, T>> selectMapping,
 												  Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column), Collections.singletonList(column), selectMapping, where);
+		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column), Arrays.asHashSet(column), selectMapping, where);
 	}
 	
 	/**
@@ -503,15 +503,14 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <I> constructor first-arg type and first column type
 	 * @param <J> constructor second-arg type and second column type
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
-												  Consumer<SelectMapping<C, T>> selectMapping,
-												  Consumer<CriteriaChain> where) {
+	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+													 Consumer<SelectMapping<C, T>> selectMapping,
+													 Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column1, column2), Arrays.asList(column1, column2), selectMapping, where
-		);
+		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column1, column2), Arrays.asHashSet(column1, column2), selectMapping, where);
 	}
 	
 	/**
@@ -525,11 +524,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @return beans created with selected data
 	 */
-	private <C, T extends Table> List<C> select(Class<C> beanType,
-							   Consumer<BeanKeyQueryMapper<C>> keyMapper,
-							   List<? extends Column<?, ?>> selectableKeys,
-							   Consumer<SelectMapping<C, T>> selectMapping,
-							   Consumer<CriteriaChain> where) {
+	private <C, T extends Table> Set<C> select(Class<C> beanType,
+											   Consumer<BeanKeyQueryMapper<C>> keyMapper,
+											   Set<? extends Column<?, ?>> selectableKeys,
+											   Consumer<SelectMapping<C, T>> selectMapping,
+											   Consumer<CriteriaChain> where) {
 		SelectMapping<C, T> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
 		Table table = selectMappingSupport.getTable();
@@ -544,7 +543,7 @@ public class PersistenceContext implements PersisterRegistry {
 		return execute(queryMapper);
 	}
 	
-	private <C> List<C> execute(QueryMapper<C> queryProvider) {
+	private <C> Set<C> execute(QueryMapper<C> queryProvider) {
 		return queryProvider.execute(getConnectionProvider());
 	}
 	

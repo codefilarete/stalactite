@@ -178,8 +178,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.execute()
-					.get(0)).isEqualTo("French president");
+					.singleResult()
+					.execute())
+					.isEqualTo("French president");
 			
 			// deletion has no action on target
 			countryPersister.delete(loadedCountry);
@@ -189,8 +190,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.isEmpty()).isTrue();
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.execute()
-					.get(0)).isEqualTo("French president");
+					.singleResult()
+					.execute())
+					.isEqualTo("French president");
 		}
 		
 		@Test
@@ -235,8 +237,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.execute()
-					.get(0)).isEqualTo("French president");
+					.singleResult()
+					.execute())
+					.isEqualTo("French president");
 			
 			// Changing country president to check foreign key modification
 			Person newPerson = new Person(new PersistableIdentifier<>(2L));
@@ -950,7 +953,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
 				assertThat(persistedCountry.getPresident().getName()).isEqualTo("Me !!");
 				// ... and we still a 2 countries (no deletion was done)
-				List<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+				Set<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
 						.mapKey(Long::new, "countryCount", Long.class)
 						.execute();
 				assertThat(Iterables.first(countryCount)).isEqualTo(2);
@@ -990,7 +993,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
 				assertThat(persistedCountry.getPresident().getName()).isEqualTo("Me !!");
 				// ... and we still have 2 countries (no deletion was done)
-				List<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+				Set<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
 						.mapKey(Long::new, "countryCount", Long.class)
 						.execute();
 				assertThat(Iterables.first(countryCount)).isEqualTo(2);
@@ -1095,15 +1098,15 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// ... must be null for old president
 				ExecutableBeanPropertyQueryMapper<Long> countryIdQuery = persistenceContext.newQuery("select countryId from Person where id = :personId", Long.class)
 						.mapKey("countryId", Long.class);
-				List<Long> originalPresidentCountryId = countryIdQuery
+				Set<Long> originalPresidentCountryId = countryIdQuery
 						.set("personId", originalPresident.getId())
 						.execute();
-				assertThat(originalPresidentCountryId.get(0)).isNull();
+				assertThat(Iterables.first(originalPresidentCountryId)).isNull();
 				// ... and not null for new president
-				List<Long> newPresidentCountryId = countryIdQuery
+				Set<Long> newPresidentCountryId = countryIdQuery
 						.set("personId", newPresident.getId())
 						.execute();
-				assertThat(dummyCountry.getId().getSurrogate()).isEqualTo(newPresidentCountryId.get(0));
+				assertThat(dummyCountry.getId().getSurrogate()).isEqualTo(Iterables.first(newPresidentCountryId));
 			}
 			
 			@Test

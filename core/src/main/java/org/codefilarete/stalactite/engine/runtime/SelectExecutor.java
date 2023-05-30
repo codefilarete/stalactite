@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -47,10 +47,10 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		int blockSize = getInOperatorMaxSize();
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		List<C> result = new ArrayList<>(50);
+		Set<C> result = new HashSet<>(50);
 		if (!parcels.isEmpty()) {
 			List<I> lastParcel = Iterables.last(parcels, java.util.Collections.emptyList());
 			int lastBlockSize = lastParcel.size();
@@ -112,7 +112,7 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 		}
 		
 		@VisibleForTesting
-		List<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
+		Set<C> execute(ReadOperation<Column<T, Object>> operation, List<I> ids) {
 			Map<Column<T, Object>, Object> primaryKeyValues = primaryKeyProvider.getColumnValues(ids);
 			try (ReadOperation<Column<T, Object>> closeableOperation = operation) {
 				closeableOperation.setValues(primaryKeyValues);
@@ -122,15 +122,15 @@ public class SelectExecutor<C, I, T extends Table<T>> extends DMLExecutor<C, I, 
 			}
 		}
 		
-		protected List<C> transform(ReadOperation<Column<T, Object>> closeableOperation, int size) {
+		protected Set<C> transform(ReadOperation<Column<T, Object>> closeableOperation, int size) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, ((ColumnParameterizedSelect) closeableOperation.getSqlStatement()).getSelectParameterBinders());
 			return transform(rowIterator, size);
 		}
 		
-		protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
-			return Iterables.collect(() -> rowIterator, transformer, () -> new ArrayList<>(resultSize));
+		protected Set<C> transform(Iterator<Row> rowIterator, int resultSize) {
+			return Iterables.collect(() -> rowIterator, transformer, () -> new HashSet<>(resultSize));
 		}
 	}
 }
