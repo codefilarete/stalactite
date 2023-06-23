@@ -8,12 +8,12 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
-import org.codefilarete.stalactite.engine.cascade.BeforeUpdateSupport;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
@@ -71,13 +71,17 @@ public class OneToOneOwnedBySourceEngine<SRC, TRGT, SRCID, TRGTID, LEFTTABLE ext
 		// adding cascade treatment
 		// - insert non-persisted target instances to fulfill foreign key requirement
 		Function<SRC, TRGT> targetProviderAsFunction = new NullProofFunction<>(targetAccessor::get);
-		sourcePersister.addUpdateListener(new BeforeUpdateSupport<>(
-				// we insert new instances
-				(it, b) -> targetPersister.insert(Iterables.collectToList(it, Duo::getLeft)),
-				targetProviderAsFunction,
-				// we only keep targets of modified instances, non null and not yet persisted
-				Predicates.predicate(Duo::getLeft, Predicates.<TRGT>predicate(Objects::nonNull).and(targetPersister.getMapping()::isNew))
-		));
+		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
+			
+			private final Predicate<TRGT> newInstancePredicate = Predicates.<TRGT>predicate(Objects::nonNull).and(targetPersister.getMapping()::isNew);
+			
+			@Override
+			public void beforeUpdate(Iterable<? extends Duo<SRC, SRC>> payloads, boolean allColumnsStatement) {
+				// we only insert new instances
+				targetPersister.insert(Iterables.stream(payloads).map(duo -> targetProviderAsFunction.apply(duo.getLeft()))
+						.filter(newInstancePredicate).collect(Collectors.toSet()));
+			}
+		});
 		// - after source update, target is updated too
 		sourcePersister.addUpdateListener(new UpdateListener<SRC>() {
 			

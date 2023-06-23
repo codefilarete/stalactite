@@ -39,7 +39,7 @@ public class ManyToManyCycleLoader<SRC, TRGT, TRGTID> extends AbstractCycleLoade
 	}
 	
 	@Override
-	protected void applyRelationToSource(EntityRelationStorage<SRC, TRGT, TRGTID> relationStorage,
+	protected void applyRelationToSource(EntityRelationStorage<SRC, TRGTID> relationStorage,
 										 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 										 Map<TRGTID, TRGT> targetPerId) {
 		relationStorage.getEntitiesToFulFill().forEach(src -> {

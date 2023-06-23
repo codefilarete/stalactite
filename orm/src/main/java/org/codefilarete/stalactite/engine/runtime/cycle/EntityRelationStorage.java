@@ -9,9 +9,12 @@ import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
- * Mapping between left part of a relation and identifiers of its right part
+ * Mapping between left part of a relation and identifiers of its right part.
+ * Created 
+ * 
+ * @author Guillaume Mary
  */
-class EntityRelationStorage<SRC, TRGT, TRGTID> {
+class EntityRelationStorage<SRC, TRGTID> {
 	
 	/**
 	 * Made as an {@link IdentityMap} to avoid hashCode entity implementation to badly influence our entity lookup because it might vary
@@ -20,12 +23,8 @@ class EntityRelationStorage<SRC, TRGT, TRGTID> {
 	private final IdentityMap<SRC, Duo<SRC, Set<TRGTID>>> entityRelations = new IdentityMap<>();
 	
 	void addRelationToInitialize(SRC src, TRGTID targetIdentifier) {
-		Duo<SRC, Set<TRGTID>> existingRelation = this.entityRelations.get(src);
-		if (existingRelation == null) {
-			existingRelation = new Duo<>(src, new HashSet<>());
-			entityRelations.put(src, existingRelation);
-		}
-		existingRelation.getRight().add(targetIdentifier);
+		this.entityRelations.computeIfAbsent(src, k -> new Duo<>(k, new HashSet<>()))
+				.getRight().add(targetIdentifier);
 	}
 	
 	Set<TRGTID> getRelationToInitialize(SRC src) {

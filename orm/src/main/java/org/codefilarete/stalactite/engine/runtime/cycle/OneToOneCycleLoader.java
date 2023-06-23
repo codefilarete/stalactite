@@ -4,8 +4,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 /**
@@ -34,6 +34,7 @@ public class OneToOneCycleLoader<SRC, TRGT, TRGTID> extends AbstractCycleLoader<
 	@Override
 	public void onFirstPhaseRowRead(SRC src, TRGTID targetId) {
 		if (!SecondPhaseRelationLoader.isDefaultValue(targetId)) {
+			// TODO : we should know which relation is being filled instead of iterating over all of them, no ? see OneToManyCycleLoader
 			this.relations.forEach((relationName, configurationResult) -> {
 				if (configurationResult.getSourcePersister().getClassToPersist().isInstance(src)) {
 					this.currentRuntimeContext.get().addRelationToInitialize(relationName, src, targetId);
@@ -43,7 +44,7 @@ public class OneToOneCycleLoader<SRC, TRGT, TRGTID> extends AbstractCycleLoader<
 	}
 	
 	@Override
-	protected void applyRelationToSource(EntityRelationStorage<SRC, TRGT, TRGTID> relationStorage,
+	protected void applyRelationToSource(EntityRelationStorage<SRC, TRGTID> relationStorage,
 										 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 										 Map<TRGTID, TRGT> targetPerId) {
 		relationStorage.getEntitiesToFulFill().forEach(src -> {

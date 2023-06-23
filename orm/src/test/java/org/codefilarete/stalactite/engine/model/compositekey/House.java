@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine.model.compositekey;
 
+import java.util.Objects;
+
 public class House {
 	
 	private Long id;
@@ -71,6 +73,28 @@ public class House {
 		
 		public String getCity() {
 			return city;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			
+			HouseId houseId = (HouseId) o;
+			
+			if (number != houseId.number) return false;
+			if (!Objects.equals(street, houseId.street)) return false;
+			if (!Objects.equals(zipCode, houseId.zipCode)) return false;
+			return Objects.equals(city, houseId.city);
+		}
+		
+		@Override
+		public int hashCode() {
+			int result = number;
+			result = 31 * result + (street != null ? street.hashCode() : 0);
+			result = 31 * result + (zipCode != null ? zipCode.hashCode() : 0);
+			result = 31 * result + (city != null ? city.hashCode() : 0);
+			return result;
 		}
 		
 		@Override

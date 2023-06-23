@@ -41,7 +41,6 @@ import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 import static org.codefilarete.tool.Nullable.nullable;
-import static org.codefilarete.tool.bean.Objects.not;
 import static org.codefilarete.tool.collection.Iterables.stream;
 
 /**
@@ -271,11 +270,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					
 					@Override
 					protected Collection<TRGT> getTargets(SRC src) {
-						Collection<TRGT> targets = manyRelationDescriptor.getCollectionGetter().apply(src);
-						// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-						return stream(targets)
-								.filter(not(targetPersister.getMapping()::isNew))
-								.collect(Collectors.toList());
+						return manyRelationDescriptor.getCollectionGetter().apply(src);
 					}
 				});
 			}
@@ -394,11 +389,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		@Override
 		protected Collection<O> getTargets(I i) {
-			Collection<O> targets = collectionGetter.apply(i);
-			// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-			return stream(targets)
-					.filter(not(getPersister()::isNew))
-					.collect(Collectors.toList());
+			return collectionGetter.apply(i);
 		}
 	}
 	
@@ -419,11 +410,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		
 		@Override
 		protected Collection<O> getTargets(I i) {
-			Collection<O> targets = collectionGetter.apply(i);
-			// We only delete persisted instances (for logic and to prevent from non matching row count exception)
-			return stream(targets)
-					.filter(not(getPersister()::isNew))
-					.collect(Collectors.toList());
+			return collectionGetter.apply(i);
 		}
 	}
 	
