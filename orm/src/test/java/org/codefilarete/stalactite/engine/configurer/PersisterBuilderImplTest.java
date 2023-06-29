@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -66,6 +67,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.reflection.Accessors.accessorByMethodReference;
 import static org.codefilarete.reflection.Accessors.mutatorByField;
@@ -78,6 +80,7 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -110,6 +113,47 @@ public class PersisterBuilderImplTest {
 	@AfterEach
 	void removeEntityCandidates() {
 		PersisterBuilderContext.CURRENT.remove();
+	}
+	
+	@Test
+	void assertCompositeKeyIdentifierOverridesEqualsHashcode() throws NoSuchFieldException {
+		PersisterBuilderImpl<?, ?> testInstance = new PersisterBuilderImpl<>(mock(EntityMappingConfiguration.class));
+		
+		class DummyCompositeKeyIdentifier {
+			
+		}
+		
+		class DummyCompositeKeyIdentifierWithEqualsAndHashCode {
+			
+			@Override
+			public boolean equals(Object obj) {
+				// any kind of implementation is sufficient
+				return super.equals(obj);
+			}
+			
+			@Override
+			public int hashCode() {
+				// any kind of implementation is sufficient
+				return super.hashCode();
+			}
+		}
+		
+		class DummyEntity {
+			
+			private DummyCompositeKeyIdentifier dummyCompositeKeyIdentifier;
+			private DummyCompositeKeyIdentifierWithEqualsAndHashCode dummyCompositeKeyIdentifierWithEqualsAndHashCode;
+		}
+		
+		EntityMappingConfiguration.CompositeKeyMapping<?, ?> compositeKeyMappingMock = mock(EntityMappingConfiguration.CompositeKeyMapping.class, RETURNS_MOCKS);
+		when(compositeKeyMappingMock.getAccessor()).thenReturn(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifier")));
+		assertThatCode(() -> testInstance.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
+				.hasMessage("Composite key identifier class o.c.s.e.c.PersisterBuilderImplTest$DummyCompositeKeyIdentifier" +
+						" seems to have default implementation of equals() and hashcode() methods," +
+						" which is not supported (identifiers must be distinguishable), please make it implement them");
+		
+		when(compositeKeyMappingMock.getAccessor()).thenReturn(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifierWithEqualsAndHashCode")));
+		assertThatCode(() -> testInstance.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
+				.doesNotThrowAnyException();
 	}
 	
 	@Test

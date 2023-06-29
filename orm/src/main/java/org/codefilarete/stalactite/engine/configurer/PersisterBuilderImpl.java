@@ -59,8 +59,8 @@ import org.codefilarete.stalactite.engine.configurer.polymorphism.PolymorphismPe
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.CompositeKeyedBeanPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsserter;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -73,7 +73,11 @@ import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.*;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.mapping.id.manager.CompositeKeyAlreadyAssignedIdentifierInsertionManager;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -803,6 +807,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		if (foundKeyMapping instanceof SingleKeyMapping) {
 			return Identification.forSingleKey(foundConfiguration);
 		} else if (foundKeyMapping instanceof CompositeKeyMapping) {
+			assertCompositeKeyIdentifierOverridesEqualsHashcode((CompositeKeyMapping<?, ?>) foundKeyMapping);
 			return Identification.forCompositeKey(foundConfiguration);
 		} else {
 			// should not happen
@@ -810,9 +815,21 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 	}
 	
+	@VisibleForTesting
+	void assertCompositeKeyIdentifierOverridesEqualsHashcode(CompositeKeyMapping<?, ?> compositeKeyIdentification) {
+		Class<?> compositeKeyType = AccessorDefinition.giveDefinition(compositeKeyIdentification.getAccessor()).getMemberType();
+		try {
+			compositeKeyType.getDeclaredMethod("equals", Object.class);
+			compositeKeyType.getDeclaredMethod("hashCode");
+		} catch (NoSuchMethodException e) {
+			throw new MappingConfigurationException("Composite key identifier class " + Reflections.toString(compositeKeyType) + " seems to have default implementation of equals() and hashcode() methods,"
+					+ " which is not supported (identifiers must be distinguishable), please make it implement them");
+		}
+	}
+	
 	/**
-	 * Determines {@link IdentifierInsertionManager} for current configuration as weel as its whole inheritance configuration.
-	 * The result is set in given {@link Identification}. Could have been done on a separate object but it would have complexified some method
+	 * Determines {@link IdentifierInsertionManager} for current configuration as well as its whole inheritance configuration.
+	 * The result is set in given {@link Identification}. Could have been done on a separate object but it would have complicated some method
 	 * signature, and {@link Identification} is a good place for it.
 	 * 
 	 * @param identification given to know expected policy, and to set result in it
@@ -1053,7 +1070,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		private Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping;
 		
-		private CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner) {
+		CompositeKeyIdentification(EntityMappingConfiguration<C, I> identificationDefiner) {
 			super(identificationDefiner);
 		}
 		
