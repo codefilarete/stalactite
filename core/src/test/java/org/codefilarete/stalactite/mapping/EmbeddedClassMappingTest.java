@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.mapping;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.codefilarete.reflection.AccessorChainMutator;
 import org.codefilarete.reflection.PropertyAccessor;
@@ -53,7 +54,7 @@ class EmbeddedClassMappingTest {
 		testInstance = new EmbeddedClassMapping<>(Toto.class, targetTable, classMapping);
 	}
 	
-	static Object[][] getInsertValuesData() {
+	static Object[][] getInsertValues() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
 				{ new Toto(null, null, null), Maps.asMap(colA, null).add(colB, null).add(colC, null) },
@@ -62,14 +63,14 @@ class EmbeddedClassMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("getInsertValuesData")
+	@MethodSource
 	void getInsertValues(Toto modified, Map<Column, Object> expectedResult) {
 		Map<? extends Column<?, ?>, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		
 		assertThat(valuesToInsert).isEqualTo(expectedResult);
 	}
 	
-	static Object[][] getUpdateValues_diffOnlyData() {
+	static Object[][] getUpdateValues_onlyNecessaryColumns() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
@@ -87,14 +88,14 @@ class EmbeddedClassMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("getUpdateValues_diffOnlyData")
-	<T extends Table<T>> void getUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column<T, Object>, Object> expectedResult) {
+	@MethodSource
+	<T extends Table<T>> void getUpdateValues_onlyNecessaryColumns(Toto modified, Toto unmodified, Map<Column<T, Object>, Object> expectedResult) {
 		Map<? extends UpwhereColumn<T>, Object> valuesToInsert = (Map) testInstance.getUpdateValues(modified, unmodified, false);
 		assertThat(UpwhereColumn.getUpdateColumns(valuesToInsert)).isEqualTo(expectedResult);
 		assertThat(UpwhereColumn.getWhereColumns(valuesToInsert)).isEmpty();
 	}
 	
-	static Object[][] getUpdateValues_allColumnsData() {
+	static Object[][] getUpdateValues_allColumns() {
 		return new Object[][] {
 				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3) },
 				{ new Toto(null, null, null), new Toto(null, null, null), new HashMap<>() },
@@ -104,11 +105,132 @@ class EmbeddedClassMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("getUpdateValues_allColumnsData")
+	@MethodSource
 	<T extends Table<T>> void getUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
 		Map<? extends UpwhereColumn<T>, Object> valuesToInsert = (Map) testInstance.getUpdateValues(modified, unmodified, true);
 		assertThat(UpwhereColumn.getUpdateColumns(valuesToInsert)).isEqualTo(expectedResult);
 		assertThat(UpwhereColumn.getWhereColumns(valuesToInsert)).isEqualTo(new HashMap<Column, Object>());
+	}
+	
+	@Test
+	<T extends Table<T>> void getUpdateValues_withModificationOnBeanAnNoModificationInShadowColumns() {
+		Column<T, String> myShadowColumn = targetTable.addColumn("myShadowColumn", String.class);
+		EmbeddedClassMapping<Toto, T> testInstance = new EmbeddedClassMapping(Toto.class, targetTable, classMapping);
+		// modification on bean
+		Toto modified = new Toto(1, 2, 42);
+		Toto unmodified = new Toto(1, 2, 3);
+		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
+			@Override
+			public Set<Column<T, Object>> getColumns() {
+				return Arrays.asSet((Column) myShadowColumn);
+			}
+			
+			@Override
+			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+				// no modification on shadow column : whatever bean (modified or not), value is the same
+				return (Map) Maps.asMap(myShadowColumn, "a");
+			}
+		});
+		
+		Map<Column, Object> expectedResult = Maps.forHashMap(Column.class, Object.class)
+				.add(colA, 1).add(colB, 2).add(colC, 42)
+				.add(myShadowColumn, "a");
+		Map<? extends UpwhereColumn<T>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEqualTo(expectedResult);
+		assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEqualTo(new HashMap<Column, Object>());
+	}
+	
+	@Test
+	<T extends Table<T>> void getUpdateValues_withModificationOnBeanAnModificationInShadowColumns() {
+		Column<T, String> myShadowColumn = targetTable.addColumn("myShadowColumn", String.class);
+		EmbeddedClassMapping<Toto, T> testInstance = new EmbeddedClassMapping(Toto.class, targetTable, classMapping);
+		// modification on bean
+		Toto modified = new Toto(1, 2, 42);
+		Toto unmodified = new Toto(1, 2, 3);
+		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
+			@Override
+			public Set<Column<T, Object>> getColumns() {
+				return Arrays.asSet((Column) myShadowColumn);
+			}
+			
+			@Override
+			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+				// modification on shadow column
+				if (bean == modified) {
+					return (Map) Maps.asMap(myShadowColumn, "b");
+				}
+				if (bean == unmodified) {
+					return (Map) Maps.asMap(myShadowColumn, "a");
+				}
+				return null;
+			}
+		});
+		
+		Map<Column, Object> expectedResult = Maps.forHashMap(Column.class, Object.class)
+				.add(colA, 1).add(colB, 2).add(colC, 42)
+				.add(myShadowColumn, "b");
+		Map<? extends UpwhereColumn<T>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEqualTo(expectedResult);
+		assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEqualTo(new HashMap<Column, Object>());
+	}
+	
+	@Test
+	<T extends Table<T>> void getUpdateValues_withNoModificationOnBeanAnModificationInShadowColumns() {
+		Column<T, String> myShadowColumn = targetTable.addColumn("myShadowColumn", String.class);
+		EmbeddedClassMapping<Toto, T> testInstance = new EmbeddedClassMapping(Toto.class, targetTable, classMapping);
+		// no modification on bean
+		Toto modified = new Toto(1, 2, 3);
+		Toto unmodified = new Toto(1, 2, 3);
+		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
+			@Override
+			public Set<Column<T, Object>> getColumns() {
+				return Arrays.asSet((Column) myShadowColumn);
+			}
+			
+			@Override
+			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+				// modification on shadow column
+				if (bean == modified) {
+					return (Map) Maps.asMap(myShadowColumn, "b");
+				}
+				if (bean == unmodified) {
+					return (Map) Maps.asMap(myShadowColumn, "a");
+				}
+				return null;
+			}
+		});
+		
+		Map<Column, Object> expectedResult = Maps.forHashMap(Column.class, Object.class)
+				.add(colA, 1).add(colB, 2).add(colC, 3)
+				.add(myShadowColumn, "b");
+		Map<? extends UpwhereColumn<T>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEqualTo(expectedResult);
+		assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEqualTo(new HashMap<Column, Object>());
+	}
+	
+	@Test
+	<T extends Table<T>> void getUpdateValues_withNoModificationOnBeanAnNoModificationInShadowColumns() {
+		Column<T, String> myShadowColumn = targetTable.addColumn("myShadowColumn", String.class);
+		EmbeddedClassMapping<Toto, T> testInstance = new EmbeddedClassMapping(Toto.class, targetTable, classMapping);
+		// no modification on bean
+		Toto modified = new Toto(1, 2, 3);
+		Toto unmodified = new Toto(1, 2, 3);
+		testInstance.addShadowColumnUpdate(new Mapping.ShadowColumnValueProvider<Toto, T>() {
+			@Override
+			public Set<Column<T, Object>> getColumns() {
+				return Arrays.asSet((Column) myShadowColumn);
+			}
+			
+			@Override
+			public Map<Column<T, Object>, Object> giveValue(Toto bean) {
+				// no modification on shadow column : whatever bean (modified or not), value is the same
+				return (Map) Maps.asMap(myShadowColumn, "a");
+			}
+		});
+		
+		Map<? extends UpwhereColumn<T>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEmpty();
+		assertThat(UpwhereColumn.getWhereColumns(valuesToUpdate)).isEmpty();
 	}
 	
 	@Test
