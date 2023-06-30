@@ -147,10 +147,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 	}
 	
 	protected PrimaryKey<?, SRCID> lookupSourcePrimaryKey(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
-		// finding joined columns: left one is primary key. Right one is given by the target strategy through the property accessor
-		if (sourcePersister.getMapping().getTargetTable().getPrimaryKey().getColumns().size() > 1) {
-			throw new NotYetSupportedOperationException("Joining tables on a composed primary key is not (yet) supported");
-		}
 		return sourcePersister.getMapping().getTargetTable().getPrimaryKey();
 	}
 	
