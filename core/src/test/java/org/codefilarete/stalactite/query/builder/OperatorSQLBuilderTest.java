@@ -121,9 +121,10 @@ class OperatorSQLBuilderTest {
 		
 		TupleIn tupleIn = new TupleIn(new Column[] { firstName, lastName }, Arrays.asList(
 				new Object[] { "John", "Doe" },
+				new Object[] { "Jane", "Doe" },
 				new Object[] { "Paul", "Smith" }));
 		testInstance.cat(tupleIn, new StringAppenderWrapper(result, dmlNameProvider));
-		assertThat(result.toString()).isEqualTo("(dummyTable.firstName, dummyTable.lastName) in (('John', 'Doe'), ('Paul', 'Smith'))");
+		assertThat(result.toString()).isEqualTo("(dummyTable.firstName, dummyTable.lastName) in (('John', 'Doe'), ('Jane', 'Doe'), ('Paul', 'Smith'))");
 		
 		// next test is meant to record the behavior, not to approve it
 		result = new StringAppender();

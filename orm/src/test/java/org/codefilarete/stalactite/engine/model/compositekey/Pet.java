@@ -76,4 +76,47 @@ public class Pet {
 					'}';
 		}
 	}
+	
+	public static class Dog extends Pet {
+		
+		private DogBreed dogBreed;
+		
+		public Dog(PetId id) {
+			super(id);
+		}
+		
+		public DogBreed getDogBreed() {
+			return dogBreed;
+		}
+	}
+	
+	public enum DogBreed {
+		Labrador,
+		Australian_Shepherd,
+		Golden_Retriever,
+	}
+	
+	public static class Cat extends Pet {
+		
+		private CatBreed catBreed;
+		
+		public Cat(PetId id) {
+			super(id);
+		}
+		
+		public CatBreed getCatBreed() {
+			return catBreed;
+		}
+		
+		public Cat setCatBreed(CatBreed catBreed) {
+			this.catBreed = catBreed;
+			return this;
+		}
+	}
+	
+	public enum CatBreed {
+		Persian,
+		Siamese,
+		Maine_Coon
+	}
 }

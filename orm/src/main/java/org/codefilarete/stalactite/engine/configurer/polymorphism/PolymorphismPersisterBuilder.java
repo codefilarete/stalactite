@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorp
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.AbstractIdentification;
+import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterListenerWrapper;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;

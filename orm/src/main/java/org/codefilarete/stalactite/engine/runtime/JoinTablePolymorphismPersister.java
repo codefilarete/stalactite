@@ -102,7 +102,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		
 		this.subEntitiesPersisters = (Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		Set<? extends Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
-		Map<Class<? extends C>, SelectExecutor<? extends C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
+		Map<Class<? extends C>, ConfiguredRelationalPersister<? extends C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
 				Entry::getValue);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
 		
@@ -116,7 +116,9 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
 				Entry::getKey,
 				entry -> entry.getValue().getMapping().getTargetTable());
-		this.mainSelectExecutor = new JoinTablePolymorphismSelectExecutor<>(tablePerSubEntityType, subclassSelectExecutors, mainTable, connectionProvider,
+		this.mainSelectExecutor = new JoinTablePolymorphismSelectExecutor<>(
+				mainPersister,
+				tablePerSubEntityType, subclassSelectExecutors, connectionProvider,
 				dialect);
 		
 		this.entitySelectExecutor = new JoinTablePolymorphismEntitySelectExecutor<>(subEntitiesPersisters,
@@ -165,7 +167,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	@Override
 	public void insert(Iterable<? extends C> entities) {
 		mainPersister.insert(entities);
-		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister((Iterable) entities);
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
 		entitiesPerType.forEach(InsertExecutor::insert);
 	}
 	

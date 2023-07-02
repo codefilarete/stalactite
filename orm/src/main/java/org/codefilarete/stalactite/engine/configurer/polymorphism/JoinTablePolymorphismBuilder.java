@@ -19,8 +19,7 @@ import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
+import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.JoinTablePolymorphismPersister;
@@ -68,15 +67,13 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass =
-				collectSubClassPersister(dialect, connectionConfiguration);
+		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		
-		JoinTablePolymorphismPersister<C, I> surrogate = new JoinTablePolymorphismPersister<>(
+		return new JoinTablePolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),
 				dialect);
-		return surrogate;
 	}
 	
 	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
@@ -84,8 +81,13 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 		
 		BeanMappingBuilder<D, ?> beanMappingBuilder = new BeanMappingBuilder<>();
 		for (SubEntityMappingConfiguration<D> subConfiguration : ((Set<SubEntityMappingConfiguration<D>>) (Set) joinTablePolymorphism.getSubClasses())) {
-			persisterPerSubclass.put(subConfiguration.getEntityType(),
-					buildSubclassPersister(dialect, connectionConfiguration, beanMappingBuilder, subConfiguration));
+			ConfiguredRelationalPersister<D, I> subclassPersister = buildSubclassPersister(dialect, connectionConfiguration, beanMappingBuilder, subConfiguration);
+			// Adding join with parent table to select
+			subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
+					new EntityMergerAdapter<C, T>(mainPersister.getMapping()),
+					subclassPersister.getMapping().getTargetTable().getPrimaryKey(),
+					this.mainTablePrimaryKey);
+			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		return persisterPerSubclass;
 	}
@@ -117,20 +119,13 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 			subTable,
 			subEntityPropertiesMapping,
 			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in joined-tables polymorphism
-			(Identification<D, I>) identification,
+			(AbstractIdentification<D, I>) identification,
 			subConfiguration.getPropertiesMapping().getBeanType(),
 			null);
 		
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)
-		ConfiguredRelationalPersister<D, I> subclassPersister = new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
-		
-		// Adding join with parent table to select
-		subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-				new EntityMergerAdapter<C, T>(mainPersister.getMapping()),
-				(PrimaryKey<SUBT, I>) subclassPersister.getMapping().getTargetTable().getPrimaryKey(),
-				this.mainTablePrimaryKey);
-		return subclassPersister;
+		return new SimpleRelationalEntityPersister<>(classMappingStrategy, dialect, connectionConfiguration);
 	}
 	
 	@Override

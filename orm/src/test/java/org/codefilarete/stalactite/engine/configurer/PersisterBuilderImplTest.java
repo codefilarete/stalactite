@@ -26,7 +26,6 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
@@ -384,7 +383,7 @@ public class PersisterBuilderImplTest {
 				.setTable(mainTable)
 				.setColumnNamingStrategy(accessorDefinition -> "myId");
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(Identification.forSingleKey(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -416,7 +415,7 @@ public class PersisterBuilderImplTest {
 				.setTable(mainTable)
 				.setColumnNamingStrategy(accessorDefinition -> "myId");
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(Identification.forSingleKey(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -440,7 +439,7 @@ public class PersisterBuilderImplTest {
 				.setTable(mainTable)
 				.setColumnNamingStrategy(accessorDefinition -> "myId");
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(Identification.forSingleKey(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
 				Column::getAbsoluteName,
@@ -465,7 +464,7 @@ public class PersisterBuilderImplTest {
 				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setForeignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT);
 		testInstance.mapEntityConfigurationPerTable();
-		testInstance.addIdentifyingPrimarykey(Identification.forSingleKey(identifyingConfiguration));
+		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
 		Table tableB = new Table("Vehicle");
 		Table tableC = new Table("Car");
@@ -509,7 +508,7 @@ public class PersisterBuilderImplTest {
 		
 		Table tableB = new Table("Vehicle");
 		Table tableC = new Table("Car");
-		PrimaryKey primaryKey = testInstance.addIdentifyingPrimarykey(Identification.forSingleKey(identifyingConfiguration));
+		PrimaryKey primaryKey = testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		PersisterBuilderImpl.propagatePrimaryKey(primaryKey, Arrays.asSet(tableB, tableC));
 		testInstance.applyForeignKeys(primaryKey, Arrays.asSet(tableB, tableC));
 		

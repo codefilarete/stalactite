@@ -40,6 +40,11 @@ public class HSQLDBDialect extends Dialect {
 		return new HSQLDBWriteOperationFactory();
 	}
 	
+	@Override
+	public boolean supportsTupleCondition() {
+		return true;
+	}
+	
 	static class HSQLDBWriteOperationFactory extends WriteOperationFactory {
 		
 		@Override

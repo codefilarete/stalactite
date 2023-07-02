@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +24,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +31,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
 
 public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	
@@ -617,5 +616,31 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 				.containsExactlyInAnyOrder(
 				new Pet(new Pet.PetId("Pluto", "Dog", 4)),
 				new Pet(new Pet.PetId("Schrodinger", "Cat", -42)));
+	}
+	
+	@Test
+	void crud_inheritance_joinedTables() {
+		EntityPersister<Pet, Pet.PetId> petPersister = MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
+				.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+						.map(Pet.PetId::getName)
+						.map(Pet.PetId::getRace)
+						.map(Pet.PetId::getAge))
+				.mapPolymorphism(PolymorphismPolicy.joinTable(Pet.class)
+						.addSubClass(subentityBuilder(Pet.Cat.class)
+								.mapEnum(Pet.Cat::getCatBreed))
+				)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Pet.Cat cat = new Pet.Cat(new Pet.PetId("Pluto", "Dog", 4));
+		cat.setCatBreed(Pet.CatBreed.Persian);
+		petPersister.insert(cat);
+		
+		Pet loadedPet = petPersister.select(cat.getId());
+		assertThat(loadedPet)
+				.usingRecursiveComparison()
+				.isEqualTo(cat);
 	}
 }
