@@ -41,7 +41,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
-	public void initTest() {
+	public void initTest() throws SQLException {
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(dataSource, dialect);
@@ -619,7 +619,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	}
 	
 	@Test
-	void crud_inheritance_joinedTables() {
+	void crud_inheritance_joinedTables() throws SQLException {
 		EntityPersister<Pet, Pet.PetId> petPersister = MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
 				.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
 						.map(Pet.PetId::getName)
@@ -642,5 +642,28 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		assertThat(loadedPet)
 				.usingRecursiveComparison()
 				.isEqualTo(cat);
+		
+		cat.setCatBreed(Pet.CatBreed.Persian);
+		petPersister.update(cat, loadedPet, true);
+		loadedPet = petPersister.select(cat.getId());
+		assertThat(loadedPet)
+				.usingRecursiveComparison()
+				.isEqualTo(cat);
+		
+		
+		persistenceContext.getConnectionProvider().giveConnection().commit();
+		petPersister.delete(cat);
+		String petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(petName).isNull();
+		String catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(catBreed).isNull();
+		persistenceContext.getConnectionProvider().giveConnection().rollback();
+		
+		// we check deleteById to ensure that it takes composite key into account
+		petPersister.deleteById(cat);
+		petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(petName).isNull();
+		catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(catBreed).isNull();
 	}
 }

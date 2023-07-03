@@ -37,20 +37,20 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 	
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
-	private final Map<Class<? extends C>, ConfiguredRelationalPersister<C, I>> subEntitiesSelectors;
+	private final Map<Class<? extends C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
 	public JoinTablePolymorphismSelectExecutor(
 			ConfiguredRelationalPersister<C, I> mainPersister,
 			Map<Class<? extends C>, Table> tablePerSubEntity,
-			Map<Class<? extends C>, ConfiguredRelationalPersister<? extends C, I>> subEntitiesSelectors,
+			Map<Class<? extends C>, ConfiguredRelationalPersister<? extends C, I>> subEntitiesPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
 		this.mainPersister = mainPersister;
 		this.tablePerSubEntity = tablePerSubEntity;
-		this.subEntitiesSelectors = (Map) subEntitiesSelectors;
+		this.subEntitiesPersisters = (Map) subEntitiesPersisters;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
@@ -111,7 +111,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 			resultSetIterator.forEachRemaining(row -> {
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
-				subEntitiesSelectors.values().forEach(subPersister -> {
+				subEntitiesPersisters.values().forEach(subPersister -> {
 					I id = subPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
 					if (id != null) {
 						idsPerSubclass.computeIfAbsent(subPersister.getClassToPersist(), k -> new HashSet<>())
@@ -122,14 +122,14 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 		}
 		
 		Set<C> result = new HashSet<>();
-		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesSelectors.get(subclass).select(subclassIds)));
+		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesPersisters.get(subclass).select(subclassIds)));
 		
 		return result;
 	}
 	
 	@VisibleForTesting
 	TupleIn transformCompositeIdentifierColumnValuesToTupleInValues(int idsCount, Map<? extends Column<T, Object>, Object> values) {
-		List<Object[]> values1 = new ArrayList<>(idsCount);
+		List<Object[]> resultValues = new ArrayList<>(idsCount);
 		
 		Column<?, ?>[] columns = new ArrayList<>(values.keySet()).toArray(new Column[0]);
 		for (int i = 0; i < idsCount; i++) {
@@ -143,9 +143,9 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 					beanValues.add(value);
 				}
 			}
-			values1.add(beanValues.toArray());
+			resultValues.add(beanValues.toArray());
 		}
 		
-		return new TupleIn(columns, values1);
+		return new TupleIn(columns, resultValues);
 	}
 }
