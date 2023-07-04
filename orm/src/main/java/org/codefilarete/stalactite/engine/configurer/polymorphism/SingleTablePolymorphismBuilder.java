@@ -112,7 +112,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 			mainTable,
 			subEntityPropertiesMapping,
 			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in single-table polymorphism
-			(Identification<D, I>) identification,
+			(AbstractIdentification<D, I>) identification,
 			subConfiguration.getPropertiesMapping().getBeanType(),
 			null);
 		// we need to copy also shadow columns, made in particular for one-to-one owned by source side because foreign key is maintained through it

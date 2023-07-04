@@ -117,10 +117,10 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		);
 		
 		this.selectExecutor = new SingleTablePolymorphismSelectExecutor<>(
+				mainPersister,
 				subEntitiesPersisters,
 				discriminatorColumn,
 				polymorphismPolicy,
-				(T) mainPersister.getMapping().getTargetTable(),
 				connectionProvider,
 				dialect);
 		

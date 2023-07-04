@@ -666,4 +666,53 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).singleResult().execute();
 		assertThat(catBreed).isNull();
 	}
+	
+	@Test
+	void crud_inheritance_singleTable() throws SQLException {
+		EntityPersister<Pet, Pet.PetId> petPersister = MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
+				.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
+						.map(Pet.PetId::getName)
+						.map(Pet.PetId::getRace)
+						.map(Pet.PetId::getAge))
+				.mapPolymorphism(PolymorphismPolicy.singleTable(Pet.class)
+						.addSubClass(subentityBuilder(Pet.Cat.class)
+								.mapEnum(Pet.Cat::getCatBreed), "Pet")
+				)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Pet.Cat cat = new Pet.Cat(new Pet.PetId("Pluto", "Dog", 4));
+		cat.setCatBreed(Pet.CatBreed.Persian);
+		petPersister.insert(cat);
+		
+		Pet loadedPet = petPersister.select(cat.getId());
+		assertThat(loadedPet)
+				.usingRecursiveComparison()
+				.isEqualTo(cat);
+		
+		cat.setCatBreed(Pet.CatBreed.Persian);
+		petPersister.update(cat, loadedPet, true);
+		loadedPet = petPersister.select(cat.getId());
+		assertThat(loadedPet)
+				.usingRecursiveComparison()
+				.isEqualTo(cat);
+		
+		
+		persistenceContext.getConnectionProvider().giveConnection().commit();
+		petPersister.delete(cat);
+		String petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(petName).isNull();
+		String catBreed = persistenceContext.newQuery("select catBreed from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(catBreed).isNull();
+		persistenceContext.getConnectionProvider().giveConnection().rollback();
+		
+		// we check deleteById to ensure that it takes composite key into account
+		petPersister.deleteById(cat);
+		petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(petName).isNull();
+		catBreed = persistenceContext.newQuery("select catBreed from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		assertThat(catBreed).isNull();
+	}
 }
