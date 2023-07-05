@@ -31,7 +31,7 @@ public interface ForeignKeyNamingStrategy {
 		@Override
 		public <SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target) {
 			// We ensure a consistent ordering of columns, regardless of the order they were bound.
-			ModifiableInt hashCode = new ModifiableInt(1);
+			ModifiableInt hashCode = new ModifiableInt(src.getTable().getAbsoluteName().hashCode());
 			target.getColumns().stream().sorted(COLUMN_COMPARATOR).forEach(joinLink -> {
 				hashCode.reset(hashCode.getValue() * 31 + joinLink.getExpression().hashCode());
 			});
