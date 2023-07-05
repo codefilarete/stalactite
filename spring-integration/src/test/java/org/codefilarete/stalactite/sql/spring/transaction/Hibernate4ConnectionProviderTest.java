@@ -1,14 +1,14 @@
-package org.codefilarete.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring.transaction;
 
 import javax.sql.DataSource;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import org.codefilarete.stalactite.sql.spring.transaction.Hibernate4ConnectionProvider;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.ConnectionHolder;
-import org.springframework.orm.hibernate5.HibernateTransactionManager;
+import org.springframework.orm.hibernate4.HibernateTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Guillaume Mary
  */
-class Hibernate5ConnectionProviderTest {
+class Hibernate4ConnectionProviderTest {
 	
 	@Test
 	void giveConnection_givenDataSourceTransactionManager_itsDataSourceIsCalled() throws SQLException {
@@ -26,7 +26,7 @@ class Hibernate5ConnectionProviderTest {
 		DataSource dataSourceMock = mock(DataSource.class);
 		Connection expectedConnection = mock(Connection.class);
 		when(dataSourceMock.getConnection()).thenReturn(expectedConnection);
-		Hibernate5ConnectionProvider testInstance = new Hibernate5ConnectionProvider(new HibernateTransactionManager() {
+		Hibernate4ConnectionProvider testInstance = new Hibernate4ConnectionProvider(new HibernateTransactionManager() {
 			@Override
 			public DataSource getDataSource() {
 				getDataSourceInvokationCounter.increment();

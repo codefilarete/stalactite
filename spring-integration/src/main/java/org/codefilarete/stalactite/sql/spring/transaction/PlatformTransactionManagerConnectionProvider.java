@@ -1,6 +1,5 @@
-package org.codefilarete.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring.transaction;
 
-import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
@@ -15,7 +14,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * {@link ConnectionProvider} acting as a bridge for Spring's {@link PlatformTransactionManager}.
- * One subclass for each known {@link PlatformTransactionManager} exist, prefer them to avoid {@link NoClassDefFoundError} :
+ * One subclass for each known {@link PlatformTransactionManager} exists, prefer them to avoid {@link NoClassDefFoundError} :
  * {@link PlatformTransactionManagerConnectionProvider} could have handled those cases through some constructor or factory method, but it rises an
  * error if the project doesn't have the dependencies due to JPA / Hibernate presence in imports.
  * This class is left public to let one handle an unexpected case.
@@ -39,7 +38,6 @@ public class PlatformTransactionManagerConnectionProvider implements SeparateTra
 		this.dataSourceProvider = dataSourceProvider;
 	}
 	
-	@Nonnull
 	@Override
 	public Connection giveConnection() {
 		// DataSourceUtils.getConnection(..) gets a connection even if no surrounding transaction exists so we have to check it before

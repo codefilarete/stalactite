@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring.transaction;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -6,6 +6,8 @@ import java.sql.SQLException;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor.JdbcOperation;
+import org.codefilarete.stalactite.sql.spring.transaction.PlatformTransactionManagerConnectionProvider;
+import org.codefilarete.stalactite.sql.spring.transaction.TransactionManagerDataSourceProvider;
 import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;

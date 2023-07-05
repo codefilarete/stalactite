@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.sql.spring;
+package org.codefilarete.stalactite.sql.spring.transaction;
 
 import org.springframework.orm.jpa.JpaTransactionManager;
 
