@@ -21,7 +21,6 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 
  * @author Guillaume Mary
  * @see DataSourceConnectionProvider
- * @see Hibernate4ConnectionProvider
  * @see Hibernate5ConnectionProvider
  * @see JpaConnectionProvider
  */
