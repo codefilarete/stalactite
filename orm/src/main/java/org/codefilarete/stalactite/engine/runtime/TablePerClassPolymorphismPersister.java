@@ -111,13 +111,10 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree(), ROOT_STRATEGY_NAME)
 		);
 		
-		Map<Class<? extends C>, SelectExecutor<? extends C, I>> subEntitiesSelectors = Iterables.map(subEntitiesPersisters.entrySet(),
-				Entry::getKey,
-				Functions.chain(Entry::getValue, SimpleRelationalEntityPersister::getSelectExecutor));
 		this.selectExecutor = new TablePerClassPolymorphicSelectExecutor<>(
+				mainPersister,
 				tablePerSubEntity,
-				subEntitiesSelectors,
-				mainPersister.getMapping().getTargetTable(),
+				subEntitiesPersisters,
 				connectionProvider,
 				dialect);
 		

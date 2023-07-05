@@ -47,12 +47,22 @@ public class ColumnedRow {
 	 */
 	@Nullable
 	public <T extends Table<T>, O> O getValue(Selectable<O> column, Row row) {
-		String columnAlias = aliasProvider.apply(column);
+		String columnAlias = getAlias(column);
 		if (columnAlias != null) {
 			return (O) row.get(columnAlias);
 		} else {
 			// we raise an exception (instead of returning null) because we think current usage is wrong
 			throw new IllegalArgumentException("Column " + column + " has no matching alias in result set");
 		}
+	}
+	
+	/**
+	 * Give alias of given column
+	 * 
+	 * @param column any non-null {@link Selectable}
+	 * @return the alias given by mapping function provided to constructor
+	 */
+	public String getAlias(Selectable<?> column) {
+		return aliasProvider.apply(column);
 	}
 }
