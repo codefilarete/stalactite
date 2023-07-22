@@ -9,7 +9,6 @@ import java.util.stream.Stream;
 
 import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
  * A storage of mapping between Java classes and Sql Types. Aimed at generating schema, not reading nor writing to ResultSet/Statement.
@@ -87,7 +86,7 @@ public class JavaTypeToSqlTypeMapping {
 	 * Gives the SQL type of a Java class, checks also for its interfaces 
 	 *
 	 * @param javaType a Java class
-	 * @return the SQL type for the given column
+	 * @return the SQL type for the given column or null if not found
 	 */
 	public String getTypeName(Class javaType) {
 		String type = defaultJavaTypeToSQLType.get(javaType);
@@ -100,8 +99,6 @@ public class JavaTypeToSqlTypeMapping {
 				type = stream.filter(Objects::nonNull).findFirst().orElse(null);
 				if (type != null) {
 					return type;
-				} else {
-					throw new BindingException("No sql type defined for " + javaType);
 				}
 			}
 		}

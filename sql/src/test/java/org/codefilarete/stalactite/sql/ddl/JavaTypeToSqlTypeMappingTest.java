@@ -3,13 +3,11 @@ package org.codefilarete.stalactite.sql.ddl;
 import java.time.Month;
 import java.util.concurrent.TimeUnit;
 
-import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * @author Guillaume Mary
@@ -66,9 +64,9 @@ class JavaTypeToSqlTypeMappingTest {
 	}
 	
 	@Test
-	void getTypeName_unkonwnType_exceptionIsThrown() {
+	void getTypeName_unknownType_returnsNull() {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
-		assertThatExceptionOfType(BindingException.class).isThrownBy(() -> testInstance.getTypeName(Object.class, null));
+		assertThat(testInstance.getTypeName(Object.class)).isNull();
 	}
 	
 }
