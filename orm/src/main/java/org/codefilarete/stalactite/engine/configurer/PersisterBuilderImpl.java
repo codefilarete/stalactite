@@ -93,6 +93,7 @@ import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
@@ -195,9 +196,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return the built persister, never null
 	 */
 	public ConfiguredRelationalPersister<C, I> build(Dialect dialect,
-														   ConnectionConfiguration connectionConfiguration,
-														   PersisterRegistry persisterRegistry,
-														   @Nullable Table table) {
+	                                                 ConnectionConfiguration connectionConfiguration,
+	                                                 PersisterRegistry persisterRegistry,
+	                                                 @Nullable Table table) {
 		boolean isInitiator = PersisterBuilderContext.CURRENT.get() == null;
 		
 		if (isInitiator) {
@@ -213,8 +214,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				// we can cast because all persisters we registered implement the interface
 				return (ConfiguredRelationalPersister<C, I>) existingPersister;
 			}
-			ConfiguredRelationalPersister<C, I> result = doBuild(table, dialect::buildGeneratedKeysReader,
-					dialect, connectionConfiguration, persisterRegistry);
+			ConfiguredRelationalPersister<C, I> result = doBuild(table, dialect, connectionConfiguration, persisterRegistry);
 			
 			if (isInitiator) {	
 				// This if is only there to execute code below only once, at the very end of persistence graph build,
@@ -240,7 +240,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	@VisibleForTesting
 	<T extends Table<T>> ConfiguredRelationalPersister<C, I> doBuild(@Nullable T table,
-																	 GeneratedKeysReaderBuilder generatedKeysReaderBuilder,
 																	 Dialect dialect,
 																	 ConnectionConfiguration connectionConfiguration,
 																	 PersisterRegistry persisterRegistry) {
@@ -262,7 +261,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		applyForeignKeys(primaryKey, new KeepOrderSet<>(tables) );
 		addIdentificationToMapping(identification, inheritanceMappingPerTable.getMappings());
 		// determining insertion manager must be done AFTER primary key addition, else it would fall into NullPointerException
-		determineIdentifierManager(identification, inheritanceMappingPerTable, identification.getIdAccessor(), generatedKeysReaderBuilder);
+		determineIdentifierManager(identification, inheritanceMappingPerTable, identification.getIdAccessor(), dialect, connectionConfiguration);
 		
 		// Creating main persister 
 		Mapping<C, T> mainMapping = (Mapping<C, T>) first(inheritanceMappingPerTable.getMappings());
@@ -843,7 +842,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private <E> void determineIdentifierManager(AbstractIdentification<E, I> identification,
 												MappingPerTable<E> mappingPerTable,
 												ReversibleAccessor<E, I> idAccessor,
-												GeneratedKeysReaderBuilder generatedKeysReaderBuilder) {
+												Dialect dialect,
+												ConnectionConfiguration connectionConfiguration) {
 		AccessorDefinition idDefinition = AccessorDefinition.giveDefinition(idAccessor);
 		Class<I> identifierType = idDefinition.getMemberType();
 		if (identification instanceof CompositeKeyIdentification) {
@@ -867,12 +867,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				Column<?, I> primaryKey = (Column<?, I>) first(targetTable.getPrimaryKey().getColumns());
 				identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
 						new SinglePropertyIdAccessor<>(idAccessor),
-						generatedKeysReaderBuilder.buildGeneratedKeysReader(primaryKey.getName(), primaryKey.getJavaType()),
+						dialect.buildGeneratedKeysReader(primaryKey.getName(), primaryKey.getJavaType()),
 						primaryKey.getJavaType()
 				);
 			} else if (identifierPolicy instanceof BeforeInsertIdentifierPolicy) {
-				identifierInsertionManager = new BeforeInsertIdentifierManager<>(
-						new SinglePropertyIdAccessor<>(idAccessor), ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(), identifierType);
+				Sequence<I> sequence = ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(dialect, connectionConfiguration, identification.getIdentificationDefiner().getEntityType().getName());
+				identifierInsertionManager = new BeforeInsertIdentifierManager<>(new SinglePropertyIdAccessor<>(idAccessor), sequence, identifierType);
 			} else if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
 				AlreadyAssignedIdentifierPolicy<E, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy;
 				identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(

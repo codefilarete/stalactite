@@ -6,6 +6,13 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
+import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
+import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Sequence;
 
 /**
@@ -42,7 +49,32 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
 		 * Reader may be interested in {@link PooledHiLoSequence}.
+		 * Sequence data will be stored as specified through {@link SequenceStorageOptions#DEFAULT}
 		 * 
+		 * @return a new policy that will be used to get the identifier value
+		 * @see #beforeInsert(SequenceStorageOptions) 
+		 */
+		static BeforeInsertIdentifierPolicy<Long> beforeInsert() {
+			return new DefaultBeforeInsertIdentifierPolicySupport();
+		}
+		
+		/**
+		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
+		 * Reader may be interested in {@link PooledHiLoSequence}.
+		 *
+		 * @param sequenceStorageOptions the options about table to store sequence data
+		 * @return a new policy that will be used to get the identifier value
+		 * @see SequenceStorageOptions#DEFAULT
+		 * @see SequenceStorageOptions#HIBERNATE_DEFAULT
+		 */
+		static BeforeInsertIdentifierPolicy<Long> beforeInsert(SequenceStorageOptions sequenceStorageOptions) {
+			return new DefaultBeforeInsertIdentifierPolicySupport(sequenceStorageOptions);
+		}
+		
+		/**
+		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
+		 * Reader may be interested in {@link PooledHiLoSequence}.
+		 *
 		 * @param sequence the {@link Sequence} to ask for identifier value
 		 * @param <I> identifier type
 		 * @return a new policy that will be used to get the identifier value
@@ -86,7 +118,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 */
 	interface BeforeInsertIdentifierPolicy<I> extends IdentifierPolicy<I> {
 		
-		Sequence<I> getIdentifierProvider();
+		Sequence<I> getIdentifierProvider(Dialect dialect, ConnectionConfiguration connectionConfiguration, String sequenceName);
 	}
 	
 	class BeforeInsertIdentifierPolicySupport<I> implements BeforeInsertIdentifierPolicy<I> {
@@ -98,8 +130,33 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		}
 		
 		@Override
-		public Sequence<I> getIdentifierProvider() {
+		public Sequence<I> getIdentifierProvider(Dialect dialect, ConnectionConfiguration connectionConfiguration, String sequenceName) {
 			return identifierProvider;
+		}
+	}
+	
+	class DefaultBeforeInsertIdentifierPolicySupport implements BeforeInsertIdentifierPolicy<Long> {
+		
+		private final SequenceStorageOptions storageOptions;
+		
+		public DefaultBeforeInsertIdentifierPolicySupport() {
+			this.storageOptions = SequenceStorageOptions.DEFAULT;
+		}
+		
+		public DefaultBeforeInsertIdentifierPolicySupport(SequenceStorageOptions sequenceStorageOptions) {
+			this.storageOptions = sequenceStorageOptions;
+		}
+		
+		@Override
+		public Sequence<Long> getIdentifierProvider(Dialect dialect, ConnectionConfiguration connectionConfiguration, String sequenceName) {
+			PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(50, sequenceName);
+			ConnectionProvider connectionProvider = connectionConfiguration.getConnectionProvider();
+			if (!(connectionProvider instanceof SeparateTransactionExecutor)) {
+				throw new MappingConfigurationException("Before-insert identifier policy configured with connection that doesn't support separate transaction,"
+						+ " please provide a " + Reflections.toString(SeparateTransactionExecutor.class) + " as connection provider or change identifier policy");
+			}
+			return new PooledHiLoSequence(options,
+					new SequencePersister(storageOptions, dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
 		}
 	}
 	

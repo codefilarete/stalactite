@@ -30,15 +30,15 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	OneToManyOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
 	
 	/**
-	 * Defines the bidirectional relationship.
+	 * Defines the bidirectional relationship stored in target entity table.
 	 * No need to additionally call {@link #mappedBy(SerializableBiConsumer)} or {@link #mappedBy(Column)}.
 	 *
 	 * If the relationship is already defined through {@link #mappedBy(Column)} or {@link #mappedBy(SerializableBiConsumer)} then there's no
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 *
-	 * Signature note : given function accepts "? super C" to allow given method to return an abstraction of current mapping definition, especially
-	 * in case of inheritance where current mapping is made of inheritance and target entities only maps it as an upper (ancestor) 
+	 * Signature note : given function accepts "? super C" to allow given method to return an abstraction of current mapped entity, for example
+	 * if current mapped entity inherits from an abstraction and target entity only maps the ancestor. 
 	 * 
 	 * @param reverseLink opposite owner of the relation (getter)
 	 * @return the global mapping configurer
@@ -59,10 +59,12 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	OneToManyOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
 	
 	/**
-	 * Defines setter of current entity on target entity. Equivalent of {@link #mappedBy(SerializableFunction)} for relation mapped with an
-	 * association table because in such case {@link #mappedBy(SerializableFunction)} is not used, hence reverse setter can't be deduced.
+	 * Defines setter of current entity on target entity, which is only interesting while dealing with relation mapped
+	 * through an association table (no use of {@link #mappedBy(SerializableFunction)}) because reverse setter can't be
+	 * deduced.
 	 * This method has no consequence on database mapping since it only interacts in memory.
-	 * If used with owned association it would have no consequence and won't be taken into account.
+	 * If used with owned association ({@link #mappedBy(SerializableFunction)} already used) it would have no consequence
+	 * and won't be taken into account.
 	 * 
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer

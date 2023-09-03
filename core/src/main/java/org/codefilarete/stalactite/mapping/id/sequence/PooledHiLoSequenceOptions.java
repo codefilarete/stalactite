@@ -7,7 +7,7 @@ import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.function.ConverterRegistry;
 
 /**
- * Classe de stockage de la configuration de {@link PooledHiLoSequence}
+ * {@link PooledHiLoSequence} configuration options. 
  * 
  * @author Guillaume Mary
  */

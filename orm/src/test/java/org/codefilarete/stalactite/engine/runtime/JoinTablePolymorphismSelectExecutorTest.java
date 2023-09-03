@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -22,7 +23,7 @@ class JoinTablePolymorphismSelectExecutorTest {
 		Column lastNameColumn = table.addColumn("lastName", String.class);
 		Column ageColumn = table.addColumn("age", int.class);
 		
-		Map<Column<Table, Object>, List<Object>> columnValues = new HashMap<>();
+		Map<Column<Table, Object>, List<Object>> columnValues = new LinkedHashMap<>();
 		
 		Toto bean1 = new Toto("John", "Doe", 40);
 		Toto bean2 = new Toto("Jane", "Doe", 41);

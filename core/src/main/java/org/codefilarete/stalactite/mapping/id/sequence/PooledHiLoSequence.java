@@ -6,7 +6,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 
 /**
  * Long identifier generator for an entity class.
- * Store the state of its sequence in a table (which can be shared, see {@link SequencePersister}
+ * Store the state of its sequence in a table (which can be shared between sequences, see {@link SequencePersister})
  * 
  * Inspired by "enhanced table generator" with Hilo Optimizer from Hibernate.
  * 
