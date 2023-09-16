@@ -45,6 +45,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(Boolean.TYPE, "boolean");
 		put(Double.class, "double");
 		put(Double.TYPE, "double");
+		put(Number.class, "double");
 		put(Float.class, "float");
 		put(Float.TYPE, "float");
 		put(BigDecimal.class, "decimal(10,4)");

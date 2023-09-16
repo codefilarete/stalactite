@@ -74,6 +74,7 @@ public class ParameterBinderRegistry {
 		register(String.class, DefaultParameterBinders.STRING_BINDER);
 		register(Double.class, DefaultParameterBinders.DOUBLE_BINDER);
 		register(Double.TYPE, DefaultParameterBinders.DOUBLE_PRIMITIVE_BINDER);
+		register(Number.class, DefaultParameterBinders.NUMBER_BINDER);
 		register(Float.class, DefaultParameterBinders.FLOAT_BINDER);
 		register(Float.TYPE, DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER);
 		register(BigDecimal.class, DefaultParameterBinders.BIGDECIMAL_BINDER);
