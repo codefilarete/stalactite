@@ -1,14 +1,10 @@
 package org.codefilarete.stalactite.mapping.id.sequence;
 
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
-import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
-import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
-import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
-import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -31,7 +27,7 @@ class PooledHiLoSequenceTest {
         PooledHiLoSequence testInstance = new PooledHiLoSequence(totoSequenceOptions, sequencePersisterMock);
         
         // we check that we can increment from an empty database
-        for (int i = 0; i < 45; i++) {    // 45 is totally arbitrary, at least more that poolSize to check that reservePool() is called
+        for (int i = 1; i < 45; i++) {    // 45 is totally arbitrary, at least more that poolSize to check that reservePool() is called
             assertThat(testInstance.next().intValue()).isEqualTo(i);
         }
         

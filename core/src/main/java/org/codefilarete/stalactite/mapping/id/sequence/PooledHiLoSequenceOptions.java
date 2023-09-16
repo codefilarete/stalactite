@@ -44,7 +44,7 @@ public class PooledHiLoSequenceOptions {
 	 * @param sequenceName the name of the sequence, most likely unique for the given {@link SequenceStorageOptions}
 	 */
 	public PooledHiLoSequenceOptions(int poolSize, String sequenceName) {
-		this(poolSize, sequenceName, SequenceStorageOptions.DEFAULT, 0);
+		this(poolSize, sequenceName, SequenceStorageOptions.DEFAULT, 1);
 	}
 	
 	/**
@@ -55,7 +55,7 @@ public class PooledHiLoSequenceOptions {
 	 * @param storageOptions options for storing the sequence in the database
 	 */
 	public PooledHiLoSequenceOptions(int poolSize, String sequenceName, SequenceStorageOptions storageOptions) {
-		this(poolSize, sequenceName, storageOptions, 0);
+		this(poolSize, sequenceName, storageOptions, 1);
 	}
 	
 	/**
