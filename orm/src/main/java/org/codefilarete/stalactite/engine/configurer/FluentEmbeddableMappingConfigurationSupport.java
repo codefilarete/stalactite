@@ -472,7 +472,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final PropertyAccessor<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
-		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
+		private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
 		private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
 		private final ValueAccessPointMap<SRC, Column> overriddenColumns = new ValueAccessPointMap<>();
 		

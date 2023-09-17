@@ -134,7 +134,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 			true,	// given Identification (which is parent one) contains identifier policy
 			subTable,
 			subEntityMapping.getMapping(),
-			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in table-per-class polymorphism 
+			new ValueAccessPointSet<>(),    // TODO: implement properties set by constructor feature in table-per-class polymorphism 
 			(AbstractIdentification<D, I>) identification,
 			subConfiguration.getPropertiesMapping().getBeanType(),
 			null);

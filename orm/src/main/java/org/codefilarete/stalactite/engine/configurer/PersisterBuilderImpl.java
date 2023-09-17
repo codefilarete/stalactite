@@ -1059,7 +1059,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 			private final T targetTable;
 			private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping;
-			private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
+			private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 			private final boolean mappedSuperClass;
 			private Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> identifier;
 			

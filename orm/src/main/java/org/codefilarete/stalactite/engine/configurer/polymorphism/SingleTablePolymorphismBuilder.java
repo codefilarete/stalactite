@@ -111,7 +111,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 			true,	// given Identification (which is parent one) contains identifier policy
 			mainTable,
 			subEntityPropertiesMapping,
-			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in single-table polymorphism
+			new ValueAccessPointSet<>(),    // TODO: implement properties set by constructor feature in single-table polymorphism
 			(AbstractIdentification<D, I>) identification,
 			subConfiguration.getPropertiesMapping().getBeanType(),
 			null);

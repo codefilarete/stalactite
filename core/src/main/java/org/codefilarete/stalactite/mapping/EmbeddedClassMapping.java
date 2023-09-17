@@ -68,7 +68,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 */
 	private final KeepOrderSet<ShadowColumnValueProvider<C, T>> shadowColumnsForUpdate = new KeepOrderSet<>();
 	
-	private final ValueAccessPointSet propertiesSetByConstructor = new ValueAccessPointSet();
+	private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 	
 	/**
 	 * Builds an embedded class mapping between its properties (as {@link ReversibleAccessor}) and some {@link Column}s.

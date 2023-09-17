@@ -118,7 +118,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 			false,
 			subTable,
 			subEntityPropertiesMapping,
-			new ValueAccessPointSet(),    // TODO: implement properties set by constructor feature in joined-tables polymorphism
+			new ValueAccessPointSet<>(),    // TODO: implement properties set by constructor feature in joined-tables polymorphism
 			(AbstractIdentification<D, I>) identification,
 			subConfiguration.getPropertiesMapping().getBeanType(),
 			null);
