@@ -117,7 +117,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		
 		assertNullOrEqual(tableDefinedByColumnOverride, tableDefinedByInheritanceConfiguration);
 		
-		Table subTable = nullable(tableDefinedByColumnOverride)
+		SUBTABLE subTable = (SUBTABLE) nullable(tableDefinedByColumnOverride)
 				.elseSet(tableDefinedByInheritanceConfiguration)
 				.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
 		
@@ -126,7 +126,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		addPrimaryKey(subTable);
-		Map<ReversibleAccessor, Column> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
+		Map<ReversibleAccessor<C, Object>, Column<SUBTABLE, Object>> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
 		subEntityPropertiesMapping.putAll(projectedMainMapping);
 		Mapping subEntityMapping = new Mapping(subConfiguration, subTable, subEntityPropertiesMapping, false);
 		addIdentificationToMapping(identification, subEntityMapping);

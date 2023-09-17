@@ -138,11 +138,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		this.mappedByConfiguration.reverseColumn = (Column<Table<?>, Object>) reverseColumn;
 	}
 	
-	public ValueAccessPointMap<Column<Table<?>, Object>> getForeignKeyColumnMapping() {
+	public ValueAccessPointMap<SRC, Column<Table<?>, Object>> getForeignKeyColumnMapping() {
 		return this.mappedByConfiguration.getForeignKeyColumnMapping();
 	}
 	
-	public ValueAccessPointMap<String> getForeignKeyNameMapping() {
+	public ValueAccessPointMap<SRC, String> getForeignKeyNameMapping() {
 		return this.mappedByConfiguration.getForeignKeyNameMapping();
 	}
 	
@@ -206,9 +206,9 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		 */
 		private Column<Table<?>, Object> reverseColumn;
 		
-		private ValueAccessPointMap<Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
+		private ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
 		
-		private ValueAccessPointMap<String> foreignKeyNameMapping = new ValueAccessPointMap<>();
+		private ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
 		
 		public SerializableFunction<TRGT, SRC> getReverseGetter() {
 			return reverseGetter;
@@ -234,11 +234,11 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 			this.reverseColumn = (Column<Table<?>, Object>) reverseColumn;
 		}
 		
-		public ValueAccessPointMap<Column<Table<?>, Object>> getForeignKeyColumnMapping() {
+		public ValueAccessPointMap<SRC, Column<Table<?>, Object>> getForeignKeyColumnMapping() {
 			return foreignKeyColumnMapping;
 		}
 		
-		public ValueAccessPointMap<String> getForeignKeyNameMapping() {
+		public ValueAccessPointMap<SRC, String> getForeignKeyNameMapping() {
 			return foreignKeyNameMapping;
 		}
 		

@@ -98,7 +98,7 @@ public interface Mapping<C, T extends Table<T>> {
 		// does nothing by default
 	}
 	
-	void addPropertySetByConstructor(ValueAccessPoint accessor);
+	void addPropertySetByConstructor(ValueAccessPoint<C> accessor);
 	
 	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
 	

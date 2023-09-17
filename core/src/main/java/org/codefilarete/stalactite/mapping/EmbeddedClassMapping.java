@@ -186,7 +186,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
 		this.propertiesSetByConstructor.add(accessor);
 	}
 	

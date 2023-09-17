@@ -68,7 +68,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	

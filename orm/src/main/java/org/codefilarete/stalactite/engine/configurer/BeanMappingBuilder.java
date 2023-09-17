@@ -89,7 +89,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		return result.get();
 	}
 	
-	private static void assertHolderIsFilledWithTargetTable(Holder<Table> result, Column targetColumn, ValueAccessPoint valueAccessPoint) {
+	private static void assertHolderIsFilledWithTargetTable(Holder<Table> result, Column targetColumn, ValueAccessPoint<?> valueAccessPoint) {
 		if (targetColumn != null) {
 			if (result.get() != null && result.get() != targetColumn.getTable()) {
 				throw new MappingConfigurationException("Property override doesn't target main table : " + valueAccessPoint);
@@ -149,41 +149,46 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		return targetTable;
 	}
 	
-	protected void includeDirectMapping(BeanMappingConfiguration<?> givenConfiguration,
-										@Nullable ValueAccessPoint accessorPrefix,
-										ValueAccessPointMap<String> overriddenColumnNames,
-										ValueAccessPointMap<Column<T, ?>> overriddenColumns,
-										ValueAccessPointSet excludedProperties) {
-		givenConfiguration.getPropertiesMapping().stream()
+	protected void includeDirectMapping(BeanMappingConfiguration<?> mappingConfiguration,
+										@Nullable ValueAccessPoint<C> accessorPrefix,
+										ValueAccessPointMap<C, String> overriddenColumnNames,
+										ValueAccessPointMap<C, Column<T, ?>> overriddenColumns,
+										ValueAccessPointSet<C> excludedProperties) {
+		mappingConfiguration.getPropertiesMapping().stream()
 				.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()))
-				.forEach(linkage -> includeMapping(linkage, givenConfiguration, accessorPrefix,
-						overriddenColumnNames.get(linkage.getAccessor()),
-						overriddenColumns.get(linkage.getAccessor())));
+				.forEach(linkage -> {
+					Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
+					String columnName = nullable(overriddenColumn)
+							.map(Column::getName)
+							.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+					assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
+					includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
+				});
 	}
 	
 	protected <O> void includeMapping(Linkage<C, O> linkage,
-									  BeanMappingConfiguration<?> mappingConfiguration,
-									  @Nullable ValueAccessPoint accessorPrefix,
-									  @Nullable String overriddenColumnName,
-									  @Nullable Column<T, O> overriddenColumn) {
-		String columnName = nullable(overriddenColumn).map(Column::getName).getOr(() -> determineColumnName(linkage, overriddenColumnName));
-		assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
+									  @Nullable ValueAccessPoint<C> accessorPrefix,
+									  String columnName,
+									  @Nullable Column<T, O> overriddenColumn,
+									  Class<?> embeddedBeanType) {
 		Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName));
 		ensureColumnBindingInRegistry(linkage, column);
-		ReversibleAccessor<C, O> accessor;
+		ReversibleAccessor<C, ?> accessor;
 		if (accessorPrefix != null) {
-			accessor = newAccessorChain(Collections.singletonList(accessorPrefix), linkage.getAccessor(), mappingConfiguration.getBeanType());
+			accessor = newAccessorChain(Collections.singletonList(accessorPrefix), linkage.getAccessor(), embeddedBeanType);
 		} else {
 			accessor = linkage.getAccessor();
 		}
 		result.put((ReversibleAccessor<C, Object>) accessor, (Column<T, Object>) column);
 	}
 	
-	protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, BeanMappingConfiguration<?> mappingConfiguration) {
+	protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, BeanMappingConfiguration<O> mappingConfiguration) {
 		DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(linkage.getAccessor(), columnNameToCheck, columnNameProvider);
 		stream(mappingConfiguration.inheritanceIterable())
 				.flatMap(configuration -> (Stream<Linkage>) configuration.getPropertiesMapping().stream())
-				// not using equals() is voluntary since we want reference checking here to exclude same instance, prevent equals() override to break this algorithm
+				// not using equals() is voluntary since we want reference checking here to exclude same instance,
+				// since given linkage is one of given mappingConfiguration
+				// (doing as such also prevent equals() method override to break this algorithm)
 				.filter(pawn -> linkage != pawn)
 				.forEach(duplicateDefinitionChecker);
 	}
@@ -206,19 +211,19 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	}
 	
 	/**
-	 * Creates equivalent {@link Column}s of those of given {@link Map} values on the given target table. May do nothing if columns already exist.
+	 * Creates equivalent {@link Column}s of those given in {@link Map} values onto given target table. May do nothing if columns already exist.
 	 *
 	 * @param propertyToColumn mapping between some property accessors and {@link Column}s from default target {@link Table}
 	 * (the one given at {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)} time)
-	 * @param localTargetTable the table on which columns must be added
+	 * @param targetTable the table on which columns must be added
 	 * @return a mapping between properties of given {@link Map} keys and their column in given {@link Table}
 	 */
-	public static Map<ReversibleAccessor, Column> projectColumns(Map<? extends ReversibleAccessor, ? extends Column> propertyToColumn,
-																 Table localTargetTable,
-																 BiFunction<ReversibleAccessor, Column, String> columnNameSupplier) {
-		Map<ReversibleAccessor, Column> localResult = new HashMap<>();
+	public static <C, T extends Table<T>> Map<ReversibleAccessor<C, Object>, Column<T, Object>> projectColumns(Map<? extends ReversibleAccessor<C, Object>, ? extends Column<?, Object>> propertyToColumn,
+																											   T targetTable,
+																											   BiFunction<? super ReversibleAccessor<C, Object>, Column<?, Object>, String> columnNameSupplier) {
+		Map<ReversibleAccessor<C, Object>, Column<T, Object>> localResult = new HashMap<>();
 		propertyToColumn.forEach((accessor, column) -> {
-			Column projectedColumn = localTargetTable.addColumn(columnNameSupplier.apply(accessor, column), column.getJavaType());
+			Column<T, Object> projectedColumn = targetTable.addColumn(columnNameSupplier.apply(accessor, column), column.getJavaType());
 			projectedColumn.setAutoGenerated(column.isAutoGenerated());
 			projectedColumn.setNullable(column.isNullable());
 			localResult.put(accessor, projectedColumn);
@@ -241,7 +246,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			assertNotAlreadyDeclared(inset, treatedInsets);
 			
 			BeanMappingConfiguration<C> configuration = (BeanMappingConfiguration<C>) inset.getConfiguration();
-			ValueAccessPoint mappingPrefix = null;
+			ValueAccessPoint<C> mappingPrefix = null;
 			if (inset.getAccessor() != null) {
 				accessorPath.add(inset.getAccessor());
 				// small optimization to avoid creation of an Accessor chain of 1 element
@@ -251,7 +256,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					mappingPrefix = AccessorChain.forModel(new ArrayList<>(accessorPath));
 				}
 			}
-			BeanMappingConfiguration<? super C> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
+			BeanMappingConfiguration<?> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
 			if (superClassConfiguration != null) {
 				includeMappedSuperClassMapping(inset, accessorPath, superClassConfiguration);
 			}
@@ -267,7 +272,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 	}
 	
-	private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, BeanMappingConfiguration<? super C> superClassConfiguration) {
+	private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, BeanMappingConfiguration<?> superClassConfiguration) {
 		// we include super type mapping by using a new instance of BeanMappingBuilder, this is the simplest (but maybe not the most
 		// debuggable) and allows to manage inheritance of several mappedSuperClass 
 		Map<ReversibleAccessor<C, Object>, Column<T, Object>> superMapping = new BeanMappingBuilder<C, T>().build((BeanMappingConfiguration<C>) superClassConfiguration, targetTable,
@@ -275,7 +280,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		Class<?> insetBeanType = inset.getConfiguration().getBeanType();
 		superMapping.forEach((accessor, column) -> {
 			AccessorChain prefix;
-			List<Accessor> accessors;
+			List<Accessor<?, ?>> accessors;
 			if (accessorPath.size() == 1) {
 				accessors = Arrays.asList(Iterables.first(accessorPath), accessor);
 			} else {
@@ -302,11 +307,24 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		});
 	}
 	
-	private static AccessorChain newAccessorChain(List<ValueAccessPoint> rootAccessors, ValueAccessPoint terminalAccessor, Class<?> beanType) {
+	/**
+	 * Composes an {@link AccessorChain} from given {@link ValueAccessPoint}.
+	 * Acts as a caster or converter because {@link ValueAccessPoint} is an abstract vision of elements accepted by
+	 * {@link AccessorChain}.
+	 * Supported {@link ValueAccessPoint}s are {@link Accessor} and {@link ReversibleAccessor}, else an exception will be thrown
+	 * 
+	 * @param rootAccessors first elements to access a property
+	 * @param terminalAccessor final accessor that read property of latest element of rootAccessors
+	 * @param beanType read property type
+	 * @return a new {@link AccessorChain} that access property of terminalAccessor thanks to all accessors of rootAccessors
+	 */
+	private static <SRC, TRGT> AccessorChain<SRC, TRGT> newAccessorChain(List<? extends ValueAccessPoint<?>> rootAccessors,
+																		 ValueAccessPoint<?> terminalAccessor,
+																		 Class<TRGT> beanType) {
 		// we must clone rootAccessors to prevent from accessor mixing
-		List<ValueAccessPoint> accessorsTmp = new ArrayList<>(rootAccessors);
+		List<ValueAccessPoint<?>> accessorsTmp = new ArrayList<>(rootAccessors);
 		accessorsTmp.add(terminalAccessor);
-		List<Accessor> finalAccessors = new ArrayList<>();
+		List<Accessor<?, ?>> finalAccessors = new ArrayList<>();
 		accessorsTmp.forEach(valueAccessPoint -> {
 					if (valueAccessPoint instanceof Accessor) {
 						finalAccessors.add((Accessor) valueAccessPoint);
@@ -343,7 +361,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				throw new MappingConfigurationException(currentMethodReference + " is already mapped");
 			}
 			
-			Map<String, ValueAccessPoint> columNamePerAccessPoint = new HashMap<>();
+			Map<String, ValueAccessPoint<?>> columNamePerAccessPoint = new HashMap<>();
 			BeanMappingConfiguration<?> insetConfiguration = inset.getConfiguration();
 			insetConfiguration.getPropertiesMapping().forEach(linkage -> {
 				if (!inset.getExcludedProperties().contains(linkage.getAccessor())) {
@@ -352,14 +370,14 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				}
 			});
 			Inset<?, ?> abstractInset = alreadyMappedType.get();
-			Map<String, ValueAccessPoint> columNamePerAccessPoint2 = new HashMap<>();
+			Map<String, ValueAccessPoint<?>> columNamePerAccessPoint2 = new HashMap<>();
 			insetConfiguration.getPropertiesMapping().forEach(linkage -> {
 				if (!abstractInset.getExcludedProperties().contains(linkage.getAccessor())) {
 					String columnName = determineColumnName(linkage, abstractInset.getOverriddenColumnNames().get(linkage.getAccessor()));
 					columNamePerAccessPoint2.put(columnName, linkage.getAccessor());
 				}
 			});
-			Map<ValueAccessPoint, ValueAccessPoint> join = Maps.innerJoin(columNamePerAccessPoint,
+			Map<ValueAccessPoint<?>, ValueAccessPoint<?>> join = Maps.innerJoin(columNamePerAccessPoint,
 					columNamePerAccessPoint2);
 			if (!join.isEmpty()) {
 				String currentMethodReference = toMethodReferenceString(inset.getInsetAccessor());
@@ -494,12 +512,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 						
 						@Override
-						public ValueAccessPointMap<String> getOverriddenColumnNames() {
+						public ValueAccessPointMap<C, String> getOverriddenColumnNames() {
 							return compositeInset.getOverriddenColumnNames();
 						}
 						
 						@Override
-						public ValueAccessPointMap<Column> getOverriddenColumns() {
+						public ValueAccessPointMap<C, Column> getOverriddenColumns() {
 							return compositeInset.getOverriddenColumns();
 						}
 						
@@ -585,12 +603,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 						
 						@Override
-						public ValueAccessPointMap<String> getOverriddenColumnNames() {
+						public ValueAccessPointMap<C, String> getOverriddenColumnNames() {
 							return embeddableInset.getOverriddenColumnNames();
 						}
 						
 						@Override
-						public ValueAccessPointMap<Column> getOverriddenColumns() {
+						public ValueAccessPointMap<C, Column> getOverriddenColumns() {
 							return embeddableInset.getOverriddenColumns();
 						}
 						
@@ -657,9 +675,9 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			
 			ValueAccessPointSet getExcludedProperties();
 			
-			ValueAccessPointMap<String> getOverriddenColumnNames();
+			ValueAccessPointMap<SRC, String> getOverriddenColumnNames();
 			
-			ValueAccessPointMap<Column> getOverriddenColumns();
+			ValueAccessPointMap<SRC, Column> getOverriddenColumns();
 			
 			BeanMappingConfiguration<TRGT> getConfiguration();
 		}

@@ -471,10 +471,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
 		private final PropertyAccessor<SRC, TRGT> accessor;
-		private final ValueAccessPointMap<String> overriddenColumnNames = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet excludedProperties = new ValueAccessPointSet();
 		private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
-		private final ValueAccessPointMap<Column> overriddenColumns = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<SRC, Column> overriddenColumns = new ValueAccessPointMap<>();
 		
 		
 		Inset(SerializableBiConsumer<SRC, TRGT> targetSetter,
@@ -521,11 +521,11 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return this.excludedProperties;
 		}
 		
-		public ValueAccessPointMap<String> getOverriddenColumnNames() {
+		public ValueAccessPointMap<SRC, String> getOverriddenColumnNames() {
 			return this.overriddenColumnNames;
 		}
 		
-		public ValueAccessPointMap<Column> getOverriddenColumns() {
+		public ValueAccessPointMap<SRC, Column> getOverriddenColumns() {
 			return overriddenColumns;
 		}
 		

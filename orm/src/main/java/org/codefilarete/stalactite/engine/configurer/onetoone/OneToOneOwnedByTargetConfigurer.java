@@ -91,9 +91,9 @@ class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 			AccessorByMethodReference<TRGT, SRC> localReverseGetter = Accessors.accessorByMethodReference(oneToOneRelation.getReverseGetter());
 			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(localReverseGetter);
 			// we add a column for reverse mapping if one is not already declared
-			rightKey = (Key<RIGHTTABLE, SRCID>) createOrUseReverseColumn(targetMappingStrategy, oneToOneRelation.getReverseColumn(), localReverseGetter, accessorDefinition);
+			rightKey = createOrUseReverseColumn(targetMappingStrategy, oneToOneRelation.getReverseColumn(), localReverseGetter, accessorDefinition);
 		} else if (oneToOneRelation.getReverseSetter() != null) {
-			ValueAccessPoint reverseSetter = Accessors.mutatorByMethodReference(oneToOneRelation.getReverseSetter());
+			ValueAccessPoint<TRGT> reverseSetter = Accessors.mutatorByMethodReference(oneToOneRelation.getReverseSetter());
 			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(reverseSetter);
 			// we add a column for reverse mapping if one is not already declared
 			rightKey = createOrUseReverseColumn(targetMappingStrategy, oneToOneRelation.getReverseColumn(), reverseSetter, accessorDefinition);
@@ -111,7 +111,7 @@ class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extend
 	private Key<RIGHTTABLE, SRCID> createOrUseReverseColumn(
 			EntityMapping<TRGT, TRGTID, RIGHTTABLE> targetMappingStrategy,
 			Column<RIGHTTABLE, SRCID> reverseColumn,
-			ValueAccessPoint reverseGetter,
+			ValueAccessPoint<TRGT> reverseGetter,
 			AccessorDefinition accessorDefinition) {
 		if (reverseColumn == null) {
 			// no reverse column was given, so we look for the one mapped under the reverse getter

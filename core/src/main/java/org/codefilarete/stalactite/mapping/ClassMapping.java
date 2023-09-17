@@ -265,7 +265,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
 		mainMapping.addPropertySetByConstructor(accessor);
 	}
 	

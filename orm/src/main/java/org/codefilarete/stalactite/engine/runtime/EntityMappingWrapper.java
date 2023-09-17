@@ -110,7 +110,7 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
 		surrogate.addPropertySetByConstructor(accessor);
 	}
 	

@@ -73,7 +73,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<ZonedDateTime> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	

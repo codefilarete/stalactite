@@ -928,7 +928,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<ReversibleAccessor<E, Object>, Column<T, Object>> mapping,
-			ValueAccessPointSet propertiesSetByConstructor,
+			ValueAccessPointSet<E> propertiesSetByConstructor,
 			AbstractIdentification<E, I> identification,
 			Class<E> beanType,
 			@Nullable EntityMappingConfiguration.EntityFactoryProvider<E, T> entityFactoryProvider) {

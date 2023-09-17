@@ -80,7 +80,7 @@ class EntityCriteriaSupportTest {
 				.build(dummyPersistenceContext, countryTable))
 				.getMapping();
 		
-		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getName))).isEqualTo(nameColumn);
 	}
 	
@@ -105,7 +105,7 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		// we have to register the relation, that is expected by EntityGraphNode
-		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
 				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCapital), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
@@ -132,7 +132,7 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		// we have to register the relation, that is expected by EntityGraphNode
-		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
 				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
 		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCities), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
@@ -151,7 +151,7 @@ class EntityCriteriaSupportTest {
 				.build(dummyPersistenceContext, countryTable))
 				.getMapping();
 		
-		EntityGraphNode testInstance = new EntityGraphNode(mappingStrategy);
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
 		assertThatThrownBy(() -> testInstance.getColumn(new AccessorByMethodReference<>(Country::getName)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Column for Country::getName was not found");

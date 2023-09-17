@@ -44,7 +44,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	private Criteria criteria = new Criteria();
 	
 	/** Root of the property-mapping graph representation. Must be constructed with {@link #registerRelation(ValueAccessPoint, ClassMapping)} */
-	private final EntityGraphNode rootConfiguration;
+	private final EntityGraphNode<C> rootConfiguration;
 	
 	public <O> EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy, SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
 		this(mappingStrategy);
@@ -57,14 +57,14 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	}
 	
 	public EntityCriteriaSupport(EntityMapping<C, ?, ?> mappingStrategy) {
-		this.rootConfiguration = new EntityGraphNode(mappingStrategy);
+		this.rootConfiguration = new EntityGraphNode<C>(mappingStrategy);
 	}
 	
 	public EntityCriteriaSupport(EntityCriteriaSupport source) {
 		this.rootConfiguration = source.rootConfiguration;
 	}
 	
-	public EntityGraphNode getRootConfiguration() {
+	public EntityGraphNode<C> getRootConfiguration() {
 		return rootConfiguration;
 	}
 	
@@ -74,7 +74,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	 * @param mappingStrategy the mapping strategy of entities relation
 	 * @return a newly created node to configure relations of this just-declared relation
 	 */
-	public EntityGraphNode registerRelation(ValueAccessPoint relation, ClassMapping<?, ?, ?> mappingStrategy) {
+	public EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relation, ClassMapping<?, ?, ?> mappingStrategy) {
 		return rootConfiguration.registerRelation(relation, mappingStrategy);
 	}
 	
@@ -143,22 +143,22 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	 * Represents a bean mapping : its simple or embedded properties bound to columns, and its relations which are themselves a mapping between
 	 * a method (as a generic {@link ValueAccessPoint}) and another {@link EntityGraphNode}
 	 */
-	public static class EntityGraphNode {
+	public static class EntityGraphNode<C> {
 		
 		/** Owned properties mapping */
-		private final ValueAccessPointMap<Column> propertyToColumn = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<C, Column> propertyToColumn = new ValueAccessPointMap<>();
 		
 		/** Relations mapping : one-to-one or one-to-many */
-		private final Map<ValueAccessPoint, EntityGraphNode> relations = new ValueAccessPointMap<>();
+		private final Map<ValueAccessPoint<C>, EntityGraphNode<?>> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
-		EntityGraphNode(EntityMapping<?, ?, ?> mappingStrategy) {
+		EntityGraphNode(EntityMapping<C, ?, ?> mappingStrategy) {
 			propertyToColumn.putAll(mappingStrategy.getPropertyToColumn());
 			// we add the identifier and primary key because they are not in the property mapping 
 			IdMapping<?, ?> idMapping = mappingStrategy.getIdMapping();
 			if (idMapping instanceof SimpleIdMapping) {
 				Column primaryKey = ((SimpleIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumn();
-				propertyToColumn.put(((SimpleIdMapping<?, ?>) idMapping).getIdAccessor().getIdAccessor(), primaryKey);
+				propertyToColumn.put(((SimpleIdMapping<C, ?>) idMapping).getIdAccessor().getIdAccessor(), primaryKey);
 			}
 			mappingStrategy.getEmbeddedBeanStrategies().forEach((k, v) ->
 					v.getPropertyToColumn().forEach((p, c) ->
@@ -174,8 +174,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		 * @param mappingStrategy a {@link ClassMapping}
 		 * @return a new {@link EntityGraphNode} containing
 		 */
-		public EntityGraphNode registerRelation(ValueAccessPoint relationProvider, EntityMapping<?, ?, ?> mappingStrategy) {
-			EntityGraphNode graphNode = new EntityGraphNode(mappingStrategy);
+		public EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relationProvider, EntityMapping<?, ?, ?> mappingStrategy) {
+			EntityGraphNode<?> graphNode = new EntityGraphNode<>(mappingStrategy);
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information
 			// at this time
@@ -228,7 +228,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		private Column giveRelationColumn(ValueAccessPointByMethodReference... accessPoints) {
 			Deque<ValueAccessPoint> stack = new ArrayDeque<>();
 			stack.addAll(Arrays.asList(accessPoints));
-			EntityGraphNode currentNode = this;
+			EntityGraphNode<?> currentNode = this;
 			while (!stack.isEmpty()) {
 				ValueAccessPoint pawn = stack.pop();
 				Column column = currentNode.propertyToColumn.get(pawn);
@@ -236,7 +236,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 					return column;
 				}
 				
-				EntityGraphNode entityGraphNode = currentNode.relations.get(pawn);
+				EntityGraphNode<?> entityGraphNode = currentNode.relations.get(pawn);
 				if (entityGraphNode == null) {
 					return null;
 				} else {

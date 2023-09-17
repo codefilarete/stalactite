@@ -53,7 +53,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	

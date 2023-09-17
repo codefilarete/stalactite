@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.onetoone;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -191,7 +190,7 @@ public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTT
 		}
 	}
 	
-	public static RuntimeMappingException newRuntimeMappingException(Object pawn, ValueAccessPoint accessor) {
+	public static RuntimeMappingException newRuntimeMappingException(Object pawn, ValueAccessPoint<?> accessor) {
 		return new RuntimeMappingException("Non null value expected for relation "
 				+ AccessorDefinition.toString(accessor) + " on object " + pawn);
 	}
