@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -41,7 +42,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	private final Column<T, ZoneId> zoneColumn;
 	private final UpwhereColumn<T> dateTimeUpdateColumn;
 	private final UpwhereColumn<T> zoneUpdateColumn;
-	private final Set<Column<T, ?>> columns;
+	private final Set<Column<T, Object>> columns;
 	private final ZonedDateTimeToBeanRowTransformer zonedDateTimeRowTransformer;
 	
 	/**
@@ -63,7 +64,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 		this.zoneColumn = zoneColumn;
 		this.dateTimeUpdateColumn = new UpwhereColumn<>(dateTimeColumn, true);
 		this.zoneUpdateColumn = new UpwhereColumn<>(zoneColumn, true);
-		this.columns = Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
+		this.columns = (Set<Column<T, Object>>) (Set) Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
 		this.zonedDateTimeRowTransformer = new ZonedDateTimeToBeanRowTransformer();
 	}
 	
@@ -126,6 +127,22 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
+	}
+	
+	@Override
+	public Map<Mutator<ZonedDateTime, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
+				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getWritableColumns() {
+		return this.columns;
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getReadonlyColumns() {
+		return java.util.Collections.emptySet();
 	}
 	
 	@Override

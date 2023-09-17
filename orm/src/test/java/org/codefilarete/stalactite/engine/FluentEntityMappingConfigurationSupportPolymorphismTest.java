@@ -2,9 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
@@ -13,15 +11,15 @@ import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.model.Engine;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
+import org.codefilarete.stalactite.engine.model.Engine;
 import org.codefilarete.stalactite.engine.model.Truck;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
@@ -50,10 +48,7 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.clearInvocations;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
@@ -289,6 +284,42 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			abstractVehiclePersister.delete(dummyTruck);
 			existingModels = modelQuery.execute();
 			assertThat(existingModels).isEmpty();
+		}
+		
+		@Test
+		void twoSubClasses_withReadonlyProperty() {
+			EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					// mapped super class defines id
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
+							.addSubClass(subentityBuilder(Car.class)
+									.map(Car::getId)
+									.map(Car::getModel).readonly()
+									.map(Car::getColor), "CAR")
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getId)
+									.map(Truck::getColor), "TRUCK"))
+					.build(persistenceContext);
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			
+			Truck dummyTruck = new Truck(2L);
+			dummyTruck.setColor(new Color(42));
+			
+			// insert test
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
+			
+			ExecutableBeanPropertyQueryMapper<String> vehicleIdQuery = persistenceContext.newQuery("select model from AbstractVehicle", String.class)
+					.mapKey("model", String.class);
+			
+			String model = vehicleIdQuery.singleResult().execute();
+			assertThat(model).isNull();
 		}
 		
 		@Test
@@ -605,6 +636,41 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertThat(truckCount).isEqualTo(0);
 		}
 		
+		@Test
+		void twoSubClasses_withReadonlyProperty() {
+			EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					// mapped super class defines id
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>joinTable()
+							.addSubClass(subentityBuilder(Car.class)
+									.map(Car::getId)
+									.map(Car::getModel).readonly()
+									.map(Car::getColor))
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getId)
+									.map(Truck::getColor)))
+					.build(persistenceContext);
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			
+			Truck dummyTruck = new Truck(2L);
+			dummyTruck.setColor(new Color(42));
+			
+			// insert test
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
+			
+			ExecutableBeanPropertyQueryMapper<String> vehicleIdQuery = persistenceContext.newQuery("select model from Car", String.class)
+					.mapKey("model", String.class);
+			
+			String model = vehicleIdQuery.singleResult().execute();
+			assertThat(model).isNull();
+		}
 		
 		@Test
 		void twoSubClasses_withCommonProperties() {
@@ -831,6 +897,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 			assertThat(existingModels).isEmpty();
 		}
 		
+		
 		@Test
 		void twoSubClasses() {
 			EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
@@ -907,6 +974,40 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 
 			Integer truckCount = Iterables.first(truckQuery.execute());
 			assertThat(truckCount).isEqualTo(0);
+		}
+		
+		@Test
+		void twoSubClasses_withReadonlyProperty() {
+			EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE)
+					// mapped super class defines id
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>tablePerClass()
+							.addSubClass(subentityBuilder(Car.class)
+									.map(Car::getModel).readonly()
+									.map(Car::getColor))
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getColor)))
+					.build(persistenceContext);
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			
+			Truck dummyTruck = new Truck(2L);
+			dummyTruck.setColor(new Color(42));
+			
+			// insert test
+			abstractVehiclePersister.insert(Arrays.asList(dummyCar, dummyTruck));
+			
+			ExecutableBeanPropertyQueryMapper<String> vehicleIdQuery = persistenceContext.newQuery("select model from Car", String.class)
+					.mapKey("model", String.class);
+			
+			String model = vehicleIdQuery.singleResult().execute();
+			assertThat(model).isNull();
 		}
 		
 		@Test

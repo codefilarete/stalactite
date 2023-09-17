@@ -188,6 +188,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 			indexColumnNamingStrategy,
 			associationTableNamingStrategy,
 			(Map) subPersister.getMapping().getPropertyToColumn(),
+			(Map) subPersister.getMapping().getPropertyToColumn(),
 			tableNamingStrategy);
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}

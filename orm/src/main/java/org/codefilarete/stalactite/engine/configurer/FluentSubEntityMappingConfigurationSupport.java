@@ -609,6 +609,12 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 							newMapping.setByConstructor();
 							return null;
 						}
+						
+						@Override
+						public PropertyOptions readonly() {
+							newMapping.readonly();
+							return null;
+						}
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
 					.build((Class<FluentSubEntityMappingBuilderPropertyOptions<C, I>>) (Class) FluentSubEntityMappingBuilderPropertyOptions.class);

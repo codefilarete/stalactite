@@ -77,5 +77,8 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		/** Indicates if this property is managed by entity constructor (information coming from user) */
 		boolean isSetByConstructor();
+		
+		/** Indicates if this property should not be writable to database */
+		boolean isReadonly();
 	}
 }

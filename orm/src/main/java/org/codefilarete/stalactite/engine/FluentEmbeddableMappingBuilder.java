@@ -74,6 +74,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		@Override
 		FluentEmbeddableMappingBuilderEnumOptions<C> mandatory();
 		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C> readonly();
+		
 	}
 	
 	interface FluentEmbeddableMappingBuilderPropertyOptions<C> extends FluentEmbeddableMappingConfigurationPropertyOptions<C>, FluentEmbeddableMappingBuilder<C> {
@@ -82,6 +85,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		FluentEmbeddableMappingBuilderPropertyOptions<C> mandatory();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> setByConstructor();
+		FluentEmbeddableMappingBuilderPropertyOptions<C> setByConstructor();
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C> readonly();
 	}
 }

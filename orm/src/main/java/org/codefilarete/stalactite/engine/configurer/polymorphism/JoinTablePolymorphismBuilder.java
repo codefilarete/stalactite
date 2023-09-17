@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
@@ -17,6 +18,7 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphi
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
@@ -108,20 +110,23 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 				.elseSet(tableDefinedByInheritanceConfiguration)
 				.getOr(() -> new Table<>(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
 		
-		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
-																							  this.columnBinderRegistry, this.columnNameProvider);
+		BeanMapping<D, SUBT> beanMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
+				this.columnBinderRegistry, this.columnNameProvider);
+		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
+		Map<Mutator<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);
-		Mapping<D, SUBT> subEntityMapping = new Mapping<>(subConfiguration, subTable, subEntityPropertiesMapping, false);
+		Mapping<D, SUBT> subEntityMapping = new Mapping<>(subConfiguration, subTable, subEntityPropertiesMapping, subEntityReadonlyPropertiesMapping, false);
 		addIdentificationToMapping(identification, subEntityMapping);
 		ClassMapping<D, I, SUBT> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
-			false,
-			subTable,
-			subEntityPropertiesMapping,
-			new ValueAccessPointSet<>(),    // TODO: implement properties set by constructor feature in joined-tables polymorphism
-			(AbstractIdentification<D, I>) identification,
-			subConfiguration.getPropertiesMapping().getBeanType(),
-			null);
+				false,
+				subTable,
+				subEntityPropertiesMapping,
+				subEntityReadonlyPropertiesMapping,
+				new ValueAccessPointSet<>(),    // TODO: implement properties set by constructor feature in joined-tables polymorphism
+				(AbstractIdentification<D, I>) identification,
+				subConfiguration.getPropertiesMapping().getBeanType(),
+				null);
 		
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
 		// available by PersistenceContext.getPersister(..)) and it is not sure that they are perfect ones (all their features should be tested)

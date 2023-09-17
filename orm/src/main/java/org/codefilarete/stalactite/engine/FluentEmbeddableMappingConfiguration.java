@@ -119,6 +119,9 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationEnumOptions<C> mandatory();
+		
+		@Override
+		FluentEmbeddableMappingConfigurationEnumOptions<C> readonly();
 	}
 	
 	interface FluentEmbeddableMappingConfigurationPropertyOptions<C> extends FluentEmbeddableMappingConfiguration<C>, PropertyOptions {
@@ -128,5 +131,8 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C> setByConstructor();
+		
+		@Override
+		FluentEmbeddableMappingConfigurationPropertyOptions<C> readonly();
 	}
 }

@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -177,6 +178,21 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
+	@Override
+	public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getWritableColumns() {
+		return this.columns;
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getReadonlyColumns() {
+		return java.util.Collections.emptySet();
 	}
 	
 	private static class LocalToMapRowTransformer<M extends Map<K, V>, K, V> extends ToMapRowTransformer<M> {

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.polymorphism;
 
 import java.util.Map;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
@@ -47,6 +48,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
+	private final Map<Mutator<C, Object>, Column<T, Object>> mainReadonlyMapping;
 	private final TableNamingStrategy tableNamingStrategy;
 	
 	public PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
@@ -61,6 +63,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 										ColumnNamingStrategy indexColumnNamingStrategy,
 										AssociationTableNamingStrategy associationTableNamingStrategy,
 										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
+										Map<? extends Mutator<C, Object>, Column<T, Object>> mainReadonlyMapping,
 										TableNamingStrategy tableNamingStrategy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
@@ -74,6 +77,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
+		this.mainReadonlyMapping = (Map<Mutator<C, Object>, Column<T, Object>>) mainReadonlyMapping;
 		this.tableNamingStrategy = tableNamingStrategy;
 	}
 	
@@ -82,13 +86,13 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		PolymorphismBuilder<C, I, T> polymorphismBuilder;
 		if (polymorphismPolicy instanceof PolymorphismPolicy.SingleTablePolymorphism) {
 			polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, ?>) polymorphismPolicy,
-					this.identification, this.mainPersister, this.mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
+					this.identification, this.mainPersister, this.mainMapping, this.mainReadonlyMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
 					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
 					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
 					this.associationTableNamingStrategy);
 		} else if (polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism) {
 			polymorphismBuilder = new TablePerClassPolymorphismBuilder<>((TablePerClassPolymorphism<C>) polymorphismPolicy,
-					this.identification, this.mainPersister, this.mainMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
+					this.identification, this.mainPersister, this.mainMapping, this.mainReadonlyMapping, this.columnBinderRegistry, this.columnNameProvider, this.tableNamingStrategy,
 					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
 					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
 					this.associationTableNamingStrategy);

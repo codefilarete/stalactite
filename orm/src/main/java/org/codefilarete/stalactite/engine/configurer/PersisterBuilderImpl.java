@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
@@ -51,6 +52,7 @@ import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterUpdateSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.CompositeKeyLinkageSupport;
@@ -83,7 +85,6 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
@@ -97,7 +98,8 @@ import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
-import static org.codefilarete.stalactite.engine.configurer.AbstractIdentification.*;
+import static org.codefilarete.stalactite.engine.configurer.AbstractIdentification.CompositeKeyIdentification;
+import static org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
 import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.bean.Objects.preventNull;
 import static org.codefilarete.tool.collection.Iterables.first;
@@ -294,7 +296,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					polymorphismPolicy, identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider,
 					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
 					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
-					this.associationTableNamingStrategy, (Map) mainMapping.getMapping(), this.tableNamingStrategy);
+					this.associationTableNamingStrategy, (Map) mainMapping.getMapping(), (Map) mainMapping.getReadonlyMapping(), this.tableNamingStrategy);
 			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		}
 		
@@ -398,6 +400,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					identification.getIdentificationDefiner().getPropertiesMapping() == mapping.giveEmbeddableConfiguration(),
 					castedMapping.targetTable,
 					castedMapping.getMapping(),
+					castedMapping.getReadonlyMapping(),
 					castedMapping.propertiesSetByConstructor,
 					identification,
 					mapping.giveEmbeddableConfiguration().getBeanType(),
@@ -424,6 +427,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				identification.getIdentificationDefiner().getPropertiesMapping() == mappingConfiguration.getPropertiesMapping(),
 				mapping.targetTable,
 				mapping.mapping,
+				mapping.readonlyMapping,
 				mapping.propertiesSetByConstructor,
 				identification,
 				mappingConfiguration.getEntityType(),
@@ -617,14 +621,17 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @return the created {@link PrimaryKey}
 	 */
 	@VisibleForTesting
-	PrimaryKey<?, I> addIdentifyingPrimarykey(AbstractIdentification<C, I> identification) {
-		Table<?> pkTable = this.tableMap.get(identification.getIdentificationDefiner());
+	<T extends Table<T>> PrimaryKey<T, I> addIdentifyingPrimarykey(AbstractIdentification<C, I> identification) {
+		T pkTable = (T) this.tableMap.get(identification.getIdentificationDefiner());
 		KeyMapping<C, I> keyLinkage = identification.getKeyLinkage();
 		AccessorDefinition identifierDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
 		if (identification instanceof CompositeKeyIdentification) {
 			BeanMappingBuilder compositeKeyBuilder = new BeanMappingBuilder();
 			CompositeKeyMappingConfiguration<I> configuration = ((CompositeKeyLinkageSupport<C, I>) keyLinkage).getCompositeKeyMappingBuilder().getConfiguration();
-			Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping = compositeKeyBuilder.build(configuration, pkTable, columnBinderRegistry, columnNameProvider);
+			// Note that we won't care about readonly column returned by build(..) since we're on a primary key case, then
+			// some readonly columns would be nonsense
+			BeanMapping<I, T> build = compositeKeyBuilder.build(configuration, pkTable, columnBinderRegistry, columnNameProvider);
+			Map<ReversibleAccessor<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
 			compositeKeyMapping.values().forEach(Column::primaryKey);
 			((AbstractIdentification.CompositeKeyIdentification<C, I>) identification).setCompositeKeyMapping(compositeKeyMapping);
 		} else {
@@ -671,6 +678,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentColumnMap = new HashMap<>();
 			
+			private Map<Mutator<C, Object>, Column<T, Object>> currentReadonlyColumnMap = new HashMap<>();
+			
 			private Mapping<C, T> currentMapping;
 			
 			private Object currentKey;
@@ -679,22 +688,28 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			@Override
 			public void accept(EmbeddableMappingConfiguration<C> embeddableMappingConfiguration) {
-				Map<ReversibleAccessor<C, Object>, Column<T, Object>> propertiesMapping = beanMappingBuilder.build(
+				BeanMapping<C, T> propertiesMapping = beanMappingBuilder.build(
 						embeddableMappingConfiguration,
 						this.currentTable,
 						PersisterBuilderImpl.this.columnBinderRegistry,
 						columnNameProvider);
 				ValueAccessPointSet localMapping = new ValueAccessPointSet(currentColumnMap.keySet());
-				propertiesMapping.keySet().forEach(propertyAccessor -> {
+				propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {
 					if (localMapping.contains(propertyAccessor)) {
 						throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
 					}
 				});
-				currentColumnMap.putAll(propertiesMapping);
+				propertiesMapping.getReadonlyMapping().keySet().forEach(propertyAccessor -> {
+					if (localMapping.contains(propertyAccessor)) {
+						throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
+					}
+				});
+				currentColumnMap.putAll(propertiesMapping.getMapping());
+				currentReadonlyColumnMap.putAll(propertiesMapping.getReadonlyMapping());
 				if (currentMapping == null) {
-					currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable, currentColumnMap, mappedSuperClass);
+					currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable, currentColumnMap, currentReadonlyColumnMap, mappedSuperClass);
 				} else {
-					currentMapping = result.add(embeddableMappingConfiguration, currentTable, currentColumnMap, mappedSuperClass);
+					currentMapping = result.add(embeddableMappingConfiguration, currentTable, currentColumnMap, currentReadonlyColumnMap, mappedSuperClass);
 					currentMapping.getMapping().putAll(currentColumnMap);
 				}
 				embeddableMappingConfiguration.getPropertiesMapping().stream()
@@ -836,7 +851,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param identification given to know expected policy, and to set result in it
 	 * @param mappingPerTable necessary to get table and primary key to be read in after-insert policy
 	 * @param idAccessor id accessor to get and set identifier on entity (except for already-assigned strategy)
-	 * @param generatedKeysReaderBuilder reader for {@link AfterInsertIdentifierPolicy}
 	 * @param <E> entity type that defines identifier manager, used as internal, may be C or one of its ancestor
 	 */
 	private <E> void determineIdentifierManager(AbstractIdentification<E, I> identification,
@@ -928,6 +942,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<ReversibleAccessor<E, Object>, Column<T, Object>> mapping,
+			Map<Mutator<E, Object>, Column<T, Object>> readOnlyMapping,
 			ValueAccessPointSet<E> propertiesSetByConstructor,
 			AbstractIdentification<E, I> identification,
 			Class<E> beanType,
@@ -1016,7 +1031,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			identifierSetByBeanFactory = entityFactoryProvider.isIdentifierSetByFactory();
 		}
 		
-		ClassMapping<E, I, T> result = new ClassMapping<>(beanType, targetTable, mapping, idMappingStrategy, beanFactory, identifierSetByBeanFactory);
+		ClassMapping<E, I, T> result = new ClassMapping<>(beanType, targetTable, mapping, readOnlyMapping, idMappingStrategy, beanFactory, identifierSetByBeanFactory);
 		propertiesSetByConstructor.forEach(result::addPropertySetByConstructor);
 		return result;
 	}
@@ -1029,8 +1044,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration,
 				T table,
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping,
+				Map<Mutator<C, Object>, Column<T, Object>> readonlyMapping,
 				boolean mappedSuperClass) {
-			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table, mapping, mappedSuperClass);
+			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table, mapping, readonlyMapping, mappedSuperClass);
 			this.mappings.add(newMapping);
 			return newMapping;
 		}
@@ -1059,14 +1075,20 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 			private final T targetTable;
 			private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping;
+			private final Map<Mutator<C, Object>, Column<T, Object>> readonlyMapping;
 			private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 			private final boolean mappedSuperClass;
 			private Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> identifier;
 			
-			public Mapping(Object mappingConfiguration, T targetTable, Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping, boolean mappedSuperClass) {
+			public Mapping(Object mappingConfiguration,
+						   T targetTable,
+						   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping,
+						   Map<? extends Mutator<C, Object>, ? extends Column<T, Object>> readonlyMapping,
+						   boolean mappedSuperClass) {
 				this.mappingConfiguration = mappingConfiguration;
 				this.targetTable = targetTable;
 				this.mapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mapping;
+				this.readonlyMapping = (Map<Mutator<C, Object>, Column<T, Object>>) readonlyMapping;
 				this.mappedSuperClass = mappedSuperClass;
 			}
 			
@@ -1094,6 +1116,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				return mapping;
 			}
 			
+			public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyMapping() {
+				return readonlyMapping;
+			}
+			
 			void registerIdentifier(ReversibleAccessor<C, ?> identifierAccessor) {
 				this.identifier = new Duo<>(identifierAccessor, getTargetTable().getPrimaryKey());
 			}
@@ -1102,11 +1128,5 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				return identifier;
 			}
 		}
-	}
-	
-	@FunctionalInterface
-	@VisibleForTesting
-	interface GeneratedKeysReaderBuilder {
-		GeneratedKeysReader buildGeneratedKeysReader(String keyName, Class columnType);
 	}
 }

@@ -13,4 +13,7 @@ public interface EnumOptions extends PropertyOptions {
 	
 	@Override
 	EnumOptions mandatory();
+	
+	@Override
+	EnumOptions readonly();
 }

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -47,9 +48,9 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	 * @param columns columns that will be used for persistent of Collections, expected to be a subset of targetTable columns    
 	 * @param rowClass Class to instantiate for select from database
 	 */
-	public ColumnedCollectionMapping(T targetTable, Set<Column<T, Object>> columns, Class<C> rowClass) {
+	public ColumnedCollectionMapping(T targetTable, Set<? extends Column<T, ?>> columns, Class<C> rowClass) {
 		this.targetTable = targetTable;
-		this.columns = columns;
+		this.columns = (Set<Column<T, Object>>) columns;
 		this.persistedClass = rowClass;
 		this.rowTransformer = new LocalToCollectionRowTransformer<C>(getPersistedClass(), (Set) getColumns(), this::toCollectionValue);
 	}
@@ -161,6 +162,21 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMapping.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
+	@Override
+	public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMapping.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getWritableColumns() {
+		return this.columns;
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getReadonlyColumns() {
+		return java.util.Collections.emptySet();
 	}
 	
 	@Override

@@ -18,6 +18,8 @@ public class Timestamp {
 	
 	private Date modificationDate;
 	
+	private String readonlyProperty;
+	
 	public Timestamp() {
 		this(new Date(), new Date());
 	}
@@ -42,6 +44,14 @@ public class Timestamp {
 	
 	public Date getModificationDate() {
 		return modificationDate;
+	}
+	
+	public String getReadonlyProperty() {
+		return readonlyProperty;
+	}
+	
+	public void setReadonlyProperty(String readonlyProperty) {
+		this.readonlyProperty = readonlyProperty;
 	}
 	
 	public void setModificationDate(Date modificationDate) {

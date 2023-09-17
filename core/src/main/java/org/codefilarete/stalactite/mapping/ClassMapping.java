@@ -6,15 +6,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
@@ -26,6 +27,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * <p>
@@ -58,17 +61,17 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	
 	private final EmbeddedClassMapping<C, T> mainMapping;
 	
-	private final Set<Column<T, Object>> insertableColumns = new LinkedHashSet<>();
+	private final Set<Column<T, Object>> insertableColumns = new KeepOrderSet<>();
 	
-	private final Set<Column<T, Object>> updatableColumns = new LinkedHashSet<>();
+	private final Set<Column<T, Object>> updatableColumns = new KeepOrderSet<>();
 	
-	private final Set<Column<T, Object>> selectableColumns = new LinkedHashSet<>();
+	private final Set<Column<T, Object>> selectableColumns = new KeepOrderSet<>();
 	
-	private final Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategies = new HashMap<>();
+	private final Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> embeddedMappings = new KeepOrderMap<>();
 	
 	private final IdMapping<C, I> idMapping;
 	
-	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> versioningMapping = new HashMap<>();
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> versioningMapping = new KeepOrderMap<>();
 	
 	private final boolean identifierSetByBeanFactory;
 	
@@ -144,10 +147,11 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	public ClassMapping(Class<C> classToPersist,
 						T targetTable,
 						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
+						Map<? extends Mutator<C, Object>, ? extends Column<T, Object>> readonlyColumns,
 						IdMapping<C, I> idMapping,
 						Function<Function<Column<?, ?>, Object>, C> entityFactory,
 						boolean identifierSetByBeanFactory) {
-		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, entityFactory), idMapping, identifierSetByBeanFactory);
+		this(new EmbeddedClassMapping<>(classToPersist, targetTable, propertyToColumn, readonlyColumns, entityFactory), idMapping, identifierSetByBeanFactory);
 	}
 	
 	private ClassMapping(EmbeddedClassMapping<C, T> mainMapping, IdMapping<C, I> idMapping, boolean identifierSetByBeanFactory) {
@@ -180,7 +184,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	
 	@Override
 	public Map<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> getEmbeddedBeanStrategies() {
-		return mappingStrategies;
+		return embeddedMappings;
 	}
 	
 	/**
@@ -191,10 +195,34 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 */
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
-		Map<ReversibleAccessor<C, Object>, Column<T, Object>> result = new HashMap<>();
+		Map<ReversibleAccessor<C, Object>, Column<T, Object>> result = new KeepOrderMap<>();
 		result.putAll(getMainMapping().getPropertyToColumn());
-		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> value : mappingStrategies.entrySet()) {
+		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> value : embeddedMappings.entrySet()) {
 			value.getValue().getPropertyToColumn().forEach((k, v) -> result.put(new AccessorChain<>(value.getKey(), k), v));
+		}
+		return result;
+	}
+	
+	@Override
+	public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		Map<Mutator<C, Object>, Column<T, Object>> result = new KeepOrderMap<>();
+		result.putAll(getMainMapping().getReadonlyPropertyToColumn());
+		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> value : embeddedMappings.entrySet()) {
+			value.getValue().getReadonlyPropertyToColumn().forEach((k, v) -> {
+				// code below is only to ensure that cast as Accessor will be fine in all circumstances
+				Accessor<?, ?> kAsAccessor;
+				if (k instanceof ReversibleMutator) {
+					kAsAccessor = ((ReversibleMutator<Object, Object>) k).toAccessor();
+				} else if (k instanceof Accessor) {
+					kAsAccessor = (Accessor<?, ?>) k;
+				} else {
+					// This is not an absolute end : it would be sufficient if we could build an AccessorChain with last element
+					// being a Mutator, making created AccessorChain a Mutator (non reversible in our case) this should be implemented to avoid this exception
+					throw new UnsupportedOperationException("Given accessor " + AccessorDefinition.toString(k) + " can't be converted to an Accessor"
+							+ " to make it last element of Accessor chain");
+				}
+				result.put(new AccessorChain<C, Object>(value.getKey(), kAsAccessor).toMutator(), v);
+			});
 		}
 		return result;
 	}
@@ -283,7 +311,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	 * @param mappingStrategy the strategy that should be used to persist the member
 	 */
 	public <O> void put(ReversibleAccessor<C, O> property, EmbeddedBeanMapping<O, T> mappingStrategy) {
-		mappingStrategies.put((ReversibleAccessor) property, (EmbeddedBeanMapping) mappingStrategy);
+		embeddedMappings.put((ReversibleAccessor) property, (EmbeddedBeanMapping) mappingStrategy);
 		// update columns lists
 		addInsertableColumns(mappingStrategy);
 		addUpdatableColumns(mappingStrategy);
@@ -297,7 +325,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 				// autoincrement columns mustn't be written
 				.filter(entry -> !entry.getKey().isAutoGenerated())
 				.forEach(entry -> insertValues.put(entry.getKey(), entry.getValue()));
-		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> fieldStrategyEntry : embeddedMappings.entrySet()) {
 			Object fieldValue = fieldStrategyEntry.getKey().get(c);
 			Map<Column<T, Object>, Object> fieldInsertValues = fieldStrategyEntry.getValue().getInsertValues(fieldValue);
 			insertValues.putAll(fieldInsertValues);
@@ -313,7 +341,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 			toReturn = new HashMap<>();
 		} else {
 			toReturn = mainMapping.getUpdateValues(modified, unmodified, allColumns);
-			for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> fieldStrategyEntry : mappingStrategies.entrySet()) {
+			for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> fieldStrategyEntry : embeddedMappings.entrySet()) {
 				ReversibleAccessor<C, Object> accessor = fieldStrategyEntry.getKey();
 				Object modifiedValue = accessor.get(modified);
 				Object unmodifiedValue = unmodified == null ? null : accessor.get(unmodified);
@@ -347,14 +375,14 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 		insertableColumns.clear();
 		addInsertableColumns(mainMapping);
 		insertableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
-		mappingStrategies.values().forEach(this::addInsertableColumns);
+		embeddedMappings.values().forEach(this::addInsertableColumns);
 		insertableColumns.addAll(versioningMapping.values());
 		// NB : generated keys are never inserted but left because DMLGenerator needs its presence to detect it
 		// and also it prevents to generate not empty statement when they are Alone in the Dark ;) 
 	}
 	
 	private void addInsertableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
-		insertableColumns.addAll(embeddedBeanMapping.getColumns());
+		insertableColumns.addAll(embeddedBeanMapping.getWritableColumns());
 	}
 	
 	/**
@@ -363,7 +391,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	private void fillUpdatableColumns() {
 		updatableColumns.clear();
 		addUpdatableColumns(mainMapping);
-		mappingStrategies.values().forEach(this::addUpdatableColumns);
+		embeddedMappings.values().forEach(this::addUpdatableColumns);
 		updatableColumns.addAll(versioningMapping.values());
 		// keys are never updated
 		updatableColumns.removeAll(getTargetTable().getPrimaryKey().getColumns());
@@ -371,7 +399,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	}
 	
 	private void addUpdatableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
-		updatableColumns.addAll(embeddedBeanMapping.getColumns());
+		updatableColumns.addAll(embeddedBeanMapping.getWritableColumns());
 	}
 	
 	private void fillSelectableColumns() {
@@ -379,7 +407,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 		addSelectableColumns(mainMapping);
 		selectableColumns.addAll(getIdMapping().<T>getIdentifierAssembler().getColumns());
 		selectableColumns.addAll(versioningMapping.values());
-		mappingStrategies.values().forEach(this::addSelectableColumns);
+		embeddedMappings.values().forEach(this::addSelectableColumns);
 	}
 	
 	private void addSelectableColumns(EmbeddedBeanMapping<?, T> embeddedBeanMapping) {
@@ -435,7 +463,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 			setId(toReturn, getIdMapping().getIdentifierAssembler().assemble(row, columnedRow));
 		}
 		// filling other properties
-		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategyEntry : mappingStrategies.entrySet()) {
+		for (Entry<? extends ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> mappingStrategyEntry : embeddedMappings.entrySet()) {
 			mappingStrategyEntry.getKey().toMutator().set(toReturn, mappingStrategyEntry.getValue().transform(row));
 		}
 		return toReturn;

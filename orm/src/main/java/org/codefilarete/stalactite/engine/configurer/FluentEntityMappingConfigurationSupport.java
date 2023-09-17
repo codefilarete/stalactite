@@ -893,6 +893,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							newMapping.setByConstructor();
 							return null;
 						}
+						
+						@Override
+						public ColumnOptions readonly() {
+							newMapping.readonly();
+							return null;
+						}
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
 					.build((Class<FluentMappingBuilderPropertyOptions<C, I>>) (Class) FluentMappingBuilderPropertyOptions.class);

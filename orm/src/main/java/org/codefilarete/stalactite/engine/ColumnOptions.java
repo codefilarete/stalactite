@@ -30,6 +30,9 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	@Override
 	ColumnOptions<C, I> setByConstructor();
 	
+	@Override
+	ColumnOptions<C, I> readonly();
+	
 	/**
 	 * Available identifier policies for entities.
 	 * @see IdentifierInsertionManager

@@ -496,6 +496,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> setByConstructor();
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> readonly();
+		
 	}
 	
 	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentEntityMappingBuilder<C, I>,
@@ -711,6 +715,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderEnumOptions<C, I> mandatory();
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I> readonly();
 	}
 	
 	interface FluentMappingBuilderInheritanceOptions<C, I>

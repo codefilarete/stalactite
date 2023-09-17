@@ -177,6 +177,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 						linkage.setByConstructor();
 						return null;
 					}
+					
+					@Override
+					public PropertyOptions readonly() {
+						linkage.readonly();
+						return null;
+					}
 				}, true)
 				.fallbackOn(this)
 				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
@@ -248,8 +254,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public PropertyOptions setByConstructor() {
+					public EnumOptions setByConstructor() {
 						linkage.setByConstructor();
+						return null;
+					}
+					
+					@Override
+					public EnumOptions readonly() {
+						linkage.readonly();
 						return null;
 					}
 				}, true)
@@ -337,6 +349,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		private final ReversibleAccessor<T, ?> function;
 		
+		private boolean readonly;
+		
 		public LinkageSupport(ReversibleAccessor<T, ?> function) {
 			this.function = function;
 		}
@@ -393,6 +407,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return this.columnOptions instanceof ColumnLinkageOptionsByColumn
 				? (Class<O>) ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
 				: AccessorDefinition.giveDefinition(this.function).getMemberType();
+		}
+		
+		@Override
+		public boolean isReadonly() {
+			return readonly;
+		}
+		
+		public void readonly() {
+			this.readonly = true;
 		}
 	}
 	

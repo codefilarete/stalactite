@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
@@ -33,19 +34,22 @@ import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Inset;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
+import org.codefilarete.tool.collection.StreamSplitter;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.function.Predicates;
 
 import static org.codefilarete.reflection.MethodReferences.toMethodReferenceString;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -98,29 +102,29 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 	}
 	
-	private BeanMappingConfiguration<C> mappingConfiguration;
+	private BeanMappingConfiguration<C> mainMappingConfiguration;
 	private T targetTable;
 	private ColumnNameProvider columnNameProvider;
 	private ColumnBinderRegistry columnBinderRegistry;
 	/** Result of {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}, shared between methods */
-	private Map<ReversibleAccessor<C, Object>, Column<T, Object>> result;
+	private BeanMapping<C, T> result;
 	
 	/**
 	 * Converts mapping definition of a {@link BeanMappingConfiguration} into a simple {@link Map}
 	 *
 	 * @return a {@link Map} representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
 	 */
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> build(EmbeddableMappingConfiguration<C> mappingConfiguration,
-																	   T targetTable,
-																	   ColumnBinderRegistry columnBinderRegistry,
-																	   ColumnNameProvider columnNameProvider) {
+	public BeanMapping<C, T> build(EmbeddableMappingConfiguration<C> mappingConfiguration,
+								   T targetTable,
+								   ColumnBinderRegistry columnBinderRegistry,
+								   ColumnNameProvider columnNameProvider) {
 		return build(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration), targetTable, columnBinderRegistry, columnNameProvider);
 	}
 	
-	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> build(CompositeKeyMappingConfiguration<C> mappingConfiguration,
-																	   T targetTable,
-																	   ColumnBinderRegistry columnBinderRegistry,
-																	   ColumnNameProvider columnNameProvider) {
+	public BeanMapping<C, T> build(CompositeKeyMappingConfiguration<C> mappingConfiguration,
+								   T targetTable,
+								   ColumnBinderRegistry columnBinderRegistry,
+								   ColumnNameProvider columnNameProvider) {
 		return build(BeanMappingConfiguration.fromCompositeKeyMappingConfiguration(mappingConfiguration), targetTable, columnBinderRegistry, columnNameProvider);
 	}
 	
@@ -129,17 +133,17 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	 *
 	 * @return a {@link Map} representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
 	 */
-	private Map<ReversibleAccessor<C, Object>, Column<T, Object>> build(BeanMappingConfiguration<C> mappingConfiguration,
-																	   T targetTable,
-																	   ColumnBinderRegistry columnBinderRegistry,
-																	   ColumnNameProvider columnNameProvider) {
-		this.mappingConfiguration = mappingConfiguration;
+	private BeanMapping<C, T> build(BeanMappingConfiguration<C> mappingConfiguration,
+									T targetTable,
+									ColumnBinderRegistry columnBinderRegistry,
+									ColumnNameProvider columnNameProvider) {
+		this.mainMappingConfiguration = mappingConfiguration;
 		this.columnNameProvider = columnNameProvider;
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.targetTable = targetTable;
-		this.result = new HashMap<>();
+		this.result = new BeanMapping<>();
 		// converting direct mapping
-		includeDirectMapping(this.mappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet());
+		includeDirectMapping(this.mainMappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet<>());
 		// adding embeddable (no particular thought about order compared to previous direct mapping) 
 		includeEmbeddedMapping();
 		return result;
@@ -154,23 +158,37 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 										ValueAccessPointMap<C, String> overriddenColumnNames,
 										ValueAccessPointMap<C, Column<T, ?>> overriddenColumns,
 										ValueAccessPointSet<C> excludedProperties) {
-		mappingConfiguration.getPropertiesMapping().stream()
-				.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()))
-				.forEach(linkage -> {
-					Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
-					String columnName = nullable(overriddenColumn)
-							.map(Column::getName)
-							.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
-					assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-					includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
-				});
+		Stream<Linkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
+				.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()));
+		new StreamSplitter<>(linkageStream)
+				.dispatch(Predicates.not(Linkage::isReadonly),
+						linkage -> {
+							Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
+							String columnName = nullable(overriddenColumn)
+									.map(Column::getName)
+									.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+							assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
+							Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
+							result.mapping.put(mapping.getLeft(), mapping.getRight());
+						})
+				.dispatch(Linkage::isReadonly,
+						linkage -> {
+							Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
+							String columnName = nullable(overriddenColumn)
+									.map(Column::getName)
+									.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+							assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
+							Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
+							result.readonlyMapping.put(mapping.getLeft().toMutator(), mapping.getRight());
+						})
+				.split();
 	}
 	
-	protected <O> void includeMapping(Linkage<C, O> linkage,
-									  @Nullable ValueAccessPoint<C> accessorPrefix,
-									  String columnName,
-									  @Nullable Column<T, O> overriddenColumn,
-									  Class<?> embeddedBeanType) {
+	protected <O> Duo<ReversibleAccessor<C, ?>, Column<T, Object>> includeMapping(Linkage<C, O> linkage,
+																				  @Nullable ValueAccessPoint<C> accessorPrefix,
+																				  String columnName,
+																				  @Nullable Column<T, O> overriddenColumn,
+																				  Class<?> embeddedBeanType) {
 		Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName));
 		ensureColumnBindingInRegistry(linkage, column);
 		ReversibleAccessor<C, ?> accessor;
@@ -179,7 +197,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		} else {
 			accessor = linkage.getAccessor();
 		}
-		result.put((ReversibleAccessor<C, Object>) accessor, (Column<T, Object>) column);
+		return new Duo<>(accessor, (Column<T, Object>) column);
 	}
 	
 	protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, BeanMappingConfiguration<O> mappingConfiguration) {
@@ -218,10 +236,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	 * @param targetTable the table on which columns must be added
 	 * @return a mapping between properties of given {@link Map} keys and their column in given {@link Table}
 	 */
-	public static <C, T extends Table<T>> Map<ReversibleAccessor<C, Object>, Column<T, Object>> projectColumns(Map<? extends ReversibleAccessor<C, Object>, ? extends Column<?, Object>> propertyToColumn,
-																											   T targetTable,
-																											   BiFunction<? super ReversibleAccessor<C, Object>, Column<?, Object>, String> columnNameSupplier) {
-		Map<ReversibleAccessor<C, Object>, Column<T, Object>> localResult = new HashMap<>();
+	public static <C, T extends Table<T>, A extends ValueAccessPoint<C>> Map<A, Column<T, Object>>
+	projectColumns(Map<? extends A, ? extends Column<?, Object>> propertyToColumn,
+				   T targetTable,
+				   BiFunction<? super A, Column<?, Object>, String> columnNameSupplier) {
+		Map<A, Column<T, Object>> localResult = new HashMap<>();
 		propertyToColumn.forEach((accessor, column) -> {
 			Column<T, Object> projectedColumn = targetTable.addColumn(columnNameSupplier.apply(accessor, column), column.getJavaType());
 			projectedColumn.setAutoGenerated(column.isAutoGenerated());
@@ -238,7 +257,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		Set<Inset<C, ?>> treatedInsets = new HashSet<>();
 		
 		Queue<Inset<C, ?>> stack = Collections.asLifoQueue(new ArrayDeque<>());
-		stack.addAll(mappingConfiguration.getInsets());
+		stack.addAll(mainMappingConfiguration.getInsets());
 		Queue<Accessor<C, ?>> accessorPath = new ArrayDeque<>();
 		while (!stack.isEmpty()) {
 			Inset<C, ?> inset = stack.poll();
@@ -275,10 +294,10 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, BeanMappingConfiguration<?> superClassConfiguration) {
 		// we include super type mapping by using a new instance of BeanMappingBuilder, this is the simplest (but maybe not the most
 		// debuggable) and allows to manage inheritance of several mappedSuperClass 
-		Map<ReversibleAccessor<C, Object>, Column<T, Object>> superMapping = new BeanMappingBuilder<C, T>().build((BeanMappingConfiguration<C>) superClassConfiguration, targetTable,
+		BeanMapping<C, T> superMapping = new BeanMappingBuilder<C, T>().build((BeanMappingConfiguration<C>) superClassConfiguration, targetTable,
 				this.columnBinderRegistry, this.columnNameProvider);
 		Class<?> insetBeanType = inset.getConfiguration().getBeanType();
-		superMapping.forEach((accessor, column) -> {
+		superMapping.mapping.forEach((accessor, column) -> {
 			AccessorChain prefix;
 			List<Accessor<?, ?>> accessors;
 			if (accessorPath.size() == 1) {
@@ -303,7 +322,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			} else {
 				finalColumn = targetTable.addColumn(column.getName(), column.getJavaType());
 			}
-			result.put((ReversibleAccessor<C, Object>) prefix, (Column<T, Object>) finalColumn);
+			result.mapping.put((ReversibleAccessor<C, Object>) prefix, (Column<T, Object>) finalColumn);
 		});
 	}
 	
@@ -392,6 +411,32 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	}
 	
 	/**
+	 * Resulting class of {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)} process
+	 * @param <C>
+	 * @param <T>
+	 */
+	public static class BeanMapping<C, T extends Table<T>> {
+		
+		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = new HashMap<>();
+		
+		private final Map<Mutator<C, Object>, Column<T, Object>> readonlyMapping = new HashMap<>();
+		
+		/**
+		 * @return mapped properties
+		 */
+		public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getMapping() {
+			return mapping;
+		}
+		
+		/**
+		 * @return mapped readonly properties
+		 */
+		public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyMapping() {
+			return readonlyMapping;
+		}
+	}
+	
+	/**
 	 * Wrapper to give {@link Column} name according to given {@link ColumnNamingStrategy} if present.
 	 * If absent {@link ColumnNamingStrategy#DEFAULT} will be used.
 	 */
@@ -466,6 +511,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					
 					@Override
 					public boolean isNullable() {
+						return false;
+					}
+					
+					@Override
+					public boolean isReadonly() {
 						return false;
 					}
 				});
@@ -558,6 +608,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					@Override
 					public boolean isNullable() {
 						return embeddableLinkage.isNullable();
+					}
+					
+					@Override
+					public boolean isReadonly() {
+						return embeddableLinkage.isReadonly();
 					}
 				});
 				
@@ -700,6 +755,8 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			ParameterBinder<O> getParameterBinder();
 			
 			boolean isNullable();
+			
+			boolean isReadonly();
 		}
 	}
 }

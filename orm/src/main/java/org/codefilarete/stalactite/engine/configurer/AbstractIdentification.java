@@ -143,8 +143,8 @@ public abstract class AbstractIdentification<C, I> {
 			return compositeKeyMapping;
 		}
 		
-		public void setCompositeKeyMapping(Map<ReversibleAccessor<I, Object>, Column<Table, Object>> compositeKeyMapping) {
-			this.compositeKeyMapping = compositeKeyMapping;
+		public void setCompositeKeyMapping(Map<? extends ReversibleAccessor<I, Object>, ? extends Column<?, Object>> compositeKeyMapping) {
+			this.compositeKeyMapping = (Map<ReversibleAccessor<I, Object>, Column<Table, Object>>) compositeKeyMapping;
 		}
 	}
 }

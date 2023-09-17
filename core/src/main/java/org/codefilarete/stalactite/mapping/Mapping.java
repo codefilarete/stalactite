@@ -6,12 +6,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * A very general contract for mapping a type to a database table. Not expected to be used as this (for instance it lacks deletion contract)
@@ -101,6 +103,16 @@ public interface Mapping<C, T extends Table<T>> {
 	void addPropertySetByConstructor(ValueAccessPoint<C> accessor);
 	
 	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
+	
+	Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn();
+	
+	default Set<Column<T, Object>> getWritableColumns() {
+		return new KeepOrderSet<>(getPropertyToColumn().values());
+	}
+	
+	default Set<Column<T, Object>> getReadonlyColumns() {
+		return new KeepOrderSet<>(getReadonlyPropertyToColumn().values());
+	}
 	
 	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	

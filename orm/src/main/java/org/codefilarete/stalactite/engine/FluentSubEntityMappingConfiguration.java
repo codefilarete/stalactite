@@ -169,6 +169,9 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I> setByConstructor();
+		
+		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I> readonly();
 	}
 	
 	interface FluentSubEntityMappingConfigurationEnumOptions<C, I> extends FluentSubEntityMappingConfiguration<C, I>, EnumOptions {
@@ -184,6 +187,9 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I> setByConstructor();
+		
+		@Override
+		FluentSubEntityMappingConfigurationEnumOptions<C, I> readonly();
 	}
 	
 	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentSubEntityMappingConfiguration<C, I>,

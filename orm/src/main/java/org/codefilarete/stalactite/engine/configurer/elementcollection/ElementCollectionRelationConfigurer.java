@@ -143,7 +143,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 							return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
 									.getOr(() -> super.giveColumnName(pawn));
 						}
-					});
+					}).getMapping();
 			
 			Map<ReversibleAccessor<ElementRecord<TRGT, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
 			columnMapping.forEach((propertyAccessor, column) -> {
