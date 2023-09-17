@@ -1,7 +1,11 @@
 package org.codefilarete.stalactite.sql;
 
+import java.util.Collections;
+
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.MariaDBDDLTableGenerator;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -33,6 +37,11 @@ public class MariaDBDialect extends Dialect {
 	@Override
 	public DDLTableGenerator newDdlTableGenerator() {
 		return new MariaDBDDLTableGenerator(getSqlTypeRegistry());
+	}
+	
+	@Override
+	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
+		return new DMLGenerator(columnBinderRegistry, NoopSorter.INSTANCE, new MariaDBDMLNameProvider(Collections.emptyMap()));
 	}
 	
 	@Override

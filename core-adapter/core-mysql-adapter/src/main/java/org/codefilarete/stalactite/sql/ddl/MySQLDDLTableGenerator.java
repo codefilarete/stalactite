@@ -2,9 +2,7 @@ package org.codefilarete.stalactite.sql.ddl;
 
 import java.util.Collections;
 
-import org.codefilarete.stalactite.sql.MySQLDMLNameProvier;
-import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
-import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.sql.MySQLDMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
@@ -16,7 +14,7 @@ import org.codefilarete.tool.StringAppender;
 public class MySQLDDLTableGenerator extends DDLTableGenerator {
 	
 	public MySQLDDLTableGenerator(SqlTypeRegistry typeMapping) {
-		super(typeMapping, new MySQLDMLNameProvier(Collections.emptyMap()));
+		super(typeMapping, new MySQLDMLNameProvider(Collections.emptyMap()));
 	}
 	
 	/**
