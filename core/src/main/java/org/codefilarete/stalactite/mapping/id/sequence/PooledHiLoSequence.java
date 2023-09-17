@@ -5,8 +5,14 @@ import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister.Sequenc
 import org.codefilarete.stalactite.sql.Dialect;
 
 /**
- * Long identifier generator for an entity class.
- * Store the state of its sequence in a table (which can be shared between sequences, see {@link SequencePersister})
+ * Long identifier generator for an entity class with pooling system.
+ * This class reserves a range of identifiers (see {@link PooledHiLoSequenceOptions#getPoolSize()} and consumes them in
+ * memory. Each time its pool is empty it goes back to the database to ask for another set of identifiers. Though if
+ * JVM is shutdown while pool is not totally consumed, then a bunch of identifiers are definitively lost for the system.
+ * 
+ * It stores the state of its sequence in a table (which can be shared between sequences, see {@link SequencePersister}).
+ * Stored state is the highest value reserved by current instance. Then external systems may use upper values without
+ * constraint but to write their own highest reserved value. 
  * 
  * Inspired by "enhanced table generator" with Hilo Optimizer from Hibernate.
  * 
