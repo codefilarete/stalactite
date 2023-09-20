@@ -7,7 +7,6 @@ import java.sql.Connection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -49,6 +48,7 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.bean.ClassIterator;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
@@ -194,21 +194,41 @@ public class PersistenceContext implements PersisterRegistry {
 		return new HashSet<>(persisterCache.values());
 	}
 	
-	/**
-	 * Returns the {@link BeanPersister} mapped for a class.
-	 * 
-	 * @param clazz the class for which the {@link BeanPersister} must be given
-	 * @param <C> the type of the persisted entity
-	 * @return null if class has no persister registered
-	 */
-	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
-		return persisterCache.get(clazz);
+	public Map<Class<?>, EntityPersister> getPersisterCache() {
+		return persisterCache;
 	}
 	
 	/**
-	 * Registers a {@link BeanPersister} on this instance. May overwrite an existing one
+	 * Looks for an {@link EntityPersister} registered for given class or one of its parent.
+	 * Found persister is then capable of persisting any instance of given class.
 	 * 
-	 * @param persister any {@link BeanPersister}
+	 * @param clazz the class for which the {@link EntityPersister} must be given
+	 * @param <C> the type of the persisted entity
+	 * @return null if class has no compatible persister registered
+	 */
+	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
+		if (persisterCache.get(clazz) != null) {
+			return persisterCache.get(clazz);
+		} else {
+			ClassIterator classIterator = new ClassIterator(clazz);
+			EntityPersister<C, I> result;
+			Class<?> pawn;
+			do {
+				pawn = classIterator.next();
+				result = persisterCache.get(pawn);
+			} while (result == null && classIterator.hasNext());
+			// we add our finding to cache for future lookup
+			if (result != null) {
+				persisterCache.put(clazz, result);
+			}
+			return result;
+		}
+	}
+	
+	/**
+	 * Registers a {@link EntityPersister} on this instance. May overwrite an existing one
+	 * 
+	 * @param persister any {@link EntityPersister}
 	 * @param <C> type of persisted bean
 	 * @throws IllegalArgumentException if a persister already exists for class persisted by given persister
 	 */
