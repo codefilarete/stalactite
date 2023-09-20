@@ -446,7 +446,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			return embeddedClass;
 		}
 		
-		public ValueAccessPointSet getExcludedProperties() {
+		public ValueAccessPointSet<SRC> getExcludedProperties() {
 			return this.excludedProperties;
 		}
 		

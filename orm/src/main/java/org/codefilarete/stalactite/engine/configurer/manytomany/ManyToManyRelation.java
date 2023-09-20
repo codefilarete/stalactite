@@ -24,7 +24,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	/** The method that gives the "many" entities from the "one" entity */
 	private final ReversibleAccessor<SRC, C1> collectionProvider;
 	
-	private final ValueAccessPointByMethodReference methodReference;
+	private final ValueAccessPointByMethodReference<SRC> methodReference;
 	
 	/** Configuration used for "many" side beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
@@ -61,7 +61,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 * @param targetTable optional table to be used to store target entities
 	 */
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionProvider,
-												ValueAccessPointByMethodReference methodReference,
+												ValueAccessPointByMethodReference<SRC> methodReference,
 												EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
 												@Nullable Table targetTable) {
 		this(collectionProvider, methodReference,
@@ -78,7 +78,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 * @param targetTable optional table to be used to store target entities
 	 */
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionProvider,
-												ValueAccessPointByMethodReference methodReference,
+												ValueAccessPointByMethodReference<SRC> methodReference,
 												EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
 												@Nullable Table targetTable) {
 		this.collectionProvider = collectionProvider;
@@ -91,7 +91,7 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		return collectionProvider;
 	}
 	
-	public ValueAccessPointByMethodReference getMethodReference() {
+	public ValueAccessPointByMethodReference<SRC> getMethodReference() {
 		return methodReference;
 	}
 	

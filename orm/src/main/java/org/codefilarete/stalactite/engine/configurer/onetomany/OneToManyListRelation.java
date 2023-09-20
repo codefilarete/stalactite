@@ -20,8 +20,10 @@ public class OneToManyListRelation<SRC, TRGT, TRGTID, C extends List<TRGT>> exte
 	
 	private Column indexingColumn;
 	
-	public <T extends Table> OneToManyListRelation(ReversibleAccessor<SRC, C> collectionProvider, ValueAccessPointByMethodReference methodReference,
-												   EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration, T targetTable) {
+	public <T extends Table> OneToManyListRelation(ReversibleAccessor<SRC, C> collectionProvider,
+												   ValueAccessPointByMethodReference<SRC> methodReference,
+												   EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
+												   T targetTable) {
 		super(collectionProvider, methodReference, targetMappingConfiguration, targetTable);
 	}
 	

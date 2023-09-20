@@ -131,7 +131,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	/**
 	 * Converts mapping definition of a {@link BeanMappingConfiguration} into a simple {@link Map}
 	 *
-	 * @return a {@link Map} representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
+	 * @return a bean that stores some {@link Map}s representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
 	 */
 	private BeanMapping<C, T> build(BeanMappingConfiguration<C> mappingConfiguration,
 									T targetTable,
@@ -557,7 +557,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 						
 						@Override
-						public ValueAccessPointSet getExcludedProperties() {
+						public ValueAccessPointSet<C> getExcludedProperties() {
 							return compositeInset.getExcludedProperties();
 						}
 						
@@ -653,7 +653,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						}
 						
 						@Override
-						public ValueAccessPointSet getExcludedProperties() {
+						public ValueAccessPointSet<C> getExcludedProperties() {
 							return embeddableInset.getExcludedProperties();
 						}
 						
@@ -728,7 +728,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			
 			Class<TRGT> getEmbeddedClass();
 			
-			ValueAccessPointSet getExcludedProperties();
+			ValueAccessPointSet<SRC> getExcludedProperties();
 			
 			ValueAccessPointMap<SRC, String> getOverriddenColumnNames();
 			

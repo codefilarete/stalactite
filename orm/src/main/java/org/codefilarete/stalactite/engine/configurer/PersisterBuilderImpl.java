@@ -626,7 +626,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		KeyMapping<C, I> keyLinkage = identification.getKeyLinkage();
 		AccessorDefinition identifierDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
 		if (identification instanceof CompositeKeyIdentification) {
-			BeanMappingBuilder compositeKeyBuilder = new BeanMappingBuilder();
+			BeanMappingBuilder<I, T> compositeKeyBuilder = new BeanMappingBuilder<>();
 			CompositeKeyMappingConfiguration<I> configuration = ((CompositeKeyLinkageSupport<C, I>) keyLinkage).getCompositeKeyMappingBuilder().getConfiguration();
 			// Note that we won't care about readonly column returned by build(..) since we're on a primary key case, then
 			// some readonly columns would be nonsense
@@ -693,7 +693,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 						this.currentTable,
 						PersisterBuilderImpl.this.columnBinderRegistry,
 						columnNameProvider);
-				ValueAccessPointSet localMapping = new ValueAccessPointSet(currentColumnMap.keySet());
+				ValueAccessPointSet<C> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
 				propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {
 					if (localMapping.contains(propertyAccessor)) {
 						throw new MappingConfigurationException(AccessorDefinition.toString(propertyAccessor) + " is mapped twice");
@@ -731,6 +731,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				mappingCollector.currentKey = entityMappingConfiguration;
 				if (initMapping) {
 					mappingCollector.currentColumnMap = new HashMap<>();
+					mappingCollector.currentReadonlyColumnMap = new HashMap<>();
 					mappingCollector.currentMapping = null;
 				}
 				
@@ -851,6 +852,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 * @param identification given to know expected policy, and to set result in it
 	 * @param mappingPerTable necessary to get table and primary key to be read in after-insert policy
 	 * @param idAccessor id accessor to get and set identifier on entity (except for already-assigned strategy)
+	 * @param dialect dialect to compute elements of identifier policy
 	 * @param <E> entity type that defines identifier manager, used as internal, may be C or one of its ancestor
 	 */
 	private <E> void determineIdentifierManager(AbstractIdentification<E, I> identification,

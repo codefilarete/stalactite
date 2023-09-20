@@ -540,7 +540,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return embeddedClass;
 		}
 		
-		public ValueAccessPointSet getExcludedProperties() {
+		public ValueAccessPointSet<SRC> getExcludedProperties() {
 			return this.excludedProperties;
 		}
 		

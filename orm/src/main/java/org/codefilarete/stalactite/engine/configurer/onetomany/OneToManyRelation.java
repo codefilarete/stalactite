@@ -28,7 +28,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	/** The method that gives the "many" entities from the "one" entity */
 	private final ReversibleAccessor<SRC, C> collectionProvider;
 	
-	private final ValueAccessPointByMethodReference methodReference;
+	private final ValueAccessPointByMethodReference<SRC> methodReference;
 	/** Configuration used for "many" side beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
@@ -63,7 +63,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @param <T>
 	 */
 	public <T extends Table> OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
-											   ValueAccessPointByMethodReference methodReference,
+											   ValueAccessPointByMethodReference<SRC> methodReference,
 											   EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
 											   @Nullable T targetTable) {
 		this(collectionProvider, methodReference, () -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration, targetTable);
@@ -80,7 +80,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * @param <T>
 	 */
 	public <T extends Table> OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
-											   ValueAccessPointByMethodReference methodReference,
+											   ValueAccessPointByMethodReference<SRC> methodReference,
 											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
 											   @Nullable T targetTable) {
 		this.collectionProvider = collectionProvider;
@@ -93,7 +93,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return collectionProvider;
 	}
 	
-	public ValueAccessPointByMethodReference getMethodReference() {
+	public ValueAccessPointByMethodReference<SRC> getMethodReference() {
 		return methodReference;
 	}
 	
@@ -206,9 +206,9 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		 */
 		private Column<Table<?>, Object> reverseColumn;
 		
-		private ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<SRC, Column<Table<?>, Object>> foreignKeyColumnMapping = new ValueAccessPointMap<>();
 		
-		private ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<SRC, String> foreignKeyNameMapping = new ValueAccessPointMap<>();
 		
 		public SerializableFunction<TRGT, SRC> getReverseGetter() {
 			return reverseGetter;
