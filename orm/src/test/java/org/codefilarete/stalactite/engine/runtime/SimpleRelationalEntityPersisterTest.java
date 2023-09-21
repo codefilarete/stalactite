@@ -17,7 +17,10 @@ import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
+import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
@@ -38,9 +41,11 @@ import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -52,9 +57,11 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.PairIterator.EmptyIterator;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.trace.ModifiableInt;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -63,6 +70,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
+import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.mockito.Mockito.*;
 
 /**
@@ -122,8 +131,11 @@ class SimpleRelationalEntityPersisterTest {
 				new SinglePropertyIdAccessor<>(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<Identifier<Integer>>) (Class) Identifier.class);
-		totoClassMappingStrategy_ontoTable1 = new ClassMapping<>(Toto.class, totoClassTable1,
-																 totoClassMapping1, identifierAccessor, beforeInsertIdentifierManager);
+		totoClassMappingStrategy_ontoTable1 = new ClassMapping<>(Toto.class,
+				totoClassTable1,
+				totoClassMapping1,
+				identifierAccessor,
+				beforeInsertIdentifierManager);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Identifier.class, "int");
@@ -189,7 +201,7 @@ class SimpleRelationalEntityPersisterTest {
 			initMapping();
 			initTest();
 			PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(initializer -> initializer.consume(
-				(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
+					(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
 			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
 		}
 		
@@ -346,7 +358,7 @@ class SimpleRelationalEntityPersisterTest {
 			));
 			// 4 statements because in operator is bounded to 3 values (see testInstance creation)
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto1 where id in (?, ?, ?)",
-																				  "delete from Toto1 where id in (?)"));
+					"delete from Toto1 where id in (?)"));
 			verify(preparedStatement, times(1)).addBatch();
 			verify(preparedStatement, times(1)).executeLargeBatch();
 			verify(preparedStatement, times(1)).executeLargeUpdate();
@@ -394,10 +406,10 @@ class SimpleRelationalEntityPersisterTest {
 			
 			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
-																									   new Toto(7, 1, 2),
-																									   new Toto(13, 1, 2),
-																									   new Toto(17, 1, 2),
-																									   new Toto(23, 1, 2)
+					new Toto(7, 1, 2),
+					new Toto(13, 1, 2),
+					new Toto(17, 1, 2),
+					new Toto(23, 1, 2)
 			).toString());
 		}
 		
@@ -431,7 +443,7 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as rootId from Toto1 where (Toto1.a = ?)",
+					"select Toto1.id as rootId from Toto1 where Toto1.a = ?",
 					"select Toto1.id as " + totoIdAlias
 							+ ", Toto1.a as " + totoAAlias
 							+ ", Toto1.b as " + totoBAlias
@@ -443,6 +455,47 @@ class SimpleRelationalEntityPersisterTest {
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 																									   new Toto(7, 1, 2)
 			).toString());
+		}
+	}
+		
+	@Nested
+	class LoadByEntityCriteria {
+		
+		@Test
+		void checkSQLGeneration() throws SQLException {
+			
+			PreparedStatement preparedStatement = mock(PreparedStatement.class);
+			Connection connection = mock(Connection.class);
+			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+			ArgumentCaptor<Integer> argCaptor = ArgumentCaptor.forClass(Integer.class);
+			when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatement);
+			doNothing().when(preparedStatement).setInt(anyInt(), argCaptor.capture());
+			DataSource dataSource = mock(DataSource.class);
+			when(dataSource.getConnection()).thenReturn(connection);
+			when(preparedStatement.executeQuery()).thenReturn(new InMemoryResultSet(new EmptyIterator<>()));
+			
+			
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, new HSQLDBDialect());
+			FluentEntityMappingBuilder<Tata, Integer> mappingConfiguration = entityBuilder(Tata.class, Integer.class)
+					.mapKey(Tata::getId, alreadyAssigned(tata -> {}, tata -> false))	// identifier policy doesn't matter
+					.map(Tata::getProp1);
+			
+			EntityPersister<Toto, Integer> totoPersister = entityBuilder(Toto.class, Integer.class)
+					.mapKey(Toto::getA, alreadyAssigned(toto -> {}, toto -> false))
+					.mapOneToOne(Toto::getTata, mappingConfiguration)
+					.build(persistenceContext);
+			
+			SerializableFunction<Toto, Tata> getTata = Toto::getTata;
+			SerializableFunction<Tata, String> getProp1 = Tata::getProp1;
+			Equals<String> dummy = Operators.eq("dummy");
+			EntityPersister.ExecutableEntityQuery<Toto> totoRelationalExecutableEntityQuery = totoPersister
+					.selectWhere(Toto::getA, Operators.eq(42))
+					.and(getTata, getProp1, dummy);
+			
+			totoRelationalExecutableEntityQuery.execute();
+			
+			assertThat(sqlCaptor.getValue()).isEqualTo("select Toto.a as rootId from Toto left outer join Tata as tata on Toto.tataId = tata.id where Toto.a = ? and tata.prop1 = ?");
+			assertThat(argCaptor.getValue()).isEqualTo(42);
 		}
 	}
 	
@@ -810,6 +863,8 @@ class SimpleRelationalEntityPersisterTest {
 		private Identifier<Integer> id;
 		private Integer a, b, x, y, z;
 		
+		private Tata tata;
+		
 		public Toto() {
 		}
 		
@@ -856,11 +911,30 @@ class SimpleRelationalEntityPersisterTest {
 			this.z = another.z;
 		}
 		
+		public Tata getTata() {
+			return tata;
+		}
+		
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
 					+ Maps.asMap("id", (Object) id.getSurrogate()).add("a", a).add("b", b).add("x", x).add("y", y).add("z", z)
 					+ "]";
+		}
+	}
+	
+	private static class Tata {
+		
+		private Integer id;
+		
+		private String prop1;
+		
+		public Integer getId() {
+			return id;
+		}
+		
+		public String getProp1() {
+			return prop1;
 		}
 	}
 }

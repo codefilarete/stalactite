@@ -13,12 +13,4 @@ import org.codefilarete.stalactite.sql.Dialect;
 public interface EntitySelectExecutor<C> {
 	
 	Set<C> loadGraph(CriteriaChain where);
-	
-	static QuerySQLBuilder createQueryBuilder(CriteriaChain where, Query query, Dialect dialect) {
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
-		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
-			query.getWhere().and(where);
-		}
-		return sqlQueryBuilder;
-	}
 }

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +23,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
@@ -60,6 +62,12 @@ public class EntityTreeQueryBuilder<C> {
 		// Made IdentityMap to support presence of same table multiple times in query, in particular for cycling bean graph (tables are cloned)
 		IdentityMap<Selectable, String> columnAliases = new IdentityMap<>();
 		
+		// Mapping between original Column of table in joins and Column of cloned tables. Not perfect but made to solve
+		// issue with entity graph load with criteria (EntityPersister.selectWhere(..)) containing Columns
+		// (ColumnCriterion) because they come from user which is one of source table, hence table alias are not found
+		// for them, which causes issue while setting criteria value (column is not found by database driver)
+		IdentityHashMap<Column, Column> columnClones = new IdentityHashMap<>();
+		
 		// Table clones storage per their initial node to manage several occurrence of same table in query
 		Map<JoinNode, Fromable> tableClonePerJoinNode = new HashMap<>();
 		
@@ -74,14 +82,18 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// initialization of the From clause with the very first table
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
-		Fromable rootTableClone = cloneTable(joinRoot);
+		Duo<Fromable, IdentityHashMap<Column, Column>> rootClone = cloneTable(joinRoot);
+		Fromable rootTableClone = rootClone.getLeft();
+		columnClones.putAll(rootClone.getRight());
 		tableClonePerJoinNode.put(joinRoot, rootTableClone);
 		query.getFromSurrogate().setRoot(rootTableClone);
 		resultHelper.addColumnsToSelect(joinRoot, aliasBuilder.buildTableAlias(joinRoot));
 		
 		// completing from clause
 		this.tree.foreachJoin(join -> {
-			tableClonePerJoinNode.put(join, cloneTable(join));
+			Duo<Fromable, IdentityHashMap<Column, Column>> joinClone = cloneTable(join);
+			tableClonePerJoinNode.put(join, joinClone.getLeft());
+			columnClones.putAll(joinClone.getRight());
 		});
 		resultHelper.applyJoinTree(this.tree);
 		
@@ -89,7 +101,7 @@ public class EntityTreeQueryBuilder<C> {
 																			columnAliases,
 																			Maps.innerJoinOnValuesAndKeys(tree.getJoinIndex(), tableClonePerJoinNode));
 		
-		return new EntityTreeQuery<>(query, selectParameterBinders, columnAliases, entityTreeInflater);
+		return new EntityTreeQuery<>(query, selectParameterBinders, columnAliases, entityTreeInflater, columnClones);
 	}
 	
 	/**
@@ -99,14 +111,18 @@ public class EntityTreeQueryBuilder<C> {
 	 * @return a copy (on name and columns) of given join table
 	 */
 	@VisibleForTesting
-	Fromable cloneTable(JoinNode joinNode) {
+	Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
 		Fromable joinFromable = joinNode.getTable();
 		if (joinFromable instanceof Table) {
 			Table table = new Table(joinFromable.getName());
-			(((Table<?>) joinFromable).getColumns()).forEach(column -> table.addColumn(column.getName(), column.getJavaType(), column.getSize()));
-			return table;
+			IdentityHashMap<Column, Column> columnClones = new IdentityHashMap<>(table.getColumns().size());
+			(((Table<?>) joinFromable).getColumns()).forEach(column -> {
+				Column clone = table.addColumn(column.getName(), column.getJavaType(), column.getSize());
+				columnClones.put(column, clone);
+			});
+			return new Duo<>(table, columnClones);
 		} else if (joinFromable instanceof UnionInFrom) {
-			return new UnionInFrom(joinFromable.getName(), ((UnionInFrom) joinFromable).getUnion());
+			return new Duo<>(new UnionInFrom(joinFromable.getName(), ((UnionInFrom) joinFromable).getUnion()), new IdentityHashMap<>());
 		} else {
 			throw new UnsupportedOperationException("Cloning " + Reflections.toString(joinNode.getTable().getClass()) + " is not implemented");
 		}
@@ -252,14 +268,18 @@ public class EntityTreeQueryBuilder<C> {
 		
 		private final EntityTreeInflater<C> entityTreeInflater;
 		
+		private final IdentityHashMap<Column, Column> columnClones;
+		
 		private EntityTreeQuery(Query query,
 								Map<String, ParameterBinder> selectParameterBinders,
 								IdentityMap<Selectable, String> columnAliases,
-								EntityTreeInflater<C> entityTreeInflater) {
+								EntityTreeInflater<C> entityTreeInflater,
+								IdentityHashMap<Column, Column> columnClones) {
 			this.selectParameterBinders = selectParameterBinders;
 			this.query = query;
 			this.columnAliases = columnAliases;
 			this.entityTreeInflater = entityTreeInflater;
+			this.columnClones = columnClones;
 		}
 		
 		public Query getQuery() {
@@ -276,6 +296,10 @@ public class EntityTreeQueryBuilder<C> {
 		
 		public EntityTreeInflater<C> getInflater() {
 			return entityTreeInflater;
+		}
+		
+		public IdentityHashMap<Column, Column> getColumnClones() {
+			return columnClones;
 		}
 	}
 	

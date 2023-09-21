@@ -36,7 +36,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
  * Implementation of {@link EntityCriteria}
  * 
  * @author Guillaume Mary
- * @see #registerRelation(ValueAccessPoint, ClassMapping) 
+ * @see #registerRelation(ValueAccessPoint, EntityMapping) 
  */
 public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	
@@ -60,7 +60,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		this.rootConfiguration = new EntityGraphNode<C>(mappingStrategy);
 	}
 	
-	public EntityCriteriaSupport(EntityCriteriaSupport source) {
+	public EntityCriteriaSupport(EntityCriteriaSupport<C> source) {
 		this.rootConfiguration = source.rootConfiguration;
 	}
 	
@@ -71,11 +71,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	/**
 	 * Adds a relation to the root of the property-mapping graph representation
 	 * @param relation the representation of the method that gives access to the value
-	 * @param mappingStrategy the mapping strategy of entities relation
+	 * @param entityMapping the mapping of related entities
 	 * @return a newly created node to configure relations of this just-declared relation
 	 */
-	public EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relation, ClassMapping<?, ?, ?> mappingStrategy) {
-		return rootConfiguration.registerRelation(relation, mappingStrategy);
+	public EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relation, EntityMapping<?, ?, ?> entityMapping) {
+		return rootConfiguration.registerRelation(relation, entityMapping);
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
@@ -174,7 +174,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		 * @param mappingStrategy a {@link ClassMapping}
 		 * @return a new {@link EntityGraphNode} containing
 		 */
-		public EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relationProvider, EntityMapping<?, ?, ?> mappingStrategy) {
+		@VisibleForTesting
+		EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relationProvider, EntityMapping<?, ?, ?> mappingStrategy) {
 			EntityGraphNode<?> graphNode = new EntityGraphNode<>(mappingStrategy);
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information

@@ -195,6 +195,20 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C> {
 		
+		@Override
+		<O> ExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+		
+		@Override
+		<O> ExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+		
+		@Override
+		<O> ExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+		
+		@Override
+		<O> ExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+		
+		@Override
+		<A, B> ExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
 	}
 	
 	/**

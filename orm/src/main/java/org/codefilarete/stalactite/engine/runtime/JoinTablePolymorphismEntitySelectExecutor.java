@@ -63,7 +63,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
 		
-		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query, dialect);
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where);
 		
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> columnReaders = new HashMap<>();

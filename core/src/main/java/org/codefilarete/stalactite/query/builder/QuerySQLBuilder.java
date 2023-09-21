@@ -1,13 +1,9 @@
 package org.codefilarete.stalactite.query.builder;
 
-import org.codefilarete.stalactite.query.model.QueryStatement;
-import org.codefilarete.stalactite.query.model.Union;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.StringAppender;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import java.util.IdentityHashMap;
+
+import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -16,6 +12,14 @@ import org.codefilarete.stalactite.query.model.OrderBy.OrderedColumn;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.query.model.QueryStatement;
+import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.StringAppender;
 
 /**
  * Builder of SQL from {@link Query}.
@@ -64,6 +68,27 @@ public class QuerySQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		this.fromSqlBuilder = new FromSQLBuilder(query.getFromSurrogate(), dialect);
 		this.whereSqlBuilder = new WhereSQLBuilder(query.getWhere(), dmlNameProvider, dialect);
 		this.havingBuilder = new WhereSQLBuilder(query.getHavingSurrogate(), dmlNameProvider, dialect);
+	}
+	
+	public QuerySQLBuilder(Query query, Dialect dialect, CriteriaChain<?> where) {
+		this(query, dialect);
+		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
+			query.getWhere().and(where);
+		}
+	}
+	
+	public QuerySQLBuilder(Query query, Dialect dialect, CriteriaChain<?> where, IdentityHashMap<Column, Column> columnClones) {
+		this(query, dialect);
+		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
+			where.forEach(criterion -> {
+				if (criterion instanceof ColumnCriterion) {
+					ColumnCriterion columnCriterion = ((ColumnCriterion) criterion).copyFor(columnClones.get(((ColumnCriterion) criterion).getColumn()));
+					query.getWhere().and(columnCriterion);
+				} else {
+					query.getWhere().and(criterion);
+				}
+			});
+		}
 	}
 	
 	/**

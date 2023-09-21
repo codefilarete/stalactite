@@ -71,7 +71,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query, dialect);
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where, entityTreeQuery.getColumnClones());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();

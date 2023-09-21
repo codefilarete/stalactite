@@ -71,7 +71,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	private final BeanPersister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
 	private final EntitySelectExecutor<C> entitySelectExecutor;
-	/** Support for defining Entity criteria on {@link #newWhere()} */
+	/** Support for defining entity criteria on {@link #newWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
 	
@@ -95,7 +95,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	protected EntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
 		return new EntityGraphSelectExecutor<>(
-				getEntityJoinTree(),
+				selectGraphExecutor.getEntityJoinTree(),
 				persister.getConnectionProvider(),
 				dialect);
 	}

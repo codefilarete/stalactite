@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.codefilarete.stalactite.engine.runtime.RawQuery;
@@ -17,6 +18,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
@@ -60,9 +62,9 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<JoinNode, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Fromable cloneTable(JoinNode joinNode) {
-				Fromable tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put(joinNode, tableClone);
+			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+				tableCloneMap.put(joinNode, tableClone.getLeft());
 				return tableClone;
 			}
 		};
@@ -161,9 +163,9 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Fromable cloneTable(JoinNode joinNode) {
-				Fromable tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put((Table) joinNode.getTable(), tableClone);
+			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}
 		};
@@ -266,9 +268,9 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Fromable cloneTable(JoinNode joinNode) {
-				Fromable tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put((Table) joinNode.getTable(), tableClone);
+			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}
 		};
@@ -338,9 +340,9 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Fromable cloneTable(JoinNode joinNode) {
-				Fromable tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put((Table) joinNode.getTable(), tableClone);
+			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}
 		};
@@ -420,9 +422,9 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Fromable cloneTable(JoinNode joinNode) {
-				Fromable tableClone = super.cloneTable(joinNode);
-				tableCloneMap.put((Table) joinNode.getTable(), tableClone);
+			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}
 		};
