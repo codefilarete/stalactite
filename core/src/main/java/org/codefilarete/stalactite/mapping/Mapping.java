@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
@@ -104,7 +103,7 @@ public interface Mapping<C, T extends Table<T>> {
 	
 	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn();
 	
-	Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn();
+	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn();
 	
 	default Set<Column<T, Object>> getWritableColumns() {
 		return new KeepOrderSet<>(getPropertyToColumn().values());

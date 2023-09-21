@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -165,7 +164,7 @@ public class ColumnedCollectionMapping<C extends Collection<O>, O, T extends Tab
 	}
 	
 	@Override
-	public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedCollectionMapping.class) + " can't export a mapping between some accessors and their columns");
 	}
 	

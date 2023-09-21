@@ -39,7 +39,8 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> propertyToColumn;
 	
-	private final Map<Mutator<C, Object>, Column<T, Object>> readonlyPropertyToColumn;
+	// Could be a Mp<Mutator....> if we could have a ChainAccessor that can me a Mutator which not currently the case
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyPropertyToColumn;
 	
 	private final Set<Column<T, Object>> columns;
 	
@@ -86,14 +87,14 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	public EmbeddedClassMapping(Class<C> classToPersist,
 								T targetTable,
 								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertiesMapping,
-								Map<? extends Mutator<C, Object>, ? extends Column<T, Object>> readonlyPropertiesMapping,
+								Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyPropertiesMapping,
 								Function<Function<Column<?, ?>, Object>, C> beanFactory) {
 		this.classToPersist = classToPersist;
 		this.targetTable = targetTable;
 		this.propertyToColumn = new KeepOrderMap<>(propertiesMapping);
 		this.readonlyPropertyToColumn = new KeepOrderMap<>(readonlyPropertiesMapping);
 		Map<Column<T, ?>, Mutator> columnToField = Iterables.map(propertiesMapping.entrySet(), Entry::getValue, e -> e.getKey().toMutator(), KeepOrderMap::new);
-		readonlyPropertiesMapping.forEach((mutator, column) -> columnToField.put(column, mutator));
+		readonlyPropertiesMapping.forEach((accessor, column) -> columnToField.put(column, accessor.toMutator()));
 		this.rowTransformer = new EmbeddedBeanRowTransformer(beanFactory, (Map) columnToField);
 		this.columns = (Set<Column<T, Object>>) (Set) new KeepOrderSet<>(rowTransformer.getColumnToMember().keySet());
 		
@@ -139,7 +140,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	/**
 	 * @return an immutable {@link Map} of the configured readonly mapping
 	 */
-	public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
 		return Collections.unmodifiableMap(readonlyPropertyToColumn);
 	}
 	

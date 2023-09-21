@@ -22,7 +22,6 @@ import java.util.stream.Stream;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
@@ -179,7 +178,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 									.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
 							assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
 							Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
-							result.readonlyMapping.put(mapping.getLeft().toMutator(), mapping.getRight());
+							result.readonlyMapping.put(mapping.getLeft(), mapping.getRight());
 						})
 				.split();
 	}
@@ -419,7 +418,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		
 		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = new HashMap<>();
 		
-		private final Map<Mutator<C, Object>, Column<T, Object>> readonlyMapping = new HashMap<>();
+		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping = new HashMap<>();
 		
 		/**
 		 * @return mapped properties
@@ -431,7 +430,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		/**
 		 * @return mapped readonly properties
 		 */
-		public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyMapping() {
+		public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyMapping() {
 			return readonlyMapping;
 		}
 	}

@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -130,7 +129,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 	}
 	
 	@Override
-	public Map<Mutator<ZonedDateTime, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
 	}

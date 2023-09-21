@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
@@ -40,13 +39,13 @@ import org.codefilarete.tool.exception.NotImplementedException;
 class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<Mutator<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
 	
 	SingleTablePolymorphismBuilder(SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 								   AbstractIdentification<C, I> identification,
 								   ConfiguredRelationalPersister<C, I> mainPersister,
 								   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainMapping,
-								   Map<? extends Mutator<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
+								   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
 								   ColumnBinderRegistry columnBinderRegistry,
 								   ColumnNameProvider columnNameProvider,
 								   TableNamingStrategy tableNamingStrategy,
@@ -60,7 +59,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
 				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<Mutator<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
 	}
 	
 	@Override
@@ -109,7 +108,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 				this.columnBinderRegistry,
 				this.columnNameProvider);
 		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
-		Map<Mutator<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
+		Map<ReversibleAccessor<D, Object>, Column<T, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
 		// in single-table polymorphism, main properties must be given to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		subEntityPropertiesMapping.putAll((Map) mainMapping);

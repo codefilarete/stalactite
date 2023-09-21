@@ -15,7 +15,6 @@ import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
@@ -147,7 +146,7 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	public ClassMapping(Class<C> classToPersist,
 						T targetTable,
 						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> propertyToColumn,
-						Map<? extends Mutator<C, Object>, ? extends Column<T, Object>> readonlyColumns,
+						Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyColumns,
 						IdMapping<C, I> idMapping,
 						Function<Function<Column<?, ?>, Object>, C> entityFactory,
 						boolean identifierSetByBeanFactory) {
@@ -204,8 +203,8 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	}
 	
 	@Override
-	public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
-		Map<Mutator<C, Object>, Column<T, Object>> result = new KeepOrderMap<>();
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		Map<ReversibleAccessor<C, Object>, Column<T, Object>> result = new KeepOrderMap<>();
 		result.putAll(getMainMapping().getReadonlyPropertyToColumn());
 		for (Entry<ReversibleAccessor<C, Object>, EmbeddedBeanMapping<Object, T>> value : embeddedMappings.entrySet()) {
 			value.getValue().getReadonlyPropertyToColumn().forEach((k, v) -> {

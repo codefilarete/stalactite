@@ -16,7 +16,6 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
@@ -678,7 +677,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentColumnMap = new HashMap<>();
 			
-			private Map<Mutator<C, Object>, Column<T, Object>> currentReadonlyColumnMap = new HashMap<>();
+			private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentReadonlyColumnMap = new HashMap<>();
 			
 			private Mapping<C, T> currentMapping;
 			
@@ -944,7 +943,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			boolean isIdentifyingConfiguration,
 			T targetTable,
 			Map<ReversibleAccessor<E, Object>, Column<T, Object>> mapping,
-			Map<Mutator<E, Object>, Column<T, Object>> readOnlyMapping,
+			Map<ReversibleAccessor<E, Object>, Column<T, Object>> readOnlyMapping,
 			ValueAccessPointSet<E> propertiesSetByConstructor,
 			AbstractIdentification<E, I> identification,
 			Class<E> beanType,
@@ -1046,7 +1045,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration,
 				T table,
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping,
-				Map<Mutator<C, Object>, Column<T, Object>> readonlyMapping,
+				Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping,
 				boolean mappedSuperClass) {
 			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table, mapping, readonlyMapping, mappedSuperClass);
 			this.mappings.add(newMapping);
@@ -1077,7 +1076,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			private final Object /* EntityMappingConfiguration, EmbeddableMappingConfiguration, SubEntityMappingConfiguration */ mappingConfiguration;
 			private final T targetTable;
 			private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping;
-			private final Map<Mutator<C, Object>, Column<T, Object>> readonlyMapping;
+			private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping;
 			private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 			private final boolean mappedSuperClass;
 			private Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> identifier;
@@ -1085,12 +1084,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			public Mapping(Object mappingConfiguration,
 						   T targetTable,
 						   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping,
-						   Map<? extends Mutator<C, Object>, ? extends Column<T, Object>> readonlyMapping,
+						   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyMapping,
 						   boolean mappedSuperClass) {
 				this.mappingConfiguration = mappingConfiguration;
 				this.targetTable = targetTable;
 				this.mapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mapping;
-				this.readonlyMapping = (Map<Mutator<C, Object>, Column<T, Object>>) readonlyMapping;
+				this.readonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) readonlyMapping;
 				this.mappedSuperClass = mappedSuperClass;
 			}
 			
@@ -1118,7 +1117,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				return mapping;
 			}
 			
-			public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyMapping() {
+			public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyMapping() {
 				return readonlyMapping;
 			}
 			

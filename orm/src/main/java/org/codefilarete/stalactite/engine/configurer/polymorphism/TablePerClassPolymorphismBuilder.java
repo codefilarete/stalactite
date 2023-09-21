@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
@@ -18,12 +17,12 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
+import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
+import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
-import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
@@ -45,13 +44,13 @@ import static org.codefilarete.tool.Nullable.nullable;
 class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<Mutator<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
 	
 	TablePerClassPolymorphismBuilder(TablePerClassPolymorphism<C> polymorphismPolicy,
 									 AbstractIdentification<C, I> identification,
 									 ConfiguredRelationalPersister<C, I> mainPersister,
 									 Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
-									 Map<? extends Mutator<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
+									 Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
 									 ColumnBinderRegistry columnBinderRegistry,
 									 ColumnNameProvider columnNameProvider,
 									 TableNamingStrategy tableNamingStrategy,
@@ -64,7 +63,7 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
 				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<Mutator<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
 	}
 	
 	@Override
@@ -129,13 +128,13 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		BeanMapping<D, SUBTABLE> beanMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
 				this.columnBinderRegistry, this.columnNameProvider);
 		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
-		Map<Mutator<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
+		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
 		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them
 		// by a proxy and main persister is not so much used
 		addPrimaryKey(subTable);
 		Map<ReversibleAccessor<C, Object>, Column<SUBTABLE, Object>> projectedMainMapping = BeanMappingBuilder.projectColumns(mainMapping, subTable, (accessor, c) -> c.getName());
 		subEntityPropertiesMapping.putAll((Map) projectedMainMapping);
-		Map<Mutator<C, Object>, Column<SUBTABLE, Object>> projectedMainReadonlyMapping = BeanMappingBuilder.projectColumns(mainReadonlyMapping, subTable, (accessor, c) -> c.getName());
+		Map<ReversibleAccessor<C, Object>, Column<SUBTABLE, Object>> projectedMainReadonlyMapping = BeanMappingBuilder.projectColumns(mainReadonlyMapping, subTable, (accessor, c) -> c.getName());
 		subEntityReadonlyPropertiesMapping.putAll((Map) projectedMainReadonlyMapping);
 		Mapping<D, SUBTABLE> subEntityMapping = new Mapping<>(subConfiguration, subTable, subEntityPropertiesMapping, subEntityReadonlyPropertiesMapping, false);
 		addIdentificationToMapping(identification, subEntityMapping);

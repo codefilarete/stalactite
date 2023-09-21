@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.polymorphism;
 
 import java.util.Map;
 
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
@@ -15,8 +14,8 @@ import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphi
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.PersisterListenerWrapper;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -48,7 +47,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
-	private final Map<Mutator<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
 	private final TableNamingStrategy tableNamingStrategy;
 	
 	public PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
@@ -63,7 +62,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 										ColumnNamingStrategy indexColumnNamingStrategy,
 										AssociationTableNamingStrategy associationTableNamingStrategy,
 										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
-										Map<? extends Mutator<C, Object>, Column<T, Object>> mainReadonlyMapping,
+										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping,
 										TableNamingStrategy tableNamingStrategy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
@@ -77,7 +76,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
 		this.associationTableNamingStrategy = associationTableNamingStrategy;
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
-		this.mainReadonlyMapping = (Map<Mutator<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
 		this.tableNamingStrategy = tableNamingStrategy;
 	}
 	

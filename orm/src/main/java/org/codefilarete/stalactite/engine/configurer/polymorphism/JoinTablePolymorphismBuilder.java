@@ -113,7 +113,7 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 		BeanMapping<D, SUBT> beanMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
 				this.columnBinderRegistry, this.columnNameProvider);
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
-		Map<Mutator<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
+		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);
 		Mapping<D, SUBT> subEntityMapping = new Mapping<>(subConfiguration, subTable, subEntityPropertiesMapping, subEntityReadonlyPropertiesMapping, false);

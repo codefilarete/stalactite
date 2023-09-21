@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.Mutator;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
@@ -121,7 +120,7 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	}
 	
 	@Override
-	public Map<Mutator<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
 		return surrogate.getReadonlyPropertyToColumn();
 	}
 	

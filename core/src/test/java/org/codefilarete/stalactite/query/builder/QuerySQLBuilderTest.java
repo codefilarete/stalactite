@@ -27,13 +27,13 @@ class QuerySQLBuilderTest {
 	
 	private final Dialect dialect = new Dialect();
 	
-	public static Object[][] toSQL_data() {
-		final Table tableToto = new Table(null, "Toto");
-		final Column colTotoA = tableToto.addColumn("a", String.class);
-		final Column colTotoB = tableToto.addColumn("b", String.class);
-		final Table tableTata = new Table(null, "Tata");
-		final Column colTataA = tableTata.addColumn("a", String.class);
-		final Column colTataB = tableTata.addColumn("b", String.class);
+	public static Object[][] toSQL() {
+		Table tableToto = new Table(null, "Toto");
+		Column colTotoA = tableToto.addColumn("a", String.class);
+		Column colTotoB = tableToto.addColumn("b", String.class);
+		Table tableTata = new Table(null, "Tata");
+		Column colTataA = tableTata.addColumn("a", String.class);
+		Column colTataB = tableTata.addColumn("b", String.class);
 		
 		return new Object[][] {
 				{ select(colTotoA, colTotoB).from(tableToto),
@@ -117,19 +117,19 @@ class QuerySQLBuilderTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("toSQL_data")
+	@MethodSource("toSQL")
 	public void toSQL(QueryProvider<?> queryProvider, String expected) {
 		SQLBuilder testInstance = QuerySQLBuilder.of(queryProvider.getQuery(), dialect);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
-	public static Object[][] toPreparedSQL_data() {
-		final Table tableToto = new Table(null, "Toto");
-		final Column colTotoA = tableToto.addColumn("a", String.class);
-		final Column colTotoB = tableToto.addColumn("b", String.class);
-		final Table tableTata = new Table(null, "Tata");
-		final Column colTataA = tableTata.addColumn("a", String.class);
-		final Column colTataB = tableTata.addColumn("b", String.class);
+	public static Object[][] toPreparedSQL() {
+		Table tableToto = new Table(null, "Toto");
+		Column colTotoA = tableToto.addColumn("a", String.class);
+		Column colTotoB = tableToto.addColumn("b", String.class);
+		Table tableTata = new Table(null, "Tata");
+		Column colTataA = tableTata.addColumn("a", String.class);
+		Column colTataB = tableTata.addColumn("b", String.class);
 		
 		TupleIn tupleIn = new TupleIn(new Column[] { colTotoA, colTataB }, Arrays.asList(
 				new Object[] { "John", "Doe" },
@@ -140,26 +140,28 @@ class QuerySQLBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)
 						.having("sum(", colTotoB, ") ", gt(1)).limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = ? group by Toto.a having sum(Toto.b) > ? limit ?",
-						Maps.asHashMap(1, 1).add(2, 1).add(3, 2)},
+						Maps.asHashMap(1, 1).add(2, 1).add(3, 2) },
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)
 						.having(sum(colTotoB), lt(1)).limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = ? group by Toto.a having sum(Toto.b)< ? limit ?",
-						Maps.asHashMap(1, 1).add(2, 1).add(3, 2)},
+						Maps.asHashMap(1, 1).add(2, 1).add(3, 2) },
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(1)).groupBy(colTotoA)
 						.having(sum(colTotoB), gt(1)).limit(2),
 						"select T.a, Tata.b from Toto as T where T.b = ? group by T.a having sum(T.b)> ? limit ?",
-						Maps.asHashMap(1, 1).add(2, 1).add(3, 2)},
+						Maps.asHashMap(1, 1).add(2, 1).add(3, 2) },
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(tupleIn).groupBy(colTotoA)
 						.having(sum(colTotoB), gt(1)).limit(2),
 						"select T.a, Tata.b from Toto as T where (T.a, Tata.b) in ((?, ?), (?, ?)) group by T.a having sum(T.b)> ? limit ?",
-						Maps.forHashMap(Integer.class, Object.class).add(1, "John").add(2, "Doe").add(3, "Jane").add(4, null).add(5, 1).add(6, 2)},
+						Maps.forHashMap(Integer.class, Object.class).add(1, "John").add(2, "Doe").add(3, "Jane").add(4, null).add(5, 1).add(6, 2) },
+				{ select(colTotoA, colTataB).from(tableToto).innerJoin(colTotoA, colTataA).setAlias(tableTata, "x").where(colTataB, eq(1)),
+						"select Toto.a, x.b from Toto inner join Tata as x on Toto.a = x.a where x.b = ?",
+						Maps.asHashMap(1, 1) },
 		};
 	}
 	
 	@ParameterizedTest
-	@MethodSource("toPreparedSQL_data")
-	public void toPreparedSQL(QueryProvider queryProvider,
-								  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
+	@MethodSource("toPreparedSQL")
+	public void toPreparedSQL(QueryProvider queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		QuerySQLBuilder testInstance = new QuerySQLBuilder(queryProvider, dialect);
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
