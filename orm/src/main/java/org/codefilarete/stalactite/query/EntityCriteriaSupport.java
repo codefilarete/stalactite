@@ -3,16 +3,10 @@ package org.codefilarete.stalactite.query;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.Nullable;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.VisibleForTesting;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
@@ -24,13 +18,21 @@ import org.codefilarete.reflection.ValueAccessPointByMethodReference;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.RuntimeMappingException;
-import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Arrays;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Implementation of {@link EntityCriteria}
@@ -148,21 +150,28 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		/** Owned properties mapping */
 		private final ValueAccessPointMap<C, Column> propertyToColumn = new ValueAccessPointMap<>();
 		
+		private final ValueAccessPointMap<C, Column> readonlyPropertyToColumn = new ValueAccessPointMap<>();
+		
+		private final Map<List<ValueAccessPoint>, Column> columnCachePerAccessPoint = new HashMap<>();
+		
 		/** Relations mapping : one-to-one or one-to-many */
-		private final Map<ValueAccessPoint<C>, EntityGraphNode<?>> relations = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<C, EntityGraphNode<?>> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
 		EntityGraphNode(EntityMapping<C, ?, ?> mappingStrategy) {
 			propertyToColumn.putAll(mappingStrategy.getPropertyToColumn());
+			readonlyPropertyToColumn.putAll(mappingStrategy.getReadonlyPropertyToColumn());
 			// we add the identifier and primary key because they are not in the property mapping 
-			IdMapping<?, ?> idMapping = mappingStrategy.getIdMapping();
+			IdMapping<C, ?> idMapping = mappingStrategy.getIdMapping();
 			if (idMapping instanceof SimpleIdMapping) {
 				Column primaryKey = ((SimpleIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumn();
 				propertyToColumn.put(((SimpleIdMapping<C, ?>) idMapping).getIdAccessor().getIdAccessor(), primaryKey);
 			}
 			mappingStrategy.getEmbeddedBeanStrategies().forEach((k, v) ->
-					v.getPropertyToColumn().forEach((p, c) ->
-							propertyToColumn.put(new AccessorChain<>(k, p), c)
+					v.getPropertyToColumn().forEach((p, c) -> {
+								propertyToColumn.put(new AccessorChain<>(k, p), c);
+								readonlyPropertyToColumn.put(new AccessorChain<>(k, p), c);
+							}
 					)
 			);
 		}
@@ -185,9 +194,9 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 			return graphNode;
 		}
 		
-		private static AccessorChain toAccessorChain(ValueAccessPointByMethodReference... accessPoints) {
+		private static AccessorChain toAccessorChain(ValueAccessPoint<?>... accessPoints) {
 			AccessorChain<Object, Object> result = new AccessorChain<>();
-			for (ValueAccessPointByMethodReference accessPoint : accessPoints) {
+			for (ValueAccessPoint<?> accessPoint : accessPoints) {
 				if (accessPoint instanceof Accessor) {
 					result.add((Accessor) accessPoint);
 				} else if (accessPoint instanceof MutatorByMethodReference) {
@@ -208,13 +217,13 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		 * @return the found column, throws an exception if not found
 		 */
 		@VisibleForTesting
-		Column getColumn(ValueAccessPointByMethodReference... accessPoints) {
+		Column getColumn(ValueAccessPoint... accessPoints) {
 			Column embeddedColumn = getEmbeddedColumn(accessPoints);
 			if (embeddedColumn != null) {
 				return embeddedColumn;
 			}
 			
-			Column column = giveRelationColumn(accessPoints);
+			Column column = columnCachePerAccessPoint.computeIfAbsent(Arrays.asList(accessPoints), k -> giveRelationColumn(k.toArray(new ValueAccessPoint[0])));
 			if (column != null) {
 				return column;
 			} else {
@@ -222,26 +231,31 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 			}
 		}
 		
-		private Column getEmbeddedColumn(ValueAccessPointByMethodReference... accessPoints) {
+		private Column getEmbeddedColumn(ValueAccessPoint<?>... accessPoints) {
 			return this.propertyToColumn.get(toAccessorChain(accessPoints));
 		}
 		
-		private Column giveRelationColumn(ValueAccessPointByMethodReference... accessPoints) {
-			Deque<ValueAccessPoint> stack = new ArrayDeque<>();
+		private Column giveRelationColumn(ValueAccessPoint<?>... accessPoints) {
+			Deque<ValueAccessPoint<?>> stack = new ArrayDeque<>();
 			stack.addAll(Arrays.asList(accessPoints));
 			EntityGraphNode<?> currentNode = this;
 			while (!stack.isEmpty()) {
-				ValueAccessPoint pawn = stack.pop();
+				ValueAccessPoint<?> pawn = stack.pop();
 				Column column = currentNode.propertyToColumn.get(pawn);
 				if (column != null) {
 					return column;
-				}
-				
-				EntityGraphNode<?> entityGraphNode = currentNode.relations.get(pawn);
-				if (entityGraphNode == null) {
-					return null;
 				} else {
-					currentNode = entityGraphNode;
+					column = currentNode.readonlyPropertyToColumn.get(pawn);
+					if (column != null) {
+						return column;
+					} else {
+						EntityGraphNode<?> entityGraphNode = currentNode.relations.get(pawn);
+						if (entityGraphNode == null) {
+							return null;
+						} else {
+							currentNode = entityGraphNode;
+						}
+					}
 				}
 			}
 			return null;

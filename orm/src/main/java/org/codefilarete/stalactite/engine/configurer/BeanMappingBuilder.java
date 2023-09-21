@@ -206,7 +206,9 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				// not using equals() is voluntary since we want reference checking here to exclude same instance,
 				// since given linkage is one of given mappingConfiguration
 				// (doing as such also prevent equals() method override to break this algorithm)
-				.filter(pawn -> linkage != pawn)
+				.filter(pawn -> linkage != pawn
+						// only writable properties are concerned by this check : we allow duplicates for readonly properties
+						&& !pawn.isReadonly() && !linkage.isReadonly())
 				.forEach(duplicateDefinitionChecker);
 	}
 	
