@@ -40,6 +40,7 @@
 		<module>spring-integration</module>
 		<module>sql-adapter</module>
 		<module>core-adapter</module>
+		<module>orm-adapter</module>
 	</modules>
 	
 	<properties>
