@@ -647,6 +647,16 @@ class FluentEntityMappingConfigurationSupportTest {
 	}
 	
 	@Test
+	void withTableNaming() {
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.mapKey(Toto::setId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.withTableNaming(persistedClass -> "tata")
+				.build(persistenceContext);
+		
+		assertThat(persister.giveImpliedTables().stream().map(Table::getName).collect(Collectors.toList())).containsExactlyInAnyOrder("tata");
+	}
+	
+	@Test
 	void embed_definedByGetter() {
 		Table toto = new Table("Toto");
 		MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -1788,7 +1798,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 		
 		@Test
-		void withTableNaming() {
+		void withElementCollectionTableNaming() {
 			MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(Person::getName)

@@ -760,6 +760,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
+	public FluentEntityMappingBuilder<C, I> withTableNaming(TableNamingStrategy tableNamingStrategy) {
+		this.tableNamingStrategy = tableNamingStrategy;
+		return this;
+	}
+	
+	@Override
 	public FluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
 		this.propertiesMappingConfigurationSurrogate.withColumnNaming(columnNamingStrategy);
 		return this;
@@ -848,6 +854,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	static class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddableMappingConfigurationSupport<C> {
 		
 		private final FluentEntityMappingConfigurationSupport<C, I> entityConfigurationSupport;
+		
+		@javax.annotation.Nullable
+		private TableNamingStrategy tableNamingStrategy;
 		
 		/**
 		 * Creates a builder to map the given class for persistence
