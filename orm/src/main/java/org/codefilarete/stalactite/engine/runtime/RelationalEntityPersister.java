@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -152,16 +153,25 @@ public interface RelationalEntityPersister<C, I> {
 	 */
 	interface RelationalExecutableEntityQuery<C> extends ExecutableEntityQuery<C>, CriteriaProvider, RelationalEntityCriteria<C> {
 		
+		@Override
 		<O> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 		
+		@Override
 		<O> RelationalExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 		
+		@Override
 		<O> RelationalExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 		
+		@Override
 		<O> RelationalExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 		
+		@Override
 		<A, B> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
 		
+		@Override
+		<O> RelationalExecutableEntityQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator);
+		
+		@Override
 		<S extends Collection<A>, A, B> RelationalExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
 		
 	}

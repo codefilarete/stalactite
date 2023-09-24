@@ -2,11 +2,11 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -71,6 +71,11 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	@Override
 	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
 		return surrogate.selectWhere(setter, operator);
+	}
+	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O> operator) {
+		return surrogate.selectWhere(accessorChain, operator);
 	}
 	
 	@Override

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.query;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingEase;
@@ -47,7 +48,9 @@ class EntityCriteriaSupportTest {
 						.map(City::getName))
 				.build(new PersistenceContext(mock(ConnectionProvider.class), dialect));
 		
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMapping(), Country::getName, Operators.eq(""))
+		// Note that this constructor can't accept relation as criteria, else we should register relations on it
+		// which can be quite difficult because we don't have access to internal objects behind persister variable 
+		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMapping())
 				.and(Country::getId, Operators.in("11"))
 				.and(Country::getName, Operators.eq("toto"))
 				.and(Country::getName, Operators.between("11", ""))
@@ -63,6 +66,9 @@ class EntityCriteriaSupportTest {
 				.or(Country::setName, Operators.between("11", ""))
 				.or(Country::setName, Operators.gteq("11"))
 				;
+		
+		persister.selectWhere(Country::getCapital, City::getId, Operators.gteq("11"))
+				.and(Country::getCapital, City::getId, Operators.gteq("11"));
 	}
 	
 	@Test
@@ -81,7 +87,7 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
-		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getName))).isEqualTo(nameColumn);
+		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getName))).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -108,7 +114,7 @@ class EntityCriteriaSupportTest {
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
 				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
-		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCapital), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
+		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getCapital, City::getName))).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -135,7 +141,9 @@ class EntityCriteriaSupportTest {
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
 				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
-		assertThat(testInstance.getColumn(new AccessorByMethodReference<>(Country::getCities), new AccessorByMethodReference<>(City::getName))).isEqualTo(nameColumn);
+		assertThat(testInstance.getColumn(new AccessorChain<>(
+				new AccessorByMethodReference<>(Country::getCities),
+				new AccessorByMethodReference<>(City::getName)))).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -152,7 +160,7 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
-		assertThatThrownBy(() -> testInstance.getColumn(new AccessorByMethodReference<>(Country::getName)))
+		assertThatThrownBy(() -> testInstance.getColumn(AccessorChain.chain(Country::getName)))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Column for Country::getName was not found");
 	}

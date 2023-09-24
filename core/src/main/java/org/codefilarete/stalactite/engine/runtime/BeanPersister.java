@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
@@ -231,6 +232,11 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	
 	@Override
 	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public <O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O> operator) {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	

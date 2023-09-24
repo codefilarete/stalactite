@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -167,6 +168,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param operator criteria for the property
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 	
@@ -178,8 +180,36 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param operator criteria for the property
 	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+	
+	/**
+	 * Variation of {@link #selectWhere(SerializableFunction, ConditionalOperator)} with a criteria on property of a property
+	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
+	 *
+	 * @param getter1 a property accessor
+	 * @param getter2 a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	default <O, A> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O> operator) {
+		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
+	}
+	
+	/**
+	 * Creates a query which criteria target mapped properties.
+	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
+	 *
+	 * @param accessorChain a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	<O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O> operator);
 	
 	Set<C> selectAll();
 	
@@ -209,6 +239,9 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		
 		@Override
 		<A, B> ExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
+		
+		@Override
+		<O> ExecutableEntityQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator);
 	}
 	
 	/**
@@ -274,5 +307,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
 		<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
+		
+		<O> EntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator);
 	}
 }
