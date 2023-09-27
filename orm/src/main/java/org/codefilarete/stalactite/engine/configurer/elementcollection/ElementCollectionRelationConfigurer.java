@@ -147,7 +147,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 			
 			Map<ReversibleAccessor<ElementRecord<TRGT, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
 			columnMapping.forEach((propertyAccessor, column) -> {
-				AccessorChain<ElementRecord<TRGT, ID>, Object> accessorChain = AccessorChain.forModel(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor), (accessor, valueType) -> {
+				AccessorChain<ElementRecord<TRGT, ID>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(ElementRecord.ELEMENT_ACCESSOR, propertyAccessor), (accessor, valueType) -> {
 					if (accessor == ElementRecord.ELEMENT_ACCESSOR) {
 						// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object
 						// so we have to specify our bean type, else a simple Object is instantiated which throws a ClassCastException further
