@@ -256,25 +256,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, String columnName);
-	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, String columnName);
-	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
-	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
-	
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter);
-	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
-	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, String columnName);
-	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
-	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
 	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
@@ -502,6 +486,15 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> readonly();
 		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> columnName(String name);
+		
+		@Override
+		<O> FluentMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, O> column);
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> fieldName(String name);
+		
 	}
 	
 	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentEntityMappingBuilder<C, I>,
@@ -720,6 +713,15 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderEnumOptions<C, I> readonly();
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I> columnName(String name);
+		
+		@Override
+		<O> FluentMappingBuilderEnumOptions<C, I> column(Column<? extends Table, O> column);
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I> fieldName(String name);
 	}
 	
 	interface FluentMappingBuilderInheritanceOptions<C, I>

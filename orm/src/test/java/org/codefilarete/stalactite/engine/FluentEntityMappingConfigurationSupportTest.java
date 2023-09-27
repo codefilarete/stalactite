@@ -383,7 +383,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED, "identifier")
 					.usingConstructor(constructor, "identifier")
-					.map(Toto::getName, "label")
+					.map(Toto::getName).columnName("label")
 					.build(persistenceContext, totoTable);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -459,7 +459,35 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		// column should be correctly created
 		assertThat(persister.getMapping().getTargetTable().getName()).isEqualTo("Toto");
-		Column columnForProperty = (Column) persister.getMapping().getTargetTable().mapColumnsOnName().get("name");
+		Column columnForProperty = persister.getMapping().getTargetTable().mapColumnsOnName().get("name");
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
+	}
+	
+	@Test
+	void map_withColumnName_targetedPropertyNameIsTaken() {
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.map(Toto::getName).columnName("dummyName")
+				.build(persistenceContext);
+		
+		// column should be correctly created
+		assertThat(persister.getMapping().getTargetTable().getName()).isEqualTo("Toto");
+		Column columnForProperty = persister.getMapping().getTargetTable().mapColumnsOnName().get("dummyName");
+		assertThat(columnForProperty).isNotNull();
+		assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
+	}
+	
+	@Test
+	void map_withFieldName_targetedPropertyNameIsTaken() {
+		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.map(Toto::getName).fieldName("firstName")
+				.build(persistenceContext);
+		
+		// column should be correctly created
+		assertThat(persister.getMapping().getTargetTable().getName()).isEqualTo("Toto");
+		Column columnForProperty = persister.getMapping().getTargetTable().mapColumnsOnName().get("firstName");
 		assertThat(columnForProperty).isNotNull();
 		assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
 	}
@@ -557,7 +585,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		Column<Table, String> titleColumn = toto.addColumn("title", String.class);
 		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-				.map(Toto::getName, titleColumn)
+				.map(Toto::getName).column(titleColumn)
 				.build(persistenceContext);
 		
 		// column should not have been created
@@ -614,8 +642,8 @@ class FluentEntityMappingConfigurationSupportTest {
 	void map_mappingDefinedTwiceByColumn_throwsException() {
 		assertThatThrownBy(() -> MappingEase.entityBuilder(Toto.class, UUID_TYPE)
 					.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-					.map(Toto::getName, "xyz")
-					.map(Toto::getFirstName, "xyz")
+					.map(Toto::getName).columnName("xyz")
+					.map(Toto::getFirstName).columnName("xyz")
 					.build(persistenceContext))
 				.isInstanceOf(MappingConfigurationException.class)
 				.hasMessage("Column 'xyz' of mapping 'Toto::getName' is already targeted by 'Toto::getFirstName'");
@@ -1279,7 +1307,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
-					.map(Timestamp::getCreationDate, "creation")
+					.map(Timestamp::getCreationDate).columnName("creation")
 					.map(Timestamp::getModificationDate);
 			
 			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -1338,7 +1366,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
-					.map(Timestamp::getCreationDate, "creation")
+					.map(Timestamp::getCreationDate).columnName("creation")
 					.map(Timestamp::getModificationDate);
 			
 			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -1377,7 +1405,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			// embeddable mapping to be reused
 			EmbeddableMappingConfigurationProvider<Timestamp> timestampMapping = MappingEase.embeddableBuilder(Timestamp.class)
-					.map(Timestamp::getCreationDate, "creation")
+					.map(Timestamp::getCreationDate).columnName("creation")
 					.map(Timestamp::getModificationDate);
 			
 			EntityPersister<Toto, Identifier<UUID>> persister = MappingEase.entityBuilder(Toto.class, UUID_TYPE)
@@ -1507,7 +1535,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		EntityPersister<PersonWithGender, Identifier<Long>> personPersister = MappingEase.entityBuilder(PersonWithGender.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
-				.mapEnum(PersonWithGender::getGender, genderColumn).byOrdinal()
+				.mapEnum(PersonWithGender::getGender).column(genderColumn).byOrdinal()
 				.build(persistenceContext);
 		
 		dialect.getSqlTypeRegistry().put(genderColumn, "INT");
@@ -2018,7 +2046,7 @@ class FluentEntityMappingConfigurationSupportTest {
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.map(Country::getId)
-					.map(Country::setDescription, "zxx")
+					.map(Country::setDescription).columnName("zxx").fieldName("tutu")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
@@ -2033,10 +2061,10 @@ class FluentEntityMappingConfigurationSupportTest {
 					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
-					.map(Country::getId, "zz")
+					.map(Country::getId).columnName("zz")
 					.mapOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, long.class))
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
-					.map(Country::getDescription, "xx")
+					.map(Country::getDescription).columnName("xx")
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
@@ -2045,7 +2073,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		try {
 			MappingEase.entityBuilder(Country.class, long.class)
 					.map(Country::getName)
-					.map(Country::getId, "zz")
+					.map(Country::getId).columnName("zz")
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					// embed with setter
 					.embed(Country::setPresident, MappingEase.embeddableBuilder(Person.class)
@@ -2057,8 +2085,8 @@ class FluentEntityMappingConfigurationSupportTest {
 					.mapOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, long.class))
 						// testing mappedBy with inheritance
 						.mappedBy((SerializableFunction<City, AbstractCountry>) City::getAbstractCountry)
-					.map(Country::getDescription, "xx")
-					.map(Country::getDummyProperty, "dd")
+					.map(Country::getDescription).columnName("xx")
+					.map(Country::getDummyProperty).columnName("dd")
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
@@ -2070,7 +2098,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			MappingEase.entityBuilder(Country.class, long.class)
 					.map(Country::getName)
-					.map(Country::getId, "zz")
+					.map(Country::getId).columnName("zz")
 					.mapOneToOne(Country::setPresident, MappingEase.entityBuilder(Person.class, long.class))
 					.mapSuperClass((EmbeddableMappingConfigurationProvider<Country>) new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					// embed with setter
@@ -2086,7 +2114,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			
 			MappingEase.entityBuilder(Country.class, long.class)
 					.map(Country::getName)
-					.map(Country::getId, "zz")
+					.map(Country::getId).columnName("zz")
 					.embed(Country::getPresident, personMappingBuilder)
 					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.mapOneToOne(Country::setPresident, MappingEase.entityBuilder(Person.class, long.class))
@@ -2114,20 +2142,20 @@ class FluentEntityMappingConfigurationSupportTest {
 		try {
 			MappingEase.entityBuilder(PersonWithGender.class, long.class)
 					.map(Person::getName)
-					.map(Person::getName, personTable.name)
+					.map(Person::getName).column(personTable.name)
 					.mapEnum(PersonWithGender::getGender).byOrdinal()
 					.embed(Person::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
 					.overrideName(Timestamp::getCreationDate, "myDate")
-					.mapEnum(PersonWithGender::getGender, "MM").byOrdinal()
-					.mapEnum(PersonWithGender::getGender, personTable.gender).byOrdinal()
-					.map(PersonWithGender::getId, "zz")
+					.mapEnum(PersonWithGender::getGender).columnName("MM").byOrdinal()
+					.mapEnum(PersonWithGender::getGender).column(personTable.gender).byOrdinal()
+					.map(PersonWithGender::getId).columnName("zz")
 					.mapEnum(PersonWithGender::setGender).byName()
 					.embed(Person::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
-					.mapEnum(PersonWithGender::setGender, "MM").byName()
+					.mapEnum(PersonWithGender::setGender).columnName("MM").byName()
 					.build(persistenceContext, new Table<>("person"));
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not

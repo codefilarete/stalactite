@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * An interface describing a fluent way to declare a sub-entity (from polymorphism point of view) mapping of a class.
@@ -26,25 +26,9 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	
 	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, String columnName);
-	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, String columnName);
-	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
-	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
-	
 	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter);
-	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
-	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, String columnName);
-	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
-	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
 	
 	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
@@ -172,6 +156,15 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I> readonly();
+		
+		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I> columnName(String name);
+		
+		@Override
+		<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, O> column);
+		
+		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I> fieldName(String name);
 	}
 	
 	interface FluentSubEntityMappingConfigurationEnumOptions<C, I> extends FluentSubEntityMappingConfiguration<C, I>, EnumOptions {
@@ -190,6 +183,16 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I> readonly();
+		
+		@Override
+		FluentSubEntityMappingConfigurationEnumOptions<C, I> columnName(String name);
+		
+		@Override
+		<O> FluentSubEntityMappingConfigurationEnumOptions<C, I> column(Column<? extends Table, O> column);
+		
+		@Override
+		FluentSubEntityMappingConfigurationEnumOptions<C, I> fieldName(String name);
+		
 	}
 	
 	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentSubEntityMappingConfiguration<C, I>,

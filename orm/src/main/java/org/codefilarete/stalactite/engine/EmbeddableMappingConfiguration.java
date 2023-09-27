@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -65,6 +66,9 @@ public interface EmbeddableMappingConfiguration<C> {
 	interface Linkage<C, O> {
 		
 		ReversibleAccessor<C, O> getAccessor();
+		
+		@Nullable
+		Field getField();
 		
 		@Nullable
 		String getColumnName();

@@ -12,6 +12,8 @@ import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Sequence;
 
@@ -32,6 +34,15 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	
 	@Override
 	ColumnOptions<C, I> readonly();
+	
+	@Override
+	ColumnOptions<C, I> columnName(String name);
+	
+	@Override
+	<O> ColumnOptions<C, I> column(Column<? extends Table, O> column);
+	
+	@Override
+	ColumnOptions<C, I> fieldName(String name);
 	
 	/**
 	 * Available identifier policies for entities.

@@ -45,6 +45,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -92,13 +93,11 @@ class OneToOneRelationConfigurerTest {
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
-		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
-		);
+		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(City::getId);
+		identifierLinkage.setField(Reflections.findField(City.class, "id"));
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
-		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name"))
-		);
+		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);
+		nameLinkage.setField(Reflections.findField(City.class, "name"));
 		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));
 		
 		// defining City mapping
@@ -222,13 +221,11 @@ class OneToOneRelationConfigurerTest {
 				Accessors.mutatorByField(City.class, "id")
 		);
 		
-		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getId), Accessors.mutatorByField(City.class, "id"))
-		);
+		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(City::getId);
+		identifierLinkage.setField(Reflections.findField(City.class, "id"));
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
-		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(
-				new PropertyAccessor<>(new AccessorByMethodReference<>(City::getName), Accessors.mutatorByField(City.class, "name"))
-		);
+		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);
+		nameLinkage.setField(Reflections.findField(City.class, "name"));
 		nameLinkage.setColumnOptions(new ColumnLinkageOptionsByName("name"));
 		
 		EmbeddableMappingConfiguration<City> cityPropertiesMapping = mock(EmbeddableMappingConfiguration.class);

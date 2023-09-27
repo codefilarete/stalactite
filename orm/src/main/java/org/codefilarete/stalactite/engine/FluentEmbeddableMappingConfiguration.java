@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.reflection.AccessorChain;
@@ -35,35 +37,13 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 */
 	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableFunction<C, O> getter);
 	
-	/**
-	 * Adds a property to be mapped and overrides its default column name.
-	 *
-	 * @param setter a Method Reference to a setter
-	 * @param <O> setter return type / property type to be mapped
-	 * @return this
-	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableBiConsumer<C, O> setter, String columnName);
-	
-	/**
-	 * Adds a property to be mapped and overrides its default column name.
-	 *
-	 * @param getter a Method Reference to a getter
-	 * @param <O> getter input type / property type to be mapped
-	 * @return this
-	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableFunction<C, O> getter, String columnName);
-	
 	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
-	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName);
-	
 	/**
 	 * Please note that we can't create a generic type for {@code ? super C} by prefixing the method signature with {@code <X super C>}
-	 * because it is not syntactically valid (in Java 8). So it can't be mutualized between the 2 arguments {@code superType} and
+	 * because it is not syntactically valid (in Java 8). So it can't be shared between the 2 arguments {@code superType} and
 	 * {@code mappingStrategy}. So user must be careful to ensure by himself that both types are equal.
 	 */
 	FluentEmbeddableMappingConfiguration<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
@@ -122,6 +102,16 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationEnumOptions<C> readonly();
+		
+		@Override
+		FluentEmbeddableMappingConfigurationEnumOptions<C> columnName(String name);
+		
+		@Override
+		<O> FluentEmbeddableMappingConfigurationEnumOptions<C> column(Column<? extends Table, O> column);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationEnumOptions<C> fieldName(String name);
+		
 	}
 	
 	interface FluentEmbeddableMappingConfigurationPropertyOptions<C> extends FluentEmbeddableMappingConfiguration<C>, PropertyOptions {
@@ -134,5 +124,14 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C> readonly();
+		
+		@Override
+		FluentEmbeddableMappingConfigurationPropertyOptions<C> columnName(String name);
+		
+		@Override
+		<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> column(Column<? extends Table, O> column);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationPropertyOptions<C> fieldName(String name);
 	}
 }
