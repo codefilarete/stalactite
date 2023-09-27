@@ -1,17 +1,16 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
@@ -53,7 +52,8 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 	
 	@Override
 	public Set<C> loadGraph(CriteriaChain where) {
-		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		Query query = entityTreeQuery.getQuery();
 		
 		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
 		persisterPerSubclass.values().forEach(subclassPersister -> {
@@ -63,7 +63,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
 		
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where);
+		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where, entityTreeQuery.getColumnClones());
 		
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> columnReaders = new HashMap<>();

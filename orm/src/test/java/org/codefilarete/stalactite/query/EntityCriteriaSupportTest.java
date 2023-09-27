@@ -86,8 +86,8 @@ class EntityCriteriaSupportTest {
 				.build(dummyPersistenceContext, countryTable))
 				.getMapping();
 		
-		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
-		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getName))).isEqualTo(nameColumn);
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
+		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getName).getAccessors())).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -111,10 +111,10 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		// we have to register the relation, that is expected by EntityGraphNode
-		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
 				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
-		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getCapital, City::getName))).isEqualTo(nameColumn);
+		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getCapital, City::getName).getAccessors())).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -138,12 +138,13 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		// we have to register the relation, that is expected by EntityGraphNode
-		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
 				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
 		assertThat(testInstance.getColumn(new AccessorChain<>(
 				new AccessorByMethodReference<>(Country::getCities),
-				new AccessorByMethodReference<>(City::getName)))).isEqualTo(nameColumn);
+				new AccessorByMethodReference<>(City::getName))
+				.getAccessors())).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -159,8 +160,8 @@ class EntityCriteriaSupportTest {
 				.build(dummyPersistenceContext, countryTable))
 				.getMapping();
 		
-		EntityGraphNode<Country> testInstance = new EntityGraphNode<Country>(mappingStrategy);
-		assertThatThrownBy(() -> testInstance.getColumn(AccessorChain.chain(Country::getName)))
+		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
+		assertThatThrownBy(() -> testInstance.getColumn(AccessorChain.chain(Country::getName).getAccessors()))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Column for Country::getName was not found");
 	}

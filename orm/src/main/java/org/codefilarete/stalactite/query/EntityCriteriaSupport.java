@@ -1,8 +1,9 @@
 package org.codefilarete.stalactite.query;
 
-import java.util.ArrayDeque;
 import java.util.Collection;
-import java.util.Deque;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
@@ -21,7 +22,11 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.PairIterator;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -75,11 +80,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
-		return add(logicalOperator, rootConfiguration.getColumn(new AccessorByMethodReference<>(getter)), operator);
+		return add(logicalOperator, rootConfiguration.getColumn(Arrays.asList(new AccessorByMethodReference<>(getter))), operator);
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
-		return add(logicalOperator, rootConfiguration.getColumn(new MutatorByMethodReference<>(setter)), operator);
+		return add(logicalOperator, rootConfiguration.getColumn(Arrays.asList(new MutatorByMethodReference<>(setter))), operator);
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, Column column, ConditionalOperator<O> operator) {
@@ -113,19 +118,19 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	
 	@Override
 	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator) {
-		criteria.and(rootConfiguration.getColumn(AccessorChain.chain(getter1, getter2)), operator);
+		criteria.and(rootConfiguration.getColumn(AccessorChain.chain(getter1, getter2).getAccessors()), operator);
 		return this;
 	}
 	
 	@Override
 	public <O> RelationalEntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator) {
-		criteria.and(rootConfiguration.getColumn(getter), operator);
+		criteria.and(rootConfiguration.getColumn(getter.getAccessors()), operator);
 		return this;
 	}
 	
 	@Override
 	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator) {
-		criteria.and(rootConfiguration.getColumn(new AccessorChain<>(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2))), operator);
+		criteria.and(rootConfiguration.getColumn(Arrays.asList(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2))), operator);
 		return this;
 	}
 	
@@ -139,30 +144,64 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	 */
 	public static class EntityGraphNode<C> {
 		
-		/** Owned properties mapping */
-		private final ValueAccessPointMap<C, Column> propertyToColumn = new ValueAccessPointMap<>();
-		
-		private final ValueAccessPointMap<C, Column> readonlyPropertyToColumn = new ValueAccessPointMap<>();
+		/**
+		 * Owned properties mapping
+		 * Implementations based on {@link AccessorDefinition}. Can be a quite heavy comparison but we have no other
+		 * solution : propertyToColumn is build from entity mapping which can contains
+		 * {@link org.codefilarete.reflection.PropertyAccessor} (for exemple) whereas getColumn() will get
+		 * {@link AccessorByMethodReference} which are quite different but should be compared.
+		 */
+		private final Map<List<? extends ValueAccessPoint<?>>, Column> propertyToColumn = new HashedMap<List<? extends ValueAccessPoint<?>>, Column>() {
+			@Override
+			protected int hash(Object key) {
+				List<ValueAccessPoint<?>> accessors = (List<ValueAccessPoint<?>>) key;
+				int result = 1;
+				for (ValueAccessPoint<?> accessor : accessors) {
+					AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(accessor);
+					// Declaring class and name should be sufficient to compute a significant hashCode and memberType will be only
+					// used in isEqualKey to make all of this robust
+					result = 31 * result + 31 * accessorDefinition.getDeclaringClass().hashCode() + accessorDefinition.getName().hashCode();
+				}
+				return result;
+			}
+			
+			@Override
+			protected boolean isEqualKey(Object key1, Object key2) {
+				List<ValueAccessPoint<?>> accessors1 = (List<ValueAccessPoint<?>>) key1;
+				List<ValueAccessPoint<?>> accessors2 = (List<ValueAccessPoint<?>>) key2;
+				List<AccessorDefinition> accessorDefintiions1 = accessors1.stream().map(AccessorDefinition::giveDefinition).collect(Collectors.toList());
+				List<AccessorDefinition> accessorDefintiions2 = accessors2.stream().map(AccessorDefinition::giveDefinition).collect(Collectors.toList());
+				PairIterator<AccessorDefinition, AccessorDefinition> pairIterator = new PairIterator<>(accessorDefintiions1, accessorDefintiions2);
+				boolean result = false;
+				while (!result && pairIterator.hasNext()) {
+					Duo<AccessorDefinition, AccessorDefinition> accessorsPair = pairIterator.next();
+					result = accessorsPair.getLeft().getDeclaringClass().equals(accessorsPair.getRight().getDeclaringClass())
+							&& accessorsPair.getLeft().getName().equals(accessorsPair.getRight().getName())
+							&& accessorsPair.getLeft().getMemberType().equals(accessorsPair.getRight().getMemberType());
+				}
+				return result;
+			}
+		};
 		
 		/** Relations mapping : one-to-one or one-to-many */
 		private final ValueAccessPointMap<C, EntityGraphNode<?>> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
 		EntityGraphNode(EntityMapping<C, ?, ?> mappingStrategy) {
-			propertyToColumn.putAll(mappingStrategy.getPropertyToColumn());
-			readonlyPropertyToColumn.putAll(mappingStrategy.getReadonlyPropertyToColumn());
+			mappingStrategy.getPropertyToColumn().forEach((p, c) -> {
+				propertyToColumn.put(Arrays.asList(p), c);
+			});
+			mappingStrategy.getReadonlyPropertyToColumn().forEach((p, c) -> {
+				propertyToColumn.put(Arrays.asList(p), c);
+			});
 			// we add the identifier and primary key because they are not in the property mapping 
 			IdMapping<C, ?> idMapping = mappingStrategy.getIdMapping();
 			if (idMapping instanceof SimpleIdMapping) {
 				Column primaryKey = ((SimpleIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumn();
-				propertyToColumn.put(((SimpleIdMapping<C, ?>) idMapping).getIdAccessor().getIdAccessor(), primaryKey);
+				propertyToColumn.put(Arrays.asList(((SimpleIdMapping<C, ?>) idMapping).getIdAccessor().getIdAccessor()), primaryKey);
 			}
 			mappingStrategy.getEmbeddedBeanStrategies().forEach((k, v) ->
-					v.getPropertyToColumn().forEach((p, c) -> {
-								propertyToColumn.put(new AccessorChain<>(k, p), c);
-								readonlyPropertyToColumn.put(new AccessorChain<>(k, p), c);
-							}
-					)
+					v.getPropertyToColumn().forEach((p, c) -> propertyToColumn.put(new AccessorChain<>(k, p).getAccessors(), c))
 			);
 		}
 		
@@ -179,7 +218,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information
 			// at this time
-			propertyToColumn.remove(relationProvider);
+			propertyToColumn.remove(Arrays.asList(relationProvider));
 			relations.put(relationProvider, graphNode);
 			return graphNode;
 		}
@@ -190,55 +229,37 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		 * its functionality such as get() or toMutator() hence it's not necessary that it be consistent. For exemple
 		 * it can start with a Collection accessor then an accessor to the component of the Collection. See
 		 * 
-		 * @param accessorChain chain to a property that has a matching column
+		 * @param valueAccessPoints chain of accessors to a property that has a matching column
 		 * @return the found column, throws an exception if not found
 		 */
 		@VisibleForTesting
-		Column getColumn(AccessorChain<C, ?> accessorChain) {
-			Column embeddedColumn = getEmbeddedColumn(accessorChain);
-			if (embeddedColumn != null) {
-				return embeddedColumn;
+		Column getColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
+			Column column = this.propertyToColumn.get(valueAccessPoints);
+			if (column != null) {
+				return column;
 			} else {
-				Column column = giveRelationColumn(accessorChain);
-				if (column != null) {
-					return column;
-				} else {
-					throw new RuntimeMappingException("Column for " + AccessorDefinition.toString(accessorChain) + " was not found");
+				EntityGraphNode<?> entityGraphNode = relations.get(valueAccessPoints.get(0));
+				if (entityGraphNode != null) {
+					column = entityGraphNode.getColumn(valueAccessPoints.subList(1, valueAccessPoints.size()));
 				}
-			}
-		}
-		
-		private Column getColumn(ValueAccessPoint<C> valueAccessPoint) {
-			return this.propertyToColumn.get(valueAccessPoint);
-		}
-		
-		private Column getEmbeddedColumn(AccessorChain<C, ?> accessorChain) {
-			return this.propertyToColumn.get(accessorChain);
-		}
-		
-		private Column giveRelationColumn(AccessorChain<C, ?> accessorChain) {
-			Deque<ValueAccessPoint<?>> stack = new ArrayDeque<>(accessorChain.getAccessors());
-			EntityGraphNode<?> currentNode = this;
-			while (!stack.isEmpty()) {
-				ValueAccessPoint<?> pawn = stack.pop();
-				Column column = currentNode.propertyToColumn.get(pawn);
-				if (column != null) {
-					return column;
-				} else {
-					column = currentNode.readonlyPropertyToColumn.get(pawn);
-					if (column != null) {
-						return column;
-					} else {
-						EntityGraphNode<?> entityGraphNode = currentNode.relations.get(pawn);
-						if (entityGraphNode == null) {
-							return null;
-						} else {
-							currentNode = entityGraphNode;
+				if (column == null) {
+					StringAppender accessPointAsString = new StringAppender() {
+						@Override
+						public StringAppender cat(Object o) {
+							if (o instanceof ValueAccessPoint) {
+								super.cat(AccessorDefinition.toString((ValueAccessPoint) o));
+							} else {
+								super.cat(o);
+							}
+							return this;
 						}
-					}
+					};
+					accessPointAsString.ccat(valueAccessPoints, " > ");
+					throw new RuntimeMappingException("Column for " + accessPointAsString + " was not found");
+				} else {
+					return column;
 				}
 			}
-			return null;
 		}
 	}
 }
