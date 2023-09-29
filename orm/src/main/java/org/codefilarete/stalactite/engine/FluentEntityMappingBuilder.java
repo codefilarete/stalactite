@@ -135,7 +135,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * Variant of {@link #usingConstructor(Function, Column)} with 2 {@link Column}s : first one is expected to be primary key,
 		 * while second one is an extra data.
 		 * About extra data : if it has an equivalent property, then it should be marked as set by constructor to avoid a superfluous
-		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, its mapping declaration ({@link #map(SerializableFunction, Column)})
+		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, its mapping declaration ({@link PropertyOptions#column(Column)})
 		 * should use this column as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 2-args constructor to use (can also be a method factory, not a pure class constructor)
@@ -161,7 +161,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * Variant of {@link #usingConstructor(BiFunction, Column, Column)} with 3 {@link Column}s : first one is expected to be primary key,
 		 * while second and third one are extra data.
 		 * About extra data : if they have equivalent properties, then they should be marked as set by constructor to avoid a superfluous
-		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, their mapping declarations ({@link #map(SerializableFunction, Column)})
+		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, their mapping declarations ({@link PropertyOptions#column(Column)})
 		 * should use the columns as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 3-args constructor to use (can also be a method factory, not a pure class constructor)
@@ -194,7 +194,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * code will depend on {@link Column}) which represent a kind of {@link java.sql.ResultSet} so one can fulfill any property of its instance
 		 * the way he wants.
 		 * <br/>
-		 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} and {@link #map(SerializableFunction, Column)}.
+		 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} and {@link PropertyOptions#column(Column)}.
 		 *
 		 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 		 */

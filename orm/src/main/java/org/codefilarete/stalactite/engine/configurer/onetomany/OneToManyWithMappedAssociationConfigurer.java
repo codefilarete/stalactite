@@ -183,7 +183,6 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			reversePropertyAccessor = Accessors.accessor(associationConfiguration.getOneToManyRelation().getReverseGetter()).toMutator();
 		}
 		BiConsumer<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor == null ? null : reversePropertyAccessor::set;
-		Function<TRGT, SRC> reverseGetter = null;//trgt -> (SRC) currentForeignKeyValueProvider.get().get(trgt);
 		if (associationConfiguration.getOneToManyRelation() instanceof OneToManyListRelation) {
 			assignEngineForIndexedAssociation(reverseSetterAsConsumer, foreignKey,
 					((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn(), targetPersister);
