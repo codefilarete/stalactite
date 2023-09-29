@@ -431,9 +431,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return accessor.get();
 		}
 		
+		@Nullable
 		@Override
 		public Field getField() {
 			return field;
+		}
+		
+		public void setField(Field field) {
+			this.field = field;
 		}
 		
 		@Nullable
@@ -456,10 +461,6 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		public void readonly() {
 			this.readonly = true;
-		}
-		
-		public void setField(Field field) {
-			this.field = field;
 		}
 		
 		/**

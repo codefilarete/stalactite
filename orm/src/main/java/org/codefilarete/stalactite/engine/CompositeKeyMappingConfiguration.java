@@ -1,14 +1,13 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.configurer.FluentCompositeKeyMappingConfigurationSupport.Inset;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.tool.collection.ReadOnlyIterator;
 
 /**
  * Defines elements needed to configure a mapping of an embeddable class
@@ -38,6 +37,9 @@ public interface CompositeKeyMappingConfiguration<C> {
 	interface CompositeKeyLinkage<C, O> {
 		
 		ReversibleAccessor<C, O> getAccessor();
+		
+		@Nullable
+		Field getField();
 		
 		@Nullable
 		String getColumnName();

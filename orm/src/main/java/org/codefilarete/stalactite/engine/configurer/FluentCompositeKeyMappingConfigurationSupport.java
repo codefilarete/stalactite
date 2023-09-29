@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -305,6 +306,9 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		
 		private final ReversibleAccessor<T, ?> function;
 		
+		@Nullable
+		private Field field;
+		
 		public LinkageSupport(ReversibleAccessor<T, ?> function) {
 			this.function = function;
 		}
@@ -330,6 +334,16 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		@Override
 		public ReversibleAccessor<T, O> getAccessor() {
 			return (ReversibleAccessor<T, O>) function;
+		}
+		
+		@Nullable
+		@Override
+		public Field getField() {
+			return field;
+		}
+		
+		public void setField(Field field) {
+			this.field = field;
 		}
 		
 		@Nullable

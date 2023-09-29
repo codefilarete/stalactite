@@ -34,7 +34,6 @@ import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.NotYetSupportedOperationException;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Inset;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -500,9 +499,9 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					@Nullable
 					@Override
 					public Field getField() {
-						// this code is not accessible since mapKey() doesn't give access to field override, maybe Linkage
+						// this code serves little purpose since mapKey() doesn't give access to field override, maybe Linkage
 						// contract should be specialized for Key mapping.
-						throw new NotYetSupportedOperationException("Definition of a key property through field is not yet supported");
+						return embeddableLinkage.getField();
 					}
 					
 					@Nullable
