@@ -14,21 +14,13 @@ public interface FluentCompositeKeyMappingBuilder<C> extends FluentCompositeKeyM
 	
 	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableBiConsumer<C, O> setter);
+	<O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
 	
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableFunction<C, O> getter);
-	
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableBiConsumer<C, O> setter, String columnName);
-	
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableFunction<C, O> getter, String columnName);
+	<O> FluentCompositeKeyMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter);
 	
 	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
-	
-	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
-	
-	<E extends Enum<E>> FluentCompositeKeyMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName);
 	
 	FluentCompositeKeyMappingBuilder<C> mapSuperClass(CompositeKeyMappingConfigurationProvider<? super C> superMappingConfiguration);
 	
@@ -41,6 +33,16 @@ public interface FluentCompositeKeyMappingBuilder<C> extends FluentCompositeKeyM
 			CompositeKeyMappingConfigurationProvider<? extends O> compositeKeyMappingBuilder);
 	
 	FluentCompositeKeyMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
+	
+	interface FluentCompositeKeyMappingBuilderPropertyOptions<C> extends FluentCompositeKeyMappingBuilder<C>,
+			FluentCompositeKeyMappingConfigurationPropertyOptions<C> {
+		
+		@Override
+		FluentCompositeKeyMappingBuilderPropertyOptions<C> columnName(String name);
+		
+		@Override
+		FluentCompositeKeyMappingBuilderPropertyOptions<C> fieldName(String name);
+	}
 	
 	interface FluentCompositeKeyMappingBuilderCompositeKeyMappingConfigurationImportedEmbedOptions<C, O>
 			extends FluentCompositeKeyMappingConfigurationImportedEmbedOptions<C, O>,
@@ -72,5 +74,10 @@ public interface FluentCompositeKeyMappingBuilder<C> extends FluentCompositeKeyM
 		@Override
 		FluentCompositeKeyMappingBuilderEnumOptions<C> byOrdinal();
 		
+		@Override
+		FluentCompositeKeyMappingBuilderEnumOptions<C> columnName(String name);
+		
+		@Override
+		FluentCompositeKeyMappingBuilderEnumOptions<C> fieldName(String name);
 	}
 }

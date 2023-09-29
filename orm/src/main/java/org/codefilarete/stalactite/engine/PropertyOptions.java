@@ -33,8 +33,9 @@ public interface PropertyOptions {
 	PropertyOptions readonly();
 	
 	/**
-	 * Sets column name to be used. By default column name is deduced from property name (its self deduced from
-	 * property accessor), this method overwrites {@link ColumnNamingStrategy} for this property.
+	 * Sets column name to be used. By default column name is deduced from property name (it is deduced from
+	 * property accessor), this method overwrites {@link ColumnNamingStrategy} for this property as well as field name
+	 * (see {@link #fieldName(String)}.
 	 */
 	PropertyOptions columnName(String name);
 	
@@ -50,9 +51,11 @@ public interface PropertyOptions {
 	<O> PropertyOptions column(Column<? extends Table, O> column);
 	
 	/**
-	 * Sets {@link java.lang.reflect.Field} name to be targeted by this property. Overwrites default mechanism which
+	 * Sets {@link java.lang.reflect.Field} name targeted by this property. Overwrites default mechanism which
 	 * deduces it from accessor name.
 	 * Uses it if your accessor doesn't follow bean naming convention.
+	 * Field name will be used as column name except if {@link #columnName(String)} is used, it also overwrites
+	 * {@link ColumnNamingStrategy} for this property.
 	 * 
 	 * @param name {@link java.lang.reflect.Field} name that stores property value
 	 */

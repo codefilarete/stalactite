@@ -225,6 +225,124 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	}
 	
 	@Test
+	void crud() {
+		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getLastName)
+						.map(PersonId::getAddress))
+				.map(Person::getAge)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.setAge(35);
+		
+		personPersister.insert(dummyPerson);
+		
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		
+		dummyPerson.setAge(36);
+		personPersister.update(dummyPerson, loadedPerson, true);
+		Table personTable = new Table("Person");
+		Column<Table, Integer> age = personTable.addColumn("age", int.class);
+		Set<Integer> ages = persistenceContext.select(SerializableFunction.identity(), age);
+		assertThat(ages).containsExactly(36);
+		
+		personPersister.delete(dummyPerson);
+		ages = persistenceContext.select(SerializableFunction.identity(), age);
+		assertThat(ages).isEmpty();
+	}
+	
+	@Test
+	void crud_columnNameOverridden_columnNameIsUsed() {
+		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getLastName).columnName("familyName")
+						.map(PersonId::getAddress))
+				.map(Person::getAge)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.setAge(35);
+		
+		personPersister.insert(dummyPerson);
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		
+		assertThat(loadedPerson.getId().getLastName()).isEqualTo("Do");
+	}
+	
+	@Test
+	void crud_fieldNameOverridden_fieldNameIsUsed() throws SQLException {
+		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getFamilyName).fieldName("lastName")
+						.map(PersonId::getAddress))
+				.map(Person::getAge)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.setAge(35);
+		
+		personPersister.insert(dummyPerson);
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		
+		assertThat(loadedPerson.getId().getLastName()).isEqualTo("Do");
+		
+		ResultSet tableColumns = persistenceContext.getConnectionProvider().giveConnection().getMetaData().getColumns(null, null,
+				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase(), null);
+		ResultSetIterator<String> columnNameReader = new ResultSetIterator<String>(tableColumns) {
+			@Override
+			public String convert(ResultSet resultSet) throws SQLException {
+				return resultSet.getString("COLUMN_NAME");
+			}
+		};
+		assertThat(columnNameReader.convert()).containsExactlyInAnyOrder("AGE", "FIRSTNAME", "LASTNAME", "ADDRESS");
+	}
+	
+	@Test
+	void crud_fieldNameOverriddenAndColumnNameOverridden_columnNameIsUsed() throws SQLException {
+		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
+				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+						.map(PersonId::getFirstName)
+						.map(PersonId::getFamilyName).fieldName("lastName").columnName("familyName")
+						.map(PersonId::getAddress))
+				.map(Person::getAge)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person dummyPerson = new Person(new PersonId("John", "Do", "nowhere"));
+		dummyPerson.setAge(35);
+		
+		personPersister.insert(dummyPerson);
+		Person loadedPerson = personPersister.select(dummyPerson.getId());
+		
+		assertThat(loadedPerson.getId().getLastName()).isEqualTo("Do");
+		
+		ResultSet tableColumns = persistenceContext.getConnectionProvider().giveConnection().getMetaData().getColumns(null, null,
+				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase(), null);
+		ResultSetIterator<String> columnNameReader = new ResultSetIterator<String>(tableColumns) {
+			@Override
+			public String convert(ResultSet resultSet) throws SQLException {
+				return resultSet.getString("COLUMN_NAME");
+			}
+		};
+		assertThat(columnNameReader.convert()).containsExactlyInAnyOrder("AGE", "FIRSTNAME", "FAMILYNAME", "ADDRESS");
+	}
+	
+	@Test
 	void crud_oneToOne_compositeToSingleKey_ownedBySource() {
 		EntityPersister<Person, PersonId> personPersister =  MappingEase.entityBuilder(Person.class, PersonId.class)
 				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)

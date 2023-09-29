@@ -23,7 +23,7 @@ public interface FluentCompositeKeyMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy) 
 	 */
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableBiConsumer<C, O> setter);
+	<O> FluentCompositeKeyMappingConfigurationPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
 	
 	/**
 	 * Adds a property to be mapped. Column name will be extracted from getter according to the Java Bean convention naming.
@@ -33,33 +33,11 @@ public interface FluentCompositeKeyMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy)
 	 */
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableFunction<C, O> getter);
-	
-	/**
-	 * Adds a property to be mapped and overrides its default column name.
-	 *
-	 * @param setter a Method Reference to a setter
-	 * @param <O> setter return type / property type to be mapped
-	 * @return this
-	 */
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableBiConsumer<C, O> setter, String columnName);
-	
-	/**
-	 * Adds a property to be mapped and overrides its default column name.
-	 *
-	 * @param getter a Method Reference to a getter
-	 * @param <O> getter input type / property type to be mapped
-	 * @return this
-	 */
-	<O> FluentCompositeKeyMappingBuilder<C> map(SerializableFunction<C, O> getter, String columnName);
+	<O> FluentCompositeKeyMappingConfigurationPropertyOptions<C> map(SerializableFunction<C, O> getter);
 	
 	<E extends Enum<E>> FluentCompositeKeyMappingConfigurationEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentCompositeKeyMappingConfigurationEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
-	
-	<E extends Enum<E>> FluentCompositeKeyMappingConfigurationEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
-	
-	<E extends Enum<E>> FluentCompositeKeyMappingConfigurationEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName);
 	
 	/**
 	 * Please note that we can't create a generic type for {@code ? super C} by prefixing the method signature with {@code <X super C>}
@@ -84,6 +62,15 @@ public interface FluentCompositeKeyMappingConfiguration<C> {
 	 * @return this
 	 */
 	FluentCompositeKeyMappingConfiguration<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
+	
+	interface FluentCompositeKeyMappingConfigurationPropertyOptions<C> extends FluentCompositeKeyMappingConfiguration<C>, CompositeKeyPropertyOptions {
+		
+		@Override
+		FluentCompositeKeyMappingConfigurationPropertyOptions<C> columnName(String name);
+		
+		@Override
+		FluentCompositeKeyMappingConfigurationPropertyOptions<C> fieldName(String name);
+	}
 	
 	/**
 	 * A mashup that allows to come back to the "main" options as well as continue configuration of an "imported bean mapping"
@@ -111,12 +98,19 @@ public interface FluentCompositeKeyMappingConfiguration<C> {
 		<IN> FluentCompositeKeyMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
-	interface FluentCompositeKeyMappingConfigurationEnumOptions<C> extends FluentCompositeKeyMappingConfiguration<C>, CompositeKeyEnumOptions {
+	interface FluentCompositeKeyMappingConfigurationEnumOptions<C> extends FluentCompositeKeyMappingConfiguration<C>, CompositeKeyEnumOptions, CompositeKeyPropertyOptions {
 		
+		@Override
 		FluentCompositeKeyMappingConfigurationEnumOptions<C> byName();
 		
+		@Override
 		FluentCompositeKeyMappingConfigurationEnumOptions<C> byOrdinal();
 		
+		@Override
+		FluentCompositeKeyMappingConfigurationEnumOptions<C> columnName(String name);
+		
+		@Override
+		FluentCompositeKeyMappingConfigurationEnumOptions<C> fieldName(String name);
 	}
 	
 	interface CompositeKeyEnumOptions {

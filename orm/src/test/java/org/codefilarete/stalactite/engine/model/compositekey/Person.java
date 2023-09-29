@@ -88,6 +88,10 @@ public class Person {
 			return lastName;
 		}
 		
+		public String getFamilyName() {
+			return lastName;
+		}
+		
 		public String getAddress() {
 			return address;
 		}
