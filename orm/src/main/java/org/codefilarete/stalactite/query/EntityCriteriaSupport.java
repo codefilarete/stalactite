@@ -12,7 +12,7 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
-import org.codefilarete.stalactite.engine.RuntimeMappingException;
+import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
@@ -183,24 +184,27 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 			}
 		};
 		
+		private final Class<?> entityClass;
+		
 		/** Relations mapping : one-to-one or one-to-many */
 		private final ValueAccessPointMap<C, EntityGraphNode<?>> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
-		EntityGraphNode(EntityMapping<C, ?, ?> mappingStrategy) {
-			mappingStrategy.getPropertyToColumn().forEach((p, c) -> {
+		EntityGraphNode(EntityMapping<C, ?, ?> entityMapping) {
+			this.entityClass = entityMapping.getClassToPersist();
+			entityMapping.getPropertyToColumn().forEach((p, c) -> {
 				propertyToColumn.put(Arrays.asList(p), c);
 			});
-			mappingStrategy.getReadonlyPropertyToColumn().forEach((p, c) -> {
+			entityMapping.getReadonlyPropertyToColumn().forEach((p, c) -> {
 				propertyToColumn.put(Arrays.asList(p), c);
 			});
 			// we add the identifier and primary key because they are not in the property mapping 
-			IdMapping<C, ?> idMapping = mappingStrategy.getIdMapping();
+			IdMapping<C, ?> idMapping = entityMapping.getIdMapping();
 			if (idMapping instanceof SimpleIdMapping) {
 				Column primaryKey = ((SimpleIdentifierAssembler) idMapping.getIdentifierAssembler()).getColumn();
 				propertyToColumn.put(Arrays.asList(((SimpleIdMapping<C, ?>) idMapping).getIdAccessor().getIdAccessor()), primaryKey);
 			}
-			mappingStrategy.getEmbeddedBeanStrategies().forEach((k, v) ->
+			entityMapping.getEmbeddedBeanStrategies().forEach((k, v) ->
 					v.getPropertyToColumn().forEach((p, c) -> propertyToColumn.put(new AccessorChain<>(k, p).getAccessors(), c))
 			);
 		}
@@ -255,7 +259,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 						}
 					};
 					accessPointAsString.ccat(valueAccessPoints, " > ");
-					throw new RuntimeMappingException("Column for " + accessPointAsString + " was not found");
+					throw new MappingConfigurationException("Error while looking for column of " + accessPointAsString
+							+ " : it is not declared in mapping of " + Reflections.toString(this.entityClass));
 				} else {
 					return column;
 				}

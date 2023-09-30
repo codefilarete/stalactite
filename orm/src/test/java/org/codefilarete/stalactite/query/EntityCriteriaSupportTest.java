@@ -5,6 +5,7 @@ import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
@@ -162,8 +163,8 @@ class EntityCriteriaSupportTest {
 		
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		assertThatThrownBy(() -> testInstance.getColumn(AccessorChain.chain(Country::getName).getAccessors()))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Column for Country::getName was not found");
+				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Error while looking for column of Country::getName : it is not declared in mapping of o.c.s.e.m.Country");
 	}
 	
 	@Test
@@ -181,7 +182,7 @@ class EntityCriteriaSupportTest {
 		
 		EntityCriteriaSupport<Country> testInstance = new EntityCriteriaSupport<>(mappingStrategy);
 		assertThatThrownBy(() -> testInstance.andMany(Country::getCities, City::getName, Operators.eq("Grenoble")))
-				.extracting(t -> Exceptions.findExceptionInCauses(t, RuntimeException.class), InstanceOfAssertFactories.THROWABLE)
-				.hasMessage("Column for Country::getCities > City::getName was not found");
+				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
+				.hasMessage("Error while looking for column of Country::getCities > City::getName : it is not declared in mapping of o.c.s.e.m.Country");
 	}
 }
