@@ -886,7 +886,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 						primaryKey.getJavaType()
 				);
 			} else if (identifierPolicy instanceof BeforeInsertIdentifierPolicy) {
-				Sequence<I> sequence = ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(dialect, connectionConfiguration, identification.getIdentificationDefiner().getEntityType().getName());
+				Sequence<I> sequence = ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(identification.getIdentificationDefiner().getEntityType(), connectionConfiguration, dialect);
 				identifierInsertionManager = new BeforeInsertIdentifierManager<>(new SinglePropertyIdAccessor<>(idAccessor), sequence, identifierType);
 			} else if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
 				AlreadyAssignedIdentifierPolicy<E, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy;

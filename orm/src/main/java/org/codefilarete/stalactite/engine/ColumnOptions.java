@@ -87,7 +87,9 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
-		 * Reader may be interested in {@link PooledHiLoSequence}.
+		 * Be aware that given sequence will be shared across all managed entities, meaning that, for instance,
+		 * if it is a long sequence, an integer value can't be found twice in whole entities.   
+		 * Reader may be interested in other {@link #beforeInsert()} methods to avoid such sharing behavior.
 		 *
 		 * @param sequence the {@link Sequence} to ask for identifier value
 		 * @param <I> identifier type
@@ -132,9 +134,23 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 */
 	interface BeforeInsertIdentifierPolicy<I> extends IdentifierPolicy<I> {
 		
-		Sequence<I> getIdentifierProvider(Dialect dialect, ConnectionConfiguration connectionConfiguration, String sequenceName);
+		/**
+		 * Expected to return a {@link Sequence} for given arguments
+		 *
+		 * @param entityType entity to get a sequence for
+		 * @param connectionConfiguration elements to get access to database, its {@link ConnectionProvider} is a {@link SeparateTransactionExecutor}
+		 * @param dialect useful to build DML statements that manage sequence value persistence
+		 * @return
+		 */
+		Sequence<I> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect);
 	}
 	
+	/**
+	 * Before-insert identifier policy that will used given {@link Sequence} for all entities.
+	 * 
+	 * @param <I>
+	 * @author Guillaume Mary
+	 */
 	class BeforeInsertIdentifierPolicySupport<I> implements BeforeInsertIdentifierPolicy<I> {
 		
 		private final Sequence<I> identifierProvider;
@@ -144,11 +160,17 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		}
 		
 		@Override
-		public Sequence<I> getIdentifierProvider(Dialect dialect, ConnectionConfiguration connectionConfiguration, String sequenceName) {
+		public Sequence<I> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect) {
+			// we return sequence given at construction time 
 			return identifierProvider;
 		}
 	}
 	
+	/**
+	 * Default configuration to store sequence values for before-insert identifier policy
+	 * 
+	 * @author Guillaume Mary
+	 */
 	class DefaultBeforeInsertIdentifierPolicySupport implements BeforeInsertIdentifierPolicy<Long> {
 		
 		private final SequenceStorageOptions storageOptions;
@@ -161,9 +183,13 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 			this.storageOptions = sequenceStorageOptions;
 		}
 		
+		/**
+		 * Overridden to dynamically build a {@link Sequence} for given arguments while using storage options given at
+		 * construction time
+		 */
 		@Override
-		public Sequence<Long> getIdentifierProvider(Dialect dialect, ConnectionConfiguration connectionConfiguration, String sequenceName) {
-			PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(50, sequenceName);
+		public Sequence<Long> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect) {
+			PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(50, entityType.getSimpleName());
 			ConnectionProvider connectionProvider = connectionConfiguration.getConnectionProvider();
 			if (!(connectionProvider instanceof SeparateTransactionExecutor)) {
 				throw new MappingConfigurationException("Before-insert identifier policy configured with connection that doesn't support separate transaction,"
