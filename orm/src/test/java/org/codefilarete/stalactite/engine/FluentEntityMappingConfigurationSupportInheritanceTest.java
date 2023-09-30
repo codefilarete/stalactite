@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -321,7 +320,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					.map(Car::getColor)	// note : we don't need to embed Color because it is defined in the Dialect registry
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.build(persistenceContext);
 			
 			// as an inherited entity of non joined_tables policy, the table should not be in the context, but its persister does exist
@@ -356,11 +355,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).getConfiguration();
 			
 			assertThatThrownBy(() -> entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapInheritance(inheritanceConfiguration)
+							.mapSuperClass(inheritanceConfiguration)
 							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.build(persistenceContext))
 					.isInstanceOf(MappingConfigurationException.class)
-					.hasMessage("Defining an identifier while inheritance is used is not supported"
+					.hasMessage("Defining an identifier in conjunction with entity inheritance is not supported"
 							+ " : o.c.s.e.m.Vehicle defines identifier AbstractVehicle::getId"
 							+ " while it inherits from o.c.s.e.m.AbstractVehicle");
 		}
@@ -374,13 +373,13 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.getConfiguration();
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					.map(Car::getColor)
-					.mapInheritance(inheritanceConfiguration2)
+					.mapSuperClass(inheritanceConfiguration2)
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should not be in the context, and its persister does exist
@@ -419,13 +418,13 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
-					.mapInheritance(inheritanceConfiguration).withJoinedTable()
+					.mapSuperClass(inheritanceConfiguration).withJoinedTable()
 					.getConfiguration();
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					.map(Car::getColor)
-					.mapInheritance(inheritanceConfiguration2).withJoinedTable()
+					.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should be in the context, and its persister does exist
@@ -465,7 +464,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getColor)
 					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
-					.mapInheritance(inheritanceConfiguration);
+					.mapSuperClass(inheritanceConfiguration);
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
 					.isInstanceOf(MappingConfigurationException.class)
 					.hasMessage("Combination of mapped super class and inheritance is not supported, please remove one of them");
@@ -483,7 +482,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.withJoinedTable()
 					.build(persistenceContext, mappedSuperClassData.carTable);
 			
@@ -525,7 +524,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.build(persistenceContext);
 			
 			// DML tests

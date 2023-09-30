@@ -312,8 +312,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		
 		// parent persister must be kept in ascending order for further treatments
-		ReadOnlyIterator<Mapping<C, ?>> mappingReadOnlyIterator = Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().getSurrogate());
-		Iterator<Mapping<C, ?>> mappings = Iterables.filter(mappingReadOnlyIterator,
+		ReadOnlyIterator<Mapping<C, ?>> inheritedMappingIterator = Iterables.reverseIterator(inheritanceMappingPerTable.getMappings().getSurrogate());
+		Iterator<Mapping<C, ?>> mappings = Iterables.filter(inheritedMappingIterator,
 				m -> !mainMapping.equals(m) && !m.isMappedSuperClass());
 		KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> parentPersisters = this.buildParentPersisters(() -> mappings,
 				identification, mainPersister, dialect, connectionConfiguration
@@ -389,7 +389,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 																																	SimpleRelationalEntityPersister<C, I, T> mainPersister,
 																																	Dialect dialect,
 																																	ConnectionConfiguration connectionConfiguration) {
-		KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> parentPersisters = new KeepOrderSet<>();
+		KeepOrderSet<SimpleRelationalEntityPersister<C, I, ?>> result = new KeepOrderSet<>();
 		PrimaryKey<T, I> superclassPK = mainPersister.getMainTable().getPrimaryKey();
 		Holder<Table> currentTable = new Holder<>(mainPersister.getMainTable());
 		mappings.forEach(mapping -> {
@@ -406,7 +406,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					null);
 			
 			SimpleRelationalEntityPersister<C, I, TT> currentPersister = new SimpleRelationalEntityPersister<>(currentMappingStrategy, dialect, connectionConfiguration);
-			parentPersisters.add(currentPersister);
+			result.add(currentPersister);
 			// a join is necessary to select entity, only if target table changes
 			if (!currentPersister.getMainTable().equals(currentTable.get())) {
 				mainPersister.getEntityMappingTreeSelectExecutor().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME, currentMappingStrategy,
@@ -414,7 +414,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				currentTable.set(currentPersister.getMainTable());
 			}
 		});
-		return parentPersisters;
+		return result;
 	}
 	
 	private <T extends Table<T>> SimpleRelationalEntityPersister<C, I, T> buildMainPersister(AbstractIdentification<C, I> identification,
@@ -790,7 +790,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			throw new MappingConfigurationException("Combination of mapped super class and inheritance is not supported, please remove one of them");
 		}
 		if (entityMappingConfiguration.getKeyMapping() != null && entityMappingConfiguration.getInheritanceConfiguration() != null) {
-			throw new MappingConfigurationException("Defining an identifier while inheritance is used is not supported : "
+			throw new MappingConfigurationException("Defining an identifier in conjunction with entity inheritance is not supported : "
 					+ Reflections.toString(entityMappingConfiguration.getEntityType()) + " defines identifier "
 					+ AccessorDefinition.toString(entityMappingConfiguration.getKeyMapping().getAccessor())
 					+ " while it inherits from " + Reflections.toString(entityMappingConfiguration.getInheritanceConfiguration().getConfiguration().getEntityType()));

@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -154,12 +153,12 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
-				.mapInheritance(inheritanceConfiguration)
+				.mapSuperClass(inheritanceConfiguration)
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
-				.mapInheritance(inheritanceConfiguration2)
+				.mapSuperClass(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
 		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo(
@@ -193,12 +192,12 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
-				.mapInheritance(inheritanceConfiguration).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
-				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
 		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));

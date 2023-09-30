@@ -281,26 +281,37 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	FluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
 	
 	/**
-	 * Declares the inherited mapping.
-	 * Id policy must be defined in the given strategy, not by current configuration : if id policy is also / only defined by the current builder,
-	 * an exception will be thrown at build time.
+	 * Declares the mapping of a super class.
+	 * As a difference with {@link #mapSuperClass(EmbeddableMappingConfiguration)}, identifier policy must be defined
+	 * by given configuration (or the highest ancestor, not intermediary), not by current one : if id policy is
+	 * also-or-only defined by the current builder, an exception will be thrown at build time.
+	 * This method should be used when given configuration acts as a parent entity, maybe stored on a different table
+	 * than current one (see {@link InheritanceOptions#withJoinedTable()}.
+	 * Note that for now relations of given configuration are not taken into account (not implemented).
 	 * 
 	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return an enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	FluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
-	
-	default FluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfigurationProvider<? super C, I> mappingConfigurationProvider) {
-		return this.mapInheritance(mappingConfigurationProvider.getConfiguration());
+	default FluentMappingBuilderInheritanceOptions<C, I> mapSuperClass(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
+		return this.mapSuperClass(() -> (EntityMappingConfiguration<C, I>) mappingConfiguration);
 	}
+	
+	FluentMappingBuilderInheritanceOptions<C, I> mapSuperClass(EntityMappingConfigurationProvider<? super C, I> mappingConfigurationProvider);
 	
 	/**
 	 * Declares the mapping of a super class.
+	 * Id policy must be defined by current configuration.
+	 * This method should be used when given configuration is reusable between entities, acting as a common and shared
+	 * configuration, with no impact on table oo id policy, since table and id policy must be defined by current configuration.
 	 * 
-	 * @param superMappingConfigurationProvider a mapping configuration of a super type of the current mapped type
+	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return an enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	FluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfigurationProvider);
+	default FluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> mappingConfiguration) {
+		return this.mapSuperClass(() -> (EmbeddableMappingConfiguration<C>) mappingConfiguration);
+	}
+	
+	FluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> mappingConfigurationProvider);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.

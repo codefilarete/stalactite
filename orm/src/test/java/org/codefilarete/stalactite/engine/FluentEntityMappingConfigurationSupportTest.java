@@ -2047,7 +2047,7 @@ class FluentEntityMappingConfigurationSupportTest {
 							.map(Timestamp::getModificationDate))
 					.map(Country::getId)
 					.map(Country::setDescription).columnName("zxx").fieldName("tutu")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
+					.mapSuperClass(() -> new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
 			// Since we only want to test compilation, we don't care about that the above code throws an exception or not
@@ -2063,7 +2063,7 @@ class FluentEntityMappingConfigurationSupportTest {
 							.map(Timestamp::getModificationDate))
 					.map(Country::getId).columnName("zz")
 					.mapOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, long.class))
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
+					.mapSuperClass(() -> new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.map(Country::getDescription).columnName("xx")
 					.build(persistenceContext);
 		} catch (RuntimeException e) {
@@ -2074,7 +2074,7 @@ class FluentEntityMappingConfigurationSupportTest {
 			MappingEase.entityBuilder(Country.class, long.class)
 					.map(Country::getName)
 					.map(Country::getId).columnName("zz")
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
+					.mapSuperClass(() -> new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					// embed with setter
 					.embed(Country::setPresident, MappingEase.embeddableBuilder(Person.class)
 							.map(Person::getName))
@@ -2116,7 +2116,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.map(Country::getName)
 					.map(Country::getId).columnName("zz")
 					.embed(Country::getPresident, personMappingBuilder)
-					.mapSuperClass(new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
+					.mapSuperClass(() -> new FluentEmbeddableMappingConfigurationSupport<>(Country.class))
 					.mapOneToOne(Country::setPresident, MappingEase.entityBuilder(Person.class, long.class))
 					// reusing embeddable ...
 					.embed(Country::getPresident, personMappingBuilder)

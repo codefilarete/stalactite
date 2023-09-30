@@ -401,8 +401,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public FluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
-		inheritanceConfiguration = new InheritanceConfigurationSupport<>(mappingConfiguration);
+	public FluentMappingBuilderInheritanceOptions<C, I> mapSuperClass(EntityMappingConfigurationProvider<? super C, I> mappingConfiguration) {
+		inheritanceConfiguration = new InheritanceConfigurationSupport<>(mappingConfiguration.getConfiguration());
 		return new MethodReferenceDispatcher()
 				.redirect((SerializableFunction<InheritanceOptions, InheritanceOptions>) InheritanceOptions::withJoinedTable,
 						() -> this.inheritanceConfiguration.joinTable = true)
