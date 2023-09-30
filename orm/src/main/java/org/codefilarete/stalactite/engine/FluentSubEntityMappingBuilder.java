@@ -18,7 +18,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * @author Guillaume Mary
  * @see MappingEase#entityBuilder(Class, Class)
  */
-public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMappingConfiguration<C> {
+public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingConfigurationProvider<C> {
 	
 	/* Overwritting methods signature to return a type that aggregates options of this class */
 	
@@ -40,7 +40,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
 																															EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
-	FluentSubEntityMappingConfiguration<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
+	FluentSubEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -144,9 +144,9 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter,
 																							  EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
-	FluentSubEntityMappingConfiguration<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
+	FluentSubEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
-	interface FluentSubEntityMappingBuilderPropertyOptions<C, I> extends FluentSubEntityMappingConfiguration<C, I>, ColumnOptions<C, I> {
+	interface FluentSubEntityMappingBuilderPropertyOptions<C, I> extends FluentSubEntityMappingBuilder<C, I>, ColumnOptions<C, I> {
 		
 		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I> mandatory();
@@ -167,7 +167,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		FluentSubEntityMappingBuilderPropertyOptions<C, I> fieldName(String name);
 	}
 	
-	interface FluentSubEntityMappingConfigurationEnumOptions<C, I> extends FluentSubEntityMappingConfiguration<C, I>, EnumOptions {
+	interface FluentSubEntityMappingConfigurationEnumOptions<C, I> extends FluentSubEntityMappingBuilder<C, I>, EnumOptions {
 		
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I> byName();
@@ -195,7 +195,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		
 	}
 	
-	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentSubEntityMappingConfiguration<C, I>,
+	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentSubEntityMappingBuilder<C, I>,
 			OneToOneOptions<C, I, T> {
 		
 		/**
@@ -237,7 +237,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 		FluentMappingBuilderOneToOneOptions<C, I, T> fetchSeparately();
 	}
 	
-	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentSubEntityMappingConfiguration<C, I>, OneToManyOptions<C, I, O, S> {
+	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentSubEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {
 		
 		/**
 		 * Declaration overridden to adapt return type to this class.
@@ -339,7 +339,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	 * @param <O>
 	 */
 	interface FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O>
-			extends FluentSubEntityMappingConfiguration<C, I>, ImportedEmbedWithColumnOptions<O> {
+			extends FluentSubEntityMappingBuilder<C, I>, ImportedEmbedWithColumnOptions<O> {
 		
 		@Override
 		<IN> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> overrideName(SerializableFunction<O, IN> function, String columnName);
@@ -375,7 +375,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	}
 	
 	interface FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S extends Collection<O>>
-			extends FluentSubEntityMappingConfiguration<C, I>, ElementCollectionOptions<C, O, S> {
+			extends FluentSubEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
@@ -393,7 +393,7 @@ public interface FluentSubEntityMappingConfiguration<C, I> extends SubEntityMapp
 	}
 	
 	interface FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
-			extends FluentSubEntityMappingConfiguration<C, I>, ElementCollectionOptions<C, O, S> {
+			extends FluentSubEntityMappingBuilder<C, I>, ElementCollectionOptions<C, O, S> {
 		
 		<IN> FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> overrideName(SerializableFunction<O, IN> getter, String columnName);
 		

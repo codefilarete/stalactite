@@ -29,7 +29,7 @@ import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EnumOptions;
 import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
 import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEnumOptions;
-import org.codefilarete.stalactite.engine.FluentSubEntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.FluentSubEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.ImportedEmbedWithColumnOptions;
 import org.codefilarete.stalactite.engine.IndexableCollectionOptions;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
@@ -37,6 +37,7 @@ import org.codefilarete.stalactite.engine.OneToManyOptions;
 import org.codefilarete.stalactite.engine.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PropertyOptions;
+import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.OneToManyOptionsSupport;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
@@ -55,11 +56,11 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
- * A class that stores configuration made through a {@link FluentSubEntityMappingConfiguration}
+ * A class that stores configuration made through a {@link FluentSubEntityMappingBuilder}
  * 
  * @author Guillaume Mary
  */
-public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentSubEntityMappingConfiguration<C, I> {
+public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentSubEntityMappingBuilder<C, I> {
 	
 	private final Class<C> classToPersist;
 	
@@ -90,14 +91,44 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public Class<C> getEntityType() {
-		return classToPersist;
-	}
-	
-	@Override
-	public Function<Function<Column, Object>, C> getEntityFactory() {
-		// for now (until reason to expose this to user) instantiation type is the same as entity one
-		return row -> Reflections.newInstance(getEntityType());
+	public SubEntityMappingConfiguration<C> getConfiguration() {
+		return new SubEntityMappingConfiguration<C>() {
+			@Override
+			public Class<C> getEntityType() {
+				return classToPersist;
+			}
+			
+			@Override
+			public Function<Function<Column, Object>, C> getEntityFactory() {
+				// for now (until reason to expose this to user) instantiation type is the same as entity one
+				return row -> Reflections.newInstance(getEntityType());
+			}
+			
+			@Override
+			public EmbeddableMappingConfiguration<C> getPropertiesMapping() {
+				return propertiesMappingConfigurationSurrogate;
+			}
+			
+			@Override
+			public <TRGT, TRGTID> List<OneToOneRelation<C, TRGT, TRGTID>> getOneToOnes() {
+				return (List) oneToOneRelations;
+			}
+			
+			@Override
+			public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
+				return (List) oneToManyRelations;
+			}
+			
+			@Override
+			public List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections() {
+				return elementCollections;
+			}
+			
+			@Override
+			public PolymorphismPolicy<C> getPolymorphismPolicy() {
+				return polymorphismPolicy;
+			}
+		};
 	}
 	
 	private Method captureMethod(SerializableFunction getter) {
@@ -106,31 +137,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	private Method captureMethod(SerializableBiConsumer setter) {
 		return this.methodSpy.findMethod(setter);
-	}
-	
-	@Override
-	public EmbeddableMappingConfiguration<C> getPropertiesMapping() {
-		return propertiesMappingConfigurationSurrogate;
-	}
-	
-	@Override
-	public <TRGT, TRGTID> List<OneToOneRelation<C, TRGT, TRGTID>> getOneToOnes() {
-		return (List) oneToOneRelations;
-	}
-	
-	@Override
-	public <TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
-		return (List) oneToManyRelations;
-	}
-	
-	@Override
-	public List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections() {
-		return elementCollections;
-	}
-	
-	@Override
-	public PolymorphismPolicy<C> getPolymorphismPolicy() {
-		return polymorphismPolicy;
 	}
 	
 	@Override
@@ -463,7 +469,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public FluentSubEntityMappingConfiguration<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy) {
+	public FluentSubEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		return this;
 	}
@@ -513,7 +519,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public FluentSubEntityMappingConfiguration<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
+	public FluentSubEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy) {
 		this.propertiesMappingConfigurationSurrogate.withColumnNaming(columnNamingStrategy);
 		return this;
 	}

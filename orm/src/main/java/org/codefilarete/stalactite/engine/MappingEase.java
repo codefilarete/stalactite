@@ -30,11 +30,11 @@ public final class MappingEase {
 		return new FluentEntityMappingConfigurationSupport<>(classToPersist);
 	}
 	
-	public static <T, I> FluentSubEntityMappingConfiguration<T, Object> subentityBuilder(Class<T> classToPersist) {
+	public static <T, I> FluentSubEntityMappingBuilder<T, Object> subentityBuilder(Class<T> classToPersist) {
 		return new FluentSubEntityMappingConfigurationSupport<>(classToPersist);
 	}
 	
-	public static <T, I> FluentSubEntityMappingConfiguration<T, I> subentityBuilder(Class<T> classToPersist, Class<I> identifierType) {
+	public static <T, I> FluentSubEntityMappingBuilder<T, I> subentityBuilder(Class<T> classToPersist, Class<I> identifierType) {
 		return new FluentSubEntityMappingConfigurationSupport<>(classToPersist);
 	}
 	

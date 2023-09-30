@@ -124,13 +124,13 @@ public interface PolymorphismPolicy<C> {
 		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
 		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
-		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
 			return this;
 		}
 		
-		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>(entityMappingConfigurationProvider, table));
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
+			subClasses.add(new Duo<>(entityMappingConfigurationProvider.getConfiguration(), table));
 			return this;
 		}
 		
@@ -150,13 +150,13 @@ public interface PolymorphismPolicy<C> {
 		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
 		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
-		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
 			return this;
 		}
 		
-		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>(entityMappingConfigurationProvider, table));
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
+			subClasses.add(new Duo<>(entityMappingConfigurationProvider.getConfiguration(), table));
 			return this;
 		}
 		
@@ -193,8 +193,8 @@ public interface PolymorphismPolicy<C> {
 			return discriminatorType;
 		}
 		
-		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, D discriminatorValue) {
-			subClasses.put(discriminatorValue, entityMappingConfiguration);
+		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfiguration, D discriminatorValue) {
+			subClasses.put(discriminatorValue, entityMappingConfiguration.getConfiguration());
 			return this;
 		}
 		
