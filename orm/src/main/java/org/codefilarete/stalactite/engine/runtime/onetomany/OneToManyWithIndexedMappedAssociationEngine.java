@@ -33,6 +33,8 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * @author Guillaume Mary
  */
@@ -123,7 +125,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
-						List<TRGT> apply = manyRelationDescriptor.getCollectionGetter().apply(src);
+						List<TRGT> apply = nullable(manyRelationDescriptor.getCollectionGetter().apply(src)).getOr(manyRelationDescriptor.getCollectionFactory());
 						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(targetPersister.getId(target))));
 					});
 				} finally {

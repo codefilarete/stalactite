@@ -45,6 +45,7 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Iterables;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.tool.collection.Iterables.collect;
 import static org.codefilarete.tool.collection.Iterables.first;
 
@@ -217,11 +218,11 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				// so it requires that this configurer holds the Dialect which is not the case, but could have.
 				// It should be more efficient because, here, we have to create as many AssociationRecord as necessary which loads the garbage collector
 				List<R> associationRecords = new ArrayList<>();
-				entities.forEach(e -> {
-					Collection<TRGT> targets = manyRelationDescriptor.getCollectionGetter().apply(e);
+				entities.forEach(src -> {
+					Collection<TRGT> targets = nullable(manyRelationDescriptor.getCollectionGetter().apply(src)).getOr(manyRelationDescriptor.getCollectionFactory());
 					int i = 0;
 					for (TRGT target : targets) {
-						associationRecords.add(newRecord(e, target, i++));
+						associationRecords.add(newRecord(src, target, i++));
 					}
 				});
 				// we delete records

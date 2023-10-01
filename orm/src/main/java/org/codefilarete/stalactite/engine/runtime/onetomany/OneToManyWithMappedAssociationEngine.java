@@ -270,7 +270,7 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 					
 					@Override
 					protected Collection<TRGT> getTargets(SRC src) {
-						return manyRelationDescriptor.getCollectionGetter().apply(src);
+						return nullable(manyRelationDescriptor.getCollectionGetter().apply(src)).getOr(manyRelationDescriptor.getCollectionFactory());
 					}
 				});
 			}
@@ -422,7 +422,8 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 			currentTargetToSourceRelationStorage.set(new TargetToSourceRelationStorage());
 		}
 		for (SRC sourceEntity : sourceEntities) {
-			manyRelationDescriptor.getCollectionGetter().apply(sourceEntity).forEach(trgt -> {
+			C collection = manyRelationDescriptor.getCollectionGetter().apply(sourceEntity);
+			nullable(collection).getOr(manyRelationDescriptor.getCollectionFactory()).forEach(trgt -> {
 				giveRelationStorageContext().add(trgt, relationIsNullified ? null : sourceEntity);
 			});
 		}
