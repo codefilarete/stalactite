@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithAssocia
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedAssociationTableEngine;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -138,7 +139,10 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 										   ManyRelationDescriptor manyRelationDescriptor,
 										   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
-		if (((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn() != null) {
+		Column indexingColumn = ((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn();
+		boolean indexingColumnIsDefined = indexingColumn != null
+				|| ((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumnName() != null;
+		if (indexingColumnIsDefined) {
 			throw new UnsupportedOperationException("Indexing column is defined without owner : relation is only declared by "
 					+ AccessorDefinition.toString(associationConfiguration.getCollectionGetter()));
 		}
@@ -155,7 +159,8 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				accessorDefinition,
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
-				createManySideForeignKey);
+				createManySideForeignKey,
+				indexingColumn);
 		
 		AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> indexedAssociationPersister =
 				new AssociationRecordPersister<>(

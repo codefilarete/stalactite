@@ -13,4 +13,6 @@ public interface IndexableCollectionOptions<C, I, O> {
 	 * @return the global mapping configurer
 	 */
 	IndexableCollectionOptions<C, I, O> indexedBy(Column<?, Integer> orderingColumn);
+	
+	IndexableCollectionOptions<C, I, O> indexedBy(String columnName);
 }

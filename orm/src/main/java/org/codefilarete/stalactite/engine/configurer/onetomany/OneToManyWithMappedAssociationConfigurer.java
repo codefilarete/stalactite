@@ -31,6 +31,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * Configurer dedicated to association that are mapped on reverse side by a property and a column on table's target entities
  */
@@ -232,7 +234,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 												   @Nullable Column<?, Integer> indexingColumn,
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (indexingColumn == null) {
-			String indexingColumnName = associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinition);
+			String indexingColumnName = nullable(associationConfiguration.getColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinition));
 			indexingColumn = targetPersister.getMapping().getTargetTable().addColumn(indexingColumnName, int.class);
 		}
 		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(

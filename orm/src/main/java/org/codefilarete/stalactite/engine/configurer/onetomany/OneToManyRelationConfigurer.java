@@ -81,10 +81,11 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
+		String columnName = oneToManyRelation instanceof OneToManyListRelation ? ((OneToManyListRelation) oneToManyRelation).getIndexingColumnName() : null;
 		
 		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
 				sourcePersister, leftPrimaryKey,
-				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy,
+				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, columnName,
 				orphanRemoval, writeAuthorized);
 		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C, ?> configurer;
 		if (oneToManyRelation.isOwnedByReverseSide()) {
@@ -112,10 +113,11 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
+		String columnName = oneToManyRelation instanceof OneToManyListRelation ? ((OneToManyListRelation) oneToManyRelation).getIndexingColumnName() : null;
 		
 		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
 				sourcePersister, leftPrimaryKey,
-				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy,
+				foreignKeyNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, columnName,
 				orphanRemoval, writeAuthorized);
 		OneToManyConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, C, ?> configurer;
 		if (oneToManyRelation.isOwnedByReverseSide()) {

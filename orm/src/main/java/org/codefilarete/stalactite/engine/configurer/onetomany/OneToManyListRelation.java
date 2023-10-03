@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer.onetomany;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -18,7 +19,11 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class OneToManyListRelation<SRC, TRGT, TRGTID, C extends List<TRGT>> extends OneToManyRelation<SRC, TRGT, TRGTID, C> {
 	
+	@Nullable
 	private Column indexingColumn;
+	
+	@Nullable
+	private String indexingColumnName;
 	
 	public <T extends Table> OneToManyListRelation(ReversibleAccessor<SRC, C> collectionProvider,
 												   ValueAccessPointByMethodReference<SRC> methodReference,
@@ -31,7 +36,17 @@ public class OneToManyListRelation<SRC, TRGT, TRGTID, C extends List<TRGT>> exte
 		this.indexingColumn = indexingColumn;
 	}
 	
+	@Nullable
 	public <T extends Table, O extends Object> Column<T, O> getIndexingColumn() {
 		return indexingColumn;
+	}
+	
+	public void setIndexingColumnName(String columnName) {
+		this.indexingColumnName = columnName;
+	}
+	
+	@Nullable
+	public String getIndexingColumnName() {
+		return indexingColumnName;
 	}
 }

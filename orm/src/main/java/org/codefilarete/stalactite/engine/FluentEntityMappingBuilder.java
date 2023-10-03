@@ -662,6 +662,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
 		
 		@Override
+		FluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(String columnName);
+		
+		@Override
 		FluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
 		
 		@Override

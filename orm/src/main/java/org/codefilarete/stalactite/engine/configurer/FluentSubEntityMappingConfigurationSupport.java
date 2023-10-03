@@ -448,9 +448,18 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		this.oneToManyRelations.add(oneToManyListRelation);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyListRelation), true)	// true to allow "return null" in implemented methods
-				.redirect(IndexableCollectionOptions.class, orderingColumn -> {
-					oneToManyListRelation.setIndexingColumn(orderingColumn);
-					return null;
+				.redirect(IndexableCollectionOptions.class, new IndexableCollectionOptions() {
+					@Override
+					public IndexableCollectionOptions indexedBy(Column orderingColumn) {
+						oneToManyListRelation.setIndexingColumn(orderingColumn);
+						return null;
+					}
+					
+					@Override
+					public IndexableCollectionOptions indexedBy(String columnName) {
+						oneToManyListRelation.setIndexingColumnName(columnName);
+						return null;
+					}
 				}, true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderOneToManyListOptions<C, I, O, S>>) (Class) FluentMappingBuilderOneToManyListOptions.class);

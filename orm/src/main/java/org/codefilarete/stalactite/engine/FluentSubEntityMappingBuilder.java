@@ -328,6 +328,8 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		@Override
 		FluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
 		
+		FluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(String columnName);
+		
 		@Override
 		FluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
 	}

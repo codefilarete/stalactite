@@ -25,6 +25,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final ColumnNamingStrategy indexColumnNamingStrategy;
 	private final ReversibleAccessor<SRC, C> collectionGetter;
+	private final String columnName;
 	private final Mutator<SRC, C> setter;
 	private final boolean orphanRemoval;
 	private final boolean writeAuthorized;
@@ -35,6 +36,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									  JoinColumnNamingStrategy joinColumnNamingStrategy,
 									  ColumnNamingStrategy indexColumnNamingStrategy,
+									  String columnName,
 									  boolean orphanRemoval,
 									  boolean writeAuthorized) {
 		this.oneToManyRelation = oneToManyRelation;
@@ -43,6 +45,7 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
+		this.columnName = columnName;
 		this.collectionGetter = oneToManyRelation.getCollectionProvider();
 		this.setter = collectionGetter.toMutator();
 		// we don't use AccessorDefinition.giveMemberDefinition(..) because it gives a cross-member definition, loosing get/set for example,
@@ -73,6 +76,10 @@ class OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C extends Coll
 	
 	public ColumnNamingStrategy getIndexColumnNamingStrategy() {
 		return indexColumnNamingStrategy;
+	}
+	
+	public String getColumnName() {
+		return columnName;
 	}
 	
 	public ReversibleAccessor<SRC, C> getCollectionGetter() {

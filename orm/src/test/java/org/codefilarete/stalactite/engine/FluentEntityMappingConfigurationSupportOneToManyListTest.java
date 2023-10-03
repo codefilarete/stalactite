@@ -108,6 +108,43 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 	}
 	
 	@Test
+	void insert_indexedByColumnName() {
+		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
+		
+		Table choiceTable = new Table("Choice");
+		// we declare the column that will store our List index
+		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
+		Column<Table, Integer> idx = choiceTable.addColumn("myIdx", int.class);
+		
+		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+				.mapKey(Choice::getId, ALREADY_ASSIGNED)
+				.map(Choice::getLabel);
+		
+		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
+				.mapKey(Question::getId, ALREADY_ASSIGNED)
+				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx.getName()).cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Question newQuestion = new Question(1L);
+		newQuestion.setChoices(Arrays.asList(
+				new Choice(10L),
+				new Choice(20L),
+				new Choice(30L)));
+		questionPersister.insert(newQuestion);
+		
+		Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+				.mapKey(Result::new, id)
+				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
+				.execute();
+		assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 20L, 30L);
+		// stating that indexes are in same order than instances
+		assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(0, 1, 2);
+	}
+	
+	@Test
 	void crud_mappedBy() {
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
@@ -464,8 +501,17 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		assertThatThrownBy(() ->
 				entityBuilder(Question.class, LONG_TYPE)
 						.mapKey(Question::getId, ALREADY_ASSIGNED)
-						// in next statement there's no call to indexedBy(), so configuration will fail because it requires it
+						// in next statement there's no call to mappedBy(), so configuration will fail because it requires it
 						.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx)
+						.build(persistenceContext))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Indexing column is defined without owner : relation is only declared by Question::getChoices");
+
+		assertThatThrownBy(() ->
+				entityBuilder(Question.class, LONG_TYPE)
+						.mapKey(Question::getId, ALREADY_ASSIGNED)
+						// in next statement there's no call to mappedBy(), so configuration will fail because it requires it
+						.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy("myIdx")
 						.build(persistenceContext))
 				.isInstanceOf(UnsupportedOperationException.class)
 				.hasMessage("Indexing column is defined without owner : relation is only declared by Question::getChoices");
