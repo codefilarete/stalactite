@@ -108,7 +108,7 @@ public class CollectionDifferTest {
 	void diffSet(Set<Country> set1, Set<Country> set2, Set<Diff<Country>> expectedResult) {
 		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
 		
-		Set<Diff<Country>> diffs = testInstance.diffSet(set1, set2);
+		Set<Diff<Country>> diffs = testInstance.diff(set1, set2);
 		
 		// we use a comparator to ensure same order, then use a ToString method because assertThat(..) needs
 		// an implementation of equals(..) and hashCode() on Diff which would have been made only for testing purpose
@@ -227,7 +227,7 @@ public class CollectionDifferTest {
 	void diffList(List<Country> set1, List<Country> set2, Set<IndexedDiff<Country>> expectedResult) {
 		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
 		
-		Set<IndexedDiff<Country>> diffs = testInstance.diffList(set1, set2);
+		Set<IndexedDiff<Country>> diffs = testInstance.diffOrdered(set1, set2);
 		
 		// we use a comparator to ensure same order, then use a ToString method because assertThat(..) needs
 		// an implementation of equals(..) and hashCode() on Diff which would have been made only for testing purpose
@@ -245,7 +245,7 @@ public class CollectionDifferTest {
 		List<Country> set2 = asList(testData.country2, country1Clone, testData.country3);
 		
 		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getName);	// we use a different predicate to prevent from using same comparator that equals(..) method 
-		Set<IndexedDiff<Country>> diffs = testInstance.diffList(set1, set2);
+		Set<IndexedDiff<Country>> diffs = testInstance.diffOrdered(set1, set2);
 		
 		assertThat(diffs)
 				.usingElementComparator((countryIndexedDiffComputed, countryIndexedDiffExpected) ->

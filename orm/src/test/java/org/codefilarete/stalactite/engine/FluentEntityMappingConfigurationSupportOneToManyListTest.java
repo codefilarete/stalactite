@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.*;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
@@ -483,38 +482,6 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		long choiceCount = persistenceContext.newQuery("select count(id) as choiceCount from Choice", long.class)
 				.mapKey("choiceCount", long.class).singleResult().execute();
 		assertThat(choiceCount).isEqualTo(3);
-	}
-		
-	@Test
-	void withoutOwnerButWithIndexedBy_throwsException() {
-		persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
-		
-		Table choiceTable = new Table("Choice");
-		// we declare the column that will store our List index
-		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
-		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
-		
-		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
-				.mapKey(Choice::getId, ALREADY_ASSIGNED)
-				.map(Choice::getLabel);
-		
-		assertThatThrownBy(() ->
-				entityBuilder(Question.class, LONG_TYPE)
-						.mapKey(Question::getId, ALREADY_ASSIGNED)
-						// in next statement there's no call to mappedBy(), so configuration will fail because it requires it
-						.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy(idx)
-						.build(persistenceContext))
-				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessage("Indexing column is defined without owner : relation is only declared by Question::getChoices");
-
-		assertThatThrownBy(() ->
-				entityBuilder(Question.class, LONG_TYPE)
-						.mapKey(Question::getId, ALREADY_ASSIGNED)
-						// in next statement there's no call to mappedBy(), so configuration will fail because it requires it
-						.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).indexedBy("myIdx")
-						.build(persistenceContext))
-				.isInstanceOf(UnsupportedOperationException.class)
-				.hasMessage("Indexing column is defined without owner : relation is only declared by Question::getChoices");
 	}
 	
 	@Nested
@@ -1169,7 +1136,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			answerPersister = entityBuilder(Answer.class, LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToManyList(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable).cascading(ALL)
+					.mapOneToManyList(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable)
+						.cascading(ALL).indexed()
 					.build(persistenceContext);
 			
 			// We declare the table that will store our relationship, and overall our List index

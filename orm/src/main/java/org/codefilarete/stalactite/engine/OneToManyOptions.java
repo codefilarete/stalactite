@@ -87,4 +87,9 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 */
 	OneToManyOptions<C, I, O, S> fetchSeparately();
 	
+	OneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
+	
+	OneToManyOptions<C, I, O, S> indexedBy(String columnName);
+	
+	OneToManyOptions<C, I, O, S> indexed();
 }

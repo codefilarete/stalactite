@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.model;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -133,7 +134,7 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	public void addCity(City city) {
 		if (cities == null) {
-			cities = new HashSet<>();
+			cities = new LinkedHashSet<>();
 		}
 		this.cities.add(city);
 		city.setCountry(this);

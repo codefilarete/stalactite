@@ -1,13 +1,13 @@
 package org.codefilarete.stalactite.engine.diff;
 
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 /**
  * A specialized version of {@link AbstractDiff} for indexed {@link java.util.Collection} because it keeps indexes.
- * Result of a comparison made by {@link CollectionDiffer#diffList(List, List)}.
+ * Result of a comparison made by {@link CollectionDiffer#diffOrdered(Collection, Collection)}.
  *
  * @author Guillaume Mary
  */
@@ -55,7 +55,7 @@ public class IndexedDiff<C> extends AbstractDiff<C> {
 	}
 	
 	/**
-	 * Implemented for the {@link CollectionDiffer#diffList(List, List)} method algorithm
+	 * Implemented for the {@link CollectionDiffer#diffOrdered(Collection, Collection)} method algorithm
 	 * 
 	 * @param o any other object
 	 * @return true when source and replacing instances are equal (indexes are not taken into account)

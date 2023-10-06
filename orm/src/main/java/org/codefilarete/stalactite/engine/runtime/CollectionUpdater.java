@@ -145,7 +145,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	protected Set<? extends AbstractDiff<O>> diff(Collection<O> modified, Collection<O> unmodified) {
 		// Casting to Set is a bit weird here but we should not be in another since List is taken into account upstream through mapping and redirected
 		// to dedicated case (ListCollectionUpdater)
-		return differ.diffSet((Set<O>) unmodified, (Set<O>) modified);
+		return differ.diff(unmodified, modified);
 	}
 	
 	/**

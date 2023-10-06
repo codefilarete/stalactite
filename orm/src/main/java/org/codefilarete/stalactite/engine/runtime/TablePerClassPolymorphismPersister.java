@@ -197,25 +197,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	
 	@Override
 	public Set<C> select(Iterable<I> ids) {
-		subEntitiesPersisters.forEach((subclass, subEntityPersister) ->
-				subEntityPersister.getPersisterListener().getSelectListener().beforeSelect(ids));
-		Set<C> result = selectExecutor.select(ids);
-		
-		// Then we call sub entities afterSelect listeners else they are not invoked. Done in particular for relation on sub entities that have
-		// an already-assigned identifier which requires marking entities as persisted (to prevent them from trying to be inserted whereas they 
-		// already are)
-		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-		for (C entity : result) {
-			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-		}
-		// We invoke persisters (not SelectExecutor to trigger event listeners which is necessary for cascade)
-		subEntitiesPersisters.forEach((subclass, subEntityPersister) -> {
-			Set<C> selectedEntities = entitiesPerType.get(subclass);
-			if (selectedEntities != null) {
-				subEntityPersister.getPersisterListener().getSelectListener().afterSelect(selectedEntities);
-			}
-		});
-		return result;
+		// Note that executor emits select listener events
+		return selectExecutor.select(ids);
 	}
 	
 	@Override

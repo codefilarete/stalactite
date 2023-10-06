@@ -43,7 +43,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 		TRGT,
 		SRCID,
 		TRGTID,
-		C extends List<TRGT>,
+		C extends Collection<TRGT>,
 		LEFTTABLE extends Table<LEFTTABLE>,
 		RIGHTTABLE extends Table<RIGHTTABLE>,
 		ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
@@ -139,7 +139,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 			
 			@Override
 			protected Set<? extends AbstractDiff<TRGT>> diff(Collection<TRGT> modified, Collection<TRGT> unmodified) {
-				return getDiffer().diffList((List<TRGT>) unmodified, (List<TRGT>) modified);
+				return getDiffer().diffOrdered(unmodified, modified);
 			}
 			
 			@Override

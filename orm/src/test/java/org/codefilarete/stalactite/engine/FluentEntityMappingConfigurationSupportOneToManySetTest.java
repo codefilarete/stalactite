@@ -4,10 +4,9 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -172,6 +171,68 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 				.mapKey(i -> i, "countryId", Long.class)
 				.execute();
 		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet((Long) null));
+	}
+	
+	private static Duo<String, Integer> pair(String name, Integer idx) {
+		return new Duo<>(name, idx);
+	}
+	
+	@Test
+	void mappedBy_set_ordered_crud() {
+		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
+				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(City::getName);
+		
+		EntityPersister<Country, Identifier<Long>> persister = entityBuilder(Country.class, LONG_TYPE)
+				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.mapOneToManySet(Country::getCities, cityConfiguration)
+					// we indicate that relation is owned by reverse side
+					.mappedBy(City::getCountry)
+					.indexedBy("myIdx")
+					.initializeWith(LinkedHashSet::new)
+					.cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Country country = new Country(new PersistableIdentifier<>(1L));
+		City grenoble = new City(new PersistableIdentifier<>(13L));
+		grenoble.setName("Grenoble");
+		City lyon = new City(new PersistableIdentifier<>(17L));
+		lyon.setName("Lyon");
+		City paris = new City(new PersistableIdentifier<>(23L));
+		paris.setName("Paris");
+		country.addCity(paris);
+		country.addCity(grenoble);
+		country.addCity(lyon);
+		
+		persister.insert(country);
+		
+		Set<Duo<String, Integer>> cityCountryIds = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
+				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx")
+				.execute();
+		
+		assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Grenoble", 2), new Duo<>("Lyon", 3));
+		
+		// testing select
+		Country loadedCountry = persister.select(country.getId());
+		assertThat(loadedCountry.getCities()).extracting(City::getName).containsExactly("Paris", "Grenoble", "Lyon");
+		// ensuring that source is set on reverse side too
+		assertThat(Iterables.first(loadedCountry.getCities()).getCountry()).isEqualTo(loadedCountry);
+		
+		// testing update : removal of a city, reversed column must be set to null
+		Country modifiedCountry = loadedCountry;
+		modifiedCountry.getCities().removeIf(city -> city.getName().equals("Grenoble"));
+
+		persister.update(modifiedCountry, country, false);
+		
+		cityCountryIds = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
+				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx")
+				.execute();
+		
+		assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Lyon", 2), new Duo<>("Grenoble", null));
+
 	}
 	
 	@Test

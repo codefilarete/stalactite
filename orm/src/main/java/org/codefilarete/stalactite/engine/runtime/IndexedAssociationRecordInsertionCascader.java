@@ -12,7 +12,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
 /**
  * @author Guillaume Mary
  */
-public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>>
+public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, IndexedAssociationRecord> {
 	
 	private final Function<SRC, C> collectionGetter;
@@ -36,7 +36,7 @@ public class IndexedAssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID,
 	
 	@Override
 	protected Collection<IndexedAssociationRecord> getTargets(SRC src) {
-		List<TRGT> targets = collectionGetter.apply(src);
+		Collection<TRGT> targets = collectionGetter.apply(src);
 		// We only insert non-persisted instances (for logic and to prevent duplicate primary key error)
 		List<IndexedAssociationRecord> result = new ArrayList<>(targets.size());
 		ModifiableInt index = new ModifiableInt(-1);    // we start at -1 because increment() increments before giving the value

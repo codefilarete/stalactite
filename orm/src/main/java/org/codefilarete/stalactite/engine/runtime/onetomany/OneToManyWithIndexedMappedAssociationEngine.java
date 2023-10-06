@@ -7,9 +7,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -22,23 +24,26 @@ import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.onetomany.IndexedMappedManyRelationDescriptor.InMemoryRelationHolder;
 import org.codefilarete.stalactite.mapping.Mapping.ShadowColumnValueProvider;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.trace.ModifiableInt;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * @author Guillaume Mary
  */
-public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends List<TRGT>, RIGHTTABLE extends Table<RIGHTTABLE>>
+public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, RIGHTTABLE extends Table<RIGHTTABLE>>
 		extends OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C, RIGHTTABLE> {
 	
 	/**
@@ -57,6 +62,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		super(targetPersister, manyRelationDefinition, sourcePersister, mappedReverseColumns, reverseColumnsValueProvider);
 	}
 	
+	@Override
 	public IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> getManyRelationDescriptor() {
 		return (IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID>) manyRelationDescriptor;
 	}
@@ -92,7 +98,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 			@Override
 			public void afterSelect(Set<? extends SRC> result) {
-				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> org.codefilarete.tool.Nullable.nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
+				Set<TRGT> collect = Iterables.stream(result).flatMap(src -> nullable(manyRelationDescriptor.getCollectionGetter().apply(src))
 						.map(Collection::stream)
 						.getOr(Stream.empty()))
 						.collect(Collectors.toSet());
@@ -114,10 +120,12 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		// The latter is used because target List is already filled by the relationFixer
 		// If we use the former we must change the relation fixer and keep a temporary List. Seems a bit more complex.
 		// May be changed if any performance issue is noticed
-		sourcePersister.getPersisterListener().addSelectListener(new SelectListener<SRC, SRCID>() {
+		sourcePersister.addSelectListener(new SelectListener<SRC, SRCID>() {
 			@Override
 			public void beforeSelect(Iterable<SRCID> ids) {
 				currentSelectedIndexes.set(new IdentityMap<>());
+				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
+				relationFixer.init();
 			}
 			
 			@Override
@@ -125,8 +133,25 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 				try {
 					// reordering List element according to read indexes during the transforming phase (see below)
 					result.forEach(src -> {
-						List<TRGT> apply = nullable(manyRelationDescriptor.getCollectionGetter().apply(src)).getOr(manyRelationDescriptor.getCollectionFactory());
-						apply.sort(Comparator.comparingInt(target -> currentSelectedIndexes.get().get(targetPersister.getId(target))));
+						// Note that if relationCollection is null it would mean that select execution returns nothing for it,
+						// but user usually expects that its collection is initialized (to avoid NPE in its domain code),
+						// that's why we add a "getOr(collectionFactory)" clause to our nullable
+						InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
+						C relationCollection = (C) nullable(relationFixer.get(src)).getOr(manyRelationDescriptor.getCollectionFactory().get());
+						IdentityMap<TRGTID, Integer> indexPerTargetId = currentSelectedIndexes.get();
+						if (relationCollection instanceof List) {
+							((List<TRGT>) relationCollection).sort(Comparator.comparingInt(target -> indexPerTargetId.get(targetPersister.getId(target))));
+						} else if (relationCollection instanceof LinkedHashSet) {
+							TreeMap<Integer, TRGT> sorter = new TreeMap<>();
+							relationCollection.forEach(trgt -> {
+								sorter.put(indexPerTargetId.get(targetPersister.getId(trgt)), trgt);
+							});
+							relationCollection = manyRelationDescriptor.getCollectionFactory().get();
+							relationCollection.addAll(sorter.values());
+						} else {
+							throw new UnsupportedOperationException("Index computation is not supported for " + Reflections.toString(relationCollection.getClass()));
+						}
+						manyRelationDescriptor.getCollectionSetter().accept(src, relationCollection);
 					});
 				} finally {
 					cleanContext();
@@ -140,19 +165,21 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 			
 			private void cleanContext() {
 				currentSelectedIndexes.remove();
+				InMemoryRelationHolder relationFixer = (InMemoryRelationHolder) manyRelationDescriptor.getRelationFixer();
+				relationFixer.clear();
 			}
 		});
 		AbstractJoinNode<TRGT, Fromable, Fromable, TRGTID> join = (AbstractJoinNode<TRGT, Fromable, Fromable, TRGTID>) sourcePersister.getEntityJoinTree().getJoin(joinNodeName);
 		join.setConsumptionListener((trgt, columnValueProvider) -> {
-			IdentityMap<TRGTID, Integer> indexPerBean = currentSelectedIndexes.get();
-			// indexPerBean may not be present because its mechanism was added on persisterListener which is the one of the source bean
+			IdentityMap<TRGTID, Integer> indexPerTargetId = currentSelectedIndexes.get();
+			// indexPerTargetId may not be present because its mechanism was added on persisterListener which is the one of the source bean
 			// so in case of entity loading from its own persister (targetPersister) ThreadLocal is not available
-			if (indexPerBean != null) {
+			if (indexPerTargetId != null) {
 				// Indexing column is not defined in targetPersister.getMapping().getRowTransformer() but is present in row
 				// because it was read from ResultSet
 				int index = (int) columnValueProvider.apply(getManyRelationDescriptor().getIndexingColumn());
 				TRGTID relationOwnerId = targetPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(columnValueProvider);
-				indexPerBean.put(relationOwnerId, index);
+				indexPerTargetId.put(relationOwnerId, index);
 			}
 		});
 	}
@@ -206,10 +233,38 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 					// since it's a normal case
 					targetEntityIndex = null;
 				} else {
-					targetEntityIndex = collectionGetter.apply(source).indexOf(target);
+					targetEntityIndex = computeTargetIndex(source, target);
 				}
 				Map<Column<TARGETTABLE, Object>, Object> result = new HashMap<>();
 				result.put((Column) getManyRelationDescriptor().getIndexingColumn(), targetEntityIndex);
+				return result;
+			}
+			
+			/**
+			 * Finds the index of target instance in the one-to-many collection of source entity.
+			 * Supports {@link List} and {@link LinkedHashSet} collection type. Else an exception is thrown.
+			 * 
+			 * @param source an entity that owns the one-to-many relation
+			 * @param target an entity expected to be in one-to-many relation
+			 * @return the index of target instance in one-to-many relation
+			 */
+			private int computeTargetIndex(SRC source, TRGT target) {
+				int result;
+				C apply = collectionGetter.apply(source);
+				if (apply instanceof List) {
+					result = ((List<?>) apply).indexOf(target);
+				} else if (apply instanceof LinkedHashSet) {
+					ModifiableInt counter = new ModifiableInt();
+					for (Object o : apply) {
+						counter.increment();
+						if (o == target) {
+							break;
+						}
+					}
+					result = counter.getValue();
+				} else {
+					throw new UnsupportedOperationException("Index computation is not supported for " + Reflections.toString(apply.getClass()));
+				}
 				return result;
 			}
 		};
@@ -230,7 +285,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		sourcePersister.getPersisterListener().addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
-	private static class ListCollectionUpdater<SRC, TRGT, ID, C extends List<TRGT>> extends CollectionUpdater<SRC, TRGT, C> {
+	private static class ListCollectionUpdater<SRC, TRGT, ID, C extends Collection<TRGT>> extends CollectionUpdater<SRC, TRGT, C> {
 		
 		/**
 		 * Context for indexed mapped List. Will keep bean index during insert between "unrelated" methods/phases :
@@ -311,7 +366,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 		
 		@Override
 		protected Set<? extends AbstractDiff<TRGT>> diff(Collection<TRGT> modified, Collection<TRGT> unmodified) {
-			return getDiffer().diffList((List<TRGT>) unmodified, (List<TRGT>) modified);
+			return getDiffer().diffOrdered(unmodified, modified);
 		}
 		
 		@Override

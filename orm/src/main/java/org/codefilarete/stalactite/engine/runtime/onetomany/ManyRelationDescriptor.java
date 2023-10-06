@@ -17,7 +17,7 @@ import org.codefilarete.tool.bean.Objects;
 public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	
 	/** Empty setter for applying source entity to target entity (reverse side) */
-	private static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {};
+	protected static final BiConsumer NOOP_REVERSE_SETTER = (o, i) -> {};
 	
 	private final Function<I, C> collectionGetter;
 	
@@ -27,7 +27,7 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 	
 	private final BiConsumer<O, I> reverseSetter;
 	
-	private final BeanRelationFixer<I, O> relationFixer;
+	protected BeanRelationFixer<I, O> relationFixer;
 	
 	/**
 	 * @param collectionGetter collection accessor
@@ -45,7 +45,7 @@ public class ManyRelationDescriptor<I, O, C extends Collection<O>> {
 		this.reverseSetter = reverseSetter;
 		
 		// configuring select for fetching relation
-		relationFixer = BeanRelationFixer.of(
+		this.relationFixer = BeanRelationFixer.of(
 				this.collectionSetter,
 				this.collectionGetter,
 				this.collectionFactory,

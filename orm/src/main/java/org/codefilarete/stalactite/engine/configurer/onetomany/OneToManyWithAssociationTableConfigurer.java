@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 
 import java.util.Collection;
 
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
@@ -20,7 +19,6 @@ import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithAssocia
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithIndexedAssociationTableEngine;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -65,14 +63,11 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		
 		String associationTableName = associationTableNamingStrategy.giveName(accessorDefinition,
 				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
-		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
-				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
-				associationConfiguration.giveCollectionFactory(),
-				associationConfiguration.getOneToManyRelation().getReverseLink());
-		if (associationConfiguration.getOneToManyRelation() instanceof OneToManyListRelation) {
-			assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor, targetPersister);
+		if (associationConfiguration.getOneToManyRelation() instanceof OneToManyListRelation
+				&& ((OneToManyListRelation<SRC, TRGT, TRGTID, C>) associationConfiguration.getOneToManyRelation()).isOrdered()) {
+			assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 		} else {
-			assignEngineForNonIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor, targetPersister);
+			assignEngineForNonIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 		}
 	}
 	
@@ -97,7 +92,6 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	void assignEngineForNonIndexedAssociation(
 			PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 			String associationTableName,
-			ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor,
 			ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
@@ -125,6 +119,11 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 						intermediaryTable.getRightIdentifierColumnMapping()),
 				dialect,
 				connectionConfiguration);
+		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
+				associationConfiguration.getCollectionGetter()::get,
+				associationConfiguration.getSetter()::set,
+				associationConfiguration.giveCollectionFactory(),
+				associationConfiguration.getOneToManyRelation().getReverseLink());
 		associationTableEngine = new OneToManyWithAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
 				targetPersister,
@@ -136,16 +135,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 	private <ASSOCIATIONTABLE extends IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>>
 	void assignEngineForIndexedAssociation(PrimaryKey<RIGHTTABLE, TRGTID> rightPrimaryKey,
 										   String associationTableName,
-										   ManyRelationDescriptor manyRelationDescriptor,
 										   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
-		
-		Column indexingColumn = ((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn();
-		boolean indexingColumnIsDefined = indexingColumn != null
-				|| ((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumnName() != null;
-		if (indexingColumnIsDefined) {
-			throw new UnsupportedOperationException("Indexing column is defined without owner : relation is only declared by "
-					+ AccessorDefinition.toString(associationConfiguration.getCollectionGetter()));
-		}
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which is not allowed by databases
@@ -160,7 +150,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createManySideForeignKey,
-				indexingColumn);
+				((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn());
 		
 		AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> indexedAssociationPersister =
 				new AssociationRecordPersister<>(
@@ -171,6 +161,10 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 								intermediaryTable.getRightIdentifierColumnMapping()),
 						dialect,
 						connectionConfiguration);
+		ManyRelationDescriptor<SRC, TRGT, C> manyRelationDescriptor = new ManyRelationDescriptor<>(
+				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
+				associationConfiguration.giveCollectionFactory(),
+				associationConfiguration.getOneToManyRelation().getReverseLink());
 		associationTableEngine = new OneToManyWithIndexedAssociationTableEngine<>(
 				associationConfiguration.getSrcPersister(),
 				targetPersister,

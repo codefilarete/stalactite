@@ -82,7 +82,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	
 	private final Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load */
-	private final JoinTablePolymorphismSelectExecutor<C, I, ?> mainSelectExecutor;
+	private final JoinTablePolymorphismSelectExecutor<C, I, ?> selectExecutor;
 	private final Class<C> parentClass;
 	private final Map<Class<? extends C>, IdMapping<C, I>> subclassIdMappingStrategies;
 	private final Map<Class<? extends C>, Table> tablePerSubEntityType;
@@ -116,7 +116,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
 				Entry::getKey,
 				entry -> entry.getValue().getMapping().getTargetTable());
-		this.mainSelectExecutor = new JoinTablePolymorphismSelectExecutor<>(
+		this.selectExecutor = new JoinTablePolymorphismSelectExecutor<>(
 				mainPersister,
 				tablePerSubEntityType, subclassSelectExecutors, connectionProvider,
 				dialect);
@@ -197,26 +197,8 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	
 	@Override
 	public Set<C> select(Iterable<I> ids) {
-		subEntitiesPersisters.forEach((subclass, subEntityPersister) ->
-				subEntityPersister.getPersisterListener().getSelectListener().beforeSelect(ids));
-		
-		Set<C> result = mainSelectExecutor.select(ids);
-		
-		// Then we call sub entities afterSelect listeners else they are not invoked. Done in particular for relation on sub entities that have
-		// an already-assigned identifier which requires marking entities as persisted (to prevent them from trying to be inserted whereas they 
-		// already are)
-		Map<Class, Set<C>> entitiesPerType = new HashMap<>();
-		for (C entity : result) {
-			entitiesPerType.computeIfAbsent(entity.getClass(), cClass -> new HashSet<>()).add(entity);
-		}
-		// We invoke persisters (not SelectExecutor to trigger event listeners which is necessary for cascade)
-		subEntitiesPersisters.forEach((subclass, subEntityPersister) -> {
-			Set<C> selectedEntities = entitiesPerType.get(subclass);
-			if (selectedEntities != null) {
-				subEntityPersister.getPersisterListener().getSelectListener().afterSelect(selectedEntities);
-			}
-		});
-		return result;
+		// Note that executor emits select listener events
+		return selectExecutor.select(ids);
 	}
 	
 	@Override
@@ -382,7 +364,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 				PrimaryKey<?, I> subclassPrimaryKey = this.tablePerSubEntityType.get(c).getPrimaryKey();
 				sourcePersister.getEntityJoinTree().addMergeJoin(mainTableJoinName,
-						new FirstPhaseRelationLoader<>(idMappingStrategy, mainSelectExecutor,
+						new FirstPhaseRelationLoader<>(idMappingStrategy, selectExecutor,
 								(ThreadLocal<Queue<Set<RelationIds<Object, C, I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
 						primaryKey,
 						subclassPrimaryKey,
@@ -428,7 +410,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 			this.subclassIdMappingStrategies.forEach((c, idMappingStrategy) -> {
 				PrimaryKey<T2, I> subclassPrimaryKey = this.tablePerSubEntityType.get(c).getPrimaryKey();
 				sourcePersister.getEntityJoinTree().addMergeJoin(createdJoinName,
-						new FirstPhaseRelationLoader<C, I>(idMappingStrategy, mainSelectExecutor,
+						new FirstPhaseRelationLoader<C, I>(idMappingStrategy, selectExecutor,
 								(ThreadLocal<Queue<Set<RelationIds<Object,C,I>>>>) (ThreadLocal) CURRENT_2PHASES_LOAD_CONTEXT),
 						mainTablePrimaryKey,
 						subclassPrimaryKey,

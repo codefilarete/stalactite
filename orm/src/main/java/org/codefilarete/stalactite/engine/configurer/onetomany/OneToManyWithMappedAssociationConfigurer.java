@@ -185,7 +185,8 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			reversePropertyAccessor = Accessors.accessor(associationConfiguration.getOneToManyRelation().getReverseGetter()).toMutator();
 		}
 		BiConsumer<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor == null ? null : reversePropertyAccessor::set;
-		if (associationConfiguration.getOneToManyRelation() instanceof OneToManyListRelation) {
+		if (associationConfiguration.getOneToManyRelation() instanceof OneToManyListRelation
+				&& ((OneToManyListRelation<SRC, TRGT, TRGTID, C>) associationConfiguration.getOneToManyRelation()).isOrdered()) {
 			assignEngineForIndexedAssociation(reverseSetterAsConsumer, foreignKey,
 					((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn(), targetPersister);
 		} else {
@@ -235,11 +236,20 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 												   ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		if (indexingColumn == null) {
 			String indexingColumnName = nullable(associationConfiguration.getColumnName()).getOr(() -> associationConfiguration.getIndexColumnNamingStrategy().giveName(accessorDefinition));
-			indexingColumn = targetPersister.getMapping().getTargetTable().addColumn(indexingColumnName, int.class);
+			Class indexColumnType = this.associationConfiguration.isOrphanRemoval()
+					? int.class
+					: Integer.class;	// column must be nullable since row won't be deleted through orphan removal but only "detached" from parent row
+			indexingColumn = targetPersister.getMapping().getTargetTable().addColumn(indexingColumnName, indexColumnType);
 		}
+		
 		IndexedMappedManyRelationDescriptor<SRC, TRGT, C, SRCID> manyRelationDefinition = new IndexedMappedManyRelationDescriptor<>(
-				associationConfiguration.getCollectionGetter()::get, associationConfiguration.getSetter()::set,
-				associationConfiguration.giveCollectionFactory(), reverseSetter, reverseColumn, indexingColumn);
+				associationConfiguration.getCollectionGetter()::get,
+				associationConfiguration.getSetter()::set,
+				associationConfiguration.giveCollectionFactory(),
+				reverseSetter,
+				reverseColumn,
+				indexingColumn,
+				associationConfiguration.getSrcPersister()::getId);
 		mappedAssociationEngine = new OneToManyWithIndexedMappedAssociationEngine(
 				targetPersister,
 				manyRelationDefinition,
