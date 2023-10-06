@@ -209,7 +209,7 @@ public class OneToManyWithIndexedMappedAssociationEngine<SRC, TRGT, SRCID, TRGTI
 						// column to null as well as its indexing column
 						sourceEntity == null
 								// Case of polymorphic inheritance with an abstract one-to-many relation redefined on each subclass (think to
-								// AbstractQuestion and mapOneToManyList(AbstractQuestion::getChoices, ..) declared for single and multiple choice question):
+								// AbstractQuestion and mapOneToMany(AbstractQuestion::getChoices, ..) declared for single and multiple choice question):
 								// we get several source persister which are quite the same at a slighlty difference on collection getter : due to JVM
 								// serialization of method reference, it keeps original generic type somewhere in the serialized form of method reference
 								// (SerializedLambda.instantiatedMethodType), then applying this concrete class (when looking for target entity index in

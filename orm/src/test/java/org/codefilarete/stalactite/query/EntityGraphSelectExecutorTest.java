@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
@@ -52,7 +51,7 @@ class EntityGraphSelectExecutorTest {
 		OptimizedUpdatePersister<Country, Identifier<Long>> persister = (OptimizedUpdatePersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
 			.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 			.map(Country::getName)
-			.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
+			.mapOneToMany(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName))
 					.mappedBy(City::getCountry)
@@ -112,7 +111,7 @@ class EntityGraphSelectExecutorTest {
 		ConfiguredRelationalPersister<Country, Identifier<Long>> persister = (ConfiguredRelationalPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
-				.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
+				.mapOneToMany(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
 						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName))
 				.mappedBy(City::getCountry)

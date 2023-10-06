@@ -185,10 +185,9 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 			reversePropertyAccessor = Accessors.accessor(associationConfiguration.getOneToManyRelation().getReverseGetter()).toMutator();
 		}
 		BiConsumer<TRGT, SRC> reverseSetterAsConsumer = reversePropertyAccessor == null ? null : reversePropertyAccessor::set;
-		if (associationConfiguration.getOneToManyRelation() instanceof OneToManyListRelation
-				&& ((OneToManyListRelation<SRC, TRGT, TRGTID, C>) associationConfiguration.getOneToManyRelation()).isOrdered()) {
+		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
 			assignEngineForIndexedAssociation(reverseSetterAsConsumer, foreignKey,
-					((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn(), targetPersister);
+					associationConfiguration.getOneToManyRelation().getIndexingColumn(), targetPersister);
 		} else {
 			assignEngineForNonIndexedAssociation(foreignKey, targetPersister, reverseSetterAsConsumer);
 		}

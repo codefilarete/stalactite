@@ -53,6 +53,14 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 */
 	private boolean fetchSeparately;
 	
+	@Nullable
+	private Column indexingColumn;
+	
+	@Nullable
+	private String indexingColumnName;
+	
+	private boolean ordered = false;
+	
 	/**
 	 * Default, simple constructor.
 	 * 
@@ -190,6 +198,35 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	public void fetchSeparately() {
 		setFetchSeparately(true);
+	}
+	
+	
+	public void setIndexingColumn(Column<? extends Table, Integer> indexingColumn) {
+		indexed();
+		this.indexingColumn = indexingColumn;
+	}
+	
+	@Nullable
+	public <T extends Table, O extends Object> Column<T, O> getIndexingColumn() {
+		return indexingColumn;
+	}
+	
+	public void setIndexingColumnName(String columnName) {
+		indexed();
+		this.indexingColumnName = columnName;
+	}
+	
+	@Nullable
+	public String getIndexingColumnName() {
+		return indexingColumnName;
+	}
+	
+	public void indexed() {
+		this.ordered = true;
+	}
+	
+	public boolean isOrdered() {
+		return this.ordered;
 	}
 	
 	private class MappedByConfiguration {

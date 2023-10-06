@@ -73,7 +73,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.map(Country::getName)
 				.map(Country::getDescription)
 				.mapOneToOne(Country::getPresident, personMappingConfiguration)
-				.mapOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(RelationMode.READ_ONLY)
+				.mapOneToMany(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(RelationMode.READ_ONLY)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -118,7 +118,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.mapOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
-				.mapOneToManySet(Country::getCities, cityMappingConfiguration).cascading(ALL)
+				.mapOneToMany(Country::getCities, cityMappingConfiguration).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -172,8 +172,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.mapOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
-				.mapOneToManySet(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
+				.mapOneToMany(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+				.mapOneToMany(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -244,8 +244,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.mapOneToManyList(Country::getAncientCities, cityMappingConfiguration).reverselySetBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL).indexed()
-				.mapOneToManySet(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
+				.mapOneToMany(Country::getAncientCities, cityMappingConfiguration).reverselySetBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL).indexed()
+				.mapOneToMany(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

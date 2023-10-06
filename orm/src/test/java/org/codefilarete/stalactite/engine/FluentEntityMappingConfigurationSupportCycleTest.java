@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -600,7 +599,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration());
+					.mapOneToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration());
 		}
 		
 		/**
@@ -656,7 +655,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::getFather);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
@@ -691,9 +690,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 						.reverselySetBy(Person::setFather)
-					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
 						.reverselySetBy(Person::setDirectNeighbor);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
@@ -800,9 +799,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 						.mappedBy(Person::setFather)
-					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
 						.mappedBy(Person::setDirectNeighbor);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
@@ -909,9 +908,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 					.reverselySetBy(Person::setFather)
-					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
 					.reverselySetBy(Person::setDirectNeighbor);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
@@ -1018,9 +1017,9 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapOneToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::setFather)
-					.mapOneToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
+					.mapOneToMany(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration())
 					.mappedBy(Person::setDirectNeighbor);
 			
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);

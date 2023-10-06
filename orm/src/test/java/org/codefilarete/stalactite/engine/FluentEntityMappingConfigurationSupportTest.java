@@ -2082,7 +2082,7 @@ class FluentEntityMappingConfigurationSupportTest {
 					.embed(Country::setTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
-					.mapOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, long.class))
+					.mapOneToMany(Country::getCities, MappingEase.entityBuilder(City.class, long.class))
 						// testing mappedBy with inheritance
 						.mappedBy((SerializableFunction<City, AbstractCountry>) City::getAbstractCountry)
 					.map(Country::getDescription).columnName("xx")

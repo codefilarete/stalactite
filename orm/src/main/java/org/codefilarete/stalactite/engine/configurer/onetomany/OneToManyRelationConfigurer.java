@@ -81,7 +81,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
-		String columnName = oneToManyRelation instanceof OneToManyListRelation ? ((OneToManyListRelation) oneToManyRelation).getIndexingColumnName() : null;
+		String columnName = oneToManyRelation.getIndexingColumnName();
 		
 		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
 				sourcePersister, leftPrimaryKey,
@@ -113,7 +113,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		// selection is always present (else configuration is nonsense !)
 		boolean orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
 		boolean writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
-		String columnName = oneToManyRelation instanceof OneToManyListRelation ? ((OneToManyListRelation) oneToManyRelation).getIndexingColumnName() : null;
+		String columnName = oneToManyRelation.getIndexingColumnName();
 		
 		OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, ?> associationConfiguration = new OneToManyAssociationConfiguration<>(oneToManyRelation,
 				sourcePersister, leftPrimaryKey,
@@ -140,9 +140,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 	
 	private Table determineTargetTable(OneToManyRelation<SRC, TRGT, TRGTID, C> oneToManyRelation) {
 		Table reverseTable = nullable(oneToManyRelation.getReverseColumn()).map(Column::getTable).get();
-		Table indexingTable = oneToManyRelation instanceof OneToManyListRelation
-				? nullable(((OneToManyListRelation<?, ?, ?, ?>) oneToManyRelation).getIndexingColumn()).map(Column::getTable).get()
-				: null;
+		Table indexingTable = nullable(oneToManyRelation.getIndexingColumn()).map(Column::getTable).get();
 		Set<Table> availableTables = Arrays.asHashSet(oneToManyRelation.getTargetTable(), reverseTable, indexingTable);
 		availableTables.remove(null);
 		if (availableTables.size() > 1) {

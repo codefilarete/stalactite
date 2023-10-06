@@ -5,7 +5,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -208,7 +207,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.map(Country::getName)
 								.map(Country::getDescription)
 								.mapOneToOne(Country::getPresident, personMappingBuilder)
-								.mapOneToManySet(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry)
+								.mapOneToMany(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry)
 								.mapPolymorphism(PolymorphismPolicy.<Country>singleTable()
 										.addSubClass(subentityBuilder(Republic.class)
 												.map(Republic::getDeputeCount), "Republic"))
@@ -220,7 +219,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.map(Country::getName)
 								.map(Country::getDescription)
 								.mapOneToOne(Country::getPresident, personMappingBuilder)
-								.mapOneToManySet(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry)
+								.mapOneToMany(Country::getCities, cityMappingBuilder).mappedBy(City::setCountry)
 								.mapPolymorphism(PolymorphismPolicy.<Country>joinTable()
 										.addSubClass(subentityBuilder(Republic.class)
 												.map(Republic::getDeputeCount)))
@@ -302,7 +301,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
 												.mapOneToOne(Car::getRadio, entityBuilder(Radio.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Radio::getSerialNumber, alreadyAssigned(Radio::markAsPersisted, Radio::isPersisted))
 														.map(Radio::getModel)).mappedBy(Radio::getCar), "CAR")
@@ -317,7 +316,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
 												.mapOneToOne(Car::getRadio, entityBuilder(Radio.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Radio::getSerialNumber, alreadyAssigned(Radio::markAsPersisted, Radio::isPersisted))
 														.map(Radio::getModel)).mappedBy(Radio::getCar))
@@ -332,7 +331,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
 												.mapOneToOne(Car::getRadio, entityBuilder(Radio.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Radio::getSerialNumber, alreadyAssigned(Radio::markAsPersisted, Radio::isPersisted))
 														.map(Radio::getModel)).mappedBy(Radio::getCar))
@@ -416,8 +415,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
-												.mapOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+												.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).reverselySetBy(Wheel::setVehicle), "CAR")
@@ -433,8 +432,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>singleTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
-												.mapOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+												.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).indexedBy(indexColumn1).mappedBy(Wheel::setVehicle), "CAR")
@@ -448,8 +447,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
-												.mapOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+												.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).reverselySetBy(Wheel::setVehicle))
@@ -463,8 +462,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
-												.mapOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+												.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).indexedBy(indexColumn2).mappedBy(Wheel::setVehicle))
@@ -475,8 +474,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				{	"joined tables / one-to-many with mapped association / association is defined as common property",
 						entityBuilder(Vehicle.class, LONG_TYPE)
 								.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
-								.mapOneToManyList(Vehicle::getWheels, entityBuilder(Wheel.class, String.class)
-										// please note that we use an already-assigned policy because it requires entities to be mark
+								.mapOneToMany(Vehicle::getWheels, entityBuilder(Wheel.class, String.class)
+										// please note that we use an already-assigned policy because it requires entities to be marked
 										// as persisted after select, so we test also select listener of relation
 										.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 										.map(Wheel::getModel))
@@ -494,8 +493,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
-												.mapOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+												.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).reverselySetBy(Wheel::setVehicle))
@@ -509,8 +508,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 								.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
 										.addSubClass(subentityBuilder(Car.class)
 												.map(Car::getModel)
-												.mapOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
-														// please note that we use an already-assigned policy because it requires entities to be mark
+												.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
+														// please note that we use an already-assigned policy because it requires entities to be marked
 														// as persisted after select, so we test also select listener of relation
 														.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 														.map(Wheel::getModel)).indexedBy(indexColumn5).mappedBy(Wheel::setVehicle))
@@ -579,15 +578,15 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				.mapPolymorphism(PolymorphismPolicy.<Vehicle>joinTable()
 						.addSubClass(subentityBuilder(Car.class)
 								.map(Car::getModel)
-								.mapOneToManyList(Car::getWheels, entityBuilder(Wheel.class, String.class)
-										// please note that we use an already-assigned policy because it requires entities to be mark
+								.mapOneToMany(Car::getWheels, entityBuilder(Wheel.class, String.class)
+										// please note that we use an already-assigned policy because it requires entities to be marked
 										// as persisted after select, so we test also select listener of relation
 										.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 										.map(Wheel::getModel)).mappedBy(Wheel::setVehicle))
 						.addSubClass(subentityBuilder(Truck.class)
 								.map(Truck::getColor)
-								.mapOneToManyList(Truck::getWheels, entityBuilder(Wheel.class, String.class)
-										// please note that we use an already-assigned policy because it requires entities to be mark
+								.mapOneToMany(Truck::getWheels, entityBuilder(Wheel.class, String.class)
+										// please note that we use an already-assigned policy because it requires entities to be marked
 										// as persisted after select, so we test also select listener of relation
 										.mapKey(Wheel::getSerialNumber, alreadyAssigned(Wheel::markAsPersisted, Wheel::isPersisted))
 										.map(Wheel::getModel)).mappedBy(Wheel::setVehicle))
@@ -2254,7 +2253,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		
 		FluentMappingBuilderOneToManyOptions<Country, Identifier<Long>, City, Set<City>> persisterConfiguration = entityBuilder(Country.class, LONG_TYPE)
 				.mapKey(Country::getId, ALREADY_ASSIGNED)
-				.mapOneToManySet(Country::getCities, cityConfiguration)
+				.mapOneToMany(Country::getCities, cityConfiguration)
 				.cascading(RelationMode.ALL);
 		
 		persisterConfiguration
@@ -2437,7 +2436,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.mapKey(Country::getId, ALREADY_ASSIGNED)
-					.mapOneToManySet(Country::getCities, cityConfiguration)
+					.mapOneToMany(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
 					.cascading(RelationMode.ALL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
@@ -2501,7 +2500,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			EntityPersister<Country, Identifier<Long>> testInstance = entityBuilder(Country.class, LONG_TYPE)
 					.mapKey(Country::getId, ALREADY_ASSIGNED)
-					.mapOneToManySet(Country::getCities, cityConfiguration)
+					.mapOneToMany(Country::getCities, cityConfiguration)
 					.mappedBy(City::getCountry)
 					.cascading(RelationMode.ALL)
 					.mapSuperClass(timestampedPersistentBeanMapping)

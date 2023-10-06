@@ -54,7 +54,6 @@ import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyListRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
@@ -508,14 +507,14 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
+	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return mapOneToManySet(getter, mappingConfiguration, null);
+		return this.mapOneToMany(getter, mappingConfiguration, null);
 	}
 		
 	@Override
-	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
+	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -526,11 +525,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				getterReference,
 				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
 				new AccessorByMethod<C, S>(captureMethod(getter)).toMutator());
-		return mapOneToManySet(propertyAccessor, getterReference, mappingConfiguration, table);
+		return mapOneToMany(propertyAccessor, getterReference, mappingConfiguration, table);
 	}
 	
 	@Override
-	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
+	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableBiConsumer<C, S> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
@@ -540,15 +539,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
 				setterReference
 		);
-		return mapOneToManySet(propertyAccessor, setterReference, mappingConfiguration, table);
+		return mapOneToMany(propertyAccessor, setterReference, mappingConfiguration, table);
 	}
 	
-	private <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManySet(
+	private <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
-		OneToManyListRelation<C, O, J, S> oneToManyRelation = new OneToManyListRelation<>(propertyAccessor, methodReference, mappingConfiguration, table);
+		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(propertyAccessor, methodReference, mappingConfiguration, table);
 		this.oneToManyRelations.add(oneToManyRelation);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods
@@ -594,55 +593,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				.redirect(ManyToManyOptions.class, new ManyToManyOptionsSupport<>(manyToManyRelation), true)	// true to allow "return null" in implemented methods
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>>) (Class) FluentMappingBuilderManyToManyOptions.class);
-	}
-	
-	@Override
-	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManyList(
-			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return mapOneToManyList(getter, mappingConfiguration, null);
-	}
-		
-	@Override
-	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManyList(
-			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
-			@javax.annotation.Nullable T table) {
-		
-		AccessorByMethodReference<C, S> getterReference = Accessors.accessorByMethodReference(getter);
-		ReversibleAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
-				// we keep close to user demand : we keep its method reference ...
-				getterReference,
-				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				new AccessorByMethod<C, S>(captureMethod(getter)).toMutator());
-		return mapOneToManyList(propertyAccessor, getterReference, mappingConfiguration, table);
-	}
-	
-	@Override
-	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManyList(
-			SerializableBiConsumer<C, S> setter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
-			@javax.annotation.Nullable T table) {
-		
-		MutatorByMethodReference<C, S> setterReference = Accessors.mutatorByMethodReference(setter);
-		PropertyAccessor<C, S> propertyAccessor = new PropertyAccessor<>(
-				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
-				setterReference
-		);
-		return mapOneToManyList(propertyAccessor, setterReference, mappingConfiguration, table);
-	}
-	
-	private <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToManyList(
-			ReversibleAccessor<C, S> propertyAccessor,
-			ValueAccessPointByMethodReference methodReference,
-			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
-			@javax.annotation.Nullable T table) {
-		OneToManyListRelation<C, O, J, ? extends Collection<O>> oneToManyListRelation = new OneToManyListRelation<>(propertyAccessor, methodReference, mappingConfiguration.getConfiguration(), table);
-		this.oneToManyRelations.add(oneToManyListRelation);
-		return new MethodDispatcher()
-				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyListRelation), true)	// true to allow "return null" in implemented methods
-				.fallbackOn(this)
-				.build((Class<FluentMappingBuilderOneToManyOptions<C, I, O, S>>) (Class) FluentMappingBuilderOneToManyOptions.class);
 	}
 	
 	@Override
@@ -1090,9 +1040,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	static class OneToManyOptionsSupport<C, I, O, S extends Collection<O>>
 			implements OneToManyOptions<C, I, O, S> {
 		
-		private final OneToManyListRelation<C, O, I, S> oneToManyRelation;
+		private final OneToManyRelation<C, O, I, S> oneToManyRelation;
 		
-		public OneToManyOptionsSupport(OneToManyListRelation<C, O, I, S> oneToManyRelation) {
+		public OneToManyOptionsSupport(OneToManyRelation<C, O, I, S> oneToManyRelation) {
 			this.oneToManyRelation = oneToManyRelation;
 		}
 		

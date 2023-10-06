@@ -63,8 +63,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		
 		String associationTableName = associationTableNamingStrategy.giveName(accessorDefinition,
 				associationConfiguration.getLeftPrimaryKey(), rightPrimaryKey);
-		if (associationConfiguration.getOneToManyRelation() instanceof OneToManyListRelation
-				&& ((OneToManyListRelation<SRC, TRGT, TRGTID, C>) associationConfiguration.getOneToManyRelation()).isOrdered()) {
+		if (associationConfiguration.getOneToManyRelation().isOrdered()) {
 			assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
 		} else {
 			assignEngineForNonIndexedAssociation(rightPrimaryKey, associationTableName, targetPersister);
@@ -150,7 +149,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
 				createManySideForeignKey,
-				((OneToManyListRelation) associationConfiguration.getOneToManyRelation()).getIndexingColumn());
+				associationConfiguration.getOneToManyRelation().getIndexingColumn());
 		
 		AssociationRecordPersister<IndexedAssociationRecord, ASSOCIATIONTABLE> indexedAssociationPersister =
 				new AssociationRecordPersister<>(

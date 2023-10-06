@@ -84,7 +84,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.mapKey(Question::getId, ALREADY_ASSIGNED)
-				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
+				.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -121,7 +121,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.mapKey(Question::getId, ALREADY_ASSIGNED)
-				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx.getName()).cascading(ALL)
+				.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx.getName()).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -160,7 +160,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.mapKey(Question::getId, ALREADY_ASSIGNED)
-				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
+				.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -371,7 +371,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 					.mapKey(Question::getId, ALREADY_ASSIGNED)
 					.map(Question::getLabel)
-					.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).cascading(ASSOCIATION_ONLY)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -430,7 +430,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		EntityPersister<Question, Identifier<Long>> questionPersister = entityBuilder(Question.class, LONG_TYPE)
 				.mapKey(Question::getId, ALREADY_ASSIGNED)
-				.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
+				.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -1051,7 +1051,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
 					.mapKey(Question::getId, ALREADY_ASSIGNED)
-					.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
 					.cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 			
@@ -1122,7 +1122,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			questionPersister = entityBuilder(Question.class, LONG_TYPE)
 					.mapKey(Question::getId, ALREADY_ASSIGNED)
-					.mapOneToManyList(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
+					.mapOneToMany(Question::getChoices, choiceMappingConfiguration).mappedBy(Choice::getQuestion).indexedBy(idx)
 					.cascading(ALL)
 					.build(persistenceContext);
 			
@@ -1136,7 +1136,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			
 			answerPersister = entityBuilder(Answer.class, LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToManyList(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable)
+					.mapOneToMany(Answer::getChoices, answerChoiceMappingConfiguration, choiceTable)
 						.cascading(ALL).indexed()
 					.build(persistenceContext);
 			

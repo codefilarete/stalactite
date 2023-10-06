@@ -131,7 +131,7 @@ class EntityCriteriaSupportTest {
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
-				.mapOneToManySet(Country::getCities, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+				.mapOneToMany(Country::getCities, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName), cityTable
 				)

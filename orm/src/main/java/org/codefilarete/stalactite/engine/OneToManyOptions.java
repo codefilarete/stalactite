@@ -87,9 +87,24 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	 */
 	OneToManyOptions<C, I, O, S> fetchSeparately();
 	
+	/**
+	 * Activates entity order persistence and indicates {@link Column} to be used for it.
+	 *
+	 * @return the global mapping configurer
+	 */
 	OneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
 	
+	/**
+	 * Activates entity order persistence and indicates column name to be used for it.
+	 *
+	 * @return the global mapping configurer
+	 */
 	OneToManyOptions<C, I, O, S> indexedBy(String columnName);
 	
+	/**
+	 * Activates entity order persistence.
+	 * 
+	 * @return the global mapping configurer
+	 */
 	OneToManyOptions<C, I, O, S> indexed();
 }

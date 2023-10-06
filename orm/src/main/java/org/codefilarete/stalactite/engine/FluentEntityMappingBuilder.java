@@ -360,29 +360,29 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} through a {@link Set}.
-	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
-	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
+	 * methods.
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
 	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
-	 * @param <O> type of {@link Set} element
+	 * @param <O> type of {@link Collection} element
 	 * @param <J> type of identifier of {@code O}
-	 * @param <S> refined {@link Set} type
+	 * @param <S> refined {@link Collection} type
 	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
 	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
 	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
@@ -441,31 +441,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
 	mapManyToManySet(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
-	
-	/**
-	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
-	 * This method is dedicated to {@link List} because generic types are erased so you can't define a generic type extending {@link List} and refine
-	 * return type or arguments in order to distinct it from a {@link Set} version.
-	 * 
-	 * @param getter the way to get the {@link List} from source entities
-	 * @param mappingConfiguration the mapping configuration of the {@link List} entities 
-	 * @param <O> type of {@link List} element
-	 * @param <J> type of identifier of {@code O} (target entities)
-	 * @param <S> refined {@link List} type
-	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
-	 */
-	<O, J, S extends Collection<O>>
-	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
-	
-	<O, J, S extends Collection<O>, T extends Table>
-	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
-	
-	<O, J, S extends Collection<O>, T extends Table>
-	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
@@ -618,67 +593,6 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> fetchSeparately();
-	}
-	
-	/**
-	 * A merge of {@link FluentMappingBuilderOneToManyOptions} and {@link IndexableCollectionOptions} to defined a one-to-many relation
-	 * with an indexed {@link java.util.Collection} such as a {@link List}
-	 * 
-	 * @param <C> type of source entity
-	 * @param <I> type of identifier of source entity
-	 * @param <O> type of target entities
-	 */
-	interface FluentMappingBuilderOneToManyListOptions<C, I, O, S extends List<O>>
-			extends FluentMappingBuilderOneToManyOptions<C, I, O, S>, IndexableCollectionOptions<C, I, O> {
-		/**
-		 * Declaration overridden to adapt return type to this class.
-		 *
-		 * @param reverseLink opposite owner of the relation (setter)
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
-		
-		/**
-		 * Declaration overridden to adapt return type to this class.
-		 *
-		 * @param reverseLink opposite owner of the relation (setter)
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
-		
-		/**
-		 * Declaration overridden to adapt return type to this class.
-		 *
-		 * @param reverseLink opposite owner of the relation (setter)
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
-		
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
-		
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
-		
-		/**
-		 * Defines the indexing column of the mapped {@link java.util.List}.
-		 * @param orderingColumn indexing column of the mapped {@link java.util.List}
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
-		
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(String columnName);
-		
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
-		
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> fetchSeparately();
 	}
 	
 	/**

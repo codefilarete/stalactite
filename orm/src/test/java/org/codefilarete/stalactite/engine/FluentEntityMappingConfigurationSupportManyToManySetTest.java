@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
@@ -318,7 +317,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			// mapping building thanks to fluent API
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
+					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -356,7 +355,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		void delete_associationRecordsMustBeDeleted() throws SQLException {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
+					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -434,7 +433,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		void update_removedElementsAreDeleted() {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
+					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -473,7 +472,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		void delete_associationRecordsMustBeDeleted() throws SQLException {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
+					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL_ORPHAN_REMOVAL)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -551,7 +550,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		void insert_associationRecordsMustBeInserted_butNotTargetEntities() throws SQLException {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapOneToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
+					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -589,7 +588,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					.map(Answer::getComment)
-					.mapOneToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
+					.mapOneToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
