@@ -450,7 +450,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				sourcePersister.getEntityJoinTree().addMergeJoin(
 						joinName,
 						// need to be cast to C instead of "? extends C" because selectExecutor is C-typed
-						new FirstPhaseRelationLoader<>((IdMapping<C, I>) subPersister.getMapping().getIdMapping(), selectExecutor, (ThreadLocal) DIFFERED_ENTITY_LOADER),
+						new FirstPhaseRelationLoader<>(subPersister.getMapping().getIdMapping(), selectExecutor, (ThreadLocal) DIFFERED_ENTITY_LOADER),
 						leftColumn,
 						joinColumnPerSubPersister.get(subPersister),
 						JoinType.OUTER);

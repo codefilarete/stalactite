@@ -10,7 +10,6 @@ import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.NotYetSupportedOperationException;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
@@ -266,7 +265,8 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					manyAssociationConfiguration.leftPrimaryKey, rightPrimaryKey);
 			
 			ManyRelationDescriptor<SRC, TRGT, C1> manyRelationDescriptor = new ManyRelationDescriptor<>(
-					manyAssociationConfiguration.collectionGetter::get, manyAssociationConfiguration.setter::set,
+					manyAssociationConfiguration.collectionGetter::get,
+					manyAssociationConfiguration.setter::set,
 					manyAssociationConfiguration.giveCollectionFactory(),
 					null);	// no reverse setter since we don't support it for many-to-many (see 
 			if (manyAssociationConfiguration.manyToManyRelation.isIndexed()) {

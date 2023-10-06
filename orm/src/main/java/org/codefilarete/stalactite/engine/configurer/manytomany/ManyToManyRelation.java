@@ -61,9 +61,9 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 * @param targetTable optional table to be used to store target entities
 	 */
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionProvider,
-												ValueAccessPointByMethodReference<SRC> methodReference,
-												EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
-												@Nullable Table targetTable) {
+							  ValueAccessPointByMethodReference<SRC> methodReference,
+							  EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
+							  @Nullable Table targetTable) {
 		this(collectionProvider, methodReference,
 				() -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration, targetTable);
 	}
@@ -78,9 +78,9 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 * @param targetTable optional table to be used to store target entities
 	 */
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionProvider,
-												ValueAccessPointByMethodReference<SRC> methodReference,
-												EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
-												@Nullable Table targetTable) {
+							  ValueAccessPointByMethodReference<SRC> methodReference,
+							  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+							  @Nullable Table targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;

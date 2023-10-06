@@ -23,7 +23,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
- * Configurer dedicated to association that needs an intermediary table between source entities and these of the relation
+ * Configurer dedicated to association that needs an intermediary table between source and target entities
+ * @author Guillaume Mary
  */
 class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>,
 		LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>

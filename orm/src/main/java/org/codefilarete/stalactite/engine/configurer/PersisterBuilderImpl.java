@@ -253,7 +253,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		// collecting mapping from inheritance
 		MappingPerTable<C> inheritanceMappingPerTable = collectPropertiesMappingFromInheritance();
 		// add primary key and foreign key to all tables
-		PrimaryKey<T, I> primaryKey = (PrimaryKey<T, I>) addIdentifyingPrimarykey(identification);
+		PrimaryKey<T, I> primaryKey = addIdentifyingPrimarykey(identification);
 		Set<Table> inheritanceTables = inheritanceMappingPerTable.giveTables();
 		inheritanceTables.remove(primaryKey.getTable());	// not necessary thanks to addColumn & addPrimaryKey tolerance to duplicates, left for clarity
 		propagatePrimaryKey(primaryKey, inheritanceTables);

@@ -35,6 +35,7 @@ import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Configurer dedicated to association that are mapped on reverse side by a property and a column on table's target entities
+ * @author Guillaume Mary
  */
 class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>,
 		LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>
@@ -47,7 +48,7 @@ class OneToManyWithMappedAssociationConfigurer<SRC, TRGT, SRCID, TRGTID, C exten
 	
 	private Set<Column<RIGHTTABLE, Object>> mappedReverseColumns;
 	
-	private  Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider;
+	private Function<SRCID, Map<Column<RIGHTTABLE, Object>, Object>> reverseColumnsValueProvider;
 	
 	OneToManyWithMappedAssociationConfigurer(OneToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C, LEFTTABLE> associationConfiguration,
 											 ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister,
