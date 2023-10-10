@@ -18,6 +18,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
 import static org.codefilarete.stalactite.engine.diff.State.ADDED;
 import static org.codefilarete.stalactite.engine.diff.State.HELD;
 import static org.codefilarete.stalactite.engine.diff.State.REMOVED;
+import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine.INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 
 /**
  * A class to compute the differences between 2 collections of objects: addition, removal or held
@@ -77,9 +78,9 @@ public class CollectionDiffer<C> {
 		// building Map of indexes per object
 		Map<C, Set<Integer>> beforeIndexes = new KeepOrderMap<>();
 		Map<C, Set<Integer>> afterIndexes = new KeepOrderMap<>();
-		ModifiableInt beforeIndex = new ModifiableInt(-1);	// because indexes should start at 0 as List does
+		ModifiableInt beforeIndex = new ModifiableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
 		before.forEach(o -> beforeIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(beforeIndex.increment()));
-		ModifiableInt afterIndex = new ModifiableInt(-1);		// because indexes should start at 0 as List does
+		ModifiableInt afterIndex = new ModifiableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
 		after.forEach(o -> afterIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(afterIndex.increment()));
 		
 		KeepOrderSet<IndexedDiff<C>> result = new KeepOrderSet<>();

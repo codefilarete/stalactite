@@ -1131,7 +1131,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapManyToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration());
+					.mapManyToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration());
 		}
 		
 		/**
@@ -1189,8 +1189,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapManyToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
-					.mapManyToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration());
+					.mapManyToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapManyToMany(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration());
 
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 
@@ -1294,8 +1294,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personMappingConfiguration = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
-					.mapManyToManySet(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
-					.mapManyToManySet(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration());
+					.mapManyToMany(Person::getChildren, () -> personMappingConfiguration.getConfiguration())
+					.mapManyToMany(Person::getNeighbours, () -> personMappingConfiguration.getConfiguration());
 
 			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.build(persistenceContext);
 

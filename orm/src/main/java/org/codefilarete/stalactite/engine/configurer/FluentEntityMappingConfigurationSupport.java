@@ -558,7 +558,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToManySet(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
 		AccessorByMethodReference<C, S1> getterReference = Accessors.accessorByMethodReference(getter);
 		ReversibleAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
 				// we keep close to user demand : we keep its method reference ...
@@ -571,7 +571,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToManySet(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
+	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
 		MutatorByMethodReference<C, S1> setterReference = Accessors.mutatorByMethodReference(setter);
 		PropertyAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
@@ -1102,7 +1102,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		
 		@Override
 		public FluentMappingBuilderOneToManyOptions<C, I, O, S> indexed() {
-			oneToManyRelation.indexed();
+			oneToManyRelation.ordered();
 			return null;
 		}
 	}
@@ -1141,6 +1141,18 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> fetchSeparately() {
 			manyToManyRelation.fetchSeparately();
 			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexedBy(String columnName) {
+			manyToManyRelation.setIndexingColumnName(columnName);
+			return null;
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexed() {
+			manyToManyRelation.ordered();
+			return null;
 		}
 	}
 	

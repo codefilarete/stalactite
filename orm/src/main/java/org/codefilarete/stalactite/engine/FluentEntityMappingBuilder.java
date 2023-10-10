@@ -407,8 +407,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	default <O, J, S1 extends Set<O>, S2 extends Set<C>>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToManySet(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return mapManyToManySet(getter, mappingConfiguration, null);
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+		return mapManyToMany(getter, mappingConfiguration, null);
 	}
 	
 	/**
@@ -436,11 +436,11 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToManySet(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToManySet(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
@@ -593,6 +593,13 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> fetchSeparately();
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexedBy(String columnName);
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexed();
+		
 	}
 	
 	/**

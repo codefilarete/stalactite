@@ -152,6 +152,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					persisterRegistry,
 					foreignKeyNamingStrategy,
 					joinColumnNamingStrategy,
+					indexColumnNamingStrategy,
 					associationTableNamingStrategy
 			);
 			
@@ -171,12 +172,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 				}
 				cycleSolver.addCycleSolver(relationName, manyRelationConfigurer);
 			} else {
-				manyRelationConfigurer.configure(manyToManyRelation,
-						sourcePersister,
-						foreignKeyNamingStrategy,
-						joinColumnNamingStrategy,
-						associationTableNamingStrategy,
-						new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
+				manyRelationConfigurer.configure(new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
 			}
 		}
 		

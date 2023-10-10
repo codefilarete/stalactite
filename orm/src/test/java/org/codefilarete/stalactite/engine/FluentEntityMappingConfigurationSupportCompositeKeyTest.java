@@ -698,7 +698,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 						.map(PersonId::getLastName)
 						.map(PersonId::getAddress))
 				.map(Person::getAge)
-				.mapManyToManySet(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
+				.mapManyToMany(Person::getPets, MappingEase.entityBuilder(Pet.class, Pet.PetId.class)
 						.mapCompositeKey(Pet::getId, MappingEase.compositeKeyBuilder(Pet.PetId.class)
 								.map(Pet.PetId::getName)
 								.map(Pet.PetId::getRace)

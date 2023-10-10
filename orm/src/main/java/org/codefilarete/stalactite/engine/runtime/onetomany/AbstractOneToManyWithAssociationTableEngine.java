@@ -54,6 +54,8 @@ import static org.codefilarete.tool.collection.Iterables.first;
  */
 public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>, R extends AssociationRecord, T extends AssociationTable<T, ?, ?, SRCID, TRGTID>> {
 	
+	public static final int INDEXED_COLLECTION_FIRST_INDEX_VALUE = 1;
+	
 	protected final AssociationRecordPersister<R, T> associationPersister;
 	
 	protected final PersisterListenerCollection<SRC, SRCID> persisterListener;
@@ -220,7 +222,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 				List<R> associationRecords = new ArrayList<>();
 				entities.forEach(src -> {
 					Collection<TRGT> targets = nullable(manyRelationDescriptor.getCollectionGetter().apply(src)).getOr(manyRelationDescriptor.getCollectionFactory());
-					int i = 0;
+					int i = INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 					for (TRGT target : targets) {
 						associationRecords.add(newRecord(src, target, i++));
 					}

@@ -59,10 +59,10 @@ class IndexedAssociationRecordInsertionCascaderTest {
 		
 		Collection<IndexedAssociationRecord> targets = testInstance.getTargets(inputData);
 		List<IndexedAssociationRecord> expectedResult = Arrays.asList(
-				new IndexedAssociationRecord(inputData.getId(), key1.getId(), 0),
-				new IndexedAssociationRecord(inputData.getId(), key2.getId(), 1),
+				new IndexedAssociationRecord(inputData.getId(), key1.getId(), 1),
 				new IndexedAssociationRecord(inputData.getId(), key2.getId(), 2),
-				new IndexedAssociationRecord(inputData.getId(), key3.getId(), 3)
+				new IndexedAssociationRecord(inputData.getId(), key2.getId(), 3),
+				new IndexedAssociationRecord(inputData.getId(), key3.getId(), 4)
 		);
 		assertThat(printIndexedAssociationRecord(targets)).isEqualTo(printIndexedAssociationRecord(expectedResult));
 	}

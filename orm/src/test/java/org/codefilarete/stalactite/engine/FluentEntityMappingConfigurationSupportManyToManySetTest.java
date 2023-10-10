@@ -7,7 +7,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -26,6 +26,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,7 +35,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.*;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.READ_ONLY;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -75,7 +79,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	void foreignKeysAreCreated() throws SQLException {
 		EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
 				.cascading(READ_ONLY)
 				.build(persistenceContext);
 		
@@ -108,7 +112,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		
 		EntityPersister<Answer, Identifier<Long>> answerPersister = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION, targetTable)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION, targetTable)
 				.cascading(READ_ONLY)
 				.build(persistenceContext);
 		
@@ -139,7 +143,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	void crud_relationContainsOneToMany() {
 		EntityPersister<Answer, Identifier<Long>> persister = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
 				.build(persistenceContext);
 
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -192,7 +196,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	void crud_relationContainsManyToMany() {
 		EntityPersister<Answer, Identifier<Long>> persister = entityBuilder(Answer.class, LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ALL)
 				.build(persistenceContext);
 
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -243,12 +247,74 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer2.getId().getSurrogate());
 	}
 	
+	private static class Trio<L, M, R> {
+		
+		private static Trio<Integer, Integer, Integer> forInteger(Integer left, Integer middle, Integer right) {
+			return new Trio<>(left, middle, right);
+		}
+		
+		private final L left;
+		private final M middle;
+		private final R right;
+		
+		public Trio(L left, M middle, R right) {
+			this.left = left;
+			this.middle = middle;
+			this.right = right;
+		}
+		
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+			Trio<?, ?, ?> trio = (Trio<?, ?, ?>) o;
+			return Objects.equals(left, trio.left) && Objects.equals(middle, trio.middle) && Objects.equals(right, trio.right);
+		}
+		
+		@Override
+		public int hashCode() {
+			return Objects.hashCode(left, middle, right);
+		}
+		
+		@Override
+		public String toString() {
+			return "{left=" + left + ", middle=" + middle + ", right=" + right + '}';
+		}
+	}
+	
 	@Test
+	void crud_relationContainsManyToMany_indexed() {
+		EntityPersister<Answer, Identifier<Long>> persister = entityBuilder(Answer.class, LONG_TYPE)
+				.mapKey(Answer::getId, ALREADY_ASSIGNED)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).indexedBy("myIdx").cascading(ALL)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Answer answer1 = new Answer(new PersistableIdentifier<>(1L));
+		Answer answer2 = new Answer(new PersistableIdentifier<>(2L));
+		Choice grenoble = new Choice(new PersistableIdentifier<>(13L));
+		grenoble.setLabel("Grenoble");
+		Choice lyon = new Choice(new PersistableIdentifier<>(17L));
+		lyon.setLabel("Lyon");
+		answer1.addChoices(lyon, grenoble);
+		answer2.addChoices(grenoble, lyon);
+		persister.insert(Arrays.asList(answer1, answer2));
+		
+		Set<Trio<Integer, Integer, Integer>> choiceAnswerIds = persistenceContext.newQuery("select answer_id, choices_id, myIdx from answer_choices", (Class<Trio<Integer, Integer, Integer>>) (Class) Trio.class)
+				.<Integer, Integer, Integer>mapKey(Trio::forInteger, "answer_id", "choices_id", "myIdx")
+				.execute();
+		
+		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(new Trio<>(1, 17, 1), new Trio<>(1, 13, 2), new Trio<>(2, 13, 1), new Trio<>(2, 17, 2));
+	}		
+		
+		@Test
 	void select_collectionFactory() throws SQLException {
 		// mapping building thanks to fluent API
 		EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION)
 					// applying a Set that will sort cities by their name
 					.initializeWith(() -> new TreeSet<>(Comparator.comparing(Choice::getLabel)))
 				.build(persistenceContext);
@@ -276,7 +342,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
 					// no cascade, nor reverse side
-					.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(READ_ONLY)
+					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(READ_ONLY)
 					.build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -637,7 +703,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		void delete_associationRecordsMustBeDeleted_butNotTargetEntities() throws SQLException {
 			EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 					.mapKey(Answer::getId, ALREADY_ASSIGNED)
-					.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
+					.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(ASSOCIATION_ONLY)
 					.build(persistenceContext);
 
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -713,7 +779,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	void select_noRecordInAssociationTable_mustReturnEmptyCollection() throws SQLException {
 		EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
 				.mapKey(Answer::getId, ALREADY_ASSIGNED)
-				.mapManyToManySet(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(READ_ONLY)
+				.mapManyToMany(Answer::getChoices, CHOICE_MAPPING_CONFIGURATION).cascading(READ_ONLY)
 				.build(persistenceContext);
 
 		// this is a configuration safeguard, thus we ensure that configuration matches test below
@@ -778,7 +844,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		
 		public void addChoices(Choice... choices) {
 			if (this.choices == null) {
-				this.choices = new HashSet<>();
+				this.choices = new LinkedHashSet<>();
 			}
 			this.choices.addAll(Arrays.asList(choices));
 		}
@@ -829,7 +895,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		
 		@Override
 		public int hashCode() {
-			return Objects.hash(id);
+			return Objects.hashCode(id);
 		}
 		
 		@Override

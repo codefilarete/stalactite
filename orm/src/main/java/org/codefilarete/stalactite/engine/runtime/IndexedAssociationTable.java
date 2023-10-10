@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import javax.annotation.Nullable;
+
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
@@ -7,6 +9,8 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+
+import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
  * @author Guillaume Mary
@@ -30,10 +34,11 @@ public class IndexedAssociationTable<
 								   AccessorDefinition accessorDefinition,
 								   AssociationTableNamingStrategy namingStrategy,
 								   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-								   boolean createManySideForeignKey) {
+								   boolean createManySideForeignKey,
+								   @Nullable String columnName) {
 		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, createManySideForeignKey);
 		// index column is part of the primary key for indexed association 
-		this.indexColumn = addColumn(DEFAULT_INDEX_COLUMN_NAME, int.class).primaryKey();
+		this.indexColumn = addColumn(preventNull(columnName, DEFAULT_INDEX_COLUMN_NAME), int.class).primaryKey();
 		getPrimaryKey().addColumn(indexColumn);
 	}
 	

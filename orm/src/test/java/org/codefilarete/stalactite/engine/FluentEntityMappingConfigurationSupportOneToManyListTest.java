@@ -101,9 +101,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute();
-		assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 20L, 30L);
+		assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 		// stating that indexes are in same order than instances
-		assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(0, 1, 2);
+		assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);
 	}
 	
 	@Test
@@ -138,9 +138,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				.mapKey(Result::new, id)
 				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 				.execute();
-		assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 20L, 30L);
+		assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 		// stating that indexes are in same order than instances
-		assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(0, 1, 2);
+		assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);
 	}
 	
 	@Test
@@ -235,9 +235,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// id should be left unmodified
-			assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 20L, 30L);
+			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 			// but indexes must reflect swap done on instances
-			assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(1, 0, 2);
+			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(2, 1, 3);
 		}
 		
 		@Test
@@ -267,8 +267,8 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// nothing should have changed
-			assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 20L, 30L);
-			assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(0, 1, 2);
+			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
+			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);
 		}
 		
 		@Test
@@ -295,9 +295,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// id should be left unmodified
-			assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 20L, 30L, 40L);
+			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L, 40L);
 			// but indexes must reflect modifications
-			assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(3, 2, 0, 1);
+			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(4, 3, 1, 2);
 		}
 		
 		@Test
@@ -324,9 +324,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// the removed id must be missing (entity asked for deletion)
-			assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 30L);
+			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 30L);
 			// choice 1 (10) is last, choice 3 (30) is first
-			assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(1, 0);
+			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(2, 1);
 		}
 		
 		/**
@@ -355,9 +355,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
 			// the removed id must be missing (entity asked for deletion)
-			assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 30L);
+			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 30L);
 			// choice 1 (10) is last, choice 3 (30) is first
-			assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(1, 0);
+			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(2, 1);
 		}
 		
 		@Test
@@ -517,9 +517,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Set<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
-			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactlyInAnyOrder(10L, 20L, 20L, 30L);
+			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactly(10L, 20L, 20L, 30L);
 			// stating that indexes are in same order than instances
-			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactlyInAnyOrder(0, 1, 2, 3);
+			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactly(1, 2, 3, 4);
 		}
 		
 		@Test
@@ -711,9 +711,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Set<RawAnswer> persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
-			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactlyInAnyOrder(10L, 20L, 50L, 20L, 30L, 10L, 40L);
+			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactly(10L, 20L, 50L, 20L, 30L, 10L, 40L);
 			// stating that indexes are in same order than instances
-			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactlyInAnyOrder(0, 1, 2, 3, 4, 5, 6);
+			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactly(1, 2, 3, 4, 5, 6, 7);
 			
 			// test with entity removal
 			Answer selectedAnswer1 = answerPersister.select(new PersistableIdentifier<>(1L));
@@ -726,9 +726,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			persistedChoices = query
 					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 					.execute();
-			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactlyInAnyOrder(10L, 20L, 10L);
+			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactly(10L, 20L, 10L);
 			// stating that indexes are in same order than instances
-			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactlyInAnyOrder(0, 1, 2);
+			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactly(1, 2, 3);
 		}
 	}
 	
@@ -1070,9 +1070,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
 					.execute();
-			assertThat(persistedChoices).extracting(Result::getId).containsExactlyInAnyOrder(10L, 20L, 30L);
+			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 			// stating that indexes are in same order than instances
-			assertThat(persistedChoices).extracting(Result::getIdx).containsExactlyInAnyOrder(0, 1, 2);
+			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);
 			return this;
 		}
 	}

@@ -42,15 +42,16 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	private Supplier<C2> reverseCollectionFactory;
 	
 	/**
-	 * Indicates if target instances are indexed in their {@link Collection} (meaning that it is capable of storing order)
-	 */
-	private boolean indexed = false;
-	
-	/**
 	 * Indicates that relation must be loaded in same main query (through join) or in some separate query
 	 */
 	private boolean fetchSeparately;
 	
+	/**
+	 * Indicates if target instances are indexed in their {@link Collection} (meaning that it is capable of storing order)
+	 */
+	private boolean ordered = false;
+	
+	private String indexingColumnName;
 	
 	/**
 	 * Default, simple constructor.
@@ -135,8 +136,22 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		this.reverseCollectionFactory = reverseCollectionFactory;
 	}
 	
-	public boolean isIndexed() {
-		return indexed;
+	public void setIndexingColumnName(String columnName) {
+		ordered();
+		this.indexingColumnName = columnName;
+	}
+	
+	@Nullable
+	public String getIndexingColumnName() {
+		return indexingColumnName;
+	}
+	
+	public void ordered() {
+		this.ordered = true;
+	}
+	
+	public boolean isOrdered() {
+		return ordered;
 	}
 	
 	public boolean isFetchSeparately() {

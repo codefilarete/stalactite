@@ -89,6 +89,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	
 	/**
 	 * Activates entity order persistence and indicates {@link Column} to be used for it.
+	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
 	 *
 	 * @return the global mapping configurer
 	 */
@@ -96,6 +97,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	
 	/**
 	 * Activates entity order persistence and indicates column name to be used for it.
+	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
 	 *
 	 * @return the global mapping configurer
 	 */
@@ -103,6 +105,7 @@ public interface OneToManyOptions<C, I, O, S extends Collection<O>> extends Casc
 	
 	/**
 	 * Activates entity order persistence.
+	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
 	 * 
 	 * @return the global mapping configurer
 	 */

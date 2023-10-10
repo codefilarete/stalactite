@@ -202,7 +202,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	
 	
 	public void setIndexingColumn(Column<? extends Table, Integer> indexingColumn) {
-		indexed();
+		ordered();
 		this.indexingColumn = indexingColumn;
 	}
 	
@@ -212,7 +212,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	}
 	
 	public void setIndexingColumnName(String columnName) {
-		indexed();
+		ordered();
 		this.indexingColumnName = columnName;
 	}
 	
@@ -221,7 +221,7 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 		return indexingColumnName;
 	}
 	
-	public void indexed() {
+	public void ordered() {
 		this.ordered = true;
 	}
 	

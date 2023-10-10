@@ -26,4 +26,20 @@ public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends
 	 */
 	ManyToManyOptions<C, I, O, S1, S2> fetchSeparately();
 	
+	/**
+	 * Activates entity order persistence and indicates column name to be used for it.
+	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
+	 *
+	 * @return the global mapping configurer
+	 */
+	ManyToManyOptions<C, I, O, S1, S2> indexedBy(String columnName);
+	
+	/**
+	 * Activates entity order persistence.
+	 * Collection that stores data is expected to support ordering by index (as List or LinkedHashSet)
+	 *
+	 * @return the global mapping configurer
+	 */
+	ManyToManyOptions<C, I, O, S1, S2> indexed();
+	
 }

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -289,7 +290,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		Map<C, Integer> resultWithoutDuplicates = new IdentityHashMap<>(convertedResult.size());	// we use identity to avoid relying on equals() implementation
 		ModifiableInt index = new ModifiableInt();
 		convertedResult.forEach(c -> resultWithoutDuplicates.putIfAbsent(c, index.increment()));
-		return resultWithoutDuplicates.entrySet().stream().sorted(Entry.comparingByValue()).map(Entry::getKey).collect(Collectors.toSet());
+		return resultWithoutDuplicates.entrySet().stream().sorted(Entry.comparingByValue()).map(Entry::getKey).collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 	
 	/**
