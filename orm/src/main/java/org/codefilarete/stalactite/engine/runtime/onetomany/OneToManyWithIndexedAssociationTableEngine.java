@@ -130,7 +130,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 					PairIterator<Integer, Integer> diffIndexIterator = new PairIterator<>(indexedDiff.getReplacerIndexes(), indexedDiff.getSourceIndexes());
 					diffIndexIterator.forEachRemaining(d -> {
 						if (!d.getLeft().equals(d.getRight()))
-							((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeUpdated().add(new Duo<>(
+							((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated().add(new Duo<>(
 									newRecord(leftIdentifier, diff.getSourceInstance(), d.getLeft()),
 									newRecord(leftIdentifier, diff.getSourceInstance(), d.getRight())));
 					});
@@ -147,7 +147,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 				super.onAddedElements(updateContext, diff);
 				SRC leftIdentifier = updateContext.getPayload().getLeft();
 				((IndexedDiff<TRGT>) diff).getReplacerIndexes().forEach(idx ->
-						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted().add(
+						((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted().add(
 								newRecord(leftIdentifier, diff.getReplacingInstance(), idx)));
 			}
 			
@@ -156,7 +156,7 @@ public class OneToManyWithIndexedAssociationTableEngine<
 				super.onRemovedElements(updateContext, diff);
 				SRC leftIdentifier = updateContext.getPayload().getLeft();
 				((IndexedDiff<TRGT>) diff).getSourceIndexes().forEach(idx ->
-						((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted().add(
+						((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted().add(
 								newRecord(leftIdentifier, diff.getSourceInstance(), idx)));
 			}
 			
@@ -164,44 +164,44 @@ public class OneToManyWithIndexedAssociationTableEngine<
 			protected void updateTargets(UpdateContext updateContext, boolean allColumnsStatement) {
 				super.updateTargets(updateContext, allColumnsStatement);
 				// we ask for index update : all columns shouldn't be updated, only index, so we don't need "all columns in statement"
-				associationPersister.update(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeUpdated(), false);
+				associationPersister.update(((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), false);
 			}
 			
 			@Override
 			protected void insertTargets(UpdateContext updateContext) {
 				// we insert targets before association records to satisfy integrity constraint
 				super.insertTargets(updateContext);
-				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeInserted());
+				associationPersister.insert(((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
 				
 			}
 			
 			@Override
 			protected void deleteTargets(UpdateContext updateContext) {
 				// we delete association records before targets to satisfy integrity constraint
-				associationPersister.delete(((AssociationTableUpdateContext) updateContext).getAssociationRecordstoBeDeleted());
+				associationPersister.delete(((AssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
 				super.deleteTargets(updateContext);
 			}
 			
 			class AssociationTableUpdateContext extends UpdateContext {
 				
-				private final List<IndexedAssociationRecord> associationRecordstoBeInserted = new ArrayList<>();
-				private final List<IndexedAssociationRecord> associationRecordstoBeDeleted = new ArrayList<>();
-				private final List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> associationRecordstoBeUpdated = new ArrayList<>();
+				private final List<IndexedAssociationRecord> associationRecordsToBeInserted = new ArrayList<>();
+				private final List<IndexedAssociationRecord> associationRecordsToBeDeleted = new ArrayList<>();
+				private final List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> associationRecordsToBeUpdated = new ArrayList<>();
 				
 				public AssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
 					super(updatePayload);
 				}
 				
-				public List<IndexedAssociationRecord> getAssociationRecordstoBeInserted() {
-					return associationRecordstoBeInserted;
+				public List<IndexedAssociationRecord> getAssociationRecordsToBeInserted() {
+					return associationRecordsToBeInserted;
 				}
 				
-				public List<IndexedAssociationRecord> getAssociationRecordstoBeDeleted() {
-					return associationRecordstoBeDeleted;
+				public List<IndexedAssociationRecord> getAssociationRecordsToBeDeleted() {
+					return associationRecordsToBeDeleted;
 				}
 				
-				public List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> getAssociationRecordstoBeUpdated() {
-					return associationRecordstoBeUpdated;
+				public List<Duo<IndexedAssociationRecord, IndexedAssociationRecord>> getAssociationRecordsToBeUpdated() {
+					return associationRecordsToBeUpdated;
 				}
 			}
 		};

@@ -88,7 +88,7 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		FluentEmbeddableMappingBuilderPropertyOptions<C> columnName(String name);
 		
 		@Override
-		<O> FluentEmbeddableMappingBuilderPropertyOptions<C> column(Column<? extends Table, O> column);
+		FluentEmbeddableMappingBuilderPropertyOptions<C> column(Column<? extends Table, ?> column);
 		
 		@Override
 		FluentEmbeddableMappingBuilderPropertyOptions<C> fieldName(String name);

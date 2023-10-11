@@ -212,8 +212,6 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 				Accessor<?, ?> kAsAccessor;
 				if (k instanceof ReversibleMutator) {
 					kAsAccessor = ((ReversibleMutator<Object, Object>) k).toAccessor();
-				} else if (k instanceof Accessor) {
-					kAsAccessor = (Accessor<?, ?>) k;
 				} else {
 					// This is not an absolute end : it would be sufficient if we could build an AccessorChain with last element
 					// being a Mutator, making created AccessorChain a Mutator (non reversible in our case) this should be implemented to avoid this exception

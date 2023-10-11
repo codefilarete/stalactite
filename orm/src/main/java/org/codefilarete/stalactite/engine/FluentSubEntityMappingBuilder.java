@@ -140,7 +140,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderPropertyOptions<C, I> columnName(String name);
 		
 		@Override
-		<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, O> column);
+		FluentSubEntityMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, ?> column);
 		
 		@Override
 		FluentSubEntityMappingBuilderPropertyOptions<C, I> fieldName(String name);
@@ -167,7 +167,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingConfigurationEnumOptions<C, I> columnName(String name);
 		
 		@Override
-		<O> FluentSubEntityMappingConfigurationEnumOptions<C, I> column(Column<? extends Table, O> column);
+		FluentSubEntityMappingConfigurationEnumOptions<C, I> column(Column<? extends Table, ?> column);
 		
 		@Override
 		FluentSubEntityMappingConfigurationEnumOptions<C, I> fieldName(String name);

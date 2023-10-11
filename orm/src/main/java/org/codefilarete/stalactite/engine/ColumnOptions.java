@@ -39,7 +39,7 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	ColumnOptions<C, I> columnName(String name);
 	
 	@Override
-	<O> ColumnOptions<C, I> column(Column<? extends Table, O> column);
+	ColumnOptions<C, I> column(Column<? extends Table, ?> column);
 	
 	@Override
 	ColumnOptions<C, I> fieldName(String name);

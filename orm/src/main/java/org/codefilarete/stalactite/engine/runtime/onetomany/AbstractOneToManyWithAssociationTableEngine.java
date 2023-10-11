@@ -202,7 +202,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 	}
 	
 	/**
-	 * Add deletion of association records on {@link BeanPersister#delete} and {@link BeanPersister#deleteById} events.
+	 * Adds deletion of association records on {@link BeanPersister#delete} and {@link BeanPersister#deleteById} events.
 	 * If {@code deleteTargetEntities} is true, then will also delete target (many side) entities.
 	 * 
 	 * In case of {@link BeanPersister#deleteById}, association records will be deleted only by source entity keys.

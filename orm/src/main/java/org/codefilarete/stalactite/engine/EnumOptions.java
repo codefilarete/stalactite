@@ -27,7 +27,7 @@ public interface EnumOptions extends PropertyOptions {
 	EnumOptions columnName(String name);
 	
 	@Override
-	<O> EnumOptions column(Column<? extends Table, O> column);
+	EnumOptions column(Column<? extends Table, ?> column);
 	
 	@Override
 	EnumOptions fieldName(String name);

@@ -196,7 +196,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public <O> PropertyOptions column(Column<? extends Table, O> column) {
+					public PropertyOptions column(Column<? extends Table, ?> column) {
 						linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 						return null;
 					}
@@ -274,7 +274,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public <O> EnumOptions column(Column<? extends Table, O> column) {
+					public EnumOptions column(Column<? extends Table, ?> column) {
 						linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 						return null;
 					}

@@ -46,9 +46,8 @@ public interface PropertyOptions {
 	 * This also sets {@link Table} to be used by mapping.
 	 * 
 	 * @param column {@link Column} to be written and read by this property
-	 * @param <O> {@link Column} Java type
 	 */
-	<O> PropertyOptions column(Column<? extends Table, O> column);
+	PropertyOptions column(Column<? extends Table, ?> column);
 	
 	/**
 	 * Sets {@link java.lang.reflect.Field} name targeted by this property. Overwrites default mechanism which

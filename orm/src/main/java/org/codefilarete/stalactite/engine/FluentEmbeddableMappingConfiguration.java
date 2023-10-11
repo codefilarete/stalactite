@@ -107,7 +107,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		FluentEmbeddableMappingConfigurationEnumOptions<C> columnName(String name);
 		
 		@Override
-		<O> FluentEmbeddableMappingConfigurationEnumOptions<C> column(Column<? extends Table, O> column);
+		FluentEmbeddableMappingConfigurationEnumOptions<C> column(Column<? extends Table, ?> column);
 		
 		@Override
 		FluentEmbeddableMappingConfigurationEnumOptions<C> fieldName(String name);
@@ -129,7 +129,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		FluentEmbeddableMappingConfigurationPropertyOptions<C> columnName(String name);
 		
 		@Override
-		<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> column(Column<? extends Table, O> column);
+		FluentEmbeddableMappingConfigurationPropertyOptions<C> column(Column<? extends Table, ?> column);
 		
 		@Override
 		FluentEmbeddableMappingConfigurationPropertyOptions<C> fieldName(String name);

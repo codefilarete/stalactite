@@ -461,6 +461,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	FluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
+//	FluentEntityMappingBuilder<C, I> mapExtraTable(Column<?, I> extraTableJoinColumn, )
+	
 	interface FluentMappingBuilderPropertyOptions<C, I> extends FluentEntityMappingBuilder<C, I>, ColumnOptions<C, I> {
 		
 		@Override
@@ -476,7 +478,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderPropertyOptions<C, I> columnName(String name);
 		
 		@Override
-		<O> FluentMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, O> column);
+		FluentMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, ?> column);
 		
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> fieldName(String name);
@@ -663,7 +665,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderEnumOptions<C, I> columnName(String name);
 		
 		@Override
-		<O> FluentMappingBuilderEnumOptions<C, I> column(Column<? extends Table, O> column);
+		FluentMappingBuilderEnumOptions<C, I> column(Column<? extends Table, ?> column);
 		
 		@Override
 		FluentMappingBuilderEnumOptions<C, I> fieldName(String name);
