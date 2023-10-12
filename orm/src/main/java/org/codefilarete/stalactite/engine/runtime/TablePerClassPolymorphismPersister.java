@@ -89,7 +89,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private final Map<Class<? extends C>, UpdateExecutor<? extends C>> subclassUpdateExecutors;
 	private final Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	private final TablePerClassPolymorphicSelectExecutor<C, I, ?> selectExecutor;
-	private final TablePerClassPolymorphicEntitySelectExecutor<C, I, ?> entitySelectExecutor;
+	private final TablePerClassPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public TablePerClassPolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
@@ -117,7 +117,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				connectionProvider,
 				dialect);
 		
-		this.entitySelectExecutor = new TablePerClassPolymorphicEntitySelectExecutor<>(
+		this.entitySelectExecutor = new TablePerClassPolymorphismEntitySelectExecutor<>(
 				tablePerSubEntity,
 				subEntitiesPersisters,
 				mainPersister.getMapping().getTargetTable(),

@@ -23,7 +23,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
+public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
 	
 	private static final String UNION_ALL_SEPARATOR = ") union all (";
 	
@@ -33,7 +33,7 @@ public class TablePerClassPolymorphicEntitySelectExecutor<C, I, T extends Table>
 	private final Dialect dialect;
 	private final Table mainTable;
 	
-	public TablePerClassPolymorphicEntitySelectExecutor(
+	public TablePerClassPolymorphismEntitySelectExecutor(
 			Map<Class<? extends C>, ? extends Table> tablePerSubConfiguration,
 			Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass,
 			T mainTable,
