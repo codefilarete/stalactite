@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -16,6 +15,7 @@ import org.codefilarete.stalactite.query.EntitySelectExecutor;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -25,12 +25,12 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.Duo;
 
 /**
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
+public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>> implements EntitySelectExecutor<C> {
 	
 	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	private final T mainTable;
@@ -55,35 +55,30 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
 		persisterPerSubclass.values().forEach(subclassPersister -> {
-			Column subclassPrimaryKey = Iterables.first(
-					(Set<Column>) subclassPersister.getMainTable().getPrimaryKey().getColumns());
-			query.select(subclassPrimaryKey, subclassPrimaryKey.getAlias());
-			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
+			query.getFrom().leftOuterJoin(mainTable.getPrimaryKey(), subclassPersister.getMainTable().getPrimaryKey());
+			((T) subclassPersister.getMainTable()).getPrimaryKey().getColumns().forEach(column -> {
+				query.select(column, column.getAlias());
+			});
 		});
 		
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where, entityTreeQuery.getColumnClones());
 		
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> columnReaders = new HashMap<>();
-		Map<Column, String> aliases = new HashMap<>();
-		Iterables.stream(query.getSelectSurrogate())
-				.map(Column.class::cast)
-				.forEach(c -> {
-					columnReaders.put(c.getAlias(), dialect.getColumnBinderRegistry().getBinder(c));
-					aliases.put(c, c.getAlias());
-				});
+		Map<Selectable<?>, String> aliases = query.getAliases();
+		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, columnReaders, primaryKey, columnedRow);
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, columnReaders, columnedRow);
 		
 		Set<C> result = new HashSet<>();
 		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}
 	
-	private Map<Class, Set<I>> readIds(QuerySQLBuilder sqlQueryBuilder, Map<String, ResultSetReader> columnReaders,
-									   Column<T, I> primaryKey, ColumnedRow columnedRow) {
+	private Map<Class, Set<I>> readIds(QuerySQLBuilder sqlQueryBuilder,
+									   Map<String, ResultSetReader> columnReaders,
+									   ColumnedRow columnedRow) {
 		Map<Class, Set<I>> result = new HashMap<>();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
@@ -94,23 +89,17 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
-				Class<? extends C> entitySubclass;
 				Set<Entry<Class<C>, ConfiguredRelationalPersister<C, I>>> entries = persisterPerSubclass.entrySet();
-				Entry<Class<C>, ConfiguredRelationalPersister<C, I>> subclassEntityOnRow = Iterables.find(entries,
-						e -> {
-							boolean isPKEmpty = true;
-							Iterator<Column> columnIt = e.getValue().getMainTable().getPrimaryKey().getColumns().iterator();
-							while (isPKEmpty && columnIt.hasNext()) {
-								Column column = columnIt.next();
-								isPKEmpty = columnedRow.getValue(column, row) != null;
-							}
-							return isPKEmpty;
-						});
-				entitySubclass = subclassEntityOnRow.getKey();
-				
-				// adding identifier to subclass' ids
-				result.computeIfAbsent(entitySubclass, k -> new HashSet<>())
-						.add((I) row.get(primaryKey.getAlias()));
+				Duo<Class, I> duo = null;
+				I identifier;
+				for (Entry<Class<C>, ConfiguredRelationalPersister<C, I>> entry : entries) {
+					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
+					if (identifier != null) {
+						duo = new Duo<>(entry.getKey(), identifier);
+						break;
+					}
+				}
+				result.computeIfAbsent(duo.getLeft(), k -> new HashSet<>()).add(duo.getRight());
 			});
 			return result;
 		} catch (RuntimeException e) {

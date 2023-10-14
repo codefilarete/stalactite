@@ -118,6 +118,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				dialect);
 		
 		this.entitySelectExecutor = new TablePerClassPolymorphismEntitySelectExecutor<>(
+				mainPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 				tablePerSubEntity,
 				subEntitiesPersisters,
 				mainPersister.getMapping().getTargetTable(),

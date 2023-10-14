@@ -125,6 +125,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 				dialect);
 		
 		this.entitySelectExecutor = new SingleTablePolymorphismEntitySelectExecutor<>(
+				mainPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 				subEntitiesPersisters,
 				discriminatorColumn,
 				polymorphismPolicy,
