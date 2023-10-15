@@ -18,14 +18,11 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.BeforeInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
@@ -39,21 +36,17 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentEntityMappingBuilderKeyOptions;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterBuilder;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteByIdSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterDeleteSupport;
 import org.codefilarete.stalactite.engine.cascade.AfterUpdateSupport;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.CompositeKeyLinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.configurer.polymorphism.PolymorphismPersisterBuilder;
@@ -112,15 +105,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	private final MethodReferenceCapturer methodSpy;
 	private ColumnBinderRegistry columnBinderRegistry;
 	private Table table;
-	private TableNamingStrategy tableNamingStrategy;
 	private final Map<EntityMappingConfiguration, Table> tableMap = new HashMap<>();
-	private ColumnNamingStrategy columnNamingStrategy;
-	private ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private JoinColumnNamingStrategy joinColumnNamingStrategy;
-	private ColumnNamingStrategy indexColumnNamingStrategy;
-	private AssociationTableNamingStrategy associationTableNamingStrategy;
-	private ColumnNameProvider columnNameProvider;
+	private final NamingConfiguration namingConfiguration;
 	
 	public PersisterBuilderImpl(EntityMappingConfigurationProvider<C, I> entityMappingConfigurationProvider) {
 		this(entityMappingConfigurationProvider.getConfiguration());
@@ -130,6 +116,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		this.entityMappingConfiguration = entityMappingConfiguration;
 		// to be reviewed if MethodReferenceCapturer instance must be reused from another PersisterBuilderImpl (not expected because should be stateless)
 		this.methodSpy = new MethodReferenceCapturer();
+		NamingConfigurationCollector namingConfigurationCollector = new NamingConfigurationCollector(entityMappingConfiguration);
+		this.namingConfiguration = namingConfigurationCollector.collect();
 	}
 	
 	PersisterBuilderImpl<C, I> setColumnBinderRegistry(ColumnBinderRegistry columnBinderRegistry) {
@@ -139,37 +127,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	PersisterBuilderImpl<C, I> setTable(Table table) {
 		this.table = table;
-		return this;
-	}
-	
-	public PersisterBuilderImpl<C, I> setElementCollectionTableNamingStrategy(ElementCollectionTableNamingStrategy tableNamingStrategy) {
-		this.elementCollectionTableNamingStrategy = tableNamingStrategy;
-		return this;
-	}
-	
-	PersisterBuilderImpl<C, I> setTableNamingStrategy(TableNamingStrategy tableNamingStrategy) {
-		this.tableNamingStrategy = tableNamingStrategy;
-		return this;
-	}
-	
-	PersisterBuilderImpl<C, I> setColumnNamingStrategy(ColumnNamingStrategy columnNamingStrategy) {
-		this.columnNamingStrategy = columnNamingStrategy;
-		this.columnNameProvider = new ColumnNameProvider(this.columnNamingStrategy) {
-			/** Overridden to invoke join column naming strategy if necessary */
-			@Override
-			protected String giveColumnName(BeanMappingConfiguration.Linkage linkage) {
-				if (PersisterBuilderContext.CURRENT.get().isEntity(linkage.getColumnType())) {
-					return columnNamingStrategy.giveName(AccessorDefinition.giveDefinition(linkage.getAccessor()));
-				} else {
-					return super.giveColumnName(linkage);
-				}
-			}
-		};
-		return this;
-	}
-	
-	PersisterBuilderImpl<C, I> setForeignKeyNamingStrategy(ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		return this;
 	}
 	
@@ -270,12 +227,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		PersisterBuilderContext.CURRENT.get().addEntity(mainPersister.getMapping().getClassToPersist());
 		
 		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, persisterRegistry, mainPersister,
-				columnNamingStrategy,
-				foreignKeyNamingStrategy,
-				elementCollectionTableNamingStrategy,
-				joinColumnNamingStrategy,
-				indexColumnNamingStrategy,
-				associationTableNamingStrategy);
+				namingConfiguration);
 		
 		PersisterBuilderContext.CURRENT.get().runInContext(entityMappingConfiguration, () -> {
 			// registering relations on parent entities
@@ -292,10 +244,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		PolymorphismPolicy<C> polymorphismPolicy = this.entityMappingConfiguration.getPolymorphismPolicy();
 		if (polymorphismPolicy != null) {
 			PolymorphismPersisterBuilder<C, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
-					polymorphismPolicy, identification, mainPersister, this.columnBinderRegistry, this.columnNameProvider,
-					this.columnNamingStrategy, this.foreignKeyNamingStrategy, this.elementCollectionTableNamingStrategy,
-					this.joinColumnNamingStrategy, this.indexColumnNamingStrategy,
-					this.associationTableNamingStrategy, (Map) mainMapping.getMapping(), (Map) mainMapping.getReadonlyMapping(), this.tableNamingStrategy);
+					polymorphismPolicy, identification, mainPersister, this.columnBinderRegistry,
+					mainMapping.getMapping(), (Map) mainMapping.getReadonlyMapping(), this.namingConfiguration);
 			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		}
 		
@@ -497,7 +447,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				tableMap.put(entityMappingConfiguration, currentTable);
 				if (changeTable) {
 					currentTable = nullable(inheritanceConfiguration.getTable())
-							.getOr(() -> new Table(tableNamingStrategy.giveName(inheritanceConfiguration.getConfiguration().getEntityType())));
+							.getOr(() -> new Table(namingConfiguration.getTableNamingStrategy().giveName(inheritanceConfiguration.getConfiguration().getEntityType())));
 				}
 			}
 		});
@@ -514,70 +464,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	<T extends Table> void init(ColumnBinderRegistry columnBinderRegistry, @Nullable T table) {
 		this.columnBinderRegistry = columnBinderRegistry;
 		
-		org.codefilarete.tool.Nullable<TableNamingStrategy> optionalTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getTableNamingStrategy() != null && !optionalTableNamingStrategy.isPresent()) {
-				optionalTableNamingStrategy.set(configuration.getTableNamingStrategy());
-			}
-		});
-		this.tableNamingStrategy = optionalTableNamingStrategy.getOr(TableNamingStrategy.DEFAULT);
-		
-		this.table = nullable(table).getOr(() -> (T) new Table(tableNamingStrategy.giveName(this.entityMappingConfiguration.getEntityType())));
-		
-		// When a ColumnNamingStrategy is defined on mapping, it must be applied to super classes too
-		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
-		class ColumnNamingStrategyCollector implements Consumer<EmbeddableMappingConfiguration> {
-			@Override
-			public void accept(EmbeddableMappingConfiguration embeddableMappingConfiguration) {
-				if (embeddableMappingConfiguration.getColumnNamingStrategy() != null && !optionalColumnNamingStrategy.isPresent()) {
-					optionalColumnNamingStrategy.set(embeddableMappingConfiguration.getColumnNamingStrategy());
-				}
-			}
-		}
-		ColumnNamingStrategyCollector columnNamingStrategyCollector = new ColumnNamingStrategyCollector();
-		visitInheritedEmbeddableMappingConfigurations(entityConfigurationConsumer ->
-				columnNamingStrategyCollector.accept(entityConfigurationConsumer.getPropertiesMapping()), columnNamingStrategyCollector);
-		setColumnNamingStrategy(optionalColumnNamingStrategy.getOr(ColumnNamingStrategy.DEFAULT));
-		
-		org.codefilarete.tool.Nullable<ForeignKeyNamingStrategy> optionalForeignKeyNamingStrategy = org.codefilarete.tool.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getForeignKeyNamingStrategy() != null && !optionalForeignKeyNamingStrategy.isPresent()) {
-				optionalForeignKeyNamingStrategy.set(configuration.getForeignKeyNamingStrategy());
-			}
-		});
-		this.foreignKeyNamingStrategy = optionalForeignKeyNamingStrategy.getOr(ForeignKeyNamingStrategy.DEFAULT);
-		
-		org.codefilarete.tool.Nullable<JoinColumnNamingStrategy> optionalJoinColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getJoinColumnNamingStrategy() != null && !optionalJoinColumnNamingStrategy.isPresent()) {
-				optionalJoinColumnNamingStrategy.set(configuration.getJoinColumnNamingStrategy());
-			}
-		});
-		this.joinColumnNamingStrategy = optionalJoinColumnNamingStrategy.getOr(JoinColumnNamingStrategy.JOIN_DEFAULT);
-		
-		org.codefilarete.tool.Nullable<ColumnNamingStrategy> optionalIndexColumnNamingStrategy = org.codefilarete.tool.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getIndexColumnNamingStrategy() != null && !optionalIndexColumnNamingStrategy.isPresent()) {
-				optionalIndexColumnNamingStrategy.set(configuration.getIndexColumnNamingStrategy());
-			}
-		});
-		this.indexColumnNamingStrategy = optionalIndexColumnNamingStrategy.getOr(ColumnNamingStrategy.INDEX_DEFAULT);
-		
-		org.codefilarete.tool.Nullable<AssociationTableNamingStrategy> optionalAssociationTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getAssociationTableNamingStrategy() != null && !optionalAssociationTableNamingStrategy.isPresent()) {
-				optionalAssociationTableNamingStrategy.set(configuration.getAssociationTableNamingStrategy());
-			}
-		});
-		this.associationTableNamingStrategy = optionalAssociationTableNamingStrategy.getOr(AssociationTableNamingStrategy.DEFAULT);
-		
-		org.codefilarete.tool.Nullable<ElementCollectionTableNamingStrategy> optionalElementCollectionTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
-		visitInheritedEntityMappingConfigurations(configuration -> {
-			if (configuration.getElementCollectionTableNamingStrategy() != null && !optionalElementCollectionTableNamingStrategy.isPresent()) {
-				optionalElementCollectionTableNamingStrategy.set(configuration.getElementCollectionTableNamingStrategy());
-			}
-		});
-		this.elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
+		this.table = nullable(table).getOr(() -> (T) new Table(namingConfiguration.getTableNamingStrategy().giveName(this.entityMappingConfiguration.getEntityType())));
 	}
 	
 	public static <C, I> void addIdentificationToMapping(AbstractIdentification<C, I> identification, Iterable<Mapping<C, ?>> mappings) {
@@ -625,18 +512,18 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		KeyMapping<C, I> keyLinkage = identification.getKeyLinkage();
 		AccessorDefinition identifierDefinition = AccessorDefinition.giveDefinition(identification.getIdAccessor());
 		if (identification instanceof CompositeKeyIdentification) {
-			BeanMappingBuilder<I, T> compositeKeyBuilder = new BeanMappingBuilder<>();
 			CompositeKeyMappingConfiguration<I> configuration = ((CompositeKeyLinkageSupport<C, I>) keyLinkage).getCompositeKeyMappingBuilder().getConfiguration();
 			// Note that we won't care about readonly column returned by build(..) since we're on a primary key case, then
 			// some readonly columns would be nonsense
-			BeanMapping<I, T> build = compositeKeyBuilder.build(configuration, pkTable, columnBinderRegistry, columnNameProvider);
+			BeanMappingBuilder<I, T> compositeKeyBuilder = new BeanMappingBuilder<>(configuration, pkTable, columnBinderRegistry, namingConfiguration.getColumnNamingStrategy());
+			BeanMapping<I, T> build = compositeKeyBuilder.build();
 			Map<ReversibleAccessor<I, Object>, Column<T, Object>> compositeKeyMapping = build.getMapping();
 			compositeKeyMapping.values().forEach(Column::primaryKey);
 			((AbstractIdentification.CompositeKeyIdentification<C, I>) identification).setCompositeKeyMapping(compositeKeyMapping);
 		} else {
 			String columnName = nullable(((SingleKeyMapping<C, I>) keyLinkage).getColumnOptions()).map(ColumnLinkageOptions::getColumnName).get();
 			if (columnName == null) {
-				columnName = columnNamingStrategy.giveName(identifierDefinition);
+				columnName = this.namingConfiguration.getColumnNamingStrategy().giveName(identifierDefinition);
 			}
 			Column<?, I> primaryKey = pkTable.addColumn(columnName, identifierDefinition.getMemberType());
 			primaryKey.setNullable(false);	// may not be necessary because of primary key, let for principle
@@ -657,7 +544,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	 */
 	@VisibleForTesting
 	void applyForeignKeys(PrimaryKey primaryKey, Set<Table> tables) {
-		applyForeignKeys(primaryKey, this.foreignKeyNamingStrategy, tables);
+		applyForeignKeys(primaryKey, this.namingConfiguration.getForeignKeyNamingStrategy(), tables);
 	}
 	
 	/**
@@ -670,8 +557,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		MappingPerTable<C> result = new MappingPerTable<>();
 		
 		class MappingCollector<T extends Table<T>> implements Consumer<EmbeddableMappingConfiguration<C>> {
-			
-			private final BeanMappingBuilder<C, T> beanMappingBuilder = new BeanMappingBuilder<>();
 			
 			private T currentTable;
 			
@@ -687,11 +572,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			@Override
 			public void accept(EmbeddableMappingConfiguration<C> embeddableMappingConfiguration) {
-				BeanMapping<C, T> propertiesMapping = beanMappingBuilder.build(
-						embeddableMappingConfiguration,
+				BeanMappingBuilder<C, T> beanMappingBuilder = new BeanMappingBuilder<>(embeddableMappingConfiguration,
 						this.currentTable,
 						PersisterBuilderImpl.this.columnBinderRegistry,
-						columnNameProvider);
+						namingConfiguration.getColumnNamingStrategy());
+				BeanMapping<C, T> propertiesMapping = beanMappingBuilder.build();
 				ValueAccessPointSet<C> localMapping = new ValueAccessPointSet<>(currentColumnMap.keySet());
 				propertiesMapping.getMapping().keySet().forEach(propertyAccessor -> {
 					if (localMapping.contains(propertyAccessor)) {
@@ -832,7 +717,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	}
 	
 	@VisibleForTesting
-	void assertCompositeKeyIdentifierOverridesEqualsHashcode(CompositeKeyMapping<?, ?> compositeKeyIdentification) {
+	static void assertCompositeKeyIdentifierOverridesEqualsHashcode(CompositeKeyMapping<?, ?> compositeKeyIdentification) {
 		Class<?> compositeKeyType = AccessorDefinition.giveDefinition(compositeKeyIdentification.getAccessor()).getMemberType();
 		try {
 			compositeKeyType.getDeclaredMethod("equals", Object.class);

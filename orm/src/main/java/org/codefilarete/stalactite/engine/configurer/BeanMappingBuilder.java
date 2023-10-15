@@ -58,7 +58,7 @@ import static org.codefilarete.tool.collection.Iterables.stream;
 /**
  * Engine that converts mapping definition of a {@link BeanMappingConfiguration} to a simple {@link Map}.
  * Designed as such as its instances can be reused (no constructor, attributes are set through
- * {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}
+ * {@link #build()}
  * therefore they are not thread-safe. This was made to avoid extra instance creation because this class is used in some loops.
  * 
  * Whereas it consumes an {@link BeanMappingConfiguration} it doesn't mean that its goal is to manage embedded beans of an entity : as its
@@ -66,7 +66,7 @@ import static org.codefilarete.tool.collection.Iterables.stream;
  * by {@link PersisterBuilderImpl})
  * 
  * @author Guillaume Mary
- * @see #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)    
+ * @see #build()    
  */
 public class BeanMappingBuilder<C, T extends Table<T>> {
 	
@@ -102,139 +102,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 	}
 	
-	private BeanMappingConfiguration<C> mainMappingConfiguration;
-	private T targetTable;
-	private ColumnNameProvider columnNameProvider;
-	private ColumnBinderRegistry columnBinderRegistry;
-	/** Result of {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)}, shared between methods */
-	private BeanMapping<C, T> result;
-	
-	/**
-	 * Converts mapping definition of a {@link BeanMappingConfiguration} into a simple {@link Map}
-	 *
-	 * @return a {@link Map} representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
-	 */
-	public BeanMapping<C, T> build(EmbeddableMappingConfiguration<C> mappingConfiguration,
-								   T targetTable,
-								   ColumnBinderRegistry columnBinderRegistry,
-								   ColumnNameProvider columnNameProvider) {
-		return build(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration), targetTable, columnBinderRegistry, columnNameProvider);
-	}
-	
-	public BeanMapping<C, T> build(CompositeKeyMappingConfiguration<C> mappingConfiguration,
-								   T targetTable,
-								   ColumnBinderRegistry columnBinderRegistry,
-								   ColumnNameProvider columnNameProvider) {
-		return build(BeanMappingConfiguration.fromCompositeKeyMappingConfiguration(mappingConfiguration), targetTable, columnBinderRegistry, columnNameProvider);
-	}
-	
-	/**
-	 * Converts mapping definition of a {@link BeanMappingConfiguration} into a simple {@link Map}
-	 *
-	 * @return a bean that stores some {@link Map}s representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
-	 */
-	private BeanMapping<C, T> build(BeanMappingConfiguration<C> mappingConfiguration,
-									T targetTable,
-									ColumnBinderRegistry columnBinderRegistry,
-									ColumnNameProvider columnNameProvider) {
-		this.mainMappingConfiguration = mappingConfiguration;
-		this.columnNameProvider = columnNameProvider;
-		this.columnBinderRegistry = columnBinderRegistry;
-		this.targetTable = targetTable;
-		this.result = new BeanMapping<>();
-		// converting direct mapping
-		includeDirectMapping(this.mainMappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet<>());
-		// adding embeddable (no particular thought about order compared to previous direct mapping) 
-		includeEmbeddedMapping();
-		return result;
-	}
-	
-	protected T getTargetTable() {
-		return targetTable;
-	}
-	
-	protected void includeDirectMapping(BeanMappingConfiguration<?> mappingConfiguration,
-										@Nullable ValueAccessPoint<C> accessorPrefix,
-										ValueAccessPointMap<C, String> overriddenColumnNames,
-										ValueAccessPointMap<C, Column<T, ?>> overriddenColumns,
-										ValueAccessPointSet<C> excludedProperties) {
-		Stream<Linkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
-				.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()));
-		new StreamSplitter<>(linkageStream)
-				.dispatch(Predicates.not(Linkage::isReadonly),
-						linkage -> {
-							Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
-							String columnName = nullable(overriddenColumn)
-									.map(Column::getName)
-									.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
-							assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-							Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
-							result.mapping.put(mapping.getLeft(), mapping.getRight());
-						})
-				.dispatch(Linkage::isReadonly,
-						linkage -> {
-							Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
-							String columnName = nullable(overriddenColumn)
-									.map(Column::getName)
-									.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
-							assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
-							Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
-							result.readonlyMapping.put(mapping.getLeft(), mapping.getRight());
-						})
-				.split();
-	}
-	
-	protected <O> Duo<ReversibleAccessor<C, ?>, Column<T, Object>> includeMapping(Linkage<C, O> linkage,
-																				  @Nullable ValueAccessPoint<C> accessorPrefix,
-																				  String columnName,
-																				  @Nullable Column<T, O> overriddenColumn,
-																				  Class<?> embeddedBeanType) {
-		Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName));
-		ensureColumnBindingInRegistry(linkage, column);
-		ReversibleAccessor<C, ?> accessor;
-		if (accessorPrefix != null) {
-			accessor = newAccessorChain(Collections.singletonList(accessorPrefix), linkage.getAccessor(), embeddedBeanType);
-		} else {
-			accessor = linkage.getAccessor();
-		}
-		return new Duo<>(accessor, (Column<T, Object>) column);
-	}
-	
-	protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, BeanMappingConfiguration<O> mappingConfiguration) {
-		DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(linkage.getAccessor(), columnNameToCheck, columnNameProvider);
-		stream(mappingConfiguration.inheritanceIterable())
-				.flatMap(configuration -> (Stream<Linkage>) configuration.getPropertiesMapping().stream())
-				// not using equals() is voluntary since we want reference checking here to exclude same instance,
-				// since given linkage is one of given mappingConfiguration
-				// (doing as such also prevent equals() method override to break this algorithm)
-				.filter(pawn -> linkage != pawn
-						// only writable properties are concerned by this check : we allow duplicates for readonly properties
-						&& !pawn.isReadonly() && !linkage.isReadonly())
-				.forEach(duplicateDefinitionChecker);
-	}
-	
-	protected <O> Column<T, O> addColumnToTable(Linkage<C, O> linkage, String columnName) {
-		Column<T, O> addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
-		addedColumn.setNullable(linkage.isNullable());
-		return addedColumn;
-	}
-	
-	private <O> String determineColumnName(Linkage<C, O> linkage, @Nullable String overriddenColumName) {
-		return nullable(overriddenColumName).elseSet(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
-	}
-	
-	protected <O> void ensureColumnBindingInRegistry(Linkage<C, O> linkage, Column<?, O> column) {
-		// assert that column binder is registered : it will throw en exception if the binder is not found
-		if (linkage.getParameterBinder() != null) {
-			columnBinderRegistry.register(column, linkage.getParameterBinder());
-		}
-	}
-	
 	/**
 	 * Creates equivalent {@link Column}s of those given in {@link Map} values onto given target table. May do nothing if columns already exist.
 	 *
 	 * @param propertyToColumn mapping between some property accessors and {@link Column}s from default target {@link Table}
-	 * (the one given at {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)} time)
+	 * (the one given at {@link #build()} time)
 	 * @param targetTable the table on which columns must be added
 	 * @return a mapping between properties of given {@link Map} keys and their column in given {@link Table}
 	 */
@@ -253,87 +125,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	}
 	
 	/**
-	 * Adds embedded beans mapping to result
-	 */
-	private void includeEmbeddedMapping() {
-		Set<Inset<C, ?>> treatedInsets = new HashSet<>();
-		
-		Queue<Inset<C, ?>> stack = Collections.asLifoQueue(new ArrayDeque<>());
-		stack.addAll(mainMappingConfiguration.getInsets());
-		Queue<Accessor<C, ?>> accessorPath = new ArrayDeque<>();
-		while (!stack.isEmpty()) {
-			Inset<C, ?> inset = stack.poll();
-			
-			assertNotAlreadyDeclared(inset, treatedInsets);
-			
-			BeanMappingConfiguration<C> configuration = (BeanMappingConfiguration<C>) inset.getConfiguration();
-			ValueAccessPoint<C> mappingPrefix = null;
-			if (inset.getAccessor() != null) {
-				accessorPath.add(inset.getAccessor());
-				// small optimization to avoid creation of an Accessor chain of 1 element
-				if (accessorPath.size() == 1) {
-					mappingPrefix = accessorPath.peek();
-				} else {
-					mappingPrefix = AccessorChain.chainNullSafe(new ArrayList<>(accessorPath));
-				}
-			}
-			BeanMappingConfiguration<?> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
-			if (superClassConfiguration != null) {
-				includeMappedSuperClassMapping(inset, accessorPath, superClassConfiguration);
-			}
-			
-			includeDirectMapping(configuration, mappingPrefix, inset.getOverriddenColumnNames(), (ValueAccessPointMap) inset.getOverriddenColumns(),
-					inset.getExcludedProperties());
-			if (configuration.getInsets().isEmpty()) {
-				accessorPath.remove();
-			} else {
-				stack.addAll(configuration.getInsets());
-			}
-			treatedInsets.add(inset);
-		}
-	}
-	
-	private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, BeanMappingConfiguration<?> superClassConfiguration) {
-		// we include super type mapping by using a new instance of BeanMappingBuilder, this is the simplest (but maybe not the most
-		// debuggable) and allows to manage inheritance of several mappedSuperClass 
-		BeanMapping<C, T> superMapping = new BeanMappingBuilder<C, T>().build((BeanMappingConfiguration<C>) superClassConfiguration, targetTable,
-				this.columnBinderRegistry, this.columnNameProvider);
-		Class<?> insetBeanType = inset.getConfiguration().getBeanType();
-		superMapping.mapping.forEach((accessor, column) -> {
-			AccessorChain prefix;
-			List<Accessor<?, ?>> accessors;
-			if (accessorPath.size() == 1) {
-				accessors = Arrays.asList(Iterables.first(accessorPath), accessor);
-			} else {
-				accessors = new ArrayList<>(accessorPath);
-				accessors.add(accessor);
-			}
-			prefix = AccessorChain.chainNullSafe(
-				accessors,
-				// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
-				// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
-				// (where T is type returned by accessor, or expected as input of mutator)
-				(localAccessor, accessorInputType) -> insetBeanType);
-			
-			// Computing definitive column because it may be overridden by inset declaration
-			Column<T, ?> finalColumn;
-			if (inset.getOverriddenColumns().containsKey(accessor)) {
-				finalColumn = inset.getOverriddenColumns().get(accessor);
-			} else if (inset.getOverriddenColumnNames().containsKey(accessor)) {
-				finalColumn = targetTable.addColumn(inset.getOverriddenColumnNames().get(accessor), column.getJavaType());
-			} else {
-				finalColumn = targetTable.addColumn(column.getName(), column.getJavaType());
-			}
-			result.mapping.put((ReversibleAccessor<C, Object>) prefix, (Column<T, Object>) finalColumn);
-		});
-	}
-	
-	/**
 	 * Composes an {@link AccessorChain} from given {@link ValueAccessPoint}.
 	 * Acts as a caster or converter because {@link ValueAccessPoint} is an abstract vision of elements accepted by
 	 * {@link AccessorChain}.
 	 * Supported {@link ValueAccessPoint}s are {@link Accessor} and {@link ReversibleAccessor}, else an exception will be thrown
-	 * 
+	 *
 	 * @param rootAccessors first elements to access a property
 	 * @param terminalAccessor final accessor that read property of latest element of rootAccessors
 	 * @param beanType read property type
@@ -347,15 +143,15 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		accessorsTmp.add(terminalAccessor);
 		List<Accessor<?, ?>> finalAccessors = new ArrayList<>();
 		accessorsTmp.forEach(valueAccessPoint -> {
-					if (valueAccessPoint instanceof Accessor) {
-						finalAccessors.add((Accessor) valueAccessPoint);
-					} else if (valueAccessPoint instanceof ReversibleMutator) {
-						finalAccessors.add(((ReversibleMutator) valueAccessPoint).toAccessor());
-					} else {
-						// Something has change in ValueAccessPoint hierarchy, it should be fixed (grave)
-						throw new NotImplementedException(Reflections.toString(valueAccessPoint.getClass()) + " is unknown from chain creation algorithm");
-					}
-				});
+			if (valueAccessPoint instanceof Accessor) {
+				finalAccessors.add((Accessor) valueAccessPoint);
+			} else if (valueAccessPoint instanceof ReversibleMutator) {
+				finalAccessors.add(((ReversibleMutator) valueAccessPoint).toAccessor());
+			} else {
+				// Something has change in ValueAccessPoint hierarchy, it should be fixed (grave)
+				throw new NotImplementedException(Reflections.toString(valueAccessPoint.getClass()) + " is unknown from chain creation algorithm");
+			}
+		});
 		return AccessorChain.chainNullSafe(
 				finalAccessors,
 				// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
@@ -364,56 +160,283 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				(accessor, aClass) -> beanType);
 	}
 	
+	private final BeanMappingConfiguration<C> mainMappingConfiguration;
+	private final T targetTable;
+	private final ColumnNameProvider columnNameProvider;
+	private final ColumnBinderRegistry columnBinderRegistry;
+	
+	public BeanMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration,
+							  T targetTable,
+							  ColumnBinderRegistry columnBinderRegistry,
+							  ColumnNameProvider columnNameProvider) {
+		this(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration),
+				targetTable,
+				columnBinderRegistry,
+				columnNameProvider);
+	}
+	
+	public BeanMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration,
+							  T targetTable,
+							  ColumnBinderRegistry columnBinderRegistry,
+							  ColumnNamingStrategy columnNamingStrategy) {
+		this(BeanMappingConfiguration.fromEmbeddableMappingConfiguration(mappingConfiguration),
+				targetTable,
+				columnBinderRegistry,
+				new ColumnNameProvider(columnNamingStrategy));
+	}
+	
+	public BeanMappingBuilder(CompositeKeyMappingConfiguration<C> mappingConfiguration,
+							  T targetTable,
+							  ColumnBinderRegistry columnBinderRegistry,
+							  ColumnNamingStrategy columnNamingStrategy) {
+		this(BeanMappingConfiguration.fromCompositeKeyMappingConfiguration(mappingConfiguration),
+				targetTable,
+				columnBinderRegistry,
+				new ColumnNameProvider(columnNamingStrategy));
+	}
+	
+	private BeanMappingBuilder(BeanMappingConfiguration<C> mappingConfiguration,
+							  T targetTable,
+							  ColumnBinderRegistry columnBinderRegistry,
+							  ColumnNameProvider columnNameProvider) {
+		this.mainMappingConfiguration = mappingConfiguration;
+		this.targetTable = targetTable;
+		this.columnNameProvider = columnNameProvider;
+		this.columnBinderRegistry = columnBinderRegistry;
+	}
+	
 	/**
-	 * Ensures that a bean is not already embedded with same accessor, because its columns would conflict with already defined ones, or checks that every property
-	 * is overridden.
-	 * Throws an exception if that's not the case.
-	 * 
-	 * @param inset current inset to be checked for duplicate
-	 * @param treatedInsets already mapped insets : if one of them matches given inset on mapped type, then a fine-graned check is done to look for conflict
+	 * Converts mapping definition of a {@link BeanMappingConfiguration} into a simple {@link Map}
+	 *
+	 * @return a bean that stores some {@link Map}s representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
 	 */
-	private void assertNotAlreadyDeclared(Inset<C, ?> inset, Set<Inset<C, ?>> treatedInsets) {
-		Optional<Inset<C, ?>> alreadyMappedType = treatedInsets.stream().filter(i -> i.getEmbeddedClass() == inset.getEmbeddedClass()).findFirst();
-		if (alreadyMappedType.isPresent()) {
-			// accessors are exactly the same ?
-			if (alreadyMappedType.get().getInsetAccessor().equals(inset.getInsetAccessor())) {
-				Method currentMethod = inset.getInsetAccessor();
-				String currentMethodReference = toMethodReferenceString(currentMethod);
-				throw new MappingConfigurationException(currentMethodReference + " is already mapped");
+	public BeanMapping<C, T> build() {
+		InternalProcessor internalProcessor = new InternalProcessor();
+		// converting direct mapping
+		internalProcessor.includeDirectMapping(this.mainMappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet<>());
+		// adding embeddable (no particular thought about order compared to previous direct mapping) 
+		internalProcessor.includeEmbeddedMapping();
+		return internalProcessor.result;
+	}
+	
+	protected T getTargetTable() {
+		return targetTable;
+	}
+	
+	/**
+	 * Internal engine driven by {@link #build()} method.
+	 * Made to store result in another class than main one and decouple configuration from process.
+	 * 
+	 * @author Guillaume Mary
+	 */
+	private class InternalProcessor {
+		
+		private final BeanMapping<C, T> result = new BeanMapping<>();
+		
+		protected void includeDirectMapping(BeanMappingConfiguration<?> mappingConfiguration,
+											@Nullable ValueAccessPoint<C> accessorPrefix,
+											ValueAccessPointMap<C, String> overriddenColumnNames,
+											ValueAccessPointMap<C, Column<T, ?>> overriddenColumns,
+											ValueAccessPointSet<C> excludedProperties) {
+			Stream<Linkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
+					.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()));
+			new StreamSplitter<>(linkageStream)
+					.dispatch(Predicates.not(Linkage::isReadonly),
+							linkage -> {
+								Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
+								String columnName = nullable(overriddenColumn)
+										.map(Column::getName)
+										.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
+								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
+								result.mapping.put(mapping.getLeft(), mapping.getRight());
+							})
+					.dispatch(Linkage::isReadonly,
+							linkage -> {
+								Column<T, ?> overriddenColumn = overriddenColumns.get(linkage.getAccessor());
+								String columnName = nullable(overriddenColumn)
+										.map(Column::getName)
+										.getOr(() -> determineColumnName(linkage, overriddenColumnNames.get(linkage.getAccessor())));
+								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
+								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
+								result.readonlyMapping.put(mapping.getLeft(), mapping.getRight());
+							})
+					.split();
+		}
+		
+		protected <O> Duo<ReversibleAccessor<C, ?>, Column<T, Object>> includeMapping(Linkage<C, O> linkage,
+																					  @Nullable ValueAccessPoint<C> accessorPrefix,
+																					  String columnName,
+																					  @Nullable Column<T, O> overriddenColumn,
+																					  Class<?> embeddedBeanType) {
+			Column<T, O> column = nullable(overriddenColumn).getOr(() -> addColumnToTable(linkage, columnName));
+			ensureColumnBindingInRegistry(linkage, column);
+			ReversibleAccessor<C, ?> accessor;
+			if (accessorPrefix != null) {
+				accessor = newAccessorChain(Collections.singletonList(accessorPrefix), linkage.getAccessor(), embeddedBeanType);
+			} else {
+				accessor = linkage.getAccessor();
 			}
+			return new Duo<>(accessor, (Column<T, Object>) column);
+		}
+		
+		protected <O> void assertMappingIsNotAlreadyDefinedByInheritance(Linkage<C, O> linkage, String columnNameToCheck, BeanMappingConfiguration<O> mappingConfiguration) {
+			DuplicateDefinitionChecker duplicateDefinitionChecker = new DuplicateDefinitionChecker(linkage.getAccessor(), columnNameToCheck, columnNameProvider);
+			stream(mappingConfiguration.inheritanceIterable())
+					.flatMap(configuration -> (Stream<Linkage>) configuration.getPropertiesMapping().stream())
+					// not using equals() is voluntary since we want reference checking here to exclude same instance,
+					// since given linkage is one of given mappingConfiguration
+					// (doing as such also prevent equals() method override to break this algorithm)
+					.filter(pawn -> linkage != pawn
+							// only writable properties are concerned by this check : we allow duplicates for readonly properties
+							&& !pawn.isReadonly() && !linkage.isReadonly())
+					.forEach(duplicateDefinitionChecker);
+		}
+		
+		protected <O> Column<T, O> addColumnToTable(Linkage<C, O> linkage, String columnName) {
+			Column<T, O> addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
+			addedColumn.setNullable(linkage.isNullable());
+			return addedColumn;
+		}
+		
+		private <O> String determineColumnName(Linkage<C, O> linkage, @Nullable String overriddenColumName) {
+			return nullable(overriddenColumName).elseSet(linkage.getColumnName()).getOr(() -> columnNameProvider.giveColumnName(linkage));
+		}
+		
+		protected <O> void ensureColumnBindingInRegistry(Linkage<C, O> linkage, Column<?, O> column) {
+			// assert that column binder is registered : it will throw en exception if the binder is not found
+			if (linkage.getParameterBinder() != null) {
+				columnBinderRegistry.register(column, linkage.getParameterBinder());
+			}
+		}
+		
+		/**
+		 * Adds embedded beans mapping to result
+		 */
+		private void includeEmbeddedMapping() {
+			Set<Inset<C, ?>> treatedInsets = new HashSet<>();
 			
-			Map<String, ValueAccessPoint<?>> columNamePerAccessPoint = new HashMap<>();
-			BeanMappingConfiguration<?> insetConfiguration = inset.getConfiguration();
-			insetConfiguration.getPropertiesMapping().forEach(linkage -> {
-				if (!inset.getExcludedProperties().contains(linkage.getAccessor())) {
-					String columnName = determineColumnName(linkage, inset.getOverriddenColumnNames().get(linkage.getAccessor()));
-					columNamePerAccessPoint.put(columnName, linkage.getAccessor());
+			Queue<Inset<C, ?>> stack = Collections.asLifoQueue(new ArrayDeque<>());
+			stack.addAll(mainMappingConfiguration.getInsets());
+			Queue<Accessor<C, ?>> accessorPath = new ArrayDeque<>();
+			while (!stack.isEmpty()) {
+				Inset<C, ?> inset = stack.poll();
+				
+				assertNotAlreadyDeclared(inset, treatedInsets);
+				
+				BeanMappingConfiguration<C> configuration = (BeanMappingConfiguration<C>) inset.getConfiguration();
+				ValueAccessPoint<C> mappingPrefix = null;
+				if (inset.getAccessor() != null) {
+					accessorPath.add(inset.getAccessor());
+					// small optimization to avoid creation of an Accessor chain of 1 element
+					if (accessorPath.size() == 1) {
+						mappingPrefix = accessorPath.peek();
+					} else {
+						mappingPrefix = AccessorChain.chainNullSafe(new ArrayList<>(accessorPath));
+					}
 				}
-			});
-			Inset<?, ?> abstractInset = alreadyMappedType.get();
-			Map<String, ValueAccessPoint<?>> columNamePerAccessPoint2 = new HashMap<>();
-			insetConfiguration.getPropertiesMapping().forEach(linkage -> {
-				if (!abstractInset.getExcludedProperties().contains(linkage.getAccessor())) {
-					String columnName = determineColumnName(linkage, abstractInset.getOverriddenColumnNames().get(linkage.getAccessor()));
-					columNamePerAccessPoint2.put(columnName, linkage.getAccessor());
+				BeanMappingConfiguration<?> superClassConfiguration = configuration.getMappedSuperClassConfiguration();
+				if (superClassConfiguration != null) {
+					includeMappedSuperClassMapping(inset, accessorPath, superClassConfiguration);
 				}
+				
+				includeDirectMapping(configuration, mappingPrefix, inset.getOverriddenColumnNames(), (ValueAccessPointMap) inset.getOverriddenColumns(),
+						inset.getExcludedProperties());
+				if (configuration.getInsets().isEmpty()) {
+					accessorPath.remove();
+				} else {
+					stack.addAll(configuration.getInsets());
+				}
+				treatedInsets.add(inset);
+			}
+		}
+		
+		private void includeMappedSuperClassMapping(Inset<C, ?> inset, Collection<Accessor<C, ?>> accessorPath, BeanMappingConfiguration<?> superClassConfiguration) {
+			// we include super type mapping by using a new instance of BeanMappingBuilder, this is the simplest (but maybe not the most
+			// debuggable) and allows to manage inheritance of several mappedSuperClass 
+			BeanMapping<C, T> superMapping = new BeanMappingBuilder<>((BeanMappingConfiguration<C>) superClassConfiguration, targetTable,
+					columnBinderRegistry, columnNameProvider).build();
+			Class<?> insetBeanType = inset.getConfiguration().getBeanType();
+			superMapping.mapping.forEach((accessor, column) -> {
+				AccessorChain prefix;
+				List<Accessor<?, ?>> accessors;
+				if (accessorPath.size() == 1) {
+					accessors = Arrays.asList(Iterables.first(accessorPath), accessor);
+				} else {
+					accessors = new ArrayList<>(accessorPath);
+					accessors.add(accessor);
+				}
+				prefix = AccessorChain.chainNullSafe(
+						accessors,
+						// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
+						// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
+						// (where T is type returned by accessor, or expected as input of mutator)
+						(localAccessor, accessorInputType) -> insetBeanType);
+				
+				// Computing definitive column because it may be overridden by inset declaration
+				Column<T, ?> finalColumn;
+				if (inset.getOverriddenColumns().containsKey(accessor)) {
+					finalColumn = inset.getOverriddenColumns().get(accessor);
+				} else if (inset.getOverriddenColumnNames().containsKey(accessor)) {
+					finalColumn = targetTable.addColumn(inset.getOverriddenColumnNames().get(accessor), column.getJavaType());
+				} else {
+					finalColumn = targetTable.addColumn(column.getName(), column.getJavaType());
+				}
+				result.mapping.put((ReversibleAccessor<C, Object>) prefix, (Column<T, Object>) finalColumn);
 			});
-			Map<ValueAccessPoint<?>, ValueAccessPoint<?>> join = Maps.innerJoin(columNamePerAccessPoint,
-					columNamePerAccessPoint2);
-			if (!join.isEmpty()) {
-				String currentMethodReference = toMethodReferenceString(inset.getInsetAccessor());
-				String conflictingDeclaration = toMethodReferenceString(abstractInset.getInsetAccessor());
-				throw new MappingConfigurationException(
-						currentMethodReference + " conflicts with " + conflictingDeclaration + " while embedding a " + Reflections.toString(inset.getEmbeddedClass())
-								+ ", column names should be overridden : "
-								+ join.keySet()
-								.stream().map(AccessorDefinition::toString).collect(Collectors.joining(", ")));
+		}
+		
+		
+		/**
+		 * Ensures that a bean is not already embedded with same accessor, because its columns would conflict with already defined ones, or checks that every property
+		 * is overridden.
+		 * Throws an exception if that's not the case.
+		 *
+		 * @param inset current inset to be checked for duplicate
+		 * @param treatedInsets already mapped insets : if one of them matches given inset on mapped type, then a fine-graned check is done to look for conflict
+		 */
+		private void assertNotAlreadyDeclared(Inset<C, ?> inset, Set<Inset<C, ?>> treatedInsets) {
+			Optional<Inset<C, ?>> alreadyMappedType = treatedInsets.stream().filter(i -> i.getEmbeddedClass() == inset.getEmbeddedClass()).findFirst();
+			if (alreadyMappedType.isPresent()) {
+				// accessors are exactly the same ?
+				if (alreadyMappedType.get().getInsetAccessor().equals(inset.getInsetAccessor())) {
+					Method currentMethod = inset.getInsetAccessor();
+					String currentMethodReference = toMethodReferenceString(currentMethod);
+					throw new MappingConfigurationException(currentMethodReference + " is already mapped");
+				}
+				
+				Map<String, ValueAccessPoint<?>> columNamePerAccessPoint = new HashMap<>();
+				BeanMappingConfiguration<?> insetConfiguration = inset.getConfiguration();
+				insetConfiguration.getPropertiesMapping().forEach(linkage -> {
+					if (!inset.getExcludedProperties().contains(linkage.getAccessor())) {
+						String columnName = determineColumnName(linkage, inset.getOverriddenColumnNames().get(linkage.getAccessor()));
+						columNamePerAccessPoint.put(columnName, linkage.getAccessor());
+					}
+				});
+				Inset<?, ?> abstractInset = alreadyMappedType.get();
+				Map<String, ValueAccessPoint<?>> columNamePerAccessPoint2 = new HashMap<>();
+				insetConfiguration.getPropertiesMapping().forEach(linkage -> {
+					if (!abstractInset.getExcludedProperties().contains(linkage.getAccessor())) {
+						String columnName = determineColumnName(linkage, abstractInset.getOverriddenColumnNames().get(linkage.getAccessor()));
+						columNamePerAccessPoint2.put(columnName, linkage.getAccessor());
+					}
+				});
+				Map<ValueAccessPoint<?>, ValueAccessPoint<?>> join = Maps.innerJoin(columNamePerAccessPoint, columNamePerAccessPoint2);
+				if (!join.isEmpty()) {
+					String currentMethodReference = toMethodReferenceString(inset.getInsetAccessor());
+					String conflictingDeclaration = toMethodReferenceString(abstractInset.getInsetAccessor());
+					throw new MappingConfigurationException(
+							currentMethodReference + " conflicts with " + conflictingDeclaration + " while embedding a " + Reflections.toString(inset.getEmbeddedClass())
+									+ ", column names should be overridden : "
+									+ join.keySet()
+									.stream().map(AccessorDefinition::toString).collect(Collectors.joining(", ")));
+				}
 			}
 		}
 	}
 	
 	/**
-	 * Resulting class of {@link #build(BeanMappingConfiguration, Table, ColumnBinderRegistry, ColumnNameProvider)} process
+	 * Resulting class of {@link #build()} process
 	 * @param <C>
 	 * @param <T>
 	 */

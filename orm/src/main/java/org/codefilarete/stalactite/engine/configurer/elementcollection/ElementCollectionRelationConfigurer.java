@@ -135,15 +135,15 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 			elementRecordStrategy = new ElementRecordMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
-			BeanMappingBuilder<TRGT, TARGETTABLE> elementCollectionMappingBuilder = new BeanMappingBuilder<>();
-			Map<ReversibleAccessor<TRGT, Object>, Column<TARGETTABLE, Object>> columnMapping = elementCollectionMappingBuilder.build(embeddableConfiguration, targetTable,
+			BeanMappingBuilder<TRGT, TARGETTABLE> elementCollectionMappingBuilder = new BeanMappingBuilder<>(embeddableConfiguration, targetTable,
 					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
-						@Override
-						protected String giveColumnName(Linkage pawn) {
-							return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
-									.getOr(() -> super.giveColumnName(pawn));
-						}
-					}).getMapping();
+				@Override
+				protected String giveColumnName(Linkage pawn) {
+					return nullable(linkage.getOverriddenColumnNames().get(pawn.getAccessor()))
+							.getOr(() -> super.giveColumnName(pawn));
+				}
+			});
+			Map<ReversibleAccessor<TRGT, Object>, Column<TARGETTABLE, Object>> columnMapping = elementCollectionMappingBuilder.build().getMapping();
 			
 			Map<ReversibleAccessor<ElementRecord<TRGT, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
 			columnMapping.forEach((propertyAccessor, column) -> {

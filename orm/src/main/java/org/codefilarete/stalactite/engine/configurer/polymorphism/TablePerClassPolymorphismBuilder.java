@@ -6,22 +6,16 @@ import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnOptions;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -52,16 +46,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 									 Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
 									 Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mainReadonlyMapping,
 									 ColumnBinderRegistry columnBinderRegistry,
-									 ColumnNameProvider columnNameProvider,
-									 TableNamingStrategy tableNamingStrategy,
-									 ColumnNamingStrategy columnNamingStrategy,
-									 ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-									 ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-									 JoinColumnNamingStrategy joinColumnNamingStrategy,
-									 ColumnNamingStrategy indexColumnNamingStrategy,
-									 AssociationTableNamingStrategy associationTableNamingStrategy) {
-		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, columnNameProvider, columnNamingStrategy, foreignKeyNamingStrategy,
-				elementCollectionTableNamingStrategy, joinColumnNamingStrategy, indexColumnNamingStrategy, associationTableNamingStrategy, tableNamingStrategy);
+									 NamingConfiguration namingConfiguration) {
+		super(polymorphismPolicy, identification, mainPersister, columnBinderRegistry, namingConfiguration);
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
 		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
 	}
@@ -98,10 +84,8 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	private <D extends C> Map<Class<D>, ConfiguredRelationalPersister<D, I>> collectSubClassPersister(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass = new HashMap<>();
 		
-		BeanMappingBuilder<D, T> beanMappingBuilder = new BeanMappingBuilder<>();
 		for (SubEntityMappingConfiguration<D> subConfiguration : ((Set<SubEntityMappingConfiguration<D>>) (Set) polymorphismPolicy.getSubClasses())) {
-			SimpleRelationalEntityPersister<D, I, ?> subclassPersister = buildSubclassPersister(dialect, connectionConfiguration,
-					beanMappingBuilder, subConfiguration);
+			SimpleRelationalEntityPersister<D, I, ?> subclassPersister = buildSubclassPersister(dialect, connectionConfiguration, subConfiguration);
 			persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 		}
 		
@@ -111,7 +95,6 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 	private <D extends C, SUBTABLE extends Table<SUBTABLE>> SimpleRelationalEntityPersister<D, I, SUBTABLE>
 	buildSubclassPersister(Dialect dialect,
 						   ConnectionConfiguration connectionConfiguration,
-						   BeanMappingBuilder<D, SUBTABLE> beanMappingBuilder,
 						   SubEntityMappingConfiguration<D> subConfiguration) {
 		// first we'll use table of columns defined in embedded override
 		// then the one defined by inheritance
@@ -123,10 +106,11 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		
 		SUBTABLE subTable = (SUBTABLE) nullable(tableDefinedByColumnOverride)
 				.elseSet(tableDefinedByInheritanceConfiguration)
-				.getOr(() -> new Table(tableNamingStrategy.giveName(subConfiguration.getEntityType())));
+				.getOr(() -> new Table(namingConfiguration.getTableNamingStrategy().giveName(subConfiguration.getEntityType())));
 		
-		BeanMapping<D, SUBTABLE> beanMapping = beanMappingBuilder.build(subConfiguration.getPropertiesMapping(), subTable,
-				this.columnBinderRegistry, this.columnNameProvider);
+		BeanMappingBuilder<D, SUBTABLE> beanMappingBuilder = new BeanMappingBuilder<>(subConfiguration.getPropertiesMapping(), subTable,
+				this.columnBinderRegistry, this.namingConfiguration.getColumnNamingStrategy());
+		BeanMapping<D, SUBTABLE> beanMapping = beanMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<SUBTABLE, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
 		// in table-per-class polymorphism, main properties must be transferred to sub-entities ones, because CRUD operations are dispatched to them

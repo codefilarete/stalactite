@@ -17,7 +17,6 @@ import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -25,7 +24,6 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
@@ -116,8 +114,6 @@ public class PersisterBuilderImplTest {
 	
 	@Test
 	void assertCompositeKeyIdentifierOverridesEqualsHashcode() throws NoSuchFieldException {
-		PersisterBuilderImpl<?, ?> testInstance = new PersisterBuilderImpl<>(mock(EntityMappingConfiguration.class));
-		
 		class DummyCompositeKeyIdentifier {
 			
 		}
@@ -145,13 +141,13 @@ public class PersisterBuilderImplTest {
 		
 		EntityMappingConfiguration.CompositeKeyMapping<?, ?> compositeKeyMappingMock = mock(EntityMappingConfiguration.CompositeKeyMapping.class, RETURNS_MOCKS);
 		when(compositeKeyMappingMock.getAccessor()).thenReturn(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifier")));
-		assertThatCode(() -> testInstance.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
+		assertThatCode(() -> PersisterBuilderImpl.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
 				.hasMessage("Composite key identifier class o.c.s.e.c.PersisterBuilderImplTest$DummyCompositeKeyIdentifier" +
 						" seems to have default implementation of equals() and hashcode() methods," +
 						" which is not supported (identifiers must be distinguishable), please make it implement them");
 		
 		when(compositeKeyMappingMock.getAccessor()).thenReturn(new AccessorByField<>(DummyEntity.class.getDeclaredField("dummyCompositeKeyIdentifierWithEqualsAndHashCode")));
-		assertThatCode(() -> testInstance.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
+		assertThatCode(() -> PersisterBuilderImpl.assertCompositeKeyIdentifierOverridesEqualsHashcode(compositeKeyMappingMock))
 				.doesNotThrowAnyException();
 	}
 	
@@ -171,7 +167,6 @@ public class PersisterBuilderImplTest {
 		
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
-				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
@@ -214,7 +209,6 @@ public class PersisterBuilderImplTest {
 		
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
-				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
@@ -268,9 +262,7 @@ public class PersisterBuilderImplTest {
 		
 		
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
-				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(carTable)
-				.setTableNamingStrategy(TableNamingStrategy.DEFAULT)
 				.mapEntityConfigurationPerTable();
 		
 		MappingPerTable<?> map = testInstance.collectPropertiesMappingFromInheritance();
@@ -344,7 +336,6 @@ public class PersisterBuilderImplTest {
 		
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
-				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
 				.setTable(dummyTable)
 				.mapEntityConfigurationPerTable();
 		
@@ -373,15 +364,15 @@ public class PersisterBuilderImplTest {
 	}
 	
 	@Test
-	void addIdentifyingPrimarykey_alreadyAssignedPolicy() {
+	void addIdentifyingPrimaryKey_alreadyAssignedPolicy() {
 		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.alreadyAssigned(o -> {}, o -> true))
+				.withColumnNaming(accessorDefinition -> "myId")
 				.getConfiguration();
 		
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
-				.setTable(mainTable)
-				.setColumnNamingStrategy(accessorDefinition -> "myId");
+				.setTable(mainTable);
 		testInstance.mapEntityConfigurationPerTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 
@@ -408,12 +399,12 @@ public class PersisterBuilderImplTest {
 						return new PersistableIdentifier<>(identifier++);
 					}
 				}))
+				.withColumnNaming(accessorDefinition -> "myId")
 				.getConfiguration();
 		
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
-				.setTable(mainTable)
-				.setColumnNamingStrategy(accessorDefinition -> "myId");
+				.setTable(mainTable);
 		testInstance.mapEntityConfigurationPerTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
@@ -432,12 +423,12 @@ public class PersisterBuilderImplTest {
 	void addIdentifyingPrimarykey_afterInsertPolicy() {
 		EntityMappingConfiguration<AbstractVehicle, Identifier<Long>> identifyingConfiguration = entityBuilder(AbstractVehicle.class, Identifier.LONG_TYPE)
 				.mapKey(AbstractVehicle::getId, IdentifierPolicy.afterInsert())
+				.withColumnNaming(accessorDefinition -> "myId")
 				.getConfiguration();
 		
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
-				.setTable(mainTable)
-				.setColumnNamingStrategy(accessorDefinition -> "myId");
+				.setTable(mainTable);
 		testInstance.mapEntityConfigurationPerTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
@@ -460,9 +451,7 @@ public class PersisterBuilderImplTest {
 		
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
-				.setTable(mainTable)
-				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
-				.setForeignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT);
+				.setTable(mainTable);
 		testInstance.mapEntityConfigurationPerTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
@@ -501,9 +490,7 @@ public class PersisterBuilderImplTest {
 		
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
-				.setTable(mainTable)
-				.setColumnNamingStrategy(ColumnNamingStrategy.DEFAULT)
-				.setForeignKeyNamingStrategy(ForeignKeyNamingStrategy.DEFAULT);
+				.setTable(mainTable);
 		testInstance.mapEntityConfigurationPerTable();
 		
 		Table tableB = new Table("Vehicle");

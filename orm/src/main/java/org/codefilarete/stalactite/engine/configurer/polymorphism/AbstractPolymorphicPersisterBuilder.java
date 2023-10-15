@@ -6,21 +6,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.TableNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
+import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
@@ -72,40 +66,19 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	protected final ConfiguredRelationalPersister<C, I> mainPersister;
 	protected final AbstractIdentification<C, I> identification;
 	protected final ColumnBinderRegistry columnBinderRegistry;
-	protected final ColumnNameProvider columnNameProvider;
 	
-	protected final ColumnNamingStrategy columnNamingStrategy;
-	protected final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-	protected final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	protected final JoinColumnNamingStrategy joinColumnNamingStrategy;
-	protected final ColumnNamingStrategy indexColumnNamingStrategy;
-	protected final AssociationTableNamingStrategy associationTableNamingStrategy;
-	protected final TableNamingStrategy tableNamingStrategy;
+	protected final NamingConfiguration namingConfiguration;
 	
 	protected AbstractPolymorphicPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
 												  AbstractIdentification<C, I> identification,
 												  ConfiguredRelationalPersister<C, I> mainPersister,
 												  ColumnBinderRegistry columnBinderRegistry,
-												  ColumnNameProvider columnNameProvider,
-												  ColumnNamingStrategy columnNamingStrategy,
-												  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-												  ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-												  JoinColumnNamingStrategy joinColumnNamingStrategy,
-												  ColumnNamingStrategy indexColumnNamingStrategy,
-												  AssociationTableNamingStrategy associationTableNamingStrategy,
-												  TableNamingStrategy tableNamingStrategy) {
+												  NamingConfiguration namingConfiguration) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
 		this.mainPersister = mainPersister;
 		this.columnBinderRegistry = columnBinderRegistry;
-		this.columnNameProvider = columnNameProvider;
-		this.columnNamingStrategy = columnNamingStrategy;
-		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
-		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
-		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
-		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
-		this.associationTableNamingStrategy = associationTableNamingStrategy;
-		this.tableNamingStrategy = tableNamingStrategy;
+		this.namingConfiguration = namingConfiguration;
 	}
 	
 	/**
@@ -180,16 +153,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 			(Identification<D, I>) identification,
 			subPersister,
 			columnBinderRegistry,
-			columnNameProvider,
-			columnNamingStrategy,
-			foreignKeyNamingStrategy,
-			elementCollectionTableNamingStrategy,
-			joinColumnNamingStrategy,
-			indexColumnNamingStrategy,
-			associationTableNamingStrategy,
 			(Map) subPersister.getMapping().getPropertyToColumn(),
 			(Map) subPersister.getMapping().getReadonlyPropertyToColumn(),
-			tableNamingStrategy);
+			namingConfiguration);
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}
 	
@@ -208,8 +174,8 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
-					this.foreignKeyNamingStrategy,
-					this.joinColumnNamingStrategy);
+					this.namingConfiguration.getForeignKeyNamingStrategy(),
+					this.namingConfiguration.getJoinColumnNamingStrategy());
 			
 			String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
 			
@@ -235,10 +201,10 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
-					this.foreignKeyNamingStrategy,
-					this.joinColumnNamingStrategy,
-					this.associationTableNamingStrategy,
-					this.indexColumnNamingStrategy);
+					this.namingConfiguration.getForeignKeyNamingStrategy(),
+					this.namingConfiguration.getJoinColumnNamingStrategy(),
+					this.namingConfiguration.getAssociationTableNamingStrategy(),
+					this.namingConfiguration.getIndexColumnNamingStrategy());
 			if (currentBuilderContext.isCycling(oneToManyRelation.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
@@ -264,9 +230,9 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 			ElementCollectionRelationConfigurer<D, ?, I, ? extends Collection> elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer<>(
 					elementCollection,
 					subEntityPersister,
-					this.foreignKeyNamingStrategy,
-					this.columnNamingStrategy,
-					this.elementCollectionTableNamingStrategy,
+					this.namingConfiguration.getForeignKeyNamingStrategy(),
+					this.namingConfiguration.getColumnNamingStrategy(),
+					this.namingConfiguration.getElementCollectionTableNamingStrategy(),
 					dialect,
 					connectionConfiguration);
 			elementCollectionRelationConfigurer.configure();

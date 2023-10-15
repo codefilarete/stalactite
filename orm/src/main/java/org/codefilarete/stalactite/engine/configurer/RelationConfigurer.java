@@ -4,13 +4,8 @@ import java.util.Collection;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
@@ -46,33 +41,18 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	private final ConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
 	private final SimpleRelationalEntityPersister<C, I, T> sourcePersister;
-	private final ColumnNamingStrategy columnNamingStrategy;
-	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
-	private final ColumnNamingStrategy indexColumnNamingStrategy;
-	private final AssociationTableNamingStrategy associationTableNamingStrategy;
+	private final NamingConfiguration namingConfiguration;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
 							  PersisterRegistry persisterRegistry,
 							  SimpleRelationalEntityPersister<C, I, T> sourcePersister,
-							  ColumnNamingStrategy columnNamingStrategy,
-							  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-							  ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-							  JoinColumnNamingStrategy joinColumnNamingStrategy,
-							  ColumnNamingStrategy indexColumnNamingStrategy,
-							  AssociationTableNamingStrategy associationTableNamingStrategy) {
+							  NamingConfiguration namingConfiguration) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.persisterRegistry = persisterRegistry;
 		this.sourcePersister = sourcePersister;
-		this.columnNamingStrategy = columnNamingStrategy;
-		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
-		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
-		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
-		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
-		this.associationTableNamingStrategy = associationTableNamingStrategy;
+		this.namingConfiguration = namingConfiguration;
 	}
 	
 	<TRGT, TRGTID> void configureRelations(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
@@ -85,8 +65,8 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
-					foreignKeyNamingStrategy,
-					joinColumnNamingStrategy);
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getJoinColumnNamingStrategy());
 			
 			String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
 			
@@ -116,10 +96,10 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
-					foreignKeyNamingStrategy,
-					joinColumnNamingStrategy,
-					associationTableNamingStrategy,
-					indexColumnNamingStrategy);
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getJoinColumnNamingStrategy(),
+					namingConfiguration.getAssociationTableNamingStrategy(),
+					namingConfiguration.getIndexColumnNamingStrategy());
 			
 			String relationName = AccessorDefinition.giveDefinition(oneToManyRelation.getCollectionProvider()).getName();
 			
@@ -150,10 +130,10 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
-					foreignKeyNamingStrategy,
-					joinColumnNamingStrategy,
-					indexColumnNamingStrategy,
-					associationTableNamingStrategy
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getJoinColumnNamingStrategy(),
+					namingConfiguration.getIndexColumnNamingStrategy(),
+					namingConfiguration.getAssociationTableNamingStrategy()
 			);
 			
 			String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionProvider()).getName();
@@ -181,9 +161,9 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 			ElementCollectionRelationConfigurer<C, ?, I, ? extends Collection> elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer<>(
 					elementCollection,
 					sourcePersister,
-					foreignKeyNamingStrategy,
-					columnNamingStrategy,
-					elementCollectionTableNamingStrategy,
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getColumnNamingStrategy(),
+					namingConfiguration.getElementCollectionTableNamingStrategy(),
 					dialect,
 					connectionConfiguration);
 			elementCollectionRelationConfigurer.configure();
