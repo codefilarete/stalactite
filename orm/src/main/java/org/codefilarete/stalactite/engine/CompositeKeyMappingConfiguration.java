@@ -29,7 +29,7 @@ public interface CompositeKeyMappingConfiguration<C> {
 	ColumnNamingStrategy getColumnNamingStrategy();
 	
 	/**
-	 * Small contract for defining property configuration storage
+	 * Small contract that defines composite key configuration storage
 	 * 
 	 * @param <C> property owner type
 	 * @param <O> property type

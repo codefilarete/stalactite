@@ -84,5 +84,8 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		/** Indicates if this property should not be writable to database */
 		boolean isReadonly();
+		
+		@Nullable
+		String getExtraTableName();
 	}
 }

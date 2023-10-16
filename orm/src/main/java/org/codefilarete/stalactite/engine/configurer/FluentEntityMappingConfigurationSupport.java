@@ -49,6 +49,7 @@ import org.codefilarete.stalactite.engine.OneToManyOptions;
 import org.codefilarete.stalactite.engine.OneToOneOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
+import org.codefilarete.stalactite.engine.ExtraTablePropertyOptions;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
 import org.codefilarete.stalactite.engine.VersioningStrategy;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport.LinkageSupport;
@@ -826,6 +827,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							newMapping.setField(field);
 							return null;
 						}
+					}, true)
+					.redirect(ExtraTablePropertyOptions.class, name -> {
+						newMapping.setExtraTableName(name);
+						return null;
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
 					.build((Class<FluentMappingBuilderPropertyOptions<C, I>>) (Class) FluentMappingBuilderPropertyOptions.class);

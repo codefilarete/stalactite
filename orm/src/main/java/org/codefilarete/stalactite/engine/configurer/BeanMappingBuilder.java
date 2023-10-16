@@ -211,7 +211,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	 * @return a bean that stores some {@link Map}s representing the definition of the mapping declared by the {@link BeanMappingConfiguration}
 	 */
 	public BeanMapping<C, T> build() {
-		InternalProcessor internalProcessor = new InternalProcessor();
+		return build(false);
+	}
+	
+	public BeanMapping<C, T> build(boolean onlyExtraTableLinkages) {
+		InternalProcessor internalProcessor = new InternalProcessor(onlyExtraTableLinkages);
 		// converting direct mapping
 		internalProcessor.includeDirectMapping(this.mainMappingConfiguration, null, new ValueAccessPointMap<>(), new ValueAccessPointMap<>(), new ValueAccessPointSet<>());
 		// adding embeddable (no particular thought about order compared to previous direct mapping) 
@@ -233,6 +237,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		
 		private final BeanMapping<C, T> result = new BeanMapping<>();
 		
+		private final boolean onlyExtraTableLinkages;
+		
+		private InternalProcessor(boolean onlyExtraTableLinkages) {
+			this.onlyExtraTableLinkages = onlyExtraTableLinkages;
+		}
+		
 		protected void includeDirectMapping(BeanMappingConfiguration<?> mappingConfiguration,
 											@Nullable ValueAccessPoint<C> accessorPrefix,
 											ValueAccessPointMap<C, String> overriddenColumnNames,
@@ -240,6 +250,11 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 											ValueAccessPointSet<C> excludedProperties) {
 			Stream<Linkage> linkageStream = mappingConfiguration.getPropertiesMapping().stream()
 					.filter(linkage -> !excludedProperties.contains(linkage.getAccessor()));
+			
+			if (!onlyExtraTableLinkages) {
+				// this method (and class) doesn't deal with extra table
+				linkageStream = linkageStream.filter(linkage -> linkage.getExtraTableName() == null);
+			}
 			new StreamSplitter<>(linkageStream)
 					.dispatch(Predicates.not(Linkage::isReadonly),
 							linkage -> {
@@ -539,6 +554,14 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					}
 					
 					@Override
+					public String getExtraTableName() {
+						// we have to return null here since this method is used by BeanMappingBuilder to keep
+						// properties of main table
+						// TODO : a better Linkage API
+						return null;
+					}
+					
+					@Override
 					public ParameterBinder getParameterBinder() {
 						return embeddableLinkage.getParameterBinder();
 					}
@@ -638,6 +661,12 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					@Override
 					public Class getColumnType() {
 						return embeddableLinkage.getColumnType();
+					}
+					
+					@Nullable
+					@Override
+					public String getExtraTableName() {
+						return embeddableLinkage.getExtraTableName();
 					}
 					
 					@Override
@@ -794,6 +823,9 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			String getColumnName();
 			
 			Class<O> getColumnType();
+			
+			@Nullable
+			String getExtraTableName();
 			
 			ParameterBinder<O> getParameterBinder();
 			

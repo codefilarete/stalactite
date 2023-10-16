@@ -30,7 +30,6 @@ import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration.ColumnLinkageOptions;
 import org.codefilarete.stalactite.engine.EnumOptions;
 import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder;
@@ -382,6 +381,8 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		private boolean readonly;
 		
+		private String extraTableName;
+		
 		public LinkageSupport(SerializableFunction<T, ?> getter) {
 			this.getter = getter;
 		}
@@ -444,7 +445,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Nullable
 		@Override
 		public String getColumnName() {
-			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(EntityMappingConfiguration.ColumnLinkageOptions::getColumnName).get();
+			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
 		}
 		
 		@Override
@@ -461,6 +462,15 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		public void readonly() {
 			this.readonly = true;
+		}
+		
+		@Override
+		public String getExtraTableName() {
+			return extraTableName;
+		}
+		
+		public void setExtraTableName(String extraTableName) {
+			this.extraTableName = extraTableName;
 		}
 		
 		/**

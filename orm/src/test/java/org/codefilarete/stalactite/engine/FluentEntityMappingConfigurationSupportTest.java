@@ -42,6 +42,7 @@ import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -64,6 +65,7 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.InvocationHandlerSupport;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
@@ -672,6 +674,195 @@ class FluentEntityMappingConfigurationSupportTest {
 		Column columnForProperty = (Column) toto.mapColumnsOnName().get("id");
 		assertThat(columnForProperty).isNotNull();
 		assertThat(columnForProperty.getJavaType()).isEqualTo(UUID_TYPE);
+	}
+	
+	@Nested
+	class ExtraTable {
+		
+		@Test
+		void tableStructure() {
+			dialect.getColumnBinderRegistry().register(
+					(Class<Identifier<UUID>>) (Class) Identifier.class,
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName)
+					.extraTableName("Tata")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// column should be correctly created
+			Map<String, Table> tablePerName = map(persister.getEntityJoinTree().giveTables(), Table::getName);
+			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Toto", "Tata");
+			Table<?> totoTable = tablePerName.get("Toto");
+			Table<?> tataTable = tablePerName.get("Tata");
+			Column columnForProperty = tataTable.mapColumnsOnName().get("name");
+			assertThat(columnForProperty).isNotNull();
+			assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			assertThat(tataTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactly(new ForeignKey("FK_Tata_identifier_Toto_identifier", tataTable.getColumn("identifier"), totoTable.getColumn("identifier")));
+		}
+		
+		@Test
+		void tableStructure_columnNameGiven_columnNameIsUsed() {
+			dialect.getColumnBinderRegistry().register(
+					(Class<Identifier<UUID>>) (Class) Identifier.class,
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName).columnName("dummyName")
+					.extraTableName("Tata")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			// column should be correctly created
+			assertThat(persister.getEntityJoinTree().giveTables()).extracting(Table::getName).containsExactlyInAnyOrder("Toto", "Tata");
+			Table<?> tataTable = Iterables.find(persister.getEntityJoinTree().giveTables(), table -> table.getName().equals("Tata"));
+			Column columnForProperty = tataTable.mapColumnsOnName().get("dummyName");
+			assertThat(columnForProperty).isNotNull();
+			assertThat(columnForProperty.getJavaType()).isEqualTo(String.class);
+		}
+		
+		@Test
+		void crud() {
+			dialect.getColumnBinderRegistry().register(
+					(Class<Identifier<UUID>>) (Class) Identifier.class,
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName)
+					.extraTableName("Tata")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setIdentifier(new PersistableIdentifier<>(UUID.randomUUID()));
+			toto.setName("dummy value");
+			persister.insert(toto);
+			
+			Toto selectedToto = persister.select(toto.getIdentifier());
+			assertThat(selectedToto.getName()).isEqualTo("dummy value");
+			
+			toto.setName("another dummy value");
+			persister.update(toto, selectedToto, true);
+			selectedToto = persister.select(toto.getIdentifier());
+			assertThat(selectedToto.getName()).isEqualTo("another dummy value");
+
+			persister.delete(selectedToto);
+			Set<String> identifiers = persistenceContext.newQuery("select identifier from Toto union all select identifier from Tata", String.class)
+					.mapKey("identifier", String.class)
+					.execute();
+			assertThat(identifiers).isEmpty();
+		}
+		
+		@Test
+		void crud_severalTables() {
+			dialect.getColumnBinderRegistry().register(
+					(Class<Identifier<UUID>>) (Class) Identifier.class,
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.mapKey(Toto::getIdentifier, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+					.map(Toto::getName).extraTableName("Tata")
+					.map(Toto::getFirstName).extraTableName("Tutu")
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setIdentifier(new PersistableIdentifier<>(UUID.randomUUID()));
+			toto.setName("dummy name");
+			toto.setFirstName("dummy firstName");
+			persister.insert(toto);
+			
+			Toto selectedToto = persister.select(toto.getIdentifier());
+			assertThat(selectedToto.getName()).isEqualTo("dummy name");
+			assertThat(selectedToto.getFirstName()).isEqualTo("dummy firstName");
+			
+			toto.setName("another dummy name");
+			toto.setFirstName("another dummy firstName");
+			persister.update(toto, selectedToto, true);
+			selectedToto = persister.select(toto.getIdentifier());
+			assertThat(selectedToto.getName()).isEqualTo("another dummy name");
+			assertThat(selectedToto.getFirstName()).isEqualTo("another dummy firstName");
+			
+			persister.delete(selectedToto);
+			Set<String> identifiers = persistenceContext.newQuery("select identifier from Toto union all select identifier from Tata", String.class)
+					.mapKey("identifier", String.class)
+					.execute();
+			assertThat(identifiers).isEmpty();
+		}
+		
+		@Test
+		void crud_withConfigurationFromInheritance() {
+			dialect.getColumnBinderRegistry().register(
+					(Class<Identifier<UUID>>) (Class) Identifier.class,
+					new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.UUID_BINDER, PersistedIdentifier::new, StatefulIdentifier::getSurrogate)));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "VARCHAR(255)");
+			
+			ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+					.map(Toto::getName).extraTableName("Tata")
+					.map(Toto::getFirstName).extraTableName("Tutu")
+					.mapSuperClass(MappingEase.entityBuilder(AbstractToto.class, UUID_TYPE)
+							.mapKey(AbstractToto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+							.map(AbstractToto::getProp1).extraTableName("Titi")
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Toto toto = new Toto();
+			toto.setIdentifier(new PersistableIdentifier<>(UUID.randomUUID()));
+			toto.setName("dummy name");
+			toto.setProp1("dummy firstName");
+			persister.insert(toto);
+			
+			Toto selectedToto = persister.select(toto.getId());
+			assertThat(selectedToto.getName()).isEqualTo("dummy name");
+			assertThat(selectedToto.getProp1()).isEqualTo("dummy firstName");
+			
+			toto.setName("another dummy name");
+			toto.setProp1("another dummy firstName");
+			persister.update(toto, selectedToto, true);
+			selectedToto = persister.select(toto.getId());
+			assertThat(selectedToto.getName()).isEqualTo("another dummy name");
+			assertThat(selectedToto.getProp1()).isEqualTo("another dummy firstName");
+			
+			persister.delete(selectedToto);
+			Set<String> identifiers = persistenceContext.newQuery("select id from Toto union all select id from Tata", String.class)
+					.mapKey("identifier", String.class)
+					.execute();
+			assertThat(identifiers).isEmpty();
+		}
+//		Set<Toto> dummy = persister.selectWhere(Toto::getName, Operators.like("%dummy%")).execute();
+//		assertThat(dummy).isEmpty();
+		
+		// TODO: check that no value on column does not insert row on secondary table
 	}
 	
 	@Test
@@ -2162,15 +2353,41 @@ class FluentEntityMappingConfigurationSupportTest {
 		}
 	}
 	
-	protected static class Toto implements Identified<UUID> {
+	protected abstract static class AbstractToto implements Identified<UUID> {
+		
+		protected final Identifier<UUID> id;
+		
+		private String prop1;
+		
+		public AbstractToto() {
+			id = new PersistableIdentifier<>(UUID.randomUUID());
+		}
+		
+		public AbstractToto(PersistedIdentifier<UUID> id) {
+			this.id = id;
+		}
+		
+		@Override
+		public Identifier<UUID> getId() {
+			return id;
+		}
+		
+		public String getProp1() {
+			return prop1;
+		}
+		
+		public void setProp1(String prop1) {
+			this.prop1 = prop1;
+		}
+	}
+	
+	protected static class Toto extends AbstractToto {
 		
 		public static Toto newInstance() {
 			Toto newInstance = new Toto();
 			newInstance.firstName = "set by static factory";
 			return newInstance;
 		}
-		
-		private final Identifier<UUID> id;
 		
 		private Identifier<UUID> identifier;
 		
@@ -2189,16 +2406,16 @@ class FluentEntityMappingConfigurationSupportTest {
 		private boolean constructorWith2ArgsWasCalled;
 		
 		public Toto() {
-			id = new PersistableIdentifier<>(UUID.randomUUID());
+			super();
 		}
 		
 		public Toto(PersistedIdentifier<UUID> id) {
-			this.id = id;
+			super(id);
 			this.constructorWithIdWasCalled = true;
 		}
 		
 		public Toto(PersistedIdentifier<UUID> id, String name) {
-			this.id = id;
+			super(id);
 			this.name = name + " by constructor";
 			this.constructorWith2ArgsWasCalled = true;
 		}
@@ -2213,6 +2430,10 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		public String getFirstName() {
 			return firstName;
+		}
+		
+		public void setFirstName(String firstName) {
+			this.firstName = firstName;
 		}
 		
 		public Identifier<UUID> getIdentifier() {

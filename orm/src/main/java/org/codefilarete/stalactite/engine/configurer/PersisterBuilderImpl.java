@@ -6,6 +6,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -224,6 +225,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		// Creating main persister 
 		Mapping<C, T> mainMapping = (Mapping<C, T>) first(inheritanceMappingPerTable.getMappings());
 		SimpleRelationalEntityPersister<C, I, T> mainPersister = buildMainPersister(identification, mainMapping, dialect, connectionConfiguration);
+		
+		applyExtraTableConfigurations(identification, mainPersister, dialect, connectionConfiguration);
+		
 		PersisterBuilderContext.CURRENT.get().addEntity(mainPersister.getMapping().getClassToPersist());
 		
 		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, persisterRegistry, mainPersister,
@@ -284,6 +288,27 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		parentPersisters.forEach(persisterRegistry::addPersister);
 		
 		return optimizedPersister;
+	}
+	
+	private <T extends Table<T>> void applyExtraTableConfigurations(AbstractIdentification<C, I> identification,
+																	SimpleRelationalEntityPersister<C, I, T> mainPersister,
+																	Dialect dialect,
+																	ConnectionConfiguration connectionConfiguration) {
+		Map<String, Set<Linkage>> extraTableLinkages = new HashMap<>();
+		visitInheritedEntityMappingConfigurations(entityMappingConfiguration1 -> {
+			EntityMappingConfiguration<C, I> mappingConfiguration = (EntityMappingConfiguration<C, I>) entityMappingConfiguration1;
+			List<Linkage> propertiesMapping = mappingConfiguration.getPropertiesMapping().getPropertiesMapping();
+			for (Linkage linkage : propertiesMapping) {
+				if (linkage.getExtraTableName() != null) {
+					extraTableLinkages.computeIfAbsent(linkage.getExtraTableName(), extraTableName -> new HashSet<>()).add(linkage);
+				}
+			}
+		});
+		
+		if (!extraTableLinkages.isEmpty()) {
+			ExtraTableConfigurer<C, I, T> extraTableConfigurer = new ExtraTableConfigurer<>(identification, mainPersister, extraTableLinkages, columnBinderRegistry, namingConfiguration);
+			extraTableConfigurer.configure(dialect, connectionConfiguration);
+		}
 	}
 	
 	/**

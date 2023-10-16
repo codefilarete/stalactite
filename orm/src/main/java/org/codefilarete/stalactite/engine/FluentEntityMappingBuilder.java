@@ -461,9 +461,11 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	FluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
-//	FluentEntityMappingBuilder<C, I> mapExtraTable(Column<?, I> extraTableJoinColumn, )
-	
-	interface FluentMappingBuilderPropertyOptions<C, I> extends FluentEntityMappingBuilder<C, I>, ColumnOptions<C, I> {
+	interface FluentMappingBuilderPropertyOptions<C, I>
+			extends
+			FluentEntityMappingBuilder<C, I>,
+			ColumnOptions<C, I>,
+			ExtraTablePropertyOptions {
 		
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> mandatory();
@@ -482,6 +484,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> fieldName(String name);
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> extraTableName(String name);
 		
 	}
 	
