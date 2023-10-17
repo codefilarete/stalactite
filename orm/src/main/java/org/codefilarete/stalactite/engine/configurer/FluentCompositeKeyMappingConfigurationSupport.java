@@ -31,7 +31,6 @@ import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.CompositeKeyMappingConfiguration;
 import org.codefilarete.stalactite.engine.CompositeKeyMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.CompositeKeyPropertyOptions;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration.ColumnLinkageOptions;
 import org.codefilarete.stalactite.engine.FluentCompositeKeyMappingBuilder;
 import org.codefilarete.stalactite.engine.ImportedEmbedOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -178,7 +177,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					
 					@Override
 					public CompositeKeyPropertyOptions columnName(String name) {
-						linkage.setColumnOptions(new ColumnLinkageOptionsByName(name));
+						linkage.setColumnName(name);
 						return null;
 					}
 					
@@ -232,7 +231,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 					
 					@Override
 					public CompositeKeyPropertyOptions columnName(String name) {
-						linkage.setColumnOptions(new ColumnLinkageOptionsByName(name));
+						linkage.setColumnName(name);
 						return null;
 					}
 					
@@ -324,7 +323,7 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		private ParameterBinder<O> parameterBinder;
 		
 		@Nullable
-		private ColumnLinkageOptions columnOptions;
+		private String columnName;
 		
 		private final AccessorFieldLazyInitializer accessor = new AccessorFieldLazyInitializer();
 		
@@ -351,8 +350,8 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			return parameterBinder;
 		}
 		
-		public void setColumnOptions(ColumnLinkageOptions columnOptions) {
-			this.columnOptions = columnOptions;
+		public void setColumnName(String name) {
+			this.columnName = name;
 		}
 		
 		@Override
@@ -373,14 +372,12 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		@Nullable
 		@Override
 		public String getColumnName() {
-			return org.codefilarete.tool.Nullable.nullable(this.columnOptions).map(ColumnLinkageOptions::getColumnName).get();
+			return this.columnName;
 		}
 		
 		@Override
 		public Class<O> getColumnType() {
-			return this.columnOptions instanceof ColumnLinkageOptionsByColumn
-					? (Class<O>) ((ColumnLinkageOptionsByColumn) this.columnOptions).getColumnType()
-					: AccessorDefinition.giveDefinition(this.accessor.get()).getMemberType();
+			return (Class<O>) AccessorDefinition.giveDefinition(this.accessor.get()).getMemberType();
 		}
 		
 		/**
@@ -432,44 +429,6 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 				}
 				return new PropertyAccessor<>(accessor, mutator);
 			}
-		}
-	}
-	
-	static class ColumnLinkageOptionsByName implements ColumnLinkageOptions {
-		
-		private final String columnName;
-		
-		ColumnLinkageOptionsByName(@Nullable String columnName) {
-			this.columnName = columnName;
-		}
-		
-		@Nullable
-		@Override
-		public String getColumnName() {
-			return this.columnName;
-		}
-		
-	}
-	
-	static class ColumnLinkageOptionsByColumn implements ColumnLinkageOptions {
-		
-		private final Column column;
-		
-		ColumnLinkageOptionsByColumn(Column column) {
-			this.column = column;
-		}
-		
-		public Column getColumn() {
-			return column;
-		}
-		
-		@Override
-		public String getColumnName() {
-			return this.column.getName();
-		}
-		
-		public Class<?> getColumnType() {
-			return this.column.getJavaType();
 		}
 	}
 	
