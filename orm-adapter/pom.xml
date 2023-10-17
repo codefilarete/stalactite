@@ -13,6 +13,7 @@
 	<packaging>pom</packaging>
 	
 	<modules>
+		<module>orm-all-adapters</module>
 		<module>orm-h2-adapter</module>
 		<module>orm-derby-adapter</module>
 		<module>orm-hsqldb-adapter</module>
