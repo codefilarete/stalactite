@@ -49,6 +49,18 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-jpa</artifactId>
+			<version>${spring-data.version}</version>
+			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>orm</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-core</artifactId>
 			<!--
@@ -66,6 +78,41 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<version>${spring-data.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- for HSQLDBInMemoryDataSource to do IT tests -->
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>sql-hsqldb-adapter</artifactId>
+			<type>test-jar</type>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- for HSQLDBDialect to do IT tests -->
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>core-hsqldb-adapter</artifactId>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>orm</artifactId>
+			<type>test-jar</type>
+			<version>${project.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.12.0</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 </project>

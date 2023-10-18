@@ -8,7 +8,7 @@ import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 
 /**
- * Mimics Spring JpaRepositoryFactory for Stalactite.
+ * Mimics JpaRepositoryFactory for Stalactite
  * 
  * @author Guillaume Mary
  */

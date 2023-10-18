@@ -4,6 +4,7 @@ import java.util.Optional;
 
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.NoRepositoryBean;
+import org.springframework.data.repository.Repository;
 
 /**
  * Stalactite specific extension of {@link org.springframework.data.repository.Repository}.
@@ -16,12 +17,15 @@ import org.springframework.data.repository.NoRepositoryBean;
  * <li> {@link CrudRepository#deleteAllById(Iterable)} because optimistic lock can't be applied </li>
  * </ul>
  * 
+ * This interface must implement {@link Repository} to let Spring detect it as a candidate repository when
+ * {@link org.codefilarete.stalactite.sql.spring.repository.config.EnableStalactiteRepositories} is used.
+ * 
  * @param <C> entity type
  * @param <I> entity identifier type
  * @author Guillaume Mary
  */
 @NoRepositoryBean
-public interface StalactiteRepository<C, I> {
+public interface StalactiteRepository<C, I> extends Repository<C, I> {
 	
 	/**
 	 * Saves a given entity (creates it in database or updates it). Returned instance is same reference as given one as argument.

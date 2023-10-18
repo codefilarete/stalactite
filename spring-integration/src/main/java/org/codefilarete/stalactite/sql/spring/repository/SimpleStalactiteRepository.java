@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 /**
  * Default implementation of the {@link StalactiteRepository} interface.
- * Mimics Spring SimpleJpaRepository.
+ * Mimics SimpleJpaRepository 
  * 
  * @param <C> entity type
  * @param <I> identifier type
