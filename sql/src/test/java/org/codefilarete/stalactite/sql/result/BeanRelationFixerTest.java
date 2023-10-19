@@ -1,10 +1,14 @@
 package org.codefilarete.stalactite.sql.result;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
@@ -59,6 +63,8 @@ public class BeanRelationFixerTest {
 	public void giveCollectionFactory() {
 		assertThat(BeanRelationFixer.giveCollectionFactory(List.class).get().getClass()).isEqualTo(ArrayList.class);
 		assertThat(BeanRelationFixer.giveCollectionFactory(Set.class).get().getClass()).isEqualTo(HashSet.class);
+		assertThat(BeanRelationFixer.giveCollectionFactory(SortedSet.class).get().getClass()).isEqualTo(TreeSet.class);
+		assertThat(BeanRelationFixer.giveCollectionFactory(Queue.class).get().getClass()).isEqualTo(ArrayDeque.class);
 		assertThat(BeanRelationFixer.giveCollectionFactory(LinkedHashSet.class).get().getClass()).isEqualTo(LinkedHashSet.class);
 	}
 	

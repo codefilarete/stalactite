@@ -1,10 +1,14 @@
 package org.codefilarete.stalactite.sql.result;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -72,8 +76,12 @@ public interface BeanRelationFixer<E, I> {
 		Class<? extends C> concreteType;
 		if (List.class.equals(collectionType)) {
 			concreteType = (Class) ArrayList.class;
+		} else if (SortedSet.class.equals(collectionType)) {
+			concreteType = (Class) TreeSet.class;
 		} else if (Set.class.equals(collectionType)) {
 			concreteType = (Class) HashSet.class;
+		} else if (Queue.class.equals(collectionType)) {
+			concreteType = (Class) ArrayDeque.class;
 		} else {
 			// given type is expected to be concrete, we'll instantiate it
 			concreteType = collectionType;
