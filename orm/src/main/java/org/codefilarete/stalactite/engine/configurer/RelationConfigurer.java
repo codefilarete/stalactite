@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -12,6 +13,8 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCo
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
+import org.codefilarete.stalactite.engine.configurer.map.MapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
@@ -167,6 +170,20 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					dialect,
 					connectionConfiguration);
 			elementCollectionRelationConfigurer.configure();
+		}
+		
+		// taking map relations into account
+		for (MapRelation<C, ?, ?, ? extends Map> map : entityMappingConfiguration.getMaps()) {
+			MapRelationConfigurer<C, I, ?, ?, ? extends Map> mapRelationConfigurer = new MapRelationConfigurer<>(
+					map,
+					sourcePersister,
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getColumnNamingStrategy(),
+					namingConfiguration.getElementCollectionTableNamingStrategy(),
+					dialect,
+					connectionConfiguration
+			);
+			mapRelationConfigurer.configure();
 		}
 	}
 	

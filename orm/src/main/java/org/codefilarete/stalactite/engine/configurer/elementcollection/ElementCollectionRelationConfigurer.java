@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.configurer.elementcollection;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -14,7 +15,6 @@ import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
@@ -25,7 +25,6 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
-import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
@@ -34,14 +33,9 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
-import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -51,11 +45,10 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
 
 import static org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.*;
@@ -102,6 +95,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		PrimaryKey<T, ID> sourcePK = sourcePersister.<T>getMapping().getTargetTable().getPrimaryKey();
 		
 		String tableName = nullable(linkage.getTargetTableName()).getOr(() -> tableNamingStrategy.giveName(collectionProviderDefinition));
+		// Note that table will participate to DDL while cascading selection thanks to its join on foreignKey 
 		TARGETTABLE targetTable = (TARGETTABLE) nullable(linkage.getTargetTable()).getOr(() -> new Table(tableName));
 		Map<Column<T, Object>, Column<TARGETTABLE, Object>> primaryKeyForeignColumnMapping = new HashMap<>();
 		Key<TARGETTABLE, ID> reverseKey = nullable((Column<TARGETTABLE, ID>) (Column) linkage.getReverseColumn()).map(Key::ofSingleColumn)
@@ -122,7 +116,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		
 		EmbeddableMappingConfiguration<TRGT> embeddableConfiguration =
 				nullable(linkage.getEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
-		ClassMapping<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, TARGETTABLE> elementRecordStrategy;
+		ClassMapping<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, TARGETTABLE> elementRecordMapping;
 		IdentifierAssembler<ID, T> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
 		if (embeddableConfiguration == null) {
 			String columnName = nullable(linkage.getElementColumnName())
@@ -132,7 +126,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 			if (collectionProviderDefinition.getMemberType().isAssignableFrom(Set.class)) {
 				elementColumn.primaryKey();
 			}
-			elementRecordStrategy = new ElementRecordMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+			elementRecordMapping = new ElementRecordMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
 		} else {
 			// a special configuration was given, we compute a EmbeddedClassMapping from it
 			BeanMappingBuilder<TRGT, TARGETTABLE> elementCollectionMappingBuilder = new BeanMappingBuilder<>(embeddableConfiguration, targetTable,
@@ -164,12 +158,12 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 			
 			Class<ElementRecord<TRGT, ID>> elementRecordClass = (Class) ElementRecord.class;
 			EmbeddedClassMapping<ElementRecord<TRGT, ID>, TARGETTABLE> elementRecordMappingStrategy = new EmbeddedClassMapping<>(elementRecordClass, targetTable, projectedColumnMap);
-			elementRecordStrategy = new ElementRecordMapping<>(targetTable, elementRecordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+			elementRecordMapping = new ElementRecordMapping<>(targetTable, elementRecordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
 		}
 			
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
 		SimpleRelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, TARGETTABLE> elementRecordPersister =
-			new SimpleRelationalEntityPersister<>(elementRecordStrategy, dialect, connectionConfiguration);
+			new SimpleRelationalEntityPersister<>(elementRecordMapping, dialect, connectionConfiguration);
 		
 		// insert management
 		Accessor<SRC, C> collectionAccessor = linkage.getCollectionProvider();
@@ -274,272 +268,12 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 	private Function<SRC, Collection<ElementRecord<TRGT, ID>>> collectionProvider(Accessor<SRC, C> collectionAccessor,
 																				  IdAccessor<SRC, ID> idAccessor,
 																				  boolean markAsPersisted) {
-		return src -> Iterables.collect(collectionAccessor.get(src),
+		return src -> Iterables.collect(Nullable.nullable(collectionAccessor.get(src)).getOr(() -> (C) Collections.emptyList()),
 										trgt -> new ElementRecord<>(idAccessor.getId(src), trgt).setPersisted(markAsPersisted),
 										HashSet::new);
 	}
 	
-	/**
-	 * Mapping strategy dedicated to {@link ElementRecord}. Very close to {@link org.codefilarete.stalactite.engine.AssociationTableNamingStrategy}
-	 * in its principle.
-	 */
-	private static class ElementRecordMapping<C, I, T extends Table<T>> extends ClassMapping<ElementRecord<C, I>, ElementRecord<C, I>, T> {
-		
-		private <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
-																		  Column<T, C> elementColumn,
-																		  IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-																		  Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-			super((Class) ElementRecord.class,
-					targetTable,
-					(Map) Maps.forHashMap(ReversibleAccessor.class, Column.class)
-							.add(ElementRecord.ELEMENT_ACCESSOR, elementColumn),
-					new ElementRecordIdMapping<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
-		}
-		
-		private <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordMapping(T targetTable,
-																		  EmbeddedClassMapping<ElementRecord<C, I>, T> embeddableMapping,
-																		  IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-																		  Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-			super((Class) ElementRecord.class,
-					targetTable,
-					embeddableMapping.getPropertyToColumn(),
-					new ElementRecordIdMapping<>(targetTable, embeddableMapping, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
-		}
-		
-		/**
-		 * {@link IdMapping} for {@link ElementRecord} : a composed id made of
-		 * {@link ElementRecord#getId()} and {@link ElementRecord#getElement()}
-		 */
-		private static class ElementRecordIdMapping<C, I, T extends Table<T>> extends ComposedIdMapping<ElementRecord<C, I>, ElementRecord<C, I>> {
-			
-			public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordIdMapping(
-					T targetTable,
-					Column<T, C> elementColumn,
-					IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-					Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-				super(new ElementRecordIdAccessor<>(),
-						new AlreadyAssignedIdentifierManager<>((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
-								ElementRecord::markAsPersisted,
-								ElementRecord::isPersisted),
-						new DefaultElementRecordIdentifierAssembler<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
-			}
-			
-			public <LEFTTABLE extends Table<LEFTTABLE>> ElementRecordIdMapping(
-					T targetTable,
-					EmbeddedClassMapping<ElementRecord<C, I>, T> elementColumn,
-					IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-					Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-				super(new ElementRecordIdAccessor<>(),
-						new AlreadyAssignedIdentifierManager<>((Class<ElementRecord<C, I>>) (Class) ElementRecord.class,
-								ElementRecord::markAsPersisted,
-								ElementRecord::isPersisted),
-						new ConfiguredElementRecordIdentifierAssembler<>(targetTable, elementColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
-			}
-			
-			/**
-			 * Override because {@link ComposedIdMapping} is based on null identifier to determine newness, which is always false for {@link ElementRecord}
-			 * because they always have one. We delegate its computation to the entity.
-			 * 
-			 * @param entity any non-null entity
-			 * @return true or false based on {@link ElementRecord#isNew()}
-			 */
-			@Override
-			public boolean isNew(ElementRecord<C, I> entity) {
-				return entity.isNew();
-			}
-			
-			private static class ElementRecordIdAccessor<C, I> implements IdAccessor<ElementRecord<C, I>, ElementRecord<C, I>> {
-				
-				@Override
-				public ElementRecord<C, I> getId(ElementRecord<C, I> associationRecord) {
-					return associationRecord;
-				}
-				
-				@Override
-				public void setId(ElementRecord<C, I> associationRecord, ElementRecord<C, I> identifier) {
-					associationRecord.setId(identifier.getId());
-					associationRecord.setElement(identifier.getElement());
-				}
-			}
-			
-			/**
-			 * Identifier assembler when {@link ElementRecord} is persisted according to a default behavior :
-			 * - identifier is saved in table primary key 
-			 * - element value is saved in elementColumn 
-			 * 
-			 * @param <TRGT> embedded bean type
-			 * @param <ID> source identifier type
-			 */
-			private static class DefaultElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
-				
-				private final Column<T, TRGT> elementColumn;
-				private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
-				private final Map<Column<?, Object>, Column<T, Object>> primaryKeyForeignColumnMapping;
-				
-				private <LEFTTABLE extends Table<LEFTTABLE>> DefaultElementRecordIdentifierAssembler(T targetTable,
-																Column<T, TRGT> elementColumn,
-																IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-																Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-					super(targetTable);
-					this.elementColumn = elementColumn;
-					this.sourceIdentifierAssembler = sourceIdentifierAssembler;
-					this.primaryKeyForeignColumnMapping = (Map) primaryKeyForeignColumnMapping;
-				}
-				
-				@Override
-				public ElementRecord<TRGT, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-					ID leftValue = sourceIdentifierAssembler.assemble(sourceColumn -> {
-						Column<T, Object> targetColumn = primaryKeyForeignColumnMapping.get(sourceColumn);
-						return columnValueProvider.apply(targetColumn);
-					});
-					TRGT rightValue = (TRGT) columnValueProvider.apply(elementColumn);
-					// we should not return an id if any (both expected in fact) value is null
-					if (leftValue == null || rightValue == null) {
-						return null;
-					} else {
-						return new ElementRecord<>(leftValue, rightValue);
-					}
-				}
-				
-				@Override
-				public Map<Column<T, Object>, Object> getColumnValues(ElementRecord<TRGT, ID> id) {
-					Map<Column<?, Object>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(id.getId());
-					Map<Column<T, Object>, Object> idColumnValues = Maps.innerJoin(primaryKeyForeignColumnMapping, sourceColumnValues);
-					Map<Column<T, Object>, Object> result = new HashMap<>();
-					result.put((Column<T, Object>) elementColumn, id.getElement());
-					result.putAll(idColumnValues);
-					return result;
-				}
-			}
-			
-			/**
-			 * Identifier assembler for cases where user gave a configuration to persist embedded beans (default way is not used)
-			 * 
-			 * @param <TRGT> embedded bean type
-			 * @param <ID> source identifier type
-			 */
-			private static class ConfiguredElementRecordIdentifierAssembler<TRGT, ID, T extends Table<T>> extends ComposedIdentifierAssembler<ElementRecord<TRGT, ID>, T> {
-				
-				private final EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> mappingStrategy;
-				private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
-				private final Map<Column<?, Object>, Column<T, Object>> primaryKeyForeignColumnMapping;
-				
-				private <LEFTTABLE extends Table<LEFTTABLE>> ConfiguredElementRecordIdentifierAssembler(
-						T targetTable,
-						EmbeddedClassMapping<ElementRecord<TRGT, ID>, T> mappingStrategy,
-						IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-						Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-					super(targetTable);
-					this.mappingStrategy = mappingStrategy;
-					this.sourceIdentifierAssembler = sourceIdentifierAssembler;
-					this.primaryKeyForeignColumnMapping = (Map) primaryKeyForeignColumnMapping;
-				}
-				
-				@Override
-				public ElementRecord<TRGT, ID> assemble(Row row, ColumnedRow rowAliaser) {
-					return mappingStrategy.copyTransformerWithAliases(rowAliaser).transform(row);
-				}
-				
-				@Override
-				public ElementRecord<TRGT, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-					// never called because we override assemble(Row, ColumnedRow)
-					return null;
-				}
-				
-				@Override
-				public Map<Column<T, Object>, Object> getColumnValues(ElementRecord<TRGT, ID> id) {
-					Map<Column<?, Object>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(id.getId());
-					Map<Column<T, Object>, Object> idColumnValues = Maps.innerJoin(primaryKeyForeignColumnMapping, sourceColumnValues);
-					Map<Column<T, Object>, Object> result = new HashMap<>();
-					result.putAll(idColumnValues);
-					result.putAll(mappingStrategy.getInsertValues(id));
-					return result;
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Represents a line in table storage, acts as a wrapper of element collection with source bean identifier addition.
-	 * 
-	 * @param <TRGT> raw value type (element collection type)
-	 * @param <ID> source bean identifier type
-	 */
-	private static class ElementRecord<TRGT, ID> {
-		
-		private static final PropertyAccessor<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = PropertyAccessor.fromMethodReference(
-				ElementRecord::getId,
-				ElementRecord::setId);
-		
-		private static final PropertyAccessor<ElementRecord<Object, Object>, Object> ELEMENT_ACCESSOR = PropertyAccessor.fromMethodReference(
-				ElementRecord::getElement,
-				ElementRecord::setElement);
-		
-		
-		private ID id;
-		private TRGT element;
-		private boolean persisted = false;
-		
-		/**
-		 * Default constructor for select instantiation
-		 */
-		public ElementRecord() {
-		}
-		
-		public ElementRecord(ID id, TRGT element) {
-			setId(id);
-			setElement(element);
-		}
-		
-		public boolean isNew() {
-			return !persisted;
-		}
-		
-		public boolean isPersisted() {
-			return persisted;
-		}
-
-		public void markAsPersisted() {
-			this.persisted = true;
-		}
-		
-		public ElementRecord<TRGT, ID> setPersisted(boolean persisted) {
-			this.persisted = persisted;
-			return this;
-		}
-		
-		public ID getId() {
-			return id;
-		}
-		
-		public void setId(ID id) {
-			this.id = id;
-			this.persisted = true;
-		}
-		
-		public TRGT getElement() {
-			return element;
-		}
-		
-		public void setElement(TRGT element) {
-			this.element = element;
-		}
-		
-		/**
-		 * Identifier for {@link CollectionDiffer} support (update use case), because it compares beans
-		 * through their "footprint" which is their id in default/entity case, but since we are value type, we must provide a dedicated footprint.
-		 * Could be hashCode() if it was implemented on identifier + element, but implementing it would require implementing equals() (to comply
-		 * with best practices) which is not our case nor required by {@link CollectionDiffer}.
-		 * Note : name of this method is not important
-		 */
-		public int footprint() {
-			int result = id.hashCode();
-			result = 31 * result + element.hashCode();
-			return result;
-		}
-	}
-	
-	public class TargetInstancesInsertCascader extends AfterInsertCollectionCascader<SRC, ElementRecord<TRGT, ID>> {
+	private static class TargetInstancesInsertCascader<SRC, TRGT, ID> extends AfterInsertCollectionCascader<SRC, ElementRecord<TRGT, ID>> {
 		
 		private final Function<SRC, ? extends Collection<ElementRecord<TRGT, ID>>> collectionGetter;
 		

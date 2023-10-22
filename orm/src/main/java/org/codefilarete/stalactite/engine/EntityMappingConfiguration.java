@@ -12,6 +12,7 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -43,6 +44,8 @@ public interface EntityMappingConfiguration<C, I> {
 	<TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations();
 	
 	List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections();
+	
+	List<MapRelation<C, ?, ?, ? extends Map>> getMaps();
 		
 	VersioningStrategy getOptimisticLockOption();
 	

@@ -240,7 +240,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			}
 			
 			@Override
-			public FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name) {
+			public FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withReverseJoinColumn(String name) {
 				elementCollectionRelation.setReverseColumnName(name);
 				return null;
 			}

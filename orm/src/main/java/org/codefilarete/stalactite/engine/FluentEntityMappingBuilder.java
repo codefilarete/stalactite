@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -259,6 +260,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter);
+	
+	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableFunction<C, M> getter, Class<K> keyType, Class<V> valueType);
+	
+	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableBiConsumer<C, M> setter, Class<K> keyType, Class<V> valueType);
 	
 	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
@@ -696,7 +701,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> override(String columnName);
 
 		@Override
-		FluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name);
+		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withReverseJoinColumn(String name);
 		
 		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(Table table);
@@ -704,6 +709,43 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
 		
+	}
+	
+	interface FluentMappingBuilderMapOptions<C, I, K, V, M extends Map<K, V>>
+			extends FluentEntityMappingBuilder<C, I>, MapOptions<K, V, M> {
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withReverseJoinColumn(String columnName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyColumn(String columnName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueColumn(String columnName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withMapFactory(Supplier<? extends M> collectionFactory);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withTable(String tableName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withTable(Table table);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> fetchSeparately();
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
@@ -717,7 +759,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
 		
 		@Override
-		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mappedBy(String name);
+		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withReverseJoinColumn(String name);
 		
 		@Override
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(Table table);

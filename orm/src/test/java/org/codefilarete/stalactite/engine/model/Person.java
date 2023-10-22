@@ -1,15 +1,16 @@
 package org.codefilarete.stalactite.engine.model;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 
 /**
  * @author Guillaume Mary
@@ -29,6 +30,10 @@ public class Person implements Identified<Long> {
 	private Vehicle vehicle;
 	
 	private Set<String> nicknames;
+	
+	private Map<String, String> phoneNumbers;
+	
+	private Map<AddressBookType, String> addressBook;
 	
 	public Person() {
 	}
@@ -97,6 +102,22 @@ public class Person implements Identified<Long> {
 		this.nicknames.add(nickname);
 	}
 	
+	public Map<String, String> getPhoneNumbers() {
+		return phoneNumbers;
+	}
+	
+	public void setPhoneNumbers(Map<String, String> phoneNumbers) {
+		this.phoneNumbers = phoneNumbers;
+	}
+	
+	public Map<AddressBookType, String> getAddressBook() {
+		return addressBook;
+	}
+	
+	public void setAddressBook(Map<AddressBookType, String> addressBook) {
+		this.addressBook = addressBook;
+	}
+	
 	@Override
 	public boolean equals(Object o) {
 		return EqualsBuilder.reflectionEquals(this, o);
@@ -115,5 +136,12 @@ public class Person implements Identified<Long> {
 	@Override
 	public String toString() {
 		return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+	}
+	
+	public enum AddressBookType {
+		HOME,
+		SECONDARY_HOUSE,
+		BILLING_ADDRESS,
+		OTHER
 	}
 }

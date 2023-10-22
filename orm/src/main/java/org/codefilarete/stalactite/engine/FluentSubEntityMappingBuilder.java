@@ -316,7 +316,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> override(String columnName);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name);
+		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withReverseJoinColumn(String name);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> withTable(Table table);
@@ -336,7 +336,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
 		
 		@Override
-		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mappedBy(String name);
+		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withReverseJoinColumn(String name);
 		
 		@Override
 		FluentSubEntityMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(Table table);
