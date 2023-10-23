@@ -26,10 +26,22 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	
 	MapOptions<K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
 	
+	/**
+	 * Indicates mapping to be used for {@link Map} keys when it's a bean type.
+	 * Bean properties will be part of table primary key.
+	 * 
+	 * @param mappingConfigurationProvider properties mapping for key type
+	 */
 	MapOptions<K, V, M> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
 	
 	MapOptions<K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
 	
+	/**
+	 * Indicates mapping to be used for {@link Map} values when it's a bean type.
+	 * Bean properties will be part of table primary key.
+	 * 
+	 * @param mappingConfigurationProvider properties mapping for value type
+	 */
 	MapOptions<K, V, M> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
 	
 	MapOptions<K, V, M> fetchSeparately();

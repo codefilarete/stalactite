@@ -35,6 +35,10 @@ public class Person implements Identified<Long> {
 	
 	private Map<AddressBookType, String> addressBook;
 	
+	private Map<Timestamp, String> addresses;
+	
+	private Map<String, Timestamp> contracts;
+	
 	public Person() {
 	}
 	
@@ -116,6 +120,22 @@ public class Person implements Identified<Long> {
 	
 	public void setAddressBook(Map<AddressBookType, String> addressBook) {
 		this.addressBook = addressBook;
+	}
+	
+	public Map<Timestamp, String> getAddresses() {
+		return addresses;
+	}
+	
+	public void setAddresses(Map<Timestamp, String> addresses) {
+		this.addresses = addresses;
+	}
+	
+	public Map<String, Timestamp> getContracts() {
+		return contracts;
+	}
+	
+	public void setContracts(Map<String, Timestamp> contracts) {
+		this.contracts = contracts;
 	}
 	
 	@Override
