@@ -12,6 +12,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
+import org.codefilarete.stalactite.engine.model.Car.Radio;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Person.AddressBookType;
 import org.codefilarete.stalactite.engine.model.Timestamp;
@@ -527,6 +528,64 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		personPersister.delete(loadedPerson);
 		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_contracts", String.class)
+				.mapKey("key", String.class)
+				.execute();
+		assertThat(remainingAddressBook).isEmpty();
+	}
+	
+	@Test
+	void crud_keyAndValueIsComplexType() {
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getMapPropertyMadeOfComplexTypes, Timestamp.class, Radio.class)
+				.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate)
+				)
+				.withValueMapping(MappingEase.embeddableBuilder(Radio.class)
+						.map(Radio::getSerialNumber)
+						.map(Radio::getModel)
+				)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		LocalDateTime now = LocalDateTime.now();
+		Radio radio1 = new Radio("123");
+		radio1.setModel("model1");
+		Radio radio2 = new Radio("456");
+		radio2.setModel("model2");
+		person.setMapPropertyMadeOfComplexTypes(Maps.forHashMap(Timestamp.class, Radio.class)
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), radio1)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio2)
+		);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getMapPropertyMadeOfComplexTypes()).isEqualTo(Maps.forHashMap(Timestamp.class, Radio.class)
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), radio1)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio2)
+		);
+		
+		Radio radio3 = new Radio("789");
+		radio3.setModel("model3");
+		person.getMapPropertyMadeOfComplexTypes().remove(new Timestamp(now.minusDays(1), now.minusDays(1)));
+		person.getMapPropertyMadeOfComplexTypes().put(new Timestamp(now.minusDays(3), now.minusDays(3)), radio3);
+		
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getMapPropertyMadeOfComplexTypes()).isEqualTo(Maps.forHashMap(Timestamp.class, Radio.class)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio2)
+				.add(new Timestamp(now.minusDays(3), now.minusDays(3)), radio3)
+		);
+		
+		personPersister.delete(loadedPerson);
+		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfComplexTypes", String.class)
 				.mapKey("key", String.class)
 				.execute();
 		assertThat(remainingAddressBook).isEmpty();

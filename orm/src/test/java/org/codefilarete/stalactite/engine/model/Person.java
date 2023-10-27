@@ -8,6 +8,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
+import org.codefilarete.stalactite.engine.model.Car.Radio;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -38,6 +39,8 @@ public class Person implements Identified<Long> {
 	private Map<Timestamp, String> addresses;
 	
 	private Map<String, Timestamp> contracts;
+	
+	private Map<Timestamp, Radio> mapPropertyMadeOfComplexTypes;
 	
 	public Person() {
 	}
@@ -136,6 +139,14 @@ public class Person implements Identified<Long> {
 	
 	public void setContracts(Map<String, Timestamp> contracts) {
 		this.contracts = contracts;
+	}
+	
+	public Map<Timestamp, Radio> getMapPropertyMadeOfComplexTypes() {
+		return mapPropertyMadeOfComplexTypes;
+	}
+	
+	public void setMapPropertyMadeOfComplexTypes(Map<Timestamp, Radio> mapPropertyMadeOfComplexTypes) {
+		this.mapPropertyMadeOfComplexTypes = mapPropertyMadeOfComplexTypes;
 	}
 	
 	@Override

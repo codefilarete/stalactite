@@ -133,6 +133,8 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 					.primaryKey();
 			relationRecordMapping = new KeyValueRecordMapping<>(targetTable, keyColumn, valueColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
 		} else {
+			Map<ReversibleAccessor<KeyValueRecord<K, V, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
+			
 			if (keyEmbeddableConfiguration != null) {
 				// a special configuration was given, we compute a EmbeddedClassMapping from it
 				BeanMappingBuilder<K, TARGETTABLE> recordKeyMappingBuilder = new BeanMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
@@ -145,7 +147,6 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				});
 				Map<ReversibleAccessor<K, Object>, Column<TARGETTABLE, Object>> columnMapping = recordKeyMappingBuilder.build().getMapping();
 				
-				Map<ReversibleAccessor<KeyValueRecord<K, V, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
 				columnMapping.forEach((propertyAccessor, column) -> {
 					AccessorChain<KeyValueRecord<K, V, ID>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(KeyValueRecord.KEY_ACCESSOR, propertyAccessor),
 							(accessor, valueType) -> {
@@ -162,17 +163,15 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 					projectedColumnMap.put(accessorChain, column);
 					column.primaryKey();
 				});
-				
-				String valueColumnName = nullable(linkage.getValueColumnName())
-						.getOr(() -> columnNamingStrategy.giveName(ENTRY_VALUE_ACCESSOR_DEFINITION));
-				Column<TARGETTABLE, Object> valueColumn = (Column<TARGETTABLE, Object>) targetTable.addColumn(valueColumnName, linkage.getValueType())
+			} else {
+				String keyColumnName = nullable(linkage.getKeyColumnName())
+						.getOr(() -> columnNamingStrategy.giveName(ENTRY_KEY_ACCESSOR_DEFINITION));
+				Column<TARGETTABLE, Object> keyColumn = (Column<TARGETTABLE, Object>) targetTable.addColumn(keyColumnName, linkage.getKeyType())
 						.primaryKey();
-				projectedColumnMap.put((ReversibleAccessor) KeyValueRecord.VALUE_ACCESSOR, valueColumn);
-				
-				Class<KeyValueRecord<K, V, ID>> keyValueRecordClass = (Class) KeyValueRecord.class;
-				EmbeddedClassMapping<KeyValueRecord<K, V, ID>, TARGETTABLE> recordMappingStrategy = new EmbeddedClassMapping<>(keyValueRecordClass, targetTable, projectedColumnMap);
-				relationRecordMapping = new KeyValueRecordMapping<>(targetTable, recordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
-			} else if (valueEmbeddableConfiguration != null) {
+				projectedColumnMap.put((ReversibleAccessor) KeyValueRecord.KEY_ACCESSOR, keyColumn);
+			}
+			
+			if (valueEmbeddableConfiguration != null) {
 				// a special configuration was given, we compute a EmbeddedClassMapping from it
 				BeanMappingBuilder<V, TARGETTABLE> recordKeyMappingBuilder = new BeanMappingBuilder<>(valueEmbeddableConfiguration, targetTable,
 						dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
@@ -184,7 +183,6 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				});
 				Map<ReversibleAccessor<V, Object>, Column<TARGETTABLE, Object>> columnMapping = recordKeyMappingBuilder.build().getMapping();
 				
-				Map<ReversibleAccessor<KeyValueRecord<K, V, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
 				columnMapping.forEach((propertyAccessor, column) -> {
 					AccessorChain<KeyValueRecord<K, V, ID>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(KeyValueRecord.VALUE_ACCESSOR, propertyAccessor),
 							(accessor, valueType) -> {
@@ -201,17 +199,17 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 					projectedColumnMap.put(accessorChain, column);
 					column.primaryKey();
 				});
-				
-				String keyColumnName = nullable(linkage.getKeyColumnName())
-						.getOr(() -> columnNamingStrategy.giveName(ENTRY_KEY_ACCESSOR_DEFINITION));
-				Column<TARGETTABLE, Object> keyColumn = (Column<TARGETTABLE, Object>) targetTable.addColumn(keyColumnName, linkage.getKeyType())
+			} else {
+				String valueColumnName = nullable(linkage.getValueColumnName())
+						.getOr(() -> columnNamingStrategy.giveName(ENTRY_VALUE_ACCESSOR_DEFINITION));
+				Column<TARGETTABLE, Object> valueColumn = (Column<TARGETTABLE, Object>) targetTable.addColumn(valueColumnName, linkage.getValueType())
 						.primaryKey();
-				projectedColumnMap.put((ReversibleAccessor) KeyValueRecord.KEY_ACCESSOR, keyColumn);
-				
-				Class<KeyValueRecord<K, V, ID>> keyValueRecordClass = (Class) KeyValueRecord.class;
-				EmbeddedClassMapping<KeyValueRecord<K, V, ID>, TARGETTABLE> recordMappingStrategy = new EmbeddedClassMapping<>(keyValueRecordClass, targetTable, projectedColumnMap);
-				relationRecordMapping = new KeyValueRecordMapping<>(targetTable, recordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+				projectedColumnMap.put((ReversibleAccessor) KeyValueRecord.VALUE_ACCESSOR, valueColumn);
 			}
+			
+			Class<KeyValueRecord<K, V, ID>> keyValueRecordClass = (Class) KeyValueRecord.class;
+			EmbeddedClassMapping<KeyValueRecord<K, V, ID>, TARGETTABLE> recordMappingStrategy = new EmbeddedClassMapping<>(keyValueRecordClass, targetTable, projectedColumnMap);
+			relationRecordMapping = new KeyValueRecordMapping<>(targetTable, recordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
 		}
 		
 		SimpleRelationalEntityPersister<KeyValueRecord<K, V, ID>, KeyValueRecord<K, V, ID>, TARGETTABLE> elementRecordPersister =
