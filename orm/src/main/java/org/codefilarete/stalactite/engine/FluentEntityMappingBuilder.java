@@ -717,10 +717,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withReverseJoinColumn(String columnName);
 		
-		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyColumn(String columnName);
 		
-		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueColumn(String columnName);
 		
 		@Override
@@ -743,6 +741,14 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
+		
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableFunction<K, IN> getter, String columnName);
+		
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
+		
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableFunction<K, IN> getter, String columnName);
+		
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> fetchSeparately();

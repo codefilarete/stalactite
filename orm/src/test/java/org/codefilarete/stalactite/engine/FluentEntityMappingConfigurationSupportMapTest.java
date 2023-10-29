@@ -591,41 +591,57 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		assertThat(remainingAddressBook).isEmpty();
 	}
 
-//	@Test
-//	void crudComplexType_overrideColumnName() {
-//		Table totoTable = new Table("toto");
-//		Column idColumn = totoTable.addColumn("id", UUID_TYPE);
-//		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
-//		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
-//		
-//		ConfiguredPersister<Toto, Identifier<UUID>> personPersister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE)
-//				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
-//				.map(Toto::getName)
-//				.mapCollection(Toto::getTimes, Timestamp.class, MappingEase.embeddableBuilder(Timestamp.class)
-//						.map(Timestamp::getCreationDate)
-//						.map(Timestamp::getModificationDate))
-//				.overrideName(Timestamp::getCreationDate, "createdAt")
-//				.build(persistenceContext, totoTable);    // necessary to set table since we override Identifier binding
-//		
-//		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
-//		ddlDeployer.deployDDL();
-//		
-//		Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
-//		Map<String, Table> tablePerName = map(tables, Table::getName);
-//		Table totoTimesTable = tablePerName.get("Toto_times");
-//		Map<String, Column> timesTableColumn = totoTimesTable.mapColumnsOnName();
-//		assertThat(timesTableColumn.get("createdAt")).isNotNull();
-//		
-//		Toto person = new Toto();
-//		person.setName("toto");
-//		Timestamp timestamp1 = new Timestamp(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1));
-//		Timestamp timestamp2 = new Timestamp(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(2));
-//		person.getTimes().add(timestamp1);
-//		person.getTimes().add(timestamp2);
-//		
-//		personPersister.insert(person);
-//		
-//		Toto loadedPerson = personPersister.select(person.getId());
-//		assertThat(loadedPerson.getTimes()).isEqualTo(Arrays.asSet(timestamp1, timestamp2));
-//	}
+	@Test
+	void crudComplexType_overrideColumnName() {
+		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(Person::getName)
+				.mapMap(Person::getMapPropertyMadeOfComplexTypesWithColumnDuplicates, Timestamp.class, Timestamp.class)
+				.withKeyMapping(MappingEase.embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate)
+				)
+				.withValueMapping(MappingEase.embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate)
+						.map(Timestamp::getModificationDate)
+				)
+				.overrideKeyColumnName(Timestamp::getCreationDate, "key_creationDate")
+				.overrideValueColumnName(Timestamp::getModificationDate, "value_modificationDate")
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Person person = new Person(new PersistableIdentifier<>(1L));
+		LocalDateTime now = LocalDateTime.now();
+		person.setMapPropertyMadeOfComplexTypesWithColumnDuplicates(Maps.forHashMap(Timestamp.class, Timestamp.class)
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), new Timestamp(now.minusDays(10), now.minusDays(10)))
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), new Timestamp(now.minusDays(20), now.minusDays(20)))
+		);
+		
+		personPersister.insert(person);
+		
+		Person loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getMapPropertyMadeOfComplexTypesWithColumnDuplicates()).isEqualTo(Maps.forHashMap(Timestamp.class, Timestamp.class)
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), new Timestamp(now.minusDays(10), now.minusDays(10)))
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), new Timestamp(now.minusDays(20), now.minusDays(20)))
+		);
+		
+		person.getMapPropertyMadeOfComplexTypesWithColumnDuplicates().remove(new Timestamp(now.minusDays(1), now.minusDays(1)));
+		person.getMapPropertyMadeOfComplexTypesWithColumnDuplicates().put(new Timestamp(now.minusDays(3), now.minusDays(3)), new Timestamp(now.minusDays(30), now.minusDays(30)));
+		
+		personPersister.update(person, loadedPerson, true);
+		
+		loadedPerson = personPersister.select(person.getId());
+		assertThat(loadedPerson.getMapPropertyMadeOfComplexTypesWithColumnDuplicates()).isEqualTo(Maps.forHashMap(Timestamp.class, Timestamp.class)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), new Timestamp(now.minusDays(20), now.minusDays(20)))
+				.add(new Timestamp(now.minusDays(3), now.minusDays(3)), new Timestamp(now.minusDays(30), now.minusDays(30)))
+		);
+		
+		personPersister.delete(loadedPerson);
+		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfComplexTypesWithColumnDuplicates", String.class)
+				.mapKey("key", String.class)
+				.execute();
+		assertThat(remainingAddressBook).isEmpty();
+	}
 }

@@ -7,14 +7,19 @@ import java.util.function.Supplier;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+
+import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
  * Storage of configuration of a {@link Map} relation (kind of "element collection" but with a {@link Map}).
@@ -44,6 +49,12 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	private String valueColumnName;
 	
+	/** Key complex type mapping override, to be used when {@link #keyEmbeddableConfigurationProvider} is not null */
+	private final ValueAccessPointMap<SRC, String> overriddenKeyColumnNames = new ValueAccessPointMap<>();
+	
+	/** Value complex type mapping override, to be used when {@link #valueEmbeddableConfigurationProvider} is not null */
+	private final ValueAccessPointMap<SRC, String> overriddenValueColumnNames = new ValueAccessPointMap<>();
+	
 	/** Complex type mapping, optional */
 	@Nullable
 	private EntityMappingConfigurationProvider<K, ?> keyEntityConfigurationProvider;
@@ -56,6 +67,18 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	private EmbeddableMappingConfigurationProvider<V> valueEmbeddableConfigurationProvider;
 	
 	private boolean fetchSeparately;
+	
+	public MapRelation(SerializableBiConsumer<SRC, M> setter,
+					   Class<K> keyType,
+					   Class<V> valueType) {
+		this.keyType = keyType;
+		this.valueType = valueType;
+		MutatorByMethodReference<SRC, M> setterReference = Accessors.mutatorByMethodReference(setter);
+		this.mapProvider = new PropertyAccessor<>(
+				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
+				setterReference
+		);
+	}
 	
 	public MapRelation(SerializableFunction<SRC, M> getter,
 					   Class<K> keyType,
@@ -173,6 +196,31 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	public String getValueColumnName() {
 		return valueColumnName;
+	}
+	
+	public ValueAccessPointMap<SRC, String> getOverriddenKeyColumnNames() {
+		return this.overriddenKeyColumnNames;
+	}
+	
+	public void overrideKeyName(SerializableFunction methodRef, String columnName) {
+		this.overriddenKeyColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+	}
+	
+	public void overrideKeyName(SerializableBiConsumer methodRef, String columnName) {
+		this.overriddenKeyColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+	}
+	
+	
+	public ValueAccessPointMap<SRC, String> getOverriddenValueColumnNames() {
+		return this.overriddenValueColumnNames;
+	}
+	
+	public void overrideValueName(SerializableFunction methodRef, String columnName) {
+		this.overriddenValueColumnNames.put(new AccessorByMethodReference(methodRef), columnName);
+	}
+	
+	public void overrideValueName(SerializableBiConsumer methodRef, String columnName) {
+		this.overriddenValueColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
 	public boolean isFetchSeparately() {

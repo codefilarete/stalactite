@@ -42,6 +42,8 @@ public class Person implements Identified<Long> {
 	
 	private Map<Timestamp, Radio> mapPropertyMadeOfComplexTypes;
 	
+	private Map<Timestamp, Timestamp> mapPropertyMadeOfComplexTypesWithColumnDuplicates;
+	
 	public Person() {
 	}
 	
@@ -147,6 +149,14 @@ public class Person implements Identified<Long> {
 	
 	public void setMapPropertyMadeOfComplexTypes(Map<Timestamp, Radio> mapPropertyMadeOfComplexTypes) {
 		this.mapPropertyMadeOfComplexTypes = mapPropertyMadeOfComplexTypes;
+	}
+	
+	public Map<Timestamp, Timestamp> getMapPropertyMadeOfComplexTypesWithColumnDuplicates() {
+		return mapPropertyMadeOfComplexTypesWithColumnDuplicates;
+	}
+	
+	public void setMapPropertyMadeOfComplexTypesWithColumnDuplicates(Map<Timestamp, Timestamp> mapPropertyMadeOfComplexTypesWithColumnDuplicates) {
+		this.mapPropertyMadeOfComplexTypesWithColumnDuplicates = mapPropertyMadeOfComplexTypesWithColumnDuplicates;
 	}
 	
 	@Override

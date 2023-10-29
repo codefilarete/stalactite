@@ -322,8 +322,20 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	public <K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableFunction<C, M> getter, Class<K> keyType, Class<V> valueType) {
 		MapRelation<C, K, V, M> mapRelation = new MapRelation<>(getter, keyType, valueType, propertiesMappingConfigurationSurrogate);
 		this.maps.add(mapRelation);
-		return new MethodDispatcher()
+		return wrapWithMapOptions(mapRelation);
+	}
+	
+	@Override
+	public <K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableBiConsumer<C, M> setter, Class<K> keyType, Class<V> valueType) {
+		MapRelation<C, K, V, M> mapRelation = new MapRelation<>(setter, keyType, valueType);
+		this.maps.add(mapRelation);
+		return wrapWithMapOptions(mapRelation);
+	}
+	
+	private <K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> wrapWithMapOptions(MapRelation<C, K, V, M> mapRelation) {
+		return new MethodReferenceDispatcher()
 				.redirect(MapOptions.class, new MapOptions() {
+					
 					@Override
 					public MapOptions withReverseJoinColumn(String columnName) {
 						mapRelation.setReverseColumnName(columnName);
@@ -344,7 +356,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					
 					@Override
 					public MapOptions withMapFactory(Supplier mapFactory) {
-						mapRelation.setMapFactory(mapFactory );
+						mapRelation.setMapFactory(mapFactory);
 						return null;
 					}
 					
@@ -385,6 +397,34 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
+					public MapOptions overrideKeyColumnName(SerializableFunction getter, String columnName) {
+						mapRelation.overrideKeyName(getter, columnName);
+						return null;
+
+					}
+
+					@Override
+					public MapOptions overrideKeyColumnName(SerializableBiConsumer setter, String columnName){
+						mapRelation.overrideKeyName(setter, columnName);
+						return null;
+
+					}
+
+					@Override
+					public MapOptions overrideValueColumnName(SerializableFunction getter, String columnName){
+						mapRelation.overrideValueName(getter, columnName);
+						return null;
+
+					}
+
+					@Override
+					public MapOptions overrideValueColumnName(SerializableBiConsumer setter, String columnName){
+						mapRelation.overrideValueName(setter, columnName);
+						return null;
+
+					}
+					
+					@Override
 					public MapOptions fetchSeparately() {
 						mapRelation.fetchSeparately();
 						return null;
@@ -393,13 +433,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderMapOptions.class);
 	}
-	
-	@Override
-	public <K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableBiConsumer<C, M> setter, Class<K> keyType, Class<V> valueType) {
-		return null;
-	}
-	
-	
 	
 	@Override
 	public <O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter,

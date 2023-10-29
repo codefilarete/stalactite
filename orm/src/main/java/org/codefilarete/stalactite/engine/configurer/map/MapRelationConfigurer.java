@@ -141,7 +141,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 						dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 					@Override
 					protected String giveColumnName(Linkage pawn) {
-						return nullable(linkage.getKeyColumnName())
+						return nullable(linkage.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
 								.getOr(() -> super.giveColumnName(pawn));
 					}
 				});
@@ -159,7 +159,6 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 									return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
 								}
 							});
-					
 					projectedColumnMap.put(accessorChain, column);
 					column.primaryKey();
 				});
@@ -177,7 +176,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 						dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
 					@Override
 					protected String giveColumnName(Linkage pawn) {
-						return nullable(linkage.getKeyColumnName())
+						return nullable(linkage.getOverriddenValueColumnNames().get(pawn.getAccessor()))
 								.getOr(() -> super.giveColumnName(pawn));
 					}
 				});
@@ -195,7 +194,6 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 									return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
 								}
 							});
-					
 					projectedColumnMap.put(accessorChain, column);
 					column.primaryKey();
 				});
