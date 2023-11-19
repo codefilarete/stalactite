@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	
-	private final SinglePropertyIdAccessor<C, I> idAccessor;
+	private final AccessorWrapperIdAccessor<C, I> idAccessor;
 	
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
 	
@@ -33,7 +33,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	 * @param identifierInsertionManager defines the way the id is persisted into the database
 	 * @param identifierMarshaller defines the way the id is read from the database
 	 */
-	public SimpleIdMapping(SinglePropertyIdAccessor<C, I> idAccessor,
+	public SimpleIdMapping(AccessorWrapperIdAccessor<C, I> idAccessor,
 						   IdentifierInsertionManager<C, I> identifierInsertionManager,
 						   SimpleIdentifierAssembler<I, ?> identifierMarshaller) {
 		this.idAccessor = idAccessor;
@@ -51,11 +51,11 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	public SimpleIdMapping(ReversibleAccessor<C, I> identifierAccessor,
 						   IdentifierInsertionManager<C, I> identifierInsertionManager,
 						   SimpleIdentifierAssembler identifierMarshaller) {
-		this(new SinglePropertyIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
+		this(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
 	}
 	
 	@Override
-	public SinglePropertyIdAccessor<C, I> getIdAccessor() {
+	public AccessorWrapperIdAccessor<C, I> getIdAccessor() {
 		return idAccessor;
 	}
 	

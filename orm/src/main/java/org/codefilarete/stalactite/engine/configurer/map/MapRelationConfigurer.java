@@ -24,8 +24,10 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.AfterInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder;
+import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMappingConfiguration.Linkage;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.ColumnNameProvider;
+import org.codefilarete.stalactite.engine.configurer.map.KeyValueRecordMapping.KeyValueRecordMappingBuilder;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
@@ -120,97 +122,84 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 				nullable(linkage.getKeyEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
 		EmbeddableMappingConfiguration<V> valueEmbeddableConfiguration =
 				nullable(linkage.getValueEmbeddableConfigurationProvider()).map(EmbeddableMappingConfigurationProvider::getConfiguration).get();
-		ClassMapping<KeyValueRecord<K, V, ID>, KeyValueRecord<K, V, ID>, TARGETTABLE> relationRecordMapping = null;
+		ClassMapping<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE> relationRecordMapping = null;
 		IdentifierAssembler<ID, T> sourceIdentifierAssembler = sourcePersister.getMapping().getIdMapping().getIdentifierAssembler();
-		if (keyEmbeddableConfiguration == null && valueEmbeddableConfiguration == null) {
+		KeyValueRecordMappingBuilder<K, V, ID, TARGETTABLE, ?> builder = new KeyValueRecordMappingBuilder(targetTable, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+		if (keyEmbeddableConfiguration == null) {
 			String keyColumnName = nullable(linkage.getKeyColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(ENTRY_KEY_ACCESSOR_DEFINITION));
 			Column<TARGETTABLE, K> keyColumn = targetTable.addColumn(keyColumnName, linkage.getKeyType())
 					.primaryKey();
+			builder.withEntryKeyIsSingleProperty(keyColumn);
+		} else {
+			// a special configuration was given, we compute a EmbeddedClassMapping from it
+			Map<ReversibleAccessor<KeyValueRecord<K, V, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
+			BeanMappingBuilder<K, TARGETTABLE> entryKeyMappingBuilder = new BeanMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
+					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+				@Override
+				protected String giveColumnName(Linkage pawn) {
+					return nullable(linkage.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
+							.getOr(() -> super.giveColumnName(pawn));
+				}
+			});
+			BeanMapping<K, TARGETTABLE> entryKeyMapping = entryKeyMappingBuilder.build();
+			Map<ReversibleAccessor<K, Object>, Column<TARGETTABLE, Object>> columnMapping = entryKeyMapping.getMapping();
+			
+			columnMapping.forEach((propertyAccessor, column) -> {
+				AccessorChain<KeyValueRecord<K, V, ID>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(KeyValueRecord.KEY_ACCESSOR, propertyAccessor),
+						(accessor, valueType) -> {
+							if (accessor == KeyValueRecord.KEY_ACCESSOR) {
+								// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object
+								// so we have to specify our bean type, else a simple Object is instantiated which throws a ClassCastException further
+								return keyEmbeddableConfiguration.getBeanType();
+							} else {
+								// default mechanism
+								return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
+							}
+						});
+				projectedColumnMap.put(accessorChain, column);
+				column.primaryKey();
+			});
+			builder.withEntryKeyIsComplexType(new EmbeddedClassMapping<>(keyEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
+		}
+		if (valueEmbeddableConfiguration == null) {
 			String valueColumnName = nullable(linkage.getValueColumnName())
 					.getOr(() -> columnNamingStrategy.giveName(ENTRY_VALUE_ACCESSOR_DEFINITION));
-			Column<TARGETTABLE, V> valueColumn = targetTable.addColumn(valueColumnName, linkage.getValueType())
-					.primaryKey();
-			relationRecordMapping = new KeyValueRecordMapping<>(targetTable, keyColumn, valueColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+			Column<TARGETTABLE, V> valueColumn = targetTable.addColumn(valueColumnName, linkage.getValueType());
+			builder.withEntryValueIsSingleProperty(valueColumn);
 		} else {
+			// a special configuration was given, we compute a EmbeddedClassMapping from it
 			Map<ReversibleAccessor<KeyValueRecord<K, V, ID>, Object>, Column<TARGETTABLE, Object>> projectedColumnMap = new HashMap<>();
+			BeanMappingBuilder<V, TARGETTABLE> recordKeyMappingBuilder = new BeanMappingBuilder<>(valueEmbeddableConfiguration, targetTable,
+					dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
+				@Override
+				protected String giveColumnName(Linkage pawn) {
+					return nullable(linkage.getOverriddenValueColumnNames().get(pawn.getAccessor()))
+							.getOr(() -> super.giveColumnName(pawn));
+				}
+			});
+			BeanMapping<V, TARGETTABLE> entryValueMapping = recordKeyMappingBuilder.build();
+			Map<ReversibleAccessor<V, Object>, Column<TARGETTABLE, Object>> columnMapping = entryValueMapping.getMapping();
 			
-			if (keyEmbeddableConfiguration != null) {
-				// a special configuration was given, we compute a EmbeddedClassMapping from it
-				BeanMappingBuilder<K, TARGETTABLE> recordKeyMappingBuilder = new BeanMappingBuilder<>(keyEmbeddableConfiguration, targetTable,
-						dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
-					@Override
-					protected String giveColumnName(Linkage pawn) {
-						return nullable(linkage.getOverriddenKeyColumnNames().get(pawn.getAccessor()))
-								.getOr(() -> super.giveColumnName(pawn));
-					}
-				});
-				Map<ReversibleAccessor<K, Object>, Column<TARGETTABLE, Object>> columnMapping = recordKeyMappingBuilder.build().getMapping();
-				
-				columnMapping.forEach((propertyAccessor, column) -> {
-					AccessorChain<KeyValueRecord<K, V, ID>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(KeyValueRecord.KEY_ACCESSOR, propertyAccessor),
-							(accessor, valueType) -> {
-								if (accessor == KeyValueRecord.KEY_ACCESSOR) {
-									// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object
-									// so we have to specify our bean type, else a simple Object is instantiated which throws a ClassCastException further
-									return keyEmbeddableConfiguration.getBeanType();
-								} else {
-									// default mechanism
-									return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
-								}
-							});
-					projectedColumnMap.put(accessorChain, column);
-					column.primaryKey();
-				});
-			} else {
-				String keyColumnName = nullable(linkage.getKeyColumnName())
-						.getOr(() -> columnNamingStrategy.giveName(ENTRY_KEY_ACCESSOR_DEFINITION));
-				Column<TARGETTABLE, Object> keyColumn = (Column<TARGETTABLE, Object>) targetTable.addColumn(keyColumnName, linkage.getKeyType())
-						.primaryKey();
-				projectedColumnMap.put((ReversibleAccessor) KeyValueRecord.KEY_ACCESSOR, keyColumn);
-			}
-			
-			if (valueEmbeddableConfiguration != null) {
-				// a special configuration was given, we compute a EmbeddedClassMapping from it
-				BeanMappingBuilder<V, TARGETTABLE> recordKeyMappingBuilder = new BeanMappingBuilder<>(valueEmbeddableConfiguration, targetTable,
-						dialect.getColumnBinderRegistry(), new ColumnNameProvider(columnNamingStrategy) {
-					@Override
-					protected String giveColumnName(Linkage pawn) {
-						return nullable(linkage.getOverriddenValueColumnNames().get(pawn.getAccessor()))
-								.getOr(() -> super.giveColumnName(pawn));
-					}
-				});
-				Map<ReversibleAccessor<V, Object>, Column<TARGETTABLE, Object>> columnMapping = recordKeyMappingBuilder.build().getMapping();
-				
-				columnMapping.forEach((propertyAccessor, column) -> {
-					AccessorChain<KeyValueRecord<K, V, ID>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(KeyValueRecord.VALUE_ACCESSOR, propertyAccessor),
-							(accessor, valueType) -> {
-								if (accessor == KeyValueRecord.VALUE_ACCESSOR) {
-									// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object
-									// so we have to specify our bean type, else a simple Object is instantiated which throws a ClassCastException further
-									return valueEmbeddableConfiguration.getBeanType();
-								} else {
-									// default mechanism
-									return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
-								}
-							});
-					projectedColumnMap.put(accessorChain, column);
-					column.primaryKey();
-				});
-			} else {
-				String valueColumnName = nullable(linkage.getValueColumnName())
-						.getOr(() -> columnNamingStrategy.giveName(ENTRY_VALUE_ACCESSOR_DEFINITION));
-				Column<TARGETTABLE, Object> valueColumn = (Column<TARGETTABLE, Object>) targetTable.addColumn(valueColumnName, linkage.getValueType())
-						.primaryKey();
-				projectedColumnMap.put((ReversibleAccessor) KeyValueRecord.VALUE_ACCESSOR, valueColumn);
-			}
-			
-			Class<KeyValueRecord<K, V, ID>> keyValueRecordClass = (Class) KeyValueRecord.class;
-			EmbeddedClassMapping<KeyValueRecord<K, V, ID>, TARGETTABLE> recordMappingStrategy = new EmbeddedClassMapping<>(keyValueRecordClass, targetTable, projectedColumnMap);
-			relationRecordMapping = new KeyValueRecordMapping<>(targetTable, recordMappingStrategy, sourceIdentifierAssembler, primaryKeyForeignColumnMapping);
+			columnMapping.forEach((propertyAccessor, column) -> {
+				AccessorChain<KeyValueRecord<K, V, ID>, Object> accessorChain = AccessorChain.chainNullSafe(Arrays.asList(KeyValueRecord.VALUE_ACCESSOR, propertyAccessor),
+						(accessor, valueType) -> {
+							if (accessor == KeyValueRecord.VALUE_ACCESSOR) {
+								// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object
+								// so we have to specify our bean type, else a simple Object is instantiated which throws a ClassCastException further
+								return valueEmbeddableConfiguration.getBeanType();
+							} else {
+								// default mechanism
+								return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
+							}
+						});
+				projectedColumnMap.put(accessorChain, column);
+			});
+			builder.withEntryValueIsComplexType(new EmbeddedClassMapping<>(valueEmbeddableConfiguration.getBeanType(), targetTable, columnMapping));
 		}
+		relationRecordMapping = builder.build();
 		
-		SimpleRelationalEntityPersister<KeyValueRecord<K, V, ID>, KeyValueRecord<K, V, ID>, TARGETTABLE> elementRecordPersister =
+		SimpleRelationalEntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>, TARGETTABLE> elementRecordPersister =
 				new SimpleRelationalEntityPersister<>(relationRecordMapping, dialect, connectionConfiguration);
 		
 		// insert management
@@ -241,7 +230,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	private void addInsertCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  EntityPersister<KeyValueRecord<K, V, ID>, KeyValueRecord<K, V, ID>> wrapperPersister,
+								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> wrapperPersister,
 								  Accessor<SRC, M> collectionAccessor) {
 		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderForInsert = mapProvider(
 				collectionAccessor,
@@ -252,7 +241,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	private void addUpdateCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  EntityPersister<KeyValueRecord<K, V, ID>, KeyValueRecord<K, V, ID>> elementRecordPersister,
+								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> elementRecordPersister,
 								  Accessor<SRC, M> mapAccessor) {
 		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderAsPersistedInstances = mapProvider(
 				mapAccessor,
@@ -284,7 +273,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	private void addDeleteCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  EntityPersister<KeyValueRecord<K, V, ID>, KeyValueRecord<K, V, ID>> wrapperPersister,
+								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> wrapperPersister,
 								  Accessor<SRC, M> mapAccessor) {
 		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderAsPersistedInstances = mapProvider(
 				mapAccessor,
@@ -295,7 +284,7 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	private void addSelectCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  RelationalEntityPersister<KeyValueRecord<K, V, ID>, KeyValueRecord<K, V, ID>> elementRecordPersister,
+								  RelationalEntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> elementRecordPersister,
 								  PrimaryKey<?, ID> sourcePK,
 								  ForeignKey<?, ?, ID> keyValueRecordToSourceForeignKey,
 								  BiConsumer<SRC, M> mapSetter,
@@ -341,5 +330,4 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 			return mapGetter.apply(source);
 		}
 	}
-	
 }

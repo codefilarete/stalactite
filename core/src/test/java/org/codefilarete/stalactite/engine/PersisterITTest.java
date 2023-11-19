@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
@@ -56,7 +56,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 				totoClassTable,
 				totoClassMapping,
 				identifierAccessor,
-				new BeforeInsertIdentifierManager<>(new SinglePropertyIdAccessor<>(identifierAccessor), identifierGenerator, Integer.class)
+				new BeforeInsertIdentifierManager<>(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierGenerator, Integer.class)
 		);
 		
 		Dialect dialect = createDialect();

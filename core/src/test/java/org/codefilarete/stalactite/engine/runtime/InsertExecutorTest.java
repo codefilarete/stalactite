@@ -14,7 +14,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
@@ -185,7 +185,7 @@ class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest
 		
 		// changing mapping strategy to add JDBCGeneratedKeysIdentifierManager and GeneratedKeysReader
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new JDBCGeneratedKeysIdentifierManager<>(
-			new SinglePropertyIdAccessor<>(primaryKeyAccessor),
+			new AccessorWrapperIdAccessor<>(primaryKeyAccessor),
 			new GeneratedKeysReaderAsInt(primaryKeyColumn.getName()),
 			Integer.class);
 

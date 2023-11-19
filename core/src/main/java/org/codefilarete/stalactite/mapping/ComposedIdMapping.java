@@ -35,10 +35,18 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 		this.identifierMarshaller = identifierMarshaller;
 	}
 	
+	/**
+	 * Shortcut to {@link ComposedIdMapping#ComposedIdMapping(IdAccessor, IdentifierInsertionManager, ComposedIdentifierAssembler)}
+	 * with a {@link ReversibleAccessor} used as a property accessor.
+	 *
+	 * @param identifierAccessor accessor to the property identifying the entity
+	 * @param identifierInsertionManager defines the way the id is persisted into the database
+	 * @param identifierMarshaller defines the way the id is read from the database
+	 */
 	public ComposedIdMapping(ReversibleAccessor<C, I> identifierAccessor,
 							 IdentifierInsertionManager<C, I> identifierInsertionManager,
 							 ComposedIdentifierAssembler<I, ?> identifierMarshaller) {
-		this(new SinglePropertyIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
+		this(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
 	}
 	
 	@Override
@@ -58,7 +66,7 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	
 	/**
 	 * Will consider a new entity if its identifier is null or if all of its values are default JVM values (null or any primitive default values)
-	 * @param entity any non null entity
+	 * @param entity any entity of type C
 	 * @return true if entity's id is null or all of its primitive elements are also null or default JVM values
 	 */
 	@Override

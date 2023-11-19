@@ -64,7 +64,7 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
@@ -791,13 +791,13 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				}
 				Column<?, I> primaryKey = (Column<?, I>) first(targetTable.getPrimaryKey().getColumns());
 				identifierInsertionManager = new JDBCGeneratedKeysIdentifierManager<>(
-						new SinglePropertyIdAccessor<>(idAccessor),
+						new AccessorWrapperIdAccessor<>(idAccessor),
 						dialect.buildGeneratedKeysReader(primaryKey.getName(), primaryKey.getJavaType()),
 						primaryKey.getJavaType()
 				);
 			} else if (identifierPolicy instanceof BeforeInsertIdentifierPolicy) {
 				Sequence<I> sequence = ((BeforeInsertIdentifierPolicy<I>) identifierPolicy).getIdentifierProvider(identification.getIdentificationDefiner().getEntityType(), connectionConfiguration, dialect);
-				identifierInsertionManager = new BeforeInsertIdentifierManager<>(new SinglePropertyIdAccessor<>(idAccessor), sequence, identifierType);
+				identifierInsertionManager = new BeforeInsertIdentifierManager<>(new AccessorWrapperIdAccessor<>(idAccessor), sequence, identifierType);
 			} else if (identifierPolicy instanceof AlreadyAssignedIdentifierPolicy) {
 				AlreadyAssignedIdentifierPolicy<E, I> alreadyAssignedPolicy = (AlreadyAssignedIdentifierPolicy<E, I>) identifierPolicy;
 				identifierInsertionManager = new AlreadyAssignedIdentifierManager<>(

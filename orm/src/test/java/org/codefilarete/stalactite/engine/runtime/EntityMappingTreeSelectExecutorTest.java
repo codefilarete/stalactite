@@ -23,7 +23,7 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
@@ -280,7 +280,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		currentConnection.commit();
 		
 		IdAccessor<Toto, Toto> idAccessor =
-				new SinglePropertyIdAccessor<>(Accessors.accessorByMethodReference(SerializableFunction.identity(), (toto, toto2) -> {
+				new AccessorWrapperIdAccessor<>(Accessors.accessorByMethodReference(SerializableFunction.identity(), (toto, toto2) -> {
 					toto.id1 = toto2.id1;
 					toto.id2 = toto2.id2;
 				}));

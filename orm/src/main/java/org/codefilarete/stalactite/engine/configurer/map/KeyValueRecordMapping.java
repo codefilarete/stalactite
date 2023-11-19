@@ -2,12 +2,16 @@ package org.codefilarete.stalactite.engine.configurer.map;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
+import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -17,35 +21,128 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.Maps.ChainingMap;
 
 /**
  * Mapping strategy dedicated to {@link KeyValueRecord}. Very close to {@link org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping}
  * in its principle.
+ *
+ * @param <K> embedded key bean type
+ * @param <V> embedded value bean type
+ * @param <I> source identifier type
+ * @param <T> relation table type
+ * @author Guillaume Mary
  */
-class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<KeyValueRecord<K, V, I>, KeyValueRecord<K, V, I>, T> {
+class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<KeyValueRecord<K, V, I>, RecordId<K, I>, T> {
 	
-	<LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordMapping(T targetTable,
-															   Column<T, K> keyColumn,
-															   Column<T, V> valueColumn,
-															   IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-															   Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-		super((Class) KeyValueRecord.class,
-				targetTable,
-				(Map) Maps.forHashMap(ReversibleAccessor.class, Column.class)
-						.add(KeyValueRecord.KEY_ACCESSOR, keyColumn)
-						.add(KeyValueRecord.VALUE_ACCESSOR, valueColumn),
-				new KeyValueRecordIdMapping<>(targetTable, keyColumn, valueColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
+	/**
+	 * Builder of {@link KeyValueRecordMapping} to let one choose between single-column entry element and composite one.
+	 * Managing those cases is necessary due to that single-value entry element cannot be set from database
+	 * through a Mutator and declared by the Map&gt;Accessor, Column&lt;
+	 * 
+	 * @author Guillaume Mary
+	 */
+	static class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extends Table<LEFTTABLE>> {
+		
+		private final T associationTable;
+		private final IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler;
+		private final Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping;
+		private Column<T, K> keyColumn;
+		private Column<T, V> valueColumn;
+		private EmbeddedClassMapping<K, T> entryKeyMapping;
+		private EmbeddedClassMapping<V, T> entryValueMapping;
+		
+		KeyValueRecordMappingBuilder(
+				T associationTable,
+				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
+				Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
+			this.associationTable = associationTable;
+			this.sourceIdentifierAssembler = sourceIdentifierAssembler;
+			this.primaryKeyForeignColumnMapping = (Map) primaryKeyForeignColumnMapping;
+		}
+		
+		void withEntryKeyIsSingleProperty(Column<T, K> keyColumn) {
+			this.keyColumn = keyColumn;
+		}
+		
+		void withEntryValueIsSingleProperty(Column<T, V> valueColumn) {
+			this.valueColumn = valueColumn;
+		}
+		
+		void withEntryKeyIsComplexType(EmbeddedClassMapping<K, T> entryKeyMapping) {
+			this.entryKeyMapping = entryKeyMapping;
+		}
+		
+		void withEntryValueIsComplexType(EmbeddedClassMapping<V, T> entryValueMapping) {
+			this.entryValueMapping = entryValueMapping;
+		}
+		
+		KeyValueRecordMapping<K, V, I, T> build() {
+			Map<ReversibleAccessor, Column> propertiesMapping = new HashMap<>();
+			KeyValueRecordIdMapping<K, V, I, T> idMapping = null;
+			if (keyColumn != null) {
+				propertiesMapping.put(KeyValueRecord.KEY_ACCESSOR, keyColumn);
+				idMapping = new KeyValueRecordIdMapping<>(
+						associationTable,
+						(row, columnedRow) -> columnedRow.getValue(keyColumn, row),
+						(Function<K, Map<Column<T, Object>, Object>>) k -> (Map) Maps.forHashMap(Column.class, Object.class).add(keyColumn, k),
+						sourceIdentifierAssembler,
+						primaryKeyForeignColumnMapping);
+			} else if (entryKeyMapping != null) {
+				propertiesMapping.putAll(chainWithKeyAccessor(entryKeyMapping));
+				idMapping = new KeyValueRecordIdMapping<>(
+						associationTable,
+						entryKeyMapping,
+						sourceIdentifierAssembler,
+						primaryKeyForeignColumnMapping);
+			}
+			if (valueColumn != null) {
+				propertiesMapping.put(KeyValueRecord.VALUE_ACCESSOR, valueColumn);
+			} else if (entryValueMapping != null) {
+				propertiesMapping.putAll(chainWithValueAccessor(entryValueMapping));
+			}
+			
+			return new KeyValueRecordMapping<K, V, I, T>(associationTable, (Map) propertiesMapping, idMapping);
+		}
 	}
 	
-	<LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordMapping(T targetTable,
-															   EmbeddedClassMapping<KeyValueRecord<K, V, I>, T> keyMapping,
-															   IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-															   Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-		super((Class) KeyValueRecord.class,
-				targetTable,
-				keyMapping.getPropertyToColumn(),
-				new KeyValueRecordIdMapping<>(targetTable, keyMapping, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
+	private static <K> ChainingMap<ReversibleAccessor, Column> chainWithKeyAccessor(EmbeddedClassMapping<K, ?> entryKeyMapping) {
+		ChainingMap<ReversibleAccessor, Column> result = new ChainingMap<>();
+		entryKeyMapping.getPropertyToColumn().forEach((keyPropertyAccessor, column) -> {
+			AccessorChain key = new AccessorChain(KeyValueRecord.KEY_ACCESSOR, keyPropertyAccessor);
+			key.setNullValueHandler(new ValueInitializerOnNullValue((accessor, inputType) -> {
+				if (accessor == KeyValueRecord.KEY_ACCESSOR) {
+					return entryKeyMapping.getClassToPersist();
+				}
+				return ValueInitializerOnNullValue.giveValueType(accessor, inputType);
+			}));
+			result.add(key, column);
+		});
+		return result;
+	}
+	
+	private static <V> ChainingMap<ReversibleAccessor, Column> chainWithValueAccessor(EmbeddedClassMapping<V, ?> entryKeyMapping) {
+		ChainingMap<ReversibleAccessor, Column> result = new ChainingMap<>();
+		entryKeyMapping.getPropertyToColumn().forEach((keyPropertyAccessor, column) -> {
+			AccessorChain key = new AccessorChain(KeyValueRecord.VALUE_ACCESSOR, keyPropertyAccessor);
+			key.setNullValueHandler(new ValueInitializerOnNullValue((accessor, inputType) -> {
+				if (accessor == KeyValueRecord.VALUE_ACCESSOR) {
+					return entryKeyMapping.getClassToPersist();
+				}
+				return ValueInitializerOnNullValue.giveValueType(accessor, inputType);
+			}));
+			result.add(key, column);
+		});
+		return result;
+	}
+	
+	KeyValueRecordMapping(T targetTable,
+						  Map<? extends ReversibleAccessor<KeyValueRecord<K, V, I>, Object>, Column<T, Object>> propertyToColumn,
+						  KeyValueRecordIdMapping<K, V, I, T> idMapping) {
+		super((Class) KeyValueRecord.class, targetTable, propertyToColumn, idMapping);
+		
 	}
 	
 	/**
@@ -54,31 +151,33 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 	 * - {@link KeyValueRecord#getKey()}
 	 * - {@link KeyValueRecord#getValue()}
 	 */
-	private static class KeyValueRecordIdMapping<K, V, I, T extends Table<T>> extends ComposedIdMapping<KeyValueRecord<K, V, I>, KeyValueRecord<K, V, I>> {
+	@VisibleForTesting
+	static class KeyValueRecordIdMapping<K, V, I, T extends Table<T>> extends ComposedIdMapping<KeyValueRecord<K, V, I>, RecordId<K, I>> {
 		
-		public <LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordIdMapping(
-				T targetTable,
-				Column<T, K> keyColumn,
-				Column<T, V> valueColumn,
-				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-				Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
+		private KeyValueRecordIdMapping(
+				RecordIdAssembler recordIdAssembler) {
 			super(new KeyValueRecordIdAccessor<>(),
-					new AlreadyAssignedIdentifierManager<>((Class<KeyValueRecord<K, V, I>>) (Class) KeyValueRecord.class,
+					new AlreadyAssignedIdentifierManager<>((Class<RecordId<K, I>>) (Class) RecordId.class,
 							KeyValueRecord::markAsPersisted,
 							KeyValueRecord::isPersisted),
-					new DefaultKeyValueRecordIdentifierAssembler<>(targetTable, keyColumn, valueColumn, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
+					recordIdAssembler);
 		}
 		
 		public <LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordIdMapping(
 				T targetTable,
-				EmbeddedClassMapping<KeyValueRecord<K, V, I>, T> keyClassMapping,
+				BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
+				Function<K, Map<Column<T, Object>, Object>> entryKeyColumnValueProvider,
 				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
-				Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-			super(new KeyValueRecordIdAccessor<>(),
-					new AlreadyAssignedIdentifierManager<>((Class<KeyValueRecord<K, V, I>>) (Class) KeyValueRecord.class,
-							KeyValueRecord::markAsPersisted,
-							KeyValueRecord::isPersisted),
-					new KeyValueRecordIdentifierAssembler<>(targetTable, keyClassMapping, sourceIdentifierAssembler, primaryKeyForeignColumnMapping));
+				Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping) {
+			this(new RecordIdAssembler<>(targetTable, entryKeyAssembler, entryKeyColumnValueProvider, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping));
+		}
+		
+		public <LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordIdMapping(
+				T targetTable,
+				EmbeddedBeanMapping<K, T> entryKeyMapping,
+				IdentifierAssembler<I, LEFTTABLE> sourceIdentifierAssembler,
+				Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping) {
+			this(new RecordIdAssembler<>(targetTable, entryKeyMapping, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping));
 		}
 		
 		/**
@@ -93,119 +192,124 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 			return entity.isNew();
 		}
 		
-		private static class KeyValueRecordIdAccessor<K, V, I> implements IdAccessor<KeyValueRecord<K, V, I>, KeyValueRecord<K, V, I>> {
+		private static class KeyValueRecordIdAccessor<K, V, I> implements IdAccessor<KeyValueRecord<K, V, I>, RecordId<K, I>> {
 			
 			@Override
-			public KeyValueRecord<K, V, I> getId(KeyValueRecord<K, V, I> associationRecord) {
-				return associationRecord;
+			public RecordId<K, I> getId(KeyValueRecord<K, V, I> associationRecord) {
+				return associationRecord.getId();
 			}
 			
 			@Override
-			public void setId(KeyValueRecord<K, V, I> associationRecord, KeyValueRecord<K, V, I> identifier) {
-				associationRecord.setId(identifier.getId());
+			public void setId(KeyValueRecord<K, V, I> associationRecord, RecordId<K, I> identifier) {
+				associationRecord.setId(new RecordId<>(identifier.getId(), associationRecord.getKey()));
 				associationRecord.setKey(identifier.getKey());
-				associationRecord.setValue(identifier.getValue());
 			}
 		}
 		
 		/**
-		 * Identifier assembler when {@link KeyValueRecord} is persisted according to a default behavior :
-		 * - identifier is saved in table primary key
-		 * - element value is saved in elementColumn
+		 * Identifier assembler for {@link RecordId}
 		 *
 		 * @param <K> embedded key bean type
-		 * @param <V> embedded value bean type
 		 * @param <ID> source identifier type
 		 */
-		private static class DefaultKeyValueRecordIdentifierAssembler<K, V, ID, T extends Table<T>> extends ComposedIdentifierAssembler<KeyValueRecord<K, V, ID>, T> {
+		@VisibleForTesting
+		static class RecordIdAssembler<K, ID, T extends Table<T>> extends ComposedIdentifierAssembler<RecordId<K, ID>, T> {
 			
-			private final Column<T, K> keyColumn;
-			private final Column<T, V> valueColumn;
+			private final BiFunction<Row, ColumnedRow, K> entryKeyAssembler;
+			private final Function<K, Map<Column<T, Object>, Object>> entryKeyColumnValueProvider;
 			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
-			private final Map<Column<?, Object>, Column<T, Object>> primaryKeyForeignColumnMapping;
+			private final Map<Column<?, Object>, Column<T, Object>> primaryKey2ForeignKeyMapping;
 			
-			private <LEFTTABLE extends Table<LEFTTABLE>> DefaultKeyValueRecordIdentifierAssembler(T targetTable,
-																								  Column<T, K> keyColumn,
-																								  Column<T, V> valueColumn,
-																								  IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-																								  Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
-				super(targetTable);
-				this.keyColumn = keyColumn;
-				this.valueColumn = valueColumn;
-				this.sourceIdentifierAssembler = sourceIdentifierAssembler;
-				this.primaryKeyForeignColumnMapping = (Map) primaryKeyForeignColumnMapping;
-			}
-			
-			@Override
-			public KeyValueRecord<K, V, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
-				ID id = sourceIdentifierAssembler.assemble(sourceColumn -> {
-					Column<T, Object> targetColumn = primaryKeyForeignColumnMapping.get(sourceColumn);
-					return columnValueProvider.apply(targetColumn);
-				});
-				K leftValue = (K) columnValueProvider.apply(keyColumn);
-				V rightValue = (V) columnValueProvider.apply(valueColumn);
-				// we should not return an id if any (both expected in fact) value is null
-				if (id == null || leftValue == null || rightValue == null) {
-					return null;
-				} else {
-					return new KeyValueRecord<>(id, leftValue, rightValue);
-				}
-			}
-			
-			@Override
-			public Map<Column<T, Object>, Object> getColumnValues(KeyValueRecord<K, V, ID> id) {
-				Map<Column<?, Object>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(id.getId());
-				Map<Column<T, Object>, Object> idColumnValues = Maps.innerJoin(primaryKeyForeignColumnMapping, sourceColumnValues);
-				Map<Column<T, Object>, Object> result = new HashMap<>();
-				result.put((Column<T, Object>) keyColumn, id.getKey());
-				result.put((Column<T, Object>) valueColumn, id.getValue());
-				result.putAll(idColumnValues);
-				return result;
-			}
-		}
-		
-		/**
-		 * Identifier assembler for cases where user gave a configuration to persist embedded beans (default way is not used)
-		 *
-		 * @param <K> embedded key bean type
-		 * @param <V> embedded value bean type
-		 * @param <ID> source identifier type
-		 */
-		private static class KeyValueRecordIdentifierAssembler<K, V, ID, T extends Table<T>> extends ComposedIdentifierAssembler<KeyValueRecord<K, V, ID>, T> {
-			
-			private final EmbeddedClassMapping<KeyValueRecord<K, V, ID>, T> recordClassMapping;
-			private final IdentifierAssembler<ID, ?> sourceIdentifierAssembler;
-			private final Map<Column<?, Object>, Column<T, Object>> primaryKeyForeignColumnMapping;
-			
-			private <LEFTTABLE extends Table<LEFTTABLE>> KeyValueRecordIdentifierAssembler(
+			/**
+			 * Constructor mapping given values to fields
+			 * 
+			 * @param targetTable association table on which value should be inserted an read
+			 * @param entryKeyAssembler builder of K instances from {@link Column} found in a {@link Row}
+			 * @param entryKeyColumnValueProvider provides {@link Column} values to be inserted / updated from a K instance
+			 * @param sourceIdentifierAssembler assemble / disassemble ID instances from / to {@link Column}s
+			 * @param primaryKey2ForeignKeyMapping used to remap {@link Column}s of sourceIdentifierAssembler to association table since it gives it for LEFTTABLE
+			 * @param <LEFTTABLE> table type of source declaring the relation
+			 */
+			@VisibleForTesting
+			<LEFTTABLE extends Table<LEFTTABLE>> RecordIdAssembler(
 					T targetTable,
-					EmbeddedClassMapping<KeyValueRecord<K, V, ID>, T> recordClassMapping,
+					BiFunction<Row, ColumnedRow, K> entryKeyAssembler,
+					Function<K, Map<Column<T, Object>, Object>> entryKeyColumnValueProvider,
 					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
-					Map<Column<LEFTTABLE, Object>, Column<T, Object>> primaryKeyForeignColumnMapping) {
+					Map<? extends Column<LEFTTABLE, Object>, ? extends Column<T, Object>> primaryKey2ForeignKeyMapping
+			) {
 				super(targetTable);
-				this.recordClassMapping = recordClassMapping;
+				this.entryKeyAssembler = entryKeyAssembler;
+				this.entryKeyColumnValueProvider = entryKeyColumnValueProvider;
 				this.sourceIdentifierAssembler = sourceIdentifierAssembler;
-				this.primaryKeyForeignColumnMapping = (Map) primaryKeyForeignColumnMapping;
+				this.primaryKey2ForeignKeyMapping = (Map) primaryKey2ForeignKeyMapping;
+			}
+			
+			/**
+			 * Constructor for cases where K is a simple (embedded) bean.
+			 *
+			 * @param targetTable association table on which value should be inserted an read
+			 * @param entryKeyMapping persistence mapping of K instance
+			 * @param sourceIdentifierAssembler assemble / disassemble ID instances from / to {@link Column}s
+			 * @param primaryKey2ForeignKeyMapping used to remap {@link Column}s of sourceIdentifierAssembler to association table since it gives it for LEFTTABLE
+			 * @param <LEFTTABLE> table type of source declaring the relation
+			 */
+			@VisibleForTesting
+			<LEFTTABLE extends Table<LEFTTABLE>> RecordIdAssembler(
+					T targetTable,
+					EmbeddedBeanMapping<K, T> entryKeyMapping,
+					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
+					Map<? extends Column<LEFTTABLE, Object>, ? extends Column<T, Object>> primaryKey2ForeignKeyMapping
+					) {
+				this(targetTable, (row, columnedRow) -> entryKeyMapping.copyTransformerWithAliases(columnedRow).transform(row), entryKeyMapping::getInsertValues, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping);
+			}
+			
+			/**
+			 * Constructor for cases where entry key an entity referencing another table. Then K type becomes its identifier.
+			 *
+			 * @param targetTable association table on which value should be inserted an read
+			 * @param rightTableIdentifierAssembler entity identifier mapping (K type mapping)
+			 * @param sourceIdentifierAssembler assemble / disassemble ID instances from / to {@link Column}s
+			 * @param primaryKey2ForeignKeyMapping used to remap {@link Column}s of sourceIdentifierAssembler to association table since it gives it for LEFTTABLE
+			 * @param <LEFTTABLE> table type of source declaring the relation
+			 */
+			@VisibleForTesting
+			<LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>> RecordIdAssembler(
+					T targetTable,
+					IdentifierAssembler<K, RIGHTTABLE> rightTableIdentifierAssembler,
+					IdentifierAssembler<ID, LEFTTABLE> sourceIdentifierAssembler,
+					Map<? extends Column<LEFTTABLE, Object>, ? extends Column<T, Object>> primaryKey2ForeignKeyMapping,
+					Map<Column<RIGHTTABLE, Object>, Column<T, Object>> rightTable2EntryKeyMapping
+					) {
+				this(targetTable, rightTableIdentifierAssembler::assemble, k -> {
+					Map<Column<RIGHTTABLE, Object>, Object> keyColumnValues = rightTableIdentifierAssembler.getColumnValues(k);
+					return Maps.innerJoin(rightTable2EntryKeyMapping, keyColumnValues);
+					
+				}, sourceIdentifierAssembler, primaryKey2ForeignKeyMapping);
 			}
 			
 			@Override
-			public KeyValueRecord<K, V, ID> assemble(Row row, ColumnedRow rowAliaser) {
-				return recordClassMapping.copyTransformerWithAliases(rowAliaser).transform(row);
+			public RecordId<K, ID> assemble(Row row, ColumnedRow rowAliaser) {
+				ID id = sourceIdentifierAssembler.assemble(row, rowAliaser);
+				K entryKey = entryKeyAssembler.apply(row, rowAliaser);
+				
+				return new RecordId<>(id, entryKey);
 			}
 			
 			@Override
-			public KeyValueRecord<K, V, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+			public RecordId<K, ID> assemble(Function<Column<?, ?>, Object> columnValueProvider) {
 				// never called because we override assemble(Row, ColumnedRow)
 				return null;
 			}
 			
 			@Override
-			public Map<Column<T, Object>, Object> getColumnValues(KeyValueRecord<K, V, ID> id) {
-				Map<Column<?, Object>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(id.getId());
-				Map<Column<T, Object>, Object> idColumnValues = Maps.innerJoin(primaryKeyForeignColumnMapping, sourceColumnValues);
+			public Map<Column<T, Object>, Object> getColumnValues(RecordId<K, ID> record) {
+				Map<Column<?, Object>, Object> sourceColumnValues = (Map) sourceIdentifierAssembler.getColumnValues(record.getId());
+				Map<Column<T, Object>, Object> idColumnValues = Maps.innerJoin(primaryKey2ForeignKeyMapping, sourceColumnValues);
+				Map<Column<T, Object>, Object> entryKeyColumnValues = entryKeyColumnValueProvider.apply(record.getKey());
 				Map<Column<T, Object>, Object> result = new HashMap<>();
 				result.putAll(idColumnValues);
-				result.putAll(recordClassMapping.getInsertValues(id));
+				result.putAll(entryKeyColumnValues);
 				return result;
 			}
 		}

@@ -21,7 +21,7 @@ class KeyValueRecord<K, V, ID> {
 			KeyValueRecord::getValue,
 			KeyValueRecord::setValue);
 	
-	private ID id;
+	private RecordId<K, ID> id;
 	private K key;
 	private V value;
 	private boolean persisted = false;
@@ -33,7 +33,7 @@ class KeyValueRecord<K, V, ID> {
 	}
 	
 	public KeyValueRecord(ID id, K key, V value) {
-		setId(id);
+		this.id = new RecordId<>(id, key);
 		this.key = key;
 		this.value = value;
 	}
@@ -55,11 +55,11 @@ class KeyValueRecord<K, V, ID> {
 		return this;
 	}
 	
-	public ID getId() {
+	public RecordId<K, ID> getId() {
 		return id;
 	}
 	
-	public void setId(ID id) {
+	public void setId(RecordId<K, ID> id) {
 		this.id = id;
 		this.persisted = true;
 	}

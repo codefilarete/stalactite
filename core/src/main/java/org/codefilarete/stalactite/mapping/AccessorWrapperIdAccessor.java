@@ -3,16 +3,16 @@ package org.codefilarete.stalactite.mapping;
 import org.codefilarete.reflection.ReversibleAccessor;
 
 /**
- * An {@link IdAccessor} dedicated to single-property id.
+ * An {@link IdAccessor} wrapping a {@link ReversibleAccessor}
  * 
  * @param <T> entity type
  * @param <I> identifier type
  */
-public final class SinglePropertyIdAccessor<T, I> implements IdAccessor<T, I> {
+public final class AccessorWrapperIdAccessor<T, I> implements IdAccessor<T, I> {
 	
 	private final ReversibleAccessor<T, I> idAccessor;
 	
-	public SinglePropertyIdAccessor(ReversibleAccessor<T, I> idAccessor) {
+	public AccessorWrapperIdAccessor(ReversibleAccessor<T, I> idAccessor) {
 		this.idAccessor = idAccessor;
 	}
 	

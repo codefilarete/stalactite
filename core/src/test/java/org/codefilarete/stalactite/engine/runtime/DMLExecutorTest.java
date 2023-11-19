@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
@@ -35,7 +35,7 @@ abstract class DMLExecutorTest {
 		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new BeforeInsertIdentifierManager<>(
-			new SinglePropertyIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
+			new AccessorWrapperIdAccessor<>(primaryKeyAccessor), new InMemoryCounterIdentifierGenerator(), Integer.class);
 
 		toReturn.classMappingStrategy = new ClassMapping<>(
 			Toto.class,

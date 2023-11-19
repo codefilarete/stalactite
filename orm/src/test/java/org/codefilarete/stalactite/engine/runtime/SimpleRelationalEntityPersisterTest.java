@@ -37,7 +37,7 @@ import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.query.model.Operators;
@@ -128,7 +128,7 @@ class SimpleRelationalEntityPersisterTest {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		
 		BeforeInsertIdentifierManager<Toto, Identifier<Integer>> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>(
-				new SinglePropertyIdAccessor<>(identifierAccessor),
+				new AccessorWrapperIdAccessor<>(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<Identifier<Integer>>) (Class) Identifier.class);
 		totoClassMappingStrategy_ontoTable1 = new ClassMapping<>(Toto.class,
