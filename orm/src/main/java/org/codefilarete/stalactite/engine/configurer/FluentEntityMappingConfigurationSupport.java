@@ -36,6 +36,7 @@ import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
+import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EnumOptions;
 import org.codefilarete.stalactite.engine.ExtraTablePropertyOptions;
 import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
@@ -89,7 +90,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
 	
-	private KeyLinkageSupport<C, I> keyMapping;
+	private KeyMapping<C, I> keyMapping;
 	
 	private final MethodReferenceCapturer methodSpy;
 	
@@ -114,6 +115,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	private AssociationTableNamingStrategy associationTableNamingStrategy = AssociationTableNamingStrategy.DEFAULT;
 	
 	private ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy = ElementCollectionTableNamingStrategy.DEFAULT;
+	
+	private MapEntryTableNamingStrategy mapEntryTableNamingStrategy = MapEntryTableNamingStrategy.DEFAULT;
 	
 	private OptimisticLockOption optimisticLockOption;
 	
@@ -153,6 +156,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
+	public ColumnNamingStrategy getColumnNamingStrategy() {
+		return propertiesMappingConfigurationSurrogate.getColumnNamingStrategy();
+	}
+	
+	@Override
 	public JoinColumnNamingStrategy getJoinColumnNamingStrategy() {
 		return joinColumnNamingStrategy;
 	}
@@ -171,7 +179,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public KeyLinkageSupport<C, I> getKeyMapping() {
+	public KeyMapping<C, I> getKeyMapping() {
 		return keyMapping;
 	}
 	
@@ -229,6 +237,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public ElementCollectionTableNamingStrategy getElementCollectionTableNamingStrategy() {
 		return this.elementCollectionTableNamingStrategy;
+	}
+	
+	@Override
+	public MapEntryTableNamingStrategy getEntryMapTableNamingStrategy() {
+		return this.mapEntryTableNamingStrategy;
 	}
 	
 	@Override
@@ -320,7 +333,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public <K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableFunction<C, M> getter, Class<K> keyType, Class<V> valueType) {
-		MapRelation<C, K, V, M> mapRelation = new MapRelation<>(getter, keyType, valueType, propertiesMappingConfigurationSurrogate);
+		MapRelation<C, K, V, M> mapRelation = new MapRelation<>(getter, keyType, valueType);
 		this.maps.add(mapRelation);
 		return wrapWithMapOptions(mapRelation);
 	}
@@ -778,6 +791,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public FluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy) {
 		this.elementCollectionTableNamingStrategy = tableNamingStrategy;
+		return this;
+	}
+	
+	@Override
+	public FluentEntityMappingBuilder<C, I> withMapEntryTableNaming(MapEntryTableNamingStrategy tableNamingStrategy) {
+		this.mapEntryTableNamingStrategy = tableNamingStrategy;
 		return this;
 	}
 	
@@ -1319,14 +1338,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		}
 	}
 	
-	protected interface KeyLinkageSupport<C, I> extends KeyMapping<C, I> {
-		
-	}
-	
 	/**
 	 * Storage for single key mapping definition. See {@link #mapKey(SerializableFunction, IdentifierPolicy)} methods.
 	 */
-	protected static class SingleKeyLinkageSupport<C, I> implements KeyLinkageSupport<C, I>, SingleKeyMapping<C, I> {
+	protected static class SingleKeyLinkageSupport<C, I> implements KeyMapping<C, I>, SingleKeyMapping<C, I> {
 		
 		private final ReversibleAccessor<C, I> accessor;
 		
@@ -1374,7 +1389,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	/**
 	 * Storage for composite key mapping definition. See {@link #mapCompositeKey(SerializableFunction, CompositeKeyMappingConfigurationProvider)} methods.
 	 */
-	protected static class CompositeKeyLinkageSupport<C, I> implements KeyLinkageSupport<C, I>, CompositeKeyMapping<C, I> {
+	protected static class CompositeKeyLinkageSupport<C, I> implements KeyMapping<C, I>, CompositeKeyMapping<C, I> {
 		
 		private final ReversibleAccessor<C, I> accessor;
 		private final CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder;

@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCo
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyMapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
 import org.codefilarete.stalactite.engine.configurer.map.MapRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
@@ -174,16 +175,32 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		
 		// taking map relations into account
 		for (MapRelation<C, ?, ?, ? extends Map> map : entityMappingConfiguration.getMaps()) {
-			MapRelationConfigurer<C, I, ?, ?, ? extends Map> mapRelationConfigurer = new MapRelationConfigurer<>(
-					map,
-					sourcePersister,
-					namingConfiguration.getForeignKeyNamingStrategy(),
-					namingConfiguration.getColumnNamingStrategy(),
-					namingConfiguration.getElementCollectionTableNamingStrategy(),
-					dialect,
-					connectionConfiguration
-			);
-			mapRelationConfigurer.configure();
+			if (map.getKeyEntityConfigurationProvider() != null) {
+				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
+				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = new PersisterBuilderImpl<>(keyEntityConfiguration)
+						.build(dialect, connectionConfiguration, persisterRegistry, null);
+				EntityAsKeyMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyMapRelationConfigurer<>(
+						(MapRelation) map,
+						sourcePersister,
+						keyEntityPersister,
+						namingConfiguration.getForeignKeyNamingStrategy(),
+						namingConfiguration.getColumnNamingStrategy(),
+						namingConfiguration.getEntryMapTableNamingStrategy(),
+						dialect,
+						connectionConfiguration);
+				entityAsKeyMapRelationConfigurer.configure();
+			} else {
+				MapRelationConfigurer<C, I, ?, ?, ? extends Map> mapRelationConfigurer = new MapRelationConfigurer<>(
+						map,
+						sourcePersister,
+						namingConfiguration.getForeignKeyNamingStrategy(),
+						namingConfiguration.getColumnNamingStrategy(),
+						namingConfiguration.getEntryMapTableNamingStrategy(),
+						dialect,
+						connectionConfiguration
+				);
+				mapRelationConfigurer.configure();
+			}
 		}
 	}
 	

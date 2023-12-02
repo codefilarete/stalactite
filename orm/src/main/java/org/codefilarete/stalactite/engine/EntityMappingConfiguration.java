@@ -33,6 +33,8 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	TableNamingStrategy getTableNamingStrategy();
 	
+	ColumnNamingStrategy getColumnNamingStrategy();
+	
 	KeyMapping<C, I> getKeyMapping();
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
@@ -68,6 +70,8 @@ public interface EntityMappingConfiguration<C, I> {
 	 */
 	ColumnNamingStrategy getIndexColumnNamingStrategy();
 	
+	MapEntryTableNamingStrategy getEntryMapTableNamingStrategy();
+	
 	PolymorphismPolicy<C> getPolymorphismPolicy();
 	
 	/**
@@ -96,7 +100,7 @@ public interface EntityMappingConfiguration<C, I> {
 			}
 		};
 	}
-
+	
 	interface EntityFactoryProvider<C, T extends Table> {
 
 		Function<Function<Column<?, ?>, Object>, C> giveEntityFactory(T table);

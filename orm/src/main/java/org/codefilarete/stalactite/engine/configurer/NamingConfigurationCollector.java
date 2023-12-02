@@ -7,6 +7,7 @@ import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
+import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.TableNamingStrategy;
@@ -90,11 +91,20 @@ public class NamingConfigurationCollector {
 		});
 		ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy = optionalElementCollectionTableNamingStrategy.getOr(ElementCollectionTableNamingStrategy.DEFAULT);
 		
+		org.codefilarete.tool.Nullable<MapEntryTableNamingStrategy> optionalEntryMapTableNamingStrategy = org.codefilarete.tool.Nullable.empty();
+		visitInheritedEntityMappingConfigurations(configuration -> {
+			if (configuration.getEntryMapTableNamingStrategy() != null && !optionalEntryMapTableNamingStrategy.isPresent()) {
+				optionalEntryMapTableNamingStrategy.set(configuration.getEntryMapTableNamingStrategy());
+			}
+		});
+		MapEntryTableNamingStrategy mapEntryTableNamingStrategy = optionalEntryMapTableNamingStrategy.getOr(MapEntryTableNamingStrategy.DEFAULT);
+		
 		return new NamingConfiguration(
 				tableNamingStrategy,
 				columnNamingStrategy,
 				foreignKeyNamingStrategy,
 				elementCollectionTableNamingStrategy,
+				mapEntryTableNamingStrategy,
 				joinColumnNamingStrategy,
 				indexColumnNamingStrategy,
 				associationTableNamingStrategy);

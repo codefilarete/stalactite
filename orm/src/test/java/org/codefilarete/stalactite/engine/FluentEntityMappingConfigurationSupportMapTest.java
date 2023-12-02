@@ -8,15 +8,18 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
+import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Person.AddressBookType;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
@@ -24,6 +27,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -41,10 +45,6 @@ import static org.codefilarete.tool.function.Functions.link;
 @Nested
 class FluentEntityMappingConfigurationSupportMapTest {
 	
-	private static final Class<Identifier<UUID>> UUID_TYPE = (Class) Identifier.class;
-	
-	// NB: dialect is made non static because we register binder for the same column several times in these tests
-	// and this is not supported : the very first one takes priority  
 	private final HSQLDBDialect dialect = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
@@ -54,6 +54,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		dialect.getDmlGenerator().sortColumnsAlphabetically();	// for steady checks on SQL orders
 		// binder creation for our identifier
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
+		dialect.getColumnBinderRegistry().register((Class) Identified.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		
 		persistenceContext = new PersistenceContext(dataSource, dialect);
@@ -278,11 +279,22 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	}
 
 	@Test
-	void withElementCollectionTableNaming() {
+	void withMapEntryTableNaming() {
 		MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
-				.withElementCollectionTableNaming(accessorDefinition -> "Toto")
+				.withMapEntryTableNaming(new MapEntryTableNamingStrategy() {
+					
+					@Override
+					public String giveTableName(AccessorDefinition accessorDefinition, Class<?> keyType, Class<?> valueType) {
+						return "Toto";
+					}
+					
+					@Override
+					public <RIGHTTABLE extends Table<RIGHTTABLE>, RIGHTID> Map<Column<RIGHTTABLE, ?>, String> giveMapKeyColumnNames(AccessorDefinition accessorDefinition, Class entityType, PrimaryKey<RIGHTTABLE, RIGHTID> rightPrimaryKey, Set<String> existingColumnNames) {
+						return null;
+					}
+				})
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
 				.build(persistenceContext);
 
@@ -592,7 +604,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 	}
 
 	@Test
-	void crudComplexType_overrideColumnName() {
+	void crud_keyAndValueIsComplexType_overrideColumnName() {
 		ConfiguredPersister<Person, Identifier<Long>> personPersister = (ConfiguredPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
@@ -643,5 +655,95 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey("key", String.class)
 				.execute();
 		assertThat(remainingAddressBook).isEmpty();
+	}
+	
+	
+	@Nested
+	class KeyIsEntity {
+		
+		@Test
+		void crud() {
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
+					.withKeyMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsKey(Maps.forHashMap(Country.class, String.class)
+					.add(new Country(1), "Grenoble")
+					.add(new Country(2), "Lyon")
+			);
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKey()).isEqualTo(Maps.forHashMap(Country.class, String.class)
+					.add(new Country(1), "Grenoble")
+					.add(new Country(2), "Lyon")
+			);
+			
+			person.getMapPropertyMadeOfEntityAsKey().remove(new Country(1));
+			person.getMapPropertyMadeOfEntityAsKey().put(new Country(3), "Paris");
+			
+			personPersister.update(person, loadedPerson, true);
+			
+			loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKey()).isEqualTo(Maps.forHashMap(Country.class, String.class)
+					.add(new Country(2), "Lyon")
+					.add(new Country(3), "Paris")
+			);
+			
+			personPersister.delete(loadedPerson);
+			Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKey", String.class)
+					.mapKey("key", String.class)
+					.execute();
+			assertThat(remainingAddressBook).isEmpty();
+		}
+		
+		@Test
+		void foreignKey() {
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKey, Country.class, String.class)
+					.withKeyMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Map<String, Table> tablePerName = map(personPersister.getEntityJoinTree().giveTables(), Table::getName);
+			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Person", "Person_mapPropertyMadeOfEntityAsKey", "Country");
+			Table<?> personTable = tablePerName.get("Person");
+			Table<?> countryTable = tablePerName.get("Country");
+			Table<?> mapTable = tablePerName.get("Person_mapPropertyMadeOfEntityAsKey");
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			assertThat(mapTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactlyInAnyOrder(
+							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsKey_id_Person_id", mapTable.getColumn("id"), personTable.getColumn("id")),
+							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsKey_key_Country_id", mapTable.getColumn("key"), countryTable.getColumn("id")));
+		}
 	}
 }

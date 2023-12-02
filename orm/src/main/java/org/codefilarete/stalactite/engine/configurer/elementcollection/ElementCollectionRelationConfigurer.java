@@ -228,7 +228,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 			 */
 			@Override
 			protected void insertTargets(UpdateContext updateContext) {
-				getElementPersister().insert(updateContext.getAddedElements());
+				elementRecordPersister.insert(updateContext.getAddedElements());
 			}
 		};
 		

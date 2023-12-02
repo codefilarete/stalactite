@@ -1,10 +1,8 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.annotation.Nonnull;
-
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
-import org.codefilarete.reflection.AccessorDefinition;
 
 import static org.codefilarete.tool.Reflections.GET_SET_PREFIX_REMOVER;
 import static org.codefilarete.tool.Reflections.IS_PREFIX_REMOVER;

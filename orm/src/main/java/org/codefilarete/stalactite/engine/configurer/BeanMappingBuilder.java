@@ -707,7 +707,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				public Collection<Inset<C, Object>> getInsets() {
 					return Iterables.collectToList(embeddableMappingConfiguration.getInsets(), embeddableInset -> new Inset<C, Object>() {
 						@Override
-						public PropertyAccessor<C, Object> getAccessor() {
+						public Accessor<C, Object> getAccessor() {
 							return embeddableInset.getAccessor();
 						}
 						
@@ -788,7 +788,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			/**
 			 * Equivalent of {@link #getInsetAccessor()} as a {@link PropertyAccessor}
 			 */
-			PropertyAccessor<SRC, TRGT> getAccessor();
+			Accessor<SRC, TRGT> getAccessor();
 			
 			/**
 			 * Equivalent of given getter or setter at construction time as a {@link Method}

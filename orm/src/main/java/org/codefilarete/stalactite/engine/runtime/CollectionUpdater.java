@@ -33,7 +33,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	private final Function<I, C> collectionGetter;
 	private final BiConsumer<O, I> reverseSetter;
-	private final EntityPersister<O, ?> elementPersister;
+	private final EntityWriter<O> elementPersister;
 	private final boolean shouldDeleteRemoved;
 	
 	/**
@@ -70,6 +70,18 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 							 Function<O, ?> idProvider) {
 		this.collectionGetter = collectionGetter;
 		this.reverseSetter = reverseSetter;
+		this.elementPersister = new EntityPersisterEntityWriterAdaptor<>(elementPersister);
+		this.shouldDeleteRemoved = shouldDeleteRemoved;
+		this.differ = new CollectionDiffer<>(idProvider);
+	}
+	
+	public CollectionUpdater(Function<I, C> collectionGetter,
+							 EntityWriter<O> elementPersister,
+							 @Nullable BiConsumer<O, I> reverseSetter,
+							 boolean shouldDeleteRemoved,
+							 Function<O, ?> idProvider) {
+		this.collectionGetter = collectionGetter;
+		this.reverseSetter = reverseSetter;
 		this.elementPersister = elementPersister;
 		this.shouldDeleteRemoved = shouldDeleteRemoved;
 		this.differ = new CollectionDiffer<>(idProvider);
@@ -77,10 +89,6 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	public CollectionDiffer<O> getDiffer() {
 		return differ;
-	}
-	
-	public EntityPersister<O, ?> getElementPersister() {
-		return elementPersister;
 	}
 	
 	@Override
@@ -122,8 +130,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	/**
 	 * Deletes entities removed from collection (only when orphan removal is asked)
-	 *  @param updateContext context created by {@link #newUpdateContext(Duo)}
-	 * 
+	 * @param updateContext context created by {@link #newUpdateContext(Duo)}
 	 */
 	protected void deleteTargets(UpdateContext updateContext) {
 		elementPersister.delete(updateContext.getRemovedElements());
@@ -131,8 +138,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	/**
 	 * Insert entities added to collection
-	 *  @param updateContext context created by {@link #newUpdateContext(Duo)}
-	 * 
+	 * @param updateContext context created by {@link #newUpdateContext(Duo)}
 	 */
 	protected void insertTargets(UpdateContext updateContext) {
 		// added entities may be to be inserted or updated, not only inserted if they were already in another Collection
@@ -214,4 +220,65 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 		}
 	}
 	
+	/**
+	 * A dedicated interface for this class use case. Avoid to implements too many method coming from
+	 * {@link EntityPersister} in particular.
+	 * 
+	 * @param <C> entity type to be managed
+	 * @author Guillaume Mary
+	 */
+	public interface EntityWriter<C> {
+		
+		void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement);
+		
+		void delete(Iterable<? extends C> entities);
+		
+		void persist(Iterable<? extends C> entities);
+		
+		boolean isNew(C entity);
+		
+		void updateById(Iterable<? extends C> entities);
+		
+	}
+	
+	/**
+	 * Internal adaptor that makes an {@link EntityPersister} become an {@link EntityWriter}.
+	 * Just some methods redirecting to delegate ones.
+	 * 
+	 * @param <C> entity type to be managed
+	 * @author Guillaume Mary
+	 */
+	private static class EntityPersisterEntityWriterAdaptor<C> implements EntityWriter<C> {
+		
+		private final EntityPersister<C, ?> delegate;
+		
+		private EntityPersisterEntityWriterAdaptor(EntityPersister<C, ?> delegate) {
+			this.delegate = delegate;
+		}
+		
+		@Override
+		public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
+			delegate.update(differencesIterable, allColumnsStatement);
+		}
+		
+		@Override
+		public void delete(Iterable<? extends C> entities) {
+			delegate.delete(entities);
+		}
+		
+		@Override
+		public void persist(Iterable<? extends C> entities) {
+			delegate.persist(entities);
+		}
+		
+		@Override
+		public boolean isNew(C entity) {
+			return delegate.isNew(entity);
+		}
+		
+		@Override
+		public void updateById(Iterable<? extends C> entities) {
+			delegate.updateById(entities);
+		}
+	}
 }

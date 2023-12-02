@@ -4,22 +4,17 @@ import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.configurer.LambdaMethodUnsheller;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-
-import static org.codefilarete.tool.Reflections.propertyName;
 
 /**
  * Storage of configuration of a {@link Map} relation (kind of "element collection" but with a {@link Map}).
@@ -71,27 +66,21 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	public MapRelation(SerializableBiConsumer<SRC, M> setter,
 					   Class<K> keyType,
 					   Class<V> valueType) {
-		this.keyType = keyType;
-		this.valueType = valueType;
-		MutatorByMethodReference<SRC, M> setterReference = Accessors.mutatorByMethodReference(setter);
-		this.mapProvider = new PropertyAccessor<>(
-				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
-				setterReference
-		);
+		this(Accessors.mutator(setter), keyType, valueType);
 	}
 	
 	public MapRelation(SerializableFunction<SRC, M> getter,
 					   Class<K> keyType,
-					   Class<V> valueType,
-					   LambdaMethodUnsheller lambdaMethodUnsheller) {
+					   Class<V> valueType) {
+		this(Accessors.accessor(getter), keyType, valueType);
+	}
+	
+	public MapRelation(ReversibleAccessor<SRC, M> mapProvider,
+					   Class<K> keyType,
+					   Class<V> valueType) {
 		this.keyType = keyType;
 		this.valueType = valueType;
-		AccessorByMethodReference<SRC, M> getterReference = Accessors.accessorByMethodReference(getter);
-		this.mapProvider = new PropertyAccessor<>(
-				// we keep close to user demand : we keep its method reference ...
-				getterReference,
-				// ... but we can't do it for mutator, so we use the most equivalent manner : a mutator based on setter method (fallback to property if not present)
-				new AccessorByMethod<SRC, M>(lambdaMethodUnsheller.captureLambdaMethod(getter)).toMutator());
+		this.mapProvider = mapProvider;
 	}
 	
 	public ReversibleAccessor<SRC, M> getMapProvider() {

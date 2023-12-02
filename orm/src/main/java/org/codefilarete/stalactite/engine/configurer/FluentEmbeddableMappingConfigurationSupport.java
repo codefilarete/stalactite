@@ -155,16 +155,19 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	
 	@Override
 	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter) {
-		LinkageSupport<C, Object> linkage = new LinkageSupport<>(setter);
-		this.mapping.add(linkage);
+		LinkageSupport<C, Object> linkage = addLinkage(new LinkageSupport<>(setter));
 		return wrapWithPropertyOptions(linkage);
 	}
 	
 	@Override
 	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter) {
-		LinkageSupport<C, Object> linkage = new LinkageSupport<>(getter);
-		this.mapping.add(linkage);
+		LinkageSupport<C, Object> linkage = addLinkage(new LinkageSupport<>(getter));
 		return wrapWithPropertyOptions(linkage);
+	}
+	
+	public LinkageSupport<C, Object> addLinkage(LinkageSupport<C, Object> linkage) {
+		this.mapping.add(linkage);
+		return linkage;
 	}
 	
 	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> wrapWithPropertyOptions(LinkageSupport<C, O> linkage) {
@@ -359,7 +362,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 * 
 	 * @param <T> property owner type
 	 */
-	protected static class LinkageSupport<T, O> implements Linkage<T, O> {
+	public static class LinkageSupport<T, O> implements Linkage<T, O> {
 		
 		/** Optional binder for this mapping */
 		private ParameterBinder<O> parameterBinder;
@@ -371,7 +374,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		@Nullable
 		private ColumnLinkageOptions columnOptions;
 		
-		private final AccessorFieldLazyInitializer accessor = new AccessorFieldLazyInitializer();
+		private final ThreadSafeLazyInitializer<ReversibleAccessor<T, O>> accessor;// = new AccessorFieldLazyInitializer();
 		
 		private SerializableFunction<T, ?> getter;
 		
@@ -385,10 +388,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		public LinkageSupport(SerializableFunction<T, ?> getter) {
 			this.getter = getter;
+			this.accessor = new AccessorFieldLazyInitializer();
 		}
 		
 		public LinkageSupport(SerializableBiConsumer<T, ?> setter) {
 			this.setter = setter;
+			this.accessor = new AccessorFieldLazyInitializer();
 		}
 		
 		public void setParameterBinder(ParameterBinder<O> parameterBinder) {
@@ -601,7 +606,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		private final Class<TRGT> embeddedClass;
 		private final Method insetAccessor;
 		/** Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}  */
-		private final PropertyAccessor<SRC, TRGT> accessor;
+		private final Accessor<SRC, TRGT> accessor;
 		private final ValueAccessPointMap<SRC, String> overriddenColumnNames = new ValueAccessPointMap<>();
 		private final ValueAccessPointSet<SRC> excludedProperties = new ValueAccessPointSet<>();
 		private final EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider;
@@ -621,7 +626,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		}
 
 		Inset(Method insetAccessor,
-			  PropertyAccessor<SRC, TRGT> accessor,
+			  Accessor<SRC, TRGT> accessor,
 			  EmbeddableMappingConfigurationProvider<? extends TRGT> configurationProvider) {
 			this.insetAccessor = insetAccessor;
 			// looking for the target type because it's necessary to find its persister (and other objects)
@@ -633,7 +638,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		/**
 		 * Equivalent of {@link #insetAccessor} as a {@link PropertyAccessor}
 		 */
-		public PropertyAccessor<SRC, TRGT> getAccessor() {
+		public Accessor<SRC, TRGT> getAccessor() {
 			return accessor;
 		}
 		
