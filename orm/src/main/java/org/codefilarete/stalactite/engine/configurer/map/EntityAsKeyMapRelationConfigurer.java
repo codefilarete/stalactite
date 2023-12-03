@@ -20,8 +20,8 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
+import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -202,7 +202,8 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	}
 	
 	@Override
-	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> elementRecordPersister) {
+	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> elementRecordPersister) {
 		Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter = mapGetter.andThen(Map::entrySet);
 		BiConsumer<Duo<SRC, SRC>, Boolean> MapUpdater = new MapUpdater<>(targetEntitiesGetter, keyEntityPersister, elementRecordPersister, sourcePersister);
 		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(MapUpdater));
@@ -260,10 +261,19 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				ROOT_STRATEGY_NAME,
 				true,
 				originalMapRelation.isFetchSeparately());
-		
-		
 	}
 	
+	/**
+	 * Class aimed at doing same thing as {@link CollectionUpdater} but for {@link Map} containing entities as keys :
+	 * requires to update {@link Map.Entry} as well as propagate insert / update /delete operation to key-entities. 
+	 *
+	 * @param <SRC> entity type owning the relation
+	 * @param <SRCID> entity owning the relation identifier type 
+	 * @param <K> Map key entity type
+	 * @param <KID> Map key entity identifier type
+	 * @param <V> Map value type
+	 * @author Guillaume Mary
+	 */
 	private static class MapUpdater<SRC, SRCID, K, KID, V> extends CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>> {
 		
 		private static <K, V, KID> EntityWriter<Entry<K, V>> asEntityWriter(ConfiguredRelationalPersister<K, KID> keyEntityPersister) {
@@ -304,7 +314,10 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		
 		private final ConfiguredRelationalPersister<K, KID> keyEntityPersister;
 		
-		public MapUpdater(Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter, ConfiguredRelationalPersister<K, KID> keyEntityPersister, EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> elementRecordPersister, ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+		public MapUpdater(Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
+						  ConfiguredRelationalPersister<K, KID> keyEntityPersister,
+						  EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> elementRecordPersister,
+						  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
 			super(targetEntitiesGetter, asEntityWriter(keyEntityPersister), (o, i) -> { /* no reverse setter because we store only raw values */ }, true, entry -> keyEntityPersister.getId(entry.getKey()));
 			this.elementRecordPersister = elementRecordPersister;
 			this.sourcePersister = sourcePersister;
@@ -324,6 +337,16 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		}
 		
 		@Override
+		protected void onHeldElements(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
+			super.onHeldElements(updateContext, diff);
+			Duo<KeyValueRecord<KID, V, SRCID>, KeyValueRecord<KID, V, SRCID>> associationRecord = new Duo<>(
+					newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance()),
+					newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance())
+			);
+			((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated().add(associationRecord);
+		}
+		
+		@Override
 		protected void onRemovedElements(UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
 			super.onRemovedElements(updateContext, diff);
 			
@@ -336,6 +359,12 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 			// we insert association records after targets to satisfy integrity constraint
 			super.insertTargets(updateContext);
 			elementRecordPersister.insert(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
+		}
+		
+		@Override
+		protected void updateTargets(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, boolean allColumnsStatement) {
+			super.updateTargets(updateContext, allColumnsStatement);
+			elementRecordPersister.update(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), allColumnsStatement);
 		}
 		
 		@Override
@@ -352,6 +381,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		class KeyValueAssociationTableUpdateContext extends UpdateContext {
 			
 			private final List<KeyValueRecord<KID, V, SRCID>> associationRecordsToBeInserted = new ArrayList<>();
+			private final List<Duo<KeyValueRecord<KID, V, SRCID>, KeyValueRecord<KID, V, SRCID>>> associationRecordsToBeUpdated = new ArrayList<>();
 			private final List<KeyValueRecord<KID, V, SRCID>> associationRecordsToBeDeleted = new ArrayList<>();
 			
 			public KeyValueAssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
@@ -360,6 +390,10 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 			
 			public List<KeyValueRecord<KID, V, SRCID>> getAssociationRecordsToBeInserted() {
 				return associationRecordsToBeInserted;
+			}
+			
+			public List<Duo<KeyValueRecord<KID, V, SRCID>, KeyValueRecord<KID, V, SRCID>>> getAssociationRecordsToBeUpdated() {
+				return associationRecordsToBeUpdated;
 			}
 			
 			public List<KeyValueRecord<KID, V, SRCID>> getAssociationRecordsToBeDeleted() {

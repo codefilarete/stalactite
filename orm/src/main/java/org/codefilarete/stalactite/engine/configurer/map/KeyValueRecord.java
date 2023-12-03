@@ -88,9 +88,12 @@ class KeyValueRecord<K, V, ID> {
 	 * Note : name of this method is not important
 	 */
 	public int footprint() {
+		// Footprint is composed of id + key only, not value, because its le logic of what's expected ! if you're not
+		// convinced, remember that adding value to it makes the whole record being different when the value of an entry
+		// changes ( put(1, "a") then put(1, "b") ), though it makes differ mechanism do a delete + insert instead of
+		// a simple update, which is less optimal.
 		int result = id.hashCode();
 		result = 31 * result + key.hashCode();
-		result = 31 * result + value.hashCode();
 		return result;
 	}
 }

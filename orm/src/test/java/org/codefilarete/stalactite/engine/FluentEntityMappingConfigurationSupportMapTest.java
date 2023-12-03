@@ -480,6 +480,8 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		);
 		
 		person.getAddresses().remove(new Timestamp(now.minusDays(10), now.minusDays(10)));
+		// Changing entry value to check value is also updated
+		person.getAddresses().put(new Timestamp(now.minusDays(1), now.minusDays(1)), "Paris");
 		person.getAddresses().put(new Timestamp(now.minusDays(5), now.minusDays(5)), "Marseille");
 		
 		personPersister.update(person, loadedPerson, true);
@@ -487,7 +489,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		loadedPerson = personPersister.select(person.getId());
 		assertThat(loadedPerson.getAddresses()).isEqualTo(Maps.forHashMap(Timestamp.class, String.class)
 				.add(new Timestamp(now.minusDays(5), now.minusDays(5)), "Marseille")
-				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), "Lyon")
+				.add(new Timestamp(now.minusDays(1), now.minusDays(1)), "Paris")
 		);
 		
 		personPersister.delete(loadedPerson);
@@ -528,6 +530,8 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		);
 		
 		person.getContracts().remove("Grenoble");
+		// Changing entry value to check value is also updated
+		person.getContracts().put("Lyon", new Timestamp(now.minusDays(2), now.minusDays(2)));
 		person.getContracts().put("Marseille", new Timestamp(now.minusDays(5), now.minusDays(5)));
 		
 		personPersister.update(person, loadedPerson, true);
@@ -535,7 +539,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		loadedPerson = personPersister.select(person.getId());
 		assertThat(loadedPerson.getContracts()).isEqualTo(Maps.forHashMap(String.class, Timestamp.class)
 				.add("Marseille", new Timestamp(now.minusDays(5), now.minusDays(5)))
-				.add("Lyon", new Timestamp(now.minusDays(1), now.minusDays(1)))
+				.add("Lyon", new Timestamp(now.minusDays(2), now.minusDays(2)))
 		);
 		
 		personPersister.delete(loadedPerson);
@@ -586,13 +590,17 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		Radio radio3 = new Radio("789");
 		radio3.setModel("model3");
 		person.getMapPropertyMadeOfComplexTypes().remove(new Timestamp(now.minusDays(1), now.minusDays(1)));
+		// Changing entry value to check value is also updated
+		Radio radio4 = new Radio("789");
+		radio4.setModel("model4");
+		person.getMapPropertyMadeOfComplexTypes().put(new Timestamp(now.minusDays(2), now.minusDays(2)), radio4);
 		person.getMapPropertyMadeOfComplexTypes().put(new Timestamp(now.minusDays(3), now.minusDays(3)), radio3);
 		
 		personPersister.update(person, loadedPerson, true);
 		
 		loadedPerson = personPersister.select(person.getId());
 		assertThat(loadedPerson.getMapPropertyMadeOfComplexTypes()).isEqualTo(Maps.forHashMap(Timestamp.class, Radio.class)
-				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio2)
+				.add(new Timestamp(now.minusDays(2), now.minusDays(2)), radio4)
 				.add(new Timestamp(now.minusDays(3), now.minusDays(3)), radio3)
 		);
 		
@@ -692,14 +700,17 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			);
 			
 			person.getMapPropertyMadeOfEntityAsKey().remove(new Country(1));
-			person.getMapPropertyMadeOfEntityAsKey().put(new Country(3), "Paris");
+			// Changing entry value to check value is also updated
+			person.getMapPropertyMadeOfEntityAsKey().put(new Country(2), "Paris");
+			person.getMapPropertyMadeOfEntityAsKey().put(new Country(3), "Marseille");
 			
 			personPersister.update(person, loadedPerson, true);
 			
 			loadedPerson = personPersister.select(person.getId());
-			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKey()).isEqualTo(Maps.forHashMap(Country.class, String.class)
-					.add(new Country(2), "Lyon")
-					.add(new Country(3), "Paris")
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKey())
+					.isEqualTo(Maps.forHashMap(Country.class, String.class)
+					.add(new Country(2), "Paris")
+					.add(new Country(3), "Marseille")
 			);
 			
 			personPersister.delete(loadedPerson);
