@@ -12,6 +12,8 @@ import java.util.function.Function;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
+import org.codefilarete.stalactite.engine.diff.Diff;
+import org.codefilarete.stalactite.engine.diff.State;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.tool.Duo;
@@ -95,19 +97,27 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	public void accept(Duo<I, I> entry, Boolean allColumnsStatement) {
 		C modified = collectionGetter.apply(entry.getLeft());
 		C unmodified = collectionGetter.apply(entry.getRight());
-		Set<? extends AbstractDiff<O>> diffSet = diff(modified, unmodified);
 		UpdateContext updateContext = newUpdateContext(entry);
-		for (AbstractDiff<O> diff : diffSet) {
-			switch (diff.getState()) {
-				case ADDED:
-					onAddedElements(updateContext, diff);
-					break;
-				case HELD:
-					onHeldElements(updateContext, diff);
-					break;
-				case REMOVED:
-					onRemovedElements(updateContext, diff);
-					break;
+		if (modified == null && unmodified == null) {
+			// nothing to do since reference hasn't change : still null
+		} else if (modified != null && unmodified == null) {
+			modified.forEach(o -> onAddedElements(updateContext, new Diff<>(State.ADDED, null, o)));
+		} else if (modified == null && unmodified != null) {
+			unmodified.forEach(o -> onRemovedElements(updateContext, new Diff<>(State.REMOVED, o, null)));
+		} else {
+			Set<? extends AbstractDiff<O>> diffSet = diff(modified, unmodified);
+			for (AbstractDiff<O> diff : diffSet) {
+				switch (diff.getState()) {
+					case ADDED:
+						onAddedElements(updateContext, diff);
+						break;
+					case HELD:
+						onHeldElements(updateContext, diff);
+						break;
+					case REMOVED:
+						onRemovedElements(updateContext, diff);
+						break;
+				}
 			}
 		}
 		// is there any better order for these statements ?

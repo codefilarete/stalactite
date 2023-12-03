@@ -36,7 +36,6 @@ import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
-import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EnumOptions;
 import org.codefilarete.stalactite.engine.ExtraTablePropertyOptions;
 import org.codefilarete.stalactite.engine.FluentEmbeddableMappingBuilder.FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
@@ -47,7 +46,9 @@ import org.codefilarete.stalactite.engine.ImportedEmbedWithColumnOptions;
 import org.codefilarete.stalactite.engine.InheritanceOptions;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ManyToManyOptions;
+import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.MapOptions;
+import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.OneToManyOptions;
 import org.codefilarete.stalactite.engine.OneToOneOptions;
@@ -386,8 +387,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public MapOptions withKeyMapping(EntityMappingConfigurationProvider mappingConfigurationProvider) {
-						mapRelation.setKeyConfigurationProvider(mappingConfigurationProvider);
+					public KeyAsEntityMapOptions withKeyMapping(EntityMappingConfigurationProvider mappingConfigurationProvider) {
+						// This method is not call because it is overwritten by a dedicated redirect(..) call below
+						// mapRelation.setKeyConfigurationProvider(mappingConfigurationProvider);
 						return null;
 					}
 					
@@ -413,28 +415,24 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					public MapOptions overrideKeyColumnName(SerializableFunction getter, String columnName) {
 						mapRelation.overrideKeyName(getter, columnName);
 						return null;
-
 					}
 
 					@Override
 					public MapOptions overrideKeyColumnName(SerializableBiConsumer setter, String columnName){
 						mapRelation.overrideKeyName(setter, columnName);
 						return null;
-
 					}
 
 					@Override
 					public MapOptions overrideValueColumnName(SerializableFunction getter, String columnName){
 						mapRelation.overrideValueName(getter, columnName);
 						return null;
-
 					}
 
 					@Override
 					public MapOptions overrideValueColumnName(SerializableBiConsumer setter, String columnName){
 						mapRelation.overrideValueName(setter, columnName);
 						return null;
-
 					}
 					
 					@Override
@@ -443,6 +441,19 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						return null;
 					}
 				}, true)
+				// This will overwrite withKeyMapping(EntityMappingConfigurationProvider) capture to return a proxy
+				// that will let us configure cascading of the relation
+				.redirect((SerializableBiFunction<MapOptions, EntityMappingConfigurationProvider, KeyAsEntityMapOptions>) MapOptions::withKeyMapping,
+						entityMappingConfigurationProvider -> {
+					mapRelation.setKeyConfigurationProvider(entityMappingConfigurationProvider);
+					return new MethodReferenceDispatcher()
+							.redirect(KeyAsEntityMapOptions.class, relationMode -> {
+								mapRelation.setKeyEntityRelationMode(relationMode);
+								return null;
+							}, true)
+							.fallbackOn(FluentEntityMappingConfigurationSupport.this)
+							.build((Class<FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderKeyAsEntityMapOptions.class);
+				})
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderMapOptions.class);
 	}

@@ -257,11 +257,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 				sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, TRGT>(targetPersister) {
 					
 					@Override
-					protected void postTargetDelete(Iterable<TRGT> entities) {
-						// nothing to do after deletion
-					}
-					
-					@Override
 					public void beforeDelete(Iterable<? extends SRC> entities) {
 						List<TRGT> targets = stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList());
 						targets.forEach(e -> manyRelationDescriptor.getReverseSetter().accept(e, null));
@@ -380,11 +375,6 @@ public class OneToManyWithMappedAssociationEngine<SRC, TRGT, SRCID, TRGTID, C ex
 		public DeleteTargetEntitiesBeforeDeleteCascader(EntityPersister<O, ?> targetPersister, Function<I, ? extends Collection<O>> collectionGetter) {
 			super(targetPersister);
 			this.collectionGetter = collectionGetter;
-		}
-		
-		@Override
-		protected void postTargetDelete(Iterable<O> entities) {
-			// no post treatment to do
 		}
 		
 		@Override

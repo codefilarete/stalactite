@@ -216,24 +216,24 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 	}
 	
 	protected void addInsertCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> wrapperPersister,
-								  Accessor<SRC, M> collectionAccessor) {
+									EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister,
+									Accessor<SRC, M> collectionAccessor) {
 		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderForInsert = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				false);
 		
-		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(wrapperPersister, collectionProviderForInsert));
+		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(relationRecordPersister, collectionProviderForInsert));
 	}
 	
 	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-									EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> elementRecordPersister) {
+									EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
 		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderAsPersistedInstances = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				true);
 		
 		BiConsumer<Duo<SRC, SRC>, Boolean> collectionUpdater = new CollectionUpdater<SRC, KeyValueRecord<K, V, ID>, Collection<KeyValueRecord<K, V, ID>>>(
 				collectionProviderAsPersistedInstances,
-				elementRecordPersister,
+				relationRecordPersister,
 				(o, i) -> { /* no reverse setter because we store only raw values */ },
 				true,
 				// we base our id policy on a particular identifier because Id is all the same for KeyValueRecord (it is source bean id)
@@ -248,20 +248,20 @@ public class MapRelationConfigurer<SRC, ID, K, V, M extends Map<K, V>> {
 			 */
 			@Override
 			protected void insertTargets(UpdateContext updateContext) {
-				elementRecordPersister.insert(updateContext.getAddedElements());
+				relationRecordPersister.insert(updateContext.getAddedElements());
 			}
 		};
 		
 		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(collectionUpdater));
 	}
 	
-	private void addDeleteCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
-								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> wrapperPersister) {
-		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> collectionProviderAsPersistedInstances = toRecordCollectionProvider(
+	protected void addDeleteCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,
+								  EntityPersister<KeyValueRecord<K, V, ID>, RecordId<K, ID>> relationRecordPersister) {
+		Function<SRC, Collection<KeyValueRecord<K, V, ID>>> recordsProviderAsPersistedInstances = toRecordCollectionProvider(
 				sourcePersister.getMapping(),
 				true);
 		
-		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(wrapperPersister, collectionProviderAsPersistedInstances));
+		sourcePersister.addDeleteListener(new DeleteTargetEntitiesBeforeDeleteCascader<>(relationRecordPersister, recordsProviderAsPersistedInstances));
 	}
 	
 	protected void addSelectCascade(ConfiguredRelationalPersister<SRC, ID> sourcePersister,

@@ -8,7 +8,9 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.function.Serie;
@@ -733,7 +735,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withTable(Table table);
 		
 		@Override
-		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
+		FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
@@ -744,16 +746,27 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
 		
+		@Override
 		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableFunction<K, IN> getter, String columnName);
 		
+		@Override
 		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
 		
+		@Override
 		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableFunction<K, IN> getter, String columnName);
 		
+		@Override
 		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> fetchSeparately();
+	}
+	
+	interface FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M extends Map<K, V>>
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, KeyAsEntityMapOptions<K, V, M> {
+		
+		@Override
+		FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>

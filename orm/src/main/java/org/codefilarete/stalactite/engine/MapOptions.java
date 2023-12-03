@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -26,7 +27,7 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	
 	MapOptions<K, V, M> withTable(Table table);
 	
-	MapOptions<K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
+	KeyAsEntityMapOptions<K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
 	
 	/**
 	 * Indicates mapping to be used for {@link Map} keys when it's a bean type.
@@ -76,4 +77,9 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	
 	MapOptions<K, V, M> fetchSeparately();
 	
+	interface KeyAsEntityMapOptions<K, V, M extends Map<K, V>> {
+		
+		MapOptions<K, V, M> cascading(RelationMode relationMode);
+		
+	}
 }

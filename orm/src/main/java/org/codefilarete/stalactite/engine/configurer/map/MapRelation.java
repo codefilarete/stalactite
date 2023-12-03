@@ -9,6 +9,7 @@ import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
+import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -42,6 +43,7 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	/** key column name override */
 	private String keyColumnName;
 	
+	/** value column name override */
 	private String valueColumnName;
 	
 	/** Key complex type mapping override, to be used when {@link #keyEmbeddableConfigurationProvider} is not null */
@@ -60,6 +62,9 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	private EntityMappingConfigurationProvider<V, ?> valueEntityConfigurationProvider;
 	@Nullable
 	private EmbeddableMappingConfigurationProvider<V> valueEmbeddableConfigurationProvider;
+	
+	/** Default relation mode is {@link RelationMode#ALL} */
+	private RelationMode keyEntityRelationMode = RelationMode.ALL;
 	
 	private boolean fetchSeparately;
 	
@@ -199,7 +204,6 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 		this.overriddenKeyColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
 	}
 	
-	
 	public ValueAccessPointMap<SRC, String> getOverriddenValueColumnNames() {
 		return this.overriddenValueColumnNames;
 	}
@@ -210,6 +214,14 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	public void overrideValueName(SerializableBiConsumer methodRef, String columnName) {
 		this.overriddenValueColumnNames.put(new MutatorByMethodReference(methodRef), columnName);
+	}
+	
+	public RelationMode getKeyEntityRelationMode() {
+		return keyEntityRelationMode;
+	}
+	
+	public void setKeyEntityRelationMode(RelationMode keyEntityRelationMode) {
+		this.keyEntityRelationMode = keyEntityRelationMode;
 	}
 	
 	public boolean isFetchSeparately() {

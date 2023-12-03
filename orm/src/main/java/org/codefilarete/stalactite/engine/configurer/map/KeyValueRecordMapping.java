@@ -191,7 +191,7 @@ class KeyValueRecordMapping<K, V, I, T extends Table<T>> extends ClassMapping<Ke
 				ID id = sourceIdentifierAssembler.assemble(row, rowAliaser);
 				K entryKey = entryKeyAssembler.apply(row, rowAliaser);
 				
-				return new RecordId<>(id, entryKey);
+				return id == null ? null : new RecordId<>(id, entryKey);
 			}
 			
 			@Override

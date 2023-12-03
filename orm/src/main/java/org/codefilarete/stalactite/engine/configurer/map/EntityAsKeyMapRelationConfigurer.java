@@ -17,11 +17,13 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
+import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
 import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -44,6 +46,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.Functions.NullProofFunction;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -86,6 +89,9 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	private final Function<SRC, M> mapGetter;
 	private final InMemoryRelationHolder<SRCID, K, KID, V> inMemoryRelationHolder;
 	private Key<?, KID> keyIdColumnsProjectInAssociationTable;
+	private final boolean orphanRemoval;
+	private final boolean writeAuthorized;
+	private final boolean maintainAssociationOnly;
 	
 	public EntityAsKeyMapRelationConfigurer(
 			MapRelation<SRC, K, V, M> mapRelation,
@@ -107,6 +113,12 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		this.keyEntityPersister = keyEntityPersister;
 		this.mapGetter = originalMapRelation.getMapProvider()::get;
 		this.inMemoryRelationHolder = new InMemoryRelationHolder<>();
+		
+		RelationMode maintenanceMode = mapRelation.getKeyEntityRelationMode();
+		// selection is always present (else configuration is nonsense !)
+		this.orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
+		this.writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
+		this.maintainAssociationOnly = maintenanceMode == RelationMode.ASSOCIATION_ONLY;
 	}
 	
 	@Override
@@ -131,7 +143,9 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 						(bean, duo, map) -> map.put(duo.getLeft(), duo.getRight()));
 				result.forEach(bean -> {
 					Collection<Duo<K, V>> keyValuePairs = inMemoryRelationHolder.get(sourcePersister.getId(bean));
-					keyValuePairs.forEach(duo -> originalRelationFixer.apply(bean, duo));
+					if (keyValuePairs != null) {
+						keyValuePairs.forEach(duo -> originalRelationFixer.apply(bean, duo));
+					} // else : no association record
 				});
 				
 				inMemoryRelationHolder.clear();
@@ -188,25 +202,48 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	
 	@Override
 	protected void addInsertCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> mapEntryPersister,
+									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> relationRecordPersister,
 									Accessor<SRC, MM> mapAccessor) {
-		Function<SRC, Collection<KeyValueRecord<KID, V, SRCID>>> mapProviderForInsert = toRecordCollectionProvider(sourcePersister.getMapping(), false);
-		sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, K>(keyEntityPersister) {
-
-			@Override
-			protected Collection<K> getTargets(SRC src) {
-				return mapGetter.apply(src).keySet();
-			}
-		});
-		sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(mapEntryPersister, mapProviderForInsert));
+		if (!maintainAssociationOnly) {
+			sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, K>(keyEntityPersister) {
+				
+				@Override
+				protected Collection<K> getTargets(SRC src) {
+					return mapGetter.apply(src).keySet();
+				}
+			});
+		}
+		if (writeAuthorized) {
+			Function<SRC, Collection<KeyValueRecord<KID, V, SRCID>>> mapProviderForInsert = toRecordCollectionProvider(sourcePersister.getMapping(), false);
+			sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(relationRecordPersister, mapProviderForInsert));
+		}
 	}
 	
 	@Override
 	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> elementRecordPersister) {
-		Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter = mapGetter.andThen(Map::entrySet);
-		BiConsumer<Duo<SRC, SRC>, Boolean> MapUpdater = new MapUpdater<>(targetEntitiesGetter, keyEntityPersister, elementRecordPersister, sourcePersister);
-		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(MapUpdater));
+									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
+		Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet);
+		BiConsumer<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(targetEntitiesGetter, keyEntityPersister,
+				relationRecordPersister, sourcePersister,
+				orphanRemoval, writeAuthorized, maintainAssociationOnly);
+		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
+	}
+	
+	@Override
+	protected void addDeleteCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
+		if (writeAuthorized) {
+			super.addDeleteCascade(sourcePersister, relationRecordPersister);
+		}
+		
+		if (orphanRemoval) {
+			Function<SRC, Set<K>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
+			sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, K>(keyEntityPersister) {
+				@Override
+				protected Collection<K> getTargets(SRC src) {
+					return targetEntitiesGetter.apply(src);
+				}
+			});
+		}
 	}
 	
 	@Override
@@ -308,20 +345,29 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 			};
 		}
 		
-		private final EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> elementRecordPersister;
+		private final EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> keyValueRecordPersister;
 		
 		private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 		
 		private final ConfiguredRelationalPersister<K, KID> keyEntityPersister;
+		private final boolean orphanRemoval;
+		private final boolean writeAuthorized;
+		private final boolean maintainAssociationOnly;
 		
 		public MapUpdater(Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
 						  ConfiguredRelationalPersister<K, KID> keyEntityPersister,
-						  EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> elementRecordPersister,
-						  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister) {
+						  EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> keyValueRecordPersister,
+						  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
+						  boolean orphanRemoval,
+						  boolean writeAuthorized,
+						  boolean maintainAssociationOnly) {
 			super(targetEntitiesGetter, asEntityWriter(keyEntityPersister), (o, i) -> { /* no reverse setter because we store only raw values */ }, true, entry -> keyEntityPersister.getId(entry.getKey()));
-			this.elementRecordPersister = elementRecordPersister;
+			this.keyValueRecordPersister = keyValueRecordPersister;
 			this.sourcePersister = sourcePersister;
 			this.keyEntityPersister = keyEntityPersister;
+			this.orphanRemoval = orphanRemoval;
+			this.writeAuthorized = writeAuthorized;
+			this.maintainAssociationOnly = maintainAssociationOnly;
 		}
 		
 		@Override
@@ -357,21 +403,29 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		@Override
 		protected void insertTargets(UpdateContext updateContext) {
 			// we insert association records after targets to satisfy integrity constraint
-			super.insertTargets(updateContext);
-			elementRecordPersister.insert(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
+			if (writeAuthorized) {
+				super.insertTargets(updateContext);
+				keyValueRecordPersister.insert(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
+			}
 		}
 		
 		@Override
 		protected void updateTargets(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, boolean allColumnsStatement) {
-			super.updateTargets(updateContext, allColumnsStatement);
-			elementRecordPersister.update(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), allColumnsStatement);
+			if (writeAuthorized) {
+				super.updateTargets(updateContext, allColumnsStatement);
+				keyValueRecordPersister.update(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), allColumnsStatement);
+			}
 		}
 		
 		@Override
 		protected void deleteTargets(UpdateContext updateContext) {
 			// we delete association records before targets to satisfy integrity constraint
-			elementRecordPersister.delete(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
-			super.deleteTargets(updateContext);
+			if (writeAuthorized) {
+				keyValueRecordPersister.delete(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
+			}
+			if (!maintainAssociationOnly && (orphanRemoval || writeAuthorized)) {
+				super.deleteTargets(updateContext);
+			}
 		}
 		
 		private KeyValueRecord<KID, V, SRCID> newRecord(SRC e, Entry<K, V> record) {
