@@ -46,6 +46,8 @@ public class Person implements Identified<Long> {
 	
 	private Map<Country, String> mapPropertyMadeOfEntityAsKey;
 	
+	private Map<String, Country> mapPropertyMadeOfEntityAsValue;
+	
 	public Person() {
 	}
 	
@@ -167,6 +169,14 @@ public class Person implements Identified<Long> {
 	
 	public void setMapPropertyMadeOfEntityAsKey(Map<Country, String> mapPropertyMadeOfEntityAsKey) {
 		this.mapPropertyMadeOfEntityAsKey = mapPropertyMadeOfEntityAsKey;
+	}
+	
+	public Map<String, Country> getMapPropertyMadeOfEntityAsValue() {
+		return mapPropertyMadeOfEntityAsValue;
+	}
+	
+	public void setMapPropertyMadeOfEntityAsValue(Map<String, Country> mapPropertyMadeOfEntityAsValue) {
+		this.mapPropertyMadeOfEntityAsValue = mapPropertyMadeOfEntityAsValue;
 	}
 	
 	@Override

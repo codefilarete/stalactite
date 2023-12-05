@@ -49,6 +49,7 @@ import org.codefilarete.stalactite.engine.ManyToManyOptions;
 import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.MapOptions;
 import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
+import org.codefilarete.stalactite.engine.MapOptions.ValueAsEntityMapOptions;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.OneToManyOptions;
 import org.codefilarete.stalactite.engine.OneToOneOptions;
@@ -400,8 +401,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 					}
 					
 					@Override
-					public MapOptions withValueMapping(EntityMappingConfigurationProvider mappingConfigurationProvider) {
-						mapRelation.setValueConfigurationProvider(mappingConfigurationProvider);
+					public ValueAsEntityMapOptions withValueMapping(EntityMappingConfigurationProvider mappingConfigurationProvider) {
+						// This method is not call because it is overwritten by a dedicated redirect(..) call below
+						// mapRelation.setValueConfigurationProvider(mappingConfigurationProvider);
 						return null;
 					}
 					
@@ -454,6 +456,17 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 							.fallbackOn(FluentEntityMappingConfigurationSupport.this)
 							.build((Class<FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderKeyAsEntityMapOptions.class);
 				})
+				.redirect((SerializableBiFunction<MapOptions, EntityMappingConfigurationProvider, ValueAsEntityMapOptions>) MapOptions::withValueMapping,
+						entityMappingConfigurationProvider -> {
+							mapRelation.setValueConfigurationProvider(entityMappingConfigurationProvider);
+							return new MethodReferenceDispatcher()
+									.redirect(ValueAsEntityMapOptions.class, relationMode -> {
+										mapRelation.setValueEntityRelationMode(relationMode);
+										return null;
+									}, true)
+									.fallbackOn(FluentEntityMappingConfigurationSupport.this)
+									.build((Class<FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderValueAsEntityMapOptions.class);
+						})
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderMapOptions.class);
 	}

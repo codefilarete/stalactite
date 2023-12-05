@@ -66,6 +66,9 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode keyEntityRelationMode = RelationMode.ALL;
 	
+	/** Default relation mode is {@link RelationMode#ALL} */
+	private RelationMode valueEntityRelationMode = RelationMode.ALL;
+	
 	private boolean fetchSeparately;
 	
 	public MapRelation(SerializableBiConsumer<SRC, M> setter,
@@ -222,6 +225,14 @@ public class MapRelation<SRC, K, V, M extends Map<K, V>> {
 	
 	public void setKeyEntityRelationMode(RelationMode keyEntityRelationMode) {
 		this.keyEntityRelationMode = keyEntityRelationMode;
+	}
+	
+	public RelationMode getValueEntityRelationMode() {
+		return valueEntityRelationMode;
+	}
+	
+	public void setValueEntityRelationMode(RelationMode valueEntityRelationMode) {
+		this.valueEntityRelationMode = valueEntityRelationMode;
 	}
 	
 	public boolean isFetchSeparately() {

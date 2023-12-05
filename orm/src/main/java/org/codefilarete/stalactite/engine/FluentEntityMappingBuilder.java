@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
+import org.codefilarete.stalactite.engine.MapOptions.ValueAsEntityMapOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.function.Serie;
@@ -741,7 +742,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
 		
 		@Override
-		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
+		FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
 		
 		@Override
 		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
@@ -767,6 +768,13 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
+	}
+	
+	interface FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M extends Map<K, V>>
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, ValueAsEntityMapOptions<K, V, M> {
+		
+		@Override
+		FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>

@@ -37,7 +37,7 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	 */
 	MapOptions<K, V, M> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
 	
-	MapOptions<K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
+	ValueAsEntityMapOptions<K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
 	
 	/**
 	 * Indicates mapping to be used for {@link Map} values when it's a bean type.
@@ -78,6 +78,12 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	MapOptions<K, V, M> fetchSeparately();
 	
 	interface KeyAsEntityMapOptions<K, V, M extends Map<K, V>> {
+		
+		MapOptions<K, V, M> cascading(RelationMode relationMode);
+		
+	}
+	
+	interface ValueAsEntityMapOptions<K, V, M extends Map<K, V>> {
 		
 		MapOptions<K, V, M> cascading(RelationMode relationMode);
 		
