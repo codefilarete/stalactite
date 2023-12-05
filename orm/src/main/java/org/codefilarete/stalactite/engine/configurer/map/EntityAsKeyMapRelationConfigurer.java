@@ -17,6 +17,7 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.CascadeOptions;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
@@ -89,9 +90,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	private final Function<SRC, M> mapGetter;
 	private final InMemoryRelationHolder<SRCID, K, KID, V> inMemoryRelationHolder;
 	private Key<?, KID> keyIdColumnsProjectInAssociationTable;
-	private final boolean orphanRemoval;
-	private final boolean writeAuthorized;
-	private final boolean maintainAssociationOnly;
+	private final RelationMode maintenanceMode;
 	
 	public EntityAsKeyMapRelationConfigurer(
 			MapRelation<SRC, K, V, M> mapRelation,
@@ -113,12 +112,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		this.keyEntityPersister = keyEntityPersister;
 		this.mapGetter = originalMapRelation.getMapProvider()::get;
 		this.inMemoryRelationHolder = new InMemoryRelationHolder<>();
-		
-		RelationMode maintenanceMode = mapRelation.getKeyEntityRelationMode();
-		// selection is always present (else configuration is nonsense !)
-		this.orphanRemoval = maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL;
-		this.writeAuthorized = maintenanceMode != RelationMode.READ_ONLY;
-		this.maintainAssociationOnly = maintenanceMode == RelationMode.ASSOCIATION_ONLY;
+		this.maintenanceMode = mapRelation.getKeyEntityRelationMode();
 	}
 	
 	@Override
@@ -204,7 +198,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 	protected void addInsertCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> relationRecordPersister,
 									Accessor<SRC, MM> mapAccessor) {
-		if (!maintainAssociationOnly) {
+		if (maintenanceMode != RelationMode.READ_ONLY) {
 			sourcePersister.addInsertListener(new BeforeInsertCollectionCascader<SRC, K>(keyEntityPersister) {
 				
 				@Override
@@ -213,7 +207,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				}
 			});
 		}
-		if (writeAuthorized) {
+		if (maintenanceMode != RelationMode.READ_ONLY) {
 			Function<SRC, Collection<KeyValueRecord<KID, V, SRCID>>> mapProviderForInsert = toRecordCollectionProvider(sourcePersister.getMapping(), false);
 			sourcePersister.addInsertListener(new TargetInstancesInsertCascader<>(relationRecordPersister, mapProviderForInsert));
 		}
@@ -224,18 +218,18 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 									EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
 		Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet);
 		BiConsumer<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(targetEntitiesGetter, keyEntityPersister,
-				relationRecordPersister, sourcePersister,
-				orphanRemoval, writeAuthorized, maintainAssociationOnly);
+				relationRecordPersister, sourcePersister, maintenanceMode
+		);
 		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
 	}
 	
 	@Override
 	protected void addDeleteCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister, EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> relationRecordPersister) {
-		if (writeAuthorized) {
+		if (maintenanceMode != RelationMode.READ_ONLY) {
 			super.addDeleteCascade(sourcePersister, relationRecordPersister);
 		}
 		
-		if (orphanRemoval) {
+		if (maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
 			Function<SRC, Set<K>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet).andThen(entries -> entries.stream().map(Entry::getKey).collect(Collectors.toSet()));
 			sourcePersister.addDeleteListener(new BeforeDeleteCollectionCascader<SRC, K>(keyEntityPersister) {
 				@Override
@@ -277,7 +271,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 				new BeanRelationFixer<C, K>() {
 					@Override
 					public void apply(C bean, K input) {
-						inMemoryRelationHolder3.store(((KeyValueRecord<KID, V, I>) bean).getId().getId(), keyEntityPersister.getId(input), input);
+						inMemoryRelationHolder.store(((KeyValueRecord<KID, V, I>) bean).getId().getId(), keyEntityPersister.getId(input), input);
 					}
 				},
 				null, associationTableJoinNodeName, true, false);
@@ -350,24 +344,22 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 		
 		private final ConfiguredRelationalPersister<K, KID> keyEntityPersister;
-		private final boolean orphanRemoval;
-		private final boolean writeAuthorized;
-		private final boolean maintainAssociationOnly;
+		private final RelationMode maintenanceMode;
 		
 		public MapUpdater(Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
 						  ConfiguredRelationalPersister<K, KID> keyEntityPersister,
 						  EntityPersister<KeyValueRecord<KID, V, SRCID>, RecordId<KID, SRCID>> keyValueRecordPersister,
 						  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-						  boolean orphanRemoval,
-						  boolean writeAuthorized,
-						  boolean maintainAssociationOnly) {
-			super(targetEntitiesGetter, asEntityWriter(keyEntityPersister), (o, i) -> { /* no reverse setter because we store only raw values */ }, true, entry -> keyEntityPersister.getId(entry.getKey()));
+						  RelationMode maintenanceMode) {
+			super(targetEntitiesGetter,
+					asEntityWriter(keyEntityPersister),
+					(o, i) -> { /* no reverse setter because we store only raw values */ },
+					true,
+					entry -> keyEntityPersister.getId(entry.getKey()));
 			this.keyValueRecordPersister = keyValueRecordPersister;
 			this.sourcePersister = sourcePersister;
 			this.keyEntityPersister = keyEntityPersister;
-			this.orphanRemoval = orphanRemoval;
-			this.writeAuthorized = writeAuthorized;
-			this.maintainAssociationOnly = maintainAssociationOnly;
+			this.maintenanceMode = maintenanceMode;
 		}
 		
 		@Override
@@ -403,7 +395,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		@Override
 		protected void insertTargets(UpdateContext updateContext) {
 			// we insert association records after targets to satisfy integrity constraint
-			if (writeAuthorized) {
+			if (maintenanceMode != CascadeOptions.RelationMode.READ_ONLY) {
 				super.insertTargets(updateContext);
 				keyValueRecordPersister.insert(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
 			}
@@ -411,7 +403,7 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		
 		@Override
 		protected void updateTargets(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, boolean allColumnsStatement) {
-			if (writeAuthorized) {
+			if (maintenanceMode != CascadeOptions.RelationMode.READ_ONLY) {
 				super.updateTargets(updateContext, allColumnsStatement);
 				keyValueRecordPersister.update(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), allColumnsStatement);
 			}
@@ -420,10 +412,10 @@ public class EntityAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, M extends M
 		@Override
 		protected void deleteTargets(UpdateContext updateContext) {
 			// we delete association records before targets to satisfy integrity constraint
-			if (writeAuthorized) {
+			if (maintenanceMode != CascadeOptions.RelationMode.READ_ONLY) {
 				keyValueRecordPersister.delete(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
 			}
-			if (!maintainAssociationOnly && (orphanRemoval || writeAuthorized)) {
+			if (maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
 				super.deleteTargets(updateContext);
 			}
 		}

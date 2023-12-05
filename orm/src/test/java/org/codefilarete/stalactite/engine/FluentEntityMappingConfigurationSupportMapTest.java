@@ -726,7 +726,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
 					.mapKey("id", Long.class)
 					.execute();
-			assertThat(remainingCountries).containsExactlyInAnyOrder(2L, 3L);
+			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
 		}
 		
 		@Test
