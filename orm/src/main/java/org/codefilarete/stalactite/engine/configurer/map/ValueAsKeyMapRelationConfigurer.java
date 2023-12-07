@@ -1,23 +1,19 @@
 package org.codefilarete.stalactite.engine.configurer.map;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.AccessorDefinitionDefiner;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
@@ -26,9 +22,7 @@ import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.MapEntryTableNamingStrategy;
 import org.codefilarete.stalactite.engine.cascade.BeforeDeleteCollectionCascader;
 import org.codefilarete.stalactite.engine.cascade.BeforeInsertCollectionCascader;
-import org.codefilarete.stalactite.engine.diff.AbstractDiff;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
@@ -46,12 +40,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.bean.Objects;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Functions.NullProofFunction;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Handle particular case of {@link MapRelationConfigurer} when Map key is an entity : it requires some cascading
@@ -67,21 +58,21 @@ import static org.codefilarete.tool.Nullable.nullable;
  * @param <MM> redefined Map type to get entity key identifier 
  * @author Guillaume Mary
  */
-public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M extends Map<K, V>, MM extends Map<K, VID>> extends MapRelationConfigurer<SRC, SRCID, K, VID, MM> {
+public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, V, VID, M extends Map<K, V>, MM extends Map<K, VID>> extends MapRelationConfigurer<SRC, SRCID, K, VID, MM> {
 	
 	private static <SRC, K, V, VID, M extends Map<K, V>, MM extends Map<K, VID>> MapRelation<SRC, K, VID, MM> convertEntityMapToIdentifierMap(
 			MapRelation<SRC, K, V, M> mapRelation,
 			ConfiguredRelationalPersister<V, VID> valueEntityPersister) {
-		MapAccessor<SRC, K, V, VID, M, MM> srckvvidmMapMapAccessor = new MapAccessor<>(mapRelation, valueEntityPersister);
-		PropertyAccessor<SRC, MM> ctPropertyAccessor = new PropertyAccessor<>(
-				srckvvidmMapMapAccessor,
+		ConvertingMapAccessor<SRC, K, V, K, VID, M, MM> mapAccessor = new ConvertingMapAccessor<>(mapRelation, (k, v, result) -> result.put(k, valueEntityPersister.getId(v)));
+		PropertyAccessor<SRC, MM> propertyAccessor = new PropertyAccessor<>(
+				mapAccessor,
 				(src, mm) -> {
 					// No setter need because afterSelect(..) method is in charge of setting the values (too complex to be done here)
 					// Don't give null Mutator to avoir NPE later
 				}
 		);
 		return new MapRelation<>(
-				ctPropertyAccessor,
+				propertyAccessor,
 				mapRelation.getKeyType(),
 				valueEntityPersister.getMapping().getIdMapping().getIdentifierInsertionManager().getIdentifierType());
 	}
@@ -93,7 +84,6 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M exten
 	private final InMemoryRelationHolder<SRCID, K, VID, V> inMemoryRelationHolder;
 	private Key<?, VID> keyIdColumnsProjectInAssociationTable;
 	private final RelationMode maintenanceMode;
-	private final boolean maintainAssociationOnly;
 	
 	public ValueAsKeyMapRelationConfigurer(
 			MapRelation<SRC, K, V, M> mapRelation,
@@ -114,11 +104,8 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M exten
 		this.originalMapRelation = mapRelation;
 		this.valueEntityPersister = valueEntityPersister;
 		this.mapGetter = originalMapRelation.getMapProvider()::get;
-		this.inMemoryRelationHolder = new InMemoryRelationHolder<>();
-		
+		this.inMemoryRelationHolder = new InMemoryRelationHolder<>(trio -> new Duo<>(trio.getKeyLookup(), trio.getEntity()));
 		this.maintenanceMode = mapRelation.getValueEntityRelationMode();
-		// selection is always present (else configuration is nonsense !)
-		this.maintainAssociationOnly = maintenanceMode == RelationMode.ASSOCIATION_ONLY;
 	}
 	
 	@Override
@@ -142,7 +129,7 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M exten
 						mapFactory,
 						(bean, duo, map) -> map.put(duo.getLeft(), duo.getRight()));
 				result.forEach(bean -> {
-					Collection<Duo<K, V>> keyValuePairs = inMemoryRelationHolder.get(sourcePersister.getId(bean));
+					Collection<Duo<K, V>> keyValuePairs = (Collection) inMemoryRelationHolder.get(sourcePersister.getId(bean));
 					if (keyValuePairs != null) {
 						keyValuePairs.forEach(duo -> originalRelationFixer.apply(bean, duo));
 					} // else : no association record
@@ -223,8 +210,12 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M exten
 	protected void addUpdateCascade(ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									EntityPersister<KeyValueRecord<K, VID, SRCID>, RecordId<K, SRCID>> relationRecordPersister) {
 		Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter = new NullProofFunction<>(mapGetter).andThen(Map::entrySet);
+		BiFunction<Entry<K, V>, SRCID, KeyValueRecord<K, VID, SRCID>> entryKeyValueRecordFunction =
+				(record, srcId) -> new KeyValueRecord<>(srcId, record.getKey(), valueEntityPersister.getId(record.getValue()));
 		BiConsumer<Duo<SRC, SRC>, Boolean> mapUpdater = new MapUpdater<>(targetEntitiesGetter, valueEntityPersister,
-				relationRecordPersister, sourcePersister, maintenanceMode);
+				relationRecordPersister, sourcePersister, maintenanceMode,
+				Entry::getValue, entryKeyValueRecordFunction
+		);
 		sourcePersister.addUpdateListener(new AfterUpdateTrigger<>(mapUpdater));
 	}
 	
@@ -259,7 +250,7 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M exten
 				mapGetter,
 				mapFactory,
 				(bean, input, map) -> {
-					inMemoryRelationHolder.store(sourcePersister.getId(bean), input);
+					inMemoryRelationHolder.storeRelation(sourcePersister.getId(bean), input.getKey(), input.getValue());
 				});
 		
 		// we add target subgraph joins to main persister
@@ -285,7 +276,7 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M exten
 		valueEntityPersister.joinAsMany(relationRecordPersister,
 				(Key<Table, VID>) keyIdColumnsProjectInAssociationTable,
 				primaryKey,
-				(bean, input) -> inMemoryRelationHolder.store(bean.getId().getId(), bean.getKey(), input),
+				(bean, input) -> inMemoryRelationHolder.storeEntity(bean.getId().getId(), bean.getKey(), input),
 				null, ROOT_STRATEGY_NAME, true, false);
 		
 		relationRecordPersister.joinAsMany(
@@ -297,290 +288,5 @@ public class ValueAsKeyMapRelationConfigurer<SRC, SRCID, K, KID, V, VID, M exten
 				ROOT_STRATEGY_NAME,
 				true,
 				originalMapRelation.isFetchSeparately());
-	}
-	
-	/**
-	 * Class aimed at doing same thing as {@link CollectionUpdater} but for {@link Map} containing entities as keys :
-	 * requires to update {@link Entry} as well as propagate insert / update /delete operation to key-entities. 
-	 *
-	 * @param <SRC> entity type owning the relation
-	 * @param <SRCID> entity owning the relation identifier type 
-	 * @param <K> Map key entity type
-	 * @param <V> Map value type
-	 * @param <VID> Map value entity identifier type
-	 * @author Guillaume Mary
-	 */
-	private static class MapUpdater<SRC, SRCID, K, VID, V> extends CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>> {
-		
-		private static <K, V, VID> EntityWriter<Entry<K, V>> asEntityWriter(ConfiguredRelationalPersister<V, VID> valueEntityPersister) {
-			return new EntityWriter<Entry<K, V>>() {
-				
-				@Override
-				public void update(Iterable<? extends Duo<Entry<K, V>, Entry<K, V>>> differencesIterable, boolean allColumnsStatement) {
-					valueEntityPersister.update(Iterables.stream(differencesIterable)
-							.map(duo -> new Duo<>(duo.getLeft().getValue(), duo.getRight().getValue()))
-							.collect(Collectors.toSet()), allColumnsStatement);
-				}
-				
-				@Override
-				public void delete(Iterable<? extends Entry<K, V>> entities) {
-					valueEntityPersister.delete(Iterables.stream(entities).map(Entry::getValue).collect(Collectors.toSet()));
-				}
-				
-				@Override
-				public void persist(Iterable<? extends Entry<K, V>> entities) {
-					valueEntityPersister.persist(Iterables.stream(entities).map(Entry::getValue).collect(Collectors.toSet()));
-				}
-				
-				@Override
-				public boolean isNew(Entry<K, V> entity) {
-					return valueEntityPersister.isNew(entity.getValue());
-				}
-				
-				@Override
-				public void updateById(Iterable<? extends Entry<K, V>> entities) {
-					valueEntityPersister.updateById(Iterables.stream(entities).map(Entry::getValue).collect(Collectors.toSet()));
-				}
-			};
-		}
-		
-		private final EntityPersister<KeyValueRecord<K, VID, SRCID>, RecordId<K, SRCID>> keyValueRecordPersister;
-		
-		private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
-		
-		private final ConfiguredRelationalPersister<V, VID> valueEntityPersister;
-		private final RelationMode maintenanceMode;
-		
-		public MapUpdater(Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
-						  ConfiguredRelationalPersister<V, VID> valueEntityPersister,
-						  EntityPersister<KeyValueRecord<K, VID, SRCID>, RecordId<K, SRCID>> keyValueRecordPersister,
-						  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
-						  RelationMode maintenanceMode) {
-			super(targetEntitiesGetter,
-					asEntityWriter(valueEntityPersister),
-					(o, i) -> { /* no reverse setter because we store only raw values */ },
-					true,
-					entry -> valueEntityPersister.getId(entry.getValue()));
-//					Entry::getKey);
-			this.keyValueRecordPersister = keyValueRecordPersister;
-			this.sourcePersister = sourcePersister;
-			this.valueEntityPersister = valueEntityPersister;
-			this.maintenanceMode = maintenanceMode;
-		}
-		
-		@Override
-		protected KeyValueAssociationTableUpdateContext newUpdateContext(Duo<SRC, SRC> updatePayload) {
-			return new KeyValueAssociationTableUpdateContext(updatePayload);
-		}
-		
-		@Override
-		protected void onAddedElements(UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
-			super.onAddedElements(updateContext, diff);
-			KeyValueRecord<K, VID, SRCID> associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance());
-			((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted().add(associationRecord);
-		}
-		
-		@Override
-		protected void onHeldElements(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
-			super.onHeldElements(updateContext, diff);
-			Duo<KeyValueRecord<K, VID, SRCID>, KeyValueRecord<K, VID, SRCID>> associationRecord = new Duo<>(
-					newRecord(updateContext.getPayload().getLeft(), diff.getReplacingInstance()),
-					newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance())
-			);
-			((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated().add(associationRecord);
-		}
-		
-		@Override
-		protected void onRemovedElements(UpdateContext updateContext, AbstractDiff<Entry<K, V>> diff) {
-			super.onRemovedElements(updateContext, diff);
-			
-			KeyValueRecord<K, VID, SRCID> associationRecord = newRecord(updateContext.getPayload().getLeft(), diff.getSourceInstance());
-			((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted().add(associationRecord);
-		}
-		
-		@Override
-		protected void insertTargets(UpdateContext updateContext) {
-			// we insert association records after targets to satisfy integrity constraint
-			if (maintenanceMode != RelationMode.READ_ONLY && maintenanceMode != RelationMode.ASSOCIATION_ONLY) {
-				super.insertTargets(updateContext);
-			}
-			if (maintenanceMode != RelationMode.READ_ONLY) {
-				super.insertTargets(updateContext);
-				keyValueRecordPersister.insert(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeInserted());
-			}
-		}
-		
-		@Override
-		protected void updateTargets(CollectionUpdater<SRC, Entry<K, V>, Set<Entry<K, V>>>.UpdateContext updateContext, boolean allColumnsStatement) {
-			if (maintenanceMode != RelationMode.READ_ONLY && maintenanceMode != RelationMode.ASSOCIATION_ONLY) {
-				super.updateTargets(updateContext, allColumnsStatement);
-			}
-			if (maintenanceMode != RelationMode.READ_ONLY) {
-				keyValueRecordPersister.update(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeUpdated(), allColumnsStatement);
-			}
-		}
-		
-		@Override
-		protected void deleteTargets(UpdateContext updateContext) {
-			// we delete association records before targets to satisfy integrity constraint
-			if (maintenanceMode != RelationMode.READ_ONLY) {
-				keyValueRecordPersister.delete(((KeyValueAssociationTableUpdateContext) updateContext).getAssociationRecordsToBeDeleted());
-			}
-			if (maintenanceMode == RelationMode.ALL_ORPHAN_REMOVAL) {
-				super.deleteTargets(updateContext);
-			}
-		}
-		
-		private KeyValueRecord<K, VID, SRCID> newRecord(SRC e, Entry<K, V> record) {
-			return new KeyValueRecord<>(sourcePersister.getId(e), record.getKey(), valueEntityPersister.getId(record.getValue()));
-		}
-		
-		class KeyValueAssociationTableUpdateContext extends UpdateContext {
-			
-			private final List<KeyValueRecord<K, VID, SRCID>> associationRecordsToBeInserted = new ArrayList<>();
-			private final List<Duo<KeyValueRecord<K, VID, SRCID>, KeyValueRecord<K, VID, SRCID>>> associationRecordsToBeUpdated = new ArrayList<>();
-			private final List<KeyValueRecord<K, VID, SRCID>> associationRecordsToBeDeleted = new ArrayList<>();
-			
-			public KeyValueAssociationTableUpdateContext(Duo<SRC, SRC> updatePayload) {
-				super(updatePayload);
-			}
-			
-			public List<KeyValueRecord<K, VID, SRCID>> getAssociationRecordsToBeInserted() {
-				return associationRecordsToBeInserted;
-			}
-			
-			public List<Duo<KeyValueRecord<K, VID, SRCID>, KeyValueRecord<K, VID, SRCID>>> getAssociationRecordsToBeUpdated() {
-				return associationRecordsToBeUpdated;
-			}
-			
-			public List<KeyValueRecord<K, VID, SRCID>> getAssociationRecordsToBeDeleted() {
-				return associationRecordsToBeDeleted;
-			}
-		}
-	}
-	
-	/**
-	 * {@link Accessor} that converts Map&lt;K, V&gt; to Map&lt;KID, V&gt; on {@link #get(Object)}.
-	 * Could have been an anonymous class but {@link MapRelationConfigurer} requires to call {@link AccessorDefinition#giveDefinition(ValueAccessPoint)}
-	 * at some point, which causes {@link UnsupportedOperationException} since the anonymous class is unknown from it.
-	 * Though it as to be a named class, moreover {@link AccessorDefinition} has been enhanced take into account classes that provides their
-	 * {@link AccessorDefinition} by their own through {@link AccessorDefinitionDefiner}.
-	 * 
-	 * @param <SRC> entity type owning the relation
-	 * @param <K> Map key entity type
-	 * @param <V> Map value type
-	 * @param <VID> Map value entity identifier type
-	 * @param <M> relation Map type
-	 * @param <MM> redefined Map type to get entity key identifier 
-	 * @author Guillaume Mary
-	 */
-	private static class MapAccessor<SRC, K, V, VID, M extends Map<K, V>, MM extends Map<K, VID>> implements Accessor<SRC, MM>, AccessorDefinitionDefiner<SRC> {
-		
-		private final MapRelation<SRC, K, V, M> map;
-		
-		private final ConfiguredRelationalPersister<V, VID> valueEntityPersister;
-		private final AccessorDefinition accessorDefinition;
-		
-		public MapAccessor(MapRelation<SRC, K, V, M> map, ConfiguredRelationalPersister<V, VID> valueEntityPersister) {
-			this.map = map;
-			this.valueEntityPersister = valueEntityPersister;
-			this.accessorDefinition = AccessorDefinition.giveDefinition(this.map.getMapProvider());
-		}
-		
-		@Override
-		public MM get(SRC SRC) {
-			M m = map.getMapProvider().get(SRC);
-			if (m != null) {
-				MM result = (MM) new HashMap<>();    // we can use an HashMap since KID should have equals() + hashCode() implemented since its an identifier
-				m.forEach((k, v) -> result.put(k, valueEntityPersister.getId(v)));
-				return result;
-			} else {
-				return null;
-			}
-		}
-		
-		@Override
-		public AccessorDefinition asAccessorDefinition() {
-			return this.accessorDefinition;
-		}
-	}
-	
-	/**
-	 * Made to store links between :
-	 * - source entity and [key-entity-id, value] pairs on one hand
-	 * - key-value records and key entity on the other hand
-	 * which let caller seam source entity and its [key entity, value] pairs afterward.
-	 * This is made necessary due to double join creation between
-	 * - source entity table and association table on one hand
-	 * - association table and key-entity table on one hand
-	 * Look at joinAsMany(..) invocations in {@link ValueAsKeyMapRelationConfigurer#addSelectCascade(ConfiguredRelationalPersister, SimpleRelationalEntityPersister, PrimaryKey, ForeignKey, BiConsumer, Function, Supplier)}  
-	 * This is the goal and need, implementation differ due to simplification made after first intent. 
-	 * 
-	 * Expected to be used in a {@link SelectListener} to {@link #init()} it before select and {@link #clear()} it after select.
-	 * 
-	 * @param <I>
-	 * @param <K>
-	 * @param <V>
-	 * @param <VID>
-	 * @author Guillaume Mary
-	 */
-	private static class InMemoryRelationHolder<I, K, VID, V> {
-		
-		private class Trio {
-			private K x;
-			private VID y;
-			private V z;
-		}
-		
-		/**
-		 * In memory and temporary Map storage.
-		 */
-		private final ThreadLocal<Map<I, Set<Trio>>> relationCollectionPerEntity = new ThreadLocal<>();
-		
-		public InMemoryRelationHolder() {
-		}
-		
-		public void store(I source, KeyValueRecord<K, VID, I> keyValueRecord) {
-			Map<I, Set<Trio>> srcidcMap = relationCollectionPerEntity.get();
-			Set<Trio> relatedDuos = srcidcMap.computeIfAbsent(source, id -> new HashSet<>());
-			Trio trio = relatedDuos.stream().filter(pawn -> pawn.x == keyValueRecord.getKey()).findAny().orElseGet(() -> {
-				Trio result = new Trio();
-				relatedDuos.add(result);
-				return result;
-			});
-			trio.x = keyValueRecord.getKey();
-			trio.y = keyValueRecord.getValue();
-		}
-		
-		public void store(I source, K identifier, V input) {
-			Map<I, Set<Trio>> srcidcMap = relationCollectionPerEntity.get();
-			Set<Trio> relatedDuos = srcidcMap.computeIfAbsent(source, id -> new HashSet<>());
-			Trio trio = relatedDuos.stream().filter(pawn -> Objects.equals(pawn.x, identifier)).findAny().orElseGet(() -> {
-				Trio result = new Trio();
-				relatedDuos.add(result);
-				return result;
-			});
-			trio.x = identifier;
-			trio.z = input;
-			// bidirectional assignment
-//			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).accept(input, source);
-		}
-		
-		public Collection<Duo<K, V>> get(I src) {
-			Map<I, Set<Trio>> currentMap = relationCollectionPerEntity.get();
-			return nullable(currentMap)
-					.map(map -> map.get(src))
-					.map(map -> map.stream().map(trio -> new Duo<>(trio.x, trio.z))
-							.collect(Collectors.toSet()))
-					.get();
-		}
-		
-		public void init() {
-			this.relationCollectionPerEntity.set(new HashMap<>());
-		}
-		
-		public void clear() {
-			this.relationCollectionPerEntity.remove();
-		}
 	}
 }
