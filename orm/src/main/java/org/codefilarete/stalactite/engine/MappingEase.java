@@ -6,6 +6,7 @@ import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigur
 import org.codefilarete.stalactite.engine.configurer.FluentSubEntityMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
@@ -27,7 +28,11 @@ public final class MappingEase {
 	 */
 	@SuppressWarnings("squid:S1172")	// identifierType is used to sign result
 	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType) {
-		return new FluentEntityMappingConfigurationSupport<>(classToPersist);
+		return entityBuilder(classToPersist, identifierType, null);
+	}
+	
+	public static <T, I> FluentEntityMappingBuilder<T, I> entityBuilder(Class<T> classToPersist, Class<I> identifierType, Table<?> targetTable) {
+		return new FluentEntityMappingConfigurationSupport<>(classToPersist, targetTable);
 	}
 	
 	public static <T, I> FluentSubEntityMappingBuilder<T, Object> subentityBuilder(Class<T> classToPersist) {

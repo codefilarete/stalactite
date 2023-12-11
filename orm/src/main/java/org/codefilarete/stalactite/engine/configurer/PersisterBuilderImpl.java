@@ -133,16 +133,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
-		return build(persistenceContext, null);
-	}
-	
-	@Override
-	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext, @Nullable Table table) {
 		return build(
 				persistenceContext.getDialect(),
 				OptimizedUpdatePersister.wrapWithQueryCache(persistenceContext.getConnectionConfiguration()),
 				persistenceContext,
-				table);
+				this.table);
 	}
 	
 	/**

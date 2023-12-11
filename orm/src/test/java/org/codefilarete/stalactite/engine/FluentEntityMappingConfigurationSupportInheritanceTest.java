@@ -480,11 +480,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Vehicle::getColor)
 					.getConfiguration();
 			
-			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
+			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE, mappedSuperClassData.carTable)
 					.map(Car::getModel)
 					.mapSuperClass(inheritanceConfiguration)
 					.withJoinedTable()
-					.build(persistenceContext, mappedSuperClassData.carTable);
+					.build(persistenceContext);
 			
 			// as an inherited entity, the table should be in the context
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);

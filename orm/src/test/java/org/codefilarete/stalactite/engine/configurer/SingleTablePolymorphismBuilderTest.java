@@ -49,7 +49,7 @@ class SingleTablePolymorphismBuilderTest {
 		Table expectedResult = new Table("MyOverridingTable");
 		Column colorTable = expectedResult.addColumn("myOverridingColumn", Integer.class);
 		
-		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE)
+		FluentEntityMappingBuilder<Vehicle, Identifier<Long>> configuration = entityBuilder(Vehicle.class, LONG_TYPE, new Table("TargetTable"))
 				.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
 						.addSubClass(subentityBuilder(Car.class)
@@ -58,7 +58,7 @@ class SingleTablePolymorphismBuilderTest {
 										.map(Color::getRgb)).override(Color::getRgb, colorTable), "CAR"));
 		
 		
-		assertThatThrownBy(() -> configuration.build(persistenceContext, new Table("TargetTable")))
+		assertThatThrownBy(() -> configuration.build(persistenceContext))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Table declared in inheritance is different from given one in embeddable properties override : MyOverridingTable, TargetTable");
 	}

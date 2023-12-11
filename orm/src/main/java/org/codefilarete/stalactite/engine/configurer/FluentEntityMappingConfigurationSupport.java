@@ -91,6 +91,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	private final Class<C> classToPersist;
 	
+	@javax.annotation.Nullable
+	private final Table<?> targetTable;
+	
 	private TableNamingStrategy tableNamingStrategy = TableNamingStrategy.DEFAULT;
 	
 	private KeyMapping<C, I> keyMapping;
@@ -135,7 +138,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	 * @param classToPersist the class to create a mapping for
 	 */
 	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist) {
+		this(classToPersist, null);
+	}
+	
+	public FluentEntityMappingConfigurationSupport(Class<C> classToPersist, Table<?> targetTable) {
 		this.classToPersist = classToPersist;
+		this.targetTable = targetTable;
 		
 		// Helper to capture Method behind method reference
 		this.methodSpy = new MethodReferenceCapturer();
@@ -914,12 +922,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
-		return build(persistenceContext, null);
-	}
-	
-	@Override
-	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext, @javax.annotation.Nullable Table targetTable) {
-		return new PersisterBuilderImpl<>(this.getConfiguration()).build(persistenceContext, targetTable);
+		PersisterBuilderImpl<C, I> persisterBuilder = new PersisterBuilderImpl<>(this.getConfiguration());
+		persisterBuilder.setTable(targetTable);
+		return persisterBuilder.build(persistenceContext);
 	}
 	
 	/**
