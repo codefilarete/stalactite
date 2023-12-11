@@ -79,12 +79,30 @@ public interface MapOptions<K, V, M extends Map<K, V>> {
 	
 	interface KeyAsEntityMapOptions<K, V, M extends Map<K, V>> {
 		
+		/**
+		 * Defines how cascading is applied to key entries and key entities of a {@link Map} relation.
+		 * If given mode is a writable one ({@link RelationMode#ASSOCIATION_ONLY}, {@link RelationMode#ALL_ORPHAN_REMOVAL}, {@link RelationMode#ALL})
+		 * then association records are also considered writable (keys and values). As a consequence, giving {@link RelationMode#READ_ONLY} makes
+		 * them read-only too.
+		 * 
+		 * @param relationMode a {@link RelationMode}
+		 * @return a proxy letting caller chain the result with some methods of {@link MapOptions} to create its configuration fluently 
+		 */
 		MapOptions<K, V, M> cascading(RelationMode relationMode);
 		
 	}
 	
 	interface ValueAsEntityMapOptions<K, V, M extends Map<K, V>> {
 		
+		/**
+		 * Defines how cascading is applied to value entities of a {@link Map} relation.
+		 * Note that as a difference with {@link KeyAsEntityMapOptions#cascading(RelationMode)} this method doesn't drive
+		 * association records : it only acts on value entities by managing their cascade on their table, but not in the
+		 * association table.
+		 *
+		 * @param relationMode a {@link RelationMode}
+		 * @return a proxy letting caller chain the result with some methods of {@link MapOptions} to create its configuration fluently 
+		 */
 		MapOptions<K, V, M> cascading(RelationMode relationMode);
 		
 	}

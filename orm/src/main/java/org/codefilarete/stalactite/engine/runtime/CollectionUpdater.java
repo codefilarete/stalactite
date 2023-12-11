@@ -35,7 +35,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	
 	private final Function<I, C> collectionGetter;
 	private final BiConsumer<O, I> reverseSetter;
-	private final EntityWriter<O> elementPersister;
+	protected final EntityWriter<O> elementPersister;
 	private final boolean shouldDeleteRemoved;
 	
 	/**

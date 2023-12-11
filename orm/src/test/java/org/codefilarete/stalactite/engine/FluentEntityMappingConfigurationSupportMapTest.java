@@ -13,8 +13,10 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
+import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Person.AddressBookType;
@@ -896,6 +898,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			
 			Person loadedPerson = personPersister.select(person.getId());
 			
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKey()).containsExactlyEntriesOf(Maps.forHashMap(Country.class, String.class)
+					.add(new Country(1), "Grenoble")
+					.add(new Country(2), "Lyon")
+			);
+			
 			person.getMapPropertyMadeOfEntityAsKey().remove(country1);
 			// Changing entry value to check value is also updated
 			person.getMapPropertyMadeOfEntityAsKey().put(country2, "Paris");
@@ -919,7 +926,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
 					.mapKey("key", Long.class)
 					.execute();
-			// Country 2 should still be present
+			// Country 1 & 2 should still be present
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 			
 			// by default key entities are not deleted since cascading is not defined
@@ -1192,6 +1199,11 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.execute();
 
 			Person loadedPerson = personPersister.select(person.getId());
+			
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsValue()).containsExactlyEntriesOf(Maps.forHashMap(String.class, Country.class)
+					.add("Grenoble", new Country(1))
+					.add("Lyon", new Country(2))
+			);
 
 			person.getMapPropertyMadeOfEntityAsValue().remove("Grenoble");
 			// Changing entry value to check value is also updated
@@ -1216,7 +1228,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			remainingEntries = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
 					.mapKey("value", Long.class)
 					.execute();
-			// Country 2 should still be present
+			// Country 1 & 2 should still be present
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 
 			// by default key entities are not deleted since cascading is not defined
@@ -1261,6 +1273,349 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.containsExactlyInAnyOrder(
 							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsValue_id_Person_id", mapTable.getColumn("id"), personTable.getColumn("id")),
 							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsValue_value_Country_id", mapTable.getColumn("value"), countryTable.getColumn("id")));
+		}
+	}
+	
+	@Nested
+	class KeyAndValueAreEntities {
+		
+		@Test
+		void crud() {
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
+					.withKeyMapping(MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(City::getName)
+					)
+					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsKeyAndValue(Maps.forHashMap(City.class, Country.class)
+					.add(new City(1, "Grenoble"), new Country(1))
+					.add(new City(2, "Lyon"), new Country(2))
+			);
+			
+			personPersister.insert(person);
+			
+			Person loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKeyAndValue()).isEqualTo(Maps.forHashMap(City.class, Country.class)
+					.add(new City(1, "Grenoble"), new Country(1))
+					.add(new City(2, "Lyon"), new Country(2))
+			);
+			
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().remove(new City(1));
+			// Changing entry value to check value is also updated
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(new City(2, "Paris"), new Country(2));
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(new City(3, "Marseille"), new Country(3));
+			
+			personPersister.update(person, loadedPerson, true);
+			
+			loadedPerson = personPersister.select(person.getId());
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKeyAndValue())
+					.isEqualTo(Maps.forHashMap(City.class, Country.class)
+							.add(new City(2, "Paris"), new Country(2))
+							.add(new City(3, "Marseille"), new Country(3))
+					);
+			
+			personPersister.delete(loadedPerson);
+			Set<String> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", String.class)
+					.mapKey("key", String.class)
+					.execute();
+			assertThat(remainingEntries).isEmpty();
+			
+			// by default key entities are not deleted since cascading is not defined
+			Set<Long> remainingCities = persistenceContext.newQuery("select id from City", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCities).containsExactlyInAnyOrder(1L, 2L, 3L);
+			
+			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
+		}
+		
+		@Test
+		void crud_associationOnly() {
+			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(City::getName);
+			EntityPersister<City, Identifier<Long>> cityPersister = cityPersisterConfiguration.build(persistenceContext);
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName)
+					.map(Country::getDescription);
+			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
+						.withKeyMapping(cityPersisterConfiguration)
+					.cascading(RelationMode.ASSOCIATION_ONLY)
+						.withValueMapping(countryPersisterConfiguration)
+					.cascading(RelationMode.ASSOCIATION_ONLY)
+					.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			City city1 = new City(1);
+			City city2 = new City(2);
+			City city3 = new City(3);
+			cityPersister.insert(Arrays.asList(city1, city2, city3));
+			Country country1 = new Country(1);
+			Country country2 = new Country(2);
+			Country country3 = new Country(3);
+			Country country4 = new Country(4);
+			countryPersister.insert(Arrays.asList(country1, country2, country3, country4));
+
+			person.setMapPropertyMadeOfEntityAsKeyAndValue(Maps.forHashMap(City.class, Country.class)
+					.add(city1, country1)
+					.add(city2, country2)
+			);
+
+			personPersister.insert(person);
+
+			Person loadedPerson = personPersister.select(person.getId());
+
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().remove(city1);
+			// Changing entry value to check value is also updated
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(city2, country3);
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(city3, country4);
+
+			personPersister.update(person, loadedPerson, true);
+
+			loadedPerson = personPersister.select(person.getId());
+			Set<Long> remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class)
+					.execute();
+			assertThat(remainingEntries).containsExactlyInAnyOrder(2L, 3L);
+
+			personPersister.delete(loadedPerson);
+			remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class)
+					.execute();
+			assertThat(remainingEntries).isEmpty();
+
+			// by default key entities are not deleted since cascading is not defined
+			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
+		}
+
+		@Test
+		void crud_deleteOrphan() {
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
+					.withKeyMapping(MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
+					.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			person.setMapPropertyMadeOfEntityAsKeyAndValue(Maps.forHashMap(City.class, Country.class)
+					.add(new City(1), new Country(1))
+					.add(new City(2), new Country(2))
+					.add(new City(3), new Country(3))
+			);
+
+			personPersister.insert(person);
+
+			Person loadedPerson = personPersister.select(person.getId());
+
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().remove(new City(1));
+			// Changing entry value to check value is also updated
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(new City(2), new Country(4));
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(new City(3), new Country(3));
+
+			personPersister.update(person, loadedPerson, true);
+
+			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCountries).containsExactlyInAnyOrder(3L, 4L);
+
+			loadedPerson = personPersister.select(person.getId());
+
+			personPersister.delete(loadedPerson);
+			Set<String> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", String.class)
+					.mapKey("key", String.class)
+					.execute();
+			assertThat(remainingEntries).isEmpty();
+
+			// everything should be erased since with asked for orphan removal for keys and values 
+			remainingCountries = persistenceContext.newQuery("select id from City", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCountries).isEmpty();
+			remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCountries).isEmpty();
+		}
+
+		@Test
+		void crud_readOnly() throws SQLException {
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED);
+			EntityPersister<City, Identifier<Long>> cityPersister = cityPersisterConfiguration.build(persistenceContext);
+			FluentEntityMappingBuilder<Country, Identifier<Long>> countryPersisterConfiguration = MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+					.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Country::getName);
+			EntityPersister<Country, Identifier<Long>> countryPersister = countryPersisterConfiguration.build(persistenceContext);
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
+					.withKeyMapping(cityPersisterConfiguration).cascading(RelationMode.READ_ONLY)
+					.withValueMapping(countryPersisterConfiguration).cascading(RelationMode.READ_ONLY)
+					.build(persistenceContext);
+
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+
+			Person person = new Person(new PersistableIdentifier<>(1L));
+			City city1 = new City(1);
+			City city2 = new City(2);
+			City city3 = new City(3);
+			cityPersister.insert(Arrays.asList(city1, city2, city3));
+			Country country1 = new Country(1);
+			Country country2 = new Country(2);
+			Country country3 = new Country(3);
+			Country country4 = new Country(4);
+			countryPersister.insert(Arrays.asList(country1, country2, country3));
+			
+			person.setMapPropertyMadeOfEntityAsKeyAndValue(Maps.forHashMap(City.class, Country.class)
+					.add(city1, country1)
+					.add(city2, country2)
+			);
+
+			personPersister.insert(person);
+
+			Set<Long> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class)
+					.execute();
+			assertThat(remainingEntries).isEmpty();
+
+
+			Table associationTable = new Table("Person_mapPropertyMadeOfEntityAsKeyAndValue");
+			Column idColumn = associationTable.addColumn("id", Long.class);
+			Column keyColumn = associationTable.addColumn("key", Long.class);
+			Column valueColumn = associationTable.addColumn("value", Long.class);
+			persistenceContext.insert(associationTable)
+					.set(idColumn, 1L)
+					.set(keyColumn, 1L)
+					.set(valueColumn, 1L)
+					.execute();
+			persistenceContext.insert(associationTable)
+					.set(idColumn, 1L)
+					.set(keyColumn, 2L)
+					.set(valueColumn, 2L)
+					.execute();
+
+			Person loadedPerson = personPersister.select(person.getId());
+			
+			assertThat(loadedPerson.getMapPropertyMadeOfEntityAsKeyAndValue()).containsExactlyEntriesOf(Maps.forHashMap(City.class, Country.class)
+					.add(new City(1), new Country(1))
+					.add(new City(2), new Country(2))
+			);
+			
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().remove(city1);
+			// Changing entry value to check value is also updated
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(city2, country3);
+			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(city3, country4);
+			
+			loadedPerson = personPersister.select(person.getId());
+			personPersister.update(person, loadedPerson, true);
+
+			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class)
+					.execute();
+			// City 1 & 2 should still be present, and City 3 missing from association table
+			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
+
+			// We must drop the foreign key between Person table and association table to let personPersister delete
+			// the person, else the constraint raises an error because the association table keeps a reference to source one
+			persistenceContext.getConnectionProvider().giveConnection()
+					.prepareStatement("alter table Person_mapPropertyMadeOfEntityAsKeyAndValue drop constraint FK_Person_mapPropertyMadeOfEntityAsKeyAndValue_id_Person_id").execute();
+			loadedPerson = personPersister.select(person.getId());
+			personPersister.delete(loadedPerson);
+			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class)
+					.execute();
+			// City 1 & 2 should still be present
+			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
+
+			// by default key entities are not deleted since cascading is not defined
+			Set<Long> remainingCities = persistenceContext.newQuery("select id from City", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCities).containsExactlyInAnyOrder(1L, 2L, 3L);
+			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class)
+					.execute();
+			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
+		}
+		
+		@Test
+		void foreignKey_creation() {
+			ConfiguredRelationalPersister<Person, Identifier<Long>> personPersister = (ConfiguredRelationalPersister<Person, Identifier<Long>>) MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.map(Person::getName)
+					.mapMap(Person::getMapPropertyMadeOfEntityAsKeyAndValue, City.class, Country.class)
+					.withKeyMapping(MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+							.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(City::getName)
+					)
+					.withValueMapping(MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+					)
+					.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Map<String, Table> tablePerName = map(personPersister.getEntityJoinTree().giveTables(), Table::getName);
+			assertThat(tablePerName.keySet()).containsExactlyInAnyOrder("Person", "Person_mapPropertyMadeOfEntityAsKeyAndValue", "City", "Country");
+			Table<?> personTable = tablePerName.get("Person");
+			Table<?> cityTable = tablePerName.get("City");
+			Table<?> countryTable = tablePerName.get("Country");
+			Table<?> mapTable = tablePerName.get("Person_mapPropertyMadeOfEntityAsKeyAndValue");
+			
+			Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
+					Column::getAbsoluteName,
+					chain(Column::getJavaType, Reflections::toString));
+			Function<ForeignKey, String> fkPrinter = ToStringBuilder.of(", ",
+					ForeignKey::getName,
+					link(ForeignKey::getColumns, ToStringBuilder.asSeveral(columnPrinter)),
+					link(ForeignKey::getTargetColumns, ToStringBuilder.asSeveral(columnPrinter)));
+			
+			assertThat(mapTable.getForeignKeys())
+					.usingElementComparator(Comparator.comparing(fkPrinter))
+					.containsExactlyInAnyOrder(
+							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsKeyAndValue_id_Person_id", mapTable.getColumn("id"), personTable.getColumn("id")),
+							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsKeyAndValue_key_City_id", mapTable.getColumn("key"), cityTable.getColumn("id")),
+							new ForeignKey("FK_Person_mapPropertyMadeOfEntityAsKeyAndValue_value_Country_id", mapTable.getColumn("value"), countryTable.getColumn("id")));
 		}
 	}
 }

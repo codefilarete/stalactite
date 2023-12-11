@@ -37,9 +37,7 @@ class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Collection
 	
 	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	
-	private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> entityPersister;
 	private final RelationMode maintenanceMode;
-	private final Function<? super Entry<K, V>, ENTITY> entryBeanExtractor;
 	private final BiFunction<Entry<K, V>, SRCID, KeyValueRecord<KK, VV, SRCID>> recordBuilder;
 	
 	public MapUpdater(Function<SRC, Set<Entry<K, V>>> targetEntitiesGetter,
@@ -56,9 +54,7 @@ class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Collection
 				(Entry<K, V> entry) -> entityPersister.getId(entryBeanExtractor.apply(entry)));
 		this.keyValueRecordPersister = keyValueRecordPersister;
 		this.sourcePersister = sourcePersister;
-		this.entityPersister = entityPersister;
 		this.maintenanceMode = maintenanceMode;
-		this.entryBeanExtractor = entryBeanExtractor;
 		this.recordBuilder = recordBuilder;
 	}
 	
@@ -131,39 +127,39 @@ class MapUpdater<SRC, SRCID, K, V, ENTITY, ENTITY_ID, KK, VV> extends Collection
 	
 	private static class RelationalPersisterAsEntityWriter<K, V, ENTITY, ENTITY_ID> implements EntityWriter<Entry<K, V>> {
 		
-		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> valueEntityPersister;
+		private final ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relationEntityPersister;
 		private final Function<? super Entry<K, V>, ENTITY> mapper;
 		
-		public RelationalPersisterAsEntityWriter(ConfiguredRelationalPersister<ENTITY, ENTITY_ID> valueEntityPersister, Function<? super Entry<K, V>, ENTITY> mapper) {
-			this.valueEntityPersister = valueEntityPersister;
+		public RelationalPersisterAsEntityWriter(ConfiguredRelationalPersister<ENTITY, ENTITY_ID> relationEntityPersister, Function<? super Entry<K, V>, ENTITY> mapper) {
+			this.relationEntityPersister = relationEntityPersister;
 			this.mapper = mapper;
 		}
 		
 		@Override
 		public void update(Iterable<? extends Duo<Entry<K, V>, Entry<K, V>>> differencesIterable, boolean allColumnsStatement) {
-			valueEntityPersister.update(Iterables.stream(differencesIterable)
+			relationEntityPersister.update(Iterables.stream(differencesIterable)
 					.map(duo -> new Duo<>(mapper.apply(duo.getLeft()), mapper.apply(duo.getRight())))
 					.collect(Collectors.toSet()), allColumnsStatement);
 		}
 		
 		@Override
 		public void delete(Iterable<? extends Entry<K, V>> entities) {
-			valueEntityPersister.delete(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			relationEntityPersister.delete(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
 		}
 		
 		@Override
 		public void persist(Iterable<? extends Entry<K, V>> entities) {
-			valueEntityPersister.persist(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			relationEntityPersister.persist(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
 		}
 		
 		@Override
 		public boolean isNew(Entry<K, V> entity) {
-			return valueEntityPersister.isNew(mapper.apply(entity));
+			return relationEntityPersister.isNew(mapper.apply(entity));
 		}
 		
 		@Override
 		public void updateById(Iterable<? extends Entry<K, V>> entities) {
-			valueEntityPersister.updateById(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
+			relationEntityPersister.updateById(Iterables.stream(entities).map(mapper).collect(Collectors.toSet()));
 		}
 	}
 	

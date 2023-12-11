@@ -71,6 +71,7 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.Serie;
 import org.codefilarete.tool.function.TriFunction;
@@ -348,7 +349,8 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	private <K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> wrapWithMapOptions(MapRelation<C, K, V, M> mapRelation) {
-		return new MethodReferenceDispatcher()
+		Holder<FluentMappingBuilderMapOptions> proxyHolder = new Holder<>();
+		FluentMappingBuilderMapOptions<C, I, K, V, M> result = new MethodReferenceDispatcher()
 				.redirect(MapOptions.class, new MapOptions() {
 					
 					@Override
@@ -418,21 +420,21 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 						mapRelation.overrideKeyName(getter, columnName);
 						return null;
 					}
-
+					
 					@Override
-					public MapOptions overrideKeyColumnName(SerializableBiConsumer setter, String columnName){
+					public MapOptions overrideKeyColumnName(SerializableBiConsumer setter, String columnName) {
 						mapRelation.overrideKeyName(setter, columnName);
 						return null;
 					}
-
+					
 					@Override
-					public MapOptions overrideValueColumnName(SerializableFunction getter, String columnName){
+					public MapOptions overrideValueColumnName(SerializableFunction getter, String columnName) {
 						mapRelation.overrideValueName(getter, columnName);
 						return null;
 					}
-
+					
 					@Override
-					public MapOptions overrideValueColumnName(SerializableBiConsumer setter, String columnName){
+					public MapOptions overrideValueColumnName(SerializableBiConsumer setter, String columnName) {
 						mapRelation.overrideValueName(setter, columnName);
 						return null;
 					}
@@ -447,15 +449,15 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 				// that will let us configure cascading of the relation
 				.redirect((SerializableBiFunction<MapOptions, EntityMappingConfigurationProvider, KeyAsEntityMapOptions>) MapOptions::withKeyMapping,
 						entityMappingConfigurationProvider -> {
-					mapRelation.setKeyConfigurationProvider(entityMappingConfigurationProvider);
-					return new MethodReferenceDispatcher()
-							.redirect(KeyAsEntityMapOptions.class, relationMode -> {
-								mapRelation.setKeyEntityRelationMode(relationMode);
-								return null;
-							}, true)
-							.fallbackOn(FluentEntityMappingConfigurationSupport.this)
-							.build((Class<FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderKeyAsEntityMapOptions.class);
-				})
+							mapRelation.setKeyConfigurationProvider(entityMappingConfigurationProvider);
+							return new MethodReferenceDispatcher()
+									.redirect(KeyAsEntityMapOptions.class, relationMode -> {
+										mapRelation.setKeyEntityRelationMode(relationMode);
+										return null;
+									}, true)
+									.fallbackOn(proxyHolder.get())
+									.build((Class<FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderKeyAsEntityMapOptions.class);
+						})
 				.redirect((SerializableBiFunction<MapOptions, EntityMappingConfigurationProvider, ValueAsEntityMapOptions>) MapOptions::withValueMapping,
 						entityMappingConfigurationProvider -> {
 							mapRelation.setValueConfigurationProvider(entityMappingConfigurationProvider);
@@ -464,11 +466,13 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 										mapRelation.setValueEntityRelationMode(relationMode);
 										return null;
 									}, true)
-									.fallbackOn(FluentEntityMappingConfigurationSupport.this)
+									.fallbackOn(proxyHolder.get())
 									.build((Class<FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderValueAsEntityMapOptions.class);
 						})
 				.fallbackOn(this)
 				.build((Class<FluentMappingBuilderMapOptions<C, I, K, V, M>>) (Class) FluentMappingBuilderMapOptions.class);
+		proxyHolder.set(result);
+		return result;
 	}
 	
 	@Override
