@@ -42,13 +42,16 @@ public class FunctionSQLBuilder {
 		} else {
 			sql.cat(operator.getExpression(), "(");
 			for (Object argument : operator.getArguments()) {
-				if (argument instanceof Selectable) {
+				if (argument instanceof SQLFunction) {
+					cat((SQLFunction) argument, sql);
+				} else if (argument instanceof Selectable) {
 					sql.cat(dmlNameProvider.getName((Selectable<?>) argument));
 				} else if (argument instanceof CharSequence) {
 					sql.cat(argument.toString());
-				}
+				} 
+				sql.cat(", ");
 			}
-			sql.cat(")");
+			sql.removeLastChars(2).cat(")");
 		}
 	}
 	

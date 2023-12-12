@@ -1,12 +1,17 @@
 package org.codefilarete.stalactite.query.builder;
 
-import org.codefilarete.stalactite.query.model.operator.*;
+import java.util.Collections;
+
+import org.codefilarete.stalactite.query.model.operator.Cast;
+import org.codefilarete.stalactite.query.model.operator.Coalesce;
+import org.codefilarete.stalactite.query.model.operator.Count;
+import org.codefilarete.stalactite.query.model.operator.Max;
+import org.codefilarete.stalactite.query.model.operator.Min;
+import org.codefilarete.stalactite.query.model.operator.Sum;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.StringAppender;
 import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -104,4 +109,39 @@ class FunctionSQLBuilderTest {
 		assertThat(result.toString()).isEqualTo("cast(Toto.a as varchar(128))");
 	}
 	
+	@Test
+	public void coalesce() {
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		StringAppender result = new StringAppender();
+		
+		Table tableToto = new Table("Toto");
+		Column colA = tableToto.addColumn("a", String.class);
+		Column colB = tableToto.addColumn("b", String.class);
+		
+		StringAppenderWrapper sql = new StringAppenderWrapper(result, dmlNameProvider);
+		testInstance.cat(new Coalesce<>(colA, colB), sql);
+		assertThat(result.toString()).isEqualTo("coalesce(Toto.a, Toto.b)");
+	}
+	
+	@Test
+	public void combining_functions() {
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		StringAppender result;
+		StringAppenderWrapper sql;
+		
+		Table tableToto = new Table("Toto");
+		Column colA = tableToto.addColumn("a", String.class);
+		Column colB = tableToto.addColumn("b", String.class);
+		
+		
+		result = new StringAppender();
+		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		testInstance.cat(new Coalesce<>(colA, new Cast<>(colB, String.class)), sql);
+		assertThat(result.toString()).isEqualTo("coalesce(Toto.a, cast(Toto.b as varchar))");
+		
+		result = new StringAppender();
+		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		testInstance.cat(new Max<>(new Coalesce<>(colA, new Cast<>(colB, String.class))), sql);
+		assertThat(result.toString()).isEqualTo("max(coalesce(Toto.a, cast(Toto.b as varchar)))");
+	}
 }

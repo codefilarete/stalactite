@@ -87,6 +87,12 @@ public class PreparedSQLWrapper implements SQLAppender {
 	}
 	
 	@Override
+	public SQLAppender removeLastChars(int length) {
+		surrogate.removeLastChars(length);
+		return this;
+	}
+	
+	@Override
 	public String getSQL() {
 		return surrogate.getSQL();
 	}

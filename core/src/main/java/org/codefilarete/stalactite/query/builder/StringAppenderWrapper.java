@@ -60,6 +60,12 @@ public class StringAppenderWrapper implements SQLAppender {
 	}
 	
 	@Override
+	public SQLAppender removeLastChars(int length) {
+		surrogate.cutTail(length);
+		return this;
+	}
+	
+	@Override
 	public String getSQL() {
 		return surrogate.toString();
 	}

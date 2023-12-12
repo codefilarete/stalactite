@@ -1,10 +1,9 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
-import org.codefilarete.stalactite.query.model.operator.Cast;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.operator.Between;
+import org.codefilarete.stalactite.query.model.operator.Cast;
+import org.codefilarete.stalactite.query.model.operator.Coalesce;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
@@ -15,6 +14,7 @@ import org.codefilarete.stalactite.query.model.operator.Lower;
 import org.codefilarete.stalactite.query.model.operator.Max;
 import org.codefilarete.stalactite.query.model.operator.Min;
 import org.codefilarete.stalactite.query.model.operator.Sum;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * General contract for operators such as <code>in, like, =, <, >, ... </code>.
@@ -183,7 +183,19 @@ public interface Operators {
 		return new Max<>(column);
 	}
 	
+	/**
+	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent write of queries for "cast" operation
+	 * @return a new instance of {@link Cast}
+	 */
 	static <C> Cast<C> cast(String expression, Class<C> javaType) {
 		return new Cast<>(expression, javaType);
+	}
+	
+	/**
+	 * Shortcut to <code>new Coalesce(column, columns)</code> to ease a fluent write of queries for "coalesce" operation
+	 * @return a new instance of {@link Coalesce}
+	 */
+	static <C> Coalesce<C> coalesce(Selectable<C> column, Selectable<C>... columns) {
+		return new Coalesce<>(column, columns);
 	}
 }

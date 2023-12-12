@@ -45,6 +45,8 @@ public interface SQLAppender {
 	 */
 	SQLAppender catColumn(Column column);
 	
+	SQLAppender removeLastChars(int length);
+	
 	default SQLAppender catIf(boolean condition, String s) {
 		if (condition) {
 			cat(s);
