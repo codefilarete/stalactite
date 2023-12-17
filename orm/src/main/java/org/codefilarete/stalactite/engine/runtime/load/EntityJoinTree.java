@@ -338,7 +338,7 @@ public class EntityJoinTree<C, I> {
 	public String addJoin(String leftStrategyName, Function<? super JoinNode<Fromable> /* parent node */, ? extends AbstractJoinNode<?, ?, ?, ?>> joinNodeSupplier) {
 		JoinNode<Fromable> owningJoin = getJoin(leftStrategyName);
 		if (owningJoin == null) {
-			throw new IllegalArgumentException("No strategy with name " + leftStrategyName + " exists to add a new strategy on");
+			throw new IllegalArgumentException("No join named " + leftStrategyName + " exists to add a new join on");
 		}
 		AbstractJoinNode joinNode = joinNodeSupplier.apply(owningJoin);
 		String joinName = this.indexKeyGenerator.generateKey(joinNode);

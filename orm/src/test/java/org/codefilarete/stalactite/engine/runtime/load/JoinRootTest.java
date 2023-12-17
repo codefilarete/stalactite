@@ -43,7 +43,7 @@ class JoinRootTest {
 					entityJoinTree.addRelationJoin("XX", null, null, null, null, OUTER, null, Collections.emptySet());
 				})
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("No strategy with name XX exists to add a new strategy on");
+				.hasMessage("No join named XX exists to add a new join on");
 	}
 	
 	@Test

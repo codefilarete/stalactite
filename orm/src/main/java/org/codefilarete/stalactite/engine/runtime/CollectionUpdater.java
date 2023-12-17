@@ -63,7 +63,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 	 * @param reverseSetter setter for applying source entity to target entities (used by {@link #onRemovedElements(UpdateContext, AbstractDiff)} to 
 	 * 						nullify relation), null accepted if no reverse mapping exists
 	 * @param shouldDeleteRemoved true to delete orphans
-	 * @param idProvider expected to provide identifier of target beans, identifier are used to store them on it (in HashMap)
+	 * @param idProvider expected to provide identifier of entities, used to store them per their id (in HashMap) to avoid usage of entity equals/hashcode
 	 */
 	public CollectionUpdater(Function<I, C> collectionGetter,
 							 EntityPersister<O, ?> elementPersister,
@@ -99,7 +99,7 @@ public class CollectionUpdater<I, O, C extends Collection<O>> implements BiConsu
 		C unmodified = collectionGetter.apply(entry.getRight());
 		UpdateContext updateContext = newUpdateContext(entry);
 		if (modified == null && unmodified == null) {
-			// nothing to do since reference hasn't change : still null
+			// nothing to do since reference hasn't changed : still null
 		} else if (modified != null && unmodified == null) {
 			modified.forEach(o -> onAddedElements(updateContext, new Diff<>(State.ADDED, null, o)));
 		} else if (modified == null && unmodified != null) {

@@ -6,7 +6,7 @@ package org.codefilarete.stalactite.engine;
 public interface DeleteExecutor<C, I> {
 	
 	/**
-	 * Will given instances.
+	 * Will delete given instances.
 	 * This method will take optimistic lock (versioned entity) into account.
 	 *
 	 * @param entities entities to be deleted
@@ -14,7 +14,7 @@ public interface DeleteExecutor<C, I> {
 	void delete(Iterable<? extends C> entities);
 	
 	/**
-	 * Will delete instances only by their identifier.
+	 * Will delete given instances only by their identifier.
 	 * This method will not take optimistic lock (versioned entity) into account, so it will delete database rows "roughly".
 	 *
 	 * @param entities entities to be deleted

@@ -39,7 +39,7 @@ public interface CascadeOptions {
 		 */
 		ASSOCIATION_ONLY,
 		/**
-		 * Declares relationship as readonly: no insert, update nor delete will be performed on target entities (nor association reacords if it exist)
+		 * Declares relationship as readonly: no insert, update nor delete will be performed on target entities (nor association records if it exists)
 		 */
 		READ_ONLY
 	}

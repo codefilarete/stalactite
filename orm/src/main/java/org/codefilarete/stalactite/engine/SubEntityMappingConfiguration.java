@@ -31,5 +31,6 @@ public interface SubEntityMappingConfiguration<C> {
 	
 	List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections();
 	
+	@Nullable
 	PolymorphismPolicy<C> getPolymorphismPolicy();
 }

@@ -19,13 +19,13 @@ public interface ElementCollectionTableNamingStrategy {
 	 * @param accessorDefinition a representation of the method (getter or setter) that gives the collection to be persisted
 	 * @return table name for element collection table
 	 */
-	String giveName(@Nonnull AccessorDefinition accessorDefinition);
+	String giveName(AccessorDefinition accessorDefinition);
 	
 	ElementCollectionTableNamingStrategy DEFAULT = new DefaultElementCollectionTableNamingStrategy();
 	
 	/**
 	 * Default implementation of the {@link ElementCollectionTableNamingStrategy} interface.
-	 * Will use relationship property name for it, prefixed with source table name.
+	 * Will use relation property name for it, prefixed with source table name.
 	 * For instance: for a Country entity with the getCities() getter to retrieve country cities,
 	 * the association table will be named "Country_cities".
 	 * If property cannot be deduced from getter (it doesn't start with "get") then target table name will be used, suffixed by "s".
@@ -35,12 +35,12 @@ public interface ElementCollectionTableNamingStrategy {
 	class DefaultElementCollectionTableNamingStrategy implements ElementCollectionTableNamingStrategy {
 		
 		@Override
-		public String giveName(@Nonnull AccessorDefinition accessor) {
+		public String giveName(AccessorDefinition accessor) {
 			String suffix = Reflections.onJavaBeanPropertyWrapperNameGeneric(accessor.getName(), accessor.getName(),
 					GET_SET_PREFIX_REMOVER.andThen(Strings::uncapitalize),
 					GET_SET_PREFIX_REMOVER.andThen(Strings::uncapitalize),
 					IS_PREFIX_REMOVER.andThen(Strings::uncapitalize),
-					s -> s);	// on non-compliant Java Bean Naming Convention, method name is returned as table name
+					methodName -> methodName);	// on non-compliant Java Bean Naming Convention, method name is returned as table name
 			return accessor.getDeclaringClass().getSimpleName() + "_" + suffix;
 		}
 	}

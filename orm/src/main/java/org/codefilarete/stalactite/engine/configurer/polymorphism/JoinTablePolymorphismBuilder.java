@@ -37,12 +37,12 @@ import static org.codefilarete.tool.Nullable.nullable;
 /**
  * @author Guillaume Mary
  */
-class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
+public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPolymorphicPersisterBuilder<C, I, T> {
 	
 	private final JoinTablePolymorphism<C> joinTablePolymorphism;
 	private final PrimaryKey<T, I> mainTablePrimaryKey;
 	
-	JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
+	public JoinTablePolymorphismBuilder(JoinTablePolymorphism<C> polymorphismPolicy,
 								 AbstractIdentification<C, I> identification,
 								 ConfiguredRelationalPersister<C, I> mainPersister,
 								 ColumnBinderRegistry columnBinderRegistry,
@@ -79,8 +79,8 @@ class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends AbstractPol
 	}
 	
 	private <D, SUBT extends Table<SUBT>> ConfiguredRelationalPersister<D, I> buildSubclassPersister(Dialect dialect,
-																										   ConnectionConfiguration connectionConfiguration,
-																										   SubEntityMappingConfiguration<D> subConfiguration) {
+																									 ConnectionConfiguration connectionConfiguration,
+																									 SubEntityMappingConfiguration<D> subConfiguration) {
 		// first we'll use table of columns defined in embedded override
 		// then the one defined by inheritance
 		// if both are null we'll create a new one

@@ -33,7 +33,7 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 											   Function<SRC, SRCID> idProvider) {
 		super(collectionGetter, collectionSetter, collectionFactory, reverseSetter, reverseColumn);
 		this.indexingColumn = (Column<Table, Integer>) indexingColumn;
-		this.relationFixer = new InMemoryRelationHolder(idProvider);
+		super.relationFixer = new InMemoryRelationHolder(idProvider);
 	}
 	
 	public Column<Table, Integer> getIndexingColumn() {
@@ -74,8 +74,7 @@ public class IndexedMappedManyRelationDescriptor<SRC, TRGT, C extends Collection
 		}
 		
 		public void init() {
-			Map<SRCID, C> srcidcMap = new HashMap<>();
-			this.relationCollectionPerEntity.set(srcidcMap);
+			this.relationCollectionPerEntity.set(new HashMap<>());
 		}
 		
 		public void clear() {

@@ -71,6 +71,7 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	
 	private final SubEntityDecoratedEmbeddableConfigurationSupport<C, I> propertiesMappingConfigurationSurrogate;
 	
+	@Nullable
 	private PolymorphismPolicy<C> polymorphismPolicy;
 	
 	/**

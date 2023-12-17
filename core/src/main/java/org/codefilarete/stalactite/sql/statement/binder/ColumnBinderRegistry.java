@@ -47,7 +47,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	 * @throws BindingException if the binder doesn't exist
 	 */
 	@Override
-	public ParameterBinder doGetBinder(@Nonnull Column column) {
+	public ParameterBinder doGetBinder(Column column) {
 		ParameterBinder columnBinder = bindersPerColumn.get(column);
 		try {
 			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());

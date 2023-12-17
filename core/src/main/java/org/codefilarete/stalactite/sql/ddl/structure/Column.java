@@ -122,7 +122,7 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	}
 	
 	/**
-	 * Fluent API. Set this column as primary of the table.
+	 * Fluent API. Set this column as primary of the table, or participate to it if there are several ones
 	 * @return this
 	 */
 	public Column<T, O> primaryKey() {
