@@ -11,7 +11,7 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
@@ -98,9 +98,9 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 			query.select(Iterables.map(subclassPrimaryKey.getColumns(), Function.identity(), Column::getAlias));
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
 		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();

@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -62,7 +62,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>>
 			});
 		});
 		
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where, entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> columnReaders = new HashMap<>();
@@ -80,7 +80,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>>
 									   Map<String, ResultSetReader> columnReaders,
 									   ColumnedRow columnedRow) {
 		Map<Class, Set<I>> result = new HashMap<>();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			

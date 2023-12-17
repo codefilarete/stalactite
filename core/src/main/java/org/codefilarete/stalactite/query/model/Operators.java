@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.query.builder.OperatorSQLBuilder;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Coalesce;
@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * General contract for operators such as <code>in, like, =, <, >, ... </code>.
- * Value of the operator is intentionnally left vague (Object), except for String operation, because some operators prefer {@link Column}, while
+ * Value of the operator is intentionally left vague (Object), except for String operation, because some operators prefer {@link Column}, while
  * others prefers {@link Comparable}.
  * 
  * Static methods should be used to ease a fluent write of queries.

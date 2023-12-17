@@ -15,7 +15,6 @@ import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -256,7 +255,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @see org.codefilarete.stalactite.query.model.QueryEase
 	 */
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider<Query> queryProvider, Class<C> beanType) {
-		return newQuery(new QuerySQLBuilder(queryProvider, dialect), beanType);
+		return newQuery(queryProvider.getQuery(), beanType);
 	}
 	
 	/**
@@ -269,7 +268,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 */
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(new QuerySQLBuilder(query, dialect), beanType);
+		return newQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 	}
 	
 	/**
@@ -557,7 +556,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		Query query = QueryEase.select(selectableKeys).from(table).getQuery();
 		where.accept(query.getWhere());
-		QueryMapper<C> queryMapper = newTransformableQuery(new QuerySQLBuilder(query, dialect), beanType);
+		QueryMapper<C> queryMapper = newTransformableQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
@@ -720,7 +719,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this delete statement with given values.
 		 */
 		public void execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder(this, dialect).toStatement();
+			PreparedSQL deleteStatement = new DeleteCommandBuilder(this, dialect).toPreparedSQL();
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				writeOperation.execute();

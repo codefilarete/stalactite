@@ -26,7 +26,6 @@ import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -103,7 +102,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	@VisibleForTesting
 	void prepareQuery() {
 		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		this.rawQuery = new QuerySQLBuilder(entityTreeQuery.getQuery(), dialect).toSQL();
+		this.rawQuery = dialect.getQuerySQLBuilderFactory().queryBuilder(entityTreeQuery.getQuery()).toSQL();
 	}
 	
 	public EntityJoinTree<C, I> getEntityJoinTree() {

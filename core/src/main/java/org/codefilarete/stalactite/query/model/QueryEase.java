@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query.FluentSelectClause;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 

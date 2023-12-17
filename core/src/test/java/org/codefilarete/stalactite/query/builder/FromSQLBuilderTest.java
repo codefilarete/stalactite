@@ -1,9 +1,12 @@
 package org.codefilarete.stalactite.query.builder;
 
+import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
 import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -119,7 +122,7 @@ public class FromSQLBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
 	public void toSQL(From from, String expected) {
-		FromSQLBuilder testInstance = new FromSQLBuilder(from);
+		FromSQLBuilder testInstance = new FromSQLBuilder(from, new DMLNameProvider(from.getTableAliases()::get), new QuerySQLBuilderFactory(new DefaultTypeMapping(),  new ColumnBinderRegistry()));
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
@@ -147,7 +150,7 @@ public class FromSQLBuilderTest {
 				.setAlias(tableToto1, "to")
 				.setAlias(tableTata, "ta")
 				.setAlias(tableTutu, "tu");
-		FromSQLBuilder testInstance = new FromSQLBuilder(from);
+		FromSQLBuilder testInstance = new FromSQLBuilder(from, new DMLNameProvider(from.getTableAliases()::get), new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()));
 		from.getTableAliases().put(tableToto2, "toChanged");
 		from.getTableAliases().put(tableTutu, "tuChanged");
 		assertThat(testInstance.toSQL()).isEqualTo("Toto as to inner join Tata as ta on to.a = ta.a"

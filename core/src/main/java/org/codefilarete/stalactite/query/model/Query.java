@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 import org.codefilarete.stalactite.query.model.Query.FluentLimitClause;
 import org.codefilarete.stalactite.query.model.SelectChain.Aliasable;

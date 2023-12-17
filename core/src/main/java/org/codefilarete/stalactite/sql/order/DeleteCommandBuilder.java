@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.*;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -19,12 +20,12 @@ import org.codefilarete.tool.collection.Iterables;
 
 /**
  * A SQL builder for {@link Delete} objects
- * Can hardly be mutualized with {@link DMLGenerator} because the latter doesn't handle multi
+ * Can hardly be shared with {@link DMLGenerator} because the latter doesn't handle multi
  * tables update.
  * 
  * @author Guillaume Mary
  */
-public class DeleteCommandBuilder implements SQLBuilder {
+public class DeleteCommandBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	private final Delete delete;
 	private final Dialect dialect;
@@ -39,6 +40,18 @@ public class DeleteCommandBuilder implements SQLBuilder {
 	@Override
 	public String toSQL() {
 		return toSQL(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dmlNameProvider);
+	}
+	
+	@Override
+	public PreparedSQL toPreparedSQL() {
+		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
+		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
+		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
+		
+		// final assembly
+		PreparedSQL result = new PreparedSQL(sql, preparedSQLWrapper.getParameterBinders());
+		result.setValues(preparedSQLWrapper.getValues());
+		return result;
 	}
 	
 	private String toSQL(SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
@@ -75,20 +88,9 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (delete.getCriteria().iterator().hasNext()) {
 			result.cat(" where ");
-			WhereSQLBuilder whereSqlBuilder = new WhereSQLBuilder(this.delete.getCriteria(), dmlNameProvider, this.dialect);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereSqlBuilder().whereBuilder(this.delete.getCriteria(), dmlNameProvider);
 			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();
-	}
-	
-	public PreparedSQL toStatement() {
-		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
-		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
-		
-		// final assembly
-		PreparedSQL result = new PreparedSQL(sql, preparedSQLWrapper.getParameterBinders());
-		result.setValues(preparedSQLWrapper.getValues());
-		return result;
 	}
 }

@@ -1,15 +1,16 @@
 package org.codefilarete.stalactite.sql;
 
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperationFactory;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 
 /**
  * Class that keeps objects necessary to "communicate" with a Database at the SQL language level:
@@ -36,6 +37,8 @@ public class Dialect {
 	
 	private final ReadOperationFactory readOperationFactory;
 	
+	private QuerySQLBuilderFactory querySQLBuilderFactory;
+	
 	/**
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
 	 */
@@ -51,7 +54,7 @@ public class Dialect {
 	}
 	
 	/**
-	 * Creates a given {@link SqlTypeRegistry} and {@link ColumnBinderRegistry}
+	 * Creates a dialect with given {@link JavaTypeToSqlTypeMapping} and {@link ColumnBinderRegistry}
 	 */
 	public Dialect(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry columnBinderRegistry) {
 		this.sqlTypeRegistry = new SqlTypeRegistry(javaTypeToSqlTypeMapping);
@@ -60,6 +63,7 @@ public class Dialect {
 		this.ddlTableGenerator = newDdlTableGenerator();
 		this.writeOperationFactory = newWriteOperationFactory();
 		this.readOperationFactory = newReadOperationFactory();
+		this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(columnBinderRegistry, javaTypeToSqlTypeMapping).build();
 	}
 	
 	protected DDLTableGenerator newDdlTableGenerator() {
@@ -92,6 +96,20 @@ public class Dialect {
 	
 	public ReadOperationFactory getReadOperationFactory() {
 		return readOperationFactory;
+	}
+	
+	public QuerySQLBuilderFactory getQuerySQLBuilderFactory() {
+		return querySQLBuilderFactory;
+	}
+	
+	/**
+	 * Change {@link QuerySQLBuilderFactory}
+	 * One can be interested in by using {@link QuerySQLBuilderFactoryBuilder}.
+	 * 
+	 * @param querySQLBuilderFactory
+	 */
+	public void setQuerySQLBuilderFactory(QuerySQLBuilderFactory querySQLBuilderFactory) {
+		this.querySQLBuilderFactory = querySQLBuilderFactory;
 	}
 	
 	public SqlTypeRegistry getSqlTypeRegistry() {

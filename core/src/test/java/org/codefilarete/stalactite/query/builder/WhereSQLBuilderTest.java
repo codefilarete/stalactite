@@ -2,13 +2,17 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Map;
 
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -73,7 +77,8 @@ public class WhereSQLBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
 	public void toSQL(CriteriaChain where, Map<Table, String> tableAliases, String expected) {
-		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, tableAliases);
+		DMLNameProvider dmlNameProvider = new DMLNameProvider(tableAliases);
+		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(), new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
@@ -178,9 +183,9 @@ public class WhereSQLBuilderTest {
 	@MethodSource("toPreparedSQL_data")
 	public void toPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases, 
 						  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, tableAliases);
-		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
-		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
+		DMLNameProvider dmlNameProvider = new DMLNameProvider(tableAliases);
+		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(), new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		PreparedSQL preparedSQL = testInstance.toPreparedSQL();
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}

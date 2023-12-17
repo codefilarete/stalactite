@@ -11,7 +11,7 @@ import java.util.function.Function;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -99,8 +99,8 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 				query.getWhere().and(projectedWhere);
 			}
 			
-			QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 			queries.add(preparedSQL);
 		});
 		

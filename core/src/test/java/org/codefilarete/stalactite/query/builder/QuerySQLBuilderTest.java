@@ -3,13 +3,19 @@ package org.codefilarete.stalactite.query.builder;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.UnionSQLBuilderFactory.UnionSQLBuilder;
+import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
+import org.codefilarete.stalactite.query.model.QueryStatement;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -119,8 +125,26 @@ class QuerySQLBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL")
 	public void toSQL(QueryProvider<?> queryProvider, String expected) {
-		SQLBuilder testInstance = QuerySQLBuilder.of(queryProvider.getQuery(), dialect);
+		SQLBuilder testInstance = sqlBuilder(queryProvider.getQuery());
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
+	}
+	
+	/**
+	 * Creates a {@link QuerySQLBuilder} or a {@link UnionSQLBuilder} depending on given {@link QueryStatement} type.
+	 * Throws an exception if {@link QueryStatement} is neither a {@link Query} nor a {@link Union}.
+	 *
+	 * @param queryStatement a {@link Query} or a {@link Union}
+	 * @return a {@link QuerySQLBuilder} or a {@link UnionSQLBuilder}
+	 */
+	private SQLBuilder sqlBuilder(QueryStatement queryStatement) {
+		QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
+		if (queryStatement instanceof Query) {
+			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
+		} else if (queryStatement instanceof Union) {
+			return new UnionSQLBuilder((Union) queryStatement, querySQLBuilderFactory);
+		} else {
+			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
+		}
 	}
 	
 	public static Object[][] toPreparedSQL() {
@@ -161,10 +185,10 @@ class QuerySQLBuilderTest {
 	
 	@ParameterizedTest
 	@MethodSource("toPreparedSQL")
-	public void toPreparedSQL(QueryProvider queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		QuerySQLBuilder testInstance = new QuerySQLBuilder(queryProvider, dialect);
+	public void toPreparedSQL(QueryProvider<Query> queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
+		QuerySQLBuilderFactory testInstance = dialect.getQuerySQLBuilderFactory();
 		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
-		PreparedSQL preparedSQL = testInstance.toPreparedSQL(parameterBinderRegistry);
+		PreparedSQL preparedSQL = testInstance.queryBuilder(queryProvider.getQuery()).toPreparedSQL();
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}

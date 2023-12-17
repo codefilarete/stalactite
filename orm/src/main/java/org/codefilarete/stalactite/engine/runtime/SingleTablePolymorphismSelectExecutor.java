@@ -14,11 +14,11 @@ import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
@@ -94,9 +94,9 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTY
 		}
 		Query query = from.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(columnBinderRegistry);
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try(ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {

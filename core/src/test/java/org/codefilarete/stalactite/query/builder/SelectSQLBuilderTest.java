@@ -3,8 +3,11 @@ package org.codefilarete.stalactite.query.builder;
 import java.util.Collections;
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
+import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.SelectChain;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Arrays;
@@ -19,7 +22,7 @@ import static org.codefilarete.stalactite.query.model.Operators.min;
 /**
  * @author Guillaume Mary
  */
-public class SelectBuilderTest {
+public class SelectSQLBuilderTest {
 
 	public static Object[][] toSQL_data() {
 		Table tableToto = new Table(null, "Toto");
@@ -55,7 +58,7 @@ public class SelectBuilderTest {
 	@ParameterizedTest
 	@MethodSource("toSQL_data")
 	public void toSQL(SelectChain<Select> select, Map<Table, String> tableAliases, String expected) {
-		SelectBuilder testInstance = new SelectBuilder(select.getSelect(), tableAliases);
+		SelectSQLBuilder testInstance = new SelectSQLBuilder(select.getSelect(), tableAliases, new FunctionSQLBuilder(new DMLNameProvider(tableAliases), new DefaultTypeMapping()));
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 }

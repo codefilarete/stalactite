@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -67,7 +67,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where, entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		
 		// selecting ids and their discriminator
 		PrimaryKey<T, I> pk = ((T) entityJoinTree.getRoot().getTable()).getPrimaryKey();
@@ -92,7 +92,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T
 	}
 	
 	private List<Duo<I, DTYPE>> readIds(QuerySQLBuilder sqlQueryBuilder, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);

@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.query.builder.PreparedSQLWrapper;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
-import org.codefilarete.stalactite.query.builder.WhereSQLBuilder;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -114,7 +114,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (!update.getCriteria().getConditions().isEmpty()) {
 			result.cat(" where ");
-			WhereSQLBuilder whereSqlBuilder = new WhereSQLBuilder(this.update.getCriteria(), dmlNameProvider, dialect);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereSqlBuilder().whereBuilder(this.update.getCriteria(), dmlNameProvider);
 			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();

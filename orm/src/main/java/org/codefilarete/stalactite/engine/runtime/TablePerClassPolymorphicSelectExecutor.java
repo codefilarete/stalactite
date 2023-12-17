@@ -14,7 +14,7 @@ import java.util.TreeMap;
 
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
@@ -27,7 +27,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.StringAppender;
@@ -111,8 +110,8 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 			}
 			
 			Query query = from.getQuery();
-			QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect);
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 			queries.add(preparedSQL);
 		});
 		

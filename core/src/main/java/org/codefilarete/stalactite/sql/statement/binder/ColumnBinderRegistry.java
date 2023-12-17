@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
-import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,10 +9,10 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
  * Registry of {@link ParameterBinder}s per {@link Column} to simplify access to method of {@link PreparedStatement} for {@link Column}s.

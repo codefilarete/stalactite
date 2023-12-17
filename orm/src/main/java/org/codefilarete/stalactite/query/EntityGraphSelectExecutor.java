@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.engine.runtime.EntityMappingTreeSelectExecuto
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
@@ -71,7 +71,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilder(query, dialect, where, entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();
@@ -89,13 +89,13 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 			query.getWhereSurrogate().clear();
 			query.where(pk, in(ids));
 			
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
 	}
 	
 	private List<I> readIds(QuerySQLBuilder sqlQueryBuilder, Column<T, I> pk) {
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk)));

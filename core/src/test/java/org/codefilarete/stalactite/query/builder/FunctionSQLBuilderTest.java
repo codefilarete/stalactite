@@ -2,12 +2,14 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Collections;
 
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Coalesce;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Max;
 import org.codefilarete.stalactite.query.model.operator.Min;
 import org.codefilarete.stalactite.query.model.operator.Sum;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.StringAppender;
@@ -21,7 +23,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catCount() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -33,7 +35,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catMin() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -45,7 +47,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catMax() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -57,7 +59,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catSum() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -69,7 +71,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catCast() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		testInstance.cat(new Cast<>("toto", Integer.class), new StringAppenderWrapper(result, dmlNameProvider));
@@ -78,7 +80,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catCast_null() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		testInstance.cat(new Cast<>((String) null, Integer.class), new StringAppenderWrapper(result, dmlNameProvider));
@@ -87,7 +89,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catCast_function() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -99,7 +101,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void catCast_typeWithSize() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -111,7 +113,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void coalesce() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");
@@ -125,7 +127,7 @@ class FunctionSQLBuilderTest {
 	
 	@Test
 	public void combining_functions() {
-		FunctionSQLBuilder testInstance = new FunctionSQLBuilder();
+		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result;
 		StringAppenderWrapper sql;
 		
