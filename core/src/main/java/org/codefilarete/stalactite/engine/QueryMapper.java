@@ -459,7 +459,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	/**
-	 * Method that mutualizes code of {@link #execute(ConnectionProvider)} and {@link #executeUnique(ConnectionProvider)}
+	 * Method that shares code of {@link #execute(ConnectionProvider)} and {@link #executeUnique(ConnectionProvider)}
 	 */
 	private <O> O execute(BiFunction<WholeResultSetTransformer<?, C>, ResultSet, O> code, ConnectionProvider connectionProvider) {
 		WholeResultSetTransformer<?, C> transformerToUse;

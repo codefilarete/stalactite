@@ -562,12 +562,12 @@ public class PersistenceContext implements PersisterRegistry {
 		return execute(queryMapper);
 	}
 	
-	private <C> Set<C> execute(QueryMapper<C> queryProvider) {
-		return queryProvider.execute(getConnectionProvider());
+	private <C> Set<C> execute(QueryMapper<C> queryMapper) {
+		return queryMapper.execute(getConnectionProvider());
 	}
 	
-	private <C> C executeUnique(QueryMapper<C> queryProvider) {
-		return queryProvider.executeUnique(getConnectionProvider());
+	private <C> C executeUnique(QueryMapper<C> queryMapper) {
+		return queryMapper.executeUnique(getConnectionProvider());
 	}
 	
 	public <T extends Table> ExecutableUpdate update(T table) {

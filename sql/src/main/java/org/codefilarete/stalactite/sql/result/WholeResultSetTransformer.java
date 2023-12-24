@@ -65,6 +65,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	/** The list of relations that will assemble objects */
 	private final KeepOrderSet<Assembler<C>> assemblers = new KeepOrderSet<>();
+	
 	/** Raw consumers, not linked to any beans, will be run on each row, if someone expects it to be run once per bean, then attach it to root converter */
 	private final Set<ColumnConsumer<C, Object>> consumers = new HashSet<>();
 	
@@ -72,25 +73,25 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * Constructor with root bean instantiation parameters
 	 * 
 	 * @param rootType main bean type
-	 * @param columnName the name of the column that contains bean key
+	 * @param beanKeyColumnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean creator, bean key will be passed as argument. Not called if bean key is null (no instantiation needed)
 	 */
-	public WholeResultSetTransformer(Class<C> rootType, String columnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
-		this(new ResultSetRowTransformer<>(rootType, columnName, reader, beanFactory));
+	public WholeResultSetTransformer(Class<C> rootType, String beanKeyColumnName, ResultSetReader<I> reader, SerializableFunction<I, C> beanFactory) {
+		this(new ResultSetRowTransformer<>(rootType, beanKeyColumnName, reader, beanFactory));
 	}
 	
 	/**
 	 * Constructor with root bean instantiation parameters as a default Java Bean constructor and setter for key value
 	 *
 	 * @param rootType main bean type
-	 * @param columnName the name of the column that contains bean key
+	 * @param beanKeyColumnName the name of the column that contains bean key
 	 * @param reader object to ease column reading, indicates column type
 	 * @param beanFactory the bean constructor. Not called if bean key is null (no instantiation needed)
 	 * @param setter setter for bean key
 	 */
-	public WholeResultSetTransformer(Class<C> rootType, String columnName, ResultSetReader<I> reader, Supplier<C> beanFactory, BiConsumer<C, I> setter) {
-		this(rootType, columnName, reader, i -> {
+	public WholeResultSetTransformer(Class<C> rootType, String beanKeyColumnName, ResultSetReader<I> reader, Supplier<C> beanFactory, BiConsumer<C, I> setter) {
+		this(rootType, beanKeyColumnName, reader, i -> {
 			C newInstance = beanFactory.get();
 			setter.accept(newInstance, i);
 			return newInstance;
