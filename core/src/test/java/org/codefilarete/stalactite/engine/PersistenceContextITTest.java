@@ -3,22 +3,21 @@ package org.codefilarete.stalactite.engine;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.QueryEase;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.Arrays;
@@ -158,7 +157,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		
 		Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).from(totoTable), Toto.class)
 				.mapKey(Toto::new, id, name)
-				.execute();
+				.execute(Accumulators.toSet());
 		assertThat(records)
 				.usingRecursiveFieldByFieldElementComparator()
 				.containsExactlyInAnyOrder(new Toto(1, "Hello"), new Toto(2, "World"));
@@ -188,7 +187,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 												   Toto.class)
 				.mapKey(Toto::new, id, name)
 				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
-				.execute();
+				.execute(Accumulators.toSet());
 		Toto expectedToto1 = new Toto(1, "Hello");
 		expectedToto1.setTata(new Tata("World"));
 		Toto expectedToto2 = new Toto(2, "Bonjour");
@@ -224,7 +223,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 												   Toto.class)
 				.mapKey(Toto::new, id, name)
 				.map(tataCombiner, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
-				.execute();
+				.execute(Accumulators.toSet());
 		Toto expectedToto1 = new Toto(1, "Hello");
 		expectedToto1.setTatas(Arrays.asSet(new Tata("World"), new Tata("Tout le monde")));
 		Toto expectedToto2 = new Toto(2, "Bonjour");

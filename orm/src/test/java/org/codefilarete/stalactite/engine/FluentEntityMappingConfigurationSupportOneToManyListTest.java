@@ -27,6 +27,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.result.RowIterator;
@@ -97,10 +98,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				new Choice(30L)));
 		questionPersister.insert(newQuestion);
 		
-		Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
-				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-				.execute();
+				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+		Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 		assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 		// stating that indexes are in same order than instances
 		assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);
@@ -134,10 +135,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 				new Choice(30L)));
 		questionPersister.insert(newQuestion);
 		
-		Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+		ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 				.mapKey(Result::new, id)
-				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-				.execute();
+				.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+		Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 		assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 		// stating that indexes are in same order than instances
 		assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);
@@ -175,9 +176,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		question.addChoice(choice2);
 		questionPersister.insert(question);
 		
-		Set<Long> choiceQuestionIds = persistenceContext.newQuery("select questionId from Choice", Long.class)
-				.mapKey(i -> i, "questionId", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select questionId from Choice", Long.class)
+				.mapKey(i -> i, "questionId", Long.class);
+		Set<Long> choiceQuestionIds = longExecutableQuery2.execute(Accumulators.toSet());
 		
 		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getSurrogate());
 		
@@ -193,17 +194,17 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		questionPersister.update(modifiedQuestion, question, false);
 		
-		choiceQuestionIds = persistenceContext.newQuery("select questionId from Choice", Long.class)
-				.mapKey(i -> i, "questionId", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select questionId from Choice", Long.class)
+				.mapKey(i -> i, "questionId", Long.class);
+		choiceQuestionIds = longExecutableQuery1.execute(Accumulators.toSet());
 		assertThat(choiceQuestionIds).containsExactlyInAnyOrder(question.getId().getSurrogate(), null);
 		
 		// testing delete
 		questionPersister.delete(modifiedQuestion);
 		// referencing columns must be set to null (we didn't ask for delete orphan)
-		choiceQuestionIds = persistenceContext.newQuery("select questionId from Choice", Long.class)
-				.mapKey(i -> i, "questionId", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select questionId from Choice", Long.class)
+				.mapKey(i -> i, "questionId", Long.class);
+		choiceQuestionIds = longExecutableQuery.execute(Accumulators.toSet());
 		ArrayList<Long> expectedResult = new ArrayList<>();
 		expectedResult.add(null);
 		assertThat(choiceQuestionIds).containsExactlyElementsOf(expectedResult);
@@ -230,10 +231,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice2Clone, choice1Clone, choice3Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute();
+					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// id should be left unmodified
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 			// but indexes must reflect swap done on instances
@@ -262,10 +263,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			verify(updateListener).beforeUpdate(argThat(argument ->
 					Iterables.collect(argument, Duo::getLeft, HashSet::new).equals(new HashSet<>(modifiedQuestion.getChoices()))
 					&& Iterables.collect(argument, Duo::getRight, HashSet::new).equals(new HashSet<>(newQuestion.getChoices()))), eq(true));
-			Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute();
+					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// nothing should have changed
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);
@@ -290,10 +291,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice4, choice2Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute();
+					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// id should be left unmodified
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L, 40L);
 			// but indexes must reflect modifications
@@ -319,10 +320,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Copy, choice1Copy));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute();
+					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// the removed id must be missing (entity asked for deletion)
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 30L);
 			// choice 1 (10) is last, choice 3 (30) is first
@@ -350,10 +351,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			modifiedQuestion.setChoices(Arrays.asList(choice3Clone, choice1Clone));
 			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute();
+					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			// the removed id must be missing (entity asked for deletion)
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 30L);
 			// choice 1 (10) is last, choice 3 (30) is first
@@ -474,13 +475,13 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		
 		ResultSet resultSet;
 		long answerCount = persistenceContext.newQuery("select count(id) as answerId from Answer", long.class)
-				.mapKey("answerId", long.class).singleResult().execute();
+				.mapKey("answerId", long.class).execute(Accumulators.getFirst());
 		assertThat(answerCount).isEqualTo(0);
 		long relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_Choices", long.class)
-				.mapKey("relationCount", long.class).singleResult().execute();
+				.mapKey("relationCount", long.class).execute(Accumulators.getFirst());
 		assertThat(relationCount).isEqualTo(0);
 		long choiceCount = persistenceContext.newQuery("select count(id) as choiceCount from Choice", long.class)
-				.mapKey("choiceCount", long.class).singleResult().execute();
+				.mapKey("choiceCount", long.class).execute(Accumulators.getFirst());
 		assertThat(choiceCount).isEqualTo(3);
 	}
 	
@@ -514,9 +515,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
 					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
-			Set<RawAnswer> persistedChoices = query
-					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-					.execute();
+			ExecutableQuery<RawAnswer> rawAnswerExecutableQuery = query
+					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId);
+			Set<RawAnswer> persistedChoices = rawAnswerExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactly(10L, 20L, 20L, 30L);
 			// stating that indexes are in same order than instances
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactly(1, 2, 3, 4);
@@ -616,16 +617,16 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.delete(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			Set<Long> persistedChoices = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable), Long.class)
-					.mapKey("c", long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable), Long.class)
+					.mapKey("c", long.class);
+			Set<Long> persistedChoices = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(Iterables.first(persistedChoices)).isEqualTo((Long) 0L);
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
-			Set<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
-					.mapKey("id", long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Choice", Long.class)
+					.mapKey("id", long.class);
+			Set<Long> remainingChoices = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
 					choice3.getId().getSurrogate()));
 		}
@@ -653,16 +654,16 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			answerPersister.deleteById(answer);
 			
 			Table answerChoicesTable = duplicatesTestData.getAnswerChoicesTable();
-			Set<Long> persistedChoices = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable).getQuery(), Long.class)
-					.mapKey("c", long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery(QueryEase.select("count(*) as c", long.class).from(answerChoicesTable).getQuery(), Long.class)
+					.mapKey("c", long.class);
+			Set<Long> persistedChoices = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(Iterables.first(persistedChoices)).isEqualTo((Long) 0L);
 			
 			// No choice must be deleted
 			// NB : we use choiceReader instead of choicePersister because the latter needs the idx column which is not mapped for Answer -> Choice
-			Set<Long> remainingChoices = persistenceContext.newQuery("select id from Choice", Long.class)
-					.mapKey("id", long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Choice", Long.class)
+					.mapKey("id", long.class);
+			Set<Long> remainingChoices = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(new HashSet<>(remainingChoices)).isEqualTo(Arrays.asSet(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(),
 					choice3.getId().getSurrogate()));
 		}
@@ -708,9 +709,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			ExecutableBeanPropertyKeyQueryMapper<RawAnswer> query = persistenceContext.newQuery(
 					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
-			Set<RawAnswer> persistedChoices = query
-					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-					.execute();
+			ExecutableQuery<RawAnswer> rawAnswerExecutableQuery1 = query
+					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId);
+			Set<RawAnswer> persistedChoices = rawAnswerExecutableQuery1.execute(Accumulators.toKeepingOrderSet());
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactly(10L, 20L, 50L, 20L, 30L, 10L, 40L);
 			// stating that indexes are in same order than instances
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactly(1, 2, 3, 4, 5, 6, 7);
@@ -723,9 +724,9 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			query = persistenceContext.newQuery(
 					QueryEase.select(answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
 							.from(answerChoicesTable).orderBy(answerChoicesTableIdx), RawAnswer.class);
-			persistedChoices = query
-					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId)
-					.execute();
+			ExecutableQuery<RawAnswer> rawAnswerExecutableQuery = query
+					.mapKey(RawAnswer::new, answerChoicesTableId, answerChoicesTableIdx, answerChoicesTableChoiceId);
+			persistedChoices = rawAnswerExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceId).containsExactly(10L, 20L, 10L);
 			// stating that indexes are in same order than instances
 			assertThat(persistedChoices).extracting(RawAnswer::getChoiceIdx).containsExactly(1, 2, 3);
@@ -1066,10 +1067,10 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// creating initial state
 			questionPersister.insert(newQuestion);
 			
-			Set<Result> persistedChoices = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
+			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
-					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx)
-					.execute();
+					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
+			Set<Result> persistedChoices = resultExecutableQuery.execute(Accumulators.toKeepingOrderSet());
 			assertThat(persistedChoices).extracting(Result::getId).containsExactly(10L, 20L, 30L);
 			// stating that indexes are in same order than instances
 			assertThat(persistedChoices).extracting(Result::getIdx).containsExactly(1, 2, 3);

@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.query.model.operator.Like;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -63,7 +64,7 @@ class DialectTest {
 		
 		// Checking that operator override is taken into Query rendering
 		persistenceContext.newQuery(QueryEase.select(dummyColumn).from(dummyTable).where(dummyColumn, like("x")), String.class)
-				.execute();
+				.execute(Accumulators.getFirst());
 		assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn LIKE 'x'");
 		
 		// Checking that operator override is taken into Delete rendering
@@ -116,7 +117,7 @@ class DialectTest {
 		
 		// Checking that operator override is taken into Query rendering
 		persistenceContext.newQuery(QueryEase.select(dummyColumn).from(dummyTable).where(dummyColumn, new MyOperator("42")), String.class)
-				.execute();
+				.execute(Accumulators.getFirst());
 		assertThat(sqlCaptor.getValue()).isEqualTo("select dummyTable.dummyColumn from dummyTable where dummyTable.dummyColumn myOperator '42'");
 		
 		// Checking that operator override is taken into Delete rendering

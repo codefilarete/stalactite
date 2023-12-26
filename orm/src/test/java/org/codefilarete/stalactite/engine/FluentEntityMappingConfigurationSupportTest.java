@@ -50,6 +50,7 @@ import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
@@ -565,8 +566,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		String firstName = persistenceContext.newQuery("select firstName from Toto", String.class)
 				.mapKey("firstName", String.class)
-				.singleResult()
-				.execute();
+				.execute(Accumulators.getFirst());
 		assertThat(firstName).isNull();
 		
 		toto.setName("updated dummy value");
@@ -574,8 +574,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		firstName = persistenceContext.newQuery("select firstName from Toto", String.class)
 				.mapKey("firstName", String.class)
-				.singleResult()
-				.execute();
+				.execute(Accumulators.getFirst());
 		assertThat(firstName).isNull();
 	}
 	
@@ -769,9 +768,9 @@ class FluentEntityMappingConfigurationSupportTest {
 			assertThat(selectedToto.getName()).isEqualTo("another dummy value");
 
 			persister.delete(selectedToto);
-			Set<String> identifiers = persistenceContext.newQuery("select identifier from Toto union all select identifier from Tata", String.class)
-					.mapKey("identifier", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select identifier from Toto union all select identifier from Tata", String.class)
+					.mapKey("identifier", String.class);
+			Set<String> identifiers = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(identifiers).isEmpty();
 		}
 		
@@ -809,9 +808,9 @@ class FluentEntityMappingConfigurationSupportTest {
 			assertThat(selectedToto.getFirstName()).isEqualTo("another dummy firstName");
 			
 			persister.delete(selectedToto);
-			Set<String> identifiers = persistenceContext.newQuery("select identifier from Toto union all select identifier from Tata", String.class)
-					.mapKey("identifier", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select identifier from Toto union all select identifier from Tata", String.class)
+					.mapKey("identifier", String.class);
+			Set<String> identifiers = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(identifiers).isEmpty();
 		}
 		
@@ -852,9 +851,9 @@ class FluentEntityMappingConfigurationSupportTest {
 			assertThat(selectedToto.getProp1()).isEqualTo("another dummy firstName");
 			
 			persister.delete(selectedToto);
-			Set<String> identifiers = persistenceContext.newQuery("select id from Toto union all select id from Tata", String.class)
-					.mapKey("identifier", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select id from Toto union all select id from Tata", String.class)
+					.mapKey("identifier", String.class);
+			Set<String> identifiers = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(identifiers).isEmpty();
 		}
 //		Set<Toto> dummy = persister.selectWhere(Toto::getName, Operators.like("%dummy%")).execute();
@@ -931,8 +930,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		
 		String readonlyProperty = persistenceContext.newQuery("select readonlyProperty from Toto", String.class)
 				.mapKey("readonlyProperty", String.class)
-				.singleResult()
-				.execute();
+				.execute(Accumulators.getFirst());
 		assertThat(readonlyProperty).isNull();
 	}
 	
@@ -1647,9 +1645,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that name was used
-		Set<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
-				.mapKey(Integer::new, "gender", Integer.class)
-				.execute();
+		ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+				.mapKey(Integer::new, "gender", Integer.class);
+		Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
 		assertThat(result).containsExactly(1);
 	}
 	
@@ -1710,9 +1708,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that ordinal was used
-		Set<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
-				.mapKey(Integer::valueOf, "gender", String.class)
-				.execute();
+		ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+				.mapKey(Integer::valueOf, "gender", String.class);
+		Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
 		assertThat(result).containsExactly(person.getGender().ordinal());
 	}
 	
@@ -1738,9 +1736,9 @@ class FluentEntityMappingConfigurationSupportTest {
 		personPersister.insert(person);
 		
 		// checking that ordinal was used
-		Set<Integer> result = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
-				.mapKey(Integer::valueOf, "gender", String.class)
-				.execute();
+		ExecutableQuery<Integer> integerExecutableQuery = persistenceContext.newQuery("select * from PersonWithGender", Integer.class)
+				.mapKey(Integer::valueOf, "gender", String.class);
+		Set<Integer> result = integerExecutableQuery.execute(Accumulators.toSet());
 		assertThat(result).containsExactly(person.getGender().ordinal());
 	}
 	

@@ -29,7 +29,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  *     
  * @author Guillaume Mary
  */
-public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>, ResultSetRowAssembler<C> {
+public class ResultSetRowTransformer<C, I> implements ResultSetTransformer<C, I>, ResultSetRowAssembler<C> {
 	
 	private final BeanFactory<C> beanFactory;
 	
@@ -113,23 +113,23 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	 * @return this
 	 */
 	@Override
-	public <O> ResultSetRowTransformer<I, C> add(ColumnConsumer<C, O> columnConsumer) {
+	public <O> ResultSetRowTransformer<C, I> add(ColumnConsumer<C, O> columnConsumer) {
 		this.consumers.add((ColumnConsumer<C, Object>) columnConsumer);
 		return this;
 	}
 	
 	@Override
-	public <K, V> ResultSetRowTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+	public <K, V> ResultSetRowTransformer<C, I> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator) {
 		this.relations.put((BeanRelationFixer) combiner, (ResultSetRowTransformer) relatedBeanCreator);
 		return this;
 	}
 	
 	@Override
-	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
+	public <T extends C> ResultSetRowTransformer<T, I> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
 		if (!(this.beanFactory instanceof IdentifierArgBeanFactory)) {
 			throw new UnsupportedOperationException("This instance can only be cloned with an identifier-arg constructor because it was created with one");
 		}
-		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, ((IdentifierArgBeanFactory) this.beanFactory).copyFor(beanFactory));
+		ResultSetRowTransformer<T, I> result = new ResultSetRowTransformer<>(beanType, ((IdentifierArgBeanFactory) this.beanFactory).copyFor(beanFactory));
 		result.consumers.addAll((Set) this.consumers);
 		this.relations.forEach((consumer, transformer) -> {
 			result.relations.put((BeanRelationFixer) consumer, transformer.copyFor(transformer.beanType, ((SerializableFunction) transformer.getBeanFactory().getFactory())));
@@ -138,11 +138,11 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	}
 	
 	@Override
-	public <T extends C> ResultSetRowTransformer<I, T> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory) {
+	public <T extends C> ResultSetRowTransformer<T, I> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory) {
 		if (!(this.beanFactory instanceof NoIdentifierBeanFactory)) {
 			throw new UnsupportedOperationException("This instance can only be cloned with a no-arg constructor because it was created with one");
 		}
-		ResultSetRowTransformer<I, T> result = new ResultSetRowTransformer<>(beanType, ((NoIdentifierBeanFactory) this.beanFactory).copyFor(beanFactory));
+		ResultSetRowTransformer<T, I> result = new ResultSetRowTransformer<>(beanType, ((NoIdentifierBeanFactory) this.beanFactory).copyFor(beanFactory));
 		result.consumers.addAll((Set) this.consumers);
 		this.relations.forEach((consumer, transformer) -> {
 				result.relations.put((BeanRelationFixer) consumer, transformer.copyFor(transformer.beanType, ((SerializableSupplier) transformer.getBeanFactory().getFactory())));
@@ -151,16 +151,16 @@ public class ResultSetRowTransformer<I, C> implements ResultSetTransformer<I, C>
 	}
 	
 	@Override
-	public ResultSetRowTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
-		ResultSetRowTransformer<I, C> result = new ResultSetRowTransformer<>(this.beanType, this.beanFactory.copyWithAliases(columnMapping));
+	public ResultSetRowTransformer<C, I> copyWithAliases(Function<String, String> columnMapping) {
+		ResultSetRowTransformer<C, I> result = new ResultSetRowTransformer<>(this.beanType, this.beanFactory.copyWithAliases(columnMapping));
 		this.consumers.forEach(c -> result.add(c.copyWithAliases(columnMapping)));
 		this.relations.forEach((consumer, transformer) -> result.add(consumer, transformer.copyWithAliases(columnMapping)));
 		return result;
 	}
 	
 	@Override	// for adhoc return type
-	public ResultSetRowTransformer<I, C> copyWithAliases(Map<String, String> columnMapping) {
-		// equivalent to super.copyWithAlias(..) but because inteface default method can't be invoked we have to copy/paste its code ;(
+	public ResultSetRowTransformer<C, I> copyWithAliases(Map<String, String> columnMapping) {
+		// equivalent to super.copyWithAlias(..) but because interface default method can't be invoked we have to copy/paste its code ;(
 		return copyWithAliases(columnMapping::get);
 	}
 	

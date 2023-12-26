@@ -98,10 +98,10 @@ public interface BeanPropertyQueryMapper<C> {
 	 * @param <V> type of beans created by given converter
 	 * @return this
 	 */
-	<K, V> BeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+	<K, V> BeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator);
 	
 	/**
-	 * Adds a low level {@link ResultSet} transfomer, for cases where mapping methods are unsufficient.
+	 * Adds a low level {@link ResultSet} transformer, for cases where mapping methods are insufficient.
 	 * Assembly will occurs on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
 	 *
 	 * @param assembler a low-level {@link ResultSet} transformer
@@ -112,7 +112,7 @@ public interface BeanPropertyQueryMapper<C> {
 	}
 	
 	/**
-	 * Adds a low level {@link ResultSet} transfomer, for cases where mapping methods are unsufficient.
+	 * Adds a low level {@link ResultSet} transformer, for cases where mapping methods are insufficient.
 	 * Be aware that any bean created by given assembler won't participate in cache, if this is required then one should implement
 	 * its own cache.
 	 *

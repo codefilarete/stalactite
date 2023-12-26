@@ -3,22 +3,20 @@ package org.codefilarete.stalactite.sql.result;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.codefilarete.tool.exception.NotImplementedException;
-import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 
 /**
- * @param <I> the type of bean keys (input)
  * @param <C> produced bean type
+ * @param <I> the type of bean keys (input)
  * @author Guillaume Mary
  */
-public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
+public interface ResultSetTransformer<C, I> {
 	
 	/**
 	 * Defines a complementary column that will be mapped on a bean property.
@@ -26,7 +24,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 *
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
-	<O> ResultSetTransformer<I, C> add(ColumnConsumer<C, O> columnConsumer);
+	<O> ResultSetTransformer<C, I> add(ColumnConsumer<C, O> columnConsumer);
 	
 	/**
 	 * Detailed version of {@link #add(ColumnConsumer)}
@@ -88,7 +86,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 * @param <T> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory);
+	<T extends C> ResultSetTransformer<T, I> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory);
 	
 	/**
 	 * Clones this instance for another type of bean.
@@ -100,7 +98,7 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 * @param <T> the target bean type
 	 * @return a new instance, kind of clone of this but for another type
 	 */
-	<T extends C> ResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory);
+	<T extends C> ResultSetTransformer<T, I> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory);
 	
 	/**
 	 * Will combine bean created by this instance with the one created by relatedBeanCreator thanks to given combiner.
@@ -111,20 +109,5 @@ public interface ResultSetTransformer<I, C> extends CopiableForAnotherQuery<C> {
 	 * @param <V> other bean key type
 	 * @return this
 	 */
-	<K, V> ResultSetTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
-	
-	/**
-	 * Overridden for return type cast.
-	 */
-	@Override
-	default ResultSetTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
-		throw new NotImplementedException("This instance doesn't support copy, please implement it if you wish to reuse its mapping for another query");
-	}
-	
-	/**
-	 * Overridden for return type cast.
-	 */
-	default ResultSetTransformer<I, C> copyWithAliases(Map<String, String> columnMapping) {
-		return copyWithAliases(columnMapping::get);
-	}
+	<K, V> ResultSetTransformer<C, I> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator);
 }

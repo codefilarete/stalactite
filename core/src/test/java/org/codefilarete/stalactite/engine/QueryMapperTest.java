@@ -9,7 +9,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.QueryMapper;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
@@ -18,23 +27,15 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingHashMap;
 import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
-import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
-import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.tool.Nullable.nullable;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.STRING_READER;
+import static org.codefilarete.tool.Nullable.nullable;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -417,57 +418,64 @@ class QueryMapperTest {
 		assertThat(result).isEmpty();
 	}
 	
-	@Test
-	void executeUnique_instanceHasAssembler() {
-		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
-			.mapKey(Toto::new, "id", long.class)
-			.map((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name1")))
-			.map((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name2")))
-			;
+	@Nested
+	class WithAccumulator {
 		
-		List<Map<String, Object>> resultSetData = Arrays.asList(
-			newRow().add("id", 42L).add("name1", "Hello").add("name2", " world !")
-		);
-		
-		Toto result = invokeExecuteUniqueWithData(queryMapper, resultSetData);
-		
-		Toto expected = new Toto(42, "Hello world !", false);
-		assertThat(result.toString()).isEqualTo(expected.toString());
-	}
-	
-	@Test
-	void executeUnique_emptyResultSet_returnsNull() {
-		List<Map<String, Object>> resultSetData = Collections.EMPTY_LIST;
-		
-		ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
-		Table totoTable = new Table<>("Toto");
-		totoTable.addColumn("name", String.class);
-		totoTable.addColumn("active", boolean.class);
-		
-		QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry)
-			.mapKey(Toto::new, "id", long.class)
-			.map("name", Toto::setName, String.class)
-			.map("active", Toto::setActive);
-		
-		Toto result = invokeExecuteUniqueWithData(testInstance, resultSetData);
-		
-		assertThat(result).isNull();
-	}
-	
-	private <C> C invokeExecuteUniqueWithData(QueryMapper<C> queryMapper, List<? extends Map<? extends String, ? extends Object>> resultSetData) {
-		// creation of a Connection that will give our test case data
-		Connection connectionMock = mock(Connection.class);
-		try {
-			PreparedStatement statementMock = mock(PreparedStatement.class);
-			when(connectionMock.prepareStatement(any())).thenReturn(statementMock);
-			when(statementMock.executeQuery()).thenReturn(new InMemoryResultSet(resultSetData));
-		} catch (SQLException e) {
-			// impossible since there's no real database connection
-			throw Exceptions.asRuntimeException(e);
+		@Test
+		void execute_first_retrievedFirstBean() {
+			ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+			QueryMapper<Toto> queryMapper = new QueryMapper<>(Toto.class, "Whatever SQL ... it is not executed", columnBinderRegistry)
+					.mapKey(Toto::new, "id", long.class)
+					.map((rootBean, resultSet) -> rootBean.setName(Objects.preventNull(rootBean.getName()) + resultSet.getString("name")));
+			
+			List<Map<String, Object>> resultSetData = Arrays.asList(
+					newRow().add("id", 42L).add("name", "Hello"),
+					newRow().add("id", 42L).add("name", " world !"),
+					// second bean shouldn't be retrieved, made to add some noise to the test
+					newRow().add("id", 43L).add("name", "Bonjour"),
+					newRow().add("id", 43L).add("name", " le monde !")
+			);
+			
+			Toto result = invokeExecuteFirstWithData(queryMapper, resultSetData);
+			
+			// Reminder : the first bean is retrieved and is complete, meaning all rows has been read, so even second
+			// bean has been built but not returned
+			Toto expected = new Toto(42, "Hello world !", false);
+			assertThat(result.toString()).isEqualTo(expected.toString());
 		}
 		
-		return queryMapper.executeUnique(() -> connectionMock);
+		@Test
+		void execute_emptyResultSet_returnsNull() {
+			List<Map<String, Object>> resultSetData = Collections.EMPTY_LIST;
+			
+			ColumnBinderRegistry columnBinderRegistry = new ColumnBinderRegistry();
+			Table totoTable = new Table<>("Toto");
+			totoTable.addColumn("name", String.class);
+			totoTable.addColumn("active", boolean.class);
+			
+			QueryMapper<Toto> testInstance = new QueryMapper<>(Toto.class, "never executed statement", columnBinderRegistry)
+					.mapKey(Toto::new, "id", long.class)
+					.map("name", Toto::setName, String.class);
+			
+			Toto result = invokeExecuteFirstWithData(testInstance, resultSetData);
+			
+			assertThat(result).isNull();
+		}
+		
+		private <C> C invokeExecuteFirstWithData(QueryMapper<C> queryMapper, List<? extends Map<? extends String, ? extends Object>> resultSetData) {
+			// creation of a Connection that will give our test case data
+			Connection connectionMock = mock(Connection.class);
+			try {
+				PreparedStatement statementMock = mock(PreparedStatement.class);
+				when(connectionMock.prepareStatement(any())).thenReturn(statementMock);
+				when(statementMock.executeQuery()).thenReturn(new InMemoryResultSet(resultSetData));
+			} catch (SQLException e) {
+				// impossible since there's no real database connection
+				throw Exceptions.asRuntimeException(e);
+			}
+			
+			return queryMapper.execute(() -> connectionMock, Accumulators.getFirst());
+		}
 	}
 	
 	public static class Toto {

@@ -29,6 +29,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.result.RowIterator;
@@ -141,9 +142,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		country.addCity(lyon);
 		persister.insert(country);
 		
-		Set<Long> cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class);
+		Set<Long> cityCountryIds = longExecutableQuery2.execute(Accumulators.toSet());
 		
 		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getSurrogate()));
 		
@@ -159,17 +160,17 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		persister.update(modifiedCountry, country, false);
 		
-		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class);
+		cityCountryIds = longExecutableQuery1.execute(Accumulators.toSet());
 		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet(country.getId().getSurrogate(), null));
 		
 		// testing delete
 		persister.delete(modifiedCountry);
 		// referencing columns must be set to null (we didn't ask for delete orphan)
-		cityCountryIds = persistenceContext.newQuery("select countryId from city", Long.class)
-				.mapKey(i -> i, "countryId", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select countryId from city", Long.class)
+				.mapKey(i -> i, "countryId", Long.class);
+		cityCountryIds = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(new HashSet<>(cityCountryIds)).isEqualTo(Arrays.asSet((Long) null));
 	}
 	
@@ -209,9 +210,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		persister.insert(country);
 		
-		Set<Duo<String, Integer>> cityCountryIds = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
-				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx")
-				.execute();
+		ExecutableQuery<Duo<String, Integer>> duoExecutableQuery1 = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
+				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx");
+		Set<Duo<String, Integer>> cityCountryIds = duoExecutableQuery1.execute(Accumulators.toSet());
 		
 		assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Grenoble", 2), new Duo<>("Lyon", 3));
 		
@@ -227,9 +228,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 
 		persister.update(modifiedCountry, country, false);
 		
-		cityCountryIds = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
-				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx")
-				.execute();
+		ExecutableQuery<Duo<String, Integer>> duoExecutableQuery = persistenceContext.newQuery("select name, myIdx from city", (Class<Duo<String, Integer>>) (Class) Duo.class)
+				.mapKey(FluentEntityMappingConfigurationSupportOneToManySetTest::pair, "name", "myIdx");
+		cityCountryIds = duoExecutableQuery.execute(Accumulators.toSet());
 		
 		assertThat(cityCountryIds).containsExactlyInAnyOrder(new Duo<>("Paris", 1), new Duo<>("Lyon", 2), new Duo<>("Grenoble", null));
 
@@ -262,9 +263,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		country.addCity(lyon);
 		persister.insert(country);
 		
-		Set<Duo> associatedIds = persistenceContext.newQuery("select Country_id, cities_id from Country_cities", Duo.class)
-				.mapKey(Duo::new, "Country_id", Long.class, "cities_id", Long.class)
-				.execute();
+		ExecutableQuery<Duo> duoExecutableQuery = persistenceContext.newQuery("select Country_id, cities_id from Country_cities", Duo.class)
+				.mapKey(Duo::new, "Country_id", Long.class, "cities_id", Long.class);
+		Set<Duo> associatedIds = duoExecutableQuery.execute(Accumulators.toSet());
 		
 		assertThat(associatedIds).containsExactlyInAnyOrder(
 				new Duo<>(country.getId().getSurrogate(), grenoble.getId().getSurrogate()),
@@ -282,17 +283,17 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		persister.update(modifiedCountry, country, false);
 		// there's only 1 relation in table
-		Set<Long> cityCountryIds = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
-				.mapKey(i -> i, "Country_id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select Country_id from Country_cities", Long.class)
+				.mapKey(i -> i, "Country_id", Long.class);
+		Set<Long> cityCountryIds = longExecutableQuery1.execute(Accumulators.toSet());
 		assertThat(cityCountryIds).containsExactlyInAnyOrder(country.getId().getSurrogate());
 		
 		// testing delete
 		persister.delete(modifiedCountry);
 		// Cities shouldn't be deleted (we didn't ask for delete orphan)
-		Set<Long> cityIds = persistenceContext.newQuery("select id from city", Long.class)
-				.mapKey(i -> i, "id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from city", Long.class)
+				.mapKey(i -> i, "id", Long.class);
+		Set<Long> cityIds = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(cityIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 	}
 	
@@ -341,28 +342,25 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey("name", String.class)
-				.singleResult()
-				.execute())
+				.execute(Accumulators.getFirst()))
 				.isEqualTo("Paris");
 		
 		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
 				.mapKey("name", String.class)
-				.singleResult()
-				.execute())
+				.execute(Accumulators.getFirst()))
 				.isEqualTo("touched France");
 		
 		// testing delete
 		countryPersister.delete(loadedCountry);
 		
-		assertThat(persistenceContext.newQuery("select name from Country where id = 42", String.class)
-				.mapKey("name", String.class)
-				.execute()).isEmpty();
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select name from Country where id = 42", String.class)
+				.mapKey("name", String.class);
+		assertThat(stringExecutableQuery.execute(Accumulators.toSet())).isEmpty();
 		
 		// city is left untouched because association is ALL (not ALL_ORPHAN_REMOVAL)
 		assertThat(persistenceContext.newQuery("select name from City where id = 1", String.class)
 				.mapKey("name", String.class)
-				.singleResult()
-				.execute())
+				.execute(Accumulators.getFirst()))
 				.isEqualTo("Paris");
 	}
 	
@@ -539,21 +537,19 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			city.setName("French president");
 			countryPersister.insert(dummyCountry);
 			
-			Set<Long> countryIds = persistenceContext.newQuery("select id from country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> countryIds = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(countryIds).containsExactlyInAnyOrder(dummyCountry.getId().getSurrogate());
 			
 			Long relationCount = persistenceContext.newQuery("select count(*) as relationCount from country_cities", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(relationCount).isEqualTo(0);
 			
 			Long cityCount = persistenceContext.newQuery("select count(*) as cityCount from city", Long.class)
 					.mapKey("cityCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(cityCount).isEqualTo(0);
 		}
 	}
@@ -762,9 +758,9 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 			assertThat(persistedCountry2.getStates()).extracting(State::getName).containsExactlyInAnyOrder("changed", "ardeche");
 			
 			// Ain shouldn't have been deleted because we didn't ask for orphan removal
-			Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
-					.mapKey(Long::new, "id", long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+					.mapKey(Long::new, "id", long.class);
+			Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(Iterables.first(loadedAin)).isNotNull();
 		}
 		

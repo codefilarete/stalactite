@@ -2,43 +2,41 @@ package org.codefilarete.stalactite.engine;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 
-import org.codefilarete.stalactite.engine.runtime.BeanPersister;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.function.Converter;
-import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.ReadOperation;
-import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.stalactite.sql.result.Accumulators;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.MultipleColumnsReader;
-import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
 import org.codefilarete.stalactite.sql.result.SingleColumnReader;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer;
 import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.Converter;
+import org.codefilarete.tool.function.SerializableTriFunction;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.danekja.java.util.function.serializable.SerializableSupplier;
 
 import static org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder.ALWAYS_SET_NULL_INSTANCE;
 
@@ -74,7 +72,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	private final Map<String, Object> sqlArguments = new HashMap<>();
 	
 	/** Delegate for {@link java.sql.ResultSet} transformation, will get all the mapping configuration */
-	private WholeResultSetTransformer<?, C> rootTransformer;
+	private WholeResultSetTransformer<C, ?> rootTransformer;
 	
 	private final QueryMapping<C, ?> mapping = new QueryMapping<>();
 	
@@ -301,7 +299,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	
 	@Override
 	public <I> QueryMapper<I> mapKey(String columnName, Class<I> columnType) {
-		this.rootTransformer = (WholeResultSetTransformer<?, C>) buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), SerializableFunction.identity());
+		this.rootTransformer = (WholeResultSetTransformer<C, ?>) buildSingleColumnKeyTransformer(new ColumnDefinition<>(columnName, columnType), SerializableFunction.identity());
 		return (QueryMapper<I>) this;
 	}
 	
@@ -419,7 +417,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	}
 	
 	@Override
-	public <K, V> QueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+	public <K, V> QueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator) {
 		mapping.add((BeanRelationFixer) combiner, relatedBeanCreator);
 		return this;
 	}
@@ -429,41 +427,17 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 	 * definition given through {@link #mapKey(SerializableFunction, String, Class)}, {@link #map(String, SerializableBiConsumer, Class)}
 	 * and {@link #map(String, SerializableBiConsumer)} methods.
 	 *
-	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
+	 * @param connectionProvider the object that will give the {@link java.sql.Connection}
 	 * @return a {@link Set} filled by the instances built
 	 */
 	public Set<C> execute(ConnectionProvider connectionProvider) {
-		return execute(WholeResultSetTransformer::transformAll, connectionProvider);
+		return execute(connectionProvider, Accumulators.toSet());
 	}
 	
-	/**
-	 * Executes the query onto the connection given by the {@link ConnectionProvider}. Transforms the result to a bean thanks to the
-	 * definition given through {@link #mapKey(SerializableFunction, String, Class)}, {@link #map(String, SerializableBiConsumer, Class)}
-	 * and {@link #map(String, SerializableBiConsumer)} methods.
-	 *
-	 * @param connectionProvider the object that will given the {@link java.sql.Connection}
-	 * @return an object, maybe null
-	 */
-	public C executeUnique(ConnectionProvider connectionProvider) {
-		return execute((transformerToUse, resultSet) -> {
-			// mimicing what WholeResultSetTransformer.transformAll does, but with only first ResultSet Row
-			ResultSetIterator<C> resultSetIterator = new ResultSetIterator<C>(resultSet) {
-				@Override
-				public C convert(ResultSet resultSet) throws SQLException {
-					return transformerToUse.transform(resultSet);
-				}
-			};
-			// we transform only first result since method is expected to return it
-			return transformerToUse.doWithBeanCache(() -> resultSetIterator.hasNext() ? resultSetIterator.next() : null);
-		}, connectionProvider);
-	}
-	
-	/**
-	 * Method that mutualizes code of {@link #execute(ConnectionProvider)} and {@link #executeUnique(ConnectionProvider)}
-	 */
-	private <O> O execute(BiFunction<WholeResultSetTransformer<?, C>, ResultSet, O> code, ConnectionProvider connectionProvider) {
-		WholeResultSetTransformer<?, C> transformerToUse;
+	public <R> R execute(ConnectionProvider connectionProvider, Accumulator<C, ?, R> accumulator) {
+		WholeResultSetTransformer<C, ?> transformerToUse;
 		if (rootTransformer == null) {
+			// No key defined (none of mapKey(..) methods were invoked), therefore we'll use default (no-arg) constructor
 			transformerToUse = new WholeResultSetTransformer<>(rootBeanType, () -> Reflections.newInstance(rootBeanType));
 		} else {
 			transformerToUse = rootTransformer;
@@ -472,15 +446,15 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		StringParamedSQL parameterizedSQL = new StringParamedSQL(this.sqlBuilder.toSQL().toString(), sqlParameterBinders);
 		try (ReadOperation<String> readOperation = new ReadOperation<>(parameterizedSQL, connectionProvider)) {
 			readOperation.setValues(sqlArguments);
-			return code.apply(transformerToUse, readOperation.execute());
+			return transformerToUse.transformAll(readOperation.execute(), accumulator);
 		}
 	}
 	
-	private <I, O> WholeResultSetTransformer<I, O> buildSingleColumnKeyTransformer(Column<I> keyColumn, SerializableFunction<I, O> beanFactory) {
+	private <I, O> WholeResultSetTransformer<O, I> buildSingleColumnKeyTransformer(Column<I> keyColumn, SerializableFunction<I, O> beanFactory) {
 		return new WholeResultSetTransformer<>((Class<O>) rootBeanType, keyColumn.getName(), keyColumn.getBinder(), beanFactory);
 	}
 	
-	private WholeResultSetTransformer<Object[], C> buildComposedKeyTransformer(Set<Column> columns, SerializableFunction<Object[], C> beanFactory) {
+	private WholeResultSetTransformer<C, Object[]> buildComposedKeyTransformer(Set<Column> columns, SerializableFunction<Object[], C> beanFactory) {
 		Set<SingleColumnReader> columnReaders = Iterables.collect(columns, c -> {
 			ParameterBinder reader = c.getBinder();
 			return new SingleColumnReader<>(c.getName(), reader);
@@ -495,7 +469,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			return constructorArgs;
 		});
 		
-		ResultSetRowTransformer<Object[], C> resultSetRowConverter = new ResultSetRowTransformer<>(
+		ResultSetRowTransformer<C, Object[]> resultSetRowConverter = new ResultSetRowTransformer<>(
 				rootBeanType,
 				multipleColumnsReader,
 				beanFactory);
@@ -657,7 +631,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 			mappings.add(new AssemblerMapping(assembler, assemblyPolicy));
 		}
 		
-		public <K, V> void add(BeanRelationFixer<K, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+		public <K, V> void add(BeanRelationFixer<K, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator) {
 			mappings.add(new RelationMapping(combiner, relatedBeanCreator));
 		}
 		
@@ -665,7 +639,7 @@ public class QueryMapper<C> implements BeanKeyQueryMapper<C>, BeanPropertyQueryM
 		 * Transfer this mapping to given instance
 		 * @param target instance that will consume current mapping
 		 */
-		public void applyTo(WholeResultSetTransformer<I, C> target) {
+		public void applyTo(WholeResultSetTransformer<C, I> target) {
 			this.mappings.forEach(m -> {
 				if (m instanceof ColumnMapping) {
 					QueryMapper.ColumnMapping columnMapping = ((ColumnMapping) m).columnMapping;

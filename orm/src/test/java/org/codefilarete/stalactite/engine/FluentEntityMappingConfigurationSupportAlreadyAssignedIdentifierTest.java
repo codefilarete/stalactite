@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.Arrays;
@@ -58,7 +59,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute();
+				.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
@@ -91,7 +92,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute();
+				.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
@@ -127,7 +128,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute();
+				.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
@@ -167,7 +168,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute();
+				.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 
 		// select test
@@ -206,7 +207,7 @@ public class FluentEntityMappingConfigurationSupportAlreadyAssignedIdentifierTes
 		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
-				.execute();
+				.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 
 		// select test

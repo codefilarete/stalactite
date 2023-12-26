@@ -50,6 +50,7 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.test.PairSetList;
@@ -438,7 +439,7 @@ class SimpleRelationalEntityPersisterTest {
 			});
 			
 			RelationalExecutableEntityQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectWhere(Toto::getA, Operators.eq(42));
-			Set<Toto> select = totoRelationalExecutableEntityQuery.execute();
+			Set<Toto> select = totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
@@ -492,7 +493,7 @@ class SimpleRelationalEntityPersisterTest {
 					.selectWhere(Toto::getA, Operators.eq(42))
 					.and(getTata, getProp1, dummy);
 			
-			totoRelationalExecutableEntityQuery.execute();
+			totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
 			
 			assertThat(sqlCaptor.getValue()).isEqualTo("select Toto.a as rootId from Toto left outer join Tata as tata on Toto.tataId = tata.id where Toto.a = ? and tata.prop1 = ?");
 			assertThat(argCaptor.getValue()).isEqualTo(42);

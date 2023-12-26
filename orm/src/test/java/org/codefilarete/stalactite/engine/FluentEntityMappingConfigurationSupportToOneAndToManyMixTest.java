@@ -20,6 +20,7 @@ import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -228,9 +229,9 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
 		// Ain shouldn't have been deleted because we didn't asked for orphan removal
-		Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
-				.mapKey(Long::new, "id", long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+				.mapKey(Long::new, "id", long.class);
+		Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(first(loadedAin)).isNotNull();
 	}
 	
@@ -304,9 +305,9 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
 		// Ain shouldn't have been deleted because we didn't asked for orphan removal
-		Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
-				.mapKey(Long::new, "id", long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+				.mapKey(Long::new, "id", long.class);
+		Set<Long> loadedAin = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(first(loadedAin)).isNotNull();
 	}
 }

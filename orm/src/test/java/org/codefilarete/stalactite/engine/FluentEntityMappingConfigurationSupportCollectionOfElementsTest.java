@@ -24,6 +24,7 @@ import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
@@ -159,7 +160,7 @@ class FluentEntityMappingConfigurationSupportCollectionOfElementsTest {
 		personPersister.delete(loadedPerson);
 		Set<String> remainingNickNames = persistenceContext.newQuery("select nickNames from Person_nicknames", String.class)
 				.mapKey("nickNames", String.class)
-				.execute();
+				.execute(Accumulators.toSet());
 		assertThat(remainingNickNames).isEmpty();
 	}
 	

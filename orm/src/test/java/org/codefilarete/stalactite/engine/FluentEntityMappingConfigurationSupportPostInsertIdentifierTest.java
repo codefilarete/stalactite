@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -52,10 +53,10 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		ExecutableQuery<Car> carExecutableQuery = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
-				.map("model", Car::setModel)
-				.execute();
+				.map("model", Car::setModel);
+		Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test
@@ -85,10 +86,10 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		carPersister.insert(dummyCar);
 		assertThat(dummyCar.getEngine().getId()).isNotNull();
 		
-		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		ExecutableQuery<Car> carExecutableQuery = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
-				.map("model", Car::setModel)
-				.execute();
+				.map("model", Car::setModel);
+		Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test
@@ -128,10 +129,10 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		ExecutableQuery<Car> carExecutableQuery = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
-				.map("model", Car::setModel)
-				.execute();
+				.map("model", Car::setModel);
+		Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test
@@ -173,10 +174,10 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		ExecutableQuery<Car> carExecutableQuery = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
-				.map("model", Car::setModel)
-				.execute();
+				.map("model", Car::setModel);
+		Set<Car> allCars = carExecutableQuery.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactly(dummyCar);
 		
 		// select test

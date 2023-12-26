@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
@@ -141,7 +142,7 @@ public class PersistenceContextTest {
 		// test select
 		Integer count = testInstance.newQuery("select count(*) as count from Toto", Integer.class)
 			.mapKey("count", Integer.class)
-			.singleResult().execute();
+			.execute(Accumulators.getFirst());
 		
 		assertThat(count).isEqualTo(666);
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("select count(*) as count from Toto");
