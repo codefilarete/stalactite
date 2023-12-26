@@ -28,6 +28,7 @@ import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
@@ -172,20 +173,18 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.singleResult()
-					.execute())
+					.execute(Accumulators.getFirst()))
 					.isEqualTo("French president");
 			
 			// deletion has no action on target
 			countryPersister.delete(loadedCountry);
-			assertThat(persistenceContext.newQuery("select name from Country", String.class)
-					.mapKey("name", String.class)
-					.execute()
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select name from Country", String.class)
+					.mapKey("name", String.class);
+			assertThat(stringExecutableQuery.execute(Accumulators.toSet())
 					.isEmpty()).isTrue();
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.singleResult()
-					.execute())
+					.execute(Accumulators.getFirst()))
 					.isEqualTo("French president");
 		}
 		
@@ -231,8 +230,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.singleResult()
-					.execute())
+					.execute(Accumulators.getFirst()))
 					.isEqualTo("French president");
 			
 			// Changing country president to check foreign key modification
@@ -250,16 +248,16 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// deletion doesn't throws integrity constraint and nullify foreign key
 			countryPersister.delete(dummyCountry);
 			
-			assertThat(persistenceContext.newQuery("select name from Country", String.class)
-					.mapKey("name", String.class)
-					.execute()).isEmpty();
-			assertThat(persistenceContext.newQuery("select name from Person", String.class)
-					.mapKey("name", String.class)
-					.execute())
+			ExecutableQuery<String> stringExecutableQuery2 = persistenceContext.newQuery("select name from Country", String.class)
+					.mapKey("name", String.class);
+			assertThat(stringExecutableQuery2.execute(Accumulators.toSet())).isEmpty();
+			ExecutableQuery<String> stringExecutableQuery1 = persistenceContext.newQuery("select name from Person", String.class)
+					.mapKey("name", String.class);
+			assertThat(stringExecutableQuery1.execute(Accumulators.toSet()))
 					.containsExactly("French president", "New French president");
-			assertThat(persistenceContext.newQuery("select name from Person where id = 2", String.class)
-					.mapKey("name", String.class)
-					.execute())
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select name from Person where id = 2", String.class)
+					.mapKey("name", String.class);
+			assertThat(stringExecutableQuery.execute(Accumulators.toSet()))
 					.first().isEqualTo("New French president");
 		}
 		
@@ -947,9 +945,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
 				assertThat(persistedCountry.getPresident().getName()).isEqualTo("Me !!");
 				// ... and we still a 2 countries (no deletion was done)
-				Set<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
-						.mapKey(Long::new, "countryCount", Long.class)
-						.execute();
+				ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+						.mapKey(Long::new, "countryCount", Long.class);
+				Set<Long> countryCount = longExecutableQuery.execute(Accumulators.toSet());
 				assertThat(Iterables.first(countryCount)).isEqualTo(2);
 			}
 			
@@ -987,9 +985,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
 				assertThat(persistedCountry.getPresident().getName()).isEqualTo("Me !!");
 				// ... and we still have 2 countries (no deletion was done)
-				Set<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
-						.mapKey(Long::new, "countryCount", Long.class)
-						.execute();
+				ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+						.mapKey(Long::new, "countryCount", Long.class);
+				Set<Long> countryCount = longExecutableQuery.execute(Accumulators.toSet());
 				assertThat(Iterables.first(countryCount)).isEqualTo(2);
 			}
 		}
@@ -1092,14 +1090,14 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// ... must be null for old president
 				ExecutableBeanPropertyQueryMapper<Long> countryIdQuery = persistenceContext.newQuery("select countryId from Person where id = :personId", Long.class)
 						.mapKey("countryId", Long.class);
-				Set<Long> originalPresidentCountryId = countryIdQuery
-						.set("personId", originalPresident.getId())
-						.execute();
+				ExecutableQuery<Long> longExecutableQuery1 = countryIdQuery
+						.set("personId", originalPresident.getId());
+				Set<Long> originalPresidentCountryId = longExecutableQuery1.execute(Accumulators.toSet());
 				assertThat(Iterables.first(originalPresidentCountryId)).isNull();
 				// ... and not null for new president
-				Set<Long> newPresidentCountryId = countryIdQuery
-						.set("personId", newPresident.getId())
-						.execute();
+				ExecutableQuery<Long> longExecutableQuery = countryIdQuery
+						.set("personId", newPresident.getId());
+				Set<Long> newPresidentCountryId = longExecutableQuery.execute(Accumulators.toSet());
 				assertThat(dummyCountry.getId().getSurrogate()).isEqualTo(Iterables.first(newPresidentCountryId));
 			}
 			

@@ -1,15 +1,24 @@
 package org.codefilarete.stalactite.engine;
 
-import java.util.List;
-import java.util.Set;
+import org.codefilarete.stalactite.sql.result.Accumulator;
 
 /**
- * Little interface to declare a {@link org.codefilarete.stalactite.query.model.Query} as executable, see {@link PersistenceContext.ExecutableSelect}
+ * Little interface to declare a {@link org.codefilarete.stalactite.query.model.Query} as executable.
  * 
  * @param <C> type of object returned by query execution
+ * @see PersistenceContext.ExecutableBeanPropertyKeyQueryMapper
+ * @see EntityPersister.ExecutableEntityQuery
  */
 public interface ExecutableQuery<C> {
 	
-	Set<C> execute();
+	/**
+	 * Will run underlying {@link org.codefilarete.stalactite.query.model.Query} and executes given {@link Accumulator}
+	 * on its result.
+	 * 
+	 * @param accumulator query result finalizer
+	 * @return beans found by the query and finalized by accumulator
+	 * @param <R> result type
+	 */
+	<R> R execute(Accumulator<C, ?, R> accumulator);
 	
 }

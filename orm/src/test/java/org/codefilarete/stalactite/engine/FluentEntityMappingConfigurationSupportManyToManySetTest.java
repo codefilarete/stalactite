@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -157,9 +158,9 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		answer.addChoices(grenoble, lyon);
 		persister.insert(answer);
 		
-		Set<Long> choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
-				.mapKey("answer_id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+				.mapKey("answer_id", Long.class);
+		Set<Long> choiceAnswerIds = longExecutableQuery3.execute(Accumulators.toSet());
 
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
 
@@ -172,23 +173,23 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		modifiedAnswer.addChoices(Iterables.first(answer.getChoices()));
 
 		persister.update(modifiedAnswer, answer, false);
-
-		choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
-				.mapKey("answer_id", Long.class)
-				.execute();
+		
+		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+				.mapKey("answer_id", Long.class);
+		choiceAnswerIds = longExecutableQuery2.execute(Accumulators.toSet());
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
 		
 		// referenced Choices must not be deleted (we didn't ask for delete orphan)
-		Set<Long> choiceIds = persistenceContext.newQuery("select id from choice", Long.class)
-				.mapKey("id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from choice", Long.class)
+				.mapKey("id", Long.class);
+		Set<Long> choiceIds = longExecutableQuery1.execute(Accumulators.toSet());
 		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 
 		// testing delete
 		persister.delete(modifiedAnswer);
-		choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
-				.mapKey("answer_id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+				.mapKey("answer_id", Long.class);
+		choiceAnswerIds = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(choiceAnswerIds).isEmpty();
 	}
 	
@@ -212,9 +213,9 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		answer2.addChoices(grenoble, lyon);
 		persister.insert(Arrays.asList(answer1, answer2));
 		
-		Set<Long> choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
-				.mapKey("answer_id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+				.mapKey("answer_id", Long.class);
+		Set<Long> choiceAnswerIds = longExecutableQuery3.execute(Accumulators.toSet());
 
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
 
@@ -227,23 +228,23 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		modifiedAnswer.addChoices(Iterables.first(answer1.getChoices()));
 
 		persister.update(modifiedAnswer, answer1, false);
-
-		choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
-				.mapKey("answer_id", Long.class)
-				.execute();
+		
+		ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+				.mapKey("answer_id", Long.class);
+		choiceAnswerIds = longExecutableQuery2.execute(Accumulators.toSet());
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
 		
 		// referenced Choices must not be deleted (we didn't ask for orphan deletion)
-		Set<Long> choiceIds = persistenceContext.newQuery("select id from choice", Long.class)
-				.mapKey("id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from choice", Long.class)
+				.mapKey("id", Long.class);
+		Set<Long> choiceIds = longExecutableQuery1.execute(Accumulators.toSet());
 		assertThat(choiceIds).containsExactlyInAnyOrder(grenoble.getId().getSurrogate(), lyon.getId().getSurrogate());
 
 		// testing delete
 		persister.delete(modifiedAnswer);
-		choiceAnswerIds = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
-				.mapKey("answer_id", Long.class)
-				.execute();
+		ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select answer_id from answer_choices", Long.class)
+				.mapKey("answer_id", Long.class);
+		choiceAnswerIds = longExecutableQuery.execute(Accumulators.toSet());
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(answer2.getId().getSurrogate());
 	}
 	
@@ -302,9 +303,9 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		answer2.addChoices(grenoble, lyon);
 		persister.insert(Arrays.asList(answer1, answer2));
 		
-		Set<Trio<Integer, Integer, Integer>> choiceAnswerIds = persistenceContext.newQuery("select answer_id, choices_id, myIdx from answer_choices", (Class<Trio<Integer, Integer, Integer>>) (Class) Trio.class)
-				.<Integer, Integer, Integer>mapKey(Trio::forInteger, "answer_id", "choices_id", "myIdx")
-				.execute();
+		ExecutableQuery<Trio<Integer, Integer, Integer>> trioExecutableQuery = persistenceContext.newQuery("select answer_id, choices_id, myIdx from answer_choices", (Class<Trio<Integer, Integer, Integer>>) (Class) Trio.class)
+				.<Integer, Integer, Integer>mapKey(Trio::forInteger, "answer_id", "choices_id", "myIdx");
+		Set<Trio<Integer, Integer, Integer>> choiceAnswerIds = trioExecutableQuery.execute(Accumulators.toSet());
 		
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(new Trio<>(1, 17, 1), new Trio<>(1, 13, 2), new Trio<>(2, 13, 1), new Trio<>(2, 17, 2));
 	}		
@@ -356,21 +357,19 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			answer.addChoices(grenoble, lyon);
 			answerPersister.insert(answer);
 			
-			Set<Long> answerIds = persistenceContext.newQuery("select id from answer", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from answer", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> answerIds = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(answerIds).containsExactlyInAnyOrder(answer.getId().getSurrogate());
 			
 			Long choiceAnswerCount = persistenceContext.newQuery("select count(*) as relationCount from answer_choices", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(choiceAnswerCount).isEqualTo(0);
 			
 			Long choiceCount = persistenceContext.newQuery("select count(*) as choiceCount from choice", Long.class)
 					.mapKey("choiceCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(choiceCount).isEqualTo(0);
 		}
 	}
@@ -446,48 +445,44 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			// Checking that we deleted what we wanted
 			Long answerCount = persistenceContext.newQuery("select count(*) as answerCount from Answer where id = 42", Long.class)
 					.mapKey("answerCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(answerCount).isEqualTo(0);
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			Long relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_choices where answer_Id = 42", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(relationCount).isEqualTo(0);
 			// target entities are not deleted with cascade All
-			Set<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> choiceIds = longExecutableQuery3.execute(Accumulators.toSet());
 			assertThat(choiceIds).containsExactlyInAnyOrder(100L, 200L);
 
 			// but we didn't delete everything !
-			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> answerIds = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(answerIds).containsExactlyInAnyOrder(666L);
-			choiceIds = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
+					.mapKey("id", Long.class);
+			choiceIds = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(choiceIds).containsExactlyInAnyOrder(300L);
 
 			// testing deletion of the last one
 			answerPersister.delete(answer2);
 			answerCount = persistenceContext.newQuery("select count(*) as answerCount from Answer where id = 666", Long.class)
 					.mapKey("answerCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(answerCount).isEqualTo(0);
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_choices where answer_Id = 666", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(relationCount).isEqualTo(0);
 			// target entities are not deleted with cascade All
-			choiceIds = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
+					.mapKey("id", Long.class);
+			choiceIds = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(choiceIds).containsExactlyInAnyOrder(300L);
 		}
 	}
@@ -563,48 +558,44 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			// Checking that we deleted what we wanted
 			Long answerCount = persistenceContext.newQuery("select count(*) as answerCount from Answer where id = 42", Long.class)
 					.mapKey("answerCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(answerCount).isEqualTo(0);
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			Long relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_choices where answer_Id = 42", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(relationCount).isEqualTo(0);
 			// target entities are not deleted with cascade All
-			Set<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> choiceIds = longExecutableQuery3.execute(Accumulators.toSet());
 			assertThat(choiceIds).isEmpty();
 			
 			// but we didn't delete everything !
-			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> answerIds = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(answerIds).containsExactlyInAnyOrder(666L);
-			choiceIds = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
+					.mapKey("id", Long.class);
+			choiceIds = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(choiceIds).containsExactlyInAnyOrder(300L);
 			
 			// testing deletion of the last one
 			answerPersister.delete(answer2);
 			answerCount = persistenceContext.newQuery("select count(*) as answerCount from Answer where id = 666", Long.class)
 					.mapKey("answerCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(answerCount).isEqualTo(0);
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_choices where answer_Id = 666", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(relationCount).isEqualTo(0);
 			// target entities are not deleted with cascade All
-			choiceIds = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
+					.mapKey("id", Long.class);
+			choiceIds = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(choiceIds).isEmpty();
 		}
 	}
@@ -638,14 +629,14 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			answerPersister.insert(Arrays.asList(answer1, answer2));
 			
 			// Checking that we inserted what we wanted
-			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id in (42, 666)", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from Answer where id in (42, 666)", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> answerIds = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(answerIds).containsExactlyInAnyOrder(answer1.getId().getSurrogate(), answer2.getId().getSurrogate());
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
-			Set<Long> choicesInRelationIds = persistenceContext.newQuery("select choices_Id from Answer_choices where answer_id in (42, 666)", Long.class)
-					.mapKey("choices_id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select choices_Id from Answer_choices where answer_id in (42, 666)", Long.class)
+					.mapKey("choices_id", Long.class);
+			Set<Long> choicesInRelationIds = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(choicesInRelationIds).containsExactlyInAnyOrder(choice1.getId().getSurrogate(), choice2.getId().getSurrogate(), choice3.getId().getSurrogate());
 		}
 		
@@ -679,13 +670,12 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			// Checking that answer name was updated
 			String answerComment = persistenceContext.newQuery("select comment from Answer where id = 42", String.class)
 					.mapKey("comment", String.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(answerComment).isEqualTo(answer1.getComment());
 			// .. but not its city name
-			Set<String> choiceLabels = persistenceContext.newQuery("select label from Choice where id = 100", String.class)
-					.mapKey("label", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery1 = persistenceContext.newQuery("select label from Choice where id = 100", String.class)
+					.mapKey("label", String.class);
+			Set<String> choiceLabels = stringExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(choiceLabels).containsExactlyInAnyOrder((String) null);
 			
 			// removing city doesn't have any effect either
@@ -693,9 +683,9 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			answer1.getChoices().remove(choice1);
 			assertThat(answer1.getChoices().size()).isEqualTo(1);	// safeguard for unwanted regression on city removal, because it would totally corrupt this test
 			answerPersister.update(answer1, answerPersister.select(answer1.getId()), true);
-			choiceLabels = persistenceContext.newQuery("select label from Choice where id = 100", String.class)
-					.mapKey("label", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select label from Choice where id = 100", String.class)
+					.mapKey("label", String.class);
+			choiceLabels = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(choiceLabels).containsExactlyInAnyOrder((String) null);
 		}
 
@@ -728,48 +718,44 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 			// Checking that we deleted what we wanted
 			Long answerCount = persistenceContext.newQuery("select count(*) as answerCount from Answer where id = 42", Long.class)
 					.mapKey("answerCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(answerCount).isEqualTo(0);
 			// with ASSOCIATION_ONLY, association table records must be deleted
 			Long relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_choices where answer_Id = 42", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(relationCount).isEqualTo(0);
 			// ... but target entities are not deleted with ASSOCIATION_ONLY
-			Set<Long> choiceIds = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select id from Choice where id in (100, 200)", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> choiceIds = longExecutableQuery3.execute(Accumulators.toSet());
 			assertThat(choiceIds).containsExactlyInAnyOrder(100L, 200L);
 			
 			// but we didn't delete everything !
-			Set<Long> answerIds = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select id from Answer where id = 666", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> answerIds = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(answerIds).containsExactlyInAnyOrder(666L);
-			choiceIds = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
+					.mapKey("id", Long.class);
+			choiceIds = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(choiceIds).containsExactlyInAnyOrder(300L);
 			
 			// testing deletion of the last one
 			answerPersister.delete(answer2);
 			answerCount = persistenceContext.newQuery("select count(*) as answerCount from Answer where id = 666", Long.class)
 					.mapKey("answerCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(answerCount).isEqualTo(0);
 			// this test is unnecessary because foreign keys should have been violated, left for more insurance
 			relationCount = persistenceContext.newQuery("select count(*) as relationCount from Answer_choices where answer_Id = 666", Long.class)
 					.mapKey("relationCount", Long.class)
-					.singleResult()
-					.execute();
+					.execute(Accumulators.getFirst());
 			assertThat(relationCount).isEqualTo(0);
 			// target entities are not deleted with cascade All
-			choiceIds = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Choice where id = 300", Long.class)
+					.mapKey("id", Long.class);
+			choiceIds = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(choiceIds).containsExactlyInAnyOrder(300L);
 			
 		}

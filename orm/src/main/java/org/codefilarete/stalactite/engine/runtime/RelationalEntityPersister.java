@@ -7,21 +7,22 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.sql.ddl.structure.Key;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Contract to allow joining a persister with another for entities with relation.
@@ -131,7 +132,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param <O> value type returned by property accessor
 	 * @param getter a property accessor
 	 * @param operator criteria for the property
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 	
@@ -143,7 +144,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param <O> value type returned by property accessor
 	 * @param setter a property setter
 	 * @param operator criteria for the property
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 	

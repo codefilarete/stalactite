@@ -1,9 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -21,6 +19,7 @@ import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -104,14 +103,14 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle left outer join car on abstractVehicle.id = car.id", String.class)
 				.mapKey("model", String.class);
 		
-		Set<String> allCars = modelQuery.execute();
+		Set<String> allCars = modelQuery.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactly("Renault");
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
-		Set<String> existingModels = modelQuery.execute();
+		Set<String> existingModels = modelQuery.execute(Accumulators.toSet());
 		assertThat(existingModels).containsExactly("Peugeot");
 		
 		// select test
@@ -121,7 +120,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
 		
-		existingModels = modelQuery.execute();
+		existingModels = modelQuery.execute(Accumulators.toSet());
 		assertThat(existingModels).isEmpty();
 	}
 	
@@ -165,14 +164,14 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from car", String.class)
 				.mapKey("model", String.class);
 		
-		Set<String> allCars = modelQuery.execute();
+		Set<String> allCars = modelQuery.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactly("Renault");
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
-		Set<String> existingModels = modelQuery.execute();
+		Set<String> existingModels = modelQuery.execute(Accumulators.toSet());
 		assertThat(existingModels).containsExactly("Peugeot");
 		
 		// select test
@@ -182,7 +181,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
 		
-		existingModels = modelQuery.execute();
+		existingModels = modelQuery.execute(Accumulators.toSet());
 		assertThat(existingModels).isEmpty();
 	}
 	
@@ -245,14 +244,14 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		ExecutableBeanPropertyQueryMapper<String> modelQuery = persistenceContext.newQuery("select * from abstractVehicle", String.class)
 				.mapKey("model", String.class);
 		
-		Set<String> allCars = modelQuery.execute();
+		Set<String> allCars = modelQuery.execute(Accumulators.toSet());
 		assertThat(allCars).containsExactly("Renault");
 		
 		// update test
 		dummyCar.setModel("Peugeot");
 		abstractVehiclePersister.persist(dummyCar);
 		
-		Set<String> existingModels = modelQuery.execute();
+		Set<String> existingModels = modelQuery.execute(Accumulators.toSet());
 		assertThat(existingModels).containsExactly("Peugeot");
 		
 		// select test
@@ -262,7 +261,7 @@ public class FluentEntityMappingConfigurationSupportPolymorphismCompositionTest 
 		// delete test
 		abstractVehiclePersister.delete(dummyCar);
 		
-		existingModels = modelQuery.execute();
+		existingModels = modelQuery.execute(Accumulators.toSet());
 		assertThat(existingModels).isEmpty();
 	}
 	

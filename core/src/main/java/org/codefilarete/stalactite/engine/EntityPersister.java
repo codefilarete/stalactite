@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Experimental;
 import org.codefilarete.tool.collection.Iterables;
@@ -167,7 +168,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param getter a property accessor
 	 * @param operator criteria for the property
 	 * @param <O> value type returned by property accessor
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
@@ -179,7 +180,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param setter a property accessor
 	 * @param operator criteria for the property
 	 * @param <O> value type returned by property accessor
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
@@ -192,7 +193,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param getter2 a property accessor
 	 * @param operator criteria for the property
 	 * @param <O> value type returned by property accessor
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	default <O, A> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O> operator) {
@@ -206,7 +207,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param accessorChain a property accessor
 	 * @param operator criteria for the property
 	 * @param <O> value type returned by property accessor
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	<O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O> operator);

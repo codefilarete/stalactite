@@ -33,6 +33,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Reflections;
@@ -194,9 +195,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.add("mobile", "03 33 33 33 33"));
 		
 		personPersister.delete(loadedPerson);
-		Set<String> remainingPhoneNumbers = persistenceContext.newQuery("select 'key' from Person_phoneNumbers", String.class)
-				.mapKey("key", String.class)
-				.execute();
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_phoneNumbers", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingPhoneNumbers = stringExecutableQuery.execute(Accumulators.toSet());
 		assertThat(remainingPhoneNumbers).isEmpty();
 	}
 
@@ -448,9 +449,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		);
 		
 		personPersister.delete(loadedPerson);
-		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_addressBook", String.class)
-				.mapKey("key", String.class)
-				.execute();
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_addressBook", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
 		assertThat(remainingAddressBook).isEmpty();
 	}
 
@@ -498,9 +499,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		);
 		
 		personPersister.delete(loadedPerson);
-		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_addresses", String.class)
-				.mapKey("key", String.class)
-				.execute();
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_addresses", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
 		assertThat(remainingAddressBook).isEmpty();
 	}
 
@@ -548,9 +549,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		);
 		
 		personPersister.delete(loadedPerson);
-		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_contracts", String.class)
-				.mapKey("key", String.class)
-				.execute();
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_contracts", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
 		assertThat(remainingAddressBook).isEmpty();
 	}
 	
@@ -610,9 +611,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		);
 		
 		personPersister.delete(loadedPerson);
-		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfComplexTypes", String.class)
-				.mapKey("key", String.class)
-				.execute();
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfComplexTypes", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
 		assertThat(remainingAddressBook).isEmpty();
 	}
 
@@ -664,9 +665,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		);
 		
 		personPersister.delete(loadedPerson);
-		Set<String> remainingAddressBook = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfComplexTypesWithColumnDuplicates", String.class)
-				.mapKey("key", String.class)
-				.execute();
+		ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfComplexTypesWithColumnDuplicates", String.class)
+				.mapKey("key", String.class);
+		Set<String> remainingAddressBook = stringExecutableQuery.execute(Accumulators.toSet());
 		assertThat(remainingAddressBook).isEmpty();
 	}
 	
@@ -719,15 +720,15 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			);
 			
 			personPersister.delete(loadedPerson);
-			Set<String> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKey", String.class)
-					.mapKey("key", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKey", String.class)
+					.mapKey("key", String.class);
+			Set<String> remainingEntries = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 			
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
 		}
 		
@@ -772,21 +773,21 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			personPersister.update(person, loadedPerson, true);
 			
 			loadedPerson = personPersister.select(person.getId());
-			Set<Long> remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
+					.mapKey("key", Long.class);
+			Set<Long> remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(remainingEntries).containsExactlyInAnyOrder(2L, 3L);
 			
 			personPersister.delete(loadedPerson);
-			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
+					.mapKey("key", Long.class);
+			remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 			
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
 		}
 		
@@ -824,23 +825,23 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			
 			personPersister.update(person, loadedPerson, true);
 			
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(2L, 3L);
 			
 			loadedPerson = personPersister.select(person.getId());
 			
 			personPersister.delete(loadedPerson);
-			Set<String> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKey", String.class)
-					.mapKey("key", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKey", String.class)
+					.mapKey("key", String.class);
+			Set<String> remainingEntries = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 			
 			// by default key entities are not deleted since cascading is not defined
-			remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).isEmpty();
 		}
 		
@@ -875,9 +876,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			
 			personPersister.insert(person);
 			
-			Set<Long> remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
+					.mapKey("key", Long.class);
+			Set<Long> remainingEntries = longExecutableQuery3.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 			
 			
@@ -911,9 +912,9 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.update(person, loadedPerson, true);
 			
-			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
+					.mapKey("key", Long.class);
+			remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			// Country 1 & 2 should still be present, and Country 3 missing from association table
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 			
@@ -923,16 +924,16 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.prepareStatement("alter table Person_mapPropertyMadeOfEntityAsKey drop constraint FK_Person_mapPropertyMadeOfEntityAsKey_id_Person_id").execute();
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.delete(loadedPerson);
-			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKey", Long.class)
+					.mapKey("key", Long.class);
+			remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
 			// Country 1 & 2 should still be present
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 			
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
 		}
 		
@@ -1026,15 +1027,15 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					);
 			
 			personPersister.delete(loadedPerson);
-			Set<String> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsValue", String.class)
-					.mapKey("key", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsValue", String.class)
+					.mapKey("key", String.class);
+			Set<String> remainingEntries = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 			
 			// by default value entities are not deleted since cascading is not defined
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
 		}
 		
@@ -1074,21 +1075,21 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			personPersister.update(person, loadedPerson, true);
 
 			loadedPerson = personPersister.select(person.getId());
-			Set<Long> remainingEntries = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
-					.mapKey("value", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("value", Long.class);
+			Set<Long> remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(remainingEntries).containsExactlyInAnyOrder(4L, 3L);
 
 			personPersister.delete(loadedPerson);
-			remainingEntries = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
-					.mapKey("value", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("value", Long.class);
+			remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
 		}
 
@@ -1125,24 +1126,24 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			person.getMapPropertyMadeOfEntityAsValue().put("Marseille", new Country(3));
 
 			personPersister.update(person, loadedPerson, true);
-
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(2L, 3L);
 
 			loadedPerson = personPersister.select(person.getId());
 
 			personPersister.delete(loadedPerson);
-			Set<String> remainingEntries = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", String.class)
-					.mapKey("value", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", String.class)
+					.mapKey("value", String.class);
+			Set<String> remainingEntries = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 
 			// by default key entities are not deleted since cascading is not defined
-			remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).isEmpty();
 		}
 
@@ -1176,10 +1177,10 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			);
 
 			personPersister.insert(person);
-
-			Set<Long> remainingEntries = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
-					.mapKey("value", Long.class)
-					.execute();
+			
+			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("value", Long.class);
+			Set<Long> remainingEntries = longExecutableQuery3.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 
 
@@ -1212,10 +1213,10 @@ class FluentEntityMappingConfigurationSupportMapTest {
 
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.update(person, loadedPerson, true);
-
-			remainingEntries = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
-					.mapKey("value", Long.class)
-					.execute();
+			
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("value", Long.class);
+			remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			// Country 1 & 2 should still be present, and Country 3 missing from association table
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 
@@ -1225,16 +1226,16 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.prepareStatement("alter table Person_mapPropertyMadeOfEntityAsValue drop constraint FK_Person_mapPropertyMadeOfEntityAsValue_id_Person_id").execute();
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.delete(loadedPerson);
-			remainingEntries = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
-					.mapKey("value", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select value from Person_mapPropertyMadeOfEntityAsValue", Long.class)
+					.mapKey("value", Long.class);
+			remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
 			// Country 1 & 2 should still be present
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
 		}
 		
@@ -1327,20 +1328,20 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					);
 			
 			personPersister.delete(loadedPerson);
-			Set<String> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", String.class)
-					.mapKey("key", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", String.class)
+					.mapKey("key", String.class);
+			Set<String> remainingEntries = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 			
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCities = persistenceContext.newQuery("select id from City", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from City", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCities = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingCities).containsExactlyInAnyOrder(1L, 2L, 3L);
 			
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
 		}
 		
@@ -1396,21 +1397,21 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			personPersister.update(person, loadedPerson, true);
 
 			loadedPerson = personPersister.select(person.getId());
-			Set<Long> remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class);
+			Set<Long> remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(remainingEntries).containsExactlyInAnyOrder(2L, 3L);
 
 			personPersister.delete(loadedPerson);
-			remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class);
+			remainingEntries = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
 		}
 
@@ -1448,28 +1449,28 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			person.getMapPropertyMadeOfEntityAsKeyAndValue().put(new City(3), new Country(3));
 
 			personPersister.update(person, loadedPerson, true);
-
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery2.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(3L, 4L);
 
 			loadedPerson = personPersister.select(person.getId());
 
 			personPersister.delete(loadedPerson);
-			Set<String> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", String.class)
-					.mapKey("key", String.class)
-					.execute();
+			ExecutableQuery<String> stringExecutableQuery = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", String.class)
+					.mapKey("key", String.class);
+			Set<String> remainingEntries = stringExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 
 			// everything should be erased since with asked for orphan removal for keys and values 
-			remainingCountries = persistenceContext.newQuery("select id from City", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from City", Long.class)
+					.mapKey("id", Long.class);
+			remainingCountries = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingCountries).isEmpty();
-			remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).isEmpty();
 		}
 
@@ -1510,10 +1511,10 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			);
 
 			personPersister.insert(person);
-
-			Set<Long> remainingEntries = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			
+			ExecutableQuery<Long> longExecutableQuery4 = persistenceContext.newQuery("select 'key' from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class);
+			Set<Long> remainingEntries = longExecutableQuery4.execute(Accumulators.toSet());
 			assertThat(remainingEntries).isEmpty();
 
 
@@ -1546,10 +1547,10 @@ class FluentEntityMappingConfigurationSupportMapTest {
 			
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.update(person, loadedPerson, true);
-
-			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			
+			ExecutableQuery<Long> longExecutableQuery3 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class);
+			remainingEntries = longExecutableQuery3.execute(Accumulators.toSet());
 			// City 1 & 2 should still be present, and City 3 missing from association table
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 
@@ -1559,20 +1560,20 @@ class FluentEntityMappingConfigurationSupportMapTest {
 					.prepareStatement("alter table Person_mapPropertyMadeOfEntityAsKeyAndValue drop constraint FK_Person_mapPropertyMadeOfEntityAsKeyAndValue_id_Person_id").execute();
 			loadedPerson = personPersister.select(person.getId());
 			personPersister.delete(loadedPerson);
-			remainingEntries = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
-					.mapKey("key", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery2 = persistenceContext.newQuery("select key from Person_mapPropertyMadeOfEntityAsKeyAndValue", Long.class)
+					.mapKey("key", Long.class);
+			remainingEntries = longExecutableQuery2.execute(Accumulators.toSet());
 			// City 1 & 2 should still be present
 			assertThat(remainingEntries).containsExactlyInAnyOrder(1L, 2L);
 
 			// by default key entities are not deleted since cascading is not defined
-			Set<Long> remainingCities = persistenceContext.newQuery("select id from City", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery1 = persistenceContext.newQuery("select id from City", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCities = longExecutableQuery1.execute(Accumulators.toSet());
 			assertThat(remainingCities).containsExactlyInAnyOrder(1L, 2L, 3L);
-			Set<Long> remainingCountries = persistenceContext.newQuery("select id from Country", Long.class)
-					.mapKey("id", Long.class)
-					.execute();
+			ExecutableQuery<Long> longExecutableQuery = persistenceContext.newQuery("select id from Country", Long.class)
+					.mapKey("id", Long.class);
+			Set<Long> remainingCountries = longExecutableQuery.execute(Accumulators.toSet());
 			assertThat(remainingCountries).containsExactlyInAnyOrder(1L, 2L, 3L);
 		}
 		

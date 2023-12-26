@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -39,6 +40,8 @@ import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatemen
 import org.codefilarete.stalactite.sql.order.Update;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
+import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
@@ -246,7 +249,7 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Creates a {@link ExecutableBeanPropertyKeyQueryMapper} from a {@link QueryProvider}, so it helps to build beans from a {@link Query}.
-	 * Should be chained with {@link QueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
+	 * Should be chained with {@link QueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute(Accumulator)}
 	 * 
 	 * @param queryProvider the query provider to give the {@link Query} execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
@@ -260,7 +263,7 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Creates a {@link ExecutableBeanPropertyKeyQueryMapper} from a {@link Query} in order to build beans from the {@link Query}.
-	 * Should be chained with {@link ExecutableBeanPropertyKeyQueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
+	 * Should be chained with {@link ExecutableBeanPropertyKeyQueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute(Accumulator)}
 	 * 
 	 * @param query the query to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
@@ -273,7 +276,7 @@ public class PersistenceContext implements PersisterRegistry {
 	
 	/**
 	 * Creates a {@link ExecutableBeanPropertyKeyQueryMapper} from some SQL in order to build beans from the SQL.
-	 * Should be chained with {@link ExecutableBeanPropertyKeyQueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute()}
+	 * Should be chained with {@link ExecutableBeanPropertyKeyQueryMapper} mapping methods and obviously with its {@link ExecutableQuery#execute(Accumulator)}
 	 * 
 	 * @param sql the SQL to execute to populate beans
 	 * @param beanType type of created beans, used for returned type marker
@@ -298,16 +301,10 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	private <C> ExecutableBeanPropertyKeyQueryMapper<C> wrapIntoExecutable(QueryMapper<C> queryMapperSupport) {
-		SingleResultExecutableSelect<C> singleResultDispatcher = new MethodReferenceDispatcher()
-				.redirect(SingleResultExecutableSelect<C>::execute, () -> executeUnique(queryMapperSupport))
-				.redirect(BeanPropertyQueryMapper.class, queryMapperSupport, true)
-				.build((Class<SingleResultExecutableSelect<C>>) (Class) SingleResultExecutableSelect.class);
-		
 		ExecutableBeanPropertyQueryMapper<C> beanPropertyMappingHandler = new MethodReferenceDispatcher()
 				// since ExecutableBeanPropertyQueryMapper can be run we redirect execute() method to the underlying method
-				.redirect(ExecutableQuery<C>::execute, () -> execute(queryMapperSupport))
-				// redirecting singleResult() to convenient instance handler
-				.redirect(ExecutableBeanPropertyQueryMapper<C>::singleResult, () -> singleResultDispatcher)
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Object, Object>, Object>) ExecutableQuery::execute,
+						(Function<Accumulator<C, Object, Object>, Object>) (accumulator) -> execute(queryMapperSupport, accumulator))
 				.redirect(BeanPropertyQueryMapper.class, queryMapperSupport, true)
 				.build((Class<ExecutableBeanPropertyQueryMapper<C>>) (Class) ExecutableBeanPropertyQueryMapper.class);
 		
@@ -315,7 +312,8 @@ public class PersistenceContext implements PersisterRegistry {
 				// BeanKeyQueryMapper methods are applied to a convenient instance but their results are redirected to another one to comply with their signature 
 				.redirect(BeanKeyQueryMapper.class, queryMapperSupport, beanPropertyMappingHandler)
 				// since ExecutableBeanPropertyKeyQueryMapper can be run we redirect execute() method to the underlying method
-				.redirect(ExecutableQuery<C>::execute, () -> execute(queryMapperSupport))
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Object, Object>, Object>) ExecutableQuery::execute,
+						(Function<Accumulator<C, Object, Object>, Object>) (accumulator) -> execute(queryMapperSupport, accumulator))
 				.build((Class<ExecutableBeanPropertyKeyQueryMapper<C>>) (Class) ExecutableBeanPropertyKeyQueryMapper.class);
 	}
 	
@@ -344,7 +342,7 @@ public class PersistenceContext implements PersisterRegistry {
 		return newQuery(QueryEase
 				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
 				.mapKey(factory, column)
-				.execute();
+				.execute(Accumulators.toSet());
 	}
 	
 	/**
@@ -369,7 +367,7 @@ public class PersistenceContext implements PersisterRegistry {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2)
-				.execute();
+				.execute(Accumulators.toSet());
 	}
 	
 	/**
@@ -396,7 +394,7 @@ public class PersistenceContext implements PersisterRegistry {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2, column3)
-				.execute();
+				.execute(Accumulators.toSet());
 	}
 	
 	/**
@@ -563,11 +561,11 @@ public class PersistenceContext implements PersisterRegistry {
 	}
 	
 	private <C> Set<C> execute(QueryMapper<C> queryMapper) {
-		return queryMapper.execute(getConnectionProvider());
+		return execute(queryMapper, Accumulators.toSet());
 	}
 	
-	private <C> C executeUnique(QueryMapper<C> queryMapper) {
-		return queryMapper.executeUnique(getConnectionProvider());
+	private <C, R> R execute(QueryMapper<C> queryMapper, Accumulator<C, ?, R> accumulator) {
+		return queryMapper.execute(getConnectionProvider(), accumulator);
 	}
 	
 	public <T extends Table> ExecutableUpdate update(T table) {
@@ -815,7 +813,7 @@ public class PersistenceContext implements PersisterRegistry {
 		<I, J> ExecutableBeanPropertyQueryMapper<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
 		
 		@Override
-		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
+		<K, V> ExecutableBeanPropertyQueryMapper<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator);
 		
 		@Override
 		default ExecutableBeanPropertyQueryMapper<C> map(ResultSetRowAssembler<C> assembler) {
@@ -833,56 +831,6 @@ public class PersistenceContext implements PersisterRegistry {
 		
 		@Override
 		<O> ExecutableBeanPropertyQueryMapper<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
-		
-		/**
-		 * Forces query to return very first result
-		 * @return a configurable query that will only return first result when executed
-		 */
-		SingleResultExecutableSelect<C> singleResult();
-	}
-	
-	/**
-	 * Configurable query that will only return first result when executed
-	 * @param <C> type of object returned by query execution
-	 */
-	public interface SingleResultExecutableSelect<C> extends BeanPropertyQueryMapper<C> {
-		
-		@Override
-		<I> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter, Class<I> columnType);
-		
-		@Override
-		<I, J> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Class<I> columnType, Converter<I, J> converter);
-		
-		@Override
-		<I> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, I> setter);
-		
-		@Override
-		<I, J> SingleResultExecutableSelect<C> map(String columnName, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
-		
-		@Override
-		<I> SingleResultExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, I> setter);
-		
-		@Override
-		<I, J> SingleResultExecutableSelect<C> map(Column<? extends Table, I> column, SerializableBiConsumer<C, J> setter, Converter<I, J> converter);
-		
-		@Override
-		<K, V> SingleResultExecutableSelect<C> map(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator);
-		
-		@Override
-		default SingleResultExecutableSelect<C> map(ResultSetRowAssembler<C> assembler) {
-			return (SingleResultExecutableSelect<C>) map(assembler, AssemblyPolicy.ON_EACH_ROW);
-		}
-		
-		@Override
-		SingleResultExecutableSelect<C> set(String paramName, Object value);
-		
-		@Override
-		<O> SingleResultExecutableSelect<C> set(String paramName, O value, Class<? super O> valueType);
-		
-		@Override
-		<O> SingleResultExecutableSelect<C> set(String paramName, Iterable<O> value, Class<? super O> valueType);
-		
-		C execute();
 	}
 	
 	/**

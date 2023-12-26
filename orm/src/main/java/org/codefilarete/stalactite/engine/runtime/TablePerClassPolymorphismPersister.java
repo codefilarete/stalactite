@@ -60,6 +60,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
@@ -72,6 +73,7 @@ import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
@@ -256,8 +258,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableFunction<ExecutableQuery, Set<C>>) ExecutableQuery::execute,
-						() -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
+						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);

@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -773,17 +774,17 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		persistenceContext.getConnectionProvider().giveConnection().commit();
 		petPersister.delete(cat);
-		String petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		String petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(petName).isNull();
-		String catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).singleResult().execute();
+		String catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(catBreed).isNull();
 		persistenceContext.getConnectionProvider().giveConnection().rollback();
 		
 		// we check deleteById to ensure that it takes composite key into account
 		petPersister.deleteById(cat);
-		petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(petName).isNull();
-		catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).singleResult().execute();
+		catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(catBreed).isNull();
 	}
 	
@@ -824,17 +825,17 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		persistenceContext.getConnectionProvider().giveConnection().commit();
 		petPersister.delete(cat);
-		String petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		String petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(petName).isNull();
-		String catBreed = persistenceContext.newQuery("select catBreed from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		String catBreed = persistenceContext.newQuery("select catBreed from Pet", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(catBreed).isNull();
 		persistenceContext.getConnectionProvider().giveConnection().rollback();
 		
 		// we check deleteById to ensure that it takes composite key into account
 		petPersister.deleteById(cat);
-		petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		petName = persistenceContext.newQuery("select name from Pet", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(petName).isNull();
-		catBreed = persistenceContext.newQuery("select catBreed from Pet", String.class).mapKey("name", String.class).singleResult().execute();
+		catBreed = persistenceContext.newQuery("select catBreed from Pet", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(catBreed).isNull();
 	}
 	
@@ -875,13 +876,13 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 		
 		persistenceContext.getConnectionProvider().giveConnection().commit();
 		petPersister.delete(cat);
-		String catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).singleResult().execute();
+		String catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(catBreed).isNull();
 		persistenceContext.getConnectionProvider().giveConnection().rollback();
 		
 		// we check deleteById to ensure that it takes composite key into account
 		petPersister.deleteById(cat);
-		catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).singleResult().execute();
+		catBreed = persistenceContext.newQuery("select catBreed from Cat", String.class).mapKey("name", String.class).execute(Accumulators.getFirst());
 		assertThat(catBreed).isNull();
 	}
 }

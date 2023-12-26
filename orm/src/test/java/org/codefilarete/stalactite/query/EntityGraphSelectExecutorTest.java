@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
@@ -125,7 +126,7 @@ class EntityGraphSelectExecutorTest {
 				.andMany(Country::getCities, City::getName, eq("Grenoble"));
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
-		Set<Country> select = countryEntityCriteriaSupport.execute();
+		Set<Country> select = countryEntityCriteriaSupport.execute(Accumulators.toSet());
 		
 		assertThat(select).isEmpty();
 	}

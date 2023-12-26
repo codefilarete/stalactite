@@ -5,29 +5,23 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.ThreadLocals;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.BeanFactory;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.IdentifierArgBeanFactory;
 import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer.NoIdentifierBeanFactory;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.ThreadLocals;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.danekja.java.util.function.serializable.SerializableSupplier;
 
 import static org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy.ON_EACH_ROW;
 
@@ -46,7 +40,7 @@ import static org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.A
  * @see #add(String, ResultSetReader, Class, SerializableFunction, BeanRelationFixer)
  * @see #transformAll(ResultSet) 
  */
-public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, C> {
+public class WholeResultSetTransformer<C, I> implements ResultSetTransformer<C, I>, CopiableForAnotherQuery<C> {
 	
 	/**
 	 * Per-Thread caches for created beans during {@link ResultSet} iteration.
@@ -61,7 +55,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	
 	static final ThreadLocal<Set<TreatedRelation>> CURRENT_TREATED_ASSEMBLERS = ThreadLocal.withInitial(HashSet::new);
 	
-	private final CachingResultSetRowTransformer<I, C> rootConverter;
+	private final RootConverter<C, I> rootConverter;
 	
 	/** The list of relations that will assemble objects */
 	private final KeepOrderSet<Assembler<C>> assemblers = new KeepOrderSet<>();
@@ -101,8 +95,8 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	/**
 	 * Constructor with root bean instantiation parameters.
 	 * 
-	 * With this constructor a root instance per {@link ResultSet} row will be created since there's no mean to distinguish a row instance from another
-	 * because no key reader is given. This is expected to be used for flat data retrieval. 
+	 * With this constructor a root instance per {@link ResultSet} row will be created since there's no mean to
+	 * distinguish a row instance from another because no key reader is given. This is expected to be used for flat data retrieval. 
 	 *
 	 * @param rootType main bean type
 	 * @param beanFactory the bean creator
@@ -116,7 +110,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * 
 	 * @param rootTransformer transformer that will create graph root-beans from {@link ResultSet}
 	 */
-	public WholeResultSetTransformer(ResultSetRowTransformer<I, C> rootTransformer) {
+	public WholeResultSetTransformer(ResultSetRowTransformer<C, I> rootTransformer) {
 		this.rootConverter = new CachingResultSetRowTransformer<>(rootTransformer);
 	}
 	
@@ -128,7 +122,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param columnConsumer the object that will do the reading and mapping
 	 */
 	@Override
-	public <O> WholeResultSetTransformer<I, C> add(ColumnConsumer<C, O> columnConsumer) {
+	public <O> WholeResultSetTransformer<C, I> add(ColumnConsumer<C, O> columnConsumer) {
 		consumers.add((ColumnConsumer<C, Object>) columnConsumer);
 		return this;
 	}
@@ -147,9 +141,9 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @return this
 	 * @see #add(String, ResultSetReader, Class, BeanRelationFixer) 
 	 */
-	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType,
+	public <K, V> WholeResultSetTransformer<C, I> add(String columnName, ResultSetReader<K> reader, Class<V> beanType,
 													  SerializableFunction<K, V> beanFactory, BeanRelationFixer<C, V> combiner) {
-		ResultSetRowTransformer<K, V> relatedBeanCreator = new ResultSetRowTransformer<>(beanType, columnName, reader, beanFactory);
+		ResultSetRowTransformer<V, K> relatedBeanCreator = new ResultSetRowTransformer<>(beanType, columnName, reader, beanFactory);
 		add(combiner, relatedBeanCreator);
 		return this;
 	}
@@ -170,7 +164,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * 
 	 * @return this
 	 */
-	public <K, V> WholeResultSetTransformer<I, C> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BeanRelationFixer<C, V> combiner) {
+	public <K, V> WholeResultSetTransformer<C, I> add(String columnName, ResultSetReader<K> reader, Class<V> beanType, BeanRelationFixer<C, V> combiner) {
 		add(columnName, reader, beanType, v -> Reflections.newInstance(beanType), combiner);
 		return this;
 	}
@@ -187,7 +181,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @return this
 	 */
 	@Override
-	public <K, V> WholeResultSetTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator) {
+	public <K, V> WholeResultSetTransformer<C, I> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator) {
 		return add(combiner, relatedBeanCreator, ON_EACH_ROW);
 	}
 	
@@ -202,8 +196,8 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param relatedBeanCreator the manager of the other beans
 	 * @return this
 	 */
-	public <K, V> WholeResultSetTransformer<I, C> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<K, V> relatedBeanCreator, AssemblyPolicy assemblyPolicy) {
-		CachingResultSetRowTransformer<K, V> relatedBeanCreatorCopy = new CachingResultSetRowTransformer<>(relatedBeanCreator);
+	public <K, V> WholeResultSetTransformer<C, I> add(BeanRelationFixer<C, V> combiner, ResultSetRowTransformer<V, K> relatedBeanCreator, AssemblyPolicy assemblyPolicy) {
+		CachingResultSetRowTransformer<V, K> relatedBeanCreatorCopy = new CachingResultSetRowTransformer<>(relatedBeanCreator);
 		return add(new Relation<>(combiner, relatedBeanCreatorCopy), assemblyPolicy);
 	}
 	
@@ -211,13 +205,13 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * Adds a very generic way to assemble {@link ResultSet} rows to a root bean.
 	 * Be aware that any bean created by given assembler won't participate in current instance cache, if this is required then one should implement
 	 * its own cache.
-	 * Assembly will occurs on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
+	 * Assembly will occur on each row ({@link ResultSetRowAssembler#assemble(Object, ResultSet)} will be call for each {@link ResultSet} row)
 	 * 
 	 * @param assembler a generic combiner of a root bean and each {@link ResultSet} row 
 	 * @return this
 	 * @see #add(ResultSetRowAssembler, AssemblyPolicy)
 	 */
-	public WholeResultSetTransformer<I, C> add(ResultSetRowAssembler<C> assembler) {
+	public WholeResultSetTransformer<C, I> add(ResultSetRowAssembler<C> assembler) {
 		return add(assembler, ON_EACH_ROW);
 	}
 	
@@ -230,40 +224,38 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param assemblyPolicy policy to decide if given assemble shall be invoked on each row or not
 	 * @return this
 	 */
-	public WholeResultSetTransformer<I, C> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
+	public WholeResultSetTransformer<C, I> add(ResultSetRowAssembler<C> assembler, AssemblyPolicy assemblyPolicy) {
 		this.assemblers.add(new Assembler<>(assembler, assemblyPolicy));
 		return this;
 	}
 	
 	@Override
-	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
-		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowTransformer<I, T> newRootConverter = this.rootConverter.transformer.copyFor(beanType, beanFactory);
+	public <T extends C> WholeResultSetTransformer<T, I> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
+		ResultSetRowTransformer<T, I> newRootConverter = this.rootConverter.copyFor(beanType, beanFactory);
 		return copy(newRootConverter);
 	}
 	
 	@Override
-	public <T extends C> WholeResultSetTransformer<I, T> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory) {
-		// ResultSetRowTransformer doesn't have a cache system, so we decorate its factory with a cache checking
-		ResultSetRowTransformer<I, T> newRootConverter = this.rootConverter.transformer.copyFor(beanType, beanFactory);
+	public <T extends C> WholeResultSetTransformer<T, I> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory) {
+		ResultSetRowTransformer<T, I> newRootConverter = this.rootConverter.copyFor(beanType, beanFactory);
 		return copy(newRootConverter);
 	}
 	
-	private <T extends C> WholeResultSetTransformer<I, T> copy(ResultSetRowTransformer<I, T> newRootConverter) {
+	private <T extends C> WholeResultSetTransformer<T, I> copy(ResultSetRowTransformer<T, I> newRootConverter) {
 		// Making the copy
-		WholeResultSetTransformer<I, T> result = new WholeResultSetTransformer<>(newRootConverter);
-		// Note: combiners can't be copied except if they were ResultSetRowTransformer which they are not, at least by their type, but 
+		WholeResultSetTransformer<T, I> result = new WholeResultSetTransformer<>(newRootConverter);
+		// Note: combiners are shared, not copied 
 		result.assemblers.addAll((Collection) this.assemblers);
 		result.consumers.addAll((Collection) this.consumers);
 		return result;
 	}
 	
 	@Override
-	public WholeResultSetTransformer<I, C> copyWithAliases(Function<String, String> columnMapping) {
+	public WholeResultSetTransformer<C, I> copyWithAliases(Function<String, String> columnMapping) {
 		// NB: rootConverter can be cloned without a cache checking bean factory because it already has it due to previous assignments
 		// (follow rootConverter assignments to be sure)
-		ResultSetRowTransformer<I, C> rootConverterCopy = this.rootConverter.transformer.copyWithAliases(columnMapping);
-		WholeResultSetTransformer<I, C> result = new WholeResultSetTransformer<>(rootConverterCopy);
+		ResultSetRowTransformer<C, I> rootConverterCopy = this.rootConverter.copyWithAliases(columnMapping);
+		WholeResultSetTransformer<C, I> result = new WholeResultSetTransformer<>(rootConverterCopy);
 		this.assemblers.forEach(assembler ->
 				result.add(assembler.getResultSetRowAssembler().copyWithAliases(columnMapping), assembler.getPolicy())
 		);
@@ -274,11 +266,15 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	}
 	
 	@Override	// for adhoc return type
-	public WholeResultSetTransformer<I, C> copyWithAliases(Map<String, String> columnMapping) {
+	public WholeResultSetTransformer<C, I> copyWithAliases(Map<String, String> columnMapping) {
 		return copyWithAliases(columnMapping::get);
 	}
 	
 	public Set<C> transformAll(ResultSet resultSet) {
+		return transformAll(resultSet, Accumulators.toCollection(LinkedHashSet::new));
+	}
+	
+	public <R, S> R transformAll(ResultSet resultSet, Accumulator<C, S, R> accumulator) {
 		// We convert the ResultSet with an iteration over a ResultSetIterator that uses the transform(ResultSet) method
 		ResultSetIterator<C> resultSetIterator = new ResultSetIterator<C>(resultSet) {
 			@Override
@@ -286,12 +282,7 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 				return transform(resultSet);
 			}
 		};
-		// Note that we first collect result in a List then treat it to clean it from its duplicates
-		List<C> convertedResult = doWithBeanCache(() -> Iterables.stream(resultSetIterator).collect(Collectors.toList()));
-		Map<C, Integer> resultWithoutDuplicates = new IdentityHashMap<>(convertedResult.size());	// we use identity to avoid relying on equals() implementation
-		ModifiableInt index = new ModifiableInt();
-		convertedResult.forEach(c -> resultWithoutDuplicates.putIfAbsent(c, index.increment()));
-		return resultWithoutDuplicates.entrySet().stream().sorted(Entry.comparingByValue()).map(Entry::getKey).collect(Collectors.toCollection(LinkedHashSet::new));
+		return doWithBeanCache(() -> accumulator.collect(() -> resultSetIterator));
 	}
 	
 	/**
@@ -348,13 +339,13 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 	 * @param <K>
 	 * @param <V>
 	 */
-	public static class Relation<K, V> implements ResultSetRowAssembler<K> {
+	private static class Relation<K, V> implements ResultSetRowAssembler<K> {
 		
 		private final BeanRelationFixer<K, V> relationFixer;
 		
-		private final CachingResultSetRowTransformer<?, V> transformer;
+		private final CachingResultSetRowTransformer<V, ?> transformer;
 		
-		public Relation(BeanRelationFixer<K, V> relationFixer, CachingResultSetRowTransformer<?, V> transformer) {
+		public Relation(BeanRelationFixer<K, V> relationFixer, CachingResultSetRowTransformer<V, ?> transformer) {
 			this.relationFixer = relationFixer;
 			this.transformer = transformer;
 		}
@@ -466,15 +457,27 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 		ONCE_PER_BEAN
 	}
 	
+	private interface RootConverter<C, I> {
+		
+		<T extends C> ResultSetRowTransformer<T, I> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory);
+		
+		<T extends C> ResultSetRowTransformer<T, I> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory);
+		
+		ResultSetRowTransformer<C, I> copyWithAliases(Function<String, String> columnMapping);
+		
+		C transform(ResultSet resultSet);
+	}
+	
 	/**
-	 * Cache system over a {@link ResultSetRowTransformer} because it doesn't have some.
-	 * This class decorates its factory with a cache checking.
+	 * Cache system over a {@link ResultSetRowTransformer} that gives already created instance if bean key matches.
+	 * Due to being based on bean key, this cache doesn't make sense with beans that don't have key (no-arg constructor),
+	 * thus, is such case, a new instance will be created each time {@link #transform(ResultSet)} is called.
 	 */
-	private static class CachingResultSetRowTransformer<I, C> {
+	private static class CachingResultSetRowTransformer<C, I> implements RootConverter<C, I> {
 		
-		private final ResultSetRowTransformer<I, C> transformer;
+		private final ResultSetRowTransformer<C, I> transformer;
 		
-		private CachingResultSetRowTransformer(ResultSetRowTransformer<I, C> transformer) {
+		private CachingResultSetRowTransformer(ResultSetRowTransformer<C, I> transformer) {
 			this.transformer = transformer;
 		}
 		
@@ -499,6 +502,21 @@ public class WholeResultSetTransformer<I, C> implements ResultSetTransformer<I, 
 				// should not happen
 				throw new IllegalArgumentException("Class " + Reflections.toString(beanFactory.getClass()) + " is not implemented");
 			}
+		}
+		
+		@Override
+		public <T extends C> ResultSetRowTransformer<T, I> copyFor(Class<T> beanType, SerializableFunction<I, T> beanFactory) {
+			return this.transformer.copyFor(beanType, beanFactory);
+		}
+		
+		@Override
+		public <T extends C> ResultSetRowTransformer<T, I> copyFor(Class<T> beanType, SerializableSupplier<T> beanFactory) {
+			return this.transformer.copyFor(beanType, beanFactory);
+		}
+		
+		@Override
+		public ResultSetRowTransformer<C, I> copyWithAliases(Function<String, String> columnMapping) {
+			return this.transformer.copyWithAliases(columnMapping);
 		}
 	}
 }

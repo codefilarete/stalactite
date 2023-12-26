@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
@@ -116,7 +117,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.delete(johnDo);
 			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
-					.execute();
+					.execute(Accumulators.toSet());
 			assertThat(allPersons).isEmpty();
 		}
 		
@@ -173,7 +174,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.delete(johnDo);
 			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
-					.execute();
+					.execute(Accumulators.toSet());
 			assertThat(allPersons).isEmpty();
 		}
 		
@@ -293,7 +294,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.delete(johnDo);
 			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
-					.execute();
+					.execute(Accumulators.toSet());
 			// previous partner is the only Person remaining because we asked for orphan removal
 			assertThat(allPersons).containsExactlyInAnyOrder(666L);
 		}
@@ -358,7 +359,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.delete(johnDo);
 			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
-					.execute();
+					.execute(Accumulators.toSet());
 			// previous partner is the only Person remaining because we asked for orphan removal
 			assertThat(allPersons).containsExactlyInAnyOrder(666L);
 		}
@@ -579,7 +580,7 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			personPersister.delete(johnDo);
 			Set<Long> allPersons = persistenceContext.newQuery("select id from Person", Long.class)
 					.mapKey(Long::new, "id", long.class)
-					.execute();
+					.execute(Accumulators.toSet());
 			// previous partner is the only Person remaining because we asked for orphan removal
 			assertThat(allPersons).containsExactlyInAnyOrder(666L);
 		}
