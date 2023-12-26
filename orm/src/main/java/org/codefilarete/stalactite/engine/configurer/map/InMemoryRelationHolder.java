@@ -86,10 +86,8 @@ class InMemoryRelationHolder<I, KEY_LOOKUP, ENTRY_VALUE, ENTITY> {
 		Map<I, Set<Trio>> srcidcMap = relationCollectionPerEntity.get();
 		Set<Trio> relatedDuos = srcidcMap.computeIfAbsent(source, id -> new HashSet<>());
 		// storeRelation(..) should have been invoked before this method (according to join building) so no need to build a Trio, null can be returned
-		Trio trio = relatedDuos.stream().filter(pawn -> Objects.equals(pawn.keyLookup, keyLookup)).findAny().orElse(null);
+		Trio trio = relatedDuos.stream().filter(pawn -> Objects.equals(pawn.keyLookup, keyLookup)).findAny().orElseGet(Trio::new);
 		trio.entity = entity;
-		// bidirectional assignment
-//			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).accept(input, source);
 	}
 	
 	public Collection<Duo<Object, Object>> get(I src) {

@@ -590,6 +590,7 @@ public class EntityJoinTree<C, I> {
 		 * We don't use {@link java.security.SecureRandom} because it consumes too much time while computing random values (more than 500ms
 		 * for a 6-digit identifier ! ... for each Node !!), and there's no need for security here.
 		 */
+		@SuppressWarnings("java:S2245" /* no security issue about Random class : it's only used as identifier generator, using SecureRandom is less performant */)
 		private final Randomizer keyGenerator = new Randomizer(new LinearRandomGenerator(new Random()));
 		
 		private String generateKey(JoinNode node) {

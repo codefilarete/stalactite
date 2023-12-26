@@ -396,16 +396,12 @@ public class EntityAsKeyAndValueMapRelationConfigurer<SRC, SRCID, K, KID, V, VID
 			Map<I, Trio> srcidcMap = relationCollectionPerEntity.get();
 			Trio relatedDuos = srcidcMap.computeIfAbsent(source, id -> new Trio());
 			relatedDuos.entity1.put(keyLookup, entity);
-			// bidirectional assignment
-//			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).accept(input, source);
 		}
 		
 		public void storeValueEntity(I source, ENTRY_VALUE keyLookup, VALUE_ENTITY entity) {
 			Map<I, Trio> srcidcMap = relationCollectionPerEntity.get();
 			Trio relatedDuos = srcidcMap.computeIfAbsent(source, id -> new Trio());
 			relatedDuos.entity2.put(keyLookup, entity);
-			// bidirectional assignment
-//			preventNull(getReverseSetter(), NOOP_REVERSE_SETTER).accept(input, source);
 		}
 		
 		public Collection<Duo<KEY_ENTITY, VALUE_ENTITY>> get(I src) {

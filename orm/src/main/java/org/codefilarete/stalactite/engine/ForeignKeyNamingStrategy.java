@@ -79,6 +79,7 @@ public interface ForeignKeyNamingStrategy {
 	 */
 	static String hashName(String s) {
 		try {
+			@SuppressWarnings("java:S4790" /* No sensitive code related to MD5 usage : only used to hash foreign key name */)
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			md.update(s.getBytes());
 			byte[] digest = md.digest();
