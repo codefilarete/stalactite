@@ -42,7 +42,7 @@ public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements 
 	}
 	
 	/**
-	 * Overriden to insert Target instances of the Trigger instances.
+	 * Overridden to insert Target instances of the Trigger instances.
 	 *
 	 * @param entities source entities previously inserted
 	 */
@@ -51,7 +51,7 @@ public abstract class AfterInsertCollectionCascader<TRIGGER, TARGET> implements 
 		Stream<TRIGGER> stream = Iterables.stream(entities);
 		Stream<TARGET> targetStream = stream.flatMap(c -> getTargets(c).stream());
 		// We collect things in a Set to avoid persisting duplicates twice which may produce constraint exception : the Set is an identity Set to
-		// avoid basing our comparison on implemented equals/hashCode although this could be sufficent, identity seems safer and match our logic.
+		// avoid basing our comparison on implemented equals/hashCode although this could be sufficient, identity seems safer and match our logic.
 		Set<TARGET> collect = targetStream.collect(Collectors.toCollection(Collections::newIdentitySet));
 		this.persister.persist(collect);
 	}

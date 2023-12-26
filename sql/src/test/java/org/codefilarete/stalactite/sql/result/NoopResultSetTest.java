@@ -23,7 +23,7 @@ public class NoopResultSetTest {
 		int methodCount = 0;
 		for (Method method : methods) {
 			if (method.getReturnType() != Void.class) {
-				Object invokationResult;
+				Object invocationResult;
 				try {
 					// we create default arguments otherwise we get IllegalArgumentException from the JVM at invoke() time
 					Object[] args = new Object[method.getParameterCount()];
@@ -36,17 +36,17 @@ public class NoopResultSetTest {
 							args[i] = Reflections.PRIMITIVE_DEFAULT_VALUES.getOrDefault(arg, null /* default value for any non-primitive Object */);
 						}
 					}
-					invokationResult = method.invoke(testInstance, args);
+					invocationResult = method.invoke(testInstance, args);
 					methodCount++;
 				} catch (ReflectiveOperationException | IllegalArgumentException e) {
 					throw new RuntimeException("Error executing " + Reflections.toString(method), e);
 				}
-				// invokation result must be a default value
+				// invocation result must be a default value
 				if (method.getReturnType().isArray()) {
-					assertThat(invokationResult.getClass().isArray()).isTrue();
-					assertThat(invokationResult.getClass().getComponentType()).isEqualTo(method.getReturnType().getComponentType());
+					assertThat(invocationResult.getClass().isArray()).isTrue();
+					assertThat(invocationResult.getClass().getComponentType()).isEqualTo(method.getReturnType().getComponentType());
 				} else {
-					assertThat(invokationResult).isEqualTo(Reflections.PRIMITIVE_DEFAULT_VALUES.get(method.getReturnType()));
+					assertThat(invocationResult).isEqualTo(Reflections.PRIMITIVE_DEFAULT_VALUES.get(method.getReturnType()));
 				}
 			}
 		}

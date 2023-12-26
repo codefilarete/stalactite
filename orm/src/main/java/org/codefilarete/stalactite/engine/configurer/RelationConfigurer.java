@@ -1,27 +1,44 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import java.util.Collection;
+import java.util.Map;
 
-import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
-import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
-import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
-import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleConfigurer;
-import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyAndValueMapRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyMapRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
+import org.codefilarete.stalactite.engine.configurer.map.MapRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.map.ValueAsKeyMapRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleConfigurer;
+import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleConfigurer;
+import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
+ * Main class that manage the configurations of all type of relations:
+ * - one-to-one
+ * - one-to-many
+ * - many-to-many
+ * - element collection
+ * 
  * @author Guillaume Mary
  */
 public class RelationConfigurer<C, I, T extends Table<T>> {
@@ -30,55 +47,40 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	private final ConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
 	private final SimpleRelationalEntityPersister<C, I, T> sourcePersister;
-	private final ColumnNamingStrategy columnNamingStrategy;
-	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
-	private final ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy;
-	private final ColumnNamingStrategy joinColumnNamingStrategy;
-	private final ColumnNamingStrategy indexColumnNamingStrategy;
-	private final AssociationTableNamingStrategy associationTableNamingStrategy;
+	private final NamingConfiguration namingConfiguration;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
 							  PersisterRegistry persisterRegistry,
 							  SimpleRelationalEntityPersister<C, I, T> sourcePersister,
-							  ColumnNamingStrategy columnNamingStrategy,
-							  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
-							  ElementCollectionTableNamingStrategy elementCollectionTableNamingStrategy,
-							  ColumnNamingStrategy joinColumnNamingStrategy,
-							  ColumnNamingStrategy indexColumnNamingStrategy,
-							  AssociationTableNamingStrategy associationTableNamingStrategy) {
+							  NamingConfiguration namingConfiguration) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
 		this.persisterRegistry = persisterRegistry;
 		this.sourcePersister = sourcePersister;
-		this.columnNamingStrategy = columnNamingStrategy;
-		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
-		this.elementCollectionTableNamingStrategy = elementCollectionTableNamingStrategy;
-		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
-		this.indexColumnNamingStrategy = indexColumnNamingStrategy;
-		this.associationTableNamingStrategy = associationTableNamingStrategy;
+		this.namingConfiguration = namingConfiguration;
 	}
 	
-	<TRGT, TRGTID> void registerRelationCascades(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	<TRGT, TRGTID> void configureRelations(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
-		for (CascadeOne<C, TRGT, TRGTID> cascadeOne : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
-			CascadeOneConfigurer<C, TRGT, I, TRGTID> cascadeOneConfigurer = new CascadeOneConfigurer<>(cascadeOne,
+		for (OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
+			OneToOneRelationConfigurer<C, TRGT, I, TRGTID> oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(oneToOneRelation,
 					sourcePersister,
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
-					foreignKeyNamingStrategy,
-					joinColumnNamingStrategy);
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getJoinColumnNamingStrategy());
 			
-			String relationName = AccessorDefinition.giveDefinition(cascadeOne.getTargetProvider()).getName();
+			String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
 			
-			if (currentBuilderContext.isCycling(cascadeOne.getTargetMappingConfiguration())) {
+			if (currentBuilderContext.isCycling(oneToOneRelation.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
 				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = cascadeOne.getTargetMappingConfiguration().getEntityType();
+				Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
 						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToOneCycleConfigurer && p.getEntityType() == targetEntityType);
@@ -86,32 +88,32 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
 					currentBuilderContext.addPostInitializers(cycleSolver);
 				}
-				cycleSolver.addCycleSolver(relationName, cascadeOneConfigurer);
+				cycleSolver.addCycleSolver(relationName, oneToOneRelationConfigurer);
 			} else {
-				cascadeOneConfigurer.appendCascades(relationName, new PersisterBuilderImpl<>(cascadeOne.getTargetMappingConfiguration()));
+				oneToOneRelationConfigurer.configure(relationName, new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration()), oneToOneRelation.isFetchSeparately());
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(cascadeOne.getTargetMappingConfiguration().getEntityType(),
-					cascadeOne.getTargetProvider()));
+			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(oneToOneRelation.getTargetMappingConfiguration().getEntityType(),
+					oneToOneRelation.getTargetProvider()));
 		}
-		for (CascadeMany<C, TRGT, TRGTID, ? extends Collection<TRGT>> cascadeMany : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
-			CascadeManyConfigurer cascadeManyConfigurer = new CascadeManyConfigurer<>(cascadeMany,
+		for (OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
+			OneToManyRelationConfigurer oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(oneToManyRelation,
 					sourcePersister,
 					dialect,
 					connectionConfiguration,
 					persisterRegistry,
-					foreignKeyNamingStrategy,
-					joinColumnNamingStrategy,
-					associationTableNamingStrategy,
-					indexColumnNamingStrategy);
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getJoinColumnNamingStrategy(),
+					namingConfiguration.getAssociationTableNamingStrategy(),
+					namingConfiguration.getIndexColumnNamingStrategy());
 			
-			String relationName = AccessorDefinition.giveDefinition(cascadeMany.getCollectionProvider()).getName();
+			String relationName = AccessorDefinition.giveDefinition(oneToManyRelation.getCollectionProvider()).getName();
 			
-			if (currentBuilderContext.isCycling(cascadeMany.getTargetMappingConfiguration())) {
+			if (currentBuilderContext.isCycling(oneToManyRelation.getTargetMappingConfiguration())) {
 				// cycle detected
 				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
 				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = cascadeMany.getTargetMappingConfiguration().getEntityType();
+				Class<TRGT> targetEntityType = oneToManyRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToManyCycleConfigurer<TRGT> cycleSolver = (OneToManyCycleConfigurer<TRGT>)
 						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToManyCycleConfigurer && p.getEntityType() == targetEntityType);
@@ -119,25 +121,120 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					cycleSolver = new OneToManyCycleConfigurer<>(targetEntityType);
 					currentBuilderContext.addPostInitializers(cycleSolver);
 				}
-				cycleSolver.addCycleSolver(relationName, cascadeManyConfigurer);
+				cycleSolver.addCycleSolver(relationName, oneToManyRelationConfigurer);
 			} else {
-				cascadeManyConfigurer.appendCascade(cascadeMany, sourcePersister,
-						foreignKeyNamingStrategy,
-						joinColumnNamingStrategy,
-						indexColumnNamingStrategy,
-						associationTableNamingStrategy,
-						new PersisterBuilderImpl<>(cascadeMany.getTargetMappingConfiguration()));
+				oneToManyRelationConfigurer.configure(new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(cascadeMany.getTargetMappingConfiguration().getEntityType(),
-					cascadeMany.getCollectionProvider()));
+			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(oneToManyRelation.getTargetMappingConfiguration().getEntityType(),
+					oneToManyRelation.getCollectionProvider()));
+		}
+		
+		for (ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>> manyToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getManyToManyRelations()) {
+			ManyToManyRelationConfigurer<C, TRGT, I, TRGTID, Collection<TRGT>, Collection<C>> manyRelationConfigurer = new ManyToManyRelationConfigurer<>(manyToManyRelation,
+					sourcePersister,
+					dialect,
+					connectionConfiguration,
+					persisterRegistry,
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getJoinColumnNamingStrategy(),
+					namingConfiguration.getIndexColumnNamingStrategy(),
+					namingConfiguration.getAssociationTableNamingStrategy()
+			);
+			
+			String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionProvider()).getName();
+			
+			if (currentBuilderContext.isCycling(manyToManyRelation.getTargetMappingConfiguration())) {
+				// cycle detected
+				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
+				// fall into infinite loop (think to SQL generation of a cycling graph ...)
+				Class<TRGT> targetEntityType = manyToManyRelation.getTargetMappingConfiguration().getEntityType();
+				// adding the relation to an eventually already existing cycle configurer for the entity
+				ManyToManyCycleConfigurer<TRGT> cycleSolver = (ManyToManyCycleConfigurer<TRGT>)
+						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof ManyToManyCycleConfigurer && p.getEntityType() == targetEntityType);
+				if (cycleSolver == null) {
+					cycleSolver = new ManyToManyCycleConfigurer<>(targetEntityType);
+					currentBuilderContext.addPostInitializers(cycleSolver);
+				}
+				cycleSolver.addCycleSolver(relationName, manyRelationConfigurer);
+			} else {
+				manyRelationConfigurer.configure(new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
+			}
 		}
 		
 		// taking element collections into account
-		for (ElementCollectionLinkage<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
-			ElementCollectionCascadeConfigurer elementCollectionCascadeConfigurer = new ElementCollectionCascadeConfigurer(dialect, connectionConfiguration);
-			elementCollectionCascadeConfigurer.appendCascade(elementCollection, sourcePersister, foreignKeyNamingStrategy, columnNamingStrategy,
-					elementCollectionTableNamingStrategy);
+		for (ElementCollectionRelation<C, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
+			ElementCollectionRelationConfigurer<C, ?, I, ? extends Collection> elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer<>(
+					elementCollection,
+					sourcePersister,
+					namingConfiguration.getForeignKeyNamingStrategy(),
+					namingConfiguration.getColumnNamingStrategy(),
+					namingConfiguration.getElementCollectionTableNamingStrategy(),
+					dialect,
+					connectionConfiguration);
+			elementCollectionRelationConfigurer.configure();
+		}
+		
+		// taking map relations into account
+		for (MapRelation<C, ?, ?, ? extends Map> map : entityMappingConfiguration.getMaps()) {
+			if (map.getKeyEntityConfigurationProvider() != null && map.getValueEntityConfigurationProvider() != null) {
+				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
+				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = new PersisterBuilderImpl<>(keyEntityConfiguration)
+						.build(dialect, connectionConfiguration, persisterRegistry, null);
+				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
+				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = new PersisterBuilderImpl<>(valueEntityConfiguration)
+						.build(dialect, connectionConfiguration, persisterRegistry, null);
+				EntityAsKeyAndValueMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyAndValueMapRelationConfigurer<>(
+						(MapRelation) map,
+						sourcePersister,
+						keyEntityPersister,
+						valueEntityPersister,
+						namingConfiguration.getForeignKeyNamingStrategy(),
+						namingConfiguration.getColumnNamingStrategy(),
+						namingConfiguration.getEntryMapTableNamingStrategy(),
+						dialect,
+						connectionConfiguration);
+				entityAsKeyMapRelationConfigurer.configure();
+			} else if (map.getKeyEntityConfigurationProvider() != null) {
+				EntityMappingConfiguration<Object, Object> keyEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getKeyEntityConfigurationProvider().getConfiguration();
+				ConfiguredRelationalPersister<Object, Object> keyEntityPersister = new PersisterBuilderImpl<>(keyEntityConfiguration)
+						.build(dialect, connectionConfiguration, persisterRegistry, null);
+				EntityAsKeyMapRelationConfigurer entityAsKeyMapRelationConfigurer = new EntityAsKeyMapRelationConfigurer<>(
+						(MapRelation) map,
+						sourcePersister,
+						keyEntityPersister,
+						namingConfiguration.getForeignKeyNamingStrategy(),
+						namingConfiguration.getColumnNamingStrategy(),
+						namingConfiguration.getEntryMapTableNamingStrategy(),
+						dialect,
+						connectionConfiguration);
+				entityAsKeyMapRelationConfigurer.configure();
+			} else if (map.getValueEntityConfigurationProvider() != null) {
+				EntityMappingConfiguration<Object, Object> valueEntityConfiguration = (EntityMappingConfiguration<Object, Object>) map.getValueEntityConfigurationProvider().getConfiguration();
+				ConfiguredRelationalPersister<Object, Object> valueEntityPersister = new PersisterBuilderImpl<>(valueEntityConfiguration)
+						.build(dialect, connectionConfiguration, persisterRegistry, null);
+				ValueAsKeyMapRelationConfigurer valueAsKeyMapRelationConfigurer = new ValueAsKeyMapRelationConfigurer<>(
+						(MapRelation) map,
+						sourcePersister,
+						valueEntityPersister,
+						namingConfiguration.getForeignKeyNamingStrategy(),
+						namingConfiguration.getColumnNamingStrategy(),
+						namingConfiguration.getEntryMapTableNamingStrategy(),
+						dialect,
+						connectionConfiguration);
+				valueAsKeyMapRelationConfigurer.configure();
+			} else {
+				MapRelationConfigurer<C, I, ?, ?, ? extends Map> mapRelationConfigurer = new MapRelationConfigurer<>(
+						map,
+						sourcePersister,
+						namingConfiguration.getForeignKeyNamingStrategy(),
+						namingConfiguration.getColumnNamingStrategy(),
+						namingConfiguration.getEntryMapTableNamingStrategy(),
+						dialect,
+						connectionConfiguration
+				);
+				mapRelationConfigurer.configure();
+			}
 		}
 	}
 	
@@ -156,8 +253,8 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		}
 		
 		@Override
-		public void consume(EntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
-			sourcePersister.getCriteriaSupport().getRootConfiguration().registerRelation(targetEntityAccessor, targetPersister.getMapping());
+		public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
+			sourcePersister.getCriteriaSupport().registerRelation(targetEntityAccessor, targetPersister.getMapping());
 		}
 	}
 }

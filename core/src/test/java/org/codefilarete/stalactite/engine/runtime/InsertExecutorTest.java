@@ -8,62 +8,56 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.runtime.AbstractVersioningStrategy.VersioningStrategySupport;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.manager.JDBCGeneratedKeysIdentifierManager;
-import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders;
 import org.codefilarete.stalactite.test.PairSetList;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
  */
-class InsertExecutorTest extends AbstractDMLExecutorMockTest {
+class InsertExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
 	
-	private InsertExecutor<Toto, Integer, Table> testInstance;
+	private InsertExecutor<Toto, Integer, T> testInstance;
 	
 	@BeforeEach
 	void setUp() {
-		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
 			new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
@@ -87,19 +81,19 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void insert_mandatoryColumn() {
-		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
+		Column<T, Object> bColumn = testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
 		assertThatThrownBy(() -> testInstance.insert(Arrays.asList(new Toto(null, 23))))
 				.isInstanceOf(RuntimeException.class)
-				.hasMessage("Error while inserting values for Toto{a=1, b=null, c=23}")
+				.hasMessage("Error while inserting values for Toto{a=1, b=null, c=23} in statement \"insert into Toto(a, b, c) values (?, ?, ?)\"")
 				.hasCause(new BindingException("Expected non null value for : Toto.b"));
 	}
 	
 	@Test
 	void insert_listenerIsCalled() {
 		SQLOperationListener<Column<Table, Object>> listenerMock = mock(SQLOperationListener.class);
-		testInstance.setOperationListener(listenerMock);
+		testInstance.setOperationListener((SQLOperationListener) listenerMock);
 		
 		ArgumentCaptor<Map<Column<Table, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
 		ArgumentCaptor<SQLStatement<Column<Table, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
@@ -112,17 +106,29 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-				Maps.asHashMap(colA, 1).add(colB, 17).add(colC, 23),
-				Maps.asHashMap(colA, 2).add(colB, 29).add(colC, 31)
-		));
+		ExtendedMapAssert.assertThatMap((Map<Column, Integer>) (Map) statementArgCaptor.getAllValues().get(0))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getAbsoluteName().equals(entry2.getKey().getAbsoluteName())
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(colA, 1),
+						entry(colB, 17),
+						entry(colC, 23));
+		ExtendedMapAssert.assertThatMap((Map<Column, Integer>) (Map) statementArgCaptor.getAllValues().get(1))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getAbsoluteName().equals(entry2.getKey().getAbsoluteName())
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(colA, 2),
+						entry(colB, 29),
+						entry(colC, 31));
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
 		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 	}
 	
 	@Test
 	void insert_withVersioningStrategy() throws SQLException {
-		InsertExecutor<VersionnedToto, Integer, Table> testInstance;
+		InsertExecutor<VersionnedToto, Integer, ?> testInstance;
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		PreparedStatement preparedStatement = mock(PreparedStatement.class);
@@ -136,15 +142,18 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 		
 		ConnectionProvider connectionProvider = new TransactionAwareConnectionProvider(connectionProviderMock);
 		
-		Table totoTable = new Table("toto");
+		T totoTable = (T) new Table("toto");
 		Column pk = totoTable.addColumn("id", Integer.class).primaryKey();
 		Column versionColumn = totoTable.addColumn("version", Long.class);
-		Map<ReversibleAccessor, Column> mapping = Maps.asMap((ReversibleAccessor)
-				PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
+		Map<ReversibleAccessor, Column> mapping = Maps.forHashMap((Class<ReversibleAccessor>) null, (Class<Column>) null)
+				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion), versionColumn)
 				.add(PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA), pk);
-		testInstance = new InsertExecutor<>(new ClassMapping<VersionnedToto, Integer, Table>(VersionnedToto.class, totoTable, (Map) mapping,
-																							 PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
-																							 new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
+		testInstance = new InsertExecutor<>(new ClassMapping<VersionnedToto, Integer, T>(
+				VersionnedToto.class,
+				totoTable,
+				(Map) mapping,
+				PropertyAccessor.fromMethodReference(VersionnedToto::getA, VersionnedToto::setA),
+				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)),
 				new ConnectionConfigurationSupport(connectionProvider, 3), dmlGenerator, new WriteOperationFactory(), 3);
 		
 		PropertyAccessor<VersionnedToto, Long> versioningAttributeAccessor = PropertyAccessor.fromMethodReference(VersionnedToto::getVersion, VersionnedToto::setVersion);
@@ -163,20 +172,20 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 		assertThat(toto.getVersion()).isEqualTo(0);
 	}
 
-	protected PersistenceConfiguration<Toto, Integer, Table> giveAutoGeneratedKeysPersistenceConfiguration() {
-		PersistenceConfiguration<Toto, Integer, Table> toReturn = new PersistenceConfiguration<>();
+	protected PersistenceConfiguration<Toto, Integer, T> giveAutoGeneratedKeysPersistenceConfiguration() {
+		PersistenceConfiguration<Toto, Integer, T> toReturn = new PersistenceConfiguration<>();
 
-		Table targetTable = new Table("Toto");
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> mappedFileds = persistentFieldHarverster.mapFields(Toto.class, targetTable);
-		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
-		Column primaryKeyColumn = persistentFieldHarverster.getColumn(primaryKeyAccessor);
+		T targetTable = (T) new Table("Toto");
+		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
+		Map<PropertyAccessor<Toto, Object>, Column<T, Object>> mappedFileds = persistentFieldHarvester.mapFields(Toto.class, targetTable);
+		PropertyAccessor<Toto, Integer> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
+		Column primaryKeyColumn = persistentFieldHarvester.getColumn(primaryKeyAccessor);
 		primaryKeyColumn.primaryKey();
 		primaryKeyColumn.setAutoGenerated(true);
 		
 		// changing mapping strategy to add JDBCGeneratedKeysIdentifierManager and GeneratedKeysReader
 		IdentifierInsertionManager<Toto, Integer> identifierGenerator = new JDBCGeneratedKeysIdentifierManager<>(
-			new SinglePropertyIdAccessor<>(primaryKeyAccessor),
+			new AccessorWrapperIdAccessor<>(primaryKeyAccessor),
 			new GeneratedKeysReaderAsInt(primaryKeyColumn.getName()),
 			Integer.class);
 
@@ -196,7 +205,7 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 		
 		@Test
 		void insert_generatedPK() throws Exception {
-			PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveAutoGeneratedKeysPersistenceConfiguration();
+			PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveAutoGeneratedKeysPersistenceConfiguration();
 			// additional configuration for generated keys method capture
 			when(jdbcMock.connection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(jdbcMock.preparedStatement);
 			
@@ -214,7 +223,7 @@ class InsertExecutorTest extends AbstractDMLExecutorMockTest {
 			
 			
 			DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-			InsertExecutor<Toto, Integer, Table> testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
+			InsertExecutor<Toto, Integer, ?> testInstance = new InsertExecutor<>(persistenceConfiguration.classMappingStrategy,
 					new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
 			List<Toto> totoList = Arrays.asList(new Toto(17, 23), new Toto(29, 31), new Toto(37, 41), new Toto(43, 53));
 			testInstance.insert(totoList);

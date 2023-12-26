@@ -2,13 +2,14 @@ package org.codefilarete.stalactite.engine.listener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Guillaume Mary
  */
-public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
+public class SelectListenerCollection<C, I> implements SelectListener<C, I> {
 	
-	private List<SelectListener<T, I>> selectListeners = new ArrayList<>();
+	private List<SelectListener<C, I>> selectListeners = new ArrayList<>();
 	
 	@Override
 	public void beforeSelect(Iterable<I> ids) {
@@ -16,27 +17,27 @@ public class SelectListenerCollection<T, I> implements SelectListener<T, I> {
 	}
 	
 	@Override
-	public void afterSelect(Iterable<? extends T> entities) {
+	public void afterSelect(Set<? extends C> entities) {
 		selectListeners.forEach(listener -> listener.afterSelect(entities));
 	}
 	
 	@Override
-	public void onError(Iterable<I> ids, RuntimeException exception) {
-		selectListeners.forEach(listener -> listener.onError(ids, exception));
+	public void onSelectError(Iterable<I> ids, RuntimeException exception) {
+		selectListeners.forEach(listener -> listener.onSelectError(ids, exception));
 	}
 	
-	public void add(SelectListener<T, I> selectListener) {
-		this.selectListeners.add(selectListener);
+	public void add(SelectListener<? extends C, I> selectListener) {
+		this.selectListeners.add((SelectListener<C, I>) selectListener);
 	}
 	
 	/**
 	 * Move internal listeners to given instance.
-	 * Usefull to agregate listeners into a single instance.
+	 * Useful to aggregate listeners into a single instance.
 	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
 	 *
 	 * @param selectListener the target listener on which the one of current instance must be moved to.
 	 */
-	public void moveTo(SelectListenerCollection<T, I> selectListener) {
+	public void moveTo(SelectListenerCollection<C, I> selectListener) {
 		selectListener.selectListeners.addAll(this.selectListeners);
 		this.selectListeners.clear();
 	}

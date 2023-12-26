@@ -1,67 +1,89 @@
 package org.codefilarete.stalactite.query.model;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.reflect.MethodDispatcher;
 
 /**
  * A support for the select part of a SQL query
  *
  * @author Guillaume Mary
  */
-public class Select implements Iterable<Object /* String, Column or AliasedColumn */>, SelectChain<Select> {
+public class Select implements FluentSelect<Select> {
 	
-	/** String, Column or {@link AliasedColumn} */
-	private final List<Object> columns = new ArrayList<>(5);
+	/** Items in select and their aliases (null value means no alias) */
+	private final KeepOrderMap<Selectable<?>, String> columns = new KeepOrderMap<>();
 	
 	private boolean distinct = false;
 	
-	private Select add(Object column) {
-		this.columns.add(column);
+	@Override
+	public KeepOrderSet<Selectable<?>> getColumns() {
+		return new KeepOrderSet<>(columns.keySet());
+	}
+	
+	@Override
+	public Select add(Iterable<? extends Selectable<?>> expressions) {
+		expressions.forEach(this::add);
 		return this;
 	}
 	
 	@Override
-	public Select add(Object selectable, Object... selectables) {
+	public Select add(Selectable<?> expression, Selectable<?>... expressions) {
+		add(expression);
+		for (Selectable<?> expr : expressions) {
+			add(expr);
+		}
+		return this;
+	}
+	
+	@Override
+	public AliasableExpression<Select> add(String expression, Class<?> javaType) {
+		SelectableString<?> selectable = new SelectableString<>(expression, javaType);
 		add(selectable);
-		for (Object col : selectables) {
-			add(col);
-		}
+		return new MethodDispatcher()
+				.redirect(Aliasable.class, alias -> {
+					columns.put(selectable, alias);
+					return null;	// we don't care about returned object since proxy is returned
+				}, this)
+				.redirect(SelectChain.class, this)
+				.build((Class<AliasableExpression<Select>>) (Class<?>) AliasableExpression.class);
+	}
+	
+	@Override
+	public Select add(Selectable<?> column, String alias) {
+		this.columns.put(column, alias);
 		return this;
 	}
 	
 	@Override
-	public Select add(Column column, String alias) {
-		return add(new AliasedColumn(column, alias));
+	public Select add(Map<? extends Selectable<?>, String> aliasedColumns) {
+		this.columns.putAll(aliasedColumns);
+		return this;
 	}
 	
-	@Override
-	public Select add(Map<Column, String> aliasedColumns) {
-		for (Entry<Column, String> aliasedColumn : aliasedColumns.entrySet()) {
-			add(new AliasedColumn(aliasedColumn.getKey(), aliasedColumn.getValue()));
-		}
+	public Select remove(Selectable<?> selectable) {
+		this.columns.remove(selectable);
 		return this;
 	}
 	
 	/**
-	 * Gives column aliases : works for {@link Column} declared through {@link #add(Column, String)} and {@link #add(Map)}.
+	 * Gives column aliases. If a {@link Column} is not present in result, then it means it has no alias
 	 * 
 	 * @return {@link Column} aliases of this instance, an empty {@link Map} if no {@link Column} was added to this instance
 	 */
-	public Map<Column, String> giveColumnAliases() {
-		Map<Column, String> aliases = new HashMap<>();
-		for (Object column : columns) {
-			if (column instanceof AliasedColumn) {
-				aliases.put(((AliasedColumn) column).getColumn(), ((AliasedColumn) column).getAlias());
-			}
-		}
-		return aliases;
+	public Map<Selectable<?>, String> getAliases() {
+		// TODO : remove this computation by a storage of aliased to avoid this algorithm at each call and complexity about ConcurrentModificationException
+		KeepOrderMap<Selectable<?>, String> result = new KeepOrderMap<>();
+		// don't use constructor parameter instead of putAll(..) because it gives it as surrogate, then, since we remove elements afterward,
+		// it throws ConcurrentModificationException while rendering SQL which need iteration over elements and access to aliases
+		result.putAll(columns);
+		result.values().remove(null);
+		return result;
 	}
 	
 	public boolean isDistinct() {
@@ -74,40 +96,14 @@ public class Select implements Iterable<Object /* String, Column or AliasedColum
 		return this;
 	}
 	
-	public Object remove(int index) {
-		return this.columns.remove(index);
-	}
-	
-	public List<Object> clear() {
-		List<Object> result = Iterables.copy(this.columns);
+	public KeepOrderMap<Selectable<?>, String> clear() {
+		KeepOrderMap<Selectable<?>, String> result = new KeepOrderMap<>(this.columns);
 		this.columns.clear();
 		return result;
 	}
 	
-	public Object get(int index) {
-		return this.columns.get(index);
-	}
-	
-	public void set(int index, Object object) {
-		this.columns.set(index, object);
-	}
-	
 	@Override
-	public Iterator<Object> iterator() {
-		return this.columns.iterator();
-	}
-	
-	public static class AliasedColumn extends Aliased {
-		
-		private final Column column;
-		
-		public AliasedColumn(Column column, String alias) {
-			super(alias);
-			this.column = column;
-		}
-		
-		public Column getColumn() {
-			return column;
-		}
+	public Iterator<Selectable<?>> iterator() {
+		return this.columns.keySet().iterator();
 	}
 }

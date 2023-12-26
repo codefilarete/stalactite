@@ -14,7 +14,7 @@ import org.codefilarete.tool.exception.Exceptions;
 public class PostgreSQLDatabaseHelper extends DatabaseHelper{
 	
 	/**
-	 * Overriden to drop table of current schema, else tables of every schema are selected for deletion, even those of system schema, which throws
+	 * Overridden to drop table of current schema, else tables of every schema are selected for deletion, even those of system schema, which throws
 	 * an error.
 	 * @param connection connection used for table lookup
 	 * @return table names as an {@link java.util.Iterator}

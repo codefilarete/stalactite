@@ -4,7 +4,7 @@
 	
 	<groupId>org.codefilarete.stalactite</groupId>
 	<artifactId>parent</artifactId>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>2.0.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	
 	<name>Stalactite</name>
@@ -40,6 +40,7 @@
 		<module>spring-integration</module>
 		<module>sql-adapter</module>
 		<module>core-adapter</module>
+		<module>orm-adapter</module>
 	</modules>
 	
 	<properties>
@@ -47,8 +48,9 @@
 		<junit.version>5.8.2</junit.version>
 		<mockito.version>4.3.1</mockito.version>
 		<slf4j-api.version>1.7.36</slf4j-api.version>
-		<assertj-core.version>3.22.0</assertj-core.version>
-		<tools.version>1.0.1</tools.version>
+		<assertj-core.version>3.23.1</assertj-core.version>
+		<!-- Tools lib dependency must be aligned with sql module Reflection lib dependency which also has its Tools lib dep -->
+		<tools.version>1.0.2-SNAPSHOT</tools.version>
 	</properties>
 	
 	<dependencies>
@@ -100,7 +102,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.0.0-M4</version>
+				<version>3.0.0</version>
 			</plugin>
 			<plugin>
 				<groupId>org.sonarsource.scanner.maven</groupId>

@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.model.Query.FluentFrom;
+import org.codefilarete.stalactite.query.model.Query.FluentFromClause;
 
 /**
  * The interface defining what's possible to do (fluent point of view) after a select
@@ -11,17 +9,13 @@ import org.codefilarete.stalactite.query.model.Query.FluentFrom;
  */
 public interface FromAware {
 	
-	FluentFrom from(Table leftTable);
+	FluentFromClause from(Fromable leftTable);
 	
-	FluentFrom from(Table leftTable, String alias);
+	FluentFromClause from(Fromable leftTable, String alias);
 	
-	FluentFrom from(Table leftTable, Table rightTable, String joinCondition);
+	FluentFromClause from(Fromable leftTable, Fromable rightTable, String joinCondition);
 	
-	FluentFrom from(Table leftTable, String leftTableAlias, Table rightTable, String rightTableAlias, String joinCondition);
+	FluentFromClause from(Fromable leftTable, String leftTableAlias, Fromable rightTable, String rightTableAlias, String joinCondition);
 	
-	FluentFrom from(Column leftColumn, Column rightColumn);
-	
-	FluentFrom fromLeftOuter(Column leftColumn, Column rightColumn);
-	
-	FluentFrom fromRightOuter(Column leftColumn, Column rightColumn);
+	<I> FluentFromClause from(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
 }

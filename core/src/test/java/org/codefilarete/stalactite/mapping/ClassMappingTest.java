@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 /**
  * @author Guillaume Mary
  */
-public class ClassMappingTest {
+class ClassMappingTest {
 	
 	private static Column colA;
 	private static Column colB;
@@ -38,20 +38,20 @@ public class ClassMappingTest {
 	private static Column colD2;
 	private static Column colE1;
 	private static Column colE2;
-	private static Map<? extends ReversibleAccessor, ? extends Column> classMapping;
+	private static Map<? extends ReversibleAccessor<Toto, Object>, ? extends Column<?, Object>> classMapping;
 	private static Table targetTable;
-	private static PersistentFieldHarverster persistentFieldHarverster;
+	private static PersistentFieldHarvester persistentFieldHarvester;
 	private static Map<String, Column> columnMapOnName;
 	private static PropertyAccessor<Toto, List<String>> myListField;
 	private static PropertyAccessor<Toto, Map<String, String>> myMapField;
 	
-	private static ClassMapping<Toto, Integer, Table> testInstance;
+	private static ClassMapping<Toto, Integer, ?> testInstance;
 	
 	@BeforeAll
-	public static void setUpClass() {
-		persistentFieldHarverster = new PersistentFieldHarverster();
+	static void setUpClass() {
+		persistentFieldHarvester = new PersistentFieldHarvester();
 		targetTable = new Table<>("Toto");
-		classMapping = persistentFieldHarverster.mapFields(Toto.class, targetTable);
+		classMapping = persistentFieldHarvester.mapFields(Toto.class, targetTable);
 		
 		
 		columnMapOnName = targetTable.mapColumnsOnName();
@@ -70,39 +70,41 @@ public class ClassMappingTest {
 		setUpTestInstance();
 	}
 	
-	public static void setUpTestInstance() {
+	static <T extends Table<T>> void setUpTestInstance() {
 		// instance to test
 		// The basic mapping will be altered to add special mapping for field "myListField" (a Collection) and "myMapField" (a Map)
 		testInstance = new ClassMapping<>(
 				Toto.class,
-				targetTable,
-				(Map<ReversibleAccessor<Toto, Object>, Column<Table, Object>>) classMapping,
-				Accessors.propertyAccessor(persistentFieldHarverster.getField("a")),
+				(T) targetTable,
+				(Map<? extends ReversibleAccessor<Toto, Object>, ? extends Column<T, Object>>) classMapping,
+				Accessors.propertyAccessor(persistentFieldHarvester.getField("a")),
 				// Basic mapping to prevent NullPointerException, even if it's not the goal of our test
-				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false));
+				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {
+				}, c -> false));
 		
 		
-		// Additionnal mapping: the list is mapped to 2 additionnal columns
+		// Additional mapping: the list is mapped to 2 additional columns
 		int nbCol = 2;
-		Set<Column<Table, Object>> collectionColumn = new LinkedHashSet<>(nbCol);
+		Set<Column<T, Object>> collectionColumn = new LinkedHashSet<>(nbCol);
 		for (int i = 1; i <= nbCol; i++) {
 			String columnName = "cold_" + i;
 			collectionColumn.add(targetTable.addColumn(columnName, String.class));
 		}
-		testInstance.put(myListField, new ColumnedCollectionMapping<List<String>, String, Table>(targetTable,
-																								 collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
+		ColumnedCollectionMapping<List<String>, String, T> columnedCollectionMapping = new ColumnedCollectionMapping<List<String>, String, T>((T) targetTable,
+				collectionColumn, (Class<List<String>>) (Class) ArrayList.class) {
 			
 			@Override
 			protected String toCollectionValue(Object object) {
 				return object.toString();
 			}
-		});
+		};
+		((ClassMapping<Toto, Integer, T>) testInstance).put(myListField, columnedCollectionMapping);
 		
 		// Additional mapping: the map is mapped to 2 additional columns
-		Map<String, Column<Table, Object>> mappedColumnsByKey = new HashMap<>();
+		Map<String, Column<T, Object>> mappedColumnsByKey = new HashMap<>();
 		for (int i = 1; i <= 2; i++) {
 			String columnName = "cole_" + i;
-			Column<Table, Object> column = targetTable.addColumn(columnName, String.class);
+			Column<T, Object> column = targetTable.addColumn(columnName, String.class);
 			switch (i) {
 				case 1:
 					mappedColumnsByKey.put("x", column);
@@ -112,12 +114,14 @@ public class ClassMappingTest {
 					break;
 			}
 		}
-		testInstance.put(myMapField, new ColumnedMapMapping<Map<String, String>, String, String, Table>(targetTable,
-																										new HashSet<>(mappedColumnsByKey.values()), (Class<Map<String, String>>) (Class) HashMap.class) {
+		ColumnedMapMapping<Map<String, String>, String, String, T> columnedMapMapping = new ColumnedMapMapping<Map<String, String>, String, String, T>(
+				(T) targetTable,
+				new HashSet<>(mappedColumnsByKey.values()),
+				(Class<Map<String, String>>) (Class) HashMap.class) {
 			
 			@Override
-			protected Column getColumn(String key) {
-				Column column = mappedColumnsByKey.get(key);
+			protected Column<T, Object> getColumn(String key) {
+				Column<T, Object> column = mappedColumnsByKey.get(key);
 				if (column == null) {
 					throw new IllegalArgumentException("Unknown key " + key);
 				} else {
@@ -136,15 +140,16 @@ public class ClassMappingTest {
 			}
 			
 			@Override
-			protected String toMapValue(String key, Object s) {
-				return s.toString();
+			protected String toMapValue(String key, Object o) {
+				return o.toString();
 			}
 			
 			@Override
 			public AbstractTransformer<Map<String, String>> copyTransformerWithAliases(ColumnedRow columnedRow) {
 				return null;
 			}
-		});
+		};
+		((ClassMapping<Toto, Integer, T>) testInstance).put(myMapField, columnedMapMapping);
 		
 		columnMapOnName = targetTable.mapColumnsOnName();
 		colD1 = columnMapOnName.get("cold_1");
@@ -153,7 +158,7 @@ public class ClassMappingTest {
 		colE2 = columnMapOnName.get("cole_2");
 	}
 	
-	public static Object[][] testGetInsertValues() {
+	static Object[][] getInsertValues() {
 		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3), Maps.asMap(colA, 1).add(colB, 2).add(colC, 3)
@@ -170,17 +175,16 @@ public class ClassMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetInsertValues")
-	public void testGetInsertValues(Toto modified, Map<Column, Object> expectedResult) {
-		Map<Column<Table, Object>, Object> valuesToInsert = testInstance.getInsertValues(modified);
-		
+	@MethodSource("getInsertValues")
+	void testGetInsertValues(Toto modified, Map<Column<?, Object>, Object> expectedResult) {
+		Map<? extends Column<?, Object>, Object> valuesToInsert = testInstance.getInsertValues(modified);
 		assertThat(valuesToInsert).isEqualTo(expectedResult);
 	}
 	
-	public static Object[][] testGetUpdateValues_diffOnly() {
+	static Object[][] getUpdateValues_diffOnly() {
 		setUpClass();
 		return new Object[][] {
-				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3)},
+				{ new Toto(1, 2, 3), new Toto(1, 5, 6), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, null, null), Maps.asMap(colB, 2).add(colC, 3) },
 				{ new Toto(1, 2, 3), new Toto(1, 2, 42), Maps.asMap(colC, 3) },
 				{ new Toto(1, null, null), new Toto(1, 2, 3), Maps.asMap(colB, null).add(colC, null) },
@@ -199,9 +203,9 @@ public class ClassMappingTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetUpdateValues_diffOnly")
-	public void testGetUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
-		Map<UpwhereColumn<Table>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, false);
+	@MethodSource("getUpdateValues_diffOnly")
+	<T extends Table<T>> void getUpdateValues_diffOnly(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
+		Map<? extends UpwhereColumn<T>, Object> valuesToUpdate = (Map) testInstance.getUpdateValues(modified, unmodified, false);
 		
 		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEqualTo(expectedResult);
 		if (!expectedResult.isEmpty()) {
@@ -211,43 +215,43 @@ public class ClassMappingTest {
 		}
 	}
 	
-	public static Object[][] testGetUpdateValues_allColumns() {
+	static Object[][] getUpdateValues_allColumns() {
 		setUpClass();
 		return new Object[][] {
 				{ new Toto(1, 2, 3),
 						new Toto(1, 5, 6),
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
 				{ new Toto(1, 2, 3),
 						new Toto(1, null, null),
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
 				{ new Toto(1, 2, 3),
 						new Toto(1, 2, 42),
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
 				{ new Toto(1, null, null),
 						new Toto(1, 2, 3),
-						Maps.asMap(colB, null).add(colC, null).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+						Maps.asMap(colB, null).add(colC, null).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
 				{ new Toto(1, 2, 3),
 						new Toto(1, 2, 3),
-						new HashMap<>()},
+						new HashMap<>() },
 				{ new Toto(1, 2, 3),
 						null,
-						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null)},
+						Maps.asMap(colB, 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, null).add(colE2, null) },
 				{ new Toto(1, 2, 3, Arrays.asList("a")),
 						new Toto(1, 5, 6, Arrays.asList("b")),
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, null).add(colE2, null)},
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, null).add(colE2, null) },
 				{ new Toto(1, 2, 3, Maps.asMap("x", "y")),
 						new Toto(1, 5, 6, Maps.asMap("x", "z")),
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, "y").add(colE2, null)},
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, null).add(colD2, null).add(colE1, "y").add(colE2, null) },
 				{ new Toto(1, 2, 3, Arrays.asList("a"), Maps.asMap("x", "y")),
 						null,
-						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, "y").add(colE2, null)},
+						Maps.asMap(colB, (Object) 2).add(colC, 3).add(colD1, "a").add(colD2, null).add(colE1, "y").add(colE2, null) },
 		};
 	}
 	
 	@ParameterizedTest
-	@MethodSource("testGetUpdateValues_allColumns")
-	public void testGetUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
-		Map<UpwhereColumn<Table>, Object> valuesToUpdate = testInstance.getUpdateValues(modified, unmodified, true);
+	@MethodSource("getUpdateValues_allColumns")
+	<T extends Table<T>> void getUpdateValues_allColumns(Toto modified, Toto unmodified, Map<Column, Object> expectedResult) {
+		Map<? extends UpwhereColumn<T>, Object> valuesToUpdate = (Map) testInstance.getUpdateValues(modified, unmodified, true);
 		
 		assertThat(UpwhereColumn.getUpdateColumns(valuesToUpdate)).isEqualTo(expectedResult);
 		if (!expectedResult.isEmpty()) {
@@ -258,16 +262,16 @@ public class ClassMappingTest {
 	}
 	
 	@Test
-	public void testBeanKeyIsPresent() {
-		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
-		assertThatExceptionOfType(IllegalArgumentException.class).as("Bean identifier '" + identifierAccesor + "' must have its matching column in " 
+	<T extends Table<T>> void beanKeyIsPresent() {
+		PropertyAccessor<Toto, Integer> identifierAccesor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
+		assertThatExceptionOfType(IllegalArgumentException.class).as("Bean identifier '" + identifierAccesor + "' must have its matching column in "
 				+ "the mapping").isThrownBy(() -> new ClassMapping<>(Toto.class,
-																	 targetTable,
-																	 Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
-																	 // identifier is not present in previous statement so it leads to the expected exception
-																	 identifierAccesor,
-																	 new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {
-				}, c -> false)));
+				(T) targetTable,
+				(Map<? extends ReversibleAccessor<Toto, Object>, ? extends Column<T, Object>>) (Map) Maps.asMap(Accessors.propertyAccessor(Toto.class, "b"), colB),
+				// identifier is not present in previous statement so it leads to the expected exception
+				identifierAccesor,
+				new AlreadyAssignedIdentifierManager<>(Integer.class, c -> {}, c -> false)
+		));
 	}
 	
 	private static class Toto {

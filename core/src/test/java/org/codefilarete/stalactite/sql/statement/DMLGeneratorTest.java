@@ -1,25 +1,25 @@
 package org.codefilarete.stalactite.sql.statement;
 
-import javax.annotation.Nonnull;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DMLGeneratorTest {
+class DMLGeneratorTest {
 
 	private ParameterBinder stringBinder;
 	private DMLGenerator testInstance;
@@ -33,7 +33,7 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildInsert() {
+	public void buildInsert() {
 		Table toto = new Table(null, "Toto");
 		Column colA = toto.addColumn("A", String.class);
 		Column colB = toto.addColumn("B", String.class);
@@ -48,14 +48,14 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildInsert_dmlNameProviderUsed() {
+	public void buildInsert_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
 		Column colA = toto.addColumn("A", String.class);
 		Column colB = toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -74,7 +74,7 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildUpdate() {
+	public void buildUpdate() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
@@ -92,14 +92,14 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildUpdate_dmlNameProviderUsed() {
+	public void buildUpdate_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -121,7 +121,7 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildDelete() {
+	public void buildDelete() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		toto.addColumn("B", String.class);
@@ -134,14 +134,14 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildDelete_dmlNameProviderUsed() {
+	public void buildDelete_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -158,13 +158,13 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildMassiveDelete() {
+	public void buildMassiveDelete() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, String> colA = toto.addColumn("A", String.class);
 		toto.addColumn("B", String.class);
 		
 		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Collections.singleton(colA);
-		ColumnParameterizedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 2);
+		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, keys, 2);
 		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where A in (?, ?)");
 		
 		assertThat(builtDelete.getIndexes(colA)[0]).isEqualTo(1);
@@ -172,14 +172,14 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildMassiveDelete_multipleKeys() {
+	public void buildMassiveDelete_multipleKeys() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, String> colA = toto.addColumn("A", String.class);
 		Column<Table, String> colB = toto.addColumn("B", String.class);
 		toto.addColumn("C", String.class);
 		
 		Collection<Column<Table, Object>> keys = (Collection<Column<Table, Object>>) (Collection) Arrays.asList(colA, colB);
-		ColumnParameterizedSQL<Table> builtDelete = testInstance.buildDeleteByKey(toto, keys, 3);
+		ColumnParameterizedSQL builtDelete = testInstance.buildDeleteByKey(toto, keys, 3);
 		assertThat(builtDelete.getSQL()).isEqualTo("delete from Toto where (A, B) in ((?, ?), (?, ?), (?, ?))");
 		
 		assertThat(builtDelete.getIndexes(colA)[0]).isEqualTo(1);
@@ -187,14 +187,14 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildMassiveDelete_dmlNameProviderUsed() {
+	public void buildMassiveDelete_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, String> colA = toto.addColumn("A", String.class);
 		toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -212,7 +212,7 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildSelect() {
+	public void buildSelect() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
@@ -225,14 +225,14 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildSelect_dmlNameProviderUsed() {
+	public void buildSelect_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("key", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -249,7 +249,7 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildMassiveSelect() {
+	public void buildMassiveSelect() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
@@ -265,7 +265,7 @@ public class DMLGeneratorTest {
 	
 	
 	@Test
-	public void testBuildMassiveSelect_multipleKeys() {
+	public void buildMassiveSelect_multipleKeys() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
@@ -280,14 +280,14 @@ public class DMLGeneratorTest {
 	}
 	
 	@Test
-	public void testBuildMassiveSelect_dmlNameProviderUsed() {
+	public void buildMassiveSelect_dmlNameProviderUsed() {
 		Table toto = new Table(null, "Toto");
 		Column<Table, Object> colA = toto.addColumn("A", String.class);
 		Column<Table, Object> colB = toto.addColumn("B", String.class);
 		
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}

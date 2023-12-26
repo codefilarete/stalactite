@@ -4,48 +4,54 @@ import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.mapping.RowTransformer;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
+import org.codefilarete.stalactite.sql.ddl.DDLAppender;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.ParameterizedWhere;
+import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityMerger.EntityMergerAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.DDLAppender;
-import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator.ParameterizedWhere;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
-import org.codefilarete.stalactite.sql.statement.ReadOperation;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Class aimed at executing a SQL select statement from multiple joined {@link ClassMapping}.
@@ -54,26 +60,49 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends SelectExecutor<C, I, T> implements JoinableSelectExecutor {
+public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implements org.codefilarete.stalactite.engine.SelectExecutor<C, I>, JoinableSelectExecutor {
 	
 	/** The surrogate for joining the strategies, will help to build the SQL */
 	private final EntityJoinTree<C, I> entityJoinTree;
-	private final ParameterBinderIndex<Column, ParameterBinder> parameterBinderProvider;
+	private final Dialect dialect;
 	private final int blockSize;
 	
-	private final PrimaryKey<Table> primaryKey;
+	private final PrimaryKey<T, I> primaryKey;
 	private final WhereClauseDMLNameProvider whereClauseDMLNameProvider;
+	private final ConnectionProvider connectionProvider;
+	private final IdentifierAssembler<I, T> identifierAssembler;
 	
-	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> classMappingStrategy,
+	protected SQLOperationListener<Column<T, Object>> operationListener;
+	
+	private final DMLGenerator dmlGenerator;
+	private String rawQuery;
+	private EntityTreeQuery<C> entityTreeQuery;
+	private final ParameterBinderIndexFromMap<Column<T, Object>, ParameterBinder> parameterBinderForPKInSelect;
+	
+	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> entityMapping,
 										   Dialect dialect,
 										   ConnectionProvider connectionProvider) {
-		super(classMappingStrategy, connectionProvider, dialect.getDmlGenerator(), dialect.getInOperatorMaxSize());
-		this.parameterBinderProvider = dialect.getColumnBinderRegistry();
-		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(classMappingStrategy), classMappingStrategy.getTargetTable());
+		this.dialect = dialect;
+		this.identifierAssembler = entityMapping.getIdMapping().getIdentifierAssembler();
+		this.entityJoinTree = new EntityJoinTree<>(new EntityMappingAdapter<>(entityMapping), entityMapping.getTargetTable());
 		this.blockSize = dialect.getInOperatorMaxSize();
-		this.primaryKey = classMappingStrategy.getTargetTable().getPrimaryKey();
+		this.primaryKey = entityMapping.getTargetTable().getPrimaryKey();
 		// NB: in the condition, table and columns are from the main strategy, so there's no need to use aliases
-		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(classMappingStrategy.getTargetTable(), classMappingStrategy.getTargetTable().getAbsoluteName());
+		this.whereClauseDMLNameProvider = new WhereClauseDMLNameProvider(entityMapping.getTargetTable(), entityMapping.getTargetTable().getAbsoluteName());
+		this.connectionProvider = connectionProvider;
+		
+		this.dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new NoopSorter(), whereClauseDMLNameProvider);
+		
+		parameterBinderForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), dialect.getColumnBinderRegistry()::getBinder));
+		
+		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
+		currentBuilderContext.addBuildLifeCycleListener(this::prepareQuery);
+	}
+	
+	@VisibleForTesting
+	void prepareQuery() {
+		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		this.rawQuery = dialect.getQuerySQLBuilderFactory().queryBuilder(entityTreeQuery.getQuery()).toSQL();
 	}
 	
 	public EntityJoinTree<C, I> getEntityJoinTree() {
@@ -81,12 +110,16 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 	}
 	
 	public ParameterBinderIndex<Column, ParameterBinder> getParameterBinderProvider() {
-		return parameterBinderProvider;
+		return dialect.getColumnBinderRegistry();
+	}
+	
+	public void setOperationListener(SQLOperationListener<Column<T, Object>> operationListener) {
+		this.operationListener = operationListener;
 	}
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
+	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
@@ -103,16 +136,19 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 			String leftStrategyName,
 			EntityMapping<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
-			Column<T1, ID> leftJoinColumn,
-			Column<T2, ID> rightJoinColumn) {
+			Key<T1, ID> leftJoinColumn,
+			Key<T2, ID> rightJoinColumn) {
 		// we outer join nullable columns
-		boolean isOuterJoin = rightJoinColumn.isNullable();
+		boolean isOuterJoin = true;
+		for (JoinLink<T2, Object> joinLink : rightJoinColumn.getColumns()) {
+			isOuterJoin &= joinLink instanceof Column && ((Column<T2, Object>) joinLink).isNullable();
+		}
 		return addRelation(leftStrategyName, strategy, beanRelationFixer, leftJoinColumn, rightJoinColumn, isOuterJoin);
 	}
 
 	/**
 	 * Adds a join to this executor.
-	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Column, Column, String, JoinType, BeanRelationFixer, java.util.Set)}
+	 * Shortcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, java.util.Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
@@ -131,10 +167,10 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 			String leftStrategyName,
 			EntityMapping<U, ID, T2> strategy,
 			BeanRelationFixer beanRelationFixer,
-			Column<T1, ID> leftJoinColumn,
-			Column<T2, ID> rightJoinColumn,
+			Key<T1, ID> leftJoinColumn,
+			Key<T2, ID> rightJoinColumn,
 			boolean isOuterJoin) {
-		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingAdapter<>(strategy), leftJoinColumn, rightJoinColumn,
+		return entityJoinTree.addRelationJoin(leftStrategyName, new EntityMappingAdapter<U, ID, T2>(strategy), leftJoinColumn, rightJoinColumn,
 											  null, isOuterJoin ? JoinType.OUTER : JoinType.INNER, beanRelationFixer, java.util.Collections.emptySet());
 	}
 	
@@ -152,27 +188,22 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 	 * @return name of created join node (may be used by caller to add some more join on it)
 	 */
 	@Override
-	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addComplementaryJoin(
+	public <U, T1 extends Table<T1>, T2 extends Table<T2>, ID> String addMergeJoin(
 			String leftStrategyName,
 			EntityMapping<U, ID, T2> strategy,
-			Column<T1, ID> leftJoinColumn,
-			Column<T2, ID> rightJoinColumn) {
+			Key<T1, ID> leftJoinColumn,
+			Key<T2, ID> rightJoinColumn) {
 		return entityJoinTree.addMergeJoin(leftStrategyName, new EntityMergerAdapter<>(strategy), leftJoinColumn, rightJoinColumn);
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		// cutting ids into pieces, adjusting expected result size
 		List<List<I>> parcels = Collections.parcel(ids, blockSize);
-		List<C> result = new ArrayList<>(parcels.size() * blockSize);
+		Set<C> result = new HashSet<>(parcels.size() * blockSize);
 		if (!parcels.isEmpty()) {
-			EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, parameterBinderProvider).buildSelectQuery();
-			Query query = entityTreeQuery.getQuery();
-			
 			// Creation of the where clause: we use a dynamic "in" operator clause to avoid multiple QueryBuilder instantiation
-			DMLGenerator dmlGenerator = new DMLGenerator(parameterBinderProvider, new NoopSorter(), whereClauseDMLNameProvider);
 			DDLAppender identifierCriteria = new JoinDDLAppender(whereClauseDMLNameProvider);
-			query.getWhere().and(identifierCriteria);
 			
 			List<I> lastBlock = Iterables.last(parcels, java.util.Collections.emptyList());
 			// keep only full blocks to run them on the fully filled "in" operator
@@ -181,19 +212,18 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 				parcels = Collections.cutTail(parcels);
 			}
 			
-			SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
 			// Be aware that this executor is made to use same Connection to execute next SQL orders in same transaction
 			InternalExecutor executor = newInternalExecutor(entityTreeQuery);
 			if (!parcels.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
 				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
-				result.addAll(executor.execute(sqlQueryBuilder.toSQL(), parcels, tableParameterizedWhere.getColumnToIndex()));
+				result.addAll(executor.execute(rawQuery + " where " + identifierCriteria, parcels, tableParameterizedWhere.getColumnToIndex()));
 			}
 			if (!lastBlock.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values, we must clear previous where clause
 				identifierCriteria.getAppender().setLength(0);
 				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), lastBlock.size());
-				result.addAll(executor.execute(sqlQueryBuilder.toSQL(), java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
+				result.addAll(executor.execute(rawQuery + " where " + identifierCriteria, java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
 			}
 		}
 		return result;
@@ -202,8 +232,8 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 	@VisibleForTesting
 	InternalExecutor newInternalExecutor(EntityTreeQuery<C> entityTreeQuery) {
 		return new InternalExecutor(entityTreeQuery,
-				// NB : this instance is reused so we must ensure that the same Connection is used for all operations
-				new SimpleConnectionProvider(getConnectionProvider().giveConnection()));
+									// NB : this instance is reused so we must ensure that the same Connection is used for all operations
+									new SimpleConnectionProvider(connectionProvider.giveConnection()));
 	}
 	
 	/**
@@ -225,9 +255,10 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 			this.entityTreeInflater = entityTreeQuery.getInflater();
 			this.selectParameterBinders = entityTreeQuery.getSelectParameterBinders();
 			this.connectionProvider = connectionProvider;
-			this.executor = new SelectExecutor<C, I, Table>.InternalExecutor() {
+			// we pass null as transformer because we override transform(..) method
+			this.executor = new SelectExecutor.InternalExecutor<C, I, T>(identifierAssembler, null) {
 				@Override
-				protected List<C> transform(Iterator<Row> rowIterator, int resultSize) {
+				protected Set<C> transform(Iterator<Row> rowIterator, int resultSize) {
 					return entityTreeInflater.transform(() -> rowIterator, resultSize);
 				}
 			};
@@ -237,12 +268,10 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 		List<C> execute(String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, Object>, int[]> inOperatorValueIndexes) {
 			// binders must be exactly the ones necessary to the request, else an IllegalArgumentException is thrown at execution time
 			// so we have to extract them from what is in the request : only primary key columns are parameterized 
-			Map<Column<T, Object>, ParameterBinder> primaryKeyBinders = Iterables.map(getMapping().getTargetTable().getPrimaryKey().getColumns(),
-																					  Function.identity(), parameterBinderProvider::getBinder);
 			ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<>(
 					sql,
 					inOperatorValueIndexes,
-					new ParameterBinderIndexFromMap<>(primaryKeyBinders),
+					parameterBinderForPKInSelect,
 					selectParameterBinders);
 			List<C> result = new ArrayList<>(idsParcels.size() * blockSize);
 			try (ReadOperation<Column<T, Object>> columnReadOperation = new ReadOperation<>(preparedSelect, connectionProvider)) {
@@ -269,7 +298,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table> extends Sele
 		
 		/** Overridden to get alias of the root and only for it, throws exception if given table is not where table one */
 		@Override
-		public String getAlias(Table table) {
+		public String getAlias(Fromable table) {
 			if (table == whereTable) {
 				return Objects.preventNull(whereTableAlias, table.getName());
 			} else {

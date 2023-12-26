@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.sql.order;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 
@@ -37,7 +37,7 @@ public class Delete {
 		return criteriaSurrogate.and(column, condition);
 	}
 	
-	public CriteriaChain where(Column column, AbstractRelationalOperator condition) {
+	public CriteriaChain where(Column column, ConditionalOperator condition) {
 		return criteriaSurrogate.and(column, condition);
 	}
 	

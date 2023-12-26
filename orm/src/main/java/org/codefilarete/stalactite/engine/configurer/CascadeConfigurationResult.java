@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 /**
@@ -10,10 +10,10 @@ public class CascadeConfigurationResult<SRC, TRGT> {
 	
 	private final BeanRelationFixer<SRC, TRGT> beanRelationFixer;
 	
-	private final ConfiguredJoinedTablesPersister<SRC, ?> sourcePersister;
+	private final ConfiguredRelationalPersister<SRC, ?> sourcePersister;
 	
 	public CascadeConfigurationResult(BeanRelationFixer<SRC, TRGT> beanRelationFixer,
-									  ConfiguredJoinedTablesPersister<SRC, ?> sourcePersister) {
+									  ConfiguredRelationalPersister<SRC, ?> sourcePersister) {
 		this.beanRelationFixer = beanRelationFixer;
 		this.sourcePersister = sourcePersister;
 	}
@@ -23,8 +23,8 @@ public class CascadeConfigurationResult<SRC, TRGT> {
 		return beanRelationFixer;
 	}
 	
-	public <SRCID> ConfiguredJoinedTablesPersister<SRC, SRCID> getSourcePersister() {
-		return (ConfiguredJoinedTablesPersister<SRC, SRCID>) sourcePersister;
+	public <SRCID> ConfiguredRelationalPersister<SRC, SRCID> getSourcePersister() {
+		return (ConfiguredRelationalPersister<SRC, SRCID>) sourcePersister;
 	}
 	
 }

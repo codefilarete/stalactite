@@ -1,8 +1,9 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder;
+import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.operator.Between;
+import org.codefilarete.stalactite.query.model.operator.Cast;
+import org.codefilarete.stalactite.query.model.operator.Coalesce;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
@@ -13,10 +14,11 @@ import org.codefilarete.stalactite.query.model.operator.Lower;
 import org.codefilarete.stalactite.query.model.operator.Max;
 import org.codefilarete.stalactite.query.model.operator.Min;
 import org.codefilarete.stalactite.query.model.operator.Sum;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
  * General contract for operators such as <code>in, like, =, <, >, ... </code>.
- * Value of the operator is intentionnally left vague (Object), except for String operation, because some operators prefer {@link Column}, while
+ * Value of the operator is intentionally left vague (Object), except for String operation, because some operators prefer {@link Column}, while
  * others prefers {@link Comparable}.
  * 
  * Static methods should be used to ease a fluent write of queries.
@@ -29,14 +31,14 @@ public interface Operators {
 		return new Equals<>(value);
 	}
 	
-	static <I extends AbstractRelationalOperator> I not(I operator) {
+	static <I extends ConditionalOperator> I not(I operator) {
 		operator.setNot();
 		return operator;
 	}
 	
 	/**
 	 * Shortcut to <code>new Lower(value)</code> to ease a fluent write of queries for "lower than" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lower}
 	 */
 	static Lower lt(Object value) {
@@ -45,7 +47,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Lower(value, true)</code> to ease a fluent write of queries for "lower than equals" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lower} with equals checking
 	 */
 	static Lower lteq(Object value) {
@@ -54,7 +56,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Greater(value)</code> to ease a fluent write of queries for "greater than" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Greater}
 	 */
 	static <O> Greater<O>  gt(O value) {
@@ -63,7 +65,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Greater(value, true)</code> to ease a fluent write of queries for "greater than equals" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Greater} with equals checking
 	 */
 	static <O> Greater<O> gteq(O value) {
@@ -72,8 +74,8 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new Between(value1, value2)</code> to ease a fluent write of queries for "between" comparisons
-	 * @param value1 a value, null accepted, transformed to "is null" by {@link OperatorBuilder}) if both values are
-	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperatorBuilder}) if both values are
+	 * @param value1 a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder}) if both values are
+	 * @param value2 a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder}) if both values are
 	 * @return a new instance of {@link Between} with equals checking
 	 */
 	static <O> Between<O> between(O value1, O value2) {
@@ -82,7 +84,7 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons
-	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link In}
 	 */
 	static <O> In<O> in(Iterable<O> value) {
@@ -91,9 +93,9 @@ public interface Operators {
 	
 	/**
 	 * Shortcut to <code>new In(value)</code> to ease a fluent write of queries for "in" comparisons.
-	 * Note that this signature won't transform null values to "is null" by {@link OperatorBuilder}), prefers {@link #in(Iterable)} for it.
+	 * Note that this signature won't transform null values to "is null" by {@link OperatorSQLBuilder}), prefers {@link #in(Iterable)} for it.
 	 * 
-	 * @param value a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperatorBuilder})
+	 * @param value a value, null accepted <b>but won't be transformed</b> to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link In}
 	 * @see #in(Iterable)
 	 */
@@ -153,7 +155,7 @@ public interface Operators {
 	 * Shortcut to <code>new Sum(column)</code> to ease a fluent write of queries for "sum" operation
 	 * @return a new instance of {@link Sum}
 	 */
-	static <N extends Number> Sum<N> sum(Column<?, N> column) {
+	static <N extends Number> Sum<N> sum(Selectable<N> column) {
 		return new Sum<>(column);
 	}
 	
@@ -161,24 +163,39 @@ public interface Operators {
 	 * Shortcut to <code>new Count(column)</code> to ease a fluent write of queries for "count" operation
 	 * @return a new instance of {@link Count}
 	 */
-	static Count count(Column column) {
-		return new Count(column);
+	static <N> Count<N> count(Selectable<N> column) {
+		return new Count<>(column);
 	}
 	
 	/**
 	 * Shortcut to <code>new Min(column)</code> to ease a fluent write of queries for "min" operation
 	 * @return a new instance of {@link Min}
 	 */
-	static Min min(Column column) {
-		return new Min(column);
+	static <N extends Number> Min<N> min(Selectable<N> column) {
+		return new Min<>(column);
 	}
 	
 	/**
 	 * Shortcut to <code>new Max(column)</code> to ease a fluent write of queries for "max" operation
 	 * @return a new instance of {@link Max}
 	 */
-	static Max max(Column column) {
-		return new Max(column);
+	static <N extends Number> Max<N> max(Selectable<N> column) {
+		return new Max<>(column);
 	}
 	
+	/**
+	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent write of queries for "cast" operation
+	 * @return a new instance of {@link Cast}
+	 */
+	static <C> Cast<C> cast(String expression, Class<C> javaType) {
+		return new Cast<>(expression, javaType);
+	}
+	
+	/**
+	 * Shortcut to <code>new Coalesce(column, columns)</code> to ease a fluent write of queries for "coalesce" operation
+	 * @return a new instance of {@link Coalesce}
+	 */
+	static <C> Coalesce<C> coalesce(Selectable<C> column, Selectable<C>... columns) {
+		return new Coalesce<>(column, columns);
+	}
 }

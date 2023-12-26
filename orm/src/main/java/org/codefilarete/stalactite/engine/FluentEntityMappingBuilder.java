@@ -2,18 +2,22 @@ package org.codefilarete.stalactite.engine;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.tool.function.Serie;
-import org.codefilarete.tool.function.TriFunction;
+import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.MapOptions.KeyAsEntityMapOptions;
+import org.codefilarete.stalactite.engine.MapOptions.ValueAsEntityMapOptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.function.Serie;
+import org.codefilarete.tool.function.TriFunction;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class. 
@@ -89,6 +93,8 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName);
 	
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder);
+	
 	/**
 	 * Interface for {@link #mapKey(SerializableFunction, IdentifierPolicy)} family methods return. Aimed at chaining to configure entity key mapping. 
 	 * @param <C> entity type
@@ -119,7 +125,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * @param input column to use for retrieving value to be given as constructor argument
 		 * @return this
 		 */
-		<T extends Table> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
+		<T extends Table<T>> KeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
 		
 		/**
 		 * Variant of {@link #usingConstructor(Function, Column)} with only column name.
@@ -133,16 +139,16 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * Variant of {@link #usingConstructor(Function, Column)} with 2 {@link Column}s : first one is expected to be primary key,
 		 * while second one is an extra data.
 		 * About extra data : if it has an equivalent property, then it should be marked as set by constructor to avoid a superfluous
-		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, its mapping declaration ({@link #map(SerializableFunction, Column)})
+		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, its mapping declaration ({@link PropertyOptions#column(Column)})
 		 * should use this column as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 2-args constructor to use (can also be a method factory, not a pure class constructor)
 		 * @param input1 first column to use for retrieving value to be given as constructor argument
 		 * @param input2 second column to use for retrieving value to be given as constructor argument
 		 */
-		<X, T extends Table> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
-															   Column<T, I> input1,
-															   Column<T, X> input2);
+		<X, T extends Table<T>> KeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+																  Column<T, I> input1,
+																  Column<T, X> input2);
 		
 		/**
 		 * Variant of {@link #usingConstructor(BiFunction, Column, Column)} with only column names.
@@ -159,7 +165,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * Variant of {@link #usingConstructor(BiFunction, Column, Column)} with 3 {@link Column}s : first one is expected to be primary key,
 		 * while second and third one are extra data.
 		 * About extra data : if they have equivalent properties, then they should be marked as set by constructor to avoid a superfluous
-		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, their mapping declarations ({@link #map(SerializableFunction, Column)})
+		 * call to its setter, through {@link PropertyOptions#setByConstructor()}. Also, their mapping declarations ({@link PropertyOptions#column(Column)})
 		 * should use the columns as argument to make whole mapping consistent. 
 		 *
 		 * @param factory 3-args constructor to use (can also be a method factory, not a pure class constructor)
@@ -167,10 +173,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * @param input2 second column to use for retrieving value to be given as constructor argument
 		 * @param input3 third column to use for retrieving value to be given as constructor argument
 		 */
-		<X, Y, T extends Table> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
-																  Column<T, I> input1,
-																  Column<T, X> input2,
-																  Column<T, Y> input3);
+		<X, Y, T extends Table<T>> KeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+																	 Column<T, I> input1,
+																	 Column<T, X> input2,
+																	 Column<T, Y> input3);
 		
 		/**
 		 * Variant of {@link #usingConstructor(TriFunction, Column, Column, Column)} with only column names.
@@ -192,13 +198,21 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		 * code will depend on {@link Column}) which represent a kind of {@link java.sql.ResultSet} so one can fulfill any property of its instance
 		 * the way he wants.
 		 * <br/>
-		 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} and {@link #map(SerializableFunction, Column)}.
+		 * This method is expected to be used in conjunction with {@link PropertyOptions#setByConstructor()} and {@link PropertyOptions#column(Column)}.
 		 *
 		 * @param factory the constructor to use (can also be a method factory, not a pure class constructor)
 		 */
 		// signature note : the generics wildcard ? are actually expected to be of same type, but left it as it is because setting a generics type
 		// for it makes usage of Function::apply quite difficult (lot of cast) because the generics type car hardly be something else than Object  
-		<T extends Table> KeyOptions<C, I> usingFactory(Function<Function<Column<T, ?>, ?>, C> factory);
+		KeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory);
+		
+	}
+	
+	interface CompositeKeyOptions<C, I> {
+		
+	}
+	
+	interface FluentEntityMappingBuilderCompositeKeyOptions<C, I> extends FluentEntityMappingBuilder<C, I>, CompositeKeyOptions<C, I> {
 		
 	}
 	
@@ -211,15 +225,15 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory);
 		
 		@Override
-		<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
+		<T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, Column<T, I> input);
 		
 		@Override
 		FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(Function<? super I, C> factory, String columnName);
 		
 		@Override
-		<X, T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
-																						 Column<T, I> input1,
-																						 Column<T, X> input2);
+		<X, T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
+																							Column<T, I> input1,
+																							Column<T, X> input2);
 		
 		@Override
 		<X> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(BiFunction<? super I, X, C> factory,
@@ -227,10 +241,10 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 																		String columnName2);
 		
 		@Override
-		<X, Y, T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
-																							Column<T, I> input1,
-																							Column<T, X> input2,
-																							Column<T, Y> input3);
+		<X, Y, T extends Table<T>> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
+																							   Column<T, I> input1,
+																							   Column<T, X> input2,
+																							   Column<T, Y> input3);
 		
 		@Override
 		<X, Y> FluentEntityMappingBuilderKeyOptions<C, I> usingConstructor(TriFunction<? super I, X, Y, C> factory,
@@ -239,32 +253,20 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 																		   String columnName3);
 		
 		@Override
-		<T extends Table> FluentEntityMappingBuilderKeyOptions<C, I> usingFactory(Function<Function<Column<T, ?>, ?>, C> factory);
+		FluentEntityMappingBuilderKeyOptions<C, I> usingFactory(Function<Function<Column<?, ?>, ?>, C> factory);
 	}
 	
 	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter);
 	
 	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter);
 	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, String columnName);
-	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, String columnName);
-	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter, Column<? extends Table, O> column);
-	
-	<O> FluentMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter, Column<? extends Table, O> column);
-	
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
+	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableFunction<C, M> getter, Class<K> keyType, Class<V> valueType);
 	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, String columnName);
-	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter, Column<? extends Table, E> column);
-	
-	<E extends Enum<E>> FluentMappingBuilderEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter, Column<? extends Table, E> column);
+	<K, V, M extends Map<K, V>> FluentMappingBuilderMapOptions<C, I, K, V, M> mapMap(SerializableBiConsumer<C, M> setter, Class<K> keyType, Class<V> valueType);
 	
 	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
@@ -276,31 +278,50 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O, S extends Collection<O>> FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mapCollection(SerializableBiConsumer<C, S> setter, Class<O> componentType,
 																												   EmbeddableMappingConfigurationProvider<O> embeddableConfiguration);
 	
+	FluentEntityMappingBuilder<C, I> withTableNaming(TableNamingStrategy tableNamingStrategy);
+	
 	FluentEntityMappingBuilder<C, I> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
+	
+	FluentEntityMappingBuilder<C, I> withJoinColumnNaming(JoinColumnNamingStrategy joinColumnNamingStrategy);
 	
 	FluentEntityMappingBuilder<C, I> withElementCollectionTableNaming(ElementCollectionTableNamingStrategy tableNamingStrategy);
 	
+	FluentEntityMappingBuilder<C, I> withMapEntryTableNaming(MapEntryTableNamingStrategy tableNamingStrategy);
+	
+	FluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
+	
 	/**
-	 * Declares the inherited mapping.
-	 * Id policy must be defined in the given strategy, not by current configuration : if id policy is also / only defined by the current builder,
-	 * an exception will be thrown at build time.
+	 * Declares the mapping of a super class.
+	 * As a difference with {@link #mapSuperClass(EmbeddableMappingConfiguration)}, identifier policy must be defined
+	 * by given configuration (or the highest ancestor, not intermediary), not by current one : if id policy is
+	 * also-or-only defined by the current builder, an exception will be thrown at build time.
+	 * This method should be used when given configuration acts as a parent entity, maybe stored on a different table
+	 * than current one (see {@link InheritanceOptions#withJoinedTable()}.
+	 * Note that for now relations of given configuration are not taken into account (not implemented).
 	 * 
 	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return an enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	FluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfiguration<? super C, I> mappingConfiguration);
-	
-	default FluentMappingBuilderInheritanceOptions<C, I> mapInheritance(EntityMappingConfigurationProvider<? super C, I> mappingConfigurationProvider) {
-		return this.mapInheritance(mappingConfigurationProvider.getConfiguration());
+	default FluentMappingBuilderInheritanceOptions<C, I> mapSuperClass(EntityMappingConfiguration<? super C, I> mappingConfiguration) {
+		return this.mapSuperClass(() -> (EntityMappingConfiguration<C, I>) mappingConfiguration);
 	}
+	
+	FluentMappingBuilderInheritanceOptions<C, I> mapSuperClass(EntityMappingConfigurationProvider<? super C, I> mappingConfigurationProvider);
 	
 	/**
 	 * Declares the mapping of a super class.
+	 * Id policy must be defined by current configuration.
+	 * This method should be used when given configuration is reusable between entities, acting as a common and shared
+	 * configuration, with no impact on table oo id policy, since table and id policy must be defined by current configuration.
 	 * 
-	 * @param superMappingConfigurationProvider a mapping configuration of a super type of the current mapped type
+	 * @param mappingConfiguration a mapping configuration of a super type of the current mapped type
 	 * @return an enhanced version of {@code this} so one can add set options to the relationship or add mapping to {@code this}
 	 */
-	FluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfigurationProvider);
+	default FluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfiguration<? super C> mappingConfiguration) {
+		return this.mapSuperClass(() -> (EmbeddableMappingConfiguration<C>) mappingConfiguration);
+	}
+	
+	FluentEntityMappingBuilder<C, I> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> mappingConfigurationProvider);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -349,62 +370,91 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} through a {@link Set}.
-	 * This method is dedicated to {@link Set} because generic types are erased so you can't defined a generic type extending {@link Set} and refine
-	 * return type or arguments in order to distinct it from a {@link List} version.
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
+	 * methods.
 	 *
 	 * @param getter the way to get the {@link Set} from source entities
-	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities 
-	 * @param <O> type of {@link Set} element
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param <O> type of {@link Collection} element
 	 * @param <J> type of identifier of {@code O}
-	 * @param <S> refined {@link Set} type
+	 * @param <S> refined {@link Collection} type
 	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToManyList(SerializableFunction, EntityMappingConfigurationProvider)
+	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
-	<O, J, S extends Set<O>>
+	<O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
-	<O, J, S extends Set<O>, T extends Table>
+	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManySet(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
-	<O, J, S extends Set<O>, T extends Table>
+	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToManySet(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	/**
-	 * Declares a relation between current entity and some of type {@code O} through a {@link List}.
-	 * This method is dedicated to {@link List} because generic types are erased so you can't define a generic type extending {@link List} and refine
-	 * return type or arguments in order to distinct it from a {@link Set} version.
+	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
+	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
+	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
 	 * 
-	 * @param getter the way to get the {@link List} from source entities
-	 * @param mappingConfiguration the mapping configuration of the {@link List} entities 
-	 * @param <O> type of {@link List} element
-	 * @param <J> type of identifier of {@code O} (target entities)
-	 * @param <S> refined {@link List} type
-	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
-	 * @see #mapOneToManySet(SerializableFunction, EntityMappingConfigurationProvider)
+	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
+	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
+	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
+	 * and, according to your data, load too many of them.
+	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
+	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
+	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 * 
+	 * @param getter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @return
+	 * @param <O> type of {@link Set} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S1> refined {@link Set} type
+	 * @param <S2>
 	 */
-	<O, J, S extends List<O>>
-	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	default <O, J, S1 extends Set<O>, S2 extends Set<C>>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+		return mapManyToMany(getter, mappingConfiguration, null);
+	}
 	
-	<O, J, S extends List<O>, T extends Table>
-	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	mapOneToManyList(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	/**
+	 * Declares a many-to-many relation between current entity and some of type {@code O} through a {@link Set}.
+	 * This method is dedicated to {@link Set} because generic types are erased so you can't define a generic type
+	 * extending {@link Set} and refine return type or arguments in order to distinct it from a {@link List} version.
+	 * 
+	 * Note that no reverse setter nor getter is proposed to be configured because it would mean to fetch it (because
+	 * Stalactite's philosophy is to fetch everything eagerly) hence triggering some back and forth with the database
+	 * until both sides of the relation on all dependent entities are fully loaded, which may be very time-consuming
+	 * and, according to your data, load too many of them.
+	 * This means that only current side of the relation has to be filled, Stalactite won't touch the other side.
+	 * This may make this many-to-many implementation looks like a unidirectional one-to-many relation with table association,
+	 * which is quite right since the only difference with it is the absence of unique constraint on table association.
+	 * 
+	 * @param getter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param table
+	 * @return
+	 * @param <O> type of {@link Set} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S1> refined {@link Set} type
+	 * @param <S2>
+	 * @param <T>
+	 */
+	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToMany(SerializableFunction<C, S1> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
-	<O, J, S extends List<O>, T extends Table>
-	FluentMappingBuilderOneToManyListOptions<C, I, O, S>
-	mapOneToManyList(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
+	<O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
+	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
+	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableFunction<C, O> getter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
 	<O> FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, I, O> embed(SerializableBiConsumer<C, O> setter, EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
-	
-	FluentEntityMappingBuilder<C, I> withForeignKeyNaming(ForeignKeyNamingStrategy foreignKeyNamingStrategy);
-	
-	FluentEntityMappingBuilder<C, I> withJoinColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	/**
 	 * Sets {@link ColumnNamingStrategy} for index column of one-to-many {@link List} association
@@ -421,13 +471,33 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	FluentEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
-	interface FluentMappingBuilderPropertyOptions<C, I> extends FluentEntityMappingBuilder<C, I>, ColumnOptions<C, I> {
+	interface FluentMappingBuilderPropertyOptions<C, I>
+			extends
+			FluentEntityMappingBuilder<C, I>,
+			ColumnOptions<C, I>,
+			ExtraTablePropertyOptions {
 		
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> mandatory();
 		
 		@Override
 		FluentMappingBuilderPropertyOptions<C, I> setByConstructor();
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> readonly();
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> columnName(String name);
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, ?> column);
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> fieldName(String name);
+		
+		@Override
+		FluentMappingBuilderPropertyOptions<C, I> extraTableName(String name);
+		
 	}
 	
 	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentEntityMappingBuilder<C, I>,
@@ -470,6 +540,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode);
+		
+		@Override
+		FluentMappingBuilderOneToOneOptions<C, I, T> fetchSeparately();
 	}
 	
 	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {
@@ -510,61 +583,40 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		@Override
 		FluentMappingBuilderOneToManyOptions<C, I, O, S> cascading(RelationMode relationMode);
 		
+		@Override
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> fetchSeparately();
+		
+		@Override
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
+		
+		@Override
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> indexedBy(String columnName);
+		
+		@Override
+		FluentMappingBuilderOneToManyOptions<C, I, O, S> indexed();
+		
 	}
 	
-	/**
-	 * A merge of {@link FluentMappingBuilderOneToManyOptions} and {@link IndexableCollectionOptions} to defined a one-to-many relation
-	 * with an indexed {@link java.util.Collection} such as a {@link List}
-	 * 
-	 * @param <C> type of source entity
-	 * @param <I> type of identifier of source entity
-	 * @param <O> type of target entities
-	 */
-	interface FluentMappingBuilderOneToManyListOptions<C, I, O, S extends List<O>>
-			extends FluentMappingBuilderOneToManyOptions<C, I, O, S>, IndexableCollectionOptions<C, I, O> {
-		/**
-		 * Declaration overridden to adapt return type to this class.
-		 *
-		 * @param reverseLink opposite owner of the relation (setter)
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableBiConsumer<O, ? super C> reverseLink);
-		
-		/**
-		 * Declaration overridden to adapt return type to this class.
-		 *
-		 * @param reverseLink opposite owner of the relation (setter)
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(SerializableFunction<O, ? super C> reverseLink);
-		
-		/**
-		 * Declaration overridden to adapt return type to this class.
-		 *
-		 * @param reverseLink opposite owner of the relation (setter)
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> mappedBy(Column<Table, ?> reverseLink);
+	interface FluentMappingBuilderManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>> extends FluentEntityMappingBuilder<C, I>, ManyToManyOptions<C, I, O, S1, S2> {
 		
 		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory);
 		
 		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> initializeWith(Supplier<S> collectionFactory);
-		
-		/**
-		 * Defines the indexing column of the mapped {@link java.util.List}.
-		 * @param orderingColumn indexing column of the mapped {@link java.util.List}
-		 * @return the global mapping configurer
-		 */
-		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> indexedBy(Column<?, Integer> orderingColumn);
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseInitializeWith(Supplier<S2> collectionFactory);
 		
 		@Override
-		FluentMappingBuilderOneToManyListOptions<C, I, O, S> cascading(RelationMode relationMode);
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> cascading(RelationMode relationMode);
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> fetchSeparately();
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexedBy(String columnName);
+		
+		@Override
+		FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> indexed();
+		
 	}
 	
 	/**
@@ -620,6 +672,18 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		
 		@Override
 		FluentMappingBuilderEnumOptions<C, I> mandatory();
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I> readonly();
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I> columnName(String name);
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I> column(Column<? extends Table, ?> column);
+		
+		@Override
+		FluentMappingBuilderEnumOptions<C, I> fieldName(String name);
 	}
 	
 	interface FluentMappingBuilderInheritanceOptions<C, I>
@@ -642,13 +706,75 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> override(String columnName);
 
 		@Override
-		FluentMappingBuilderElementCollectionOptions<C, I, O, S> mappedBy(String name);
+		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withReverseJoinColumn(String name);
 		
 		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(Table table);
 
 		@Override
 		FluentMappingBuilderElementCollectionOptions<C, I, O, S> withTable(String tableName);
+		
+	}
+	
+	interface FluentMappingBuilderMapOptions<C, I, K, V, M extends Map<K, V>>
+			extends FluentEntityMappingBuilder<C, I>, MapOptions<K, V, M> {
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withReverseJoinColumn(String columnName);
+		
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyColumn(String columnName);
+		
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueColumn(String columnName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withMapFactory(Supplier<? extends M> collectionFactory);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withTable(String tableName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withTable(Table table);
+		
+		@Override
+		FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M> withKeyMapping(EntityMappingConfigurationProvider<K, ?> mappingConfigurationProvider);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withKeyMapping(EmbeddableMappingConfigurationProvider<K> mappingConfigurationProvider);
+		
+		@Override
+		FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M> withValueMapping(EntityMappingConfigurationProvider<V, ?> mappingConfigurationProvider);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> withValueMapping(EmbeddableMappingConfigurationProvider<V> mappingConfigurationProvider);
+		
+		@Override
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableFunction<K, IN> getter, String columnName);
+		
+		@Override
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideKeyColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
+		
+		@Override
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableFunction<K, IN> getter, String columnName);
+		
+		@Override
+		<IN> FluentMappingBuilderMapOptions<C, I, K, V, M> overrideValueColumnName(SerializableBiConsumer<K, IN> setter, String columnName);
+		
+		@Override
+		FluentMappingBuilderMapOptions<C, I, K, V, M> fetchSeparately();
+	}
+	
+	interface FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M extends Map<K, V>>
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, KeyAsEntityMapOptions<K, V, M> {
+		
+		@Override
+		FluentMappingBuilderKeyAsEntityMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
+	}
+	
+	interface FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M extends Map<K, V>>
+			extends FluentMappingBuilderMapOptions<C, I, K, V, M>, ValueAsEntityMapOptions<K, V, M> {
+		
+		@Override
+		FluentMappingBuilderValueAsEntityMapOptions<C, I, K, V, M> cascading(RelationMode relationMode);
 	}
 	
 	interface FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S extends Collection<O>>
@@ -662,7 +788,7 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withCollectionFactory(Supplier<? extends S> collectionFactory);
 		
 		@Override
-		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> mappedBy(String name);
+		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withReverseJoinColumn(String name);
 		
 		@Override
 		FluentMappingBuilderElementCollectionImportEmbedOptions<C, I, O, S> withTable(Table table);

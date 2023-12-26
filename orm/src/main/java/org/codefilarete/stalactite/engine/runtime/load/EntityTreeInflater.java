@@ -1,31 +1,37 @@
 package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor.EntityCreationResult;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.BasicEntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.EntityCache;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.RelationJoinRowConsumer;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.IdentityMap;
-import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.collection.IdentityMap;
 
 /**
  * Bean graph creator from database rows. Based on a tree of {@link ConsumerNode}s which wraps some {@link JoinRowConsumer}.
@@ -65,7 +71,7 @@ public class EntityTreeInflater<C> {
 	 * @param columnAliases query column aliases
 	 * @param tablePerJoinNodeName mapping between join nodes and their names
 	 */
-	EntityTreeInflater(ConsumerNode consumerRoot, IdentityMap<Column, String> columnAliases, Map<String, Table> tablePerJoinNodeName) {
+	EntityTreeInflater(ConsumerNode consumerRoot, IdentityMap<Selectable, String> columnAliases, Map<String, Fromable> tablePerJoinNodeName) {
 		this.consumerRoot = consumerRoot;
 		this.rowDecoder = new EntityTreeQueryRowDecoder(columnAliases, tablePerJoinNodeName);
 	}
@@ -76,9 +82,9 @@ public class EntityTreeInflater<C> {
 	 * @param resultSize expected result size, only for resulting list optimization
 	 * @return a list of root beans, built from given rows by asking internal strategy joins to instantiate and complete them
 	 */
-	public List<C> transform(Iterable<Row> rows, int resultSize) {
-		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> this.new TreeInflationContext(), (Function<EntityTreeInflater<?>.TreeInflationContext, List<C>>) context ->
-						new ArrayList<>(transform(rows, resultSize, context)));
+	public Set<C> transform(Iterable<Row> rows, int resultSize) {
+		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> this.new TreeInflationContext(), (Function<EntityTreeInflater<?>.TreeInflationContext, Set<C>>) context ->
+						transform(rows, resultSize, context));
 	}
 	
 	private Set<C> transform(Iterable<Row> rows, int resultSize, EntityTreeInflater<?>.TreeInflationContext context) {
@@ -104,16 +110,34 @@ public class EntityTreeInflater<C> {
 			foreachNode(new NodeVisitor(result.get()) {
 				
 				@Override
-				public Object apply(JoinRowConsumer join, Object entity) {
+				public EntityCreationResult apply(ConsumerNode join, Object entity) {
 					// processing current depth
-					if (join instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
-						((PassiveJoinRowConsumer) join).consume(entity, row);
-						return entity;
-					} else if (join instanceof MergeJoinNode.MergeJoinRowConsumer) {
-						((MergeJoinRowConsumer) join).mergeProperties(entity, row);
-						return entity;
-					} else if (join instanceof RelationJoinNode.RelationJoinRowConsumer) {
-						return ((RelationJoinRowConsumer) join).applyRelatedEntity(entity, row, context);
+					JoinRowConsumer consumer = join.getConsumer();
+					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
+						((PassiveJoinRowConsumer) consumer).consume(entity, row);
+						return new EntityCreationResult(entity, join);
+					} else if (consumer instanceof MergeJoinNode.MergeJoinRowConsumer) {
+						((MergeJoinRowConsumer) consumer).mergeProperties(entity, row);
+						return new EntityCreationResult(entity, join);
+					} else if (consumer instanceof RelationJoinNode.RelationJoinRowConsumer) {
+						Object relatedEntity = ((RelationJoinRowConsumer) consumer).applyRelatedEntity(entity, row, context);
+						if (consumer instanceof ForkJoinRowConsumer) {
+							// In case of join-table polymorphism we have to provide the tree branch on which id was found
+							// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
+							JoinRowConsumer nextRowConsumer = ((ForkJoinRowConsumer) consumer).giveNextConsumer();
+							if (nextRowConsumer == null) {
+								// means no identifier of polymorphic entity
+								return new EntityCreationResult(null, (List<ConsumerNode>) null);
+							} else {
+								Optional<ConsumerNode> consumerNode = join.consumers.stream().filter(c -> nextRowConsumer == c.consumer).findFirst();
+								if (!consumerNode.isPresent()) {
+									throw new IllegalStateException("Can't find consumer node for " + nextRowConsumer + " in " + join.consumers);
+								} else {
+									return new EntityCreationResult(relatedEntity, Arrays.asList(consumerNode.get()));
+								}
+							}
+						}
+						return new EntityCreationResult(relatedEntity, join);
 					} else {
 						// Developer made something wrong because other types than MergeJoin and RelationJoin are not expected
 						throw new IllegalArgumentException("Unexpected join type, only "
@@ -129,25 +153,26 @@ public class EntityTreeInflater<C> {
 	}
 	
 	@VisibleForTesting
-	void foreachNode(NodeVisitor consumer) {
+	void foreachNode(NodeVisitor nodeVisitor) {
 		Queue<ConsumerNode> joinNodeStack = Collections.newLifoQueue();
 		joinNodeStack.addAll(this.consumerRoot.consumers);
 		// Maintaining entities that will be given to each node : they are entities produced by parent node
-		Map<ConsumerNode, Object> entityPerNode = new HashMap<>(10);
-		joinNodeStack.forEach(node -> entityPerNode.put(node, consumer.entityRoot));
-		
+		Map<ConsumerNode, Object> entityPerConsumer = new HashMap<>(10);
+		joinNodeStack.forEach(node -> entityPerConsumer.put(node, nodeVisitor.entityRoot));
+
 		while (!joinNodeStack.isEmpty()) {
 			ConsumerNode joinNode = joinNodeStack.poll();
-			Object entity = consumer.apply(joinNode.consumer, entityPerNode.get(joinNode));
-			if (entity != null) {
-				joinNodeStack.addAll(joinNode.consumers);
-				joinNode.consumers.forEach(node -> entityPerNode.put(node, entity));
+			EntityCreationResult result = nodeVisitor.apply(joinNode, entityPerConsumer.get(joinNode));
+			if (result.getEntity() != null) {
+				List<ConsumerNode> nextConsumers = result.nextConsumers();
+				joinNodeStack.addAll(nextConsumers);
+				nextConsumers.forEach(node -> entityPerConsumer.put(node, result.getEntity()));
 			}
 		}
 	}
-	
+
 	/**
-	 * Small structure to store {@link JoinRootRowConsumer} as a tree that reflects {@link EntityJoinTree} input.
+	 * Small structure to store {@link JoinRowConsumer} as a tree that reflects {@link EntityJoinTree} input.
 	 */
 	static class ConsumerNode {
 		
@@ -159,12 +184,15 @@ public class EntityTreeInflater<C> {
 			this.consumer = consumer;
 		}
 		
+		public JoinRowConsumer getConsumer() {
+			return consumer;
+		}
+		
 		void addConsumer(ConsumerNode consumer) {
 			this.consumers.add(consumer);
 		}
 	}
 	
-	@VisibleForTesting
 	static abstract class NodeVisitor {
 		
 		private final Object entityRoot;
@@ -174,12 +202,36 @@ public class EntityTreeInflater<C> {
 		}
 		
 		/**
-		 * Asks for parentEntity consumption by {@link JoinRootRowConsumer}
-		 * @param joinRowConsumer consumer expected to use given entity to constructs, fills, does whatever, with given entity
+		 * Asks for parentEntity consumption by {@link ConsumerNode}
+		 * @param consumerNode consumer expected to use given entity to constructs, fills, does whatever, with given entity
 		 * @param parentEntity entity on which consumer mechanism may apply
 		 * @return the optional entity created by consumer (as in one-to-one or one-to-many relation), else given parentEntity (not null)
 		 */
-		abstract Object apply(JoinRowConsumer joinRowConsumer, Object parentEntity);
+		abstract EntityCreationResult apply(ConsumerNode consumerNode, Object parentEntity);
+		
+		static class EntityCreationResult {
+			
+			private final Object entity;
+			
+			private final List<ConsumerNode> consumers;
+			
+			EntityCreationResult(Object entity, ConsumerNode entityCreator) {
+				this(entity, entityCreator.consumers);
+			}
+			
+			EntityCreationResult(Object entity, List<ConsumerNode> consumers) {
+				this.entity = entity;
+				this.consumers = consumers;
+			}
+			
+			public Object getEntity() {
+				return entity;
+			}
+			
+			List<ConsumerNode> nextConsumers() {
+				return consumers;
+			}
+		}
 	}
 	
 	/**
@@ -187,10 +239,10 @@ public class EntityTreeInflater<C> {
 	 */
 	static class RelationIdentifier {
 		
-		private final Object rootEntity;
-		private final Class relatedEntityType;
-		private final Object relatedBeanIdentifier;
-		private final RelationJoinRowConsumer joinNode;
+		protected final Object rootEntity;
+		protected final Class relatedEntityType;
+		protected final Object relatedBeanIdentifier;
+		protected final RelationJoinRowConsumer joinNode;
 		
 		RelationIdentifier(Object rootEntity, Class<?> relatedEntityType, Object relatedBeanIdentifier, RelationJoinRowConsumer joinNode) {
 			this.rootEntity = rootEntity;
@@ -309,12 +361,12 @@ public class EntityTreeInflater<C> {
 	 */
 	public static class EntityTreeQueryRowDecoder {
 		
-		private final IdentityMap<Column, String> columnAliases;
+		private final IdentityMap<Selectable, String> columnAliases;
 		
-		private final Map<String, Table> tablePerJoinNodeName;
+		private final Map<String, Fromable> tablePerJoinNodeName;
 		
-		EntityTreeQueryRowDecoder(IdentityMap<Column, String> columnAliases,
-								  Map<String, Table> tablePerJoinNodeName) {
+		EntityTreeQueryRowDecoder(IdentityMap<Selectable, String> columnAliases,
+								  Map<String, Fromable> tablePerJoinNodeName) {
 			this.columnAliases = columnAliases;
 			this.tablePerJoinNodeName = tablePerJoinNodeName;
 		}
@@ -332,12 +384,12 @@ public class EntityTreeInflater<C> {
 		 */
 		@javax.annotation.Nullable
 		public <T extends Table<T>, O> O giveValue(String joinNodeName, Column<T, O> column, Row row) {
-			Table table = tablePerJoinNodeName.get(joinNodeName);
+			Fromable table = tablePerJoinNodeName.get(joinNodeName);
 			if (table == null) {
 				// This is more for debugging purpose than for a real production goal, may be removed later
 				throw new MappingConfigurationException("Can't find node named " + joinNodeName + " in joins : " + this.tablePerJoinNodeName);
 			}
-			Column<T, O> columnClone = table.getColumn(column.getName());
+			Column<T, O> columnClone = table.findColumn(column.getName());
 			return (O) row.get(columnAliases.get(columnClone));
 		}
 	}

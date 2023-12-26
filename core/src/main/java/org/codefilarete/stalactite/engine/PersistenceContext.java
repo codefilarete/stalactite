@@ -4,23 +4,31 @@ import javax.sql.DataSource;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.reflection.MethodReferenceCapturer;
+import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.DialectResolver;
 import org.codefilarete.stalactite.sql.ServiceLoaderDialectResolver;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.Delete;
@@ -31,37 +39,26 @@ import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatemen
 import org.codefilarete.stalactite.sql.order.Update;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
+import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
+import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
+import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.bean.ClassIterator;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.function.Converter;
+import org.codefilarete.tool.function.SerializableTriFunction;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.danekja.java.util.function.serializable.SerializableSupplier;
-import org.codefilarete.tool.Nullable;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.exception.Exceptions;
-import org.codefilarete.tool.function.Converter;
-import org.codefilarete.tool.function.SerializableTriFunction;
-import org.codefilarete.reflection.MethodReferenceCapturer;
-import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
-import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryEase;
-import org.codefilarete.stalactite.query.model.QueryProvider;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.WriteOperation;
-import org.codefilarete.stalactite.sql.result.ResultSetRowAssembler;
-import org.codefilarete.stalactite.sql.result.ResultSetRowTransformer;
-import org.codefilarete.stalactite.sql.result.WholeResultSetTransformer.AssemblyPolicy;
 
 /**
- * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link Persister}s.
+ * Entry point for persistence in a database. Mix of configuration (Transaction, Dialect, ...) and registry for {@link BeanPersister}s.
  *
  * @author Guillaume Mary
  * @see #PersistenceContext(DataSource)
@@ -135,11 +132,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 */
 	public PersistenceContext(ConnectionConfiguration connectionConfiguration, DialectResolver dialectResolver) {
 		this.connectionConfiguration = new TransactionAwareConnectionConfiguration(connectionConfiguration);
-		try (Connection currentConnection = this.connectionConfiguration.giveConnection()) {
-			this.dialect = dialectResolver.determineDialect(currentConnection);
-		} catch (SQLException throwable) {
-			throw Exceptions.asRuntimeException(throwable);
-		}
+		this.dialect = dialectResolver.determineDialect(this.connectionConfiguration.giveConnection());
 	}
 	
 	/**
@@ -186,11 +179,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param classMappingStrategy the persistence configuration
 	 * @param <C> the entity type that is configured for persistence
 	 * @param <I> the identifier type of the entity
-	 * @return the newly created {@link Persister} for the configuration
+	 * @return the newly created {@link BeanPersister} for the configuration
 	 */
-	public <C, I, T extends Table<T>> Persister<C, I, T> add(ClassMapping<C, I, T> classMappingStrategy) {
+	public <C, I, T extends Table<T>> BeanPersister<C, I, T> add(ClassMapping<C, I, T> classMappingStrategy) {
 		mapping.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
-		Persister<C, I, T> persister = new Persister<>(classMappingStrategy, this);
+		BeanPersister<C, I, T> persister = new BeanPersister<>(classMappingStrategy, this);
 		addPersister(persister);
 		return persister;
 	}
@@ -200,21 +193,41 @@ public class PersistenceContext implements PersisterRegistry {
 		return new HashSet<>(persisterCache.values());
 	}
 	
-	/**
-	 * Returns the {@link Persister} mapped for a class.
-	 * 
-	 * @param clazz the class for which the {@link Persister} must be given
-	 * @param <C> the type of the persisted entity
-	 * @return null if class has no persister registered
-	 */
-	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
-		return persisterCache.get(clazz);
+	public Map<Class<?>, EntityPersister> getPersisterCache() {
+		return persisterCache;
 	}
 	
 	/**
-	 * Registers a {@link Persister} on this instance. May overwrite an existing one
+	 * Looks for an {@link EntityPersister} registered for given class or one of its parent.
+	 * Found persister is then capable of persisting any instance of given class.
 	 * 
-	 * @param persister any {@link Persister}
+	 * @param clazz the class for which the {@link EntityPersister} must be given
+	 * @param <C> the type of the persisted entity
+	 * @return null if class has no compatible persister registered
+	 */
+	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
+		if (persisterCache.get(clazz) != null) {
+			return persisterCache.get(clazz);
+		} else {
+			ClassIterator classIterator = new ClassIterator(clazz);
+			EntityPersister<C, I> result;
+			Class<?> pawn;
+			do {
+				pawn = classIterator.next();
+				result = persisterCache.get(pawn);
+			} while (result == null && classIterator.hasNext());
+			// we add our finding to cache for future lookup
+			if (result != null) {
+				persisterCache.put(clazz, result);
+			}
+			return result;
+		}
+	}
+	
+	/**
+	 * Registers a {@link EntityPersister} on this instance. May overwrite an existing one
+	 * 
+	 * @param persister any {@link EntityPersister}
 	 * @param <C> type of persisted bean
 	 * @throws IllegalArgumentException if a persister already exists for class persisted by given persister
 	 */
@@ -241,8 +254,8 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 * @see org.codefilarete.stalactite.query.model.QueryEase
 	 */
-	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider queryProvider, Class<C> beanType) {
-		return newQuery(new SQLQueryBuilder(queryProvider), beanType);
+	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(QueryProvider<Query> queryProvider, Class<C> beanType) {
+		return newQuery(queryProvider.getQuery(), beanType);
 	}
 	
 	/**
@@ -255,7 +268,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @return a new {@link ExecutableBeanPropertyKeyQueryMapper} that must be configured and executed
 	 */
 	public <C> ExecutableBeanPropertyKeyQueryMapper<C> newQuery(Query query, Class<C> beanType) {
-		return newQuery(new SQLQueryBuilder(query), beanType);
+		return newQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 	}
 	
 	/**
@@ -318,15 +331,15 @@ public class PersistenceContext implements PersisterRegistry {
 	 * Prefer {@link #select(SerializableFunction, Column, Consumer, Consumer)} for a more complete use case, or even {@link #newQuery(SQLBuilder, Class)}
 	 * 
 	 * @param factory a one-argument bean constructor
-	 * @param column any table column (primary key may be prefered because its result is given to bean constructor but it is not expected)
+	 * @param column any table column (primary key may be preferred because its result is given to bean constructor but it is not expected)
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class) 
 	 */
-	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
+	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column) {
 		Executable constructor = new MethodReferenceCapturer().findExecutable(factory);
 		return newQuery(QueryEase
 				.select(column).from(column.getTable()), ((Class<C>) constructor.getDeclaringClass()))
@@ -348,11 +361,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <I> constructor first-arg type and first column type
 	 * @param <J> constructor second-arg type and second column type
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
+	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2)
@@ -375,11 +388,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <J> constructor second-arg type and second column type
 	 * @param <K> constructor third-arg type and third column type
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, K, T extends Table> List<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
+	public <C, I, J, K, T extends Table> Set<C> select(SerializableTriFunction<I, J, K, C> factory, Column<T, I> column1, Column<T, J> column2, Column<T, K> column3) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
 		return newQuery(QueryEase.select(column1, column2, column3).from(column1.getTable()), constructor.getDeclaringClass())
 				.mapKey(factory, column1, column2, column3)
@@ -397,11 +410,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param factory a two-arguments bean constructor
 	 * @param <C> type of created beans
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping) {
+	public <C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, selectMapping, where -> {});
 	}
 	
@@ -419,11 +432,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping) {
+	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column, Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, column, selectMapping, where -> {});
 	}
 	
@@ -442,11 +455,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableFunction, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
 													 Consumer<SelectMapping<C, T>> selectMapping) {
 		return select(factory, column1, column2, selectMapping, where -> {});
 	}
@@ -461,14 +474,14 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param factory a two-arguments bean constructor
 	 * @param <C> type of created beans
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #select(SerializableBiFunction, Column, Column, Consumer, Consumer)
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, T extends Table> List<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
+	public <C, T extends Table> Set<C> select(SerializableSupplier<C> factory, Consumer<SelectMapping<C, T>> selectMapping,
 							  Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory), Collections.emptyList(), selectMapping, where);
+		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory), Collections.emptySet(), selectMapping, where);
 	}
 	
 	/**
@@ -484,14 +497,14 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @param <I> constructor arg and column types
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, T extends Table> List<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
+	public <C, I, T extends Table> Set<C> select(SerializableFunction<I, C> factory, Column<T, I> column,
 												  Consumer<SelectMapping<C, T>> selectMapping,
 												  Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column), Collections.singletonList(column), selectMapping, where);
+		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column), Arrays.asHashSet(column), selectMapping, where);
 	}
 	
 	/**
@@ -509,15 +522,14 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <I> constructor first-arg type and first column type
 	 * @param <J> constructor second-arg type and second column type
 	 * @param <T> targeted table type
-	 * @return a list of all table records mapped to the given bean
+	 * @return a set of all table records mapped to the given bean
 	 * @see #newQuery(SQLBuilder, Class)
 	 */
-	public <C, I, J, T extends Table> List<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
-												  Consumer<SelectMapping<C, T>> selectMapping,
-												  Consumer<CriteriaChain> where) {
+	public <C, I, J, T extends Table> Set<C> select(SerializableBiFunction<I, J, C> factory, Column<T, I> column1, Column<T, J> column2,
+													 Consumer<SelectMapping<C, T>> selectMapping,
+													 Consumer<CriteriaChain> where) {
 		Constructor<C> constructor = new MethodReferenceCapturer().findConstructor(factory);
-		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column1, column2), Arrays.asList(column1, column2), selectMapping, where
-		);
+		return select(constructor.getDeclaringClass(), queryMapper -> queryMapper.mapKey(factory, column1, column2), Arrays.asHashSet(column1, column2), selectMapping, where);
 	}
 	
 	/**
@@ -531,11 +543,11 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of created beans
 	 * @return beans created with selected data
 	 */
-	private <C, T extends Table> List<C> select(Class<C> beanType,
-							   Consumer<BeanKeyQueryMapper<C>> keyMapper,
-							   List<Column> selectableKeys,
-							   Consumer<SelectMapping<C, T>> selectMapping,
-							   Consumer<CriteriaChain> where) {
+	private <C, T extends Table> Set<C> select(Class<C> beanType,
+											   Consumer<BeanKeyQueryMapper<C>> keyMapper,
+											   Set<? extends Column<?, ?>> selectableKeys,
+											   Consumer<SelectMapping<C, T>> selectMapping,
+											   Consumer<CriteriaChain> where) {
 		SelectMapping<C, T> selectMappingSupport = new SelectMapping<>();
 		selectMapping.accept(selectMappingSupport);
 		Table table = selectMappingSupport.getTable();
@@ -544,17 +556,17 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		Query query = QueryEase.select(selectableKeys).from(table).getQuery();
 		where.accept(query.getWhere());
-		QueryMapper<C> queryMapper = newTransformableQuery(new SQLQueryBuilder(query), beanType);
+		QueryMapper<C> queryMapper = newTransformableQuery(dialect.getQuerySQLBuilderFactory().queryBuilder(query), beanType);
 		keyMapper.accept(queryMapper);
 		selectMappingSupport.appendTo(query, queryMapper);
 		return execute(queryMapper);
 	}
 	
-	public <C> List<C> execute(QueryMapper<C> queryProvider) {
+	private <C> Set<C> execute(QueryMapper<C> queryProvider) {
 		return queryProvider.execute(getConnectionProvider());
 	}
 	
-	public <C> C executeUnique(QueryMapper<C> queryProvider) {
+	private <C> C executeUnique(QueryMapper<C> queryProvider) {
 		return queryProvider.executeUnique(getConnectionProvider());
 	}
 	
@@ -595,7 +607,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		
 		private void appendTo(Query query, BeanPropertyQueryMapper<C> queryMapper) {
-			mapping.keySet().forEach(query::select);
+			query.select(mapping.keySet());
 			mapping.forEach((k, v) -> queryMapper.map((Column) k, v));
 		}
 		
@@ -621,7 +633,7 @@ public class PersistenceContext implements PersisterRegistry {
 			super(targetTable);
 		}
 		
-		/** Overriden to adapt return type */
+		/** Overridden to adapt return type */
 		@Override
 		public ExecutableUpdate set(Column column) {
 			super.set(column);
@@ -646,7 +658,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this update statement with given values
 		 */
 		public void execute() {
-			UpdateStatement updateStatement = new UpdateCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
+			UpdateStatement updateStatement = new UpdateCommandBuilder(this, dialect).toStatement();
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(updateStatement, getConnectionProvider())) {
 				writeOperation.setValues(updateStatement.getValues());
 				writeOperation.execute();
@@ -663,7 +675,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		
 		@Override
-		public ExecutableCriteria where(Column column, AbstractRelationalOperator condition) {
+		public ExecutableCriteria where(Column column, ConditionalOperator condition) {
 			CriteriaChain where = super.where(column, condition);
 			return new MethodReferenceDispatcher()
 					.redirect(ExecutableSQL::execute, this::execute)
@@ -707,7 +719,7 @@ public class PersistenceContext implements PersisterRegistry {
 		 * Executes this delete statement with given values.
 		 */
 		public void execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder(this).toStatement(dialect.getColumnBinderRegistry());
+			PreparedSQL deleteStatement = new DeleteCommandBuilder(this, dialect).toPreparedSQL();
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				writeOperation.execute();
@@ -724,7 +736,7 @@ public class PersistenceContext implements PersisterRegistry {
 		}
 		
 		@Override
-		public ExecutableCriteria where(Column column, AbstractRelationalOperator condition) {
+		public ExecutableCriteria where(Column column, ConditionalOperator condition) {
 			CriteriaChain where = super.where(column, condition);
 			return new MethodReferenceDispatcher()
 					.redirect(ExecutableSQL::execute, this::execute)

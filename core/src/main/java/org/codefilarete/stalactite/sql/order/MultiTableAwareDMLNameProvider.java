@@ -1,11 +1,10 @@
 package org.codefilarete.stalactite.sql.order;
 
-import javax.annotation.Nonnull;
 import java.util.Collections;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.tool.trace.ModifiableBoolean;
 
 /**
  * A name provider that doesn't add table prefix to columns in case of single table.
@@ -23,7 +22,7 @@ public class MultiTableAwareDMLNameProvider extends DMLNameProvider {
 	}
 	
 	@Override
-	public String getName(@Nonnull Column column) {
+	public String getName(Selectable<?> column) {
 		if (multiTable.isTrue()) {
 			// default : adds table prefix
 			return super.getName(column);

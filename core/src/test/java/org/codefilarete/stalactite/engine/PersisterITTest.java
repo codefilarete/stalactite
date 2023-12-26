@@ -5,14 +5,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.PersistentFieldHarverster;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
@@ -36,26 +37,26 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 
 	abstract Dialect createDialect();
 	
-	private Persister<Toto, Integer, TotoTable> testInstance;
+	private BeanPersister<Toto, Integer, TotoTable> testInstance;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
 	
 	@BeforeEach
 	void setUp() {
 		TotoTable totoClassTable = new TotoTable(null, "Toto");
-		PersistentFieldHarverster persistentFieldHarverster = new PersistentFieldHarverster();
-		Map<PropertyAccessor<Toto, Object>, Column<TotoTable, Object>> totoClassMapping = persistentFieldHarverster.mapFields(Toto.class, totoClassTable);
+		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
+		Map<PropertyAccessor<Toto, Object>, Column<TotoTable, Object>> totoClassMapping = persistentFieldHarvester.mapFields(Toto.class, totoClassTable);
 		Map<String, Column<TotoTable, Object>> columns = totoClassTable.mapColumnsOnName();
 		columns.get("a").setPrimaryKey(true);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		// defining a test instance that maps Toto class onto TotoTable with "a" field as identifier
-		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarverster.getField("a"));
+		PropertyAccessor<Toto, Integer> identifierAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("a"));
 		ClassMapping<Toto, Integer, TotoTable> totoClassMappingStrategy = new ClassMapping<>(
 				Toto.class,
 				totoClassTable,
 				totoClassMapping,
 				identifierAccessor,
-				new BeforeInsertIdentifierManager<>(new SinglePropertyIdAccessor<>(identifierAccessor), identifierGenerator, Integer.class)
+				new BeforeInsertIdentifierManager<>(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierGenerator, Integer.class)
 		);
 		
 		Dialect dialect = createDialect();
@@ -63,7 +64,7 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		// reset id counter between 2 tests else id "overflows"
 		identifierGenerator.reset();
 		
-		testInstance = new Persister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
+		testInstance = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(connectionProvider, 3));
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(dialect.getSqlTypeRegistry(), connectionProvider);
 		ddlDeployer.getDdlGenerator().setTables(Arrays.asSet(totoClassTable));
@@ -181,19 +182,19 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		
-		List<Toto> totos = testInstance.select(Arrays.asList(1));
+		Set<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
 		assertThat((Object) t.a).isEqualTo(1);
 		assertThat((Object) t.b).isEqualTo(10);
 		assertThat((Object) t.c).isEqualTo(100);
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
 		
-		List<Toto> expectedResult = Arrays.asList(
-				new Toto(2, 20, 200),
-				new Toto(3, 30, 300),
-				new Toto(4, 40, 400));
-		
-		assertThat(totos.toString()).isEqualTo(expectedResult.toString());
+		assertThat(totos)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(2, 20, 200),
+						new Toto(3, 30, 300),
+						new Toto(4, 40, 400));
 	}
 	
 	static class Toto {

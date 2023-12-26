@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 
 /**
  * The interface defining what's possible to do (fluent point of view) on a from (more exactly a join to take more general cases)
@@ -10,27 +9,31 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  */
 public interface JoinChain<T extends JoinChain<T>> {
 	
-	T innerJoin(Column leftColumn, Column rightColumn);
+	<I> T innerJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
 	
-	T leftOuterJoin(Column leftColumn, Column rightColumn);
+	<JOINTYPE> T innerJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns);
 	
-	T rightOuterJoin(Column leftColumn, Column rightColumn);
+	<I> T leftOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
 	
-	T innerJoin(Table leftTable, Table rightTable, String joinClause);
+	<JOINTYPE> T leftOuterJoin(Key<?, JOINTYPE> leftColumns, Key<?, JOINTYPE> rightColumns);
 	
-	T innerJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause);
+	<I> T rightOuterJoin(JoinLink<?, I> leftColumn, JoinLink<?, I> rightColumn);
 	
-	T leftOuterJoin(Table leftTable, Table rigTable, String joinClause);
+	T innerJoin(Fromable rightTable, String joinClause);
 	
-	T leftOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause);
+	T innerJoin(Fromable rightTable, String rightTableAlias, String joinClause);
 	
-	T rightOuterJoin(Table leftTable, Table rigTable, String joinClause);
+	T leftOuterJoin(Fromable rightTable, String joinClause);
 	
-	T rightOuterJoin(Table leftTable, String leftTableAlias, Table rigTable, String rightTableAlias, String joinClause);
+	T leftOuterJoin(Fromable rightTable, String rightTableAlias, String joinClause);
 	
-	T crossJoin(Table table);
+	T rightOuterJoin(Fromable rightTable, String joinClause);
 	
-	T crossJoin(Table table, String tableAlias);
+	T rightOuterJoin(Fromable rightTable, String rightTableAlias, String joinClause);
 	
-	T setAlias(Table table, String alias);
+	T crossJoin(Fromable table);
+	
+	T crossJoin(Fromable table, String tableAlias);
+	
+	T setAlias(Fromable table, String alias);
 }

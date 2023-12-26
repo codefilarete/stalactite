@@ -2,17 +2,17 @@ package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
 import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.model.Car;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredPersister;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
+import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
@@ -95,10 +95,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -133,10 +133,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -165,12 +165,12 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
+			Set<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
 					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model_col", Car::setModel)
 					.map("color_col", Car::setColor)
 					.execute();
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactly(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -200,12 +200,12 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.newQuery("select id_supercol, model_supercol, color_supercol from Car", Car.class)
+			Set<Car> allCars = persistenceContext.newQuery("select id_supercol, model_supercol, color_supercol from Car", Car.class)
 					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id_supercol", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model_supercol", Car::setModel)
 					.map("color_supercol", Car::setColor)
 					.execute();
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -242,12 +242,12 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
+			Set<Car> allCars = persistenceContext.newQuery("select id_col, model_col, color_col from Car", Car.class)
 					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id_col", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model_col", Car::setModel)
 					.map("color_col", Car::setColor)
 					.execute();
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -296,12 +296,12 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			assertThat(loadedCar).isEqualTo(dummyCar);
 			
 			// checking with query to understand what's under the hood : rgb column is created instead of color
-			List<Car> allCars = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
+			Set<Car> allCars = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
 					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new)
 					.execute();
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		}
 	}
 	
@@ -320,7 +320,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					.map(Car::getColor)	// note : we don't need to embed Color because it is defined in the Dialect registry
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.build(persistenceContext);
 			
 			// as an inherited entity of non joined_tables policy, the table should not be in the context, but its persister does exist
@@ -339,10 +339,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -355,11 +355,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED).getConfiguration();
 			
 			assertThatThrownBy(() -> entityBuilder(Vehicle.class, LONG_TYPE)
-							.mapInheritance(inheritanceConfiguration)
+							.mapSuperClass(inheritanceConfiguration)
 							.mapKey(Vehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 							.build(persistenceContext))
 					.isInstanceOf(MappingConfigurationException.class)
-					.hasMessage("Defining an identifier while inheritance is used is not supported"
+					.hasMessage("Defining an identifier in conjunction with entity inheritance is not supported"
 							+ " : o.c.s.e.m.Vehicle defines identifier AbstractVehicle::getId"
 							+ " while it inherits from o.c.s.e.m.AbstractVehicle");
 		}
@@ -373,13 +373,13 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.getConfiguration();
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					.map(Car::getColor)
-					.mapInheritance(inheritanceConfiguration2)
+					.mapSuperClass(inheritanceConfiguration2)
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should not be in the context, and its persister does exist
@@ -399,10 +399,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -418,18 +418,18 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.getConfiguration();
 			
 			EntityMappingConfiguration<Vehicle, Identifier<Long>> inheritanceConfiguration2 = entityBuilder(Vehicle.class, LONG_TYPE)
-					.mapInheritance(inheritanceConfiguration).withJoinedTable()
+					.mapSuperClass(inheritanceConfiguration).withJoinedTable()
 					.getConfiguration();
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
 					.map(Car::getColor)
-					.mapInheritance(inheritanceConfiguration2).withJoinedTable()
+					.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
 					.build(persistenceContext);
 			
 			// as an inherited entity, the table should be in the context, and its persister does exist
 			assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
-			assertThat(((EntityConfiguredPersister) persistenceContext.getPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo("Car");
+			assertThat(((ConfiguredRelationalPersister) persistenceContext.getPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo("Car");
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -442,10 +442,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
+			Set<Car> allCars = persistenceContext.select(Car::new, mappedSuperClassData.carTable.idColumn, m -> m
 					.add(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.add(mappedSuperClassData.carTable.colorColumn, Car::setColor));
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -464,7 +464,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Car::getColor)
 					.mapSuperClass(MappingEase.embeddableBuilder(Vehicle.class)
 							.map(Vehicle::getColor))
-					.mapInheritance(inheritanceConfiguration);
+					.mapSuperClass(inheritanceConfiguration);
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
 					.isInstanceOf(MappingConfigurationException.class)
 					.hasMessage("Combination of mapped super class and inheritance is not supported, please remove one of them");
@@ -480,11 +480,11 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.map(Vehicle::getColor)
 					.getConfiguration();
 			
-			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
+			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE, mappedSuperClassData.carTable)
 					.map(Car::getModel)
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.withJoinedTable()
-					.build(persistenceContext, mappedSuperClassData.carTable);
+					.build(persistenceContext);
 			
 			// as an inherited entity, the table should be in the context
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
@@ -501,13 +501,13 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// insert test
 			carPersister.insert(dummyCar);
 			
-			List<Car> allCars = persistenceContext.newQuery(select(mappedSuperClassData.carTable.idColumn, mappedSuperClassData.carTable.modelColumn, mappedSuperClassData.vehicleTable.colorColumn)
+			Set<Car> allCars = persistenceContext.newQuery(select(mappedSuperClassData.carTable.idColumn, mappedSuperClassData.carTable.modelColumn, mappedSuperClassData.vehicleTable.colorColumn)
 					.from(mappedSuperClassData.carTable).innerJoin(mappedSuperClassData.carTable.idColumn, mappedSuperClassData.vehicleTable.idColumn), Car.class)
 					.mapKey(Car::new, mappedSuperClassData.carTable.idColumn)
 					.map(mappedSuperClassData.carTable.modelColumn, Car::setModel)
 					.map(mappedSuperClassData.vehicleTable.colorColumn, Car::setColor)
 					.execute();
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 			
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
@@ -524,7 +524,7 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			
 			EntityPersister<Car, Identifier<Long>> carPersister = entityBuilder(Car.class, LONG_TYPE)
 					.map(Car::getModel)
-					.mapInheritance(inheritanceConfiguration)
+					.mapSuperClass(inheritanceConfiguration)
 					.build(persistenceContext);
 			
 			// DML tests
@@ -543,12 +543,12 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			assertThat(loadedCar).isEqualTo(dummyCar);
 			
 			// checking with query to understand what's under the hood : rgb column is created instead of color
-			List<Car> allCars = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
+			Set<Car> allCars = persistenceContext.newQuery("select id, model, rgb from Car", Car.class)
 					.mapKey((SerializableFunction<Identifier<Long>, Car>) Car::new, "id", (Class<Identifier<Long>>) (Class) Identifier.class)
 					.map("model", Car::setModel)
 					.map("rgb", Car::setColor, int.class, Color::new)
 					.execute();
-			assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+			assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		}
 	}
 	

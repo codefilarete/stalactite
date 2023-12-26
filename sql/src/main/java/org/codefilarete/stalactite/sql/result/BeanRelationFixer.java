@@ -1,10 +1,18 @@
 package org.codefilarete.stalactite.sql.result;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -72,11 +80,28 @@ public interface BeanRelationFixer<E, I> {
 		Class<? extends C> concreteType;
 		if (List.class.equals(collectionType)) {
 			concreteType = (Class) ArrayList.class;
+		} else if (SortedSet.class.equals(collectionType)) {
+			concreteType = (Class) TreeSet.class;
 		} else if (Set.class.equals(collectionType)) {
 			concreteType = (Class) HashSet.class;
+		} else if (Queue.class.equals(collectionType)) {
+			concreteType = (Class) ArrayDeque.class;
 		} else {
 			// given type is expected to be concrete, we'll instantiate it
 			concreteType = collectionType;
+		}
+		return () -> Reflections.newInstance(concreteType);
+	}
+	
+	static <M extends Map> Supplier<M> giveMapFactory(Class<M> mapType) {
+		Class<? extends M> concreteType;
+		if (SortedMap.class.equals(mapType)) {
+			concreteType = (Class) TreeMap.class;
+		} else if (Map.class.equals(mapType)) {
+			concreteType = (Class) HashMap.class;
+		} else {
+			// given type is expected to be concrete, we'll instantiate it
+			concreteType = mapType;
 		}
 		return () -> Reflections.newInstance(concreteType);
 	}
@@ -147,8 +172,10 @@ public interface BeanRelationFixer<E, I> {
 	 * @param adapter the final method that will be applied to bean, input and collection, expected to have at least a collection add, with eventual input adaptation
 	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
 	 */
-	static <E, I, C extends Collection<?>> BeanRelationFixer<E, I> ofAdapter(BiConsumer<E, C> setter, Function<E, C> getter, Supplier<C> collectionFactory,
-																	  TriConsumer<E, I, C> adapter) {
+	static <E, I, C extends Collection<?>> BeanRelationFixer<E, I> ofAdapter(BiConsumer<E, C> setter,
+																			 Function<E, C> getter,
+																			 Supplier<C> collectionFactory,
+																			 TriConsumer<E, I, C> adapter) {
 		return (target, input) -> {
 			C collection = getter.apply(target);
 			if (collection == null) {
@@ -157,6 +184,30 @@ public interface BeanRelationFixer<E, I> {
 				setter.accept(target, collection);
 			}
 			adapter.accept(target, input, collection);
+		};
+	}
+	
+	/**
+	 * Shortcut to create a {@link BeanRelationFixer} for a relation where the attribute is a {@link Map}
+	 *
+	 * @param setter the method that sets the {@link Map} onto the target bean
+	 * @param getter the method that gets the {@link Map} from the target bean
+	 * @param mapFactory a supplier of an instance to fill the relation if it is null
+	 * @param adapter the final method that will be applied to bean, input and collection, expected to have at least a collection add, with eventual input adaptation
+	 * @return a {@link BeanRelationFixer} that will add the input to the Collection and create if the getter returns null
+	 */
+	static <E, I, M extends Map<?, ?>> BeanRelationFixer<E, I> ofMapAdapter(BiConsumer<E, M> setter,
+																			Function<E, M> getter,
+																			Supplier<M> mapFactory,
+																			TriConsumer<E, I, M> adapter) {
+		return (target, input) -> {
+			M map = getter.apply(target);
+			if (map == null) {
+				// we fill the relation
+				map = mapFactory.get();
+				setter.accept(target, map);
+			}
+			adapter.accept(target, input, map);
 		};
 	}
 }

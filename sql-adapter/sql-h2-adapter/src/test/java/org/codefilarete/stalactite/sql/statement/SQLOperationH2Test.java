@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.sql.statement;
 
 import javax.sql.DataSource;
-import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -59,7 +58,7 @@ class SQLOperationH2Test extends SQLOperationITTest {
 	/**
 	 * Dedicated H2 Datasource for concurrent access to simulate multiple user accessing same table and lock
 	 */
-	public static class ConcurrentH2InMemoryDataSource extends UrlAwareDataSource implements Closeable {
+	public static class ConcurrentH2InMemoryDataSource extends UrlAwareDataSource {
 		
 		private final JdbcDataSource delegate;
 		
@@ -73,11 +72,6 @@ class SQLOperationH2Test extends SQLOperationITTest {
 			delegate.setUser("sa");
 			delegate.setPassword("");
 			setDelegate(delegate);
-		}
-		
-		@Override
-		public void close() {
-			// nothing to do because H2DataSource doesn't need to be closed
 		}
 	}
 }

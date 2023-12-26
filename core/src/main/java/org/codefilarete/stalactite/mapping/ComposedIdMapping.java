@@ -1,10 +1,11 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
-
-import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
-import org.codefilarete.tool.Reflections;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Reflections;
 
 /**
  * Entry point for composed value (hence composed primary key), about entity identifier mapping.
@@ -17,7 +18,7 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	
 	private final IdAccessor<C, I> idAccessor;
 	private final IdentifierInsertionManager<C, I> identifierInsertionManager;
-	private final ComposedIdentifierAssembler<I> identifierMarshaller;
+	private final ComposedIdentifierAssembler<I, ?> identifierMarshaller;
 	
 	/**
 	 * Main constructor
@@ -28,10 +29,24 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	 */
 	public ComposedIdMapping(IdAccessor<C, I> idAccessor,
 							 IdentifierInsertionManager<C, I> identifierInsertionManager,
-							 ComposedIdentifierAssembler<I> identifierMarshaller) {
+							 ComposedIdentifierAssembler<I, ?> identifierMarshaller) {
 		this.idAccessor = idAccessor;
 		this.identifierInsertionManager = identifierInsertionManager;
 		this.identifierMarshaller = identifierMarshaller;
+	}
+	
+	/**
+	 * Shortcut to {@link ComposedIdMapping#ComposedIdMapping(IdAccessor, IdentifierInsertionManager, ComposedIdentifierAssembler)}
+	 * with a {@link ReversibleAccessor} used as a property accessor.
+	 *
+	 * @param identifierAccessor accessor to the property identifying the entity
+	 * @param identifierInsertionManager defines the way the id is persisted into the database
+	 * @param identifierMarshaller defines the way the id is read from the database
+	 */
+	public ComposedIdMapping(ReversibleAccessor<C, I> identifierAccessor,
+							 IdentifierInsertionManager<C, I> identifierInsertionManager,
+							 ComposedIdentifierAssembler<I, ?> identifierMarshaller) {
+		this(new AccessorWrapperIdAccessor<>(identifierAccessor), identifierInsertionManager, identifierMarshaller);
 	}
 	
 	@Override
@@ -40,8 +55,8 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	}
 	
 	@Override
-	public ComposedIdentifierAssembler<I> getIdentifierAssembler() {
-		return identifierMarshaller;
+	public <T extends Table<T>> IdentifierAssembler<I, T> getIdentifierAssembler() {
+		return (IdentifierAssembler<I, T>) identifierMarshaller;
 	}
 	
 	@Override
@@ -51,11 +66,11 @@ public class ComposedIdMapping<C, I> implements IdMapping<C, I> {
 	
 	/**
 	 * Will consider a new entity if its identifier is null or if all of its values are default JVM values (null or any primitive default values)
-	 * @param entity any non null entity
+	 * @param entity any entity of type C
 	 * @return true if entity's id is null or all of its primitive elements are also null or default JVM values
 	 */
 	@Override
-	public boolean isNew(@Nonnull C entity) {
+	public boolean isNew(C entity) {
 		I id = idAccessor.getId(entity);
 		return id == null || identifierMarshaller.getColumnValues(id).values().stream().allMatch(o -> o == null || isDefaultPrimitiveValue(o));
 	}

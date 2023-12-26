@@ -1,16 +1,15 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.query.model.Selectable;
 
 /**
  * Represents a min operation (on a column)
  * 
  * @author Guillaume Mary
  */
-public class Min extends UnitaryOperator {
+public class Min<N extends Number> extends SQLFunction<N> {
 	
-	public Min(Column value) {
-		super(value);
+	public Min(Selectable<N> value) {
+		super("min", value.getJavaType(), value);
 	}
 }

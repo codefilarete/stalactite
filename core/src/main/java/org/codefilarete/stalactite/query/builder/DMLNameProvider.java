@@ -1,12 +1,13 @@
 package org.codefilarete.stalactite.query.builder;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.codefilarete.tool.Strings;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Strings;
 
 /**
  * A simple wrapper for methods that can give some necessary names during DML generation.
@@ -15,54 +16,62 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class DMLNameProvider {
 	
-	private final Function<Table, String> tableAliases;
+	private final Function<Fromable, String> tableAliases;
 	
-	public DMLNameProvider(Function<Table, String> tableAliases) {
+	public DMLNameProvider(Function<Fromable, String> tableAliases) {
 		this.tableAliases = tableAliases;
 	}
 	
-	public DMLNameProvider(Map<? extends Table, String> tableAliases) {
+	public DMLNameProvider(Map<? extends Fromable, String> tableAliases) {
 		this(tableAliases::get);
 	}
 	
 	/**
-	 * Gives a column name with table "path" (either alias or name according to {@link #getTablePrefix(Table)})
+	 * Gives a column name with table "path" (either alias or name according to {@link #getTablePrefix(Fromable)})
 	 * @param column a column
 	 * @return the column name prefixed with table name/alias
 	 */
-	public String getName(@Nonnull Column column) {
-		String tablePrefix = getTablePrefix(column.getTable());
-		return tablePrefix + "." + getSimpleName(column);
+	public String getName(Selectable<?> column) {
+		if (column instanceof JoinLink) {
+			String tablePrefix = getTablePrefix(((JoinLink<?, ?>) column).getOwner());
+			return tablePrefix + "." + getSimpleName(column);
+		} else {
+			return getSimpleName(column);
+		}
 	}
 	
 	/**
 	 * Gives the column name (without table name).
-	 * Aimed at being overridden to take key words into account (and put it between quotes for instance)
+	 * Aimed at being overridden to take keywords into account (and put it between quotes for instance)
 	 * 
 	 * @param column a column
 	 * @return the column name (eventually escaped)
 	 */
-	public String getSimpleName(@Nonnull Column column) {
-		return column.getName();
+	public String getSimpleName(Selectable<?> column) {
+		return column.getExpression();
 	}
 	
-	public String getAlias(Table table) {
+	public String getAlias(Fromable table) {
 		return tableAliases.apply(table);
 	}
 	
-	public String getTablePrefix(Table table) {
+	public String getTablePrefix(Fromable table) {
 		String tableAlias = getAlias(table);
-		return Strings.isEmpty(tableAlias) ? getSimpleName(table) : tableAlias;
+		return Strings.isEmpty(tableAlias) ? getName(table) : tableAlias;
 	}
 	
 	/**
 	 * Gives the table name.
-	 * Aimed at being overridden to take key words into account (and put it between quotes for instance)
+	 * Aimed at being overridden to take keywords into account (and put result between quotes for instance)
 	 *
 	 * @param table a table
 	 * @return the table name (eventually escaped)
 	 */
-	public String getSimpleName(Table table) {
-		return table.getAbsoluteName();
+	public String getName(Fromable table) {
+		if (table instanceof Table) {
+			return table.getAbsoluteName();
+		} else {
+			return table.getName();
+		}
 	}
 }

@@ -1,0 +1,1 @@
+This module should be added as a dependency if one want to use Stalactite ORM with all supported databases specificities.

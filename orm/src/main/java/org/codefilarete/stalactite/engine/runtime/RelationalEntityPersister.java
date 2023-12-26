@@ -6,7 +6,9 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
@@ -17,7 +19,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.AbstractRelationalOperator;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 
@@ -35,46 +37,50 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param <SRC> source entity type
 	 * @param <T1> left table type
 	 * @param <T2> right table type
-	 * @param <JID> join columns type, which can either be source persister identifier type (SRCID), or current instance identifier type (I)
 	 * @param sourcePersister source that needs this instance joins
-	 * @param leftColumn left part of the join, expected to be one of source table 
+	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param rightTableAlias optional alias for right table, if null table name will be used
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 * @return the created join name, then it could be found in sourcePersister#getEntityJoinTree
 	 */
-	<SRC, T1 extends Table, T2 extends Table, SRCID, JID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																		   Column<T1, JID> leftColumn,
-																		   Column<T2, JID> rightColumn,
-																		   String rightTableAlias,
-																		   BeanRelationFixer<SRC, C> beanRelationFixer,
-																		   boolean optional);
+	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsOne(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																			  Key<T1, JOINID> leftColumn,
+																			  Key<T2, JOINID> rightColumn,
+																			  String rightTableAlias,
+																			  BeanRelationFixer<SRC, C> beanRelationFixer,
+																			  boolean optional,
+																			  boolean loadSeparately);
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
 	 * Made as such because polymorphic cases (which are instance of this interface) are the only one who knows how to join themselves with another persister.
-	 * 
+	 *
 	 * @param <SRC> source entity type
 	 * @param <T1> left table type
 	 * @param <T2> right table type
 	 * @param sourcePersister source that needs this instance joins
-	 * @param leftColumn left part of the join, expected to be one of source table 
+	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
-	 * 					not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
+	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	default <SRC, T1 extends Table, T2 extends Table, SRCID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																			   Column<T1, ?> leftColumn,
-																			   Column<T2, ?> rightColumn,
-																			   BeanRelationFixer<SRC, C> beanRelationFixer,
-																			   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																			   String joinName,
-																			   boolean optional) {
-		return joinAsMany(sourcePersister, (Column) leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider, joinName, optional, Collections.emptySet());
+	default <SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																							   Key<T1, JOINID> leftColumn,
+																							   Key<T2, JOINID> rightColumn,
+																							   BeanRelationFixer<SRC, C> beanRelationFixer,
+																							   @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																							   String joinName,
+																							   boolean optional,
+																							   boolean loadSeparately) {
+		return joinAsMany(sourcePersister, leftColumn, rightColumn, beanRelationFixer, duplicateIdentifierProvider,
+				joinName, Collections.emptySet(), optional, loadSeparately);
 	}
 	
 	/**
@@ -85,23 +91,25 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param <T1> left table type
 	 * @param <T2> right table type
 	 * @param sourcePersister source that needs this instance joins
-	 * @param leftColumn left part of the join, expected to be one of source table 
+	 * @param leftColumn left part of the join, expected to be one of source table
 	 * @param rightColumn right part of the join, expected to be one of current instance table
 	 * @param beanRelationFixer setter that fix relation of this instance onto source persister instance, expected to manage collection instantiation
 	 * @param duplicateIdentifierProvider a function that computes the relation identifier
 	 * @param joinName parent join node name on which join must be added,
-	 * 					not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
-	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * not always {@link EntityJoinTree#ROOT_STRATEGY_NAME} in particular in one-to-many with association table
 	 * @param selectableColumns columns to be added to SQL select clause
+	 * @param optional true for optional relation, makes an outer join, else should create a inner join
+	 * @param loadSeparately indicator to make the target entities loaded in a separate query
 	 */
-	<SRC, T1 extends Table, T2 extends Table, SRCID, ID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
-																		   Column<T1, ID> leftColumn,
-																		   Column<T2, ID> rightColumn,
-																		   BeanRelationFixer<SRC, C> beanRelationFixer,
-																		   @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider,
-																		   String joinName,
-																		   boolean optional,
-																		   Set<Column<T2, ?>> selectableColumns);
+	<SRC, T1 extends Table<T1>, T2 extends Table<T2>, SRCID, JOINID> String joinAsMany(RelationalEntityPersister<SRC, SRCID> sourcePersister,
+																					   Key<T1, JOINID> leftColumn,
+																					   Key<T2, JOINID> rightColumn,
+																					   BeanRelationFixer<SRC, C> beanRelationFixer,
+																					   @Nullable BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider,
+																					   String joinName,
+																					   Set<? extends Column<T2, Object>> selectableColumns,
+																					   boolean optional,
+																					   boolean loadSeparately);
 	
 	EntityJoinTree<C, I> getEntityJoinTree();
 	
@@ -125,7 +133,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param operator criteria for the property
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
 	 */
-	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
@@ -137,7 +145,7 @@ public interface RelationalEntityPersister<C, I> {
 	 * @param operator criteria for the property
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute()}
 	 */
-	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 	
 	/**
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
@@ -145,17 +153,26 @@ public interface RelationalEntityPersister<C, I> {
 	 */
 	interface RelationalExecutableEntityQuery<C> extends ExecutableEntityQuery<C>, CriteriaProvider, RelationalEntityCriteria<C> {
 		
-		<O> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		@Override
+		<O> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 		
-		<O> RelationalExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		@Override
+		<O> RelationalExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 		
-		<O> RelationalExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, AbstractRelationalOperator<O> operator);
+		@Override
+		<O> RelationalExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
 		
-		<O> RelationalExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, AbstractRelationalOperator<O> operator);
+		@Override
+		<O> RelationalExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
 		
-		<A, B> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		@Override
+		<A, B> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
 		
-		<S extends Collection<A>, A, B> RelationalExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, AbstractRelationalOperator<B> operator);
+		@Override
+		<O> RelationalExecutableEntityQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator);
+		
+		@Override
+		<S extends Collection<A>, A, B> RelationalExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
 		
 	}
 }

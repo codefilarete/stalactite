@@ -3,19 +3,19 @@ package org.codefilarete.stalactite.engine.runtime.load;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.tool.collection.ReadOnlyList;
 
 /**
  * @author Guillaume Mary
  */
-public interface JoinNode<T extends Table> {
+public interface JoinNode<T extends Fromable> {
 	
 	T getTable();
 	
-	Set<Column<T, Object>> getColumnsToSelect();
+	Set<Selectable<Object>> getColumnsToSelect();
 	
 	@Nullable
 	String getTableAlias();

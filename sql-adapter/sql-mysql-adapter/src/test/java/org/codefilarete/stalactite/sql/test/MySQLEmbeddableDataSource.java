@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -61,13 +60,15 @@ public class MySQLEmbeddableDataSource extends UrlAwareDataSource implements Clo
 				.withServerVariable("bind-address", "localhost")
 				.build();
 			
+			// /!\ if Mysql doesn't start under Windows, you may miss MSVCR100.dll,
+			// which is available in Microsoft Visual Studio 2010 redistributable package, download it and install it
 			db = com.wix.mysql.EmbeddedMysql.anEmbeddedMysql(config).start();
 			USED_PORTS.put(port, db);
 		}
 	}
 	
 	@Override
-	public void close() throws IOException {
+	public void close() {
 		USED_PORTS.get(port).stop(); //optional, as there is a shutdown hook
 	}
 }

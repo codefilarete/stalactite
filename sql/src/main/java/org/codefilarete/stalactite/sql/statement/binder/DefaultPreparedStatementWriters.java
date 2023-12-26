@@ -174,6 +174,12 @@ public final class DefaultPreparedStatementWriters {
 	 */
 	public static final PreparedStatementWriter<Path> PATH_WRITER = new NullAwarePreparedStatementWriter<>(new PathBinder());
 	
+	/**
+	 * {@link PreparedStatementWriter} for {@link Number}. Bound to {@link PreparedStatement#setDouble(int, double)}
+	 */
+	public static final PreparedStatementWriter<Number> NUMBER_WRITER = (preparedStatement, valueIndex, value)
+			-> preparedStatement.setDouble(valueIndex, value.doubleValue());
+	
 	private DefaultPreparedStatementWriters() {
 		// Class for constants
 	}

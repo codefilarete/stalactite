@@ -14,7 +14,7 @@ public class HSQLDBWriteOperation<ParamType> extends WriteOperation<ParamType> {
 	}
 	
 	/**
-	 * Overriden to call executeUpdate() instead of executeLargeUpdate() because HSQLDB 2.3.2 doesn't support it
+	 * Overridden to call executeUpdate() instead of executeLargeUpdate() because HSQLDB 2.3.2 doesn't support it
 	 */
 	@Override
 	protected long doExecuteUpdate() throws SQLException {
@@ -22,7 +22,7 @@ public class HSQLDBWriteOperation<ParamType> extends WriteOperation<ParamType> {
 	}
 	
 	/**
-	 * Overriden to call executeBatch() instead of executeLargeBatch() because HSQLDB 2.3.2 doesn't support it
+	 * Overridden to call executeBatch() instead of executeLargeBatch() because HSQLDB 2.3.2 doesn't support it
 	 */
 	@Override
 	protected long[] doExecuteBatch() throws SQLException {

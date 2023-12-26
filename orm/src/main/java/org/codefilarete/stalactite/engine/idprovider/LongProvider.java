@@ -18,7 +18,7 @@ public class LongProvider extends IdentifierSupplier<Long> {
 	
 	/**
 	 * Basic constructor. Starts from zero.
-	 * Usefull for test.
+	 * Useful for test.
 	 */
 	public LongProvider() {
 		this(0);

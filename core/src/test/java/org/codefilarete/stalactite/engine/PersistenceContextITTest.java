@@ -49,28 +49,38 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
 		
-		List<Toto> records = testInstance.select(Toto::new, selectMapping -> selectMapping.add(name, Toto::setName));
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(-1, "Hello"), new Toto(-1, "World")).toString());
+		Set<Toto> records = testInstance.select(Toto::new, selectMapping -> selectMapping.add(name, Toto::setName));
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(-1, "Hello"), new Toto(-1, "World"));
 		
 		records = testInstance.select(Toto::new, id);
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1), new Toto(2)).toString());
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(1), new Toto(2));
 		
 		records = testInstance.select(Toto::new, id, name);
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, "Hello"), new Toto(2, "World")).toString());
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(1, "Hello"), new Toto(2, "World"));
 		
 		records = testInstance.select(Toto::new, id,
 									  select -> select.add(name, Toto::setName).add(name, Toto::setName2));
-		assertThat(records).extracting(Toto::getName2).isEqualTo(Arrays.asList("Hello", "World"));
+		assertThat(records).extracting(Toto::getName2).containsExactlyInAnyOrder("Hello", "World");
 		
 		records = testInstance.select(Toto::new, id,
 									  select -> select.add(name, Toto::setName),
 									  where -> where.and(id, Operators.eq(1)));
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, "Hello")).toString());
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(1, "Hello"));
 		
 		records = testInstance.select(Toto::new, id,
 									  select -> select.add(name, Toto::setName),
 									  where -> where.and(id, Operators.eq(2)));
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(2, "World")).toString());
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(2, "World"));
 	}
 	
 	@Test
@@ -92,12 +102,14 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
 		
-		List<Toto> records = testInstance.select(Toto::new, id, dummyProp);
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World"))).toString());
+		Set<Toto> records = testInstance.select(Toto::new, id, dummyProp);
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World")));
 		
 		records = testInstance.select(Toto::new, id,
 									  select -> select.add(dummyProp, Toto::setDummyWrappedProp));
-		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).isEqualTo(Arrays.asList("Hello", "World"));
+		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).containsExactlyInAnyOrder("Hello", "World");
 	}
 	
 	@Test
@@ -119,12 +131,14 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, dummyProp) values (2, 'World')").execute();
 		
-		List<Toto> records = testInstance.select(Toto::new, id, dummyProp);
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World"))).toString());
+		Set<Toto> records = testInstance.select(Toto::new, id, dummyProp);
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(1, new Wrapper("Hello")), new Toto(2, new Wrapper("World")));
 		
 		records = testInstance.select(Toto::new, id,
 									  select -> select.add(dummyProp, Toto::setDummyWrappedProp));
-		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).isEqualTo(Arrays.asList("Hello", "World"));
+		assertThat(records).extracting(chain(Toto::getDummyWrappedProp, Wrapper::getSurrogate)).containsExactlyInAnyOrder("Hello", "World");
 	}
 	
 	@Test
@@ -142,10 +156,12 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, name) values (1, 'Hello')").execute();
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'World')").execute();
 		
-		List<Toto> records = testInstance.newQuery(QueryEase.select(id, name).from(totoTable), Toto.class)
+		Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).from(totoTable), Toto.class)
 				.mapKey(Toto::new, id, name)
 				.execute();
-		assertThat(records.toString()).isEqualTo(Arrays.asList(new Toto(1, "Hello"), new Toto(2, "World")).toString());
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(new Toto(1, "Hello"), new Toto(2, "World"));
 	}
 	
 	@Test
@@ -168,7 +184,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(id, name) values (2, 'Bonjour')").execute();
 		connection.prepareStatement("insert into Tata(totoId, name) values (2, 'Tout le monde')").execute();
 		
-		List<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).innerJoin(id, totoId),
+		Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).innerJoin(id, totoId),
 												   Toto.class)
 				.mapKey(Toto::new, id, name)
 				.map(Toto::setTata, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
@@ -177,7 +193,9 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		expectedToto1.setTata(new Tata("World"));
 		Toto expectedToto2 = new Toto(2, "Bonjour");
 		expectedToto2.setTata(new Tata("Tout le monde"));
-		assertThat(records.toString()).isEqualTo(Arrays.asList(expectedToto1, expectedToto2).toString());
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(expectedToto1, expectedToto2);
 	}
 	
 	@Test
@@ -202,7 +220,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		
 		BeanRelationFixer<Toto, Tata> tataCombiner = BeanRelationFixer.of(Toto::setTatas, Toto::getTatas, LinkedHashSet::new);
 		
-		List<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).leftOuterJoin(id, totoId),
+		Set<Toto> records = testInstance.newQuery(QueryEase.select(id, name).add(tataName, "tataName").from(totoTable).leftOuterJoin(id, totoId),
 												   Toto.class)
 				.mapKey(Toto::new, id, name)
 				.map(tataCombiner, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
@@ -210,7 +228,9 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 		Toto expectedToto1 = new Toto(1, "Hello");
 		expectedToto1.setTatas(Arrays.asSet(new Tata("World"), new Tata("Tout le monde")));
 		Toto expectedToto2 = new Toto(2, "Bonjour");
-		assertThat(records.toString()).isEqualTo(Arrays.asList(expectedToto1, expectedToto2).toString());
+		assertThat(records)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(expectedToto1, expectedToto2);
 	}
 	
 	private static class Toto {

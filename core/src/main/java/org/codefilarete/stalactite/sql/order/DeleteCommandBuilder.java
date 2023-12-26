@@ -5,42 +5,53 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.builder.*;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
+import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
-import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.WhereBuilder;
-import org.codefilarete.stalactite.query.model.ColumnCriterion;
-import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
  * A SQL builder for {@link Delete} objects
- * Can hardly be mutualized with {@link DMLGenerator} because the latter doesn't handle multi
+ * Can hardly be shared with {@link DMLGenerator} because the latter doesn't handle multi
  * tables update.
  * 
  * @author Guillaume Mary
  */
-public class DeleteCommandBuilder implements SQLBuilder {
+public class DeleteCommandBuilder implements SQLBuilder, PreparedSQLBuilder {
 	
 	private final Delete delete;
+	private final Dialect dialect;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public DeleteCommandBuilder(Delete delete) {
+	public DeleteCommandBuilder(Delete delete, Dialect dialect) {
 		this.delete = delete;
+		this.dialect = dialect;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
 	}
 	
 	@Override
 	public String toSQL() {
 		return toSQL(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dmlNameProvider);
+	}
+	
+	@Override
+	public PreparedSQL toPreparedSQL() {
+		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
+		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
+		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
+		
+		// final assembly
+		PreparedSQL result = new PreparedSQL(sql, preparedSQLWrapper.getParameterBinders());
+		result.setValues(preparedSQLWrapper.getValues());
+		return result;
 	}
 	
 	private String toSQL(SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
@@ -77,20 +88,9 @@ public class DeleteCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (delete.getCriteria().iterator().hasNext()) {
 			result.cat(" where ");
-			WhereBuilder whereBuilder = new WhereBuilder(this.delete.getCriteria(), dmlNameProvider);
-			whereBuilder.appendSQL(result);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereSqlBuilder().whereBuilder(this.delete.getCriteria(), dmlNameProvider);
+			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();
-	}
-	
-	public PreparedSQL toStatement(ColumnBinderRegistry columnBinderRegistry) {
-		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
-		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
-		
-		// final assembly
-		PreparedSQL result = new PreparedSQL(sql, preparedSQLWrapper.getParameterBinders());
-		result.setValues(preparedSQLWrapper.getValues());
-		return result;
 	}
 }

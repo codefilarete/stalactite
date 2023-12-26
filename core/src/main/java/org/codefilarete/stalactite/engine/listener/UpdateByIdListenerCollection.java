@@ -6,37 +6,37 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class UpdateByIdListenerCollection<T> implements UpdateByIdListener<T> {
+public class UpdateByIdListenerCollection<C> implements UpdateByIdListener<C> {
 	
-	private List<UpdateByIdListener<T>> updateByIdListeners = new ArrayList<>();
+	private List<UpdateByIdListener<C>> updateByIdListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeUpdateById(Iterable<T> entities) {
+	public void beforeUpdateById(Iterable<? extends C> entities) {
 		updateByIdListeners.forEach(listener -> listener.beforeUpdateById(entities));
 	}
 	
 	@Override
-	public void afterUpdateById(Iterable<T> entities) {
+	public void afterUpdateById(Iterable<? extends C> entities) {
 		updateByIdListeners.forEach(listener -> listener.afterUpdateById(entities));
 	}
 	
 	@Override
-	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
-		updateByIdListeners.forEach(listener -> listener.onError(entities, runtimeException));
+	public void onUpdateError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+		updateByIdListeners.forEach(listener -> listener.onUpdateError(entities, runtimeException));
 	}
 	
-	public void add(UpdateByIdListener<T> updateByIdListener) {
+	public void add(UpdateByIdListener<C> updateByIdListener) {
 		this.updateByIdListeners.add(updateByIdListener);
 	}
 	
 	/**
 	 * Move internal listeners to given instance.
-	 * Usefull to agregate listeners into a single instance.
+	 * Useful to aggregate listeners into a single instance.
 	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
 	 *
 	 * @param updateByIdListener the target listener on which the one of current instance must be moved to.
 	 */
-	public void moveTo(UpdateByIdListenerCollection<T> updateByIdListener) {
+	public void moveTo(UpdateByIdListenerCollection<C> updateByIdListener) {
 		updateByIdListener.updateByIdListeners.addAll(this.updateByIdListeners);
 		this.updateByIdListeners.clear();
 	}

@@ -40,7 +40,7 @@ public class PooledSequenceIdentifierProviderTest {
 	}
 	
 	@Test
-	public void testGiveNewIdentifier() {
+	public void giveNewIdentifier() {
 		// Creation of an in-memory database pooled sequence generator
 		sequenceIdentifierGenerator = new PooledHiLoSequence(new PooledHiLoSequenceOptions(10, "Toto", SequenceStorageOptions.DEFAULT),
 				persistenceContext.getDialect(), (SeparateTransactionExecutor) persistenceContext.getConnectionProvider(), persistenceContext.getJDBCBatchSize());
@@ -58,7 +58,7 @@ public class PooledSequenceIdentifierProviderTest {
 		List<Long> generated = new ArrayList<>();
 		List<Long> expectedGeneration = new ArrayList<>();
 		// we start at 0 since the sequence will do so since the database is empty
-		for (int i = 0; i < 15; i++) {
+		for (int i = 1; i < 15; i++) {
 			long persistableIdentifier = testInstance.giveNewIdentifier();
 			generated.add(persistableIdentifier);
 			expectedGeneration.add((long) i);
@@ -69,7 +69,7 @@ public class PooledSequenceIdentifierProviderTest {
 	}
 	
 	@Test
-	public void testGiveNewIdentifier_persistenceContextDoesntProvideSeparateTransactionExecutor_throwsException() {
+	public void giveNewIdentifier_persistenceContextDoesntProvideSeparateTransactionExecutor_throwsException() {
 		// we create a PersistenceContext that doesn't have a SeparateTransactionExecutor as connection provider,
 		// it will cause error later
 		PersistenceContext persistenceContext = new PersistenceContext(new CurrentThreadConnectionProvider(new HSQLDBInMemoryDataSource()),

@@ -157,6 +157,11 @@ public final class DefaultResultSetReaders {
 	 */
 	public static final NullAwareResultSetReader<Path> PATH_READER = new NullAwareResultSetReader<>(new PathBinder());
 	
+	/**
+	 * {@link ResultSetReader} for {@link Number}. Bound to {@link ResultSet#getDouble(String)}
+	 */
+	public static final ResultSetReader<Number> NUMBER_READER = ResultSet::getDouble;
+	
 	private DefaultResultSetReaders() {
 		// Class for constants
 	}

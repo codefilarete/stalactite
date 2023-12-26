@@ -6,6 +6,15 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequence;
+import org.codefilarete.stalactite.mapping.id.sequence.PooledHiLoSequenceOptions;
+import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
+import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.function.Sequence;
 
 /**
@@ -22,6 +31,18 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	
 	@Override
 	ColumnOptions<C, I> setByConstructor();
+	
+	@Override
+	ColumnOptions<C, I> readonly();
+	
+	@Override
+	ColumnOptions<C, I> columnName(String name);
+	
+	@Override
+	ColumnOptions<C, I> column(Column<? extends Table, ?> column);
+	
+	@Override
+	ColumnOptions<C, I> fieldName(String name);
 	
 	/**
 	 * Available identifier policies for entities.
@@ -42,7 +63,34 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		/**
 		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
 		 * Reader may be interested in {@link PooledHiLoSequence}.
+		 * Sequence data will be stored as specified through {@link SequenceStorageOptions#DEFAULT}
 		 * 
+		 * @return a new policy that will be used to get the identifier value
+		 * @see #beforeInsert(SequenceStorageOptions) 
+		 */
+		static BeforeInsertIdentifierPolicy<Long> beforeInsert() {
+			return new DefaultBeforeInsertIdentifierPolicySupport();
+		}
+		
+		/**
+		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
+		 * Reader may be interested in {@link PooledHiLoSequence}.
+		 *
+		 * @param sequenceStorageOptions the options about table to store sequence data
+		 * @return a new policy that will be used to get the identifier value
+		 * @see SequenceStorageOptions#DEFAULT
+		 * @see SequenceStorageOptions#HIBERNATE_DEFAULT
+		 */
+		static BeforeInsertIdentifierPolicy<Long> beforeInsert(SequenceStorageOptions sequenceStorageOptions) {
+			return new DefaultBeforeInsertIdentifierPolicySupport(sequenceStorageOptions);
+		}
+		
+		/**
+		 * Policy for entities that want their id fixed just before insert which value is given by a {@link Sequence}.
+		 * Be aware that given sequence will be shared across all managed entities, meaning that, for instance,
+		 * if it is a long sequence, an integer value can't be found twice in whole entities.   
+		 * Reader may be interested in other {@link #beforeInsert()} methods to avoid such sharing behavior.
+		 *
 		 * @param sequence the {@link Sequence} to ask for identifier value
 		 * @param <I> identifier type
 		 * @return a new policy that will be used to get the identifier value
@@ -86,9 +134,23 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 	 */
 	interface BeforeInsertIdentifierPolicy<I> extends IdentifierPolicy<I> {
 		
-		Sequence<I> getIdentifierProvider();
+		/**
+		 * Expected to return a {@link Sequence} for given arguments
+		 *
+		 * @param entityType entity to get a sequence for
+		 * @param connectionConfiguration elements to get access to database, its {@link ConnectionProvider} is a {@link SeparateTransactionExecutor}
+		 * @param dialect useful to build DML statements that manage sequence value persistence
+		 * @return
+		 */
+		Sequence<I> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect);
 	}
 	
+	/**
+	 * Before-insert identifier policy that will used given {@link Sequence} for all entities.
+	 * 
+	 * @param <I>
+	 * @author Guillaume Mary
+	 */
 	class BeforeInsertIdentifierPolicySupport<I> implements BeforeInsertIdentifierPolicy<I> {
 		
 		private final Sequence<I> identifierProvider;
@@ -98,13 +160,48 @@ public interface ColumnOptions<C, I> extends PropertyOptions {
 		}
 		
 		@Override
-		public Sequence<I> getIdentifierProvider() {
+		public Sequence<I> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect) {
+			// we return sequence given at construction time 
 			return identifierProvider;
 		}
 	}
 	
 	/**
-	 * Contract for already-assigned identifier policy. Requires the methods that store entities persistence state.
+	 * Default configuration to store sequence values for before-insert identifier policy
+	 * 
+	 * @author Guillaume Mary
+	 */
+	class DefaultBeforeInsertIdentifierPolicySupport implements BeforeInsertIdentifierPolicy<Long> {
+		
+		private final SequenceStorageOptions storageOptions;
+		
+		public DefaultBeforeInsertIdentifierPolicySupport() {
+			this.storageOptions = SequenceStorageOptions.DEFAULT;
+		}
+		
+		public DefaultBeforeInsertIdentifierPolicySupport(SequenceStorageOptions sequenceStorageOptions) {
+			this.storageOptions = sequenceStorageOptions;
+		}
+		
+		/**
+		 * Overridden to dynamically build a {@link Sequence} for given arguments while using storage options given at
+		 * construction time
+		 */
+		@Override
+		public Sequence<Long> getIdentifierProvider(Class<?> entityType, ConnectionConfiguration connectionConfiguration, Dialect dialect) {
+			PooledHiLoSequenceOptions options = new PooledHiLoSequenceOptions(50, entityType.getSimpleName());
+			ConnectionProvider connectionProvider = connectionConfiguration.getConnectionProvider();
+			if (!(connectionProvider instanceof SeparateTransactionExecutor)) {
+				throw new MappingConfigurationException("Before-insert identifier policy configured with connection that doesn't support separate transaction,"
+						+ " please provide a " + Reflections.toString(SeparateTransactionExecutor.class) + " as connection provider or change identifier policy");
+			}
+			return new PooledHiLoSequence(options,
+					new SequencePersister(storageOptions, dialect, (SeparateTransactionExecutor) connectionProvider, connectionConfiguration.getBatchSize()));
+		}
+	}
+	
+	/**
+	 * Contract for already-assigned identifier policy. Requires the methods that store entity persistence state.
 	 * @param <I> identifier type
 	 */
 	interface AlreadyAssignedIdentifierPolicy<C, I> extends IdentifierPolicy<I> {

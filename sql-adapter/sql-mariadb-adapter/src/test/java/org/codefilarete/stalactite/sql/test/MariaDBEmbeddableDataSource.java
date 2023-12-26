@@ -45,7 +45,7 @@ public class MariaDBEmbeddableDataSource extends UrlAwareDataSource implements C
 		start();
 		MariaDbDataSource delegate;
 		try {
-			delegate = new MariaDbDataSource("localhost", port, databaseName);
+			delegate = new MariaDbDataSource(getUrl());
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
 		}

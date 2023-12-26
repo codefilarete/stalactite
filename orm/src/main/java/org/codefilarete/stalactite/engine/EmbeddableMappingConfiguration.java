@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -24,7 +25,7 @@ public interface EmbeddableMappingConfiguration<C> {
 	
 	List<Linkage> getPropertiesMapping();
 	
-	Collection<Inset<C, ?>> getInsets();
+	Collection<Inset<C, Object>> getInsets();
 	
 	@Nullable
 	ColumnNamingStrategy getColumnNamingStrategy();
@@ -67,6 +68,9 @@ public interface EmbeddableMappingConfiguration<C> {
 		ReversibleAccessor<C, O> getAccessor();
 		
 		@Nullable
+		Field getField();
+		
+		@Nullable
 		String getColumnName();
 		
 		Class<O> getColumnType();
@@ -77,5 +81,11 @@ public interface EmbeddableMappingConfiguration<C> {
 		
 		/** Indicates if this property is managed by entity constructor (information coming from user) */
 		boolean isSetByConstructor();
+		
+		/** Indicates if this property should not be writable to database */
+		boolean isReadonly();
+		
+		@Nullable
+		String getExtraTableName();
 	}
 }

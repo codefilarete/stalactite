@@ -13,7 +13,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.engine.runtime.UpdateExecutor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -46,7 +46,7 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 																			 mapping, identifier,
 																			 new AlreadyAssignedIdentifierManager<>(Long.class, c -> {}, c -> false));
 		
-		Persister<Tata, Long, T> persisterStub = new Persister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(ConnectionConfiguration.class)) {
+		BeanPersister<Tata, Long, T> persisterStub = new BeanPersister<Tata, Long, T>(mappingStrategyMock, mock(Dialect.class), mock(ConnectionConfiguration.class)) {
 			
 			@Override
 			protected UpdateExecutor<Tata, Long, T> newUpdateExecutor(EntityMapping<Tata, Long, T> mappingStrategy, ConnectionConfiguration connectionConfiguration, DMLGenerator dmlGenerator, WriteOperationFactory writeOperationFactory, int inOperatorMaxSize) {
@@ -55,7 +55,7 @@ public class AfterUpdateCollectionCascaderTest extends AbstractCascaderTest {
 					
 					@Override
 					public void update(Iterable<? extends Duo<Tata, Tata>> differencesIterable, boolean allColumnsStatement) {
-						// Overriden to do no action, because default super action is complex to mock
+						// Overridden to do no action, because default super action is complex to mock
 					}
 				};
 			}

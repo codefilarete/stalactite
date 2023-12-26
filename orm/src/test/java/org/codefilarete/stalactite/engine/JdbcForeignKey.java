@@ -25,7 +25,7 @@ class JdbcForeignKey {
 		this.targetTableName = targetTableName;
 	}
 	
-	public JdbcForeignKey(ForeignKey<? extends Table, ? extends Table> fk) {
+	public JdbcForeignKey(ForeignKey<? extends Table, ? extends Table, ?> fk) {
 		this(fk.getName(),
 				fk.getTable().getName(),
 				Iterables.first(fk.getColumns()).getName(),
@@ -33,13 +33,33 @@ class JdbcForeignKey {
 				Iterables.first(fk.getTargetColumns()).getName());
 	}
 	
+	public String getName() {
+		return name;
+	}
+
+	public String getSrcColumnName() {
+		return srcColumnName;
+	}
+
+	public String getSrcTableName() {
+		return srcTableName;
+	}
+
+	public String getTargetColumnName() {
+		return targetColumnName;
+	}
+
+	public String getTargetTableName() {
+		return targetTableName;
+	}
+	
 	String getSignature() {
 		return "JdbcForeignKey{" +
 				"name='" + name + '\'' +
-				", srcColumnName='" + srcColumnName + '\'' +
 				", srcTableName='" + srcTableName + '\'' +
-				", targetColumnName='" + targetColumnName + '\'' +
+				", srcColumnName='" + srcColumnName + '\'' +
 				", targetTableName='" + targetTableName + '\'' +
+				", targetColumnName='" + targetColumnName + '\'' +
 				'}';
 	}
 }

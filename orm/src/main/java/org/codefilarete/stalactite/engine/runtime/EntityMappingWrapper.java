@@ -1,17 +1,16 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nonnull;
 import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.mapping.AbstractTransformer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.RowTransformer;
+import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -22,7 +21,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class EntityMappingWrapper<C, I, T extends Table> implements EntityMapping<C, I, T> {
+public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMapping<C, I, T> {
 	
 	private final EntityMapping<C, I, T> surrogate;
 	
@@ -81,13 +80,11 @@ public class EntityMappingWrapper<C, I, T extends Table> implements EntityMappin
 	}
 	
 	@Override
-	@Nonnull
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
 		return surrogate.getInsertValues(c);
 	}
 	
 	@Override
-	@Nonnull
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		return surrogate.getUpdateValues(modified, unmodified, allColumns);
 	}
@@ -98,12 +95,12 @@ public class EntityMappingWrapper<C, I, T extends Table> implements EntityMappin
 	}
 	
 	@Override
-	public <O> void addShadowColumnInsert(ShadowColumnValueProvider<C, O, T> valueProvider) {
+	public void addShadowColumnInsert(ShadowColumnValueProvider<C, T> valueProvider) {
 		surrogate.addShadowColumnInsert(valueProvider);
 	}
 	
 	@Override
-	public <O> void addShadowColumnUpdate(ShadowColumnValueProvider<C, O, T> valueProvider) {
+	public void addShadowColumnUpdate(ShadowColumnValueProvider<C, T> valueProvider) {
 		surrogate.addShadowColumnUpdate(valueProvider);
 	}
 	
@@ -113,7 +110,7 @@ public class EntityMappingWrapper<C, I, T extends Table> implements EntityMappin
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
 		surrogate.addPropertySetByConstructor(accessor);
 	}
 	
@@ -123,7 +120,12 @@ public class EntityMappingWrapper<C, I, T extends Table> implements EntityMappin
 	}
 	
 	@Override
-	public AbstractTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		return surrogate.getReadonlyPropertyToColumn();
+	}
+	
+	@Override
+	public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
 		return surrogate.copyTransformerWithAliases(columnedRow);
 	}
 	

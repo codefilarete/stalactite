@@ -24,7 +24,7 @@ import org.codefilarete.tool.exception.Exceptions;
  * Provider. Hence, it is expected that dialect implementors declare them through META-INF/services/DialectResolver.DialectResolverEntry
  * file. Then when {@link #determineDialect(Connection)} is invoked, database metadata are compared to compatibility given by entries: only entries
  * whom product name exactly matches database one are kept, then comparing version, the highest dialect among smaller than database one is selected.
- * For example, if database is "A wonderfull database 3.8", and 3 dialects for "A wonderfull database" are present with "3.1", "3.5" and "4.0" versions,
+ * For example, if database is "A wonderful database 3.8", and 3 dialects for "A wonderful database" are present with "3.1", "3.5" and "4.0" versions,
  * then the "3.5" will be selected.
  * 
  * Why such algorithm ? because a dialect is expected to benefit from database features, hence its version should be close to the one of the
@@ -78,11 +78,7 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 			
 			// we select the highest dialect among the smaller than database version
 			Entry<DatabaseSignet, DialectResolverEntry> foundEntry = dialectPerSortedCompatibility.floorEntry(databaseSignet);
-			if (foundEntry == null) {
-				return null;
-			} else {
-				return foundEntry.getValue();
-			}
+			return foundEntry == null ? null : foundEntry.getValue();
 		}
 	}
 	
@@ -92,7 +88,7 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 	static class DatabaseSignet {
 		
 		/**
-		 * Builds a {@link DatabaseSignet} from a connection to create the datatabase signature from its metadata.
+		 * Builds a {@link DatabaseSignet} from a connection to create the database signature from its metadata.
 		 * Could be a constructor but would require callers to handle {@link SQLException} which is quite boring, therefore this method handles it
 		 * by wrapping it into a {@link RuntimeException}
 		 * 
@@ -121,7 +117,7 @@ public class ServiceLoaderDialectResolver implements DialectResolver {
 		
 		/**
 		 * Constructor with mandatory elements.
-		 * See {@link #fromMetadata(Connection)} to buid one for a database.
+		 * See {@link #fromMetadata(Connection)} to build one for a database.
 		 * 
 		 * @param productName database product name, must be strictly equals to the one of database metadata, else detection algorithm will fail
 		 * @param majorVersion database product major version, as the one given by database metadata

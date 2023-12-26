@@ -1,16 +1,11 @@
 package org.codefilarete.stalactite.engine.listener;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
-import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
-import org.codefilarete.stalactite.engine.listener.DeleteListener;
-import org.codefilarete.stalactite.engine.listener.InsertListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
-import org.codefilarete.stalactite.engine.listener.SelectListener;
-import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
@@ -20,6 +15,7 @@ import org.mockito.Mockito;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyIterable;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -38,7 +34,7 @@ public class PersisterListenerCollectionTest {
 		testInstance.addSelectListener(listenerMock);
 		
 		ArrayList<Object> entities = new ArrayList<>();
-		ArrayList<Object> result = new ArrayList<>();
+		Set<Object> result = new HashSet<>();
 		assertThat(testInstance.doWithSelectListener(entities, () -> result)).isEqualTo(result);
 		
 		verify(listenerMock).beforeSelect(eq(entities));
@@ -58,8 +54,39 @@ public class PersisterListenerCollectionTest {
 				})).isSameAs(error);
 		
 		verify(listenerMock).beforeSelect(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
-		verify(listenerMock, never()).afterSelect(anyIterable());
+		verify(listenerMock).onSelectError(eq(entities), eq(error));
+		verify(listenerMock, never()).afterSelect(anySet());
+	}
+	
+	@Test
+	public void doWithPersistListener() {
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
+		PersistListener listenerMock = mock(PersistListener.class);
+		testInstance.addPersistListener(listenerMock);
+		
+		ArrayList<Object> entities = new ArrayList<>();
+		ArrayList<Object> result = new ArrayList<>();
+		assertThat(testInstance.doWithPersistListener(entities, () -> result)).isEqualTo(result);
+		
+		verify(listenerMock).beforePersist(eq(entities));
+		verify(listenerMock).afterPersist(eq(result));
+	}
+	
+	@Test
+	public void doWithPersistListener_onError() {
+		PersisterListenerCollection testInstance = new PersisterListenerCollection();
+		PersistListener listenerMock = mock(PersistListener.class);
+		testInstance.addPersistListener(listenerMock);
+		
+		ArrayList<Object> entities = new ArrayList<>();
+		RuntimeException error = new RuntimeException("This is the expected exception to be thrown");
+		assertThatThrownBy(() -> testInstance.doWithPersistListener(entities, () -> {
+			throw error;
+		})).isSameAs(error);
+		
+		verify(listenerMock).beforePersist(eq(entities));
+		verify(listenerMock).onPersistError(eq(entities), eq(error));
+		verify(listenerMock, never()).afterPersist(anyIterable());
 	}
 	
 	@Test
@@ -89,7 +116,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeInsert(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onInsertError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterInsert(anyIterable());
 	}
 	
@@ -121,7 +148,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeUpdate(eq(entities), eq(true));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onUpdateError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterUpdate(anyIterable(), eq(true));
 	}
 	
@@ -152,7 +179,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeUpdateById(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onUpdateError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterUpdateById(anyIterable());
 	}
 	
@@ -183,7 +210,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeDelete(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onDeleteError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterDelete(anyIterable());
 	}
 	
@@ -214,7 +241,7 @@ public class PersisterListenerCollectionTest {
 		})).isSameAs(error);
 		
 		verify(listenerMock).beforeDeleteById(eq(entities));
-		verify(listenerMock).onError(eq(entities), eq(error));
+		verify(listenerMock).onDeleteError(eq(entities), eq(error));
 		verify(listenerMock, never()).afterDeleteById(anyIterable());
 	}
 	
@@ -257,7 +284,7 @@ public class PersisterListenerCollectionTest {
 		Mockito.verify(expectedDeleteByIdListener, times(0)).beforeDeleteById(eq(entities));
 		Mockito.verify(expectedDeleteByIdListener, times(0)).afterDeleteById(eq(entities));
 		List<Object> entitiesIds = Arrays.asList(new Object());
-		List loadedEntities = new ArrayList();
+		Set loadedEntities = new HashSet();
 		testInstance.doWithSelectListener(entitiesIds, () -> loadedEntities);
 		Mockito.verify(expectedSelectListener, times(0)).beforeSelect(eq(entitiesIds));
 		Mockito.verify(expectedSelectListener, times(0)).afterSelect(eq(loadedEntities));

@@ -18,7 +18,7 @@ public interface RowTransformer<C> {
 	
 	AbstractTransformer<C> copyWithAliases(ColumnedRow columnedRow);
 	
-	void addTransformerListener(TransformerListener<C> listener);
+	void addTransformerListener(TransformerListener<? extends C> listener);
 	
 	/**
 	 * Small interface which instances will be invoked after row transformation, such as one can add any post-treatment to the bean row

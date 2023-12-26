@@ -2,11 +2,11 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.Collections;
 
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,26 +43,30 @@ class JoinRootTest {
 					entityJoinTree.addRelationJoin("XX", null, null, null, null, OUTER, null, Collections.emptySet());
 				})
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessage("No strategy with name XX exists to add a new strategy on");
+				.hasMessage("No join named XX exists to add a new join on");
 	}
 	
 	@Test
 	public void giveTables() {
 		ClassMapping totoMappingMock = buildMappingStrategyMock("Toto");
 		Table totoTable = totoMappingMock.getTargetTable();
-		Column totoPrimaryKey = totoTable.addColumn("id", long.class);
+		totoTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey totoPrimaryKey = totoTable.getPrimaryKey();
 		
 		ClassMapping tataMappingMock = buildMappingStrategyMock("Tata");
 		Table tataTable = tataMappingMock.getTargetTable();
-		Column tataPrimaryKey = tataTable.addColumn("id", long.class);
+		tataTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey tataPrimaryKey = tataTable.getPrimaryKey();
 		
 		ClassMapping tutuMappingMock = buildMappingStrategyMock("Tutu");
 		Table tutuTable = tutuMappingMock.getTargetTable();
-		Column tutuPrimaryKey = tutuTable.addColumn("id", long.class);
+		tutuTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey tutuPrimaryKey = tutuTable.getPrimaryKey();
 		
 		ClassMapping titiMappingMock = buildMappingStrategyMock("Titi");
 		Table titiTable = titiMappingMock.getTargetTable();
-		Column titiPrimaryKey = titiTable.addColumn("id", long.class);
+		titiTable.addColumn("id", long.class).primaryKey();
+		PrimaryKey titiPrimaryKey = titiTable.getPrimaryKey();
 		
 		EntityJoinTree entityJoinTree = new EntityJoinTree(new EntityMappingAdapter(totoMappingMock), totoMappingMock.getTargetTable());
 		String tataAddKey = entityJoinTree.addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME, new EntityMappingAdapter(tataMappingMock), totoPrimaryKey, tataPrimaryKey, null, INNER, null, Collections.emptySet());

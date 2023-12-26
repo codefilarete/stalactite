@@ -1,15 +1,14 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import javax.annotation.Nonnull;
 import java.util.Collections;
-import java.util.Set;
 
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.sql.ddl.structure.UniqueConstraint;
 import org.codefilarete.tool.StringAppender;
 
 /**
@@ -30,9 +29,9 @@ public class DDLTableGenerator {
 		this.dmlNameProvider = dmlNameProvider;
 	}
 	
-	public String generateCreateTable(Table table) {
+	public String generateCreateTable(Table<?> table) {
 		DDLAppender sqlCreateTable = new DDLAppender(dmlNameProvider, "create table ", table, "(");
-		for (Column column : (Set<Column>) table.getColumns()) {
+		for (Column<?, ?> column : table.getColumns()) {
 			generateCreateColumn(column, sqlCreateTable);
 			sqlCreateTable.cat(", ");
 		}
@@ -44,7 +43,7 @@ public class DDLTableGenerator {
 		return sqlCreateTable.toString();
 	}
 	
-	protected void generateCreatePrimaryKey(@Nonnull PrimaryKey primaryKey, DDLAppender sqlCreateTable) {
+	protected void generateCreatePrimaryKey(PrimaryKey primaryKey, DDLAppender sqlCreateTable) {
 		sqlCreateTable.cat(", primary key (")
 			.ccat(primaryKey.getColumns(), ", ")
 			.cat(")");
@@ -59,7 +58,7 @@ public class DDLTableGenerator {
 	protected String getSqlType(Column column) {
 		return typeMapping.getTypeName(column);
 	}
-
+	
 	public String generateCreateIndex(Index index) {
 		Table table = index.getTable();
 		StringAppender sqlCreateIndex = new DDLAppender(dmlNameProvider, "create")
@@ -77,6 +76,14 @@ public class DDLTableGenerator {
 				.cat(") references ", foreignKey.getTargetTable(), "(")
 				.ccat(foreignKey.getTargetColumns(), ", ");
 		return sqlCreateFK.cat(")").toString();
+	}
+	
+	public String generateCreateUniqueConstraint(UniqueConstraint uniqueConstraint) {
+		Table table = uniqueConstraint.getTable();
+		StringAppender sqlCreateIndex = new DDLAppender(dmlNameProvider, "alter table ")
+				.cat(table, " add constraint ", uniqueConstraint.getName(), " unique ", "(")
+				.ccat(uniqueConstraint.getColumns(), ", ");
+		return sqlCreateIndex.cat(")").toString();
 	}
 	
 	public String generateAddColumn(Column column) {
@@ -108,5 +115,4 @@ public class DDLTableGenerator {
 		DDLAppender sqlDropColumn = new DDLAppender(dmlNameProvider, "alter table ", column.getTable(), " drop column ", column);
 		return sqlDropColumn.toString();
 	}
-	
 }

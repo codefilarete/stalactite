@@ -1,15 +1,17 @@
 package org.codefilarete.stalactite.engine.model;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.codefilarete.stalactite.id.PersistableIdentifier;
+import org.codefilarete.stalactite.engine.model.Car.Radio;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 
 /**
  * @author Guillaume Mary
@@ -29,6 +31,24 @@ public class Person implements Identified<Long> {
 	private Vehicle vehicle;
 	
 	private Set<String> nicknames;
+	
+	private Map<String, String> phoneNumbers;
+	
+	private Map<AddressBookType, String> addressBook;
+	
+	private Map<Timestamp, String> addresses;
+	
+	private Map<String, Timestamp> contracts;
+	
+	private Map<Timestamp, Radio> mapPropertyMadeOfComplexTypes;
+	
+	private Map<Timestamp, Timestamp> mapPropertyMadeOfComplexTypesWithColumnDuplicates;
+	
+	private Map<Country, String> mapPropertyMadeOfEntityAsKey;
+	
+	private Map<String, Country> mapPropertyMadeOfEntityAsValue;
+	
+	private Map<City, Country> mapPropertyMadeOfEntityAsKeyAndValue;
 	
 	public Person() {
 	}
@@ -97,6 +117,78 @@ public class Person implements Identified<Long> {
 		this.nicknames.add(nickname);
 	}
 	
+	public Map<String, String> getPhoneNumbers() {
+		return phoneNumbers;
+	}
+	
+	public void setPhoneNumbers(Map<String, String> phoneNumbers) {
+		this.phoneNumbers = phoneNumbers;
+	}
+	
+	public Map<AddressBookType, String> getAddressBook() {
+		return addressBook;
+	}
+	
+	public void setAddressBook(Map<AddressBookType, String> addressBook) {
+		this.addressBook = addressBook;
+	}
+	
+	public Map<Timestamp, String> getAddresses() {
+		return addresses;
+	}
+	
+	public void setAddresses(Map<Timestamp, String> addresses) {
+		this.addresses = addresses;
+	}
+	
+	public Map<String, Timestamp> getContracts() {
+		return contracts;
+	}
+	
+	public void setContracts(Map<String, Timestamp> contracts) {
+		this.contracts = contracts;
+	}
+	
+	public Map<Timestamp, Radio> getMapPropertyMadeOfComplexTypes() {
+		return mapPropertyMadeOfComplexTypes;
+	}
+	
+	public void setMapPropertyMadeOfComplexTypes(Map<Timestamp, Radio> mapPropertyMadeOfComplexTypes) {
+		this.mapPropertyMadeOfComplexTypes = mapPropertyMadeOfComplexTypes;
+	}
+	
+	public Map<Timestamp, Timestamp> getMapPropertyMadeOfComplexTypesWithColumnDuplicates() {
+		return mapPropertyMadeOfComplexTypesWithColumnDuplicates;
+	}
+	
+	public void setMapPropertyMadeOfComplexTypesWithColumnDuplicates(Map<Timestamp, Timestamp> mapPropertyMadeOfComplexTypesWithColumnDuplicates) {
+		this.mapPropertyMadeOfComplexTypesWithColumnDuplicates = mapPropertyMadeOfComplexTypesWithColumnDuplicates;
+	}
+	
+	public Map<Country, String> getMapPropertyMadeOfEntityAsKey() {
+		return mapPropertyMadeOfEntityAsKey;
+	}
+	
+	public void setMapPropertyMadeOfEntityAsKey(Map<Country, String> mapPropertyMadeOfEntityAsKey) {
+		this.mapPropertyMadeOfEntityAsKey = mapPropertyMadeOfEntityAsKey;
+	}
+	
+	public Map<String, Country> getMapPropertyMadeOfEntityAsValue() {
+		return mapPropertyMadeOfEntityAsValue;
+	}
+	
+	public void setMapPropertyMadeOfEntityAsValue(Map<String, Country> mapPropertyMadeOfEntityAsValue) {
+		this.mapPropertyMadeOfEntityAsValue = mapPropertyMadeOfEntityAsValue;
+	}
+	
+	public Map<City, Country> getMapPropertyMadeOfEntityAsKeyAndValue() {
+		return mapPropertyMadeOfEntityAsKeyAndValue;
+	}
+	
+	public void setMapPropertyMadeOfEntityAsKeyAndValue(Map<City, Country> mapPropertyMadeOfEntityAsKeyAndValue) {
+		this.mapPropertyMadeOfEntityAsKeyAndValue = mapPropertyMadeOfEntityAsKeyAndValue;
+	}
+	
 	@Override
 	public boolean equals(Object o) {
 		return EqualsBuilder.reflectionEquals(this, o);
@@ -115,5 +207,12 @@ public class Person implements Identified<Long> {
 	@Override
 	public String toString() {
 		return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+	}
+	
+	public enum AddressBookType {
+		HOME,
+		SECONDARY_HOUSE,
+		BILLING_ADDRESS,
+		OTHER
 	}
 }

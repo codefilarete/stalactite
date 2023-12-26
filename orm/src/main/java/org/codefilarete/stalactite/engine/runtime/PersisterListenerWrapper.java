@@ -1,20 +1,25 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
+import org.codefilarete.stalactite.engine.listener.PersistListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
- * Class for wrapping calls to {@link EntityConfiguredJoinedTablesPersister#insert(Object)} and other update, delete, etc methods into
+ * Class for wrapping calls to {@link ConfiguredRelationalPersister#insert(Object)} and other update, delete, etc methods into
  * {@link InsertListener#beforeInsert(Iterable)} and {@link InsertListener#afterInsert(Iterable)} (and corresponding methods for other methods),
  * this is made through an internal {@link PersisterListenerCollection}.
  * 
@@ -24,32 +29,42 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	
 	private final PersisterListenerCollection<C, I> persisterListener = new PersisterListenerCollection<>();
 	
-	public PersisterListenerWrapper(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public PersisterListenerWrapper(ConfiguredRelationalPersister<C, I> surrogate) {
 		super(surrogate);
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener insertListener) {
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		this.persisterListener.addPersistListener(persistListener);
+	}
+	
+	@Override
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		this.persisterListener.addInsertListener(insertListener);
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener updateListener) {
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
 		this.persisterListener.addUpdateListener(updateListener);
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener selectListener) {
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		this.surrogate.addUpdateByIdListener(updateByIdListener);
+	}
+	
+	@Override
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		this.persisterListener.addSelectListener(selectListener);
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		this.persisterListener.addDeleteListener(deleteListener);
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener deleteListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		this.persisterListener.addDeleteByIdListener(deleteListener);
 	}
 	
@@ -59,12 +74,12 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		persisterListener.doWithDeleteListener(entities, () -> surrogate.delete(entities));
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		persisterListener.doWithDeleteByIdListener(entities, () -> surrogate.deleteById(entities));
 	}
 	
@@ -75,17 +90,31 @@ public class PersisterListenerWrapper<C, I> extends PersisterWrapper<C, I> {
 		}
 	}
 	
+	/**
+	 * Overriden to wrap invokations with persister listeners
+	 * @param entities
+	 */
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public void persist(Iterable<? extends C> entities) {
+		if (!Iterables.isEmpty(entities)) {
+			persisterListener.doWithPersistListener(entities, () -> {
+				// we redirect all invokations to ourselves because targetted methods invoke their listeners
+				PersistExecutor.persist(entities, this::isNew, this, this, this, this::getId);
+			});
+		}
+	}
+
+	@Override
+	public Set<C> select(Iterable<I> ids) {
 		if (Iterables.isEmpty(ids)) {
-			return new ArrayList<>();
+			return new HashSet<>();
 		} else {
 			return persisterListener.doWithSelectListener(ids, () -> surrogate.select(ids));
 		}
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		if (!Iterables.isEmpty(entities)) {
 			persisterListener.doWithUpdateByIdListener(entities, () -> surrogate.updateById(entities));
 		}

@@ -3,21 +3,21 @@ package org.codefilarete.stalactite.engine.runtime.cycle;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
-import org.codefilarete.stalactite.engine.configurer.CascadeOneConfigurer;
-import org.codefilarete.stalactite.engine.configurer.CascadeOneConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 
 /**
- * Container of {@link CascadeOneConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).
+ * Container of {@link OneToOneRelationConfigurer}s of same entity type and their relation name (through {@link RelationConfigurer}).
  * Expected to exist as a one-per-entity-type.
  * 
- * As a {@link PostInitializer}, will invoke every registered {@link CascadeOneConfigurer}
- * {@link CascadeOneConfigurer#appendCascadesWith2PhasesSelect(String, EntityConfiguredJoinedTablesPersister, FirstPhaseCycleLoadListener) appendCascadesWith2PhasesSelect method}
+ * As a {@link PostInitializer}, will invoke every registered {@link OneToOneRelationConfigurer}
+ * {@link OneToOneRelationConfigurer#configureWithSelectIn2Phases(String, ConfiguredRelationalPersister, FirstPhaseCycleLoadListener) configureWithSelectIn2Phases method}
  * with a {@link OneToOneCycleLoader}.
  * 
- * @param <TRGT> type of all registered {@link CascadeOneConfigurer}
+ * @param <TRGT> type of all registered {@link OneToOneRelationConfigurer}
  */
 public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	
@@ -29,21 +29,21 @@ public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	}
 	
 	public <SRC> void addCycleSolver(String relationIdentifier,
-									 CascadeOneConfigurer<SRC, TRGT, ?, ?> cascadeOneConfigurer) {
-		this.relations.add(new RelationConfigurer<>(relationIdentifier, cascadeOneConfigurer));
+									 OneToOneRelationConfigurer<SRC, TRGT, ?, ?> oneToOneRelationConfigurer) {
+		this.relations.add(new RelationConfigurer<>(relationIdentifier, oneToOneRelationConfigurer));
 	}
 	
 	@Override
-	public void consume(EntityConfiguredJoinedTablesPersister<TRGT, Object> targetPersister) {
+	public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
 		registerRelationLoader(targetPersister);
 	}
 	
-	private <SRC, TRGTID> void registerRelationLoader(EntityConfiguredJoinedTablesPersister<TRGT, TRGTID> targetPersister) {
+	private <SRC, TRGTID> void registerRelationLoader(ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister) {
 		OneToOneCycleLoader<SRC, TRGT, TRGTID> oneToOneCycleLoader = new OneToOneCycleLoader<>(targetPersister);
 		targetPersister.addSelectListener(oneToOneCycleLoader);
 		relations.forEach((RelationConfigurer c) -> {
 			String tableAlias = c.relationName.replaceAll("\\W", "_");
-			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.cascadeOneConfigurer.appendCascadesWith2PhasesSelect(
+			CascadeConfigurationResult<SRC, TRGT> configurationResult = c.oneToOneRelationConfigurer.configureWithSelectIn2Phases(
 					tableAlias, targetPersister, oneToOneCycleLoader);
 			oneToOneCycleLoader.addRelation(c.relationName, configurationResult);
 		});
@@ -52,12 +52,12 @@ public class OneToOneCycleConfigurer<TRGT> extends PostInitializer<TRGT> {
 	private class RelationConfigurer<SRC, SRCID, TRGTID> {
 		
 		private final String relationName;
-		private final CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> cascadeOneConfigurer;
+		private final OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> oneToOneRelationConfigurer;
 		
 		public RelationConfigurer(String relationName,
-								  CascadeOneConfigurer<SRC, TRGT, SRCID, TRGTID> cascadeOneConfigurer) {
+								  OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> oneToOneRelationConfigurer) {
 			this.relationName = relationName;
-			this.cascadeOneConfigurer = cascadeOneConfigurer;
+			this.oneToOneRelationConfigurer = oneToOneRelationConfigurer;
 		}
 	}
 }

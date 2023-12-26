@@ -4,27 +4,26 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
+import java.util.Set;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.State;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +31,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
 import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * @author Guillaume Mary
@@ -73,7 +73,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.map(Country::getName)
 				.map(Country::getDescription)
 				.mapOneToOne(Country::getPresident, personMappingConfiguration)
-				.mapOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(RelationMode.READ_ONLY)
+				.mapOneToMany(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(RelationMode.READ_ONLY)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -91,7 +91,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				);
 			}
 		};
-		JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+		JdbcForeignKey foundForeignKey = first(fkPersonIterator);
 		JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_COUNTRY_PRESIDENTID_PERSON_ID", "COUNTRY", "PRESIDENTID", "PERSON", "ID");
 		assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		
@@ -106,7 +106,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				);
 			}
 		};
-		foundForeignKey = Iterables.first(fkCityIterator);
+		foundForeignKey = first(fkCityIterator);
 		expectedForeignKey = new JdbcForeignKey("FK_CITY_COUNTRYID_COUNTRY_ID", "CITY", "COUNTRYID", "COUNTRY", "ID");
 		assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 	}
@@ -118,7 +118,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.mapOneToOne(Country::getPresident, personMappingConfiguration).cascading(ALL)
-				.mapOneToManySet(Country::getCities, cityMappingConfiguration).cascading(ALL)
+				.mapOneToMany(Country::getCities, cityMappingConfiguration).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -142,9 +142,9 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		Country persistedCountry = countryPersister.select(dummyCountry.getId());
 		assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
 		assertThat(persistedCountry.getPresident().getName()).isEqualTo("French president");
-		assertThat(Iterables.first(persistedCountry.getCities()).getName()).isEqualTo("Paris");
+		assertThat(first(persistedCountry.getCities()).getName()).isEqualTo("Paris");
 		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
-		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
+		assertThat(first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 		
 		// testing update cascade
 		persistedCountry.getPresident().setName("New french president");
@@ -158,7 +158,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry.getPresident().getName()).isEqualTo("New french president");
 		assertThat(persistedCountry.getCities()).extracting(City::getName).containsExactlyInAnyOrder("Grenoble", "Paris");
 		assertThat(persistedCountry.getPresident().getId().isPersisted()).isTrue();
-		assertThat(Iterables.first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
+		assertThat(first(persistedCountry.getCities()).getId().isPersisted()).isTrue();
 	}
 	
 	
@@ -172,8 +172,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.mapOneToManySet(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
-				.mapOneToManySet(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
+				.mapOneToMany(Country::getCities, cityMappingConfiguration).mappedBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
+				.mapOneToMany(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -207,13 +207,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		City grenoble = new City(cityIdProvider.giveNewIdentifier());
 		grenoble.setName("Grenoble");
 		persistedCountry.addCity(grenoble);
-		Iterables.first(persistedCountry.getCities()).setName("changed");
+		first(persistedCountry.getCities()).setName("changed");
 		
 		persistedCountry.getStates().remove(ain);
 		State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
 		ardeche.setName("ardeche");
 		persistedCountry.addState(ardeche);
-		Iterables.first(persistedCountry.getStates()).setName("changed");
+		first(persistedCountry.getStates()).setName("changed");
 		
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
@@ -227,11 +227,11 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		assertThat(persistedCountry2.getCities().stream().map(City::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "Grenoble"));
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
-		// Ain should'nt have been deleted because we didn't asked for orphan removal
-		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+		// Ain shouldn't have been deleted because we didn't asked for orphan removal
+		Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 				.mapKey(Long::new, "id", long.class)
 				.execute();
-		assertThat(Iterables.first(loadedAin)).isNotNull();
+		assertThat(first(loadedAin)).isNotNull();
 	}
 	
 	@Test
@@ -244,8 +244,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.mapOneToManyList(Country::getAncientCities, cityMappingConfiguration).reverselySetBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL)
-				.mapOneToManySet(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
+				.mapOneToMany(Country::getAncientCities, cityMappingConfiguration).reverselySetBy(City::setCountry).cascading(ALL_ORPHAN_REMOVAL).indexed()
+				.mapOneToMany(Country::getStates, stateMappingBuilder).mappedBy(State::setCountry).cascading(ALL)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -282,13 +282,13 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		City grenoble = new City(cityIdProvider.giveNewIdentifier());
 		grenoble.setName("Grenoble");
 		persistedCountry.addAncientCity(grenoble);
-		Iterables.first(persistedCountry.getAncientCities()).setName("changed");
+		first(persistedCountry.getAncientCities()).setName("changed");
 		
 		persistedCountry.getStates().remove(ain);
 		State ardeche = new State(new PersistableIdentifier<>(cityIdProvider.giveNewIdentifier()));
 		ardeche.setName("ardeche");
 		persistedCountry.addState(ardeche);
-		Iterables.first(persistedCountry.getStates()).setName("changed");
+		first(persistedCountry.getStates()).setName("changed");
 		
 		countryPersister.update(persistedCountry, dummyCountry, true);
 		
@@ -303,10 +303,10 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 				"Grenoble"));
 		assertThat(persistedCountry2.getStates().stream().map(State::getName).collect(toSet())).isEqualTo(Arrays.asHashSet("changed", "ardeche"));
 		
-		// Ain should'nt have been deleted because we didn't asked for orphan removal
-		List<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
+		// Ain shouldn't have been deleted because we didn't asked for orphan removal
+		Set<Long> loadedAin = persistenceContext.newQuery("select id from State where id = " + ain.getId().getSurrogate(), Long.class)
 				.mapKey(Long::new, "id", long.class)
 				.execute();
-		assertThat(Iterables.first(loadedAin)).isNotNull();
+		assertThat(first(loadedAin)).isNotNull();
 	}
 }

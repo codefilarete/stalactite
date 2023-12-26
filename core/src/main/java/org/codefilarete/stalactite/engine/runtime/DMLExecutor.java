@@ -6,12 +6,12 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 
 /**
- * CRUD Persistent features dedicated to an entity class. Kind of sliding door of {@link Persister} aimed at running
+ * CRUD Persistent features dedicated to an entity class. Kind of sliding door of {@link BeanPersister} aimed at running
  * actions for it.
  * 
  * @author Guillaume Mary
  */
-public abstract class DMLExecutor<C, I, T extends Table> {
+public abstract class DMLExecutor<C, I, T extends Table<T>> {
 	
 	private final EntityMapping<C, I, T> mapping;
 	private final ConnectionProvider connectionProvider;

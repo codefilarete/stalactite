@@ -1,8 +1,8 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.sql.DataSource;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
@@ -64,11 +64,11 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
@@ -97,11 +97,11 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		carPersister.insert(dummyCar);
 		assertThat(dummyCar.getEngine().getId()).isNotNull();
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(2L);	// 2 because Engin was inserted first and sequence is shared between Car and Engine (for tests purpose)
@@ -134,11 +134,11 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		carPersister.insert(dummyCar);
 		assertThat(dummyCar.getEngine().getId()).isNotNull();
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);	// 1 because Car was inserted first because it owns the property
@@ -153,12 +153,12 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
-				.mapInheritance(inheritanceConfiguration)
+				.mapSuperClass(inheritanceConfiguration)
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
-				.mapInheritance(inheritanceConfiguration2)
+				.mapSuperClass(inheritanceConfiguration2)
 				.build(persistenceContext);
 		
 		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo(
@@ -174,11 +174,11 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);
@@ -192,12 +192,12 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 				.getConfiguration();
 		
 		EntityMappingConfiguration<Vehicle, Long> inheritanceConfiguration2 = entityBuilder(Vehicle.class, long.class)
-				.mapInheritance(inheritanceConfiguration).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration).withJoinedTable()
 				.getConfiguration();
 		
 		EntityPersister<Car, Long> carPersister = entityBuilder(Car.class, long.class)
 				.map(Car::getModel)
-				.mapInheritance(inheritanceConfiguration2).withJoinedTable()
+				.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
 		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
@@ -213,11 +213,11 @@ public class FluentEntityMappingConfigurationSupportBeforeInsertIdentifierTest {
 		// insert test
 		carPersister.insert(dummyCar);
 		
-		List<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
+		Set<Car> allCars = persistenceContext.newQuery("select id, model from Car", Car.class)
 				.mapKey((SerializableFunction<Long, Car>) Car::new, "id", long.class)
 				.map("model", Car::setModel)
 				.execute();
-		assertThat(allCars).isEqualTo(Arrays.asList(dummyCar));
+		assertThat(allCars).containsExactlyInAnyOrder(dummyCar);
 		
 		// select test
 		Car loadedCar = carPersister.select(1L);

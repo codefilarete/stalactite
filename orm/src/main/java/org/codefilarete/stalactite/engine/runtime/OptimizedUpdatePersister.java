@@ -51,10 +51,10 @@ import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
 
 /**
  * Persister with optimized {@link #update(Object, Consumer)} method by leveraging an internal cache so only one select is really executed. 
- * Acts as a proxy over a delegate {@link EntityConfiguredJoinedTablesPersister persister} to enhance its {@link #update(Object, Consumer)}
+ * Acts as a proxy over a delegate {@link ConfiguredRelationalPersister persister} to enhance its {@link #update(Object, Consumer)}
  * method.
  * <strong>
- * It requires that given {@link EntityConfiguredJoinedTablesPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
+ * It requires that given {@link ConfiguredRelationalPersister} uses a {@link CachingQueryConnectionProvider}, this is done at build time
  * ({@link PersisterBuilderImpl}) by calling {@link #wrapWithQueryCache(ConnectionConfiguration)}.
  * </strong>
  * 
@@ -90,7 +90,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		return new ConnectionConfigurationSupport(connectionProvider, connectionConfiguration.getBatchSize());
 	}
 	
-	public OptimizedUpdatePersister(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public OptimizedUpdatePersister(ConfiguredRelationalPersister<C, I> surrogate) {
 		super(surrogate);
 	}
 	
@@ -123,8 +123,8 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	@Experimental
 	@Override
 	public void update(Iterable<I> ids, Consumer<C> entityConsumer) {
-		Holder<List<C>> referenceEntity = new Holder<>();
-		Holder<List<C>> entityToModify = new Holder<>();
+		Holder<Set<C>> referenceEntity = new Holder<>();
+		Holder<Set<C>> entityToModify = new Holder<>();
 		ThreadLocals.doWithThreadLocal(QUERY_CACHE, HashMap::new, (Runnable) () -> {
 			// Thanks to query cache this first select will be executed and its result put into QUERY_CACHE
 			referenceEntity.set(select(ids));
@@ -257,7 +257,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 			}
 			
 			/**
-			 * Overriden to put data in cache at the very end of iteration (when <pre>super.next()</pre> returns false)
+			 * Overridden to put data in cache at the very end of iteration (when <pre>super.next()</pre> returns false)
 			 * @return false when there's no more row to read
 			 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 			 */

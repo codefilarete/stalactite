@@ -6,29 +6,31 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.codefilarete.stalactite.engine.runtime.SelectExecutor.InternalExecutor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.IdMapping;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.statement.ColumnParameterizedSelect;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.test.PairSetList;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.codefilarete.stalactite.test.PairSetList.pairSetList;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
@@ -36,16 +38,16 @@ import static org.mockito.Mockito.*;
 /**
  * @author Guillaume Mary
  */
-class SelectExecutorTest extends AbstractDMLExecutorMockTest {
+class SelectExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
 	
-	private SelectExecutor<Toto, Integer, Table> testInstance;
+	private SelectExecutor<Toto, Integer, T> testInstance;
 	
 	@BeforeEach
 	public void setUp() throws SQLException {
-		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 	}
@@ -71,11 +73,11 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(jdbcMock.preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		SQLOperationListener<Column<Table, Object>> listenerMock = mock(SQLOperationListener.class);
+		SQLOperationListener<Column<T, Object>> listenerMock = mock(SQLOperationListener.class);
 		testInstance.setOperationListener(listenerMock);
 		
-		ArgumentCaptor<Map<Column<Table, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
-		ArgumentCaptor<SQLStatement<Column<Table, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
+		ArgumentCaptor<Map<Column<T, Object>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
+		ArgumentCaptor<SQLStatement<Column<T, Object>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
 		
 		testInstance.select(Arrays.asList(1, 2));
 		
@@ -84,9 +86,13 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(1)).onValuesSet(statementArgCaptor.capture());
-		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-				Maps.asHashMap(colA, Arrays.asList(1, 2))
-		));
+		ExtendedMapAssert.assertThatMap((Map<Column, List<Integer>>) (Map) statementArgCaptor.getAllValues().get(0))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getAbsoluteName().equals(entry2.getKey().getAbsoluteName())
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(colA, Arrays.asList(1, 2))
+				);
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
 		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("select a, b, c from Toto where a in (?, ?)");
 	}
@@ -163,7 +169,7 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 		ResultSet resultSetMock = mock(ResultSet.class);
 		when(jdbcMock.preparedStatement.executeQuery()).thenReturn(resultSetMock);
 		
-		List<Toto> result = testInstance.select(Arrays.asList());
+		Set<Toto> result = testInstance.select(Arrays.asList());
 		
 		assertThat(result.isEmpty()).isTrue();
 		
@@ -175,9 +181,9 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void select_multiple_composedId_lastBlockContainsOneValue() throws SQLException {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		SelectExecutor<Toto, Toto, Table> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 		
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
@@ -198,9 +204,9 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void select_multiple_composedId_lastBlockContainsMultipleValue() throws SQLException {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		SelectExecutor<Toto, Toto, Table> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 		
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
@@ -221,9 +227,9 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void select_multiple_composedId_lastBlockSizeIsInOperatorSize() throws SQLException {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
-		SelectExecutor<Toto, Toto, Table> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, jdbcMock.transactionManager, dmlGenerator, 3);
 		
 		// mocking executeQuery not to return null because select method will use the ResultSet
 		ResultSet resultSetMock = mock(ResultSet.class);
@@ -243,11 +249,11 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 	}
 	
 	@Test
-	void execute() {
-		Table targetTable = new Table("Toto");
+	void internalExecutor_execute() {
+		T targetTable = (T) new Table("Toto");
 		Column id = targetTable.addColumn("id", long.class).primaryKey();
 		
-		ClassMapping mappingStrategyMock = mock(ClassMapping.class);
+		ClassMapping<Toto, Integer, T> mappingStrategyMock = mock(ClassMapping.class);
 		when(mappingStrategyMock.getTargetTable()).thenReturn(targetTable);
 		// the selected columns are plugged on the table ones
 		when(mappingStrategyMock.getSelectableColumns()).thenAnswer(invocation -> targetTable.getColumns());
@@ -268,9 +274,9 @@ class SelectExecutorTest extends AbstractDMLExecutorMockTest {
 		when(readOperationMock.getSqlStatement()).thenReturn(new ColumnParameterizedSelect("", new HashMap<>(), new HashMap<>(), new HashMap<>()));
 		
 		// we're going to check if values are correctly passed to the underlying ReadOperation
-		SelectExecutor<Toto, Integer, Table> testInstance = new SelectExecutor<>(mappingStrategyMock, mock(ConnectionProvider.class), new Dialect().getDmlGenerator(), 3);
 		ArgumentCaptor<Map> capturedValues = ArgumentCaptor.forClass(Map.class);
-		testInstance.new InternalExecutor().execute(readOperationMock, Arrays.asList(1, 2));
+		InternalExecutor<Toto, Integer, T> testInstance = new InternalExecutor<>(mappingStrategyMock);
+		testInstance.execute(readOperationMock, Arrays.asList(1, 2));
 		
 		verify(readOperationMock).setValues(capturedValues.capture());
 		assertThat(capturedValues.getValue()).isEqualTo(Maps.asMap(id, Arrays.asList(10, 20)));

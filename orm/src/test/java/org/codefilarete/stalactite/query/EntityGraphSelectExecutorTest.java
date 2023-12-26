@@ -4,14 +4,14 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
+import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
-import org.codefilarete.stalactite.engine.runtime.EntityConfiguredJoinedTablesPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.id.Identifier;
@@ -21,7 +21,6 @@ import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.collection.Arrays;
@@ -52,7 +51,7 @@ class EntityGraphSelectExecutorTest {
 		OptimizedUpdatePersister<Country, Identifier<Long>> persister = (OptimizedUpdatePersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
 			.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 			.map(Country::getName)
-			.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
+			.mapOneToMany(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName))
 					.mappedBy(City::getCountry)
@@ -67,8 +66,7 @@ class EntityGraphSelectExecutorTest {
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(43, 'Lyon', 12)").execute();
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(44, 'Grenoble', 12)").execute();
 		
-		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
-		EntityGraphSelectExecutor<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelectExecutor<>(persister.getEntityJoinTree(), connectionProvider, columnBinderRegistry);
+		EntityGraphSelectExecutor<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelectExecutor<>(persister.getEntityJoinTree(), connectionProvider, dialect);
 		
 		// Criteria tied to data formerly persisted
 		EntityCriteria<Country> countryEntityCriteriaSupport =
@@ -88,7 +86,7 @@ class EntityGraphSelectExecutorTest {
 		expectedCountry.setCities(Arrays.asSet(paris, lyon, grenoble));
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
-		List<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
+		Set<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
 				testInstance.loadGraph(((CriteriaProvider) countryEntityCriteriaSupport).getCriteria())
 		);
 		
@@ -110,10 +108,10 @@ class EntityGraphSelectExecutorTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "bigint");
 		
 		PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
-		EntityConfiguredJoinedTablesPersister<Country, Identifier<Long>> persister = (EntityConfiguredJoinedTablesPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
+		ConfiguredRelationalPersister<Country, Identifier<Long>> persister = (ConfiguredRelationalPersister<Country, Identifier<Long>>) entityBuilder(Country.class, Identifier.LONG_TYPE)
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
-				.mapOneToManySet(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
+				.mapOneToMany(Country::getCities, entityBuilder(City.class, Identifier.LONG_TYPE)
 						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 						.map(City::getName))
 				.mappedBy(City::getCountry)
@@ -127,7 +125,7 @@ class EntityGraphSelectExecutorTest {
 				.andMany(Country::getCities, City::getName, eq("Grenoble"));
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
-		List<Country> select = countryEntityCriteriaSupport.execute();
+		Set<Country> select = countryEntityCriteriaSupport.execute();
 		
 		assertThat(select).isEmpty();
 	}

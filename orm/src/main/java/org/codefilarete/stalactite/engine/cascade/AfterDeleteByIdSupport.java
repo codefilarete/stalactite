@@ -31,7 +31,7 @@ public class AfterDeleteByIdSupport<TRIGGER, TARGET> implements DeleteByIdListen
 	}
 
 	@Override
-	public void afterDeleteById(Iterable<TRIGGER> entities) {
+	public void afterDeleteById(Iterable<? extends TRIGGER> entities) {
 		afterDeleteAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toList()));
 	}
 }

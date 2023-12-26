@@ -1,8 +1,5 @@
 package org.codefilarete.stalactite.sql.test;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 import org.codefilarete.tool.bean.Randomizer;
 import org.h2.jdbcx.JdbcDataSource;
@@ -12,7 +9,7 @@ import org.h2.jdbcx.JdbcDataSource;
  * 
  * @author Guillaume Mary
  */
-public class H2InMemoryDataSource extends UrlAwareDataSource implements Closeable {
+public class H2InMemoryDataSource extends UrlAwareDataSource {
 	
 	public H2InMemoryDataSource() {
 		// random URL to avoid conflict between tests
@@ -22,10 +19,5 @@ public class H2InMemoryDataSource extends UrlAwareDataSource implements Closeabl
 		delegate.setUser("sa");
 		delegate.setPassword("");
 		setDelegate(delegate);
-	}
-	
-	@Override
-	public void close() throws IOException {
-		// nothing to do because H2DataSource doesn't need to be closed 
 	}
 }

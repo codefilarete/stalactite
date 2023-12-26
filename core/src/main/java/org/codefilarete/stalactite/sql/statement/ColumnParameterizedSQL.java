@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterI
  * 
  * @author Guillaume Mary
  */
-public class ColumnParameterizedSQL<T extends Table> extends ExpandableStatement<Column<T, Object>> {
+public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatement<Column<T, Object>> {
 	
 	private final Map<Column<T, Object>, int[]> columnIndexes;
 	
@@ -35,24 +35,12 @@ public class ColumnParameterizedSQL<T extends Table> extends ExpandableStatement
 	}
 	
 	@Override
-	protected String getParameterName(Column column) {
+	protected String getParameterName(Column<T, Object> column) {
 		return column.getAbsoluteName();
 	}
 	
-	/**
-	 * Hides {@link org.codefilarete.stalactite.sql.statement.SQLStatement#getParameterBinder(Object)} due to class generic type erasure, but this signature allows
-	 * to get the writer type that matched column's one
-	 * 
-	 * @param parameter any non null column
-	 * @param <O> column value type
-	 * @return super.getParameterBinder(parameter)
-	 * @see org.codefilarete.stalactite.sql.statement.SQLStatement#getParameterBinder(Object) 
-	 */
-	public <O> PreparedStatementWriter<O> getParameterBinder(Column<T, O> parameter) {
-		return super.getParameterBinder((Column) parameter);
-	}
-	
-	public int[] getIndexes(Column column) {
+	@Override
+	public int[] getIndexes(Column<T, Object> column) {
 		return columnIndexes.get(column);
 	}
 }

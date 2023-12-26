@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,10 +34,10 @@ public class WholeResultSetTransformerTest {
 	
 	@Test
 	public void testTransform() throws SQLException {
-		String chickenInstanciationColumnName = "chickenName";
+		String chickenInstantiationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(
-				Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+				Chicken.class, chickenInstantiationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER,
 				(chicken, colorName) -> chicken.getLeftWing().add(new Feather(new FeatherColor(colorName)))
 		);
@@ -44,11 +45,11 @@ public class WholeResultSetTransformerTest {
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster")
+						.add(chickenInstantiationColumnName, "rooster")
 						.add("leftFeatherNumber", 1)
 						.add(leftFeatherColorColumnName, "red"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster")
+						.add(chickenInstantiationColumnName, "rooster")
 						.add("leftFeatherNumber", 1)
 						.add(leftFeatherColorColumnName, "black")
 		));
@@ -75,10 +76,10 @@ public class WholeResultSetTransformerTest {
 	
 	@Test
 	public void testTransform_shareBeanInstances() throws SQLException {
-		String chickenInstanciationColumnName = "chickenName";
+		String chickenInstantiationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstantiationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
 			if (color != null) {	// prevent addition of Feather with a null color
 				chicken.getLeftWing().add(new Feather(color));
@@ -94,13 +95,13 @@ public class WholeResultSetTransformerTest {
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster")
+						.add(chickenInstantiationColumnName, "rooster")
 						.add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "red"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster")
+						.add(chickenInstantiationColumnName, "rooster")
 						.add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "black"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster")
+						.add(chickenInstantiationColumnName, "rooster")
 						.add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null)
 		));
 		
@@ -142,9 +143,9 @@ public class WholeResultSetTransformerTest {
 	 */
 	@Test
 	public void testTransform_withInnerClass() throws SQLException {
-		String wingInstanciationColumnName = "wingName";
+		String wingInstantiationColumnName = "wingName";
 		String leftFeatherColorColumnName = "featherColor";
-		WholeResultSetTransformer<String, WingInner> testInstance = new WholeResultSetTransformer<>(WingInner.class, wingInstanciationColumnName, STRING_READER, WingInner::new);
+		WholeResultSetTransformer<String, WingInner> testInstance = new WholeResultSetTransformer<>(WingInner.class, wingInstantiationColumnName, STRING_READER, WingInner::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER,
 				// Simply instantiate the inner class as usual
 				// No need to be added to the wing instance because the constructor does it
@@ -154,10 +155,10 @@ public class WholeResultSetTransformerTest {
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(wingInstanciationColumnName, "left")
+						.add(wingInstantiationColumnName, "left")
 						.add(leftFeatherColorColumnName, "red"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(wingInstanciationColumnName, "left")
+						.add(wingInstantiationColumnName, "left")
 						.add(leftFeatherColorColumnName, "black")
 		));
 		
@@ -185,10 +186,10 @@ public class WholeResultSetTransformerTest {
 	 */
 	@Test
 	public void testTransformAll() {
-		String chickenInstanciationColumnName = "chickenName";
+		String chickenInstantiationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstantiationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
 			if (color != null) {	// prevent addition of Feather with a null color
 				chicken.getLeftWing().add(new Feather(color));
@@ -204,17 +205,17 @@ public class WholeResultSetTransformerTest {
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "red"),
+						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "red"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "black"),
+						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "black"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null)
+						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null)
 		));
 		
-		List<Chicken> result = testInstance.transformAll(resultSet);
+		Set<Chicken> result = testInstance.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		
-		Chicken rooster = result.get(0);
+		Chicken rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Two colors on left : red and black
 		assertThat(rooster.getLeftWing().getFeathers().stream()
@@ -239,10 +240,10 @@ public class WholeResultSetTransformerTest {
 	@ParameterizedTest
 	@MethodSource("testTransform_withReuse")
 	public void transform_copyWithAliases(ResultSetTransformer<String, FeatherColor> featherColorTestInstance) {
-		String chickenInstanciationColumnName = "chickenName";
+		String chickenInstantiationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstantiationColumnName, STRING_READER, Chicken::new);
 		
 		BeanRelationFixer<Chicken, FeatherColor> leftChickenFeatherColorCombiner = (chicken, color) -> {
 			chicken.getLeftWing().add(new Feather(color));
@@ -282,26 +283,26 @@ public class WholeResultSetTransformerTest {
 		// a ResultSet that retrieves all the feathers of a unique Chicken
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(translatingColumnFunction.apply(chickenInstanciationColumnName), "rooster")
+						.add(translatingColumnFunction.apply(chickenInstantiationColumnName), "rooster")
 						.add(translatingColumnFunction.apply(rightFeatherColorColumnName), null)
 						.add(translatingColumnFunction.apply(leftFeatherColorColumnName), "red")
 						.add(translatingColumnFunction.apply(sneakyFeatherColorColumnName), "pink"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(translatingColumnFunction.apply(chickenInstanciationColumnName), "rooster")
+						.add(translatingColumnFunction.apply(chickenInstantiationColumnName), "rooster")
 						.add(translatingColumnFunction.apply(rightFeatherColorColumnName), null)
 						.add(translatingColumnFunction.apply(leftFeatherColorColumnName), "black")
 						.add(translatingColumnFunction.apply(sneakyFeatherColorColumnName), "pink"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(translatingColumnFunction.apply(chickenInstanciationColumnName), "rooster")
+						.add(translatingColumnFunction.apply(chickenInstantiationColumnName), "rooster")
 						.add(translatingColumnFunction.apply(rightFeatherColorColumnName), "black")
 						.add(translatingColumnFunction.apply(leftFeatherColorColumnName), null)
 						.add(translatingColumnFunction.apply(sneakyFeatherColorColumnName), "pink")
 		));
 		
-		List<Chicken> result = testInstance.transformAll(resultSet);
+		Set<Chicken> result = testInstance.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		
-		Chicken rooster = result.get(0);
+		Chicken rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Colors on left : red, black and pink put by dummy row transformer
 		assertThat(rooster.getLeftWing().getFeathers().stream()
@@ -320,10 +321,10 @@ public class WholeResultSetTransformerTest {
 	
 	@Test
 	public void copyFor() {
-		String chickenInstanciationColumnName = "chickenName";
+		String chickenInstantiationColumnName = "chickenName";
 		String leftFeatherColorColumnName = "leftFeatherColor";
 		String rightFeatherColorColumnName = "rightFeatherColor";
-		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstantiationColumnName, STRING_READER, Chicken::new);
 		testInstance.add(leftFeatherColorColumnName, STRING_READER, FeatherColor.class, FeatherColor::new, (chicken, color) -> {
 			if (color != null) {	// prevent addition of Feather with a null color
 				chicken.getLeftWing().add(new Feather(color));
@@ -341,7 +342,7 @@ public class WholeResultSetTransformerTest {
 		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("yellow")), AssemblyPolicy.ONCE_PER_BEAN);
 		
 		ModifiableInt headCreationCounter = new ModifiableInt();
-		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstanciationColumnName, STRING_READER, s -> {
+		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstantiationColumnName, STRING_READER, s -> {
 			headCreationCounter.increment();	// this will be done once because of cache put by WholeResultSetTransformer
 			return new Head();
 		}));
@@ -351,18 +352,18 @@ public class WholeResultSetTransformerTest {
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "red").add("chicks", 3),
+						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "red").add("chicks", 3),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "black").add("chicks", 3),
+						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, null).add(leftFeatherColorColumnName, "black").add("chicks", 3),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster").add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null).add("chicks", 3)
+						.add(chickenInstantiationColumnName, "rooster").add(rightFeatherColorColumnName, "black").add(leftFeatherColorColumnName, null).add("chicks", 3)
 		));
 		
-		List<Rooster> result = testInstanceCopy.transformAll(resultSet);
+		Set<Rooster> result = testInstanceCopy.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
-		Rooster rooster = result.get(0);
+		Rooster rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		assertThat(rooster.getChickCount()).isEqualTo(3);
 		// Colors on left : red, black, and as many as were added by 
@@ -382,32 +383,32 @@ public class WholeResultSetTransformerTest {
 	
 	@Test
 	public void assemblyStrategy() {
-		String chickenInstanciationColumnName = "chickenName";
-		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstanciationColumnName, STRING_READER, Chicken::new);
+		String chickenInstantiationColumnName = "chickenName";
+		WholeResultSetTransformer<String, Chicken> testInstance = new WholeResultSetTransformer<>(Chicken.class, chickenInstantiationColumnName, STRING_READER, Chicken::new);
 		// we add a dummy assembler to ensure that they are also taken into account by copyFor(..)
 		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("pink")), AssemblyPolicy.ON_EACH_ROW);
 		testInstance.add((rootBean, resultSet) -> rootBean.addLeftFeather(new FeatherColor("yellow")), AssemblyPolicy.ONCE_PER_BEAN);
 		
 		ModifiableInt headCreationCounter = new ModifiableInt();
-		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstanciationColumnName, STRING_READER, s -> {
+		testInstance.add(Chicken::setHead, new ResultSetRowTransformer<>(Head.class, chickenInstantiationColumnName, STRING_READER, s -> {
 			headCreationCounter.increment();
 			return new Head();
 		}));
 		
 		InMemoryResultSet resultSet = new InMemoryResultSet(Arrays.asList(
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster"),
+						.add(chickenInstantiationColumnName, "rooster"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster"),
+						.add(chickenInstantiationColumnName, "rooster"),
 				Maps.forHashMap(String.class, Object.class)
-						.add(chickenInstanciationColumnName, "rooster")
+						.add(chickenInstantiationColumnName, "rooster")
 		));
 		
-		List<Chicken> result = testInstance.transformAll(resultSet);
+		Set<Chicken> result = testInstance.transformAll(resultSet);
 		assertThat(result.size()).isEqualTo(1);
 		assertThat(headCreationCounter.getValue()).isEqualTo(1);
 		
-		Chicken rooster = result.get(0);
+		Chicken rooster = Iterables.first(result);
 		assertThat(rooster.getName()).isEqualTo("rooster");
 		// Colors on left : red, black, and as many as were added by 
 		assertThat(rooster.getLeftWing().getFeathers().stream()
@@ -428,9 +429,9 @@ public class WholeResultSetTransformerTest {
 						.add("name", "paul").add("address", "rue Menon")
 		));
 		
-		List<Person> result = testInstance.transformAll(resultSet);
-		assertThat(result.get(0).getName()).isEqualTo("paul");
-		assertThat(result.get(0).getAddresses()).isEqualTo(Arrays.asList("rue Vaugirard", "rue Menon"));
+		Set<Person> result = testInstance.transformAll(resultSet);
+		assertThat(Iterables.first(result).getName()).isEqualTo("paul");
+		assertThat(Iterables.first(result).getAddresses()).isEqualTo(Arrays.asList("rue Vaugirard", "rue Menon"));
 	}
 	
 	public static class Chicken {

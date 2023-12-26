@@ -1,6 +1,11 @@
 package org.codefilarete.stalactite.sql;
 
+import java.util.Collections;
+
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.MySQLDDLTableGenerator;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -35,8 +40,17 @@ public class MySQLDialect extends Dialect {
 	}
 	
 	@Override
+	protected DMLGenerator newDmlGenerator(ColumnBinderRegistry columnBinderRegistry) {
+		return new DMLGenerator(columnBinderRegistry, NoopSorter.INSTANCE, new MySQLDMLNameProvider(Collections.emptyMap()));
+	}
+	
+	@Override
 	protected WriteOperationFactory newWriteOperationFactory() {
 		return new MySQLWriteOperationFactory();
 	}
 	
+	@Override
+	public boolean supportsTupleCondition() {
+		return true;
+	}
 }

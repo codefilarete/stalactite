@@ -31,7 +31,7 @@ public class BeforeDeleteSupport<TRIGGER, TARGET> implements DeleteListener<TRIG
 	}
 
 	@Override
-	public void beforeDelete(Iterable<TRIGGER> entities) {
+	public void beforeDelete(Iterable<? extends TRIGGER> entities) {
 		beforeDeleteAction.accept(Iterables.stream(entities).map(targetProvider).filter(targetFilter).collect(Collectors.toList()));
 	}
 }

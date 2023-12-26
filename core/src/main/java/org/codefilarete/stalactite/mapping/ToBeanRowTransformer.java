@@ -64,12 +64,12 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	 * @param beanFactory factory to be used to instantiate a new bean
 	 * @param columnToMember the mapping between key in rows and helper that fixes values of the bean
 	 */
-	public ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
+	public ToBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
 		super(beanFactory, new ColumnedRow());
 		this.columnToMember = columnToMember;
 	}
 	
-	protected ToBeanRowTransformer(Function<Function<Column, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
+	protected ToBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
 								   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
 		super(beanFactory, columnedRow, rowTransformerListeners);
 		this.columnToMember = columnToMember;
@@ -94,7 +94,7 @@ public class ToBeanRowTransformer<C> extends AbstractTransformer<C> {
 	/**
 	 * Allows to change the mapping used by this instance to a new one. A new instance is returned that will read keys according to the given
 	 * "sliding" function.
-	 * Helpfull to reuse a {@link RowTransformer} over multiple queries which different column aliases.
+	 * Helpful to reuse a {@link RowTransformer} over multiple queries which different column aliases.
 	 * 
 	 * @param columnedRow a wrapper that gives {@link Row} values by {@link Column}.
 	 * @return a new instance of {@link ToBeanRowTransformer} which read keys are those given by the function

@@ -5,14 +5,18 @@ package org.codefilarete.stalactite.engine.listener;
  */
 public interface PersisterListener<C, I> {
 	
-	void addInsertListener(InsertListener<C> insertListener);
+	void addPersistListener(PersistListener<? extends C> persistListener);
 	
-	void addUpdateListener(UpdateListener<C> updateListener);
+	void addInsertListener(InsertListener<? extends C> insertListener);
 	
-	void addSelectListener(SelectListener<C, I> selectListener);
+	void addUpdateListener(UpdateListener<? extends C> updateListener);
 	
-	void addDeleteListener(DeleteListener<C> deleteListener);
+	void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener);
 	
-	void addDeleteByIdListener(DeleteByIdListener<C> deleteListener);
+	void addSelectListener(SelectListener<? extends C, I> selectListener);
+	
+	void addDeleteListener(DeleteListener<? extends C> deleteListener);
+	
+	void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener);
 	
 }

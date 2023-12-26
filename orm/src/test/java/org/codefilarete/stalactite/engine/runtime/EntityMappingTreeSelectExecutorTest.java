@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -18,16 +17,17 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
 import org.codefilarete.stalactite.mapping.IdMapping;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -37,6 +37,7 @@ import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.HSQLDBTypeMapping;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -48,6 +49,8 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,15 +59,22 @@ import org.mockito.ArgumentCaptor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.test.PairSetList.pairSetList;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
  */
 public class EntityMappingTreeSelectExecutorTest {
+	
+	@BeforeEach
+	void initEntityCandidates() {
+		PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
+	}
+	
+	@AfterEach
+	void removeEntityCandidates() {
+		PersisterBuilderContext.CURRENT.remove();
+	}
 	
 	static ClassMapping buildMappingStrategyMock(Table table) {
 		ClassMapping mappingStrategyMock = mock(ClassMapping.class);
@@ -111,28 +121,28 @@ public class EntityMappingTreeSelectExecutorTest {
 	
 	@ParameterizedTest
 	@MethodSource("selectData")
-	public void testSelect(Table targetTable, List<String> expectedSql, PairSetList<Integer, Integer> expectedParameters) throws SQLException {
-		ClassMapping<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(targetTable);
+	public <T extends Table<T>> void select(T targetTable, List<String> expectedSql, PairSetList<Integer, Integer> expectedParameters) throws SQLException {
+		ClassMapping<Object, Object, T> classMappingStrategy = buildMappingStrategyMock(targetTable);
 		// mocking to prevent NPE from EntityMappingTreeSelectExecutor constructor
 		IdMapping idMappingMock = mock(IdMapping.class);
 		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
 		IdentifierAssembler t;
-		Set<Column> primaryKeyColumn = targetTable.getPrimaryKey().getColumns();
-		if (primaryKeyColumn.size() == 1) {
-			t = new SimpleIdentifierAssembler(Iterables.first(primaryKeyColumn));
+		PrimaryKey<T, Object> primaryKey = targetTable.getPrimaryKey();
+		if (!primaryKey.isComposed()) {
+			t = new SimpleIdentifierAssembler(Iterables.first(primaryKey.getColumns()));
 		} else {
-			t = new ComposedIdentifierAssembler(primaryKeyColumn) {
+			t = new ComposedIdentifierAssembler<Object, T>(primaryKey) {
 				@Nullable
 				@Override
-				protected Object assemble(Map primaryKeyElements) {
+				public Object assemble(Function<Column<?, ?>, Object> columnValueProvider) {
 					// this method is not called so we don't need to implement it
 					throw new NotImplementedException("Method is not expected to be called");
 				}
 				
 				@Override
-				public Map<Column, Object> getColumnValues(@Nonnull Object id) {
+				public Map<Column<T, Object>, Object> getColumnValues(Object id) {
 					// for simplicity we give the same value to all columns
-					return Iterables.map(primaryKeyColumn, Function.identity(), c -> id);
+					return Iterables.map(primaryKey.getColumns(), Function.identity(), c -> id);
 				}
 			};
 		}
@@ -145,6 +155,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		JdbcArgCaptor jdbcArgCaptor = new JdbcArgCaptor();
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(jdbcArgCaptor.connection);
 		EntityMappingTreeSelectExecutor testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
+		testInstance.prepareQuery();
 		
 		List<Integer> inputValues = Arrays.asList(11, 13, 17, 23);
 		testInstance.select(inputValues);
@@ -152,7 +163,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		// one query because in operator is bounded to 3 values
 		int expectedQueryCount = (int) Math.ceil(((double) inputValues.size()) / dialect.getInOperatorMaxSize());
 		verify(jdbcArgCaptor.preparedStatement, times(expectedQueryCount)).executeQuery();
-		int expectedParamCount = inputValues.size() * primaryKeyColumn.size();
+		int expectedParamCount = inputValues.size() * primaryKey.getColumns().size();
 		verify(jdbcArgCaptor.preparedStatement, times(expectedParamCount)).setInt(jdbcArgCaptor.indexCaptor.capture(), jdbcArgCaptor.valueCaptor.capture());
 		
 		assertThat(jdbcArgCaptor.statementArgCaptor.getAllValues()).isEqualTo(expectedSql);
@@ -161,7 +172,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		// We reassociate each couple to its query ("line") depending on its position in the captured values
 		PairIterator<Integer, Integer> capturedValues = new PairIterator<>(jdbcArgCaptor.indexCaptor.getAllValues(), jdbcArgCaptor.valueCaptor.getAllValues());
 		PairSetList<Object, Object> capturedValuesAsPairSetList = new PairSetList<>();
-		int paramCountPerQuery = primaryKeyColumn.size() * dialect.getInOperatorMaxSize();
+		int paramCountPerQuery = primaryKey.getColumns().size() * dialect.getInOperatorMaxSize();
 		Iterables.iterate(capturedValues, (i, c) -> {
 			// Because PairSetList contains already an empty line at instantiation time we should not add one at very first iteration (i != 0)  
 			if (i != 0 && i % paramCountPerQuery == 0) {
@@ -173,10 +184,10 @@ public class EntityMappingTreeSelectExecutorTest {
 	}
 	
 	@Test
-	public void testSelect_argumentWithOneBlock() throws SQLException {
+	public <T extends Table<T>> void select_argumentWithOneBlock() throws SQLException {
 		Table dummyTable = new Table("dummyTable");
 		Column dummyPK = dummyTable.addColumn("dummyPK", Integer.class).primaryKey();
-		ClassMapping<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(dummyTable);
+		ClassMapping<Object, Object, T> classMappingStrategy = buildMappingStrategyMock(dummyTable);
 		// mocking to prevent NPE from EntityMappingTreeSelectExecutor constructor
 		IdMapping idMappingMock = mock(IdMapping.class);
 		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
@@ -190,6 +201,7 @@ public class EntityMappingTreeSelectExecutorTest {
 		ConnectionProvider connectionProvider = new SimpleConnectionProvider(jdbcArgCaptor.connection);
 		
 		EntityMappingTreeSelectExecutor testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, dialect, connectionProvider);
+		testInstance.prepareQuery();
 		testInstance.select(Arrays.asList(11, 13));
 		
 		// one query because in operator is bounded to 3 values
@@ -205,8 +217,10 @@ public class EntityMappingTreeSelectExecutorTest {
 	}
 	
 	@Test
-	public void testSelect_emptyArgument() {
-		ClassMapping<Object, Object, Table> classMappingStrategy = buildMappingStrategyMock(new Table("dummyTable"));
+	public <T extends Table<T>> void select_emptyArgument() {
+		T dummyTable = (T) new Table("dummyTable");
+		dummyTable.addColumn("id", long.class).primaryKey();
+		ClassMapping<Object, Object, T> classMappingStrategy = buildMappingStrategyMock(dummyTable);
 		// mocking to prevent NPE from EntityMappingTreeSelectExecutor constructor
 		IdMapping idMappingMock = mock(IdMapping.class);
 		when(classMappingStrategy.getIdMapping()).thenReturn(idMappingMock);
@@ -215,32 +229,34 @@ public class EntityMappingTreeSelectExecutorTest {
 		Dialect dialect = new Dialect();
 		// we set a in operator size to test overflow
 		dialect.setInOperatorMaxSize(3);
-		EntityMappingTreeSelectExecutor<Object, Object, Table> testInstance = new EntityMappingTreeSelectExecutor<Object, Object, Table>(
-				classMappingStrategy, dialect, mock(ConnectionProvider.class)) {
+		ConnectionProvider connectionProvider = mock(ConnectionProvider.class);
+		EntityMappingTreeSelectExecutor<Object, Object, ?> testInstance = new EntityMappingTreeSelectExecutor<Object, Object, T>(
+			classMappingStrategy, dialect, connectionProvider) {
 			
 			@Override
 			InternalExecutor newInternalExecutor(EntityTreeQuery<Object> entityTreeQuery) {
-				return new InternalExecutor(entityTreeQuery, this.getConnectionProvider()) {
+				return new InternalExecutor(entityTreeQuery, connectionProvider) {
 					@Override
 					List<Object> execute(String sql, Collection<? extends List<Object>> idsParcels,
-										 Map<Column<Table, Object>, int[]> inOperatorValueIndexes) {
+										 Map<Column<T, Object>, int[]> inOperatorValueIndexes) {
 						capturedSQL.add(sql);
 						return Collections.emptyList();
 					}
 				};
 			}
 		};
+		testInstance.prepareQuery();
 		testInstance.select(Arrays.asList());
 		assertThat(capturedSQL.isEmpty()).isTrue();
 	}
 	
 	@Test
-	public void testExecute_realLife_composedId() throws SQLException {
+	public <T extends Table<T>> void execute_realLife_composedId() throws SQLException {
 		DataSource dataSource = new HSQLDBInMemoryDataSource(); 
-		Table targetTable = new Table("Toto");
-		Column<Table, Long> id1 = targetTable.addColumn("id1", long.class).primaryKey();
-		Column<Table, Long> id2 = targetTable.addColumn("id2", long.class).primaryKey();
-		Column<Table, String> name = targetTable.addColumn("name", String.class);
+		T targetTable = (T) new Table("Toto");
+		Column<T, Long> id1 = targetTable.addColumn("id1", long.class).primaryKey();
+		Column<T, Long> id2 = targetTable.addColumn("id2", long.class).primaryKey();
+		Column<T, String> name = targetTable.addColumn("name", String.class);
 		
 		ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
 		DDLDeployer ddlDeployer = new DDLDeployer(new SqlTypeRegistry(new HSQLDBTypeMapping()), connectionProvider);
@@ -264,32 +280,32 @@ public class EntityMappingTreeSelectExecutorTest {
 		currentConnection.commit();
 		
 		IdAccessor<Toto, Toto> idAccessor =
-				new SinglePropertyIdAccessor<>(Accessors.accessorByMethodReference(SerializableFunction.identity(), (toto, toto2) -> {
+				new AccessorWrapperIdAccessor<>(Accessors.accessorByMethodReference(SerializableFunction.identity(), (toto, toto2) -> {
 					toto.id1 = toto2.id1;
 					toto.id2 = toto2.id2;
 				}));
-		ClassMapping<Toto, Toto, Table> classMappingStrategy = new ClassMapping<Toto, Toto, Table>(Toto.class, targetTable,
-																								   (Map)
-				Maps.asMap((ReversibleAccessor) Accessors.accessorByMethodReference(Toto::getId1, Toto::setId1), (Column) id1)
+		ClassMapping<Toto, Toto, T> classMappingStrategy = new ClassMapping<Toto, Toto, T>(Toto.class, targetTable,
+				(Map) Maps.asMap((ReversibleAccessor) Accessors.accessorByMethodReference(Toto::getId1, Toto::setId1), (Column) id1)
 						.add(Accessors.accessorByMethodReference(Toto::getId2, Toto::setId2), id2)
 						.add(Accessors.accessorByMethodReference(Toto::getName, Toto::setName), name),
-																								   new ComposedIdMapping<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false)
-						, new ComposedIdentifierAssembler<Toto>(targetTable) {
+				new ComposedIdMapping<>(idAccessor, new AlreadyAssignedIdentifierManager<>(Toto.class, c -> {}, c -> false)
+						, new ComposedIdentifierAssembler<Toto, T>(targetTable) {
 					@Override
-					protected Toto assemble(Map<Column, Object> primaryKeyElements) {
-						return new Toto((long) primaryKeyElements.get(id1), (long) primaryKeyElements.get(id2));
+					public Toto assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+						return new Toto((long) columnValueProvider.apply(id1), (long) columnValueProvider.apply(id2));
 					}
 					
 					@Override
-					public <T extends Table<T>> Map<Column<T, Object>, Object> getColumnValues(@Nonnull Toto id) {
-						return Maps.asMap((Column<T, Object>) (Column) id1, (Object) id.id1).add((Column<T, Object>) (Column) id2, id.id2);
+					public Map<Column<T, Object>, Object> getColumnValues(Toto id) {
+						return (Map) Maps.forHashMap((Class<Column<T, ?>>) null, Object.class).add(id1, id.id1).add(id2, id.id2);
 					}
 				})
 		);
 		
 		// Checking that selected entities by their id are those expected
 		EntityMappingTreeSelectExecutor<Toto, Toto, ?> testInstance = new EntityMappingTreeSelectExecutor<>(classMappingStrategy, new HSQLDBDialect(), connectionProvider);
-		List<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
+		testInstance.prepareQuery();
+		Set<Toto> select = testInstance.select(Arrays.asList(new Toto(100, 1)));
 		assertThat(select.toString()).isEqualTo(Arrays.asList(entity1).toString());
 		
 		select = testInstance.select(Arrays.asList(new Toto(100, 1), new Toto(200, 2)));

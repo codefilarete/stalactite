@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -12,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ColumnNamingStrategyTest {
 	
 	@Test
-	public void testDefaultGetName() {
-		assertThat(ColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "setName", int.class))).isEqualTo("nameId");
-		assertThat(ColumnNamingStrategy.JOIN_DEFAULT.giveName(new AccessorDefinition(Toto.class, "getName", String.class))).isEqualTo("nameId");
+	void defaultGiveName() {
+		assertThat(ColumnNamingStrategy.DEFAULT.giveName(new AccessorDefinition(Toto.class, "setName", int.class))).isEqualTo("name");
+		assertThat(ColumnNamingStrategy.DEFAULT.giveName(new AccessorDefinition(Toto.class, "getName", String.class))).isEqualTo("name");
 	}
 	
 	private static class Toto {

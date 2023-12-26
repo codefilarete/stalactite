@@ -12,7 +12,7 @@ import static org.codefilarete.tool.collection.Iterables.stream;
 /**
  * @author Guillaume Mary
  */
-class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
+public class AssociationRecordInsertionCascader<SRC, TRGT, SRCID, TRGTID, C extends Collection<TRGT>>
 		extends AfterInsertCollectionCascader<SRC, AssociationRecord> {
 	
 	private final Function<SRC, C> collectionGetter;

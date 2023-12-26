@@ -15,32 +15,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.UUID;
 
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.BIGDECIMAL_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.BINARYSTREAM_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.BLOB_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.BOOLEAN_PRIMITIVE_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.BYTES_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.BYTE_PRIMITIVE_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.DATE_SQL_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.DOUBLE_PRIMITIVE_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.FLOAT_PRIMITIVE_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.INTEGER_PRIMITIVE_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.LONG_PRIMITIVE_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.STRING_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.TIMESTAMP_WRITER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.BIGDECIMAL_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.BINARYSTREAM_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.BLOB_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.BOOLEAN_PRIMITIVE_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.BYTES_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.BYTE_PRIMITIVE_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.DATE_SQL_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.DOUBLE_PRIMITIVE_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.FLOAT_PRIMITIVE_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.INTEGER_PRIMITIVE_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.LONG_PRIMITIVE_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.STRING_READER;
-import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.TIMESTAMP_READER;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultPreparedStatementWriters.*;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultResultSetReaders.*;
 
 /**
  * Default {@link ParameterBinder}s mapped to methods of {@link ResultSet} and {@link PreparedStatement} 
@@ -101,6 +77,12 @@ public final class DefaultParameterBinders {
 	 * Wrapped into a {@link NullAwareParameterBinder} to manage type boxing and unboxing.
 	 */
 	public static final ParameterBinder<Double> DOUBLE_BINDER = new NullAwareParameterBinder<>(DOUBLE_PRIMITIVE_BINDER);
+	
+	/**
+	 * {@link ParameterBinder} for {@link Number}. Bound to {@link PreparedStatement#setDouble(int, double)} and {@link PreparedStatement#setDouble(int, double)}.
+	 * Wrapped into a {@link NullAwareParameterBinder} to manage type boxing and unboxing.
+	 */
+	public static final ParameterBinder<Number> NUMBER_BINDER = new NullAwareParameterBinder<>(new LambdaParameterBinder<>(NUMBER_READER, NUMBER_WRITER));
 	
 	/**
 	 * {@link ParameterBinder} for {@link ResultSet#getFloat(String)} and {@link PreparedStatement#setFloat(int, float)}.

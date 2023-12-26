@@ -25,7 +25,7 @@ public class DatabaseHelper {
 	protected ResultSetIterator<String> lookupTables(Connection connection) {
 		ResultSet tablesResultSet;
 		try {
-			tablesResultSet = connection.getMetaData().getTables(null, null, null, null);
+			tablesResultSet = connection.getMetaData().getTables(null, null, null, new String[] { "TABLE" });
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
 		}

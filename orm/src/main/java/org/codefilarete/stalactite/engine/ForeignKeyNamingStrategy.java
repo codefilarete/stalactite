@@ -3,9 +3,16 @@ package org.codefilarete.stalactite.engine;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Comparator;
 
-import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.exception.Exceptions;
+import org.codefilarete.tool.trace.ModifiableInt;
+
+import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * Contract for giving a name to a foreign key
@@ -16,28 +23,61 @@ public interface ForeignKeyNamingStrategy {
 	
 	String DEFAULT_FOREIGNKEY_PREFIX = "FK_";
 	
-	String giveName(Column src, Column target);
+	Comparator<JoinLink<?, Object>> COLUMN_COMPARATOR = Comparator.comparing(JoinLink::getExpression);
+	
+	<SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target);
+	
+	ForeignKeyNamingStrategy HASH = new ForeignKeyNamingStrategy() {
+		@Override
+		public <SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target) {
+			// We ensure a consistent ordering of columns, regardless of the order they were bound.
+			ModifiableInt hashCode = new ModifiableInt(src.getTable().getAbsoluteName().hashCode());
+			target.getColumns().stream().sorted(COLUMN_COMPARATOR).forEach(joinLink -> {
+				hashCode.reset(hashCode.getValue() * 31 + joinLink.getExpression().hashCode());
+			});
+			return DEFAULT_FOREIGNKEY_PREFIX + Integer.toHexString(hashCode.getValue());
+		}
+	};
 	
 	/**
 	 * Composed of a prefix, source table name, source column name, target column name.
-	 * Must be quite unique to prevent Database such as HSQLDB to yiel because key names unicity is over a table space, not per table.
+	 * Must be quite unique to prevent Database such as HSQLDB to yel because key names uniqueness is over a table space, not per table.
 	 */
-	ForeignKeyNamingStrategy DEFAULT = (src, target) -> DEFAULT_FOREIGNKEY_PREFIX + src.getTable().getName() + "_" + src.getName()
-			+ "_" + target.getTable().getName() + "_" + target.getName();
+	ForeignKeyNamingStrategy DEFAULT = new ForeignKeyNamingStrategy() {
+		@Override
+		public <SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target) {
+			if (src.getColumns().size() == 1) {
+				return DEFAULT_FOREIGNKEY_PREFIX + src.getTable().getName() + "_" + ((Column) first(src.getColumns())).getName()
+						+ "_" + target.getTable().getName() + "_" + ((Column) first(target.getColumns())).getName();
+			} else {
+				return HASH.giveName(src, target);
+			}
+		}
+	};
 	
-	ForeignKeyNamingStrategy HASH = (src, target) -> DEFAULT_FOREIGNKEY_PREFIX
-			+ Integer.toHexString(src.getTable().getAbsoluteName().hashCode() * 31 * 31 + src.getName().hashCode() * 31 + target.getName().hashCode());
-	
-	/** Generates same name as Hibernate (4.3.7) does. From org.hibernate.mapping.Constraint#generateName(String, Table, Column... columns) */
-	ForeignKeyNamingStrategy HIBERNATE = (src, target) ->
-			"FK" + hashedName("table`" + src.getTable().getName() + "`" + "column`" + src.getName() + "`");
+	/**
+	 * Generates same name as Hibernate (4.3.7) does. From org.hibernate.mapping.Constraint#generateName(String, Table, Column... columns)
+	 */
+	ForeignKeyNamingStrategy HIBERNATE = new ForeignKeyNamingStrategy() {
+		@Override
+		public <SOURCETABLE extends Table<SOURCETABLE>, TARGETTABLE extends Table<TARGETTABLE>, ID> String giveName(Key<SOURCETABLE, ID> src, Key<TARGETTABLE, ID> target) {
+			// Use a concatenation that guarantees uniqueness, even if identical names
+			// exist between all table and column identifiers.
+			StringBuilder sb = new StringBuilder("table`" + src.getTable().getName() + "`");
+			
+			// We ensure a consistent ordering of columns, regardless of the order they were bound.
+			target.getColumns().stream().sorted(COLUMN_COMPARATOR).forEach(column -> sb.append("column`").append(column.getExpression()).append("`"));
+			return "FK" + hashName(sb.toString());
+		}
+	};
 	
 	/**
 	 * Same algorithm as Hibernate (4.3.7), see org.hibernate.mapping.Constraint#hashedName(String)
+	 *
 	 * @param s the string to be hashed
 	 * @return a hashed (MD5) version of the given String, less than 30 characters
 	 */
-	static String hashedName(String s) {
+	static String hashName(String s) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("MD5");
 			md.update(s.getBytes());

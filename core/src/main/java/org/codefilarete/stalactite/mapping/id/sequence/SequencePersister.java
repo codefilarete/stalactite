@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.mapping.id.sequence;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.tool.collection.Maps;
@@ -24,13 +24,13 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * 
  * @author Guillaume Mary
  */
-public class SequencePersister extends Persister<Sequence, String, SequenceTable> {
+public class SequencePersister extends BeanPersister<Sequence, String, SequenceTable> {
 	
 	/**
 	 * Constructor with default table and column names.
 	 * @param dialect the {@link Dialect} to use for database dialog
-	 * @param separateTransactionExecutor a transaction provider that mmust give a new and separate transaction
-	 * @param jdbcBatchSize the JDBC batch size, not really usefull for this class since it doesn't do massive insert
+	 * @param separateTransactionExecutor a transaction provider that must give a new and separate transaction
+	 * @param jdbcBatchSize the JDBC batch size, not really useful for this class since it doesn't do massive insert
 	 * @see SequenceStorageOptions#DEFAULT
 	 */
 	public SequencePersister(Dialect dialect, SeparateTransactionExecutor separateTransactionExecutor, int jdbcBatchSize) {

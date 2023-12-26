@@ -27,14 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Guillaume Mary
  */
-abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
+abstract class SelectExecutorITTest<T extends Table<T>> extends DatabaseIntegrationTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 													.with(Integer.class, "int"));
 	
 	@Test
 	void select() throws SQLException {
-		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = DMLExecutorTest.giveDefaultPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = DMLExecutorTest.giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		Connection connection = connectionProvider.giveConnection();
@@ -47,10 +47,10 @@ abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		
-		SelectExecutor<Toto, Integer, Table> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
+		SelectExecutor<Toto, Integer, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
 		
 		// test with 1 id
-		List<Toto> totos = testInstance.select(Arrays.asList(1));
+		Set<Toto> totos = testInstance.select(Arrays.asList(1));
 		Toto t = Iterables.first(totos);
 		assertThat((Object) t.a).isEqualTo(1);
 		assertThat((Object) t.b).isEqualTo(10);
@@ -58,16 +58,17 @@ abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
 		
 		// test with 3 ids
 		totos = testInstance.select(Arrays.asList(2, 3, 4));
-		List<Toto> expectedResult = Arrays.asList(
-			new Toto(2, 20, 200),
-			new Toto(3, 30, 300),
-			new Toto(4, 40, 400));
-		assertThat(totos.toString()).isEqualTo(expectedResult.toString());
+		assertThat(totos)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(2, 20, 200),
+						new Toto(3, 30, 300),
+						new Toto(4, 40, 400));
 	}
 	
 	@Test
 	void select_composedId_idIsItSelf() throws SQLException {
-		PersistenceConfiguration<Toto, Toto, Table> persistenceConfiguration = DMLExecutorTest.giveIdAsItselfPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Toto, T> persistenceConfiguration = DMLExecutorTest.giveIdAsItselfPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		Connection connection = connectionProvider.giveConnection();
@@ -80,19 +81,20 @@ abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Toto(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Toto(a, b, c) values (4, 40, 400)").execute();
 		
-		SelectExecutor<Toto, Toto, Table> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
-		List<Toto> result = testInstance.select(Arrays.asList(new Toto(1, 10, null), new Toto(2, 20, null), new Toto(3, 30, null), new Toto(4, 40, null)));
-		List<Toto> expectedResult = Arrays.asList(
-			new Toto(1, 10, 100),
-			new Toto(2, 20, 200),
-			new Toto(3, 30, 300),
-			new Toto(4, 40, 400));
-		assertThat(result.toString()).isEqualTo(expectedResult.toString());
+		SelectExecutor<Toto, Toto, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
+		Set<Toto> result = testInstance.select(Arrays.asList(new Toto(1, 10, null), new Toto(2, 20, null), new Toto(3, 30, null), new Toto(4, 40, null)));
+		assertThat(result)
+				.usingRecursiveFieldByFieldElementComparator()
+				.containsExactlyInAnyOrder(
+						new Toto(1, 10, 100),
+						new Toto(2, 20, 200),
+						new Toto(3, 30, 300),
+						new Toto(4, 40, 400));
 	}
 	
 	@Test
 	void select_composedId_idIsABean() throws SQLException {
-		PersistenceConfiguration<Tata, ComposedId, Table> persistenceConfiguration = DMLExecutorTest.giveComposedIdPersistenceConfiguration();
+		PersistenceConfiguration<Tata, ComposedId, T> persistenceConfiguration = DMLExecutorTest.giveComposedIdPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		
 		Connection connection = connectionProvider.giveConnection();
@@ -105,8 +107,8 @@ abstract class SelectExecutorITTest extends DatabaseIntegrationTest {
 		connection.prepareStatement("insert into Tata(a, b, c) values (3, 30, 300)").execute();
 		connection.prepareStatement("insert into Tata(a, b, c) values (4, 40, 400)").execute();
 		
-		SelectExecutor<Tata, ComposedId, Table> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
-		List<Tata> result = testInstance.select(Arrays.asList(new ComposedId(1, 10), new ComposedId(2, 20), new ComposedId(3, 30), new ComposedId(4, 40)));
+		SelectExecutor<Tata, ComposedId, T> testInstance = new SelectExecutor<>(persistenceConfiguration.classMappingStrategy, connectionProvider, dmlGenerator, 3);
+		Set<Tata> result = testInstance.select(Arrays.asList(new ComposedId(1, 10), new ComposedId(2, 20), new ComposedId(3, 30), new ComposedId(4, 40)));
 		Set<Tata> expectedResult = Arrays.asHashSet(
 			new Tata(1, 10, 100),
 			new Tata(2, 20, 200),

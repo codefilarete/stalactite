@@ -6,37 +6,37 @@ import java.util.List;
 /**
  * @author Guillaume Mary
  */
-public class DeleteListenerCollection<T> implements DeleteListener<T> {
+public class DeleteListenerCollection<C> implements DeleteListener<C> {
 	
-	private List<DeleteListener<T>> deleteListeners = new ArrayList<>();
+	private final List<DeleteListener<C>> deleteListeners = new ArrayList<>();
 	
 	@Override
-	public void beforeDelete(Iterable<T> entities) {
+	public void beforeDelete(Iterable<? extends C> entities) {
 		deleteListeners.forEach(listener -> listener.beforeDelete(entities));
 	}
 	
 	@Override
-	public void afterDelete(Iterable<T> entities) {
+	public void afterDelete(Iterable<? extends C> entities) {
 		deleteListeners.forEach(listener -> listener.afterDelete(entities));
 	}
 	
 	@Override
-	public void onError(Iterable<T> entities, RuntimeException runtimeException) {
-		deleteListeners.forEach(listener -> listener.onError(entities, runtimeException));
+	public void onDeleteError(Iterable<? extends C> entities, RuntimeException runtimeException) {
+		deleteListeners.forEach(listener -> listener.onDeleteError(entities, runtimeException));
 	}
 	
-	public void add(DeleteListener<T> deleteListener) {
-		this.deleteListeners.add(deleteListener);
+	public void add(DeleteListener<? extends C> deleteListener) {
+		this.deleteListeners.add((DeleteListener<C>) deleteListener);
 	}
 	
 	/**
 	 * Move internal listeners to given instance.
-	 * Usefull to agregate listeners into a single instance.
+	 * Useful to aggregate listeners into a single instance.
 	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
 	 *
 	 * @param deleteListener the target listener on which the one of current instance must be moved to.
 	 */
-	public void moveTo(DeleteListenerCollection<T> deleteListener) {
+	public void moveTo(DeleteListenerCollection<C> deleteListener) {
 		deleteListener.deleteListeners.addAll(this.deleteListeners);
 		this.deleteListeners.clear();
 	}

@@ -1,8 +1,10 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.reflection.AccessorChain;
 
 /**
  * An interface describing a fluent way to declare and build the persistence mapping of a class as an embedded bean.
@@ -12,23 +14,15 @@ import org.codefilarete.reflection.AccessorChain;
  */
 public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappingConfiguration<C>, EmbeddableMappingConfigurationProvider<C> {
 	
-	/* Overwritting methods signature to return a type that aggregates options of this class */
+	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
 	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
 	
 	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter);
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter, String columnName);
-	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter, String columnName);
-	
 	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
 	
 	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
-	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter, String columnName);
-	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter, String columnName);
 	
 	FluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
 	
@@ -74,6 +68,9 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		@Override
 		FluentEmbeddableMappingBuilderEnumOptions<C> mandatory();
 		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C> readonly();
+		
 	}
 	
 	interface FluentEmbeddableMappingBuilderPropertyOptions<C> extends FluentEmbeddableMappingConfigurationPropertyOptions<C>, FluentEmbeddableMappingBuilder<C> {
@@ -82,6 +79,18 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		FluentEmbeddableMappingBuilderPropertyOptions<C> mandatory();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> setByConstructor();
+		FluentEmbeddableMappingBuilderPropertyOptions<C> setByConstructor();
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C> readonly();
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C> columnName(String name);
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C> column(Column<? extends Table, ?> column);
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C> fieldName(String name);
 	}
 }

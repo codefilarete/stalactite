@@ -34,6 +34,11 @@ public class City implements Identified<Long> {
 		this.id = id;
 	}
 	
+	public City(long id, String name) {
+		this(id);
+		setName(name);
+	}
+	
 	@Override
 	public Identifier<Long> getId() {
 		return id;

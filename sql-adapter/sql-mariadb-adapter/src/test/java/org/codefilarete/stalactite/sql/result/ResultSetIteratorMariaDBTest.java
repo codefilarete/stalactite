@@ -2,6 +2,8 @@ package org.codefilarete.stalactite.sql.result;
 
 import javax.sql.DataSource;
 
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MariaDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 
 /**
@@ -14,5 +16,9 @@ class ResultSetIteratorMariaDBTest extends ResultSetIteratorITTest {
 	@Override
 	protected DataSource giveDataSource() {
 		return DATASOURCE;
+	}
+	
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MariaDBDatabaseHelper();
 	}
 }

@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.diff;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -19,6 +18,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
 import static org.codefilarete.stalactite.engine.diff.State.ADDED;
 import static org.codefilarete.stalactite.engine.diff.State.HELD;
 import static org.codefilarete.stalactite.engine.diff.State.REMOVED;
+import static org.codefilarete.stalactite.engine.runtime.onetomany.AbstractOneToManyWithAssociationTableEngine.INDEXED_COLLECTION_FIRST_INDEX_VALUE;
 
 /**
  * A class to compute the differences between 2 collections of objects: addition, removal or held
@@ -35,15 +35,16 @@ public class CollectionDiffer<C> {
 	}
 	
 	/**
-	 * Computes the differences between 2 sets. Comparison between objects will be done onto instance equals() method
+	 * Computes the differences between 2 sets. Comparison between objects will be done through identifier provider
+	 * given at construction time
 	 *
-	 * @param before the "source" Set
-	 * @param after the modified Set
+	 * @param before the "source" {@link Collection}
+	 * @param after the modified {@link Collection}
 	 * @param <I> the type of the payload onto comparison will be done
-	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
-	 * {@link State#HELD}.
+	 * @return a set of differences between the 2 collections, never null, empty if the 2 sets are empty. If no
+	 * modification, all instances will be {@link State#HELD}.
 	 */
-	public <I> KeepOrderSet<Diff<C>> diffSet(Set<C> before, Set<C> after) {
+	public <I> KeepOrderSet<Diff<C>> diff(Collection<C> before, Collection<C> after) {
 		Map<I, C> beforeMappedOnIdentifier = Iterables.map(before, (Function<C, I>) idProvider, Function.identity(), KeepOrderMap::new);
 		Map<I, C> afterMappedOnIdentifier = Iterables.map(after, (Function<C, I>) idProvider, Function.identity(), KeepOrderMap::new);
 		
@@ -65,20 +66,21 @@ public class CollectionDiffer<C> {
 	}
 	
 	/**
-	 * Computes the differences between 2 lists. Comparison between objects will be done onto instance equals() method
+	 * Computes the differences between 2 collections by taking order in collections into account. Comparison between
+	 * objects will be done through identifier provider given at construction time.
 	 *
-	 * @param before the "source" List
-	 * @param after the modified List
-	 * @return a set of differences between the 2 sets, never null, empty if the 2 sets are empty. If no modification, all instances will be
-	 * {@link State#HELD}.
+	 * @param before the "source" {@link Collection}
+	 * @param after the modified {@link Collection}
+	 * @return a set of differences between the 2 collections, never null, empty if the 2 sets are empty. If no
+	 * modification, all instances will be {@link State#HELD}.
 	 */
-	public KeepOrderSet<IndexedDiff<C>> diffList(List<C> before, List<C> after) {
+	public KeepOrderSet<IndexedDiff<C>> diffOrdered(Collection<C> before, Collection<C> after) {
 		// building Map of indexes per object
 		Map<C, Set<Integer>> beforeIndexes = new KeepOrderMap<>();
 		Map<C, Set<Integer>> afterIndexes = new KeepOrderMap<>();
-		ModifiableInt beforeIndex = new ModifiableInt(-1);	// because indexes should start at 0 as List does
+		ModifiableInt beforeIndex = new ModifiableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
 		before.forEach(o -> beforeIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(beforeIndex.increment()));
-		ModifiableInt afterIndex = new ModifiableInt(-1);		// because indexes should start at 0 as List does
+		ModifiableInt afterIndex = new ModifiableInt(INDEXED_COLLECTION_FIRST_INDEX_VALUE - 1);	// -1 because ModifiableInt.increment(..) increments value before giving value
 		after.forEach(o -> afterIndexes.computeIfAbsent(o, k -> new HashSet<>()).add(afterIndex.increment()));
 		
 		KeepOrderSet<IndexedDiff<C>> result = new KeepOrderSet<>();

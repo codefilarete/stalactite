@@ -4,14 +4,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy.DefaultAssociationTableNamingStrategy;
+import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy.ReferencedColumnNames;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -26,16 +26,16 @@ class AssociationTableNamingStrategyTest {
 	@Test
 	void giveName() {
 		Table countryTable = new Table(null, "CountryTable");
-		Column countryPK = countryTable.addColumn("id", String.class).primaryKey();
+		countryTable.addColumn("id", String.class).primaryKey();
 		Table cityTable = new Table(null, "CityTable");
-		Column countryFK = cityTable.addColumn("countryId", String.class);
+		cityTable.addColumn("cityId", String.class).primaryKey();
 		
 		
 		DefaultAssociationTableNamingStrategy testInstance = new DefaultAssociationTableNamingStrategy();
 		
-		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "cities", Set.class), countryPK, countryFK)).isEqualTo(
+		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "cities", Set.class), countryTable.getPrimaryKey(), cityTable.getPrimaryKey())).isEqualTo(
 				"Country_cities");
-		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "giveCities", Set.class), countryPK, countryFK)).isEqualTo(
+		assertThat(testInstance.giveName(new AccessorDefinition(Country.class, "giveCities", Set.class), countryTable.getPrimaryKey(), cityTable.getPrimaryKey())).isEqualTo(
 				"Country_giveCities");
 		
 	}
@@ -46,40 +46,40 @@ class AssociationTableNamingStrategyTest {
 		@Test
 		void fallsbackOnAttributeName() {
 			DefaultAssociationTableNamingStrategy testInstance = new DefaultAssociationTableNamingStrategy();
-			AccessorByMethodReference<CyclingModel, Set<CyclingModel>> methodReference = new AccessorByMethodReference<>(CyclingModel::getCyclingModels);
-			AccessorDefinition accessorDefinition = new AccessorDefinition(
-					methodReference.getDeclaringClass(),
-					AccessorDefinition.giveDefinition(methodReference).getName(),
-					methodReference.getPropertyType());
+			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(new AccessorByMethodReference<>(CyclingModel::getCyclingModels));
 			Table cyclingModelTable = new Table("CyclingModelTable");
-			Column cyclingModelIdColumn = cyclingModelTable.addColumn("id", long.class);
-			Duo<String, String> columnNames = testInstance.giveColumnNames(accessorDefinition, cyclingModelIdColumn, cyclingModelIdColumn);
+			Column idColumn = cyclingModelTable.addColumn("id", long.class);
+			idColumn.primaryKey();
+			ReferencedColumnNames columnNames = testInstance.giveColumnNames(accessorDefinition, cyclingModelTable.getPrimaryKey(), cyclingModelTable.getPrimaryKey());
 			// please note that ending "s" was removed, not a strong rule, could be removed if too "intrusive"
-			assertThat(columnNames).isEqualTo(new Duo<>("cyclingModelTable_id", "cyclingModel_id"));
+			assertThat(columnNames.getLeftColumnName(idColumn)).isEqualTo("cyclingModelTable_id");
+			assertThat(columnNames.getRightColumnName(idColumn)).isEqualTo("cyclingModels_id");
 		}
 		
 		@Test
-		void attributeNameIsSameAsTable_throwsException() {
+		<T extends Table<T>> void attributeNameIsSameAsTable_throwsException() {
 			DefaultAssociationTableNamingStrategy testInstance = new DefaultAssociationTableNamingStrategy();
-			AccessorByMethodReference<CyclingModel, Set<CyclingModel>> methodReference = new AccessorByMethodReference<>(CyclingModel::getCyclingModels);
-			AccessorDefinition accessorDefinition = new AccessorDefinition(
-					methodReference.getDeclaringClass(),
-					AccessorDefinition.giveDefinition(methodReference).getName(),
-					methodReference.getPropertyType());
-			Table cyclingModelTable = new Table("CyclingModel");
-			Column cyclingModelIdColumn = cyclingModelTable.addColumn("id", long.class);
-			assertThatThrownBy(() -> testInstance.giveColumnNames(accessorDefinition, cyclingModelIdColumn, cyclingModelIdColumn))
+			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(new AccessorByMethodReference<>(CyclingModel::getCyclingModel));
+			T cyclingModelTable = (T) new Table("CyclingModel");
+			cyclingModelTable.addColumn("id", long.class).primaryKey();
+			assertThatThrownBy(() -> testInstance.giveColumnNames(accessorDefinition, cyclingModelTable.getPrimaryKey(), cyclingModelTable.getPrimaryKey()))
 					.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
 					.hasMessage("Identical column names in association table of collection" 
-							+ " o.c.s.e.keyColumnNames_primaryKeysTargetSameEntity_keyColumnNamesAreDifferent$CyclingModel.cyclingModels");
+							+ " o.c.s.e.keyColumnNames_primaryKeysTargetSameEntity_keyColumnNamesAreDifferent$CyclingModel.cyclingModel : cyclingModel_id");
 		}
 		
 		private class CyclingModel {
 			
 			private final Set<CyclingModel> cyclingModels = new HashSet<>();
 			
+			private final CyclingModel cyclingModel = null;
+			
 			public Set<CyclingModel> getCyclingModels() {
 				return cyclingModels;
+			}
+			
+			public CyclingModel getCyclingModel() {
+				return cyclingModel;
 			}
 		}
 		

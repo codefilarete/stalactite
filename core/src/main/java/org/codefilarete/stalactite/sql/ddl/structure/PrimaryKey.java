@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
 
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
@@ -12,10 +10,10 @@ import org.codefilarete.tool.collection.KeepOrderSet;
  * 
  * @author Guillaume Mary
  */
-public class PrimaryKey<T extends Table> {
+public class PrimaryKey<T extends Table<T>, ID> implements Key<T, ID> {
 	
 	private final T table;
-	private final Set<Column<T, Object>> columns = new KeepOrderSet<>();
+	private final KeepOrderSet<Column<T, Object>> columns = new KeepOrderSet<>();
 	
 	public PrimaryKey(Collection<Column<T, Object>> columns) {
 		this.table = Iterables.first(columns).getTable();
@@ -27,6 +25,7 @@ public class PrimaryKey<T extends Table> {
 		this.addColumns(column, additionalColumns);
 	}
 	
+	@Override
 	public T getTable() {
 		return table;
 	}
@@ -38,11 +37,17 @@ public class PrimaryKey<T extends Table> {
 		}
 	}
 	
-	public <O extends Object> void addColumn(Column<T, O> column) {
+	public <O> void addColumn(Column<T, O> column) {
 		this.columns.add((Column<T, Object>) column);
 	}
 	
-	public <O> Set<Column<T, O>> getColumns() {
-		return (Set) Collections.unmodifiableSet(columns);
+	@Override
+	public KeepOrderSet<Column<T, Object>> getColumns() {
+		return new KeepOrderSet<>(columns);
+	}
+	
+	@Override
+	public boolean isComposed() {
+		return columns.size() > 1;
 	}
 }

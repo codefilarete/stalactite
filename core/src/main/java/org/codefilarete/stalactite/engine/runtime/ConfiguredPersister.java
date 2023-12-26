@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public interface ConfiguredPersister<C, I> extends EntityPersister<C, I> {
 	
-	<T extends Table> EntityMapping<C, I, T> getMapping();
+	<T extends Table<T>> EntityMapping<C, I, T> getMapping();
 	
 	Collection<Table> giveImpliedTables();
 	

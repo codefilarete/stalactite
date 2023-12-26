@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
-import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * Index on some columns
@@ -15,23 +15,23 @@ import org.codefilarete.tool.collection.Iterables;
 public class Index {
 	
 	private final Table table;
-	private final LinkedHashSet<Column> columns;
+	private final KeepOrderSet<Column<Table, Object>> columns;
 	private final String name;
 	private boolean unique = false;
 	
-	public Index(String name, Column column, Column ... columns) {
-		this(name, Collections.addAll(Arrays.asSet(column), columns));
+	public <T extends Table> Index(String name, Column<T, ?> column, Column<T, ?> ... columns) {
+		this(name, (Iterable) Collections.addAll(Arrays.asSet(column), columns));
 	}
 	
-	public Index(String name, Iterable<Column> columns) {
+	public <T extends Table> Index(String name, Iterable<Column<T, Object>> columns) {
 		// table is took from columns
 		this.table = Iterables.first(columns).getTable();
-		this.columns = Iterables.copy(columns, new LinkedHashSet<>());
+		this.columns = (KeepOrderSet) Iterables.copy(columns, new KeepOrderSet<>());
 		this.name = name;
 	}
 	
-	public Set<Column> getColumns() {
-		return columns;
+	public <T extends Table> Set<Column<T, Object>> getColumns() {
+		return (Set) columns;
 	}
 	
 	public String getName() {

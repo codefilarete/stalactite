@@ -1,54 +1,49 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.codefilarete.stalactite.query.EntitySelectExecutor;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
+import org.codefilarete.stalactite.query.EntitySelectExecutor;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
+import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Select.AliasedColumn;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
-import org.codefilarete.stalactite.sql.result.RowIterator;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.Duo;
 
 /**
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
+public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>> implements EntitySelectExecutor<C> {
 	
-	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass;
-	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2;
+	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	private final T mainTable;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinTablePolymorphismEntitySelectExecutor(Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass,
-													 Map<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> persisterPerSubclass2,
+	public JoinTablePolymorphismEntitySelectExecutor(Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 													 T mainTable,
 													 EntityJoinTree<C, I> entityJoinTree,
 													 ConnectionProvider connectionProvider,
 													 Dialect dialect) {
-		this.persisterPerSubclass = persisterPerSubclass;
-		this.persisterPerSubclass2 = persisterPerSubclass2;
+		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
 		this.mainTable = mainTable;
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
@@ -56,61 +51,55 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table> im
 	}
 	
 	@Override
-	public List<C> loadGraph(CriteriaChain where) {
-		Query query = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery().getQuery();
+	public Set<C> loadGraph(CriteriaChain where) {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		Query query = entityTreeQuery.getQuery();
 		
-		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
 		persisterPerSubclass.values().forEach(subclassPersister -> {
-			Column subclassPrimaryKey = Iterables.first(
-					(Set<Column>) subclassPersister.getMainTable().getPrimaryKey().getColumns());
-			query.select(subclassPrimaryKey, subclassPrimaryKey.getAlias());
-			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
+			query.getFrom().leftOuterJoin(mainTable.getPrimaryKey(), subclassPersister.getMainTable().getPrimaryKey());
+			((T) subclassPersister.getMainTable()).getPrimaryKey().getColumns().forEach(column -> {
+				query.select(column, column.getAlias());
+			});
 		});
 		
-		SQLQueryBuilder sqlQueryBuilder = EntitySelectExecutor.createQueryBuilder(where, query);
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		
 		// selecting ids and their entity type
-		Map<String, ResultSetReader> aliases = new HashMap<>();
-		Iterables.stream(query.getSelectSurrogate())
-				.map(AliasedColumn.class::cast).map(AliasedColumn::getColumn)
-				.forEach(c -> aliases.put(c.getAlias(), dialect.getColumnBinderRegistry().getBinder(c)));
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, aliases, primaryKey);
+		Map<String, ResultSetReader> columnReaders = new HashMap<>();
+		Map<Selectable<?>, String> aliases = query.getAliases();
+		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
+		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, columnReaders, columnedRow);
 		
-		List<C> result = new ArrayList<>();
-		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass2.get(k).select(v)));
+		Set<C> result = new HashSet<>();
+		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}
 	
-	private Map<Class, Set<I>> readIds(SQLQueryBuilder sqlQueryBuilder, Map<String, ResultSetReader> aliases,
-									   Column<T, I> primaryKey) {
+	private Map<Class, Set<I>> readIds(QuerySQLBuilder sqlQueryBuilder,
+									   Map<String, ResultSetReader> columnReaders,
+									   ColumnedRow columnedRow) {
 		Map<Class, Set<I>> result = new HashMap<>();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			
-			RowIterator resultSetIterator = new RowIterator(resultSet, aliases);
-			ColumnedRow columnedRow = new ColumnedRow(Column::getAlias);
+			RowIterator resultSetIterator = new RowIterator(resultSet, columnReaders);
 			resultSetIterator.forEachRemaining(row -> {
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the 
 				// right one
-				Class<? extends C> entitySubclass;
-				Set<Entry<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>>> entries = persisterPerSubclass.entrySet();
-				Entry<Class<? extends C>, SimpleRelationalEntityPersister<C, I, T>> subclassEntityOnRow = Iterables.find(entries,
-						e -> {
-							boolean isPKEmpty = true;
-							Iterator<Column> columnIt = e.getValue().getMainTable().getPrimaryKey().getColumns().iterator();
-							while (isPKEmpty && columnIt.hasNext()) {
-								Column column = columnIt.next();
-								isPKEmpty = columnedRow.getValue(column, row) != null;
-							}
-							return isPKEmpty;
-						});
-				entitySubclass = subclassEntityOnRow.getKey();
-				
-				// adding identifier to subclass' ids
-				result.computeIfAbsent(entitySubclass, k -> new HashSet<>())
-						.add((I) columnedRow.getValue(primaryKey, row));
+				Set<Entry<Class<C>, ConfiguredRelationalPersister<C, I>>> entries = persisterPerSubclass.entrySet();
+				Duo<Class, I> duo = null;
+				I identifier;
+				for (Entry<Class<C>, ConfiguredRelationalPersister<C, I>> entry : entries) {
+					identifier = entry.getValue().getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
+					if (identifier != null) {
+						duo = new Duo<>(entry.getKey(), identifier);
+						break;
+					}
+				}
+				result.computeIfAbsent(duo.getLeft(), k -> new HashSet<>()).add(duo.getRight());
 			});
 			return result;
 		} catch (RuntimeException e) {

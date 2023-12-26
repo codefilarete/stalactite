@@ -8,28 +8,29 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.tool.collection.ReadOnlyList;
-import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Abstraction of relation, merge and passive joins.
  * 
  * @author Guillaume Mary
  */
-public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I> implements JoinNode<T2> {
+public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINTYPE> implements JoinNode<T2> {
 	
 	/** Join column with previous strategy table */
-	private final Column<T1, I> leftJoinColumn;
+	private final Key<T1, JOINTYPE> leftJoinLink;
 	
 	/** Join column with next strategy table */
-	private final Column<T2, I> rightJoinColumn;
+	private final Key<T2, JOINTYPE> rightJoinLink;
 	
 	/** Indicates if the join must be an inner or (left) outer join */
 	private final JoinType joinType;
 	
-	private final Set<Column<T2, Object>> columnsToSelect;
+	private final Set<Selectable<Object>> columnsToSelect;
 	
 	private final JoinNode<T1> parent;
 	
@@ -40,17 +41,26 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	protected String tableAlias;
 	
 	@Nullable
-	private TransformerListener<C> transformerListener;
+	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 	
 	protected AbstractJoinNode(JoinNode<T1> parent,
-							   Column<T1, I> leftJoinColumn,
-							   Column<T2, I> rightJoinColumn,
+							   JoinLink<T1, JOINTYPE> leftJoinLink,
+							   JoinLink<T2, JOINTYPE> rightJoinLink,
 							   JoinType joinType,
-							   Set<Column<T2, ?>> columnsToSelect,
+							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
+							   @Nullable String tableAlias) {
+		this(parent, Key.ofSingleColumn(leftJoinLink), Key.ofSingleColumn(rightJoinLink), joinType, columnsToSelect, tableAlias);
+	}
+	
+	protected AbstractJoinNode(JoinNode<T1> parent,
+							   Key<T1, JOINTYPE> leftJoinLink,
+							   Key<T2, JOINTYPE> rightJoinLink,
+							   JoinType joinType,
+							   Set<? extends Selectable<?>> columnsToSelect,	// From T2
 							   @Nullable String tableAlias) {
 		this.parent = parent;
-		this.leftJoinColumn = leftJoinColumn;
-		this.rightJoinColumn = rightJoinColumn;
+		this.leftJoinLink = leftJoinLink;
+		this.rightJoinLink = rightJoinLink;
 		this.joinType = joinType;
 		this.columnsToSelect = (Set) columnsToSelect;
 		this.tableAlias = tableAlias;
@@ -61,7 +71,7 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	public <ROOT, ID> EntityJoinTree<ROOT, ID> getTree() {
 		// going up to the root to get tree from it because JoinRoot owns the information
 		JoinNodeHierarchyIterator joinNodeHierarchyIterator = new JoinNodeHierarchyIterator(this);
-		AbstractJoinNode currentNode = this;
+		AbstractJoinNode<?, ?, ?, ?> currentNode = this;
 		while (joinNodeHierarchyIterator.hasNext()) {
 			currentNode = joinNodeHierarchyIterator.next();
 		}
@@ -78,12 +88,12 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 		return getRightTable();
 	}
 	
-	public Column<?, I> getLeftJoinColumn() {
-		return leftJoinColumn;
+	public Key<T1, JOINTYPE> getLeftJoinLink() {
+		return leftJoinLink;
 	}
 	
-	public Column<T2, I> getRightJoinColumn() {
-		return rightJoinColumn;
+	public Key<T2, JOINTYPE> getRightJoinLink() {
+		return rightJoinLink;
 	}
 	
 	public JoinType getJoinType() {
@@ -91,8 +101,8 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	}
 	
 	@Override
-	public Set<Column<T2, Object>> getColumnsToSelect() {
-		return columnsToSelect;
+	public Set<Selectable<Object>> getColumnsToSelect() {
+		return (Set) columnsToSelect;
 	}
 	
 	@Override
@@ -101,12 +111,12 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	}
 	
 	@Nullable
-	TransformerListener<C> getTransformerListener() {
-		return transformerListener;
+	EntityTreeJoinNodeConsumptionListener<C> getConsumptionListener() {
+		return consumptionListener;
 	}
 	
-	public AbstractJoinNode<C, T1, T2, I> setTransformerListener(@Nullable TransformerListener<C> transformerListener) {
-		this.transformerListener = transformerListener;
+	public AbstractJoinNode<C, T1, T2, JOINTYPE> setConsumptionListener(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
+		this.consumptionListener = consumptionListener;
 		return this;
 	}
 	
@@ -126,7 +136,7 @@ public abstract class AbstractJoinNode<C, T1 extends Table, T2 extends Table, I>
 	}
 	
 	public T2 getRightTable() {
-		return this.rightJoinColumn.getTable();
+		return this.rightJoinLink.getTable();
 	}
 	
 	/**

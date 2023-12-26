@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
@@ -13,14 +13,14 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  *
  * @author Guillaume Mary
  */
-public interface EntityMapping<C, I, T extends Table> extends Mapping<C, T>, IdAccessor<C, I> {
+public interface EntityMapping<C, I, T extends Table<T>> extends Mapping<C, T>, IdAccessor<C, I> {
 	
 	T getTargetTable();
 	
 	Class<C> getClassToPersist();
 	
 	/**
-	 * Necessary to distinguish insert or update action on {@link Persister#persist(Object)} call
+	 * Necessary to distinguish insert or update action on {@link BeanPersister#persist(Object)} call
 	 * @param c an instance of C
 	 * @return true if the instance is not persisted, false if not (a row for its identifier already exists in the targeted table)
 	 */

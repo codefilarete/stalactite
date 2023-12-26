@@ -21,7 +21,7 @@ public abstract class ToMapRowTransformer<T extends Map> extends AbstractTransfo
 	 *
 	 * @param factory the factory of beans
 	 */
-	public ToMapRowTransformer(Function<Function<Column, Object>, T> factory, ColumnedRow columnedRow) {
+	public ToMapRowTransformer(Function<Function<Column<?, ?>, Object>, T> factory, ColumnedRow columnedRow) {
 		super(factory, columnedRow);
 	}
 }

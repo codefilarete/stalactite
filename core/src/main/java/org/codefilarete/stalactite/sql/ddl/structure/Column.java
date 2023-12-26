@@ -2,13 +2,16 @@ package org.codefilarete.stalactite.sql.ddl.structure;
 
 import javax.annotation.Nonnull;
 
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
+
 /**
  * Column of a table.
  * 
  * @param <O> the Java type this columns is mapped to
  * @author Guillaume Mary
  */
-public class Column<T extends Table, O> {
+public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O> {
 	
 	private final T table;
 	private final String name;
@@ -40,6 +43,21 @@ public class Column<T extends Table, O> {
 		this.nullable = !javaType.isPrimitive();	// default basic principle
 	}
 	
+	@Override
+	public T getOwner() {
+		return getTable();
+	}
+	
+	@Override
+	public String getExpression() {
+		return this.name;
+	}
+	
+	@Override
+	public Class<O> getJavaType() {
+		return this.javaType;
+	}
+	
 	public T getTable() {
 		return table;
 	}
@@ -65,10 +83,6 @@ public class Column<T extends Table, O> {
 		return alias;
 	}
 	
-	public Class<O> getJavaType() {
-		return javaType;
-	}
-	
 	public Integer getSize() {
 		return size;
 	}
@@ -86,9 +100,17 @@ public class Column<T extends Table, O> {
 	 * @param nullable is this Column is optional or mandatory
 	 * @return this
 	 */
-	public Column nullable(boolean nullable) {
+	public Column<T, O> nullable(boolean nullable) {
 		setNullable(nullable);
 		return this;
+	}
+	
+	/**
+	 * Fluent API. Set this column as not nullable.
+	 * @return this
+	 */
+	public Column<T, O> notNull() {
+		return nullable(false);
 	}
 	
 	public boolean isPrimaryKey() {
@@ -100,7 +122,7 @@ public class Column<T extends Table, O> {
 	}
 	
 	/**
-	 * Fluent API. Set this column as primary of the table.
+	 * Fluent API. Set this column as primary of the table, or participate to it if there are several ones
 	 * @return this
 	 */
 	public Column<T, O> primaryKey() {
@@ -124,32 +146,13 @@ public class Column<T extends Table, O> {
 		return this;
 	}
 	
-	/**
-	 * Implementation based on absolute name comparison. Done for Collections comparison.
-	 *
-	 * @param o un Object
-	 * @return true if absolute name of both Column (this and o) are the same ignoring case.
+	/* Do not implement equals/hashCode, which can be tempting (based on absolute name for instance)
+	 * because it breaks possibility to add clones of column (through clones of table) in select clause when
+	 * joining several times same table is necessary : for that case column clones must be considered distinct
 	 */
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		
-		Column column = (Column) o;
-		return getAbsoluteName().equalsIgnoreCase(column.getAbsoluteName());
-	}
-	
-	@Override
-	public int hashCode() {
-		return getAbsoluteName().toUpperCase().hashCode();
-	}
 	
 	/**
-	 * Overriden only for simple print (debug)
+	 * Overridden only for simple print (debug)
 	 */
 	@Override
 	public String toString() {

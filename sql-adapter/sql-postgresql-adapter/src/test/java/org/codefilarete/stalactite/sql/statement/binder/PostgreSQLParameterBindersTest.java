@@ -61,7 +61,7 @@ class PostgreSQLParameterBindersTest extends AbstractParameterBindersITTest {
 	}
 	
 	/**
-	 * Overriden to take into account rounding made by PostgreSQL on stored nanos
+	 * Overridden to take into account rounding made by PostgreSQL on stored nanos
 	 */
 	@Test
 	void localDateTimeBinder() throws SQLException {
@@ -73,7 +73,7 @@ class PostgreSQLParameterBindersTest extends AbstractParameterBindersITTest {
 	}
 	
 	/**
-	 * Overriden to take into account rounding made by PostgreSQL on stored nanos
+	 * Overridden to take into account rounding made by PostgreSQL on stored nanos
 	 */
 	@Test
 	void localTimeBinder() throws SQLException {

@@ -9,6 +9,8 @@ public class SequenceStorageOptions {
 	
 	public static final SequenceStorageOptions DEFAULT = new SequenceStorageOptions("sequence_table", "sequence_name", "next_val");
 	
+	public static final SequenceStorageOptions HIBERNATE_DEFAULT = new SequenceStorageOptions("hibernate_sequences", "sequence_name", "next_val");
+	
 	private final String table;
 	private final String sequenceNameColumn;
 	private final String valueColumn;

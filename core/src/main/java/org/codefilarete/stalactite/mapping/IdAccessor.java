@@ -3,9 +3,11 @@ package org.codefilarete.stalactite.mapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 
 /**
- * Interface for general access to the identifier of an entity
+ * Interface for general access to the identifier of an entity.
+ * User may be interested in {@link AccessorWrapperIdAccessor}.
  * 
  * @author Guillaume Mary
+ * @see AccessorWrapperIdAccessor
  */
 public interface IdAccessor<C, I> {
 	

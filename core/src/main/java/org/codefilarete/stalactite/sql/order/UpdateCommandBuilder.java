@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.order;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -7,24 +8,24 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.builder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.SQLAppender;
+import org.codefilarete.stalactite.query.builder.SQLBuilder;
+import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
+import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.trace.ModifiableInt;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.PreparedSQLWrapper;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.SQLAppender;
-import org.codefilarete.stalactite.query.builder.OperatorBuilder.StringAppenderWrapper;
-import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.WhereBuilder;
-import org.codefilarete.stalactite.query.model.ColumnCriterion;
-import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
  * A SQL builder for {@link Update} objects.
@@ -36,10 +37,12 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
 public class UpdateCommandBuilder implements SQLBuilder {
 	
 	private final Update update;
+	private final Dialect dialect;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public UpdateCommandBuilder(Update update) {
+	public UpdateCommandBuilder(Update update, Dialect dialect) {
 		this.update = update;
+		this.dialect = dialect;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
 	}
 	
@@ -47,11 +50,20 @@ public class UpdateCommandBuilder implements SQLBuilder {
 	public String toSQL() {
 		return toSQL(new StringAppenderWrapper(new StringAppender(), dmlNameProvider) {
 			@Override
-			public StringAppenderWrapper catValue(Column column, Object value) {
+			public StringAppenderWrapper catValue(@Nullable Column column, Object value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {
 					return super.catValue(column, value);
+				}
+			}
+			
+			@Override
+			public StringAppenderWrapper catValue(Object value) {
+				if (value == UpdateColumn.PLACEHOLDER) {
+					return cat("?");
+				} else {
+					return super.catValue(value);
 				}
 			}
 		}, dmlNameProvider);
@@ -102,8 +114,8 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (!update.getCriteria().getConditions().isEmpty()) {
 			result.cat(" where ");
-			WhereBuilder whereBuilder = new WhereBuilder(this.update.getCriteria(), dmlNameProvider);
-			whereBuilder.appendSQL(result);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereSqlBuilder().whereBuilder(this.update.getCriteria(), dmlNameProvider);
+			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();
 	}
@@ -127,9 +139,9 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		}
 	}
 	
-	public UpdateStatement toStatement(ColumnBinderRegistry columnBinderRegistry) {
+	public UpdateStatement toStatement() {
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
+		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
 		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
 		
 		Map<Integer, Object> values = new HashMap<>(preparedSQLWrapper.getValues());
@@ -139,7 +151,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
 		// Moreover we have to build indexes of Columns to allow usage of UpdateStatement.setValue(..)
-		// So we iterate of set Columns to remove unecessary columns and compute column indexes
+		// So we iterate of set Columns to remove unnecessary columns and compute column indexes
 		ModifiableInt placeholderColumnCount = new ModifiableInt();
 		update.getColumns().forEach(c -> {
 			// only non column value must be adapted (see catUpdateObject(..))

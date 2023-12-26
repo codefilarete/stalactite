@@ -4,59 +4,61 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Function;
 
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.engine.SelectExecutor;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.SQLQueryBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
-import org.codefilarete.stalactite.sql.result.RowIterator;
-
-import static org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader.isDefaultValue;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implements SelectExecutor<C, I> {
+public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> implements SelectExecutor<C, I> {
 	
+	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
-	private final Map<Class<? extends C>, SelectExecutor<C, I>> subEntitiesSelectors;
-	private final T mainTable;
+	private final Map<Class<? extends C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
 	public JoinTablePolymorphismSelectExecutor(
+			ConfiguredRelationalPersister<C, I> mainPersister,
 			Map<Class<? extends C>, Table> tablePerSubEntity,
-			Map<Class<? extends C>, SelectExecutor<? extends C, I>> subEntitiesSelectors,
-			T mainTable,
+			Map<Class<? extends C>, ConfiguredRelationalPersister<? extends C, I>> subEntitiesPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
+		this.mainPersister = mainPersister;
 		this.tablePerSubEntity = tablePerSubEntity;
-		this.subEntitiesSelectors = (Map) subEntitiesSelectors;
-		this.mainTable = mainTable;
+		this.subEntitiesPersisters = (Map) subEntitiesPersisters;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
 	
 	@Override
-	public List<C> select(Iterable<I> ids) {
+	public Set<C> select(Iterable<I> ids) {
 		// 2 possibilities :
-		// - execute a request that join all tables and all relations, then give result to transfomer
+		// - execute a request that join all tables and all relations, then give result to transformer
 		//   Pros : one request, simple approach
 		//   Cons : one eventually big/complex request, has some drawback on how to create this request (impacts on parent
 		//          Persister behavior) and how to build the transformer. In conclusion quite complex
@@ -66,57 +68,84 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table> implemen
 		//   differences)
 		//   Cons : first request not so easy to write. Performance may be lower because of 1+N (one per subclass) database 
 		//   requests
-		// => option 2 choosen. May be reviewed later, or make this policy configurable.
+		// => option 2 chosen. May be reviewed later, or make this policy configurable.
 		
 		// Doing this in 2 phases
 		// - make a select with id + discriminator in select clause and ids in where to determine ids per subclass type
 		// - call the right subclass joinExecutor with dedicated ids
 		
-		Column<T, I> primaryKey = (Column<T, I>) Iterables.first(mainTable.getPrimaryKey().getColumns());
-		Query query = QueryEase.
-				select(primaryKey, primaryKey.getAlias())
-				.from(mainTable)
-				.where(primaryKey, Operators.in(ids)).getQuery();
+		PrimaryKey<T, I> primaryKey = mainPersister.getMainTable().getPrimaryKey();
+		if (primaryKey.isComposed() && !this.dialect.supportsTupleCondition()) {
+			throw new UnsupportedOperationException("Database doesn't support tuple-in so selection can't be done trivially, not yet supported");
+		}
+		
+		Query.FluentFromClause from = QueryEase.
+				select(Iterables.map(primaryKey.getColumns(), Function.identity(), Column::getAlias))
+				.from(mainPersister.getMainTable());
+		
+		if (!primaryKey.isComposed()) {
+			// Note that casting first element as Column<T, I> is required to match method that generates right SQL,
+			// else it goes in Object method which is more vague and generate wrong SQL
+			from.where((Column<T, I>) Iterables.first(primaryKey.getColumns()), Operators.in(ids));
+		} else {
+			List<I> idsAsList = Collections.asList(ids);
+			Map<Column<T, Object>, Object> columnValues = mainPersister.getMapping().getIdMapping().<T>getIdentifierAssembler().getColumnValues(idsAsList);
+			from.where(transformCompositeIdentifierColumnValuesToTupleInValues(idsAsList.size(), columnValues));
+		}
+		Query query = from.getQuery();
 		tablePerSubEntity.values().forEach(subTable -> {
-			Column subclassPrimaryKey = Iterables.first((Set<Column>) subTable.getPrimaryKey().getColumns());
-			query.select(subclassPrimaryKey, subclassPrimaryKey.getAlias());
+			PrimaryKey<?, ?> subclassPrimaryKey = subTable.getPrimaryKey();
+			query.select(Iterables.map(subclassPrimaryKey.getColumns(), Function.identity(), Column::getAlias));
 			query.getFrom().leftOuterJoin(primaryKey, subclassPrimaryKey);
 		});
-		SQLQueryBuilder sqlQueryBuilder = new SQLQueryBuilder(query);
-		Map<Column, String> aliases = query.getSelectSurrogate().giveColumnAliases();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL(dialect.getColumnBinderRegistry());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
+		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			Map<String, ResultSetReader> readers = new HashMap<>();
-			aliases.forEach((c, as) -> readers.put(as, dialect.getColumnBinderRegistry().getBinder(c)));
+			aliases.forEach((c, as) -> readers.put(as, dialect.getColumnBinderRegistry().getBinder((Column) c)));
 			
 			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 			resultSetIterator.forEachRemaining(row -> {
-				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
-				Entry<Class<? extends C>, Table> subclassEntityOnRow = Iterables.find(tablePerSubEntity.entrySet(),
-						e -> {
-							boolean isPKEmpty = true;
-							Iterator<Column> columnIt = e.getValue().getPrimaryKey().getColumns().iterator();
-							while (isPKEmpty && columnIt.hasNext()) {
-								Column column = columnIt.next();
-								isPKEmpty = !isDefaultValue(columnedRow.getValue(column, row));
-							}
-							return isPKEmpty;
-						});
-				Class<? extends C> entitySubclass = subclassEntityOnRow.getKey();
-				
-				// adding identifier to subclass ids
-				idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())
-						.add((I) columnedRow.getValue(primaryKey, row));
+				subEntitiesPersisters.values().forEach(subPersister -> {
+					I id = subPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow);
+					if (id != null) {
+						idsPerSubclass.computeIfAbsent(subPersister.getClassToPersist(), k -> new HashSet<>())
+								.add(id);
+					}
+				});
 			});
 		}
 		
-		List<C> result = new ArrayList<>();
-		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesSelectors.get(subclass).select(subclassIds)));
+		Set<C> result = new HashSet<>();
+		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(subEntitiesPersisters.get(subclass).select(subclassIds)));
 		
 		return result;
+	}
+	
+	@VisibleForTesting
+	TupleIn transformCompositeIdentifierColumnValuesToTupleInValues(int idsCount, Map<? extends Column<T, Object>, Object> values) {
+		List<Object[]> resultValues = new ArrayList<>(idsCount);
+		
+		Column<?, ?>[] columns = new ArrayList<>(values.keySet()).toArray(new Column[0]);
+		for (int i = 0; i < idsCount; i++) {
+			List<Object> beanValues = new ArrayList<>(columns.length);
+			for (Column<?, ?> column: columns) {
+				Object value = values.get(column);
+				// we respect initial will as well as ExpandableStatement.doApplyValue(..) algorithm
+				if (value instanceof List) {
+					beanValues.add(((List) value).get(i));
+				} else {
+					beanValues.add(value);
+				}
+			}
+			resultValues.add(beanValues.toArray());
+		}
+		
+		return new TupleIn(columns, resultValues);
 	}
 }

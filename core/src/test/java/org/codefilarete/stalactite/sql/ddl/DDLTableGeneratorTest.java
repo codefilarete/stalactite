@@ -1,23 +1,27 @@
 package org.codefilarete.stalactite.sql.ddl;
 
 import javax.annotation.Nonnull;
+import java.sql.Connection;
 import java.util.Collections;
 
-import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
-import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Index;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.builder.DMLNameProvider;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class DDLTableGeneratorTest {
 	
 	@Test
-	public void testGenerateCreateTable() {
+	void generateCreateTable() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null) {
 			@Override
 			protected String getSqlType(Column column) {
@@ -47,7 +51,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == primaryKey) {
 					return "'key'";
 				}
@@ -67,7 +71,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateDropTable() {
+	void generateDropTable() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table toto = new Table(null, "Toto");
@@ -78,11 +82,11 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Table table) {
+			public String getName(@Nonnull Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}
-				return super.getSimpleName(toto);
+				return super.getName(toto);
 			}
 		};
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
@@ -92,7 +96,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateDropTableIfExists() {
+	void generateDropTableIfExists() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table toto = new Table(null, "Toto");
@@ -103,11 +107,11 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Table table) {
+			public String getName(@Nonnull Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}
-				return super.getSimpleName(toto);
+				return super.getName(toto);
 			}
 		};
 		testInstance = new DDLTableGenerator(null, dmlNameProvider);
@@ -117,7 +121,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateAddColumn() {
+	void generateAddColumn() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null) {
 			@Override
 			protected String getSqlType(Column column) {
@@ -134,7 +138,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == newColumn) {
 					return "'key'";
 				}
@@ -153,7 +157,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateDropColumn() {
+	void generateDropColumn() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null) {
 			@Override
 			protected String getSqlType(Column column) {
@@ -170,7 +174,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == newColumn) {
 					return "'key'";
 				}
@@ -189,7 +193,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateCreateIndex() {
+	void generateCreateIndex() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table t = new Table(null, "Toto");
@@ -207,7 +211,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -221,7 +225,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateDropIndex() {
+	void generateDropIndex() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table t = new Table(null, "Toto");
@@ -235,7 +239,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -254,7 +258,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateCreateForeignKey() {
+	void generateCreateForeignKey() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table toto = new Table(null, "Toto");
@@ -276,7 +280,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA || column == colA2) {
 					return "'key'";
 				}
@@ -289,7 +293,7 @@ public class DDLTableGeneratorTest {
 	}
 	
 	@Test
-	public void testGenerateDropForeignKey() {
+	void generateDropForeignKey() {
 		DDLTableGenerator testInstance = new DDLTableGenerator(null);
 		
 		Table toto = new Table(null, "Toto");
@@ -306,7 +310,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getSimpleName(@Nonnull Column column) {
+			public String getSimpleName(Selectable<?> column) {
 				if (column == colA) {
 					return "'key'";
 				}
@@ -322,5 +326,42 @@ public class DDLTableGeneratorTest {
 		
 		generateDropForeignKey = testInstance.generateDropForeignKey(foreignKey);
 		assertThat(generateDropForeignKey).isEqualTo("alter table Toto drop constraint FK1");
+	}
+	
+	/**
+	 * Abstract class that creates some tables, columns, indexes and foreign keys and expose a method to deploy them
+	 * on a {@link Connection} thanks to a {@link DDLTableGenerator}.
+	 * This default behavior is expected to be implemented by supported-database-adapter modules in their own test
+	 * to check that default {@link DDLTableGenerator} generates a syntactically correct SQL for them, or to test their
+	 * dedicated implementation.
+	 * 
+	 * @author Guillaume Mary
+	 */
+	abstract static class IntegrationTest {
+		
+		protected final Table table1;
+		protected final Table table2;
+		
+		public IntegrationTest() {
+			table1 = new Table<>("dummyTable1");
+			// testing primary key and auto-increment
+			table1.addColumn("id", int.class).primaryKey().autoGenerated();
+			Column<?, String> nameColumn = table1.addColumn("name", String.class);
+			// testing index creation
+			table1.addIndex("dummyIDX_1", nameColumn);
+			// testing unique constraint creation
+			table1.addUniqueConstraint("dummy_UK", nameColumn);
+			
+			table2 = new Table<>("dummyTable2");
+			Column nameColumn2 = table2.addColumn("name", String.class);
+			// testing foreign key constraint creation
+			table2.addForeignKey("dummyTable2_FK", nameColumn2, nameColumn);
+		}
+		
+		void assertGeneratedSQL_runOnAliveDatabase_doesNotThrowException(DDLTableGenerator testInstance, Connection connection) {
+			DDLDeployer ddlDeployer = new DDLDeployer(testInstance, new SimpleConnectionProvider(connection));
+			ddlDeployer.getDdlGenerator().addTables(table1, table2);
+			assertThatCode(ddlDeployer::deployDDL).doesNotThrowAnyException();
+		}
 	}
 }

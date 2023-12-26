@@ -1,14 +1,14 @@
 package org.codefilarete.stalactite.engine.listener;
 
-import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.ThrowingExecutable;
 import org.codefilarete.tool.function.ThrowingRunnable;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * Simple class that centralizes persistence event listener registration as well as execution of some code wrapped between event triggering.
@@ -23,6 +23,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class PersisterListenerCollection<C, I> implements PersisterListener<C, I> {
 	
+	private final PersistListenerCollection<C> persistListener = new PersistListenerCollection<>();
 	private final InsertListenerCollection<C> insertListener = new InsertListenerCollection<>();
 	private final UpdateByIdListenerCollection<C> updateByIdListener = new UpdateByIdListenerCollection<>();
 	private final UpdateListenerCollection<C> updateListener = new UpdateListenerCollection<>();
@@ -35,54 +36,94 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addInsertListener(InsertListener<C> insertListener) {
+	public void addPersistListener(PersistListener<? extends C> persistListener) {
+		this.persistListener.add(persistListener);
+	}
+	
+	public <R> R doWithPersistListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+		R result;
+		try {
+			persistListener.beforePersist(entities);
+			result = delegate.execute();
+			persistListener.afterPersist(entities);
+		} catch (RuntimeException e) {
+			persistListener.onPersistError(entities, e);
+			throw e;
+		}
+		return result;
+	}
+	
+	public void doWithPersistListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		try {
+			persistListener.beforePersist(entities);
+			delegate.run();
+			persistListener.afterPersist(entities);
+		} catch (RuntimeException e) {
+			persistListener.onPersistError(entities, e);
+			throw e;
+		}
+	}
+	
+	@Override
+	public void addInsertListener(InsertListener<? extends C> insertListener) {
 		this.insertListener.add(insertListener);
 	}
 	
 	public <R> R doWithInsertListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		insertListener.beforeInsert(entities);
 		R result;
 		try {
+			insertListener.beforeInsert(entities);
 			result = delegate.execute();
+			insertListener.afterInsert(entities);
 		} catch (RuntimeException e) {
-			insertListener.onError(entities, e);
+			insertListener.onInsertError(entities, e);
 			throw e;
 		}
-		insertListener.afterInsert(entities);
 		return result;
 	}
 	
 	public void doWithInsertListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		insertListener.beforeInsert(entities);
 		try {
+			insertListener.beforeInsert(entities);
 			delegate.run();
+			insertListener.afterInsert(entities);
 		} catch (RuntimeException e) {
-			insertListener.onError(entities, e);
+			insertListener.onInsertError(entities, e);
 			throw e;
 		}
-		insertListener.afterInsert(entities);
 	}
 	
 	public UpdateByIdListenerCollection<C> getUpdateByIdListener() {
 		return updateByIdListener;
 	}
 	
-	public PersisterListenerCollection<C, I> addUpdateByIdListener(UpdateByIdListener<C> updateByIdListener) {
-		this.updateByIdListener.add(updateByIdListener);
-		return this;
+	@Override
+	public void addUpdateByIdListener(UpdateByIdListener<? extends C> updateByIdListener) {
+		this.updateByIdListener.add((UpdateByIdListener<C>) updateByIdListener);
 	}
 	
-	public <R> R doWithUpdateByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		updateByIdListener.beforeUpdateById(entities);
-		R result = execute(delegate, entities, updateByIdListener::onError);
-		updateByIdListener.afterUpdateById(entities);
+	public <R> R doWithUpdateByIdListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+		R result;
+		try {
+			updateByIdListener.beforeUpdateById(entities);
+			result = delegate.execute();
+			updateByIdListener.afterUpdateById(entities);
+		} catch (RuntimeException e) {
+			updateByIdListener.onUpdateError(entities, e);
+			throw e;
+		}
 		return result;
 	}
 	
-	public void doWithUpdateByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		updateByIdListener.beforeUpdateById(entities);
-		execute(delegate, entities, updateByIdListener::onError);
-		updateByIdListener.afterUpdateById(entities);
+	public void doWithUpdateByIdListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		try {
+			updateByIdListener.beforeUpdateById(entities);
+			delegate.run();
+			updateByIdListener.afterUpdateById(entities);
+		} catch (RuntimeException e) {
+			updateByIdListener.onUpdateError(entities, e);
+			throw e;
+		}
 	}
 	
 	public UpdateListenerCollection<C> getUpdateListener() {
@@ -90,34 +131,34 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addUpdateListener(UpdateListener<C> updateListener) {
-		this.updateListener.add(updateListener);
+	public void addUpdateListener(UpdateListener<? extends C> updateListener) {
+		this.updateListener.add((UpdateListener<C>) updateListener);
 	}
 	
 	public <R, T extends Table<T>> R doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
 														  BiFunction<Iterable<? extends Duo<C, C>>, Boolean, R> delegate) {
-		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		R result;
 		try {
+			updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 			result = delegate.apply(differencesIterable, allColumnsStatement);
+			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
-			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
+			updateListener.onUpdateError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
-		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		return result;
 	}
 	
 	public <T extends Table<T>> void doWithUpdateListener(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement,
 														  BiConsumer<Iterable<? extends Duo<C, C>>, Boolean> delegate) {
-		updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 		try {
+			updateListener.beforeUpdate(differencesIterable, allColumnsStatement);
 			delegate.accept(differencesIterable, allColumnsStatement);
+			updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 		} catch (RuntimeException e) {
-			updateListener.onError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
+			updateListener.onUpdateError(Iterables.collectToList(differencesIterable, Duo::getLeft), e);
 			throw e;
 		}
-		updateListener.afterUpdate(differencesIterable, allColumnsStatement);
 	}
 	
 	public DeleteListenerCollection<C> getDeleteListener() {
@@ -129,39 +170,61 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addDeleteListener(DeleteListener<C> deleteListener) {
+	public void addDeleteListener(DeleteListener<? extends C> deleteListener) {
 		this.deleteListener.add(deleteListener);
 	}
 	
-	public <R> R doWithDeleteListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		deleteListener.beforeDelete(entities);
-		R result = execute(delegate, entities, deleteListener::onError);
-		deleteListener.afterDelete(entities);
+	public <R> R doWithDeleteListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+		R result;
+		try {
+			deleteListener.beforeDelete(entities);
+			result = delegate.execute();
+			deleteListener.afterDelete(entities);
+		} catch (RuntimeException e) {
+			deleteListener.onDeleteError(entities, e);
+			throw e;
+		}
 		return result;
 	}
 	
-	public void doWithDeleteListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		deleteListener.beforeDelete(entities);
-		execute(delegate, entities, deleteListener::onError);
-		deleteListener.afterDelete(entities);
+	public void doWithDeleteListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		try {
+			deleteListener.beforeDelete(entities);
+			delegate.run();
+			deleteListener.afterDelete(entities);
+		} catch (RuntimeException e) {
+			deleteListener.onDeleteError(entities, e);
+			throw e;
+		}
 	}
 	
 	@Override
-	public void addDeleteByIdListener(DeleteByIdListener<C> deleteByIdListener) {
+	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteByIdListener) {
 		this.deleteByIdListener.add(deleteByIdListener);
 	}
 	
-	public <R> R doWithDeleteByIdListener(Iterable<C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
-		deleteByIdListener.beforeDeleteById(entities);
-		R result = execute(delegate, entities, deleteByIdListener::onError);
-		deleteByIdListener.afterDeleteById(entities);
+	public <R> R doWithDeleteByIdListener(Iterable<? extends C> entities, ThrowingExecutable<R, RuntimeException> delegate) {
+		R result;
+		try {
+			deleteByIdListener.beforeDeleteById(entities);
+			result = delegate.execute();
+			deleteByIdListener.afterDeleteById(entities);
+		} catch (RuntimeException e) {
+			deleteByIdListener.onDeleteError(entities, e);
+			throw e;
+		}
 		return result;
 	}
 	
-	public void doWithDeleteByIdListener(Iterable<C> entities, ThrowingRunnable<RuntimeException> delegate) {
-		deleteByIdListener.beforeDeleteById(entities);
-		execute(delegate, entities, deleteByIdListener::onError);
-		deleteByIdListener.afterDeleteById(entities);
+	public void doWithDeleteByIdListener(Iterable<? extends C> entities, ThrowingRunnable<RuntimeException> delegate) {
+		try {
+			deleteByIdListener.beforeDeleteById(entities);
+			delegate.run();
+			deleteByIdListener.afterDeleteById(entities);
+		} catch (RuntimeException e) {
+			deleteByIdListener.onDeleteError(entities, e);
+			throw e;
+		}
 	}
 	
 	public SelectListenerCollection<C, I> getSelectListener() {
@@ -169,40 +232,26 @@ public class PersisterListenerCollection<C, I> implements PersisterListener<C, I
 	}
 	
 	@Override
-	public void addSelectListener(SelectListener<C, I> selectListener) {
+	public void addSelectListener(SelectListener<? extends C, I> selectListener) {
 		this.selectListener.add(selectListener);
 	}
 	
-	public List<C> doWithSelectListener(Iterable<I> ids, ThrowingExecutable<List<C>, RuntimeException> delegate) {
-		selectListener.beforeSelect(ids);
-		List<C> result = execute(delegate, ids, selectListener::onError);
-		selectListener.afterSelect(result);
+	public Set<C> doWithSelectListener(Iterable<I> ids, ThrowingExecutable<Set<C>, RuntimeException> delegate) {
+		Set<C> result;
+		try {
+			selectListener.beforeSelect(ids);
+			result = delegate.execute();
+			selectListener.afterSelect(result);
+		} catch (RuntimeException e) {
+			selectListener.onSelectError(ids, e);
+			throw e;
+		}
 		return result;
-	}
-	
-	private <X, R> R execute(ThrowingExecutable<R, RuntimeException> delegate, Iterable<X> entities,
-								 BiConsumer<Iterable<X>, RuntimeException> errorHandler) {
-		try {
-			return delegate.execute();
-		} catch (RuntimeException e) {
-			errorHandler.accept(entities, e);
-			throw e;
-		}
-	}
-	
-	private <X> void execute(ThrowingRunnable<RuntimeException> delegate, Iterable<X> entities,
-								 BiConsumer<Iterable<X>, RuntimeException> errorHandler) {
-		try {
-			delegate.run();
-		} catch (RuntimeException e) {
-			errorHandler.accept(entities, e);
-			throw e;
-		}
 	}
 	
 	/**
 	 * Move internal listeners to given instance.
-	 * Usefull to agregate listeners into a single instance.
+	 * Useful to aggregate listeners into a single instance.
 	 * Please note that as this method is named "move" it means that listeners of current instance will be cleared.
 	 * 
 	 * @param persisterListener the target listener on which the one of current instance must be moved to.

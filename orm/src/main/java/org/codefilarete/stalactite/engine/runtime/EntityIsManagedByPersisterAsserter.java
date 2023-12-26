@@ -25,7 +25,7 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	private final Consumer<C> asserter;
 	
 	
-	public EntityIsManagedByPersisterAsserter(EntityConfiguredJoinedTablesPersister<C, I> surrogate) {
+	public EntityIsManagedByPersisterAsserter(ConfiguredRelationalPersister<C, I> surrogate) {
 		super(surrogate);
 		if (getDeepestSurrogate() instanceof PolymorphicPersister) {
 			Set<Class<? extends C>> supportedEntityTypes = ((PolymorphicPersister<C>) getDeepestSurrogate()).getSupportedEntityTypes();
@@ -57,10 +57,10 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 		asserter.accept(entity);
 	}
 	
-	/* Please note that some methods were not overridden for calling assertion because there super implementation invokes some methods that do it,
+	/* Please note that some methods were not overriden for calling assertion because there super implementation invokes some methods that do it,
 	 * hence by such a way we avoid multiple calls to assertion. Meanwhile a Unit Test checks all of them. 
 	 * Here they are:
-	 * - persist(Iterable<? extends C> entities)
+	 * - persist(entity)
 	 * - insert(C entity)
 	 * - update(C modified, C unmodified, boolean allColumnsStatement)
 	 * - update(C entity)
@@ -71,9 +71,9 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	 */
 	
 	@Override
-	public void persist(C entity) {
-		assertPersisterManagesEntity(entity);
-		super.persist(entity);
+	public void persist(Iterable<? extends C> entities) {
+		assertPersisterManagesEntities(entities);
+		super.persist(entities);
 	}
 	
 	@Override
@@ -91,13 +91,13 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	}
 	
 	@Override
-	public void updateById(Iterable<C> entities) {
+	public void updateById(Iterable<? extends C> entities) {
 		assertPersisterManagesEntities(entities);
 		super.updateById(entities);
 	}
 	
 	@Override
-	public void delete(Iterable<C> entities) {
+	public void delete(Iterable<? extends C> entities) {
 		// we clear asserter input from null because it doesn't support it, and it may happen in update cases of nullified one-to-one relation
 		List<C> nonNullEntities = Iterables.stream(entities).filter(Objects::nonNull).collect(Collectors.toList());
 		assertPersisterManagesEntities(nonNullEntities);
@@ -105,7 +105,7 @@ public class EntityIsManagedByPersisterAsserter<C, I> extends PersisterWrapper<C
 	}
 	
 	@Override
-	public void deleteById(Iterable<C> entities) {
+	public void deleteById(Iterable<? extends C> entities) {
 		assertPersisterManagesEntities(entities);
 		super.deleteById(entities);
 	}

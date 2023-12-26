@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.stream.LongStream;
 
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
+import org.codefilarete.stalactite.sql.ddl.DerbyDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.DerbyReadOperation;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
@@ -37,7 +38,7 @@ public class DerbyDialect extends Dialect {
 
 	@Override
 	protected DDLTableGenerator newDdlTableGenerator() {
-		return new DerbyTableGenerator(getSqlTypeRegistry());
+		return new DerbyDDLTableGenerator(getSqlTypeRegistry());
 	}
 	
 	@Override

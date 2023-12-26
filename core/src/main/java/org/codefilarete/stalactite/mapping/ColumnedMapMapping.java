@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -10,21 +9,21 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Collections;
-import org.codefilarete.tool.function.Predicates;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Collections;
+import org.codefilarete.tool.function.Predicates;
 
 /**
  * A class that "roughly" persists a {@link Map} tom some {@link Column}s : mapping is made according to {@link Map} keys.
  *
  * @author Guillaume Mary
  */
-public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Table> implements EmbeddedBeanMapping<C, T> {
+public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Table<T>> implements EmbeddedBeanMapping<C, T> {
 	
 	private final T targetTable;
 	private final Set<Column<T, Object>> columns;
@@ -48,14 +47,13 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 		return targetTable;
 	}
 	
-	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return columns;
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<C> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
@@ -63,10 +61,9 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 		return columnsPrefix + i;
 	}
 	
-	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(C c) {
-		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
+		Map<Column<T, ?>, Object> toReturn = new HashMap<>();
 		Map<K, V> toIterate = c;
 		if (Collections.isEmpty(c)) {
 			toIterate = new HashMap<>();
@@ -78,14 +75,13 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 				toReturn.put(column, null);
 			}
 		}
-		return toReturn;
+		return (Map<Column<T, Object>, Object>) (Map) toReturn;
 	}
 	
-	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(C modified, C unmodified, boolean allColumns) {
 		Map<Column<T, Object>, Object> unmodifiedColumns = new HashMap<>();
-		Map<Column<T, Object>, Object> toReturn = new HashMap<>();
+		Map<Column<T, ?>, Object> toReturn = new HashMap<>();
 		if (modified != null) {
 			// getting differences
 			// - all of modified but different in unmodified
@@ -123,7 +119,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 		return convertToUpwhereColumn(toReturn);
 	}
 	
-	private Map<UpwhereColumn<T>, Object> convertToUpwhereColumn(Map<Column<T, Object>, Object> map) {
+	private Map<UpwhereColumn<T>, Object> convertToUpwhereColumn(Map<Column<T, ?>, Object> map) {
 		Map<UpwhereColumn<T>, Object> convertion = new HashMap<>();
 		map.forEach((c, s) -> convertion.put(new UpwhereColumn<>(c, true), s));
 		return convertion;
@@ -137,7 +133,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	 * @param value the value ok key in the Map, may be transformed to be persisted
 	 * @param valuesToBePersisted Map to populate
 	 */
-	protected void addUpsertValues(K key, V value, Map<Column<T, Object>, Object> valuesToBePersisted) {
+	protected void addUpsertValues(K key, V value, Map<Column<T, ?>, Object> valuesToBePersisted) {
 		Object o = toDatabaseValue(key, value);
 		Column<T, Object> column = getColumn(key);
 		valuesToBePersisted.put(column, o);
@@ -163,10 +159,10 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	/**
 	 * Reverse of {@link #toDatabaseValue(Object, Object)}: give a map value from a database selected value
 	 * @param k the key being read, help to determine how to convert t
-	 * @param t the data from the database
+	 * @param o the data from the database
 	 * @return a value for a Map
 	 */
-	protected abstract V toMapValue(K k, Object t);
+	protected abstract V toMapValue(K k, Object o);
 
 	@Override
 	public C transform(Row row) {
@@ -181,6 +177,21 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
+	@Override
+	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		throw new UnsupportedOperationException(Reflections.toString(ColumnedMapMapping.class) + " can't export a mapping between some accessors and their columns");
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getWritableColumns() {
+		return this.columns;
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getReadonlyColumns() {
+		return java.util.Collections.emptySet();
 	}
 	
 	private static class LocalToMapRowTransformer<M extends Map<K, V>, K, V> extends ToMapRowTransformer<M> {
@@ -199,7 +210,7 @@ public abstract class ColumnedMapMapping<C extends Map<K, V>, K, V, T extends Ta
 			this.databaseValueConverter = databaseValueConverter;
 		}
 		
-		private LocalToMapRowTransformer(Function<Function<Column, Object>, M> beanFactory,
+		private LocalToMapRowTransformer(Function<Function<Column<?, ?>, Object>, M> beanFactory,
 										 ColumnedRow columnedRow,
 										 Iterable<Column> columns, Function<Column, K> keyProvider,
 										 BiFunction<K /* key */, Object /* row value */, V> databaseValueConverter) {

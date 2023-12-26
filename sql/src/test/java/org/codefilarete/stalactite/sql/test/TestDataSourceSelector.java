@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
  * Choice is made according to presence of the JVM variable named {@value #DATABASE_SERVICES_VARIABLE_NAME} expected to point to a file path that contains databases coordinates
  * as properties. Each property name depends on database vendor and defined by subclasses (but is usually formed as "DatabaseVendorName.url").
  * 
- * Given file should contain several databaase service coordinates (one per database vendor), but may not contain all database vendor, depending
- * weither or not user wants to run tests on installed services or embedded ones.
+ * Given file should contain several database service coordinates (one per database vendor), but may not contain all database vendor, depending
+ * whether or not user wants to run tests on installed services or embedded ones.
  * 
  * @author Guillaume Mary
  */

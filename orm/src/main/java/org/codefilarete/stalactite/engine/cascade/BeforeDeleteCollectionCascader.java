@@ -25,12 +25,6 @@ public abstract class BeforeDeleteCollectionCascader<TRIGGER, TARGET> implements
 	 */
 	public BeforeDeleteCollectionCascader(EntityPersister<TARGET, ?> persister) {
 		this.persister = persister;
-		this.persister.addDeleteListener(new DeleteListener<TARGET>() {
-			@Override
-			public void afterDelete(Iterable<TARGET> entities) {
-				postTargetDelete(entities);
-			}
-		});
 	}
 	
 	public EntityPersister<TARGET, ?> getPersister() {
@@ -38,21 +32,14 @@ public abstract class BeforeDeleteCollectionCascader<TRIGGER, TARGET> implements
 	}
 	
 	/**
-	 * Overriden to delete Target instances of the Trigger instances.
+	 * Overridden to delete Target instances of the Trigger instances.
 	 * 
 	 * @param entities source entities previously deleted
 	 */
 	@Override
-	public void beforeDelete(Iterable<TRIGGER> entities) {
+	public void beforeDelete(Iterable<? extends TRIGGER> entities) {
 		this.persister.delete(Iterables.stream(entities).flatMap(c -> getTargets(c).stream()).collect(Collectors.toList()));
 	}
-	
-	/**
-	 * Post treatment after Target instance deletion. Cache cleanup for instance.
-	 * 
-	 * @param entities entities deleted by this listener
-	 */
-	protected abstract void postTargetDelete(Iterable<TARGET> entities);
 	
 	/**
 	 * Expected to give the Target instances of a Trigger (should simply give a field value of trigger)

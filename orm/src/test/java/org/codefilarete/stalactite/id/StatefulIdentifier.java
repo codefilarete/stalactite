@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.id;
 
 import javax.annotation.Nonnull;
 
-import org.codefilarete.stalactite.engine.runtime.Persister;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 
 /**
@@ -10,7 +10,7 @@ import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierM
  * The surrogate will be persisted, not the whole instances of this class.
  * 
  * Mainly introduced to manage {@link AlreadyAssignedIdentifierManager} and the need to determine if an instance is persisted or not
- * (see {@link Persister#persist(Object)}.
+ * (see {@link BeanPersister#persist(Object)}.
  * 
  * @param <T> the real type of the identifier
  * @author Guillaume Mary

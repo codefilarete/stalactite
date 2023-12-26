@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.runtime.SecondPhaseRelationLoader;
-import org.codefilarete.stalactite.engine.configurer.CascadeManyConfigurer.FirstPhaseCycleLoadListener;
+import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer.FirstPhaseCycleLoadListener;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 
 /**
@@ -21,7 +21,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
  * @param <TRGTID> cycling entity identifier type
  *
  */
-public class OneToManyCycleLoader<SRC, TRGT, TRGTID> extends AbstractOneCycleLoader<SRC, TRGT, TRGTID> {
+public class OneToManyCycleLoader<SRC, TRGT, TRGTID> extends AbstractCycleLoader<SRC, TRGT, TRGTID> {
 	
 	public OneToManyCycleLoader(EntityPersister<TRGT, TRGTID> targetPersister) {
 		super(targetPersister);
@@ -39,7 +39,7 @@ public class OneToManyCycleLoader<SRC, TRGT, TRGTID> extends AbstractOneCycleLoa
 	}
 	
 	@Override
-	protected void applyRelationToSource(EntityRelationStorage<SRC, TRGT, TRGTID> relationStorage,
+	protected void applyRelationToSource(EntityRelationStorage<SRC, TRGTID> relationStorage,
 										 BeanRelationFixer<SRC, TRGT> beanRelationFixer,
 										 Map<TRGTID, TRGT> targetPerId) {
 		relationStorage.getEntitiesToFulFill().forEach(src -> {

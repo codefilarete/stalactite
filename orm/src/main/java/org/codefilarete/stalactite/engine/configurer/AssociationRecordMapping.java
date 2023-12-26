@@ -1,64 +1,79 @@
 package org.codefilarete.stalactite.engine.configurer;
 
-import javax.annotation.Nonnull;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdAccessor;
+import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 
 /**
  * @author Guillaume Mary
  */
-class AssociationRecordMapping extends ClassMapping<AssociationRecord, AssociationRecord, AssociationTable> {
+public class AssociationRecordMapping<
+		ASSOCIATIONTABLE extends AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, LEFTID, RIGHTID>,
+		LEFTTABLE extends Table<LEFTTABLE>,
+		RIGHTTABLE extends Table<RIGHTTABLE>,
+		LEFTID,
+		RIGHTID>
+		extends ClassMapping<AssociationRecord, AssociationRecord, ASSOCIATIONTABLE> {
 	
-	public AssociationRecordMapping(AssociationTable targetTable) {
-		super(AssociationRecord.class, targetTable, (Map) Maps
-						.forHashMap(ReversibleAccessor.class, Column.class)
-						.add(AssociationRecord.LEFT_ACCESSOR, targetTable.getOneSideKeyColumn())
-						.add(AssociationRecord.RIGHT_ACCESSOR, targetTable.getManySideKeyColumn())
-				,
-				new ComposedIdMapping<AssociationRecord, AssociationRecord>(new IdAccessor<AssociationRecord, AssociationRecord>() {
-					@Override
-					public AssociationRecord getId(AssociationRecord associationRecord) {
-						return associationRecord;
-					}
-					
-					@Override
-					public void setId(AssociationRecord associationRecord, AssociationRecord identifier) {
-						associationRecord.setLeft(identifier.getLeft());
-						associationRecord.setRight(identifier.getRight());
-					}
-				}, new AlreadyAssignedIdentifierManager<>(AssociationRecord.class, AssociationRecord::markAsPersisted, AssociationRecord::isPersisted),
-																			new ComposedIdentifierAssembler<AssociationRecord>(targetTable) {
+	public AssociationRecordMapping(ASSOCIATIONTABLE targetTable,
+									IdentifierAssembler<LEFTID, LEFTTABLE> leftIdentifierAssembler,
+									IdentifierAssembler<RIGHTID, RIGHTTABLE> rightIdentifierAssembler,
+									Map<Column<LEFTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> leftIdentifierColumnMapping,
+									Map<Column<RIGHTTABLE, Object>, Column<ASSOCIATIONTABLE, Object>> rightIdentifierColumnMapping
+									) {
+		super(AssociationRecord.class,
+				targetTable,
+				new HashMap<>(),
+				new ComposedIdMapping<AssociationRecord, AssociationRecord>(
+						new IdAccessor<AssociationRecord, AssociationRecord>() {
 							@Override
-							protected AssociationRecord assemble(Map<Column, Object> primaryKeyElements) {
-								Object leftValue = primaryKeyElements.get(targetTable.getOneSideKeyColumn());
-								Object rightValue = primaryKeyElements.get(targetTable.getManySideKeyColumn());
+							public AssociationRecord getId(AssociationRecord associationRecord) {
+								return associationRecord;
+							}
+							
+							@Override
+							public void setId(AssociationRecord associationRecord, AssociationRecord identifier) {
+								associationRecord.setLeft(identifier.getLeft());
+								associationRecord.setRight(identifier.getRight());
+							}
+						}, new AlreadyAssignedIdentifierManager<>(AssociationRecord.class, AssociationRecord::markAsPersisted, AssociationRecord::isPersisted),
+						new ComposedIdentifierAssembler<AssociationRecord, ASSOCIATIONTABLE>(targetTable) {
+							@Override
+							public AssociationRecord assemble(Function<Column<?, ?>, Object> columnValueProvider) {
+								LEFTID leftid = leftIdentifierAssembler.assemble(columnValueProvider);
+								RIGHTID rightid = rightIdentifierAssembler.assemble(columnValueProvider);
 								// we should not return an id if any (both expected in fact) value is null
-								if (leftValue == null || rightValue == null) {
+								if (leftid == null || rightid == null) {
 									return null;
 								} else {
-									return new AssociationRecord(leftValue, rightValue);
+									return new AssociationRecord(leftid, rightid);
 								}
 							}
 							
 							@Override
-							public Map<Column, Object> getColumnValues(@Nonnull AssociationRecord id) {
-								return Maps.asMap(targetTable.getOneSideKeyColumn(), id.getLeft())
-										.add(targetTable.getManySideKeyColumn(), id.getRight());
+							public Map<Column<ASSOCIATIONTABLE, Object>, Object> getColumnValues(AssociationRecord id) {
+								Map<Column<LEFTTABLE, Object>, Object> leftValues = leftIdentifierAssembler.getColumnValues((LEFTID) id.getLeft());
+								Map<Column<RIGHTTABLE, Object>, Object> rightValues = rightIdentifierAssembler.getColumnValues((RIGHTID) id.getRight());
+								Map<Column<ASSOCIATIONTABLE, Object>, Object> result = new HashMap<>();
+								leftValues.forEach((key, value) -> result.put(leftIdentifierColumnMapping.get(key), value));
+								rightValues.forEach((key, value) -> result.put(rightIdentifierColumnMapping.get(key), value));
+								return result;
 							}
 						}) {
 					
 					@Override
-					public boolean isNew(@Nonnull AssociationRecord entity) {
+					public boolean isNew(AssociationRecord entity) {
 						return !entity.isPersisted();
 					}
 				});

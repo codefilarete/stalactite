@@ -4,57 +4,53 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.collection.PairIterator;
 import org.codefilarete.reflection.AccessorByField;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener.UpdatePayload;
-import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.Mapping.UpwhereColumn;
+import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.statement.DMLGenerator;
-import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.statement.DMLGenerator;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.test.PairSetList;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.PairIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.codefilarete.tool.collection.Arrays.asList;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
  */
-class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
+class UpdateExecutorTest<T extends Table<T>> extends AbstractDMLExecutorMockTest {
 	
 	private final Dialect dialect = new Dialect(new JavaTypeToSqlTypeMapping()
 		.with(Integer.class, "int"));
 	
-	private UpdateExecutor<Toto, Integer, Table> testInstance;
+	private UpdateExecutor<Toto, Integer, T> testInstance;
 	
 	@BeforeEach
 	void setUp() {
-		PersistenceConfiguration<Toto, Integer, Table> persistenceConfiguration = giveDefaultPersistenceConfiguration();
+		PersistenceConfiguration<Toto, Integer, T> persistenceConfiguration = giveDefaultPersistenceConfiguration();
 		DMLGenerator dmlGenerator = new DMLGenerator(dialect.getColumnBinderRegistry(), new DMLGenerator.CaseSensitiveSorter());
 		testInstance = new UpdateExecutor<>(persistenceConfiguration.classMappingStrategy,
 				new ConnectionConfigurationSupport(jdbcMock.transactionManager, 3), dmlGenerator, noRowCountCheckWriteOperationFactory, 3);
@@ -78,11 +74,11 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void update_mandatoryColumn() {
-		Column<Table, Object> bColumn = (Column<Table, Object>) testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
+		Column<T, Object> bColumn = testInstance.getMapping().getTargetTable().mapColumnsOnName().get("b");
 		bColumn.setNullable(false);
 		
 		List<Duo<Toto, Toto>> differencesIterable = asList(new Duo<>(new Toto(1, null, 23), new Toto(1, 42, 23)));
-		Iterable<UpdatePayload<Toto, Table>> payloads = UpdateListener.computePayloads(differencesIterable, true,
+		Iterable<UpdatePayload<Toto, T>> payloads = UpdateListener.computePayloads(differencesIterable, true,
 				testInstance.getMapping());
 		
 		assertThatThrownBy(() -> testInstance.updateMappedColumns(payloads))
@@ -92,11 +88,11 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 	
 	@Test
 	void listenerIsCalled() {
-		SQLOperationListener<UpwhereColumn<Table>> listenerMock = mock(SQLOperationListener.class);
+		SQLOperationListener<UpwhereColumn<T>> listenerMock = mock(SQLOperationListener.class);
 		testInstance.setOperationListener(listenerMock);
 		
-		ArgumentCaptor<Map<UpwhereColumn<Table>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
-		ArgumentCaptor<SQLStatement<UpwhereColumn<Table>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
+		ArgumentCaptor<Map<UpwhereColumn<T>, ?>> statementArgCaptor = ArgumentCaptor.forClass(Map.class);
+		ArgumentCaptor<SQLStatement<UpwhereColumn<T>>> sqlArgCaptor = ArgumentCaptor.forClass(SQLStatement.class);
 		
 		try {
 			testInstance.updateById(Arrays.asList(new Toto(1, 17, 23), new Toto(2, 29, 31)));
@@ -109,24 +105,50 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 		Column colB = mappedTable.addColumn("b", Integer.class);
 		Column colC = mappedTable.addColumn("c", Integer.class);
 		verify(listenerMock, times(2)).onValuesSet(statementArgCaptor.capture());
-		assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-				Maps.asHashMap(new UpwhereColumn<>(colA, false), 1).add(new UpwhereColumn<>(colB, true), 17).add(new UpwhereColumn<>(colC, true),
-						23),
-				Maps.asHashMap(new UpwhereColumn<>(colA, false), 2).add(new UpwhereColumn<>(colB, true), 29).add(new UpwhereColumn<>(colC, true), 31)
-		));
+		ExtendedMapAssert.assertThatMap((Map<UpwhereColumn, Integer>) (Map) statementArgCaptor.getAllValues().get(0))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getColumn().getAbsoluteName().equals(entry2.getKey().getColumn().getAbsoluteName())
+						&& entry1.getKey().isUpdate() == entry2.getKey().isUpdate()
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(new UpwhereColumn<>(colA, false), 1),
+						entry(new UpwhereColumn<>(colB, true), 17),
+						entry(new UpwhereColumn<>(colC, true), 23)
+				);
+		ExtendedMapAssert.assertThatMap((Map<UpwhereColumn, Integer>) (Map) statementArgCaptor.getAllValues().get(1))
+				// since Query contains columns copies we can't compare them through equals() (and since Column doesn't implement equals()/hashCode()
+				.usingElementPredicate((entry1, entry2) -> entry1.getKey().getColumn().getAbsoluteName().equals(entry2.getKey().getColumn().getAbsoluteName())
+						&& entry1.getKey().isUpdate() == entry2.getKey().isUpdate()
+						&& entry1.getValue().equals(entry2.getValue()))
+				.containsExactlyInAnyOrder(
+						entry(new UpwhereColumn<>(colA, false), 2),
+						entry(new UpwhereColumn<>(colB, true), 29),
+						entry(new UpwhereColumn<>(colC, true), 31)
+				);
 		verify(listenerMock, times(1)).onExecute(sqlArgCaptor.capture());
 		assertThat(sqlArgCaptor.getValue().getSQL()).isEqualTo("update Toto set b = ?, c = ? where a = ?");
 	}
 	
 	@Test
-	<T extends Table<T>> void updateById_noColumnToUpdate() {
-		T table = (T) new Table<>("SimpleEntity");
-		Column<?, Long> id = table.addColumn("id", long.class).primaryKey();
+	void updateById_noColumnToUpdate() {
+		T table = (T) new Table("SimpleEntity");
+		Column<T, Long> id = table.addColumn("id", long.class).primaryKey();
 		AccessorByField<SimpleEntity, Long> idAccessor = Accessors.accessorByField(SimpleEntity.class, "id");
-		ClassMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMapping<SimpleEntity, Long, T>
-				(SimpleEntity.class, table, (Map) Maps.asMap(idAccessor, id), idAccessor, new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> true));
-		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<SimpleEntity, Long, T>(
-				simpleEntityPersistenceMapping, new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4), new DMLGenerator(new ColumnBinderRegistry()), new WriteOperationFactory(), 4);
+		Map<AccessorByField<SimpleEntity, Object>, Column<T, Object>> mapping = Maps
+				.forHashMap((Class<AccessorByField<SimpleEntity, Object>>) null, (Class<Column<T, Object>>) null)
+				.add((AccessorByField) idAccessor, (Column) id);
+		ClassMapping<SimpleEntity, Long, T> simpleEntityPersistenceMapping = new ClassMapping<>(
+				SimpleEntity.class,
+				table,
+				mapping,
+				idAccessor,
+				new AlreadyAssignedIdentifierManager<>(long.class, c -> {}, c -> true));
+		UpdateExecutor<SimpleEntity, Long, T> testInstance = new UpdateExecutor<>(
+				simpleEntityPersistenceMapping,
+				new ConnectionConfigurationSupport(mock(ConnectionProvider.class), 4),
+				new DMLGenerator(new ColumnBinderRegistry()),
+				new WriteOperationFactory(),
+				4);
 		
 		assertThatCode(() -> testInstance.updateById(Arrays.asList(new SimpleEntity()))).doesNotThrowAnyException();
 	}
@@ -205,9 +227,8 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 	@MethodSource("testUpdate_diff_data")
 	void update_diff(List<Toto> originalInstances, List<Toto> modifiedInstances, ExpectedResult_TestUpdate_diff expectedResult) throws Exception {
 		// variable introduced to bypass generics problem
-		UpdateExecutor<Toto, Integer, Table> localTestInstance = testInstance;
-		localTestInstance.updateVariousColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
-				false, localTestInstance.getMapping()));
+		Iterable<Duo<Toto, Toto>> duos = () -> new PairIterator<>(modifiedInstances, originalInstances);
+		testInstance.updateVariousColumns(UpdateListener.computePayloads(duos, false, testInstance.getMapping()));
 		
 		verify(jdbcMock.preparedStatement, times(expectedResult.addBatchCallCount)).addBatch();
 		verify(jdbcMock.preparedStatement, times(expectedResult.executeBatchCallCount)).executeLargeBatch();
@@ -225,7 +246,7 @@ class UpdateExecutorTest extends AbstractDMLExecutorMockTest {
 				new Toto(1, 17, 123), new Toto(2, 129, 31), new Toto(3, 137, 141),
 				new Toto(4, 143, 153), new Toto(5, -1, -2));
 		// variable introduced to bypass generics problem
-		UpdateExecutor<Toto, Integer, Table> localTestInstance = testInstance;
+		UpdateExecutor<Toto, Integer, T> localTestInstance = testInstance;
 		localTestInstance.updateMappedColumns(UpdateListener.computePayloads(() -> new PairIterator<>(modifiedInstances, originalInstances),
 				true, localTestInstance.getMapping()));
 		

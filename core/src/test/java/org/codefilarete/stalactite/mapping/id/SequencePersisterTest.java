@@ -3,14 +3,14 @@ package org.codefilarete.stalactite.mapping.id;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.stalactite.engine.SeparateTransactionExecutor;
+import org.codefilarete.stalactite.engine.SeparateTransactionExecutor.JdbcOperation;
 import org.codefilarete.stalactite.mapping.id.sequence.SequencePersister;
 import org.codefilarete.stalactite.mapping.id.sequence.SequenceStorageOptions;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,12 +65,9 @@ public class SequencePersisterTest {
 		List<SequencePersister.Sequence> insertedSequence = new ArrayList<>();
 		List<SequencePersister.Sequence> updatedSequence = new ArrayList<>();
 		SeparateTransactionExecutor separateTransactionExecutorMock = mock(SeparateTransactionExecutor.class);
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer(InvocationOnMock invocationOnMock) throws Throwable {
-				((SeparateTransactionExecutor.JdbcOperation) invocationOnMock.getArgument(0)).execute();
-				return null;
-			}
+		doAnswer((Answer<Void>) invocationOnMock -> {
+			((JdbcOperation) invocationOnMock.getArgument(0)).execute();
+			return null;
 		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
 		SequencePersister testInstance = new SequencePersister(new Dialect(), separateTransactionExecutorMock, 42) {
 			
@@ -104,12 +101,9 @@ public class SequencePersisterTest {
 		List<SequencePersister.Sequence> insertedSequence = new ArrayList<>();
 		List<SequencePersister.Sequence> updatedSequence = new ArrayList<>();
 		SeparateTransactionExecutor separateTransactionExecutorMock = mock(SeparateTransactionExecutor.class);
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer(InvocationOnMock invocationOnMock) throws Throwable {
-				((SeparateTransactionExecutor.JdbcOperation) invocationOnMock.getArgument(0)).execute();
-				return null;
-			}
+		doAnswer((Answer<Void>) invocationOnMock -> {
+			((JdbcOperation) invocationOnMock.getArgument(0)).execute();
+			return null;
 		}).when(separateTransactionExecutorMock).executeInNewTransaction(any());
 		SequencePersister testInstance = new SequencePersister(new Dialect(), separateTransactionExecutorMock, 42) {
 

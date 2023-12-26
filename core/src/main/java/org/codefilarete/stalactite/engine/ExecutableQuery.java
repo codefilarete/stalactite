@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * Little interface to declare a {@link org.codefilarete.stalactite.query.model.Query} as executable, see {@link PersistenceContext.ExecutableSelect}
@@ -9,6 +10,6 @@ import java.util.List;
  */
 public interface ExecutableQuery<C> {
 	
-	List<C> execute();
+	Set<C> execute();
 	
 }

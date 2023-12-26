@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -11,18 +10,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.SqlTypeRegistry;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Predicates;
-import org.codefilarete.reflection.ReversibleAccessor;
-import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * A mapping strategy to persist a {@link ZonedDateTime} : requires 2 columns, one for the date-time part, another for the timezone.
@@ -36,13 +35,13 @@ import org.codefilarete.stalactite.sql.result.Row;
  * 
  * @author Guillaume Mary
  */
-public class ZonedDateTimeMapping<T extends Table> implements EmbeddedBeanMapping<ZonedDateTime, T> {
+public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMapping<ZonedDateTime, T> {
 	
 	private final Column<T, LocalDateTime> dateTimeColumn;
 	private final Column<T, ZoneId> zoneColumn;
 	private final UpwhereColumn<T> dateTimeUpdateColumn;
 	private final UpwhereColumn<T> zoneUpdateColumn;
-	private final Set<Column<T, ?>> columns;
+	private final Set<Column<T, Object>> columns;
 	private final ZonedDateTimeToBeanRowTransformer zonedDateTimeRowTransformer;
 	
 	/**
@@ -64,31 +63,28 @@ public class ZonedDateTimeMapping<T extends Table> implements EmbeddedBeanMappin
 		this.zoneColumn = zoneColumn;
 		this.dateTimeUpdateColumn = new UpwhereColumn<>(dateTimeColumn, true);
 		this.zoneUpdateColumn = new UpwhereColumn<>(zoneColumn, true);
-		this.columns = Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
+		this.columns = (Set<Column<T, Object>>) (Set) Collections.unmodifiableSet(Arrays.asHashSet(dateTimeColumn, zoneColumn));
 		this.zonedDateTimeRowTransformer = new ZonedDateTimeToBeanRowTransformer();
 	}
 	
-	@Nonnull
 	@Override
 	public Set<Column<T, Object>> getColumns() {
 		return (Set) columns;
 	}
 	
 	@Override
-	public void addPropertySetByConstructor(ValueAccessPoint accessor) {
+	public void addPropertySetByConstructor(ValueAccessPoint<ZonedDateTime> accessor) {
 		// this class doesn't support bean factory so it can't support properties set by constructor
 	}
 	
-	@Nonnull
 	@Override
 	public Map<Column<T, Object>, Object> getInsertValues(ZonedDateTime zonedDateTime) {
 		Map<Column<T, ?>, Object> result = new HashMap<>();
 		result.put(dateTimeColumn, zonedDateTime.toLocalDateTime());
 		result.put(zoneColumn, zonedDateTime.getZone());
-		return (Map) result;
+		return (Map<Column<T, Object>, Object>) (Map) result;
 	}
 	
-	@Nonnull
 	@Override
 	public Map<UpwhereColumn<T>, Object> getUpdateValues(ZonedDateTime modified, ZonedDateTime unmodified, boolean allColumns) {
 		Map<Column<T, ?>, Object> unmodifiedColumns = new HashMap<>();
@@ -130,6 +126,22 @@ public class ZonedDateTimeMapping<T extends Table> implements EmbeddedBeanMappin
 	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getPropertyToColumn() {
 		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
 				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
+	}
+	
+	@Override
+	public Map<ReversibleAccessor<ZonedDateTime, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
+		throw new NotImplementedException(Reflections.toString(ZonedDateTimeMapping.class) + " can't export a mapping between some accessors and their columns"
+				+ " because properties of " + Reflections.toString(ZonedDateTime.class) + " can't be set");
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getWritableColumns() {
+		return this.columns;
+	}
+	
+	@Override
+	public Set<Column<T, Object>> getReadonlyColumns() {
+		return java.util.Collections.emptySet();
 	}
 	
 	@Override

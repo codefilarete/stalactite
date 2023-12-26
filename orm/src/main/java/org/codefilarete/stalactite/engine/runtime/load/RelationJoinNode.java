@@ -7,67 +7,92 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
-import org.codefilarete.tool.bean.Objects;
-import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.RelationIdentifier;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.JoinLink;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.bean.Objects;
 
 /**
  * Join node for filling a relation between beans such as one-to-one or one-to-many
  * 
  * @author Guillaume Mary
  */
-public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends AbstractJoinNode<C, T1, T2, I> {
+public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINTYPE, I> extends AbstractJoinNode<C, T1, T2, JOINTYPE> {
 	
 	/** The right part of the join */
-	private final EntityInflater<C, I, T2> entityInflater;
+	private final EntityInflater<C, I> entityInflater;
 	
 	/** Relation fixer for instances of this strategy on owning strategy entities */
 	private final BeanRelationFixer<Object, C> beanRelationFixer;
 	
-	private final BiFunction<Row, ColumnedRow, Object> duplicateIdentifierProvider;
+	/** Available only in List cases : gives the identifier of an entity in the List to avoid duplicate mix (typically : concatenates list index to entity id)*/
+	private final BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider;
 	
 	RelationJoinNode(JoinNode<T1> parent,
-					 Column<T1, I> leftJoinColumn,
-					 Column<T2, I> rightJoinColumn,
+					 JoinLink<T1, JOINTYPE> leftJoinColumn,
+					 JoinLink<T2, JOINTYPE> rightJoinColumn,
 					 JoinType joinType,
-					 Set<Column<T2, ?>> columnsToSelect,
+					 Set<? extends Selectable<?>> columnsToSelect,	// Of T2
 					 @Nullable String tableAlias,
-					 EntityInflater<C, I, T2> entityInflater,
-					 BeanRelationFixer<Object, C> beanRelationFixer,
-					 @Nullable BiFunction<Row, ColumnedRow, ?> duplicateIdentifierProvider) {
+					 EntityInflater<C, I> entityInflater,
+					 BeanRelationFixer<?, C> beanRelationFixer,
+					 @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
 		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
 		this.entityInflater = entityInflater;
-		this.beanRelationFixer = beanRelationFixer;
-		this.duplicateIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) duplicateIdentifierProvider;
+		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
+		this.relationIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) relationIdentifierProvider;
 	}
 	
-	public EntityInflater<C, ?, T2> getEntityInflater() {
+	RelationJoinNode(JoinNode<T1> parent,
+					 Key<T1, JOINTYPE> leftJoinColumn,
+					 Key<T2, JOINTYPE> rightJoinColumn,
+					 JoinType joinType,
+					 Set<? extends Selectable<?>> columnsToSelect,	// Of T2
+					 @Nullable String tableAlias,
+					 EntityInflater<C, I> entityInflater,
+					 BeanRelationFixer<?, C> beanRelationFixer,
+					 @Nullable BiFunction<Row, ColumnedRow, ?> relationIdentifierProvider) {
+		super(parent, leftJoinColumn, rightJoinColumn, joinType, columnsToSelect, tableAlias);
+		this.entityInflater = entityInflater;
+		this.beanRelationFixer = (BeanRelationFixer<Object, C>) beanRelationFixer;
+		this.relationIdentifierProvider = (BiFunction<Row, ColumnedRow, Object>) relationIdentifierProvider;
+	}
+	
+	public EntityInflater<C, ?> getEntityInflater() {
 		return entityInflater;
+	}
+	
+	public Class<C> getEntityType() {
+		return entityInflater.getEntityType();
 	}
 	
 	BeanRelationFixer<Object, C> getBeanRelationFixer() {
 		return beanRelationFixer;
 	}
 	
-	public BiFunction<Row, ColumnedRow, Object> getDuplicateIdentifierProvider() {
-		return duplicateIdentifierProvider;
+	public BiFunction<Row, ColumnedRow, Object> getRelationIdentifierProvider() {
+		return relationIdentifierProvider;
 	}
 	
 	@Override
 	public RelationJoinRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
-		return new RelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, duplicateIdentifierProvider, getTransformerListener());
+		return new DefaultRelationJoinRowConsumer<>(entityInflater, beanRelationFixer, columnedRow, relationIdentifierProvider, getConsumptionListener());
 	}
 	
-	static class RelationJoinRowConsumer<C, I> implements JoinRowConsumer {
+	interface RelationJoinRowConsumer<C, I> extends JoinRowConsumer {
+		
+		C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context);
+	}
+	
+	static class DefaultRelationJoinRowConsumer<C, I> implements RelationJoinRowConsumer<C, I> {
 		
 		private final Class<C> entityType;
 		
@@ -84,23 +109,28 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 		
 		/** Optional listener of ResultSet decoding */
 		@Nullable
-		private final TransformerListener<C> transformerListener;
+		private final EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
 		
-		RelationJoinRowConsumer(EntityInflater<C, I, ?> entityInflater,
-								BeanRelationFixer<Object, C> beanRelationFixer,
-								ColumnedRow columnedRow,
-								@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer,
-								@Nullable TransformerListener<C> transformerListener) {
+		DefaultRelationJoinRowConsumer(EntityInflater<C, I> entityInflater,
+									   BeanRelationFixer<Object, C> beanRelationFixer,
+									   ColumnedRow columnedRow,
+									   @Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierComputer,
+									   @Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
 			this.entityType = entityInflater.getEntityType();
 			this.identifierProvider = entityInflater::giveIdentifier;
 			this.beanRelationFixer = beanRelationFixer;
 			this.columnedRow = columnedRow;
 			this.relationIdentifierComputer = (BiFunction<Row, ColumnedRow, Object>) Objects.preventNull(relationIdentifierComputer, this.identifierProvider);
 			this.rowTransformer = entityInflater.copyTransformerWithAliases(columnedRow);
-			this.transformerListener = transformerListener;
+			this.consumptionListener = consumptionListener;
 		}
 		
-		C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context) {
+		RowTransformer<C> getRowTransformer() {
+			return rowTransformer;
+		}
+		
+		@Override
+		public C applyRelatedEntity(Object parentJoinEntity, Row row, TreeInflationContext context) {
 			I rightIdentifier = identifierProvider.apply(row, columnedRow);
 			// we avoid treating twice same relation, overall to avoid adding twice same instance to a collection (one-to-many list cases)
 			// in case of multiple collections in ResultSet because it creates similar data (through cross join) which are treated as many as
@@ -111,8 +141,8 @@ public class RelationJoinNode<C, T1 extends Table, T2 extends Table, I> extends 
 			if (rightIdentifier != null && context.isTreatedOrAppend(eventuallyApplied)) {
 				C rightEntity = (C) context.giveEntityFromCache(entityType, rightIdentifier, () -> rowTransformer.transform(row));
 				beanRelationFixer.apply(parentJoinEntity, rightEntity);
-				if (this.transformerListener != null) {
-					this.transformerListener.onTransform(rightEntity, column -> columnedRow.getValue(column, row));
+				if (this.consumptionListener != null) {
+					this.consumptionListener.onNodeConsumption(rightEntity, col -> columnedRow.getValue(col, row));
 				}
 				return rightEntity;
 			}

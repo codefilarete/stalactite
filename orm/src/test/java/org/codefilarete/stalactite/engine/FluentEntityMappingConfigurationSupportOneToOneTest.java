@@ -6,24 +6,23 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToOneOptions;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
+import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
-import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -40,13 +39,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.READ_ONLY;
+import static org.assertj.core.api.Assertions.*;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.*;
 
 /**
  * @author Guillaume Mary
@@ -90,7 +84,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			assertThatThrownBy(() -> mappingBuilder.build(persistenceContext))
 					.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
-					.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevent for one-to-many association");
+					.hasMessage(RelationMode.ASSOCIATION_ONLY + " is only relevant for one-to-many association");
 		}
 		
 		@Test
@@ -166,7 +160,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Person(id, name) values (1, 'French president')").execute();
 			persistenceContext.getConnectionProvider().giveConnection().prepareStatement("insert into Country(id, name, presidentId) values (42, 'France', 1)").execute();
 			
-			// select selects entity and relation
+			// select entity and relation
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedCountry.getName()).isEqualTo("France");
 			assertThat(loadedCountry.getPresident().getName()).isEqualTo("French president");
@@ -178,8 +172,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.execute()
-					.get(0)).isEqualTo("French president");
+					.singleResult()
+					.execute())
+					.isEqualTo("French president");
 			
 			// deletion has no action on target
 			countryPersister.delete(loadedCountry);
@@ -189,8 +184,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.isEmpty()).isTrue();
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.execute()
-					.get(0)).isEqualTo("French president");
+					.singleResult()
+					.execute())
+					.isEqualTo("French president");
 		}
 		
 		@Test
@@ -223,7 +219,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// insert doesn't throw integrity constraint and will update foreign key in Person table making relation available on load
 			countryPersister.insert(dummyCountry);
 			
-			// select selects entity and relation
+			// select entity and relation
 			Country loadedCountry = countryPersister.select(new PersistedIdentifier<>(42L));
 			assertThat(loadedCountry.getName()).isEqualTo("France");
 			assertThat(loadedCountry.getPresident().getName()).isEqualTo("French president");
@@ -235,10 +231,11 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// president is left untouched because association is read only
 			assertThat(persistenceContext.newQuery("select name from Person where id = 1", String.class)
 					.mapKey("name", String.class)
-					.execute()
-					.get(0)).isEqualTo("French president");
+					.singleResult()
+					.execute())
+					.isEqualTo("French president");
 			
-			// Changing country persident to check foreign key modification
+			// Changing country president to check foreign key modification
 			Person newPerson = new Person(new PersistableIdentifier<>(2L));
 			newPerson.setName("New French president");
 			// person must be persisted before usage because cascade is marked as READ_ONLY
@@ -303,7 +300,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	 */
 	@Test
 	public void lightOneToOne_relationIsPersisted() throws SQLException {
-		// we redifine th eDialcet to avoid polluting the instance one with some more mapping that is only the purpose of this test (avoid side effect)
+		// we redefine the Dialect to avoid polluting the instance one with some more mapping that is only the purpose of this test (avoid side effect)
 		HSQLDBDialect dialect = new HSQLDBDialect();
 		dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
@@ -316,7 +313,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Country::getName)
 				.map(Country::getDescription)
-				.map(Country::getPresident, "presidentId")	// this is not a true relation, it's only for presidentId insert/update
+				.map(Country::getPresident).columnName("presidentId")	// this is not a true relation, it's only for presidentId insert/update
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -443,7 +440,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// ensuring that the foreign key is present on table, hence testing that cityTable was used, not a clone created by build(..) 
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_city_state_Country_id", "city", "state", "Country", "id");
 			Comparator<JdbcForeignKey> comparing = Comparator.comparing(JdbcForeignKey::getSignature, Comparator.naturalOrder());
-			assertThat((Set<ForeignKey<? extends Table, ?>>) cityTable.getForeignKeys()).extracting(JdbcForeignKey::new)
+			assertThat((Set<ForeignKey<? extends Table, ?, ?>>) cityTable.getForeignKeys()).extracting(JdbcForeignKey::new)
 					.usingElementComparator(comparing)
 					.containsExactlyInAnyOrder(expectedForeignKey);
 			
@@ -717,7 +714,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		@Test
@@ -728,7 +725,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::getCountry)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		@Test
@@ -739,7 +736,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfiguration).cascading(ALL).mappedBy(City::setCountry)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		@Test
@@ -758,7 +755,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 					.mapOneToOne(Country::getCapital, cityConfigurer).cascading(ALL).mappedBy(countryId)
 					.build(persistenceContext);
 			
-			checkCascadeAll(countryPersister);
+			assertCascadeAll(countryPersister);
 		}
 		
 		/**
@@ -766,7 +763,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		 * Should have been done with a @ParameterizedTest but can't be done in such a way due to database commit between tests and cityPersister
 		 * dependency
 		 */
-		private void checkCascadeAll(EntityPersister<Country, Identifier<Long>> countryPersister) {
+		private void assertCascadeAll(EntityPersister<Country, Identifier<Long>> countryPersister) {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
@@ -950,7 +947,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
 				assertThat(persistedCountry.getPresident().getName()).isEqualTo("Me !!");
 				// ... and we still a 2 countries (no deletion was done)
-				List<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+				Set<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
 						.mapKey(Long::new, "countryCount", Long.class)
 						.execute();
 				assertThat(Iterables.first(countryCount)).isEqualTo(2);
@@ -990,7 +987,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country persistedCountry = countryPersister.select(dummyCountry2.getId());
 				assertThat(persistedCountry.getPresident().getName()).isEqualTo("Me !!");
 				// ... and we still have 2 countries (no deletion was done)
-				List<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
+				Set<Long> countryCount = persistenceContext.newQuery("select count(*) as countryCount from Country", Long.class)
 						.mapKey(Long::new, "countryCount", Long.class)
 						.execute();
 				assertThat(Iterables.first(countryCount)).isEqualTo(2);
@@ -1095,15 +1092,15 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				// ... must be null for old president
 				ExecutableBeanPropertyQueryMapper<Long> countryIdQuery = persistenceContext.newQuery("select countryId from Person where id = :personId", Long.class)
 						.mapKey("countryId", Long.class);
-				List<Long> originalPresidentCountryId = countryIdQuery
+				Set<Long> originalPresidentCountryId = countryIdQuery
 						.set("personId", originalPresident.getId())
 						.execute();
-				assertThat(originalPresidentCountryId.get(0)).isNull();
+				assertThat(Iterables.first(originalPresidentCountryId)).isNull();
 				// ... and not null for new president
-				List<Long> newPresidentCountryId = countryIdQuery
+				Set<Long> newPresidentCountryId = countryIdQuery
 						.set("personId", newPresident.getId())
 						.execute();
-				assertThat(dummyCountry.getId().getSurrogate()).isEqualTo(newPresidentCountryId.get(0));
+				assertThat(dummyCountry.getId().getSurrogate()).isEqualTo(Iterables.first(newPresidentCountryId));
 			}
 			
 			@Test
@@ -1268,8 +1265,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 
 						+ " where id = 100");
 				assertThat(resultSet.next()).isFalse();
-				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person " 
-						+ "where id = 42");
+				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person" 
+						+ " where id = 42");
 				assertThat(resultSet.next()).isTrue();
 				// but we didn't delete everything !
 				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Country" 

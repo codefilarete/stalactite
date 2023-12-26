@@ -16,7 +16,7 @@ import org.codefilarete.stalactite.sql.result.Row;
  */
 public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	
-	protected final Function<Function<Column, Object>, C> beanFactory;
+	protected final Function<Function<Column<?, ?>, Object>, C> beanFactory;
 	
 	/** A kind of {@link Column} aliaser, mainly useful in case of {@link #copyWithAliases(ColumnedRow)} usage */
 	private final ColumnedRow columnedRow;
@@ -37,11 +37,11 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	 *
 	 * @param beanFactory the factory of beans
 	 */
-	public AbstractTransformer(Function<Function<Column, Object>, C> beanFactory, ColumnedRow columnedRow) {
+	public AbstractTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow) {
 		this(beanFactory, columnedRow, Collections.emptyList());
 	}
 	
-	protected AbstractTransformer(Function<Function<Column, Object>, C> beanFactory, ColumnedRow columnedRow,
+	protected AbstractTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow,
 								  Collection<TransformerListener<C>> rowTransformerListeners) {
 		this.beanFactory = beanFactory;
 		this.columnedRow = columnedRow;
@@ -56,8 +56,9 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 		return rowTransformerListeners;
 	}
 	
-	public void addTransformerListener(TransformerListener<C> listener) {
-		this.rowTransformerListeners.add(listener);
+	@Override
+	public void addTransformerListener(TransformerListener<? extends C> listener) {
+		this.rowTransformerListeners.add((TransformerListener<C>) listener);
 	}
 	
 	@Override
@@ -75,6 +76,6 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	 * @return a new instance of bean C
 	 */
 	protected C newBeanInstance(Row row) {
-		return (C) beanFactory.apply(c -> this.columnedRow.getValue(c, row));
+		return beanFactory.apply(c -> this.columnedRow.getValue(c, row));
 	}
 }

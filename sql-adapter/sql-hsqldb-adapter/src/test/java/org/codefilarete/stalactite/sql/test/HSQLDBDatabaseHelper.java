@@ -15,7 +15,7 @@ public class HSQLDBDatabaseHelper extends DatabaseHelper {
 	public void clearDatabaseSchema(Connection connection) {
 		try {
 			Statement statement = connection.createStatement();
-			statement.execute("TRUNCATE SCHEMA public AND commit");
+			statement.execute("DROP SCHEMA PUBLIC CASCADE");
 		} catch (SQLException e) {
 			throw Exceptions.asRuntimeException(e);
 		}

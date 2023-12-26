@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.query.model;
 /**
  * @author Guillaume Mary
  */
-public interface LimitAware {
+public interface LimitAware<C> {
 	
-	LimitChain limit(int value);
+	C limit(int value);
 }

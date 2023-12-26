@@ -23,7 +23,7 @@ class SimpleBeanCacheTest {
 		String s = testInstance.computeIfAbsent(String.class, 1, capturingFactory);
 		assertThat(s).isEqualTo("hello 1");
 		
-		// a second call with same key should hit the cache (no factory invokation) and give same result
+		// a second call with same key should hit the cache (no factory invocation) and give same result
 		s = testInstance.computeIfAbsent(String.class, 1, capturingFactory);
 		assertThat(s).isEqualTo("hello 1");
 		assertThat(factoryCallCounter.getValue()).isEqualTo(1);
@@ -44,7 +44,7 @@ class SimpleBeanCacheTest {
 		String s = testInstance.computeIfAbsent(String.class, new Object[] { 1, 2 }, capturingFactory);
 		// just to be sure ...
 		assertThat(s).isEqualTo("hello");
-		// a second call with same key should hit the cache (no factory invokation) and give same result
+		// a second call with same key should hit the cache (no factory invocation) and give same result
 		s = testInstance.computeIfAbsent(String.class, new Object[] { 1, 2 }, capturingFactory);
 		assertThat(s).isEqualTo("hello");
 		assertThat(factoryCallCounter.getValue()).isEqualTo(1);

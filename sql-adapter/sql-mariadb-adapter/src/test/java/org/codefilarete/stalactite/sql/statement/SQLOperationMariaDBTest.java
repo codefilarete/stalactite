@@ -4,6 +4,8 @@ import javax.sql.DataSource;
 import java.sql.SQLTransientException;
 import java.util.function.Predicate;
 
+import org.codefilarete.stalactite.sql.test.DatabaseHelper;
+import org.codefilarete.stalactite.sql.test.MariaDBDatabaseHelper;
 import org.codefilarete.stalactite.sql.test.MariaDBTestDataSourceSelector;
 import org.codefilarete.tool.exception.Exceptions;
 
@@ -17,6 +19,10 @@ class SQLOperationMariaDBTest extends SQLOperationITTest {
 	@Override
 	public DataSource giveDataSource() {
 		return DATASOURCE;
+	}
+	
+	protected DatabaseHelper giveDatabaseHelper() {
+		return new MariaDBDatabaseHelper();
 	}
 	
 	@Override

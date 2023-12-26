@@ -1,34 +1,78 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * @author Guillaume Mary
  */
 public interface PolymorphismPolicy<C> {
 	
+	/**
+	 * Starts a persistence configuration of a table-per-class polymorphic type.
+	 * As a difference with {@link #tablePerClass(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;tablePerClass()
+	 * </code>
+	 *
+	 * @return the configuration
+	 */
 	static <C> TablePerClassPolymorphism<C> tablePerClass() {
 		return new TablePerClassPolymorphism<>();
 	}
 	
+	/**
+	 * Starts a persistence configuration of a table-per-class polymorphic type 
+	 * 
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> TablePerClassPolymorphism<C> tablePerClass(Class<C> polymorphicType) {
+		return new TablePerClassPolymorphism<>();
+	}
+	
+	/**
+	 * Starts a persistence configuration of a join-table polymorphic type.
+	 * As a difference with {@link #joinTable(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;joinTable()
+	 * </code>
+	 *
+	 * @return the configuration
+	 */
 	static <C> JoinTablePolymorphism<C> joinTable() {
 		return new JoinTablePolymorphism<>();
 	}
 	
-	static <C> JoinTablePolymorphism<C> joinTable(Class<? extends C> c) {
+	/**
+	 * Starts a persistence configuration of a join-table polymorphic type 
+	 *
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> JoinTablePolymorphism<C> joinTable(Class<C> polymorphicType) {
 		return new JoinTablePolymorphism<>();
 	}
 	
 	/**
-	 * Creates a single-table polymorphism configuration with a default discriminating column names "DTYPE" of {@link String} type
+	 * Starts a persistence configuration of a single-table polymorphic type with a default discriminating column name "DTYPE" of {@link String} type
+	 * As a difference with {@link #singleTable(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;singleTable()
+	 * </code>
+	 * 
 	 * @param <C> entity type
 	 * @return a new {@link SingleTablePolymorphism} with "DTYPE" as String discriminator column
 	 */
@@ -36,7 +80,40 @@ public interface PolymorphismPolicy<C> {
 		return singleTable("DTYPE");
 	}
 	
+	/**
+	 * Starts a persistence configuration of a single-table polymorphic type with the give discriminating column name {@link String} type
+	 * As a difference with {@link #singleTable(Class)}, this method doesn't require the polymorphic type as argument,
+	 * though you should prefix its call by the polymorphic type as a generic, for instance : 
+	 * <code>
+	 *     &lt;Vehicle&gt;singleTable()
+	 * </code>
+	 *
+	 * @param <C> entity type
+	 * @return a new {@link SingleTablePolymorphism} with "DTYPE" as String discriminator column
+	 */
 	static <C> SingleTablePolymorphism<C, String> singleTable(String discriminatorColumnName) {
+		return new SingleTablePolymorphism<>(discriminatorColumnName, String.class);
+	}
+	
+	/**
+	 * Starts a persistence configuration of a single-table polymorphic type with a default discriminating column name "DTYPE" of {@link String} type
+	 *
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> SingleTablePolymorphism<C, String> singleTable(Class<C> polymorphicType) {
+		return singleTable("DTYPE");
+	}
+	
+	/**
+	 * Starts a persistence configuration of a single-table polymorphic type with the give discriminating column name {@link String} type
+	 *
+	 * @param polymorphicType type for which polymorphism is declared
+	 * @return the configuration
+	 * @param <C> polymorphic type
+	 */
+	static <C> SingleTablePolymorphism<C, String> singleTable(Class<C> polymorphicType, String discriminatorColumnName) {
 		return new SingleTablePolymorphism<>(discriminatorColumnName, String.class);
 	}
 	
@@ -44,20 +121,22 @@ public interface PolymorphismPolicy<C> {
 	
 	class TablePerClassPolymorphism<C> implements PolymorphismPolicy<C> {
 		
-		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new HashSet<>();
+		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
-		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
 			return this;
 		}
 		
-		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>(entityMappingConfigurationProvider, table));
+		public TablePerClassPolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
+			subClasses.add(new Duo<>(entityMappingConfigurationProvider.getConfiguration(), table));
 			return this;
 		}
 		
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
-			return Iterables.collect(subClasses, Duo::getLeft, HashSet::new);
+			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+			return Iterables.collect(subClasses, Duo::getLeft, KeepOrderSet::new);
 		}
 		
 		@Nullable
@@ -68,20 +147,22 @@ public interface PolymorphismPolicy<C> {
 	
 	class JoinTablePolymorphism<C> implements PolymorphismPolicy<C> {
 		
-		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new HashSet<>();
+		// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+		private final Set<Duo<SubEntityMappingConfiguration<? extends C>, Table /* Nullable */>> subClasses = new KeepOrderSet<>();
 		
-		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider) {
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider) {
 			addSubClass(entityMappingConfigurationProvider, null);
 			return this;
 		}
 		
-		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>(entityMappingConfigurationProvider, table));
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
+			subClasses.add(new Duo<>(entityMappingConfigurationProvider.getConfiguration(), table));
 			return this;
 		}
 		
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
-			return Iterables.collect(subClasses, Duo::getLeft, HashSet::new);
+			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+			return Iterables.collect(subClasses, Duo::getLeft, KeepOrderSet::new);
 		}
 		
 		@Nullable
@@ -96,7 +177,8 @@ public interface PolymorphismPolicy<C> {
 		
 		private final Class<D> discriminatorType;
 		
-		private final Map<D, SubEntityMappingConfiguration<? extends C>> subClasses = new HashMap<>();
+		// we use a KeepOrderMap for stability order (overall for test assertions), not a strong expectation
+		private final Map<D, SubEntityMappingConfiguration<? extends C>> subClasses = new KeepOrderMap<>();
 		
 		public SingleTablePolymorphism(String discriminatorColumn, Class<D> discriminatorType) {
 			this.discriminatorColumn = discriminatorColumn;
@@ -111,8 +193,8 @@ public interface PolymorphismPolicy<C> {
 			return discriminatorType;
 		}
 		
-		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, D discriminatorValue) {
-			subClasses.put(discriminatorValue, entityMappingConfiguration);
+		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfiguration, D discriminatorValue) {
+			subClasses.put(discriminatorValue, entityMappingConfiguration.getConfiguration());
 			return this;
 		}
 		
@@ -125,7 +207,8 @@ public interface PolymorphismPolicy<C> {
 		}
 		
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
-			return new HashSet<>(this.subClasses.values());
+			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
+			return new KeepOrderSet<>(this.subClasses.values());
 		}
 	}
 }

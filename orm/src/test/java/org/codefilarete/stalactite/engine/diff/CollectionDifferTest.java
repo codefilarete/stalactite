@@ -108,7 +108,7 @@ public class CollectionDifferTest {
 	void diffSet(Set<Country> set1, Set<Country> set2, Set<Diff<Country>> expectedResult) {
 		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
 		
-		Set<Diff<Country>> diffs = testInstance.diffSet(set1, set2);
+		Set<Diff<Country>> diffs = testInstance.diff(set1, set2);
 		
 		// we use a comparator to ensure same order, then use a ToString method because assertThat(..) needs
 		// an implementation of equals(..) and hashCode() on Diff which would have been made only for testing purpose
@@ -125,27 +125,27 @@ public class CollectionDifferTest {
 						asList(testData.country1, testData.country2, testData.country3),
 						asList(testData.country2, testData.country1, testData.country3),
 						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
-										.addSourceIndex(0).addReplacerIndex(1),
+										.addSourceIndex(1).addReplacerIndex(2),
 								new IndexedDiff(HELD, testData.country2, testData.country2)
-										.addSourceIndex(1).addReplacerIndex(0),
+										.addSourceIndex(2).addReplacerIndex(1),
 								new IndexedDiff(HELD, testData.country3, testData.country3)
-										.addSourceIndex(2).addReplacerIndex(2))
+										.addSourceIndex(3).addReplacerIndex(3))
 				},
 				{
 						asList(testData.country1),
 						asList(testData.country1, testData.country2),
 						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
-										.addSourceIndex(0).addReplacerIndex(0),
+										.addSourceIndex(1).addReplacerIndex(1),
 								new IndexedDiff(ADDED, null, testData.country2)
-										.addReplacerIndex(1))
+										.addReplacerIndex(2))
 				},
 				{
 						asList(testData.country1, testData.country2),
 						asList(testData.country1),
 						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
-										.addSourceIndex(0).addReplacerIndex(0),
+										.addSourceIndex(1).addReplacerIndex(1),
 								new IndexedDiff(REMOVED, testData.country2, null)
-										.addSourceIndex(1))
+										.addSourceIndex(2))
 				},
 				// with duplicates ...
 				// ... one removed
@@ -153,66 +153,66 @@ public class CollectionDifferTest {
 						asList(testData.country1, testData.country2, testData.country1),
 						asList(testData.country1),
 						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
-										.addSourceIndex(0).addReplacerIndex(0),
+										.addSourceIndex(1).addReplacerIndex(1),
 								new IndexedDiff(REMOVED, testData.country2, null)
-										.addSourceIndex(1),
+										.addSourceIndex(2),
 								new IndexedDiff(REMOVED, testData.country1, null)
-										.addSourceIndex(2))
+										.addSourceIndex(3))
 				},
 				// ... none removed
 				{
 						asList(testData.country1, testData.country2, testData.country1),
 						asList(testData.country1, testData.country1),
 						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
-										.addSourceIndex(0).addSourceIndex(2).addReplacerIndex(0).addReplacerIndex(1),
+										.addSourceIndex(1).addSourceIndex(3).addReplacerIndex(1).addReplacerIndex(2),
 								new IndexedDiff(REMOVED, testData.country2, null)
-										.addSourceIndex(1))
+										.addSourceIndex(2))
 				},
 				// ... all removed
 				{
 						asList(testData.country1, testData.country2, testData.country1),
 						asList(testData.country2),
 						asHashSet(new IndexedDiff(REMOVED, testData.country1, null)
-										.addSourceIndex(0).addSourceIndex(2),
+										.addSourceIndex(1).addSourceIndex(3),
 								new IndexedDiff(HELD, testData.country2, testData.country2)
-										.addSourceIndex(1).addReplacerIndex(0))
+										.addSourceIndex(2).addReplacerIndex(1))
 				},
 				// ... none removed but some added
 				{
 						asList(testData.country1, testData.country2, testData.country1),
 						asList(testData.country1, testData.country1, testData.country1, testData.country1),
 						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
-										.addSourceIndex(0).addSourceIndex(2).addReplacerIndex(0).addReplacerIndex(1),
+										.addSourceIndex(1).addSourceIndex(3).addReplacerIndex(1).addReplacerIndex(2),
 								new IndexedDiff(ADDED, null, testData.country1)
-										.addReplacerIndex(2).addReplacerIndex(3),
+										.addReplacerIndex(3).addReplacerIndex(4),
 								new IndexedDiff(REMOVED, testData.country2, null)
-										.addSourceIndex(1))
+										.addSourceIndex(2))
 				},
 				// ... none removed but some added
 				{
 						asList(testData.country1, testData.country2, testData.country1),
 						asList(testData.country1, testData.country1, testData.country1, testData.country1, testData.country2, testData.country2),
 						asHashSet(new IndexedDiff(HELD, testData.country1, testData.country1)
-										.addSourceIndex(0).addSourceIndex(2).addReplacerIndex(0).addReplacerIndex(1),
+										.addSourceIndex(1).addSourceIndex(3).addReplacerIndex(1).addReplacerIndex(2),
 								new IndexedDiff(ADDED, null, testData.country1)
-										.addReplacerIndex(2).addReplacerIndex(3),
+										.addReplacerIndex(3).addReplacerIndex(4),
 								new IndexedDiff(HELD, testData.country2, testData.country2)
-										.addSourceIndex(1).addReplacerIndex(4),
+										.addSourceIndex(2).addReplacerIndex(5),
 								new IndexedDiff(ADDED, null, testData.country2)
-										.addReplacerIndex(5))
+										.addReplacerIndex(6))
 				},
 				// corner cases with empty sets
 				{
 						asList(),
 						asList(testData.country1),
 						asHashSet(new IndexedDiff(ADDED, null, testData.country1)
-										.addReplacerIndex(0))
+										.addReplacerIndex(1))
 				},
 				{
 						asList(testData.country1),
 						asList(),
 						asHashSet(new IndexedDiff(REMOVED, testData.country1, null)
-										.addSourceIndex(0))
+										.addSourceIndex(1))
 				},
 				{
 						asList(),
@@ -227,7 +227,7 @@ public class CollectionDifferTest {
 	void diffList(List<Country> set1, List<Country> set2, Set<IndexedDiff<Country>> expectedResult) {
 		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getId);
 		
-		Set<IndexedDiff<Country>> diffs = testInstance.diffList(set1, set2);
+		Set<IndexedDiff<Country>> diffs = testInstance.diffOrdered(set1, set2);
 		
 		// we use a comparator to ensure same order, then use a ToString method because assertThat(..) needs
 		// an implementation of equals(..) and hashCode() on Diff which would have been made only for testing purpose
@@ -245,7 +245,7 @@ public class CollectionDifferTest {
 		List<Country> set2 = asList(testData.country2, country1Clone, testData.country3);
 		
 		CollectionDiffer<Country> testInstance = new CollectionDiffer<>(Country::getName);	// we use a different predicate to prevent from using same comparator that equals(..) method 
-		Set<IndexedDiff<Country>> diffs = testInstance.diffList(set1, set2);
+		Set<IndexedDiff<Country>> diffs = testInstance.diffOrdered(set1, set2);
 		
 		assertThat(diffs)
 				.usingElementComparator((countryIndexedDiffComputed, countryIndexedDiffExpected) ->
@@ -258,8 +258,8 @@ public class CollectionDifferTest {
 						&& countryIndexedDiffComputed.getReplacerIndexes().equals(countryIndexedDiffExpected.getReplacerIndexes()) ? 0 : -1
 				)
 				.isEqualTo(Arrays.asHashSet(
-						new IndexedDiff<>(HELD, testData.country1, country1Clone, Arrays.asHashSet(0), Arrays.asHashSet(1)),
-						new IndexedDiff<>(HELD, testData.country2, testData.country2, Arrays.asHashSet(1), Arrays.asHashSet(0)),
-						new IndexedDiff<>(HELD, testData.country3, testData.country3, Arrays.asHashSet(2), Arrays.asHashSet(2))));
+						new IndexedDiff<>(HELD, testData.country1, country1Clone, Arrays.asHashSet(1), Arrays.asHashSet(2)),
+						new IndexedDiff<>(HELD, testData.country2, testData.country2, Arrays.asHashSet(2), Arrays.asHashSet(1)),
+						new IndexedDiff<>(HELD, testData.country3, testData.country3, Arrays.asHashSet(3), Arrays.asHashSet(3))));
 	}
 }

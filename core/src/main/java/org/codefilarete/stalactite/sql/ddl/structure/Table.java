@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,16 +10,13 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Predicates;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Representation of a database Table, not exhaustive but sufficient for our need.
@@ -29,7 +25,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  *
  * @author Guillaume Mary
  */
-public class Table<SELF extends Table<SELF>> {
+public class Table<SELF extends Table<SELF>> implements Fromable {
 	
 	private final Schema schema;
 	
@@ -39,15 +35,17 @@ public class Table<SELF extends Table<SELF>> {
 	
 	private final KeepOrderSet<Column<SELF, Object>> columns = new KeepOrderSet<>();
 	
-	private PrimaryKey<SELF> primaryKey;
+	private PrimaryKey<SELF, ?> primaryKey;
 	
 	private final Set<Index> indexes = new HashSet<>();
 	
-	private final Set<ForeignKey<SELF, ? extends Table<?>>> foreignKeys = new HashSet<>();
+	private final Set<UniqueConstraint> uniqueConstraints = new HashSet<>();
+	
+	private final Set<ForeignKey<SELF, ? extends Table<?>, ?>> foreignKeys = new HashSet<>();
 	
 	private final Map<String, Column<SELF, ?>> columnsPerName = new HashMap<>();
 	
-	/** Made to avoid name & uppercase computation at each invokation of hashCode(). Made by principle, not for any performance issue observation */
+	/** Made to avoid name & uppercase computation at each invocation of hashCode(). Made by principle, not for any performance issue observation */
 	private final int hashCode;
 	
 	public Table(String name) {
@@ -73,13 +71,25 @@ public class Table<SELF extends Table<SELF>> {
 		return absoluteName;
 	}
 	
-	public Set<Column<SELF, Object>> getColumns() {
-		return Collections.unmodifiableSet(columns.asSet());
+	/**
+	 * Gives columns of this table as an unmodifiable set.
+	 * 
+	 * @return an unmodifiable Set&lt;Column&gt;
+	 */
+	public Set<Column<SELF, ?>> getColumns() {
+		return Collections.unmodifiableSet(columns);
+	}
+	
+	@Override
+	public Map<Column<SELF, ?>, String> getAliases() {
+		Map<Column<SELF, ?>, String> result = new HashMap<>();
+		columnsPerName.forEach((key, value) -> result.put(value, key));
+		return Collections.unmodifiableMap(result);
 	}
 	
 	public Set<Column<SELF, Object>> getColumnsNoPrimaryKey() {
-		LinkedHashSet<Column<SELF, Object>> result = this.columns.asSet();
-		result.removeAll(org.codefilarete.tool.Nullable.nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(Collections.emptySet()));
+		LinkedHashSet<Column<SELF, Object>> result = new LinkedHashSet<>(this.columns);
+		result.removeAll(org.codefilarete.tool.Nullable.nullable(getPrimaryKey()).map(PrimaryKey::getColumns).getOr(new KeepOrderSet<>()));
 		return result;
 	}
 	
@@ -126,8 +136,8 @@ public class Table<SELF extends Table<SELF>> {
 				&& (!existingColumn.getJavaType().equals(column.getJavaType())
 				|| !Predicates.equalOrNull(existingColumn.getSize(), column.getSize()))
 		) {
-			throw new IllegalArgumentException("Trying to add a column that already exists with a different type : "
-					+ column.getAbsoluteName() + " " + toString(existingColumn) + " vs " + toString(column));
+			throw new IllegalArgumentException("Trying to add column '"+column.getName()+"' to '" + this.getAbsoluteName() + "' but it already exists with a different type : "
+					+ typeToString(existingColumn) + " vs " + typeToString(column));
 		}
 		if (existingColumn == null) {
 			columns.add((Column<SELF, Object>) column);
@@ -152,8 +162,9 @@ public class Table<SELF extends Table<SELF>> {
 	 * @param columnName an expected matching column name
 	 * @return null if not found
 	 */
-	public Column<SELF, Object> findColumn(String columnName) {
-		return nullable(Iterables.find(columns, Column::getName, columnName::equals)).map(Duo::getLeft).get();
+	@Override
+	public Column<SELF, ?> findColumn(String columnName) {
+		return getColumn(columnName);
 	}
 	
 	/**
@@ -163,33 +174,30 @@ public class Table<SELF extends Table<SELF>> {
 	 * 
 	 * @return the {@link PrimaryKey} of this table if any {@link Column} was marked as primary key, else null
 	 */
-	@Nullable
-	public PrimaryKey<SELF> getPrimaryKey() {
+	public <ID> PrimaryKey<SELF, ID> getPrimaryKey() {
 		if (primaryKey == null) {
-			Set<Column<SELF, Object>> pkColumns = Iterables.collect(columns.asSet(), Column::isPrimaryKey, Function.identity(), LinkedHashSet::new);
+			Set<Column<SELF, Object>> pkColumns = Iterables.collect(columns, Column::isPrimaryKey, Function.identity(), LinkedHashSet::new);
 			primaryKey = pkColumns.isEmpty() ? null : new PrimaryKey<>(pkColumns);
 		}
-		return primaryKey;
+		return (PrimaryKey<SELF, ID>) primaryKey;
 	}
 	
 	public Set<Index> getIndexes() {
 		return Collections.unmodifiableSet(indexes);
 	}
 	
-	public Index addIndex(String name, Column column, Column ... columns) {
-		LinkedHashSet<Column> indexedColumns = Arrays.asSet(column);
-		indexedColumns.addAll(java.util.Arrays.asList(columns));
-		Index newIndex = new Index(name, indexedColumns);
+	public Index addIndex(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
+		Index newIndex = new Index(name, column, columns);
 		this.indexes.add(newIndex);
 		return newIndex;
 	}
 	
-	public Set<ForeignKey<SELF, ?>> getForeignKeys() {
+	public Set<ForeignKey<SELF, ?, ?>> getForeignKeys() {
 		return Collections.unmodifiableSet(foreignKeys);
 	}
 	
-	public <T extends Table<T>, I> ForeignKey addForeignKey(BiFunction<Column, Column, String> namingFunction,
-															Column<SELF, I> column, Column<T, I> targetColumn) {
+	public <T extends Table<T>, I> ForeignKey<SELF, T, I> addForeignKey(BiFunction<Column<SELF, I>, Column<T, I>, String> namingFunction,
+																	 Column<SELF, I> column, Column<T, I> targetColumn) {
 		return this.addForeignKey(namingFunction.apply(column, targetColumn), column, targetColumn);
 	}
 	
@@ -204,8 +212,8 @@ public class Table<SELF extends Table<SELF>> {
 	 * @param <T> referenced table type
 	 * @return the created foreign key or the existing one
 	 */
-	public <T extends Table<T>, I> ForeignKey addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {
-		return addForeignKey(name, Collections.<Column<SELF, ?>>singletonList(column), Collections.<Column<T, ?>>singletonList(targetColumn));
+	public <T extends Table<T>, I> ForeignKey<SELF, T, I> addForeignKey(String name, Column<SELF, I> column, Column<T, I> targetColumn) {
+		return addssertForeignKey(new ForeignKey<>(name, column, targetColumn));
 	}
 	
 	/**
@@ -219,32 +227,78 @@ public class Table<SELF extends Table<SELF>> {
 	 * @param <T> referenced table type
 	 * @return the created foreign key or the existing one
 	 */
-	public <T extends Table<T>> ForeignKey addForeignKey(String name, List<? extends Column<SELF, ?>> columns, List<? extends Column<T, ?>> targetColumns) {
-		return addertForeignKey(new ForeignKey<>(name, new LinkedHashSet<>(columns), new LinkedHashSet<>(targetColumns)));
+	public <T extends Table<T>, I> ForeignKey<SELF, T, I> addForeignKey(String name, List<? extends Column<SELF, Object>> columns, List<? extends Column<T, Object>> targetColumns) {
+		return addssertForeignKey(new ForeignKey<>(name, new KeepOrderSet<>(columns), new KeepOrderSet<>(targetColumns)));
+	}
+	
+	public <T extends Table<T>, I> ForeignKey<SELF, T, I> addForeignKey(String name, Key<SELF, I> columns, Key<T, I> targetColumns) {
+		ForeignKey<SELF, T, I> foreignKey = new ForeignKey<>(
+				name,
+				(KeepOrderSet<? extends Column<SELF, Object>>) columns.getColumns(),
+				(KeepOrderSet<? extends Column<T, Object>>) targetColumns.getColumns());
+		return addssertForeignKey(foreignKey);
+	}
+	
+	public <T extends Table<T>, I, K1 extends Key<SELF, I>, K2 extends Key<T, I>> ForeignKey<SELF, T, I> addForeignKey(
+			BiFunction<K1, K2, String> namingFunction,
+			K1 sourceColumns,
+			K2 targetColumns) {
+		ForeignKey<SELF, T, I> foreignKey = new ForeignKey<>(
+				namingFunction.apply(sourceColumns, targetColumns),
+				(KeepOrderSet<? extends Column<SELF, Object>>) sourceColumns.getColumns(),
+				(KeepOrderSet<? extends Column<T, Object>>) targetColumns.getColumns());
+		return addssertForeignKey(foreignKey);
 	}
 	
 	/**
-	 * Adds with presence assertion (add + assert = addert, poor naming)
+	 * Adds with presence assertion (add + assert = addssert, poor naming)
 	 *
 	 * @param foreignKey the column to be added
 	 * @param <T> target table type
 	 * @return given column
 	 */
-	private <T extends Table<T>> ForeignKey<SELF, T> addertForeignKey(ForeignKey<SELF, T> foreignKey) {
-		ForeignKey<SELF, T> existingForeignKey = (ForeignKey<SELF, T>) Iterables.find(this.foreignKeys, fk -> fk.getName().equals(foreignKey.getName()));
-		if (existingForeignKey != null
-				&& (!existingForeignKey.getColumns().equals(foreignKey.getColumns())
-				|| !existingForeignKey.getTargetColumns().equals(foreignKey.getTargetColumns()))
-		) {
-			throw new IllegalArgumentException("Trying to add a foreign key that already exists with different columns : "
-					+ foreignKey.getName() + " " + toString(existingForeignKey) + " vs " + toString(foreignKey));
-		}
+	private <T extends Table<T>, I> ForeignKey<SELF, T, I> addssertForeignKey(ForeignKey<SELF, T, I> foreignKey) {
+		ForeignKey<SELF, T, I> existingForeignKey = assertDoesNotExistOnSameName(foreignKey);
 		if (existingForeignKey == null) {
+			assertDoesNotExistOnSameColumns(foreignKey);
 			this.foreignKeys.add(foreignKey);
 			return foreignKey;
 		} else {
 			return existingForeignKey;
 		}
+	}
+	
+	private <T extends Table<T>, I> ForeignKey<SELF, T, I> assertDoesNotExistOnSameName(ForeignKey<SELF, T, I> foreignKey) {
+		ForeignKey<SELF, T, I> existingForeignKey = (ForeignKey<SELF, T, I>) Iterables.find(this.foreignKeys, fk -> fk.getName().equals(foreignKey.getName()));
+		if (existingForeignKey != null
+				&& (!existingForeignKey.getColumns().equals(foreignKey.getColumns())
+				|| !existingForeignKey.getTargetColumns().equals(foreignKey.getTargetColumns()))
+		) {
+			throw new IllegalArgumentException("Trying to add a foreign key with same name than another with different columns : "
+					+ foreignKey.getName() + " " + toString(existingForeignKey) + " vs " + toString(foreignKey));
+		}
+		return existingForeignKey;
+	}
+	
+	private <T extends Table<T>, I> ForeignKey<SELF, T, I> assertDoesNotExistOnSameColumns(ForeignKey<SELF, T, I> foreignKey) {
+		ForeignKey<SELF, T, I> existingForeignKeyWithSameColumns = (ForeignKey<SELF, T, I>) Iterables.find(this.foreignKeys, fk -> fk.getColumns().equals(foreignKey.getColumns()));
+		if (existingForeignKeyWithSameColumns != null
+				&& !existingForeignKeyWithSameColumns.getTargetColumns().equals(foreignKey.getTargetColumns())) {
+			throw new IllegalArgumentException("A foreign key with same source columns but different referenced columns already exist : "
+					+ "'" + existingForeignKeyWithSameColumns.getName() + "' <" + toString(existingForeignKeyWithSameColumns) + ">"
+					+ " vs wanted new one '" + foreignKey.getName() + "' <" + toString(foreignKey) + ">");
+		}
+		return existingForeignKeyWithSameColumns;
+	}
+	
+	public Set<UniqueConstraint> getUniqueConstraints() {
+		return uniqueConstraints;
+	}
+	
+	public UniqueConstraint addUniqueConstraint(String name, Column<SELF, ?> column, Column<SELF, ?> ... columns) {
+		UniqueConstraint newUniqueConstraint = new UniqueConstraint(name, column, columns);
+		this.uniqueConstraints.add(newUniqueConstraint);
+		return newUniqueConstraint;
 	}
 	
 	/**
@@ -263,7 +317,7 @@ public class Table<SELF extends Table<SELF>> {
 		}
 		
 		Table table = (Table) o;
-		return name.equalsIgnoreCase(table.name);
+		return getName().equalsIgnoreCase(table.getName());
 	}
 	
 	/**
@@ -275,7 +329,7 @@ public class Table<SELF extends Table<SELF>> {
 		return hashCode;
 	}
 	
-	private static String toString(Column column) {
+	private static String typeToString(Column column) {
 		return Reflections.toString(column.getJavaType()) + (column.getSize() != null ? "(" + column.getSize() + ")" : "");
 	}
 	

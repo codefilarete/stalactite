@@ -15,43 +15,54 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.stalactite.id.PersistableIdentifier;
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.function.Sequence;
-import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
+import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
+import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.RelationalExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.SinglePropertyIdAccessor;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.operator.Equals;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.test.PairSetList;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.PairIterator.EmptyIterator;
+import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.function.Sequence;
+import org.codefilarete.tool.trace.ModifiableInt;
+import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -59,12 +70,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
+import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.mockito.Mockito.*;
 
 /**
  * @author Guillaume Mary
@@ -77,10 +85,10 @@ class SimpleRelationalEntityPersisterTest {
 	private ArgumentCaptor<Integer> indexCaptor;
 	private ArgumentCaptor<String> statementArgCaptor;
 	private InMemoryCounterIdentifierGenerator identifierGenerator;
-	private ClassMapping<Toto, Identifier<Integer>, Table> totoClassMappingStrategy_ontoTable1;
+	private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy_ontoTable1;
 	private Dialect dialect;
-	private Column leftJoinColumn;
-	private Column rightJoinColumn;
+	private Key<Table, Identifier<Integer>> leftJoinColumn;
+	private Key<Table, Identifier<Integer>> rightJoinColumn;
 	private final EffectiveBatchedRowCount effectiveBatchedRowCount = new EffectiveBatchedRowCount();
 	private final Holder<Long> expectedRowCountForUpdate = new Holder<>();
 	private Connection connection;
@@ -105,7 +113,7 @@ class SimpleRelationalEntityPersisterTest {
 		Field fieldB = Reflections.getField(Toto.class, "b");
 		
 		Table totoClassTable1 = new Table("Toto1");
-		leftJoinColumn = totoClassTable1.addColumn("id", fieldId.getType());
+		leftJoinColumn = Key.ofSingleColumn(totoClassTable1.addColumn("id", fieldId.getType()));
 		totoClassTable1.addColumn("a", fieldA.getType());
 		totoClassTable1.addColumn("b", fieldB.getType());
 		Map<String, Column> columnMap1 = totoClassTable1.mapColumnsOnName();
@@ -120,11 +128,14 @@ class SimpleRelationalEntityPersisterTest {
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		
 		BeforeInsertIdentifierManager<Toto, Identifier<Integer>> beforeInsertIdentifierManager = new BeforeInsertIdentifierManager<>(
-				new SinglePropertyIdAccessor<>(identifierAccessor),
+				new AccessorWrapperIdAccessor<>(identifierAccessor),
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<Identifier<Integer>>) (Class) Identifier.class);
-		totoClassMappingStrategy_ontoTable1 = new ClassMapping<>(Toto.class, totoClassTable1,
-																 totoClassMapping1, identifierAccessor, beforeInsertIdentifierManager);
+		totoClassMappingStrategy_ontoTable1 = new ClassMapping<>(Toto.class,
+				totoClassTable1,
+				totoClassMapping1,
+				identifierAccessor,
+				beforeInsertIdentifierManager);
 		
 		JavaTypeToSqlTypeMapping simpleTypeMapping = new JavaTypeToSqlTypeMapping();
 		simpleTypeMapping.put(Identifier.class, "int");
@@ -145,7 +156,7 @@ class SimpleRelationalEntityPersisterTest {
 	}
 	
 	protected void initTest() throws SQLException {
-		// reset id counter between 2 tests to keep independency between them
+		// reset id counter between 2 tests to keep independence between them
 		identifierGenerator.reset();
 		
 		preparedStatement = mock(PreparedStatement.class);
@@ -155,7 +166,7 @@ class SimpleRelationalEntityPersisterTest {
 		
 		connection = mock(Connection.class);
 		// PreparedStatement.getConnection() must gives that instance of connection because of SQLOperation that checks
-		// weither or not it should prepare statement
+		// either or not it should prepare statement
 		when(preparedStatement.getConnection()).thenReturn(connection);
 		statementArgCaptor = ArgumentCaptor.forClass(String.class);
 		when(connection.prepareStatement(statementArgCaptor.capture())).thenReturn(preparedStatement);
@@ -186,8 +197,17 @@ class SimpleRelationalEntityPersisterTest {
 		
 		@BeforeEach
 		void setUp() throws SQLException {
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
 			initMapping();
 			initTest();
+			PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(initializer -> initializer.consume(
+					(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
+		}
+		
+		@AfterEach
+		void removeEntityCandidates() {
+			PersisterBuilderContext.CURRENT.remove();
 		}
 		
 		@Test
@@ -338,7 +358,7 @@ class SimpleRelationalEntityPersisterTest {
 			));
 			// 4 statements because in operator is bounded to 3 values (see testInstance creation)
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto1 where id in (?, ?, ?)",
-																				  "delete from Toto1 where id in (?)"));
+					"delete from Toto1 where id in (?)"));
 			verify(preparedStatement, times(1)).addBatch();
 			verify(preparedStatement, times(1)).executeLargeBatch();
 			verify(preparedStatement, times(1)).executeLargeUpdate();
@@ -363,7 +383,7 @@ class SimpleRelationalEntityPersisterTest {
 			));
 			when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 			
-			List<Toto> select = testInstance.select(Arrays.asList(
+			Set<Toto> select = testInstance.select(Arrays.asList(
 					new PersistableIdentifier<>(7),
 					new PersistableIdentifier<>(13),
 					new PersistableIdentifier<>(17),
@@ -386,10 +406,10 @@ class SimpleRelationalEntityPersisterTest {
 			
 			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
-																									   new Toto(7, 1, 2),
-																									   new Toto(13, 1, 2),
-																									   new Toto(17, 1, 2),
-																									   new Toto(23, 1, 2)
+					new Toto(7, 1, 2),
+					new Toto(13, 1, 2),
+					new Toto(17, 1, 2),
+					new Toto(23, 1, 2)
 			).toString());
 		}
 		
@@ -418,12 +438,12 @@ class SimpleRelationalEntityPersisterTest {
 			});
 			
 			RelationalExecutableEntityQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectWhere(Toto::getA, Operators.eq(42));
-			List<Toto> select = totoRelationalExecutableEntityQuery.execute();
+			Set<Toto> select = totoRelationalExecutableEntityQuery.execute();
 			
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as rootId from Toto1 where (Toto1.a = ?)",
+					"select Toto1.id as rootId from Toto1 where Toto1.a = ?",
 					"select Toto1.id as " + totoIdAlias
 							+ ", Toto1.a as " + totoAAlias
 							+ ", Toto1.b as " + totoBAlias
@@ -437,17 +457,67 @@ class SimpleRelationalEntityPersisterTest {
 			).toString());
 		}
 	}
+		
+	@Nested
+	class LoadByEntityCriteria {
+		
+		@Test
+		void checkSQLGeneration() throws SQLException {
+			
+			PreparedStatement preparedStatement = mock(PreparedStatement.class);
+			Connection connection = mock(Connection.class);
+			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+			ArgumentCaptor<Integer> argCaptor = ArgumentCaptor.forClass(Integer.class);
+			when(connection.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatement);
+			doNothing().when(preparedStatement).setInt(anyInt(), argCaptor.capture());
+			DataSource dataSource = mock(DataSource.class);
+			when(dataSource.getConnection()).thenReturn(connection);
+			when(preparedStatement.executeQuery()).thenReturn(new InMemoryResultSet(new EmptyIterator<>()));
+			
+			
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, new HSQLDBDialect());
+			FluentEntityMappingBuilder<Tata, Integer> mappingConfiguration = entityBuilder(Tata.class, Integer.class)
+					.mapKey(Tata::getId, alreadyAssigned(tata -> {}, tata -> false))	// identifier policy doesn't matter
+					.map(Tata::getProp1);
+			
+			EntityPersister<Toto, Integer> totoPersister = entityBuilder(Toto.class, Integer.class)
+					.mapKey(Toto::getA, alreadyAssigned(toto -> {}, toto -> false))
+					.mapOneToOne(Toto::getTata, mappingConfiguration)
+					.build(persistenceContext);
+			
+			SerializableFunction<Toto, Tata> getTata = Toto::getTata;
+			SerializableFunction<Tata, String> getProp1 = Tata::getProp1;
+			Equals<String> dummy = Operators.eq("dummy");
+			EntityPersister.ExecutableEntityQuery<Toto> totoRelationalExecutableEntityQuery = totoPersister
+					.selectWhere(Toto::getA, Operators.eq(42))
+					.and(getTata, getProp1, dummy);
+			
+			totoRelationalExecutableEntityQuery.execute();
+			
+			assertThat(sqlCaptor.getValue()).isEqualTo("select Toto.a as rootId from Toto left outer join Tata as tata on Toto.tataId = tata.id where Toto.a = ? and tata.prop1 = ?");
+			assertThat(argCaptor.getValue()).isEqualTo(42);
+		}
+	}
 	
 	@Nested
 	class CRUD_WithListener {
 		
-		private ClassMapping<Toto, Identifier<Integer>, Table> totoClassMappingStrategy2_ontoTable2;
-		private Persister<Toto, Identifier<Integer>, ?> persister2;
+		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy;
+		private BeanPersister<Toto, Identifier<Integer>, ?> persister;
 		
 		@BeforeEach
 		void setUp() throws SQLException {
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
 			initMapping();
 			initTest();
+			PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(initializer -> initializer.consume(
+				(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
+		}
+		
+		@AfterEach
+		void removeEntityCandidates() {
+			PersisterBuilderContext.CURRENT.remove();
 		}
 		
 		void initMapping() {
@@ -458,12 +528,12 @@ class SimpleRelationalEntityPersisterTest {
 			Field fieldY = Reflections.getField(Toto.class, "y");
 			Field fieldZ = Reflections.getField(Toto.class, "z");
 			
-			Table totoClassTable2 = new Table("Toto2");
-			rightJoinColumn = totoClassTable2.addColumn("id", fieldId.getType());
-			totoClassTable2.addColumn("x", fieldX.getType());
-			totoClassTable2.addColumn("y", fieldY.getType());
-			totoClassTable2.addColumn("z", fieldZ.getType());
-			Map<String, Column> columnMap2 = totoClassTable2.mapColumnsOnName();
+			Table totoClassTable = new Table("Toto2");
+			rightJoinColumn = Key.ofSingleColumn(totoClassTable.addColumn("id", fieldId.getType()));
+			totoClassTable.addColumn("x", fieldX.getType());
+			totoClassTable.addColumn("y", fieldY.getType());
+			totoClassTable.addColumn("z", fieldZ.getType());
+			Map<String, Column> columnMap2 = totoClassTable.mapColumnsOnName();
 			columnMap2.get("id").setPrimaryKey(true);
 			
 			PropertyAccessor<Toto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
@@ -476,52 +546,50 @@ class SimpleRelationalEntityPersisterTest {
 			AlreadyAssignedIdentifierManager<Toto, Identifier<Integer>> identifierManager =
 					new AlreadyAssignedIdentifierManager<>((Class<Identifier<Integer>>) (Class) Identifier.class,
 														   c -> c.getId().setPersisted(), c -> c.getId().isPersisted());
-			totoClassMappingStrategy2_ontoTable2 = new ClassMapping<>(Toto.class, totoClassTable2,
-																	  totoClassMapping2, identifierAccessor,
-																	  identifierManager);
+			totoClassMappingStrategy = new ClassMapping<>(Toto.class, totoClassTable, totoClassMapping2, identifierAccessor, identifierManager);
 		}
 		
 		protected void initTest() throws SQLException {
 			SimpleRelationalEntityPersisterTest.this.initTest();
 			
 			// we add a copier onto a another table
-			persister2 = new Persister<>(totoClassMappingStrategy2_ontoTable2, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
+			persister = new BeanPersister<>(totoClassMappingStrategy, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 			testInstance.getEntityJoinTree().addRelationJoin(EntityJoinTree.ROOT_STRATEGY_NAME,
-															 new EntityMappingAdapter<>(persister2.getMapping()),
+															 new EntityMappingAdapter<>(persister.getMapping()),
 															 leftJoinColumn, rightJoinColumn, null, JoinType.INNER, Toto::merge, Collections.emptySet());
 			testInstance.getPersisterListener().addInsertListener(new InsertListener<Toto>() {
 				@Override
 				public void afterInsert(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.insert(entities);
+					persister.insert(entities);
 				}
 			});
 			testInstance.getPersisterListener().addUpdateListener(new UpdateListener<Toto>() {
 				@Override
-				public void afterUpdate(Iterable<? extends Duo<? extends Toto, ? extends Toto>> entities, boolean allColumnsStatement) {
+				public void afterUpdate(Iterable<? extends Duo<Toto, Toto>> entities, boolean allColumnsStatement) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.update((Iterable<? extends Duo<Toto, Toto>>) entities, allColumnsStatement);
+					persister.update(entities, allColumnsStatement);
 				}
 			});
 			testInstance.getPersisterListener().addUpdateByIdListener(new UpdateByIdListener<Toto>() {
 				@Override
-				public void afterUpdateById(Iterable<Toto> entities) {
+				public void afterUpdateById(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.updateById(entities);
+					persister.updateById(entities);
 				}
 			});
 			testInstance.getPersisterListener().addDeleteListener(new DeleteListener<Toto>() {
 				@Override
-				public void beforeDelete(Iterable<Toto> entities) {
+				public void beforeDelete(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.delete(entities);
+					persister.delete(entities);
 				}
 			});
 			testInstance.getPersisterListener().addDeleteByIdListener(new DeleteByIdListener<Toto>() {
 				@Override
-				public void beforeDeleteById(Iterable<Toto> entities) {
+				public void beforeDeleteById(Iterable<? extends Toto> entities) {
 					// since we only want a replicate of totos in table2, we only need to return them
-					persister2.deleteById(entities);
+					persister.deleteById(entities);
 				}
 			});
 		}
@@ -585,25 +653,34 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(32)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			verify(preparedStatement, times(8)).addBatch();
 			verify(preparedStatement, times(4)).executeLargeBatch();
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)",
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)"
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"
+			);
+			assertThat(statementArgCaptor.getAllValues().subList(2, 4)).isEqualTo(Arrays.asList(
 					"update Toto1 set a = ?, b = ? where id = ?",
 					"update Toto2 set x = ?, y = ?, z = ? where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).hasSize(4);
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 		}
@@ -735,7 +812,7 @@ class SimpleRelationalEntityPersisterTest {
 			));
 			when(preparedStatement.executeQuery()).thenReturn(resultSetMock);
 			
-			List<Toto> select = testInstance.select(Arrays.asList(
+			Set<Toto> select = testInstance.select(Arrays.asList(
 					new PersistableIdentifier<>(7),
 					new PersistableIdentifier<>(13),
 					new PersistableIdentifier<>(17),
@@ -744,23 +821,31 @@ class SimpleRelationalEntityPersisterTest {
 			
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)",
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ ", Toto2.z as " + toto2ZAlias
-							+ ", Toto2.x as " + toto2XAlias
-							+ ", Toto2.y as " + toto2YAlias
-							+ ", Toto2.id as " + toto2IdAlias
-							+ " from Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"));
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)"
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getColumns()).containsExactlyInAnyOrder(
+					"Toto1.id as " + totoIdAlias,
+							"Toto1.a as " + totoAAlias,
+							"Toto1.b as " + totoBAlias,
+							"Toto2.z as " + toto2ZAlias,
+							"Toto2.x as " + toto2XAlias,
+							"Toto2.y as " + toto2YAlias,
+							"Toto2.id as " + toto2IdAlias
+			);
+			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getFrom()).isEqualTo(
+					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"
+			);
+			assertThat(statementArgCaptor.getAllValues()).hasSize(2);
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 			
@@ -777,6 +862,8 @@ class SimpleRelationalEntityPersisterTest {
 	private static class Toto implements Identified<Integer> {
 		private Identifier<Integer> id;
 		private Integer a, b, x, y, z;
+		
+		private Tata tata;
 		
 		public Toto() {
 		}
@@ -816,7 +903,7 @@ class SimpleRelationalEntityPersisterTest {
 		 * It has no real purpose, it only exists to fulfill the relational mapping between tables Toto and Toto2 and avoid a NullPointerException
 		 * when associating 2 results of RowTransformer
 		 * 
-		 * @param another a bean coming from the persister2
+		 * @param another a bean coming from the persister
 		 */
 		void merge(Toto another) {
 			this.x = another.x;
@@ -824,11 +911,30 @@ class SimpleRelationalEntityPersisterTest {
 			this.z = another.z;
 		}
 		
+		public Tata getTata() {
+			return tata;
+		}
+		
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
 					+ Maps.asMap("id", (Object) id.getSurrogate()).add("a", a).add("b", b).add("x", x).add("y", y).add("z", z)
 					+ "]";
+		}
+	}
+	
+	private static class Tata {
+		
+		private Integer id;
+		
+		private String prop1;
+		
+		public Integer getId() {
+			return id;
+		}
+		
+		public String getProp1() {
+			return prop1;
 		}
 	}
 }

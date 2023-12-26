@@ -2,28 +2,52 @@ package org.codefilarete.stalactite.query.model;
 
 import java.util.Map;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-
 /**
  * The interface defining what's possible to do (fluent point of view) on a select
  * 
  * @author Guillaume Mary
  */
-public interface SelectChain<T extends SelectChain<T>> {
+public interface SelectChain<SELF extends SelectChain<SELF>> {
 	
-	T add(Object selectable, Object... selectables);
+	SELF add(Iterable<? extends Selectable<?>> expressions);
 	
-	T add(Column column, String alias);
+	SELF add(Selectable<?> expression, Selectable<?>... expressions);
 	
-	default T add(Column col1, String alias1, Column col2, String alias2) {
+	AliasableExpression<SELF> add(String expression, Class<?> javaType);
+	
+	default SELF add(Selectable<?> column) {
+		return add(column, (String) null);
+	}
+	
+	SELF add(Selectable<?> column, String alias);
+	
+	default SELF add(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2) {
 		return add(col1, alias1).add(col2, alias2);
 	}
 	
-	default T add(Column col1, String alias1, Column col2, String alias2, Column col3, String alias3) {
+	default SELF add(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2, Selectable<?> col3, String alias3) {
 		return add(col1, alias1).add(col2, alias2).add(col3, alias3);
 	}
 	
-	T add(Map<Column, String> aliasedColumns);
+	SELF add(Map<? extends Selectable<?>, String> aliasedColumns);
 	
-	T distinct();
+	SELF distinct();
+	
+	default SELF getSelect() {
+		return (SELF) this;
+	}
+	
+	interface Aliasable {
+		
+		SelectChain<?> as(String alias);
+	}
+	
+	/**
+	 * A mixin to chain {@link Aliasable} and {@link SelectChain}.
+	 * 
+	 * @param <SELF> type of {@link SelectChain}
+	 */
+	interface AliasableExpression<SELF extends SelectChain<SELF>> extends Aliasable, SelectChain<SELF> {
+		
+	}
 }

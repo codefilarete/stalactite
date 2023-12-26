@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterI
  * 
  * @author Guillaume Mary
  */
-public class PreparedUpdate<T extends Table> extends SQLStatement<UpwhereColumn<T>> {
+public class PreparedUpdate<T extends Table<T>> extends SQLStatement<UpwhereColumn<T>> {
 	
 	private final String sql;
 	private final Map<UpwhereColumn<T>, Integer> columnIndexes;

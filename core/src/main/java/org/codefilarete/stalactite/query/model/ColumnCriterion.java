@@ -10,11 +10,11 @@ public class ColumnCriterion extends AbstractCriterion {
 	private final Column column;
 	private final Object /* String or Operator */ condition;
 	
-	public ColumnCriterion(Column column, CharSequence condition) {
+	public <O> ColumnCriterion(Column<?, O> column, CharSequence condition) {
 		this(null, column, condition);
 	}
 	
-	public ColumnCriterion(Column column, AbstractRelationalOperator operator) {
+	public <O> ColumnCriterion(Column<?, O> column, ConditionalOperator<? super O> operator) {
 		this(null, column, operator);
 	}
 	
