@@ -157,7 +157,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 				// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
 				// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
 				// (where T is type returned by accessor, or expected as input of mutator)
-				(accessor, aClass) -> beanType);
+				(accessor, aClass) -> Reflections.newInstance(beanType));
 	}
 	
 	private final BeanMappingConfiguration<C> mainMappingConfiguration;
@@ -386,7 +386,7 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						// this can look superfluous but fills the gap of instantiating right bean when configuration is a subtype of inset accessor,
 						// case which is allowed by signature of embed(..) method : it accepts "? extend T" as parameter type of given configuration
 						// (where T is type returned by accessor, or expected as input of mutator)
-						(localAccessor, accessorInputType) -> insetBeanType);
+						(localAccessor, accessorInputType) -> Reflections.newInstance(insetBeanType));
 				
 				// Computing definitive column because it may be overridden by inset declaration
 				Column<T, ?> finalColumn;

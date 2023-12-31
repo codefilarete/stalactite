@@ -12,6 +12,7 @@ import org.codefilarete.stalactite.mapping.EmbeddedClassMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingMap;
 
@@ -30,9 +31,9 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 			AccessorChain key = new AccessorChain(KeyValueRecord.KEY_ACCESSOR, keyPropertyAccessor);
 			key.setNullValueHandler(new ValueInitializerOnNullValue((accessor, inputType) -> {
 				if (accessor == KeyValueRecord.KEY_ACCESSOR) {
-					return entryKeyMapping.getClassToPersist();
+					return Reflections.newInstance(entryKeyMapping.getClassToPersist());
 				}
-				return ValueInitializerOnNullValue.giveValueType(accessor, inputType);
+				return ValueInitializerOnNullValue.newInstance(accessor, inputType);
 			}));
 			result.add(key, column);
 		});
@@ -45,9 +46,9 @@ class KeyValueRecordMappingBuilder<K, V, I, T extends Table<T>, LEFTTABLE extend
 			AccessorChain key = new AccessorChain(KeyValueRecord.VALUE_ACCESSOR, keyPropertyAccessor);
 			key.setNullValueHandler(new ValueInitializerOnNullValue((accessor, inputType) -> {
 				if (accessor == KeyValueRecord.VALUE_ACCESSOR) {
-					return entryKeyMapping.getClassToPersist();
+					return Reflections.newInstance(entryKeyMapping.getClassToPersist());
 				}
-				return ValueInitializerOnNullValue.giveValueType(accessor, inputType);
+				return ValueInitializerOnNullValue.newInstance(accessor, inputType);
 			}));
 			result.add(key, column);
 		});

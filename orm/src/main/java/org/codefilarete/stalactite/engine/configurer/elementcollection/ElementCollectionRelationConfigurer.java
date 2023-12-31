@@ -47,6 +47,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.PairIterator;
@@ -145,10 +146,10 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 					if (accessor == ElementRecord.ELEMENT_ACCESSOR) {
 						// on getElement(), bean type can't be deduced by reflection due to generic type erasure : default mechanism returns Object
 						// so we have to specify our bean type, else a simple Object is instantiated which throws a ClassCastException further
-						return embeddableConfiguration.getBeanType();
+						return Reflections.newInstance(embeddableConfiguration.getBeanType());
 					} else {
 						// default mechanism
-						return ValueInitializerOnNullValue.giveValueType(accessor, valueType);
+						return ValueInitializerOnNullValue.newInstance(accessor, valueType);
 					}
 				});
 				
