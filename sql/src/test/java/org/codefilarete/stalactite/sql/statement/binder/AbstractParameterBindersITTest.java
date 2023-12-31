@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -146,6 +147,11 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	@Test
 	void bigDecimalBinder() throws SQLException {
 		testParameterBinder(BigDecimal.class, Arrays.asSet(null, new BigDecimal("42.6600", new MathContext(6))));
+	}
+	
+	@Test
+	void bigIntegerBinder() throws SQLException {
+		testParameterBinder(BigInteger.class, Arrays.asSet(null, new BigInteger("42", 10)));
 	}
 	
 	@Test

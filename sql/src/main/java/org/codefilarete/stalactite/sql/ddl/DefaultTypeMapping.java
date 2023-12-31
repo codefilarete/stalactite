@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.ddl;
 import java.io.File;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Timestamp;
@@ -49,6 +50,7 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(Float.class, "float");
 		put(Float.TYPE, "float");
 		put(BigDecimal.class, "decimal(10,4)");
+		put(BigInteger.class, "bigint");
 		put(Long.class, "bigint");
 		put(Long.TYPE, "bigint");
 		put(Integer.class, "integer");

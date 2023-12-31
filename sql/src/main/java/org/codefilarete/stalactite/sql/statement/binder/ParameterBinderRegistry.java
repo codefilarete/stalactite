@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.statement.binder;
 import java.io.File;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.sql.Blob;
 import java.time.Instant;
@@ -19,10 +20,10 @@ import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.function.Function;
 
+import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 import static java.util.stream.Collectors.toSet;
 import static org.codefilarete.tool.collection.Iterables.first;
@@ -79,6 +80,7 @@ public class ParameterBinderRegistry {
 		register(Float.class, DefaultParameterBinders.FLOAT_BINDER);
 		register(Float.TYPE, DefaultParameterBinders.FLOAT_PRIMITIVE_BINDER);
 		register(BigDecimal.class, DefaultParameterBinders.BIGDECIMAL_BINDER);
+		register(BigInteger.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(DefaultParameterBinders.LONG_PRIMITIVE_BINDER, BigInteger::valueOf, BigInteger::longValue)));
 		register(Long.class, DefaultParameterBinders.LONG_BINDER);
 		register(Long.TYPE, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		register(Integer.class, DefaultParameterBinders.INTEGER_BINDER);
