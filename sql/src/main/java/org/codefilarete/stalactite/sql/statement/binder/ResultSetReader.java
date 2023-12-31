@@ -9,21 +9,26 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
  * An interface that allows to use {@link ResultSet#getXXX(...)} method to be used as method reference.
+ * See {@link DefaultResultSetReaders} for some available ones.
+ * See {@link PreparedStatementWriter} for its equivalence to write to {@link java.sql.PreparedStatement}, or
+ * {@link ParameterBinder} to accomplish both.
  * 
  * @author Guillaume Mary
+ * @see PreparedStatementWriter
+ * @see DefaultResultSetReaders
  */
 @FunctionalInterface
 public interface ResultSetReader<I> {
 	
 	/**
-	 * Reads column <t>columnName</t> returned by <t>resultSet</t>.
+	 * Reads column <code>columnName</code> returned by <code>resultSet</code>.
 	 * This implementation wraps any exception in a {@link BindingException} and in particular wraps {@link ClassCastException} for better message
 	 * handling.
 	 * Subclasses are expected to implement {@link #doGet(ResultSet, String)}
 	 *
 	 * @param resultSet the {@link ResultSet} to read
 	 * @param columnName the column to be read from the given {@link ResultSet}
-	 * @return content of <t>columnName</t>, typed according to <t>column</t>
+	 * @return content of <code>columnName</code>, typed according to <code>column</code>
 	 */
 	default I get(ResultSet resultSet, String columnName) {
 		try {
@@ -43,7 +48,7 @@ public interface ResultSetReader<I> {
 	 *
 	 * @param resultSet the {@link ResultSet} to read
 	 * @param columnName the column to be read from the given {@link ResultSet}
-	 * @return content of <t>columnName</t>, typed according to <t>column</t>
+	 * @return content of <code>columnName</code>, typed according to <code>column</code>
 	 * @throws SQLException the exception thrown be the underlying access to the {@link ResultSet}
 	 */
 	I doGet(ResultSet resultSet, String columnName) throws SQLException;

@@ -18,7 +18,7 @@ class JavaTypeToSqlTypeMappingTest {
 		JavaTypeToSqlTypeMapping testInstance1 = new JavaTypeToSqlTypeMapping();
 		testInstance1.put(String.class, "VARCHAR");
 		JavaTypeToSqlTypeMapping testInstance2 = new JavaTypeToSqlTypeMapping();
-		testInstance2.put(String.class, 10, "CHAR($l)");
+		testInstance2.put(String.class, "CHAR($l)", 10);
 		return new Object[][] {
 				{ testInstance1, String.class, null, "VARCHAR" },
 				{ testInstance2, String.class, 10, "CHAR(10)" },
@@ -35,8 +35,8 @@ class JavaTypeToSqlTypeMappingTest {
 		JavaTypeToSqlTypeMapping testInstance = new JavaTypeToSqlTypeMapping();
 		testInstance.put(CharSequence.class, "VARCHAR");
 		testInstance.put(String.class, "TEXT");
-		testInstance.put(String.class, 10, "CHAR($l)");
-		testInstance.put(String.class, 100, "VARCHAR($l)");
+		testInstance.put(String.class, "CHAR($l)", 10);
+		testInstance.put(String.class, "VARCHAR($l)", 100);
 		testInstance.put(Enum.class, "myEnumType");	// a entry for Enum must be registered for make enum types work 
 		testInstance.put(Month.class, "monthType");	// a entry for Enum must be registered for make enum types work 
 		return new Object[][] {

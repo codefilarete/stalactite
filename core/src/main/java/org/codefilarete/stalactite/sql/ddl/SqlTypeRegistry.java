@@ -7,13 +7,18 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
- * A registry to specify SQL types for Java types and {@link Column}s.
+ * A registry that let one specifies SQL types for Java types and {@link Column}s.
  * This is used for schema generation.
- * One can specify SQL type of a particular {@link Column}, as well as one for a Java class. latter ones will act as
- * fallback if an SQL type is not found for a {@link Column} : its Java type will be checked for SQL type presence.
- *
+ * One can specify the SQL type of a particular {@link Column} with {@link #put(Column, String)}, as well as one for
+ * a Java class with {@link #put(Class, String)}. The latter will act as a fallback if an SQL type is not found for a
+ * {@link Column} : its {@link Column#getJavaType() Java type} will be checked for SQL type presence.
+ * Designed as a wrapper of {@link JavaTypeToSqlTypeMapping} by adding {@link Column} type registration.
+ * 
+ * See {@link org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry} for default readers and writers
+ * to database.
+ * 
  * @author Guillaume Mary
- * @see #getTypeName(Column) 
+ * @see #getTypeName(Column)
  */
 public class SqlTypeRegistry {
 	
@@ -47,11 +52,11 @@ public class SqlTypeRegistry {
 	 * Register a Java class to a SQL type mapping
 	 *
 	 * @param clazz the Java class to bind
-	 * @param size the minimal size from which the SQL type will be used
 	 * @param sqlType the SQL type to map on the Java type
+	 * @param size the minimal size from which the SQL type will be used
 	 */
-	public void put(Class clazz, int size, String sqlType) {
-		javaTypeToSqlType.put(clazz, size, sqlType);
+	public void put(Class clazz, String sqlType, int size) {
+		javaTypeToSqlType.put(clazz, sqlType, size);
 	}
 	
 	/**

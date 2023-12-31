@@ -15,8 +15,8 @@ public class HSQLDBTypeMapping extends DefaultTypeMapping {
         // to prevent "length must be specified in type definition: VARCHAR"
         put(String.class, "varchar(255)");
 		put(Path.class, "varchar(255)");
-		put(Path.class, Integer.MAX_VALUE, "varchar($l)");
+		put(Path.class, "varchar($l)", Integer.MAX_VALUE);
 		put(File.class, "varchar(255)");
-		put(File.class, Integer.MAX_VALUE, "varchar($l)");
+		put(File.class, "varchar($l)", Integer.MAX_VALUE);
     }
 }

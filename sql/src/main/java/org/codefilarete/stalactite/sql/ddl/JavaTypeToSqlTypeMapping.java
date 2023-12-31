@@ -11,8 +11,9 @@ import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
- * A storage of mapping between Java classes and Sql Types. Aimed at generating schema, not reading nor writing to ResultSet/Statement.
- * Near Hibernate Dialect::register types principles.
+ * A storage for mapping between Java classes and Sql Types. Aimed at generating schema, not reading nor writing to
+ * ResultSet/Statement.
+ * A default registry is implemented through {@link DefaultTypeMapping}.
  *
  * @author Guillaume Mary
  * @see #getTypeName(Class)
@@ -45,11 +46,11 @@ public class JavaTypeToSqlTypeMapping {
 	 * Register a Java class to a SQL type mapping
 	 *
 	 * @param clazz the Java class to bind
-	 * @param size the maximum size until which the SQL type will be used
 	 * @param sqlType the SQL type to map on the Java type
+	 * @param size the maximum size until which the SQL type will be used
 	 * @see #with(Class, int, String)
 	 */
-	public void put(Class clazz, int size, String sqlType) {
+	public void put(Class clazz, String sqlType, int size) {
 		getSQLType(clazz).put(size, sqlType);
 	}
 	
@@ -70,7 +71,7 @@ public class JavaTypeToSqlTypeMapping {
 	}
 	
 	/**
-	 * Same as {@link #put(Class, int, String)} with fluent writing
+	 * Same as {@link #put(Class, String, int)} with fluent writing
 	 * 
 	 * @param clazz the Java class to bind
 	 * @param size the minimal size from which the SQL type will be used
@@ -78,7 +79,7 @@ public class JavaTypeToSqlTypeMapping {
 	 * @return this
 	 */
 	public JavaTypeToSqlTypeMapping with(Class clazz, int size, String sqlType) {
-		put(clazz, size, sqlType);
+		put(clazz, sqlType, size);
 		return this;
 	}
 	

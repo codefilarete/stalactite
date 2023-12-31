@@ -66,15 +66,15 @@ public class DefaultTypeMapping extends JavaTypeToSqlTypeMapping {
 		put(LocalTime.class, "timestamp");
 		put(Instant.class, "bigint");
 		put(String.class, "varchar");
-		put(String.class, 16383, "varchar($l)");
+		put(String.class, "varchar($l)", 16383);
 		// 35 chars because the largest timezone found is "America/Argentina/ComodRivadavia" (with ZoneId.getAvailableZoneIds())
 		put(ZoneId.class, "varchar(35)");
 		// necessary entry for Enum, "integer" because Enum are stored by their ordinal by default, see ParameterBinderRegistry.lookupForBinder(Class)
 		put(Enum.class, "integer");
 		put(UUID.class, "varchar(36)");	// 36 because it UUID length as String
 		put(Path.class, "varchar");
-		put(Path.class, Integer.MAX_VALUE, "varchar($l)");
+		put(Path.class, "varchar($l)", Integer.MAX_VALUE);
 		put(File.class, "varchar");
-		put(File.class, Integer.MAX_VALUE, "varchar($l)");
+		put(File.class, "varchar($l)", Integer.MAX_VALUE);
 	}
 }

@@ -6,18 +6,23 @@ import java.util.function.Function;
 
 /**
  * An interface that allows to use {@link PreparedStatement#setXXX(...)} methods to be used as method reference.
+ * See {@link DefaultPreparedStatementWriters} for some available ones.
+ * See {@link ResultSetReader} for its equivalence for reading {@link java.sql.ResultSet}, or
+ * {@link ParameterBinder} to accomplish both.
  * 
  * @author Guillaume Mary
+ * @see ResultSetReader
+ * @see DefaultPreparedStatementWriters
  */
 @FunctionalInterface
 public interface PreparedStatementWriter<I> {
 	
 	/**
-	 * Applies <t>value</t> at position <t>valueIndex</t> on <t>statement</t>.
+	 * Applies <code>value</code> at position <code>valueIndex</code> on <code>statement</code>.
 	 *
 	 * @param preparedStatement PreparedStatement to be used
-	 * @param valueIndex parameter index to be set, value for first parameter of methods <t>Statement.setXXX(..)</t>
-	 * @param value value to be passed as second argument of methods <t>Statement.setXXX(..)</t>
+	 * @param valueIndex parameter index to be set, value for first parameter of methods <code>Statement.setXXX(..)</code>
+	 * @param value value to be passed as second argument of methods <code>Statement.setXXX(..)</code>
 	 * @throws SQLException the exception thrown be the underlying access to the {@link PreparedStatement}
 	 */
 	void set(PreparedStatement preparedStatement, int valueIndex, I value) throws SQLException;
