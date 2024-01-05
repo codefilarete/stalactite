@@ -284,7 +284,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 	 */
 	private class EmbeddedBeanRowTransformer extends ToBeanRowTransformer<C> {
 		
-		public EmbeddedBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember) {
+		public EmbeddedBeanRowTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory, Map<? extends Column, ? extends Mutator<C, Object>> columnToMember) {
 			super(beanFactory, columnToMember);
 		}
 		
@@ -295,7 +295,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 		 * @param columnedRow mapping between {@link Column} and their alias in given row to {@link #transform(Row)} 
 		 * @param rowTransformerListeners listeners that need notification of bean creation
 		 */
-		private EmbeddedBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<Column, Mutator> columnToMember,
+		private EmbeddedBeanRowTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, Map<? extends Column, ? extends Mutator<C, Object>> columnToMember,
 										   ColumnedRow columnedRow, Collection<TransformerListener<C>> rowTransformerListeners) {
 			super(beanFactory, columnToMember, columnedRow, rowTransformerListeners);
 		}
@@ -309,9 +309,9 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 			// per accessor to this bean. Example : with the mappings "Person::getTimestamp, Timestamp::setCreationDate" and
 			// "Person::getTimestamp, Timestamp::setModificationDate", then we keep a boolean per "Person::getTimestamp" saying that if one of
 			// creationDate and modificationDate is not null then we should instantiate Timestamp, if both are null then not. 
-			Map<Entry<Column, Mutator>, Object> beanValues = new HashMap<>();
+			Map<Entry<Column, Mutator<C, Object>>, Object> beanValues = new HashMap<>();
 			Map<Accessor, MutableBoolean> valuesAreDefaultOnes = new HashMap<>();
-			for (Entry<Column, Mutator> columnFieldEntry : getColumnToMember().entrySet()) {
+			for (Entry<Column, Mutator<C, Object>> columnFieldEntry : getColumnToMember().entrySet()) {
 				Object propertyValue = getColumnedRow().getValue(columnFieldEntry.getKey(), values);
 				beanValues.put(columnFieldEntry, propertyValue);
 				boolean valueIsDefault = EmbeddedClassMapping.this.defaultValueDeterminer.isDefaultValue(
@@ -337,7 +337,7 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 		}
 		
 		@Override
-		protected void applyValueToBean(C targetRowBean, Entry<Column, Mutator> columnFieldEntry, Object propertyValue) {
+		protected void applyValueToBean(C targetRowBean, Entry<? extends Column, ? extends Mutator<C, Object>> columnFieldEntry, Object propertyValue) {
 			// we skip properties set by constructor
 			if (!propertiesSetByConstructor.contains(columnFieldEntry.getValue())) {
 				super.applyValueToBean(targetRowBean, columnFieldEntry, propertyValue);

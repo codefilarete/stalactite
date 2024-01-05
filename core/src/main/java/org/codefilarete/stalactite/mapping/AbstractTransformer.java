@@ -37,13 +37,13 @@ public abstract class AbstractTransformer<C> implements RowTransformer<C> {
 	 *
 	 * @param beanFactory the factory of beans
 	 */
-	public AbstractTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow) {
+	public AbstractTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow) {
 		this(beanFactory, columnedRow, Collections.emptyList());
 	}
 	
-	protected AbstractTransformer(Function<Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow,
+	protected AbstractTransformer(Function<? extends Function<Column<?, ?>, Object>, C> beanFactory, ColumnedRow columnedRow,
 								  Collection<TransformerListener<C>> rowTransformerListeners) {
-		this.beanFactory = beanFactory;
+		this.beanFactory = (Function<Function<Column<?, ?>, Object>, C>) beanFactory;
 		this.columnedRow = columnedRow;
 		this.rowTransformerListeners.addAll(rowTransformerListeners);
 	}

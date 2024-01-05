@@ -1,13 +1,11 @@
 package org.codefilarete.stalactite.mapping;
 
-import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.ToBeanRowTransformer;
-import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.Mutator;
-import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +21,8 @@ class ToBeanRowTransformerTest {
 		Column columnA = table.addColumn("a", int.class);
 		Column columnB = table.addColumn("b", String.class);
 		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (Mutator) Accessors.mutatorByMethodReference(Toto::setProp1))
+				.forHashMap(Column.class, (Class<Mutator<Toto, Object>>) (Class) Mutator.class)
+				.add(columnA, (Mutator) Accessors.mutatorByMethodReference(Toto::setProp1))
 				.add(columnB, Accessors.mutatorByMethodReference(Toto::setProp2)));
 		Row row = new Row();
 		row.add(columnA.getName(), 1);
@@ -41,7 +40,8 @@ class ToBeanRowTransformerTest {
 		Column columnA = table.addColumn("a", int.class);
 		Column columnB = table.addColumn("b", String.class);
 		ToBeanRowTransformer<Toto> testInstance = new ToBeanRowTransformer<>(Toto.class, Maps
-				.asMap(columnA, (Mutator) Accessors.mutatorByMethodReference(Toto::setProp1))
+				.forHashMap(Column.class, (Class<Mutator<Toto, Object>>) (Class) Mutator.class)
+				.add(columnA, (Mutator) Accessors.mutatorByMethodReference(Toto::setProp1))
 				.add(columnB, Accessors.mutatorByMethodReference(Toto::setProp2)));
 		testInstance = testInstance.copyWithAliases(new ColumnedRow(column -> {
 			if (column == columnA) {

@@ -42,6 +42,7 @@ import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
@@ -530,16 +531,41 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void map_readonly_columnIsNotWrittenToDatabase() {
+		Table totoTable = new Table("Toto");
+		Column<Table, Identifier<UUID>> idColumn = totoTable.addColumn("id", Identifier.class);
+		Column<Table, String> nameColumn = totoTable.addColumn("name", String.class);
+		dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
+		
 		ConfiguredRelationalPersister<Toto, Identifier<UUID>> persister = (ConfiguredRelationalPersister<Toto, Identifier<UUID>>)
-				MappingEase.entityBuilder(Toto.class, UUID_TYPE)
+				MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
 				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
 				.map(Toto::getName).readonly()
 				.map(Toto::getFirstName)
 				.build(persistenceContext);
 		
+		// Checking that configuration is done right
 		assertThat(persister.getMapping().getSelectableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("id", "name", "firstName"));
 		assertThat(persister.getMapping().getInsertableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("id", "firstName"));
 		assertThat(persister.getMapping().getUpdatableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("firstName"));
+		
+		// Testing in real conditions
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		UUID uuid = UUID.randomUUID();
+		Toto toto = new Toto(new PersistedIdentifier<>(uuid));
+		toto.setName("dummyName");
+		persister.insert(toto);
+		
+		// insert should not write data
+		Set<Duo<Identifier<UUID>, String>> totoNames = persistenceContext.select(Duo::new, idColumn, nameColumn);
+		assertThat(totoNames).containsExactly(new Duo<>(toto.getId(), null));
+		
+		// testing that select fill the property (the property is not totally ignored) 
+		persistenceContext.update(totoTable).set(nameColumn, "dummyName").where(idColumn, Operators.eq(toto.getId())).execute();
+		totoNames = persistenceContext.select(Duo::new, idColumn, nameColumn);
+		assertThat(totoNames).containsExactly(new Duo<>(toto.getId(), "dummyName"));
 	}
 	
 	@Test
