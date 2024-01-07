@@ -277,105 +277,105 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 			
 			@Override
 			public String getString(String columnLabel) throws SQLException {
-				String value = surrogate.getString(columnLabel);
+				String value = delegate.getString(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public boolean getBoolean(String columnLabel) throws SQLException {
-				boolean value = surrogate.getBoolean(columnLabel);
+				boolean value = delegate.getBoolean(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public byte getByte(String columnLabel) throws SQLException {
-				byte value = surrogate.getByte(columnLabel);
+				byte value = delegate.getByte(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public short getShort(String columnLabel) throws SQLException {
-				short value = surrogate.getShort(columnLabel);
+				short value = delegate.getShort(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public int getInt(String columnLabel) throws SQLException {
-				int value = surrogate.getInt(columnLabel);
+				int value = delegate.getInt(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public long getLong(String columnLabel) throws SQLException {
-				long value = surrogate.getLong(columnLabel);
+				long value = delegate.getLong(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public float getFloat(String columnLabel) throws SQLException {
-				float value = surrogate.getFloat(columnLabel);
+				float value = delegate.getFloat(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public double getDouble(String columnLabel) throws SQLException {
-				double value = surrogate.getDouble(columnLabel);
+				double value = delegate.getDouble(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public byte[] getBytes(String columnLabel) throws SQLException {
-				byte[] value = surrogate.getBytes(columnLabel);
+				byte[] value = delegate.getBytes(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public Date getDate(String columnLabel) throws SQLException {
-				Date value = surrogate.getDate(columnLabel);
+				Date value = delegate.getDate(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public Time getTime(String columnLabel) throws SQLException {
-				Time value = surrogate.getTime(columnLabel);
+				Time value = delegate.getTime(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public Timestamp getTimestamp(String columnLabel) throws SQLException {
-				Timestamp value = surrogate.getTimestamp(columnLabel);
+				Timestamp value = delegate.getTimestamp(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public Object getObject(String columnLabel) throws SQLException {
-				Object value = surrogate.getObject(columnLabel);
+				Object value = delegate.getObject(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-				BigDecimal value = surrogate.getBigDecimal(columnLabel);
+				BigDecimal value = delegate.getBigDecimal(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
 			
 			@Override
 			public URL getURL(String columnLabel) throws SQLException {
-				URL value = surrogate.getURL(columnLabel);
+				URL value = delegate.getURL(columnLabel);
 				rowContent.put(columnLabel, value);
 				return value;
 			}
