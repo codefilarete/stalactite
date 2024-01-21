@@ -5,6 +5,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
+import org.danekja.java.util.function.serializable.SerializableFunction;
+
 /**
  * A {@link ParameterBinder} aimed at simplifying {@link ResultSet} and {@link PreparedStatement} access thanks to method references.
  * 
@@ -34,9 +36,14 @@ public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	 * @param statementInputConverter the converter applied on the value passed to the root binder
 	 * @param <I> type of the root binder's value type, which is the Java type of the read and written value from/to the database
 	 */
-	public <I> LambdaParameterBinder(ParameterBinder<I> surrogate, Function<I, T> resultSetConverter, Function<T, I> statementInputConverter) {
+	public <I> LambdaParameterBinder(ParameterBinder<I> surrogate, SerializableFunction<I, T> resultSetConverter, SerializableFunction<T, I> statementInputConverter) {
 		this.resultSetReader = surrogate.thenApply(resultSetConverter);
 		this.preparedStatementWriter = surrogate.preApply(statementInputConverter);
+	}
+	
+	@Override
+	public Class<T> getType() {
+		return resultSetReader.getType();
 	}
 	
 	@Override

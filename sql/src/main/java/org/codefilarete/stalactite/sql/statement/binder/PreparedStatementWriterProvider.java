@@ -20,7 +20,7 @@ public interface PreparedStatementWriterProvider<K> {
 	default PreparedStatementWriter getWriter(K key) {
 		PreparedStatementWriter writer = doGetWriter(key);
 		if (writer == null) {
-			throw new BindingException("Binder for " + key + " is not registered");
+			throw new BindingException("Writer for " + key + " is not registered");
 		}
 		return writer;
 	}

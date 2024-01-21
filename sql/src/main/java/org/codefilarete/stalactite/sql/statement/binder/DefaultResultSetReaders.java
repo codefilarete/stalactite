@@ -11,6 +11,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import static org.codefilarete.stalactite.sql.statement.binder.ResultSetReader.ofMethodReference;
+
 /**
  * Default {@link ResultSetReader}s mapped to methods of {@link ResultSet}
  *
@@ -25,7 +27,7 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getLong(String)}.
 	 */
-	public static final ResultSetReader<Long> LONG_PRIMITIVE_READER = ResultSet::getLong;
+	public static final ResultSetReader<Long> LONG_PRIMITIVE_READER = ofMethodReference(ResultSet::getLong);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getLong(String)}.
@@ -36,7 +38,7 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getInt(String)}.
 	 */
-	public static final ResultSetReader<Integer> INTEGER_PRIMITIVE_READER = ResultSet::getInt;
+	public static final ResultSetReader<Integer> INTEGER_PRIMITIVE_READER = ofMethodReference(ResultSet::getInt);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getInt(String)}.
@@ -47,7 +49,7 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getByte(String)}.
 	 */
-	public static final ResultSetReader<Byte> BYTE_PRIMITIVE_READER = ResultSet::getByte;
+	public static final ResultSetReader<Byte> BYTE_PRIMITIVE_READER = ofMethodReference(ResultSet::getByte);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getByte(String)}.
@@ -58,12 +60,12 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getBytes(String)}.
 	 */
-	public static final ResultSetReader<byte[]> BYTES_READER = ResultSet::getBytes;
+	public static final ResultSetReader<byte[]> BYTES_READER = ofMethodReference(ResultSet::getBytes);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getDouble(String)}.
 	 */
-	public static final ResultSetReader<Double> DOUBLE_PRIMITIVE_READER = ResultSet::getDouble;
+	public static final ResultSetReader<Double> DOUBLE_PRIMITIVE_READER = ofMethodReference(ResultSet::getDouble);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getDouble(String)}.
@@ -74,7 +76,7 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getFloat(String)}.
 	 */
-	public static final ResultSetReader<Float> FLOAT_PRIMITIVE_READER = ResultSet::getFloat;
+	public static final ResultSetReader<Float> FLOAT_PRIMITIVE_READER = ofMethodReference(ResultSet::getFloat);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getFloat(String)}.
@@ -90,7 +92,7 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getBoolean(String)}.
 	 */
-	public static final ResultSetReader<Boolean> BOOLEAN_PRIMITIVE_READER = ResultSet::getBoolean;
+	public static final ResultSetReader<Boolean> BOOLEAN_PRIMITIVE_READER = ofMethodReference(ResultSet::getBoolean);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getBoolean(String)}.
@@ -103,29 +105,29 @@ public final class DefaultResultSetReaders {
 	 * For common usage, prefer {@link DateBinder} because it uses {@link java.util.Date}
 	 * @see DateBinder
 	 */
-	public static final ResultSetReader<Date> DATE_SQL_READER = ResultSet::getDate;
+	public static final ResultSetReader<Date> DATE_SQL_READER = ofMethodReference(ResultSet::getDate);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getTimestamp(String)}.
 	 */
-	public static final ResultSetReader<Timestamp> TIMESTAMP_READER = ResultSet::getTimestamp;
+	public static final ResultSetReader<Timestamp> TIMESTAMP_READER = ofMethodReference(ResultSet::getTimestamp);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getString(String)}.
 	 */
-	public static final ResultSetReader<String> STRING_READER = ResultSet::getString;
+	public static final ResultSetReader<String> STRING_READER = ofMethodReference(ResultSet::getString);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getBinaryStream(String)}.
 	 * @see DerbyParameterBinders#BINARYSTREAM_BINDER
 	 * @see HSQLDBParameterBinders#BINARYSTREAM_BINDER
 	 */
-	public static final ResultSetReader<InputStream> BINARYSTREAM_READER = ResultSet::getBinaryStream;
+	public static final ResultSetReader<InputStream> BINARYSTREAM_READER = ofMethodReference(ResultSet::getBinaryStream);
 	
 	/**
 	 * {@link ResultSetReader} for {@link ResultSet#getBlob(String)}.
 	 */
-	public static final ResultSetReader<Blob> BLOB_READER = ResultSet::getBlob;
+	public static final ResultSetReader<Blob> BLOB_READER = ofMethodReference(ResultSet::getBlob);
 	
 	/**
 	 * {@link ResultSetReader} for {@link java.util.Date}
@@ -145,7 +147,7 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link Object}
 	 */
-	public static final ResultSetReader<Object> OBJECT_READER = ResultSet::getObject;
+	public static final ResultSetReader<Object> OBJECT_READER = ofMethodReference(ResultSet::getObject);
 	
 	/**
 	 * {@link ResultSetReader} for {@link UUID}
@@ -160,7 +162,7 @@ public final class DefaultResultSetReaders {
 	/**
 	 * {@link ResultSetReader} for {@link Number}. Bound to {@link ResultSet#getDouble(String)}
 	 */
-	public static final ResultSetReader<Number> NUMBER_READER = ResultSet::getDouble;
+	public static final ResultSetReader<Number> NUMBER_READER = ofMethodReference(ResultSet::getDouble);
 	
 	private DefaultResultSetReaders() {
 		// Class for constants

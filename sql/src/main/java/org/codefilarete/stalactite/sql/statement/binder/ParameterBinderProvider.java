@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
  * 
  * @author Guillaume Mary
  */
-public interface ParameterBinderProvider<K> extends PreparedStatementWriterProvider<K> {
+public interface ParameterBinderProvider<K> extends PreparedStatementWriterProvider<K>, ResultSetReaderProvider<K> {
 	
 	/**
 	 * Gives a {@link ParameterBinder} from a key.
@@ -30,6 +30,11 @@ public interface ParameterBinderProvider<K> extends PreparedStatementWriterProvi
 	
 	@Override
 	default PreparedStatementWriter doGetWriter(K key) {
+		return doGetBinder(key);
+	}
+	
+	@Override
+	default ResultSetReader doGetReader(K key) {
 		return doGetBinder(key);
 	}
 	

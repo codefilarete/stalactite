@@ -32,6 +32,11 @@ public class LocalTimeBinder implements ParameterBinder<LocalTime> {
 	}
 	
 	@Override
+	public Class<LocalTime> getType() {
+		return LocalTime.class;
+	}
+	
+	@Override
 	public LocalTime doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return resultSet.getTimestamp(columnName).toLocalDateTime().toLocalTime();
 	}

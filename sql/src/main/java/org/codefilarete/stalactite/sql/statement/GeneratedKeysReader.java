@@ -6,10 +6,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
+import org.codefilarete.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.stalactite.sql.result.ResultSetIterator;
+import org.codefilarete.tool.function.SerializableThrowingBiFunction;
 
 /**
  * Default implementation of a {@link ResultSet} returned by {@link Statement#getGeneratedKeys()}.
@@ -34,6 +35,16 @@ public class GeneratedKeysReader<I> {
 	
 	/** Underlying reader of generated value */
 	private final ResultSetReader<I> typeReader;
+	
+	/**
+	 * Constructor.
+	 * 
+	 * @param keyName column name to be read on generated {@link ResultSet}
+	 * @param resultSetGetter reader of generated key column
+	 */
+	public GeneratedKeysReader(String keyName, SerializableThrowingBiFunction<ResultSet, String, I, SQLException> resultSetGetter) {
+			this(keyName, ResultSetReader.ofMethodReference(resultSetGetter));
+		}
 	
 	/**
 	 * Constructor.

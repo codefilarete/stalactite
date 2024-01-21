@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
-import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,6 +44,11 @@ public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	@Override
 	public void set(PreparedStatement preparedStatement, int valueIndex, C value) throws SQLException {
 		convertingBinder.set(preparedStatement, valueIndex, value);
+	}
+	
+	@Override
+	public Class<C> getType() {
+		return convertingBinder.getType();
 	}
 	
 	@Override

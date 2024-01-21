@@ -59,6 +59,8 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter.LambdaPreparedStatementWriter;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader.LambdaResultSetReader;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.codefilarete.tool.Dates;
 import org.codefilarete.tool.Duo;
@@ -1359,8 +1361,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			dialect.getColumnBinderRegistry().register(Locale.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
-					(resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)),
-					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
+					new LambdaResultSetReader<>((resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)), Locale.class),
+					new LambdaPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()), Locale.class))));
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddable mapping to be reused
@@ -1406,8 +1408,8 @@ class FluentEntityMappingConfigurationSupportTest {
 			dialect.getColumnBinderRegistry().register(idColumn, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
 			dialect.getSqlTypeRegistry().put(idColumn, "VARCHAR(255)");
 			dialect.getColumnBinderRegistry().register(Locale.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
-					(resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)),
-					(preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()))));
+					new LambdaResultSetReader<>((resultSet, columnName) -> Locale.forLanguageTag(resultSet.getString(columnName)), Locale.class),
+					new LambdaPreparedStatementWriter<>((preparedStatement, valueIndex, value) -> preparedStatement.setString(valueIndex, value.toLanguageTag()), Locale.class))));
 			dialect.getSqlTypeRegistry().put(Locale.class, "VARCHAR(20)");
 			
 			// embeddable mapping to be reused

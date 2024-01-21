@@ -13,6 +13,11 @@ import java.util.UUID;
 public class UUIDParameterBinder implements ParameterBinder<UUID> {
 	
 	@Override
+	public Class<UUID> getType() {
+		return UUID.class;
+	}
+	
+	@Override
 	public void set(PreparedStatement preparedStatement, int valueIndex, UUID value) throws SQLException {
 		preparedStatement.setString(valueIndex, value.toString());
 	}

@@ -145,6 +145,11 @@ class SimpleRelationalEntityPersisterTest {
 		dialect.setInOperatorMaxSize(3);
 		dialect.getColumnBinderRegistry().register(Identifier.class, new ParameterBinder<Identifier>() {
 			@Override
+			public Class<Identifier> getType() {
+				return Identifier.class;
+			}
+			
+			@Override
 			public Identifier doGet(ResultSet resultSet, String columnName) throws SQLException {
 				return new PersistedIdentifier<>(resultSet.getObject(columnName));
 			}

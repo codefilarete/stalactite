@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.sql.statement.binder;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import org.codefilarete.tool.function.SerializableThrowingTriConsumer;
+
 /**
  * Wrapper around another {@link PreparedStatementWriter} to handle null value
  * 
@@ -11,6 +13,10 @@ import java.sql.SQLException;
 public class NullAwarePreparedStatementWriter<T> implements PreparedStatementWriter<T> {
 	
 	private final PreparedStatementWriter<T> surrogate;
+	
+	public NullAwarePreparedStatementWriter(SerializableThrowingTriConsumer<PreparedStatement, Integer, T, SQLException> preparedStatementSetter) {
+		this(PreparedStatementWriter.ofMethodReference(preparedStatementSetter));
+	}
 	
 	public NullAwarePreparedStatementWriter(PreparedStatementWriter<T> surrogate) {
 		this.surrogate = surrogate;
@@ -23,6 +29,11 @@ public class NullAwarePreparedStatementWriter<T> implements PreparedStatementWri
 		} else {
 			setNotNull(valueIndex, value, statement);
 		}
+	}
+	
+	@Override
+	public Class<T> getType() {
+		return surrogate.getType();
 	}
 	
 	/**

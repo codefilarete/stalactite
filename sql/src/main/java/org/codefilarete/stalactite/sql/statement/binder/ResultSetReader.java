@@ -1,11 +1,20 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
+import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.SerializedLambda;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 
-import org.codefilarete.tool.Strings;
+import org.codefilarete.reflection.MethodReferenceCapturer.MethodDefinition;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
+import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.function.SerializableThrowingBiFunction;
+import org.codefilarete.tool.function.ThrowingBiFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
+
+import static org.codefilarete.reflection.MethodReferenceCapturer.giveArgumentTypes;
+import static org.codefilarete.reflection.MethodReferences.buildSerializedLambda;
 
 /**
  * An interface that allows to use {@link ResultSet#getXXX(...)} method to be used as method reference.
@@ -17,8 +26,20 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
  * @see PreparedStatementWriter
  * @see DefaultResultSetReaders
  */
-@FunctionalInterface
 public interface ResultSetReader<I> {
+	
+	/**
+	 * Creates a {@link ResultSetReader} from a method reference.
+	 * Its type is deduced from given method reference by introspection of it.
+	 * 
+	 * @param resultSetGetter one method of {@link ResultSet}
+	 * @return a new {@link ResultSetReader} which calls given {@link ResultSet} method
+	 * @param <O> the type retrieved from the {@link ResultSet}
+	 */
+	static <O> ResultSetReader<O> ofMethodReference(SerializableThrowingBiFunction<ResultSet, String, O, SQLException> resultSetGetter) {
+		Class<O> argumentType = giveArgumentTypes(buildSerializedLambda(resultSetGetter)).getReturnType();
+		return new LambdaResultSetReader<>(resultSetGetter, argumentType);
+	}
 	
 	/**
 	 * Reads column <code>columnName</code> returned by <code>resultSet</code>.
@@ -43,6 +64,8 @@ public interface ResultSetReader<I> {
 		}
 	}
 	
+	Class<I> getType();
+	
 	/**
 	 * Method expected to be overridden for really reading {@link ResultSet} value if one want to benefit from exception handling by {@link #get(ResultSet, String)}
 	 *
@@ -59,9 +82,45 @@ public interface ResultSetReader<I> {
 	 * @param converter the {@link Function} that turns output value to the final type
 	 * @param <O> final type
 	 * @return a new {@link ResultSetReader} based on this one plus a converting {@link Function}
-	 * @see PreparedStatementWriter#preApply(Function)
+	 * @see PreparedStatementWriter#preApply(SerializableFunction)
 	 */
-	default <O> ResultSetReader<O> thenApply(Function<I, O> converter) {
-		return (rs, columnName) -> converter.apply(this.get(rs, columnName));
+	default <O> ResultSetReader<O> thenApply(SerializableFunction<I, O> converter) {
+		// Determining the type of next ResultSetReader: this is based 
+		SerializedLambda methodReference = buildSerializedLambda(converter);
+		MethodDefinition methodDefinition = giveArgumentTypes(methodReference);
+		Class<O> argumentType;
+		if (methodReference.getImplMethodKind() == MethodHandleInfo.REF_invokeStatic) {
+			argumentType = methodDefinition.getArgumentTypes()[0];
+		} else {
+			argumentType = methodDefinition.getDeclaringClass();
+		}
+		return new LambdaResultSetReader<O>((rs, columnName) -> converter.apply(this.get(rs, columnName)), argumentType);
+	}
+	
+	/**
+	 * Class that helps to wrap a {@link ResultSet} method as a {@link ResultSetReader} 
+	 * @param <I> type read by the reader
+	 * @author Guillaume Mary
+	 */
+	class LambdaResultSetReader<I> implements ResultSetReader<I> {
+		
+		private final ThrowingBiFunction<ResultSet, String, I, SQLException> delegate;
+		
+		private final Class<I> type;
+		
+		public LambdaResultSetReader(ThrowingBiFunction<ResultSet, String, I, SQLException> delegate, Class<I> type) {
+			this.delegate = delegate;
+			this.type = type;
+		}
+		
+		@Override
+		public Class<I> getType() {
+			return type;
+		}
+		
+		@Override
+		public I doGet(ResultSet resultSet, String columnName) throws SQLException {
+			return delegate.apply(resultSet, columnName);
+		}
 	}
 }

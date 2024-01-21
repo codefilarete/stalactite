@@ -6,10 +6,13 @@ import java.nio.file.Path;
 import java.sql.Blob;
 import java.sql.Date;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+
+import static org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter.ofMethodReference;
 
 /**
  * Default {@link PreparedStatementWriter}s mapped to methods of {@link PreparedStatement}
@@ -23,7 +26,7 @@ public final class DefaultPreparedStatementWriters {
 	 */
 	
 	/** Writer straightly bound to {@link PreparedStatement#setLong(int, long)} */
-	private static final PreparedStatementWriter<Long> SET_LONG_WRITER = PreparedStatement::setLong;
+	public static final PreparedStatementWriter<Long> SET_LONG_WRITER = ofMethodReference(PreparedStatement::setLong);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setLong(int, long)}.
@@ -37,7 +40,7 @@ public final class DefaultPreparedStatementWriters {
 	public static final PreparedStatementWriter<Long> LONG_WRITER = new NullAwarePreparedStatementWriter<>(SET_LONG_WRITER);
 	
 	/** Writer straightly bound to {@link PreparedStatement#setInt(int, int)} */
-	private static final PreparedStatementWriter<Integer> SET_INT_WRITER = PreparedStatement::setInt;
+	private static final PreparedStatementWriter<Integer> SET_INT_WRITER = ofMethodReference(PreparedStatement::setInt);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setInt(int, int)}.
@@ -51,7 +54,7 @@ public final class DefaultPreparedStatementWriters {
 	public static final PreparedStatementWriter<Integer> INTEGER_WRITER = new NullAwarePreparedStatementWriter<>(SET_INT_WRITER);
 	
 	/** Writer straightly bound to {@link PreparedStatement#setByte(int, byte)} */
-	private static final PreparedStatementWriter<Byte> SET_BYTE_WRITER = PreparedStatement::setByte;
+	private static final PreparedStatementWriter<Byte> SET_BYTE_WRITER = ofMethodReference(PreparedStatement::setByte);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setByte(int, byte)}.
@@ -70,7 +73,7 @@ public final class DefaultPreparedStatementWriters {
 	public static final PreparedStatementWriter<byte[]> BYTES_WRITER = new NullAwarePreparedStatementWriter<>(PreparedStatement::setBytes);
 	
 	/** Writer straightly bound to {@link PreparedStatement#setDouble(int, double)} */
-	private static final PreparedStatementWriter<Double> SET_DOUBLE_WRITER = PreparedStatement::setDouble;
+	private static final PreparedStatementWriter<Double> SET_DOUBLE_WRITER = ofMethodReference(PreparedStatement::setDouble);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setDouble(int, double)}.
@@ -84,7 +87,7 @@ public final class DefaultPreparedStatementWriters {
 	public static final PreparedStatementWriter<Double> DOUBLE_WRITER = new NullAwarePreparedStatementWriter<>(SET_DOUBLE_WRITER);
 	
 	/** Writer straightly bound to {@link PreparedStatement#setFloat(int, float)} */
-	private static final PreparedStatementWriter<Float> SET_FLOAT_WRITER = PreparedStatement::setFloat;
+	private static final PreparedStatementWriter<Float> SET_FLOAT_WRITER = ofMethodReference(PreparedStatement::setFloat);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setFloat(int, float)}.
@@ -104,7 +107,7 @@ public final class DefaultPreparedStatementWriters {
 	public static final PreparedStatementWriter<BigDecimal> BIGDECIMAL_WRITER = new NullAwarePreparedStatementWriter<>(PreparedStatement::setBigDecimal);
 	
 	/** Writer straightly bound to {@link PreparedStatement#setBoolean(int, boolean)} */
-	private static final PreparedStatementWriter<Boolean> SET_BOOLEAN_WRITER = PreparedStatement::setBoolean;
+	private static final PreparedStatementWriter<Boolean> SET_BOOLEAN_WRITER = ofMethodReference(PreparedStatement::setBoolean);
 	
 	/**
 	 * {@link PreparedStatementWriter} for {@link PreparedStatement#setBoolean(int, boolean)}.
@@ -177,8 +180,17 @@ public final class DefaultPreparedStatementWriters {
 	/**
 	 * {@link PreparedStatementWriter} for {@link Number}. Bound to {@link PreparedStatement#setDouble(int, double)}
 	 */
-	public static final PreparedStatementWriter<Number> NUMBER_WRITER = (preparedStatement, valueIndex, value)
-			-> preparedStatement.setDouble(valueIndex, value.doubleValue());
+	public static final PreparedStatementWriter<Number> NUMBER_WRITER = new PreparedStatementWriter<Number>() {
+		@Override
+		public void set(PreparedStatement preparedStatement, int valueIndex, Number value) throws SQLException {
+			preparedStatement.setDouble(valueIndex, value.doubleValue());
+		}
+		
+		@Override
+		public Class<Number> getType() {
+			return Number.class;
+		}
+	};
 	
 	private DefaultPreparedStatementWriters() {
 		// Class for constants

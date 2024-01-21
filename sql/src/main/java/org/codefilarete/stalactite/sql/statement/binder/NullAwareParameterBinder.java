@@ -24,6 +24,11 @@ public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 		public Object doGet(ResultSet resultSet, String columnName) {
 			throw new UnsupportedOperationException("This code should never be called because it's only aimed at writing parameters, not reading");
 		}
+		
+		@Override
+		public Class getType() {
+			return Object.class;
+		}
 	};
 	
 	private final NullAwareResultSetReader<T> nullAwareResultSetReader;
@@ -43,6 +48,11 @@ public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 									NullAwarePreparedStatementWriter<T> nullAwarePreparedStatementWriter) {
 		this.nullAwareResultSetReader = nullAwareResultSetReader;
 		this.nullAwarePreparedStatementWriter = nullAwarePreparedStatementWriter;
+	}
+	
+	@Override
+	public Class<T> getType() {
+		return nullAwareResultSetReader.getType();
 	}
 	
 	@Override

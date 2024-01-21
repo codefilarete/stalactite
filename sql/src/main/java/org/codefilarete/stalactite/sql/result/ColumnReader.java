@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.result;
 
-import javax.annotation.Nonnull;
 import java.sql.ResultSet;
 import java.util.function.Function;
 
@@ -21,7 +20,7 @@ public interface ColumnReader<C> {
 	 * @param resultSet a {@link ResultSet} positioned at a row (started, not closed)
 	 * @return a bean
 	 */
-	C read(@Nonnull ResultSet resultSet);
+	C read(ResultSet resultSet);
 	
 	ColumnReader<C> copyWithAliases(Function<String, String> columnMapping);
 }

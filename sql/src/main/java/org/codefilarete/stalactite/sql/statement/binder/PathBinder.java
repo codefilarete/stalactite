@@ -14,6 +14,11 @@ import java.sql.SQLException;
 public class PathBinder implements ParameterBinder<Path> {
 	
 	@Override
+	public Class<Path> getType() {
+		return Path.class;
+	}
+	
+	@Override
 	public Path doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return Paths.get(resultSet.getString(columnName));
 	}

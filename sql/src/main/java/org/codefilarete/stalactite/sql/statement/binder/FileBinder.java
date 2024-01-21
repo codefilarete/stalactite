@@ -13,6 +13,11 @@ import java.sql.SQLException;
 public class FileBinder implements ParameterBinder<File> {
 	
 	@Override
+	public Class<File> getType() {
+		return File.class;
+	}
+	
+	@Override
 	public File doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return new File(resultSet.getString(columnName));
 	}

@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.result;
 
-import javax.annotation.Nonnull;
 import java.sql.ResultSet;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,7 +34,7 @@ public class MultipleColumnsReader<C> implements ColumnReader<C> {
 	}
 	
 	@Override
-	public C read(@Nonnull ResultSet resultSet) {
+	public C read(ResultSet resultSet) {
 		Map<String, Object> rowValues = Iterables.map(columnReaders, SingleColumnReader::getColumnName, reader -> reader.read(resultSet));
 		return assembler.apply(rowValues);
 	}

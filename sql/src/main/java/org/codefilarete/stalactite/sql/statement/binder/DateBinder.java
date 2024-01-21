@@ -14,6 +14,11 @@ import java.util.Date;
 public class DateBinder implements ParameterBinder<Date> {
 	
 	@Override
+	public Class<Date> getType() {
+		return Date.class;
+	}
+	
+	@Override
 	public Date doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return new Date(resultSet.getTimestamp(columnName).getTime());
 	}

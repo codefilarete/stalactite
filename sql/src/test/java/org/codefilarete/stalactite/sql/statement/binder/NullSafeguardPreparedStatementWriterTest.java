@@ -3,7 +3,6 @@ package org.codefilarete.stalactite.sql.statement.binder;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.sql.statement.binder.NullSafeguardPreparedStatementWriter;
 import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +14,11 @@ import static org.mockito.Mockito.mock;
  * @author Guillaume Mary
  */
 class NullSafeguardPreparedStatementWriterTest {
+	
+	@Test
+	void cc() {
+		System.out.println(DefaultPreparedStatementWriters.SET_LONG_WRITER.getType());
+	}
 	
 	@Test
 	public void testSet_nonNullValueIsPassedAsArgument_surrogateIsInvoked() throws SQLException {

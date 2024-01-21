@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.sql.statement.binder;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+import org.codefilarete.tool.function.SerializableThrowingTriConsumer;
+
 /**
  * Wrapper around another {@link PreparedStatementWriter} of primitive types to throw an exception on null value with a clearer message than
  * a cryptic {@link NullPointerException}
@@ -14,8 +16,17 @@ public class NullSafeguardPreparedStatementWriter<C> implements PreparedStatemen
 	
 	private final PreparedStatementWriter<C> surrogate;
 	
+	public NullSafeguardPreparedStatementWriter(SerializableThrowingTriConsumer<PreparedStatement, Integer, C, SQLException> preparedStatementSetter) {
+		this(PreparedStatementWriter.ofMethodReference(preparedStatementSetter));
+	}
+	
 	public NullSafeguardPreparedStatementWriter(PreparedStatementWriter<C> surrogate) {
 		this.surrogate = surrogate;
+	}
+	
+	@Override
+	public Class<C> getType() {
+		return surrogate.getType();
 	}
 	
 	@Override

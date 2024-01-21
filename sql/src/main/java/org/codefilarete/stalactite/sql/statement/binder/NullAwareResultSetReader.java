@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.sql.statement.binder;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.codefilarete.tool.function.SerializableThrowingBiFunction;
+
 /**
  * Wrapper around another {@link ResultSetReader} to handle null value
  * 
@@ -11,6 +13,10 @@ import java.sql.SQLException;
 public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 	
 	private final ResultSetReader<T> surrogate;
+	
+	public NullAwareResultSetReader(SerializableThrowingBiFunction<ResultSet, String, T, SQLException> resultSetGetter) {
+		this(ResultSetReader.ofMethodReference(resultSetGetter));
+	}
 	
 	public NullAwareResultSetReader(ResultSetReader<T> surrogate) {
 		this.surrogate = surrogate;
@@ -23,6 +29,11 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 		} else {
 			return null;
 		}
+	}
+	
+	@Override
+	public Class<T> getType() {
+		return surrogate.getType();
 	}
 	
 	/**

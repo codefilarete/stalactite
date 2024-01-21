@@ -15,7 +15,17 @@ class ResultSetReaderTest {
 	
 	@Test
 	void get_exceptionHandling() throws SQLException {
-		ResultSetReader<Integer> resultSetReader = (resultSet, columnName) -> (Integer) new Holder("A").get();
+		ResultSetReader<Integer> resultSetReader = new ResultSetReader<Integer>() {
+			@Override
+			public Class<Integer> getType() {
+				return Integer.class;
+			}
+			
+			@Override
+			public Integer doGet(ResultSet resultSet, String columnName) throws SQLException {
+				return (Integer) new Holder("A").get();
+			}
+		};
 		ResultSet resultSetMock = Mockito.mock(ResultSet.class);
 		Mockito.when(resultSetMock.getObject("XX")).thenReturn("my too long String value");
 		Assertions.assertThatThrownBy(() -> resultSetReader.get(resultSetMock, "XX"))

@@ -13,6 +13,11 @@ import java.time.ZoneId;
 public class ZoneIdBinder implements ParameterBinder<ZoneId> {
 	
 	@Override
+	public Class<ZoneId> getType() {
+		return ZoneId.class;
+	}
+	
+	@Override
 	public ZoneId doGet(ResultSet resultSet, String columnName) throws SQLException {
 		return ZoneId.of(resultSet.getString(columnName));
 	}
