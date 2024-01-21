@@ -4,15 +4,10 @@ import java.io.Serializable;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
-import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -83,7 +78,7 @@ class ParameterBinderRegistryTest {
 		testInstance.register(Serializable.class, serializableBinder);
 		assertThatThrownBy(() -> testInstance.getBinder(StringBuilder.class))
 				.isInstanceOf(BindingException.class)
-				.hasMessage("Multiple binders found for j.l.StringBuilder, please register a dedicated one : [j.l"
+				.hasMessage("Multiple binders found for j.l.StringBuilder, please register one for any of : [j.l"
 						+ ".CharSequence, j.i.Serializable]");
 	}
 }

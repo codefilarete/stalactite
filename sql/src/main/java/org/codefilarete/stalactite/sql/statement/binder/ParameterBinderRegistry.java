@@ -12,21 +12,23 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
+import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.bean.ClassIterator;
 import org.codefilarete.tool.bean.InterfaceIterator;
 import org.codefilarete.tool.collection.Iterables;
 
 import static java.util.stream.Collectors.toSet;
-import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * Registry of {@link ParameterBinder}s according to their binding class.
@@ -124,21 +126,28 @@ public class ParameterBinderRegistry {
 		if (clazz.isEnum()) {
 			return bindersPerType.computeIfAbsent(clazz, k -> new NullAwareParameterBinder<>(new OrdinalEnumParameterBinder(k)));
 		}
-		Set<Class> assignableType = new HashSet<>();
-		InterfaceIterator interfaceIterator = new InterfaceIterator(clazz);
-		Iterables.copy(interfaceIterator, assignableType);
-		Set<Entry<Class, ParameterBinder>> compatibleBinders =
-				bindersPerType.entrySet().stream().filter(e -> assignableType.contains(e.getKey())).collect(toSet());
-		if (compatibleBinders.size() == 1) {
-			ParameterBinder foundBinder = first(compatibleBinders).getValue();
-			// we put the found binder to save computation of a next call (optional action)
-			bindersPerType.put(clazz, foundBinder);
-			return foundBinder;
-		} else if (compatibleBinders.size() > 1) {
-			throw new BindingException("Multiple binders found for " + Reflections.toString(clazz)
-					+ ", please register a dedicated one : " + compatibleBinders.stream().map(Entry::getKey).map(Reflections::toString).collect(toSet()));
-		} else {
-			throw new BindingException("No binder found for type " + Reflections.toString(clazz));
-		}
+		
+		Iterator<Class> classHierarchy = Iterables.concat(Iterables.ofElements(clazz), new ClassIterator(clazz));
+		return Iterables.stream(classHierarchy)
+				.map(classAncestor -> (ParameterBinder<T>) bindersPerType.get(classAncestor))
+				.filter(Objects::nonNull)
+				.findFirst()
+				.orElseGet(() -> {
+					// if no binder was found during class hierarchy scan, we scan the interfaces
+					Set<Duo<Class, ParameterBinder>> binderPerInterface = Iterables.stream(new InterfaceIterator(clazz))
+							.map(pawn -> new Duo<>(pawn, bindersPerType.get(pawn)))
+							.filter(duo -> duo.getRight() != null)
+							.collect(Collectors.toSet());
+					if (binderPerInterface.size() > 1) {
+						throw new BindingException("Multiple binders found for " + Reflections.toString(clazz)
+								+ ", please register one for any of : " + Iterables.stream(binderPerInterface).map(Duo::getLeft).map(Reflections::toString).collect(toSet()));
+					} else if (binderPerInterface.isEmpty()) {
+						throw new BindingException("No binder found for type " + Reflections.toString(clazz));
+					}
+					ParameterBinder foundBinder = Iterables.first(binderPerInterface).getRight();
+					// we put the found binder to save computation of a next call (optional action)
+					bindersPerType.put(clazz, foundBinder);
+					return foundBinder;
+				});
 	}
 }
