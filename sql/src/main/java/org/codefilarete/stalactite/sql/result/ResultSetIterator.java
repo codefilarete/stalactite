@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.result;
 
+import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -36,10 +37,15 @@ import org.codefilarete.tool.exception.Exceptions;
  * @see RowIterator
  * @see #convert()
  * @see #convert(ResultSet)
+ * @see #setResultSet(ResultSet)
  */
 public abstract class ResultSetIterator<T> extends ReadOnlyIterator<T> implements ThrowingConverter<ResultSet, T, SQLException> {
 	
-	/** The read {@link ResultSet} */
+	/**
+	 * The read {@link ResultSet}.
+	 * Can be null if one gave null at construction time, then one can use {@link #setResultSet(ResultSet)} to be non null before iteration
+	 */
+	@Nullable
 	private ResultSet resultSet;
 	
 	/**

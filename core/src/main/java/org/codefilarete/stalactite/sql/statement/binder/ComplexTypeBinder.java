@@ -33,9 +33,9 @@ public class ComplexTypeBinder<C> implements ParameterBinder<C> {
 	 * @param toDatabaseConverter a converter applied on input value, then result is passed to lower binder when writing to {@link PreparedStatement}
 	 * @param <P> the intermediary type
 	 */
-	public <P> ComplexTypeBinder(@Nonnull ParameterBinder<P> lowerBinder,
-								 @Nonnull ThrowingConverter<P, C, RuntimeException> toObjectConverter,
-								 @Nonnull ThrowingConverter<C, P, RuntimeException> toDatabaseConverter) {
+	public <P> ComplexTypeBinder(ParameterBinder<P> lowerBinder,
+								 ThrowingConverter<P, C, RuntimeException> toObjectConverter,
+								 ThrowingConverter<C, P, RuntimeException> toDatabaseConverter) {
 		convertingBinder = new NullAwareParameterBinder<>(new LambdaParameterBinder<>(
 				// we simply need some conversion after reading and before writing
 				lowerBinder.thenApply(toObjectConverter::convert), lowerBinder.preApply(toDatabaseConverter::convert)

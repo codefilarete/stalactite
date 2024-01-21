@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.result;
 
+import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
@@ -17,7 +18,7 @@ import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
  */
 public class RowIterator extends ResultSetIterator<Row> {
 	
-	/** Readers for each column of the RestulSet, by name (may contains double but doesn't matter, causes only extra conversion) */
+	/** Readers for each column of the {@link ResultSet}, by name (may contains double but doesn't matter, causes only extra conversion) */
 	private final Iterable<Decoder> decoders;
 	
 	/**
@@ -35,7 +36,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	 * @param rs a ResultSet to wrap into an {@link java.util.Iterator}
 	 * @param columnNameBinders column names and associated {@link ResultSetReader} to use for {@link ResultSet} reading
 	 */
-	public RowIterator(ResultSet rs, Map<String, ? extends ResultSetReader> columnNameBinders) {
+	public RowIterator(@Nullable ResultSet rs, Map<String, ? extends ResultSetReader> columnNameBinders) {
 		super(rs);
 		decoders = Decoder.decoders(columnNameBinders.entrySet());
 	}
@@ -54,7 +55,7 @@ public class RowIterator extends ResultSetIterator<Row> {
 	/**
 	 * Implementation that converts current {@link ResultSet} line into a {@link Row} according to {@link ResultSetReader}s given at construction time.
 	 * 
-	 * @param rs {@link ResultSet} positionned at line that must be converted
+	 * @param rs {@link ResultSet} positioned at line that must be converted
 	 * @return a {@link Row} containing values given by {@link ResultSetReader}s
 	 * @throws SQLException if a read error occurs
 	 * @throws BindingException if a binding doesn't match its ResultSet value

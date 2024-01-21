@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
-import javax.annotation.Nonnull;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -22,7 +21,7 @@ public class LambdaParameterBinder<T> implements ParameterBinder<T> {
 	 * @param resultSetReader a {@link ResultSetReader}
 	 * @param preparedStatementWriter a {@link PreparedStatementWriter}
 	 */
-	public LambdaParameterBinder(@Nonnull ResultSetReader<T> resultSetReader, @Nonnull PreparedStatementWriter<T> preparedStatementWriter) {
+	public LambdaParameterBinder(ResultSetReader<T> resultSetReader, PreparedStatementWriter<T> preparedStatementWriter) {
 		this.resultSetReader = resultSetReader;
 		this.preparedStatementWriter = preparedStatementWriter;
 	}

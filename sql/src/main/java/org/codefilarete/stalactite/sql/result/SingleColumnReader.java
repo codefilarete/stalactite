@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.result;
 
-import javax.annotation.Nonnull;
 import java.sql.ResultSet;
 import java.util.function.Function;
 
@@ -17,7 +16,7 @@ public class SingleColumnReader<C> implements ColumnReader<C> {
 	
 	private final ResultSetReader<C> reader;
 	
-	public SingleColumnReader(@Nonnull String columnName, @Nonnull ResultSetReader<C> reader) {
+	public SingleColumnReader(String columnName, ResultSetReader<C> reader) {
 		this.columnName = columnName;
 		this.reader = reader;
 	}
@@ -31,7 +30,7 @@ public class SingleColumnReader<C> implements ColumnReader<C> {
 	}
 	
 	@Override
-	public C read(@Nonnull ResultSet resultSet) {
+	public C read(ResultSet resultSet) {
 		return reader.get(resultSet, columnName);
 	}
 	

@@ -54,7 +54,7 @@ public interface ResultSetReader<I> {
 	I doGet(ResultSet resultSet, String columnName) throws SQLException;
 	
 	/**
-	 * Builds a new {@link ResultSetReader} from this one by appliyng a converter on the output object
+	 * Builds a new {@link ResultSetReader} from this one by applying a converter on the output object
 	 * 
 	 * @param converter the {@link Function} that turns output value to the final type
 	 * @param <O> final type
