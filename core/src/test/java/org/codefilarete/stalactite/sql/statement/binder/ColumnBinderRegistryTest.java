@@ -1,12 +1,12 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
+import java.util.Set;
+
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
-import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
+import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,4 +32,13 @@ class ColumnBinderRegistryTest {
 				.hasMessage("Binder for column toto.name already exists");
 	}
 	
+	@Test
+	void doGetBinder_columnIsNotRegistered_throwsException() {
+		ColumnBinderRegistry testInstance = new ColumnBinderRegistry();
+		Table table = new Table("toto");
+		Column setColumn = table.addColumn("set", Set.class);
+		assertThatThrownBy(() -> testInstance.doGetBinder(setColumn))
+				.isInstanceOf(BindingException.class)
+				.hasMessage("No binder found for type j.u.Set");
+	}
 }

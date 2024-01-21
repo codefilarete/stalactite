@@ -4,15 +4,10 @@ import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
-import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.bean.InterfaceIterator;
-import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Registry of {@link ParameterBinder}s per {@link Column} to simplify access to method of {@link PreparedStatement} for {@link Column}s.
@@ -49,22 +44,7 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 	@Override
 	public ParameterBinder doGetBinder(Column column) {
 		ParameterBinder columnBinder = bindersPerColumn.get(column);
-		try {
-			return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
-		} catch (BindingException e) {
-			InterfaceIterator interfaceIterator = new InterfaceIterator(column.getJavaType());
-			Stream<ParameterBinder> stream = Iterables.stream(interfaceIterator).map(this::getBinder);
-			columnBinder = stream.filter(Objects::nonNull).findFirst().orElse(null);
-			if (columnBinder != null) {
-				return columnBinder;
-			} else {
-				// Why do we throw an exception instead of returning null ? because null would generate a NullPointerException for caller
-				// which should handle this case with ... what ? in fact there's no solution to missing binder else than throwing an exception
-				// saying that configuration is insufficient, that's what we do.
-				throw new BindingException("No binder found for column " + column.getAbsoluteName()
-						+ " (type " + Reflections.toString(column.getJavaType()) + ")");
-			}
-		}
+		return columnBinder != null ? columnBinder : getBinder(column.getJavaType());
 	}
 	
 	@Override

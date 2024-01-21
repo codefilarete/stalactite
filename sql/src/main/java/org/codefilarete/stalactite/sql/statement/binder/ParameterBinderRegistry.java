@@ -138,12 +138,7 @@ public class ParameterBinderRegistry {
 			throw new BindingException("Multiple binders found for " + Reflections.toString(clazz)
 					+ ", please register a dedicated one : " + compatibleBinders.stream().map(Entry::getKey).map(Reflections::toString).collect(toSet()));
 		} else {
-			throw newMissingBinderException(clazz);
+			throw new BindingException("No binder found for type " + Reflections.toString(clazz));
 		}
 	}
-	
-	private BindingException newMissingBinderException(Class clazz) {
-		return new BindingException("No binder found for type " + Reflections.toString(clazz));
-	}
-	
 }
