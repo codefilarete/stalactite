@@ -20,7 +20,7 @@ public interface EntityInflater<C, I> {
 	
 	RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow);
 	
-	Set<Selectable<?>> getSelectableColumns();
+	Set<Selectable<Object>> getSelectableColumns();
 	
 	/**
 	 * Adapter of a {@link EntityMapping} as a {@link EntityInflater}.
@@ -54,7 +54,7 @@ public interface EntityInflater<C, I> {
 		}
 		
 		@Override
-		public Set<Selectable<?>> getSelectableColumns() {
+		public Set<Selectable<Object>> getSelectableColumns() {
 			return (Set) this.delegate.getSelectableColumns();
 		}
 	}

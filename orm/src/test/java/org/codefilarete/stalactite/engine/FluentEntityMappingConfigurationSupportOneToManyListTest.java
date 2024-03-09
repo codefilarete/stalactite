@@ -79,7 +79,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
@@ -116,7 +116,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("myIdx", int.class);
 		
-		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
@@ -155,7 +155,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		// since we won't ask for orphan deletion, index column will be set to null so it can't be a primitive type
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", Integer.class);
 		
-		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
@@ -365,7 +365,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		void update_withAssociationTable_associationRecordsMustBeUpdated_butNotTargetEntities_list() throws SQLException {
 			PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, DIALECT);
 			
-			FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 					.mapKey(Choice::getId, ALREADY_ASSIGNED)
 					.map(Choice::getLabel);
 			
@@ -425,7 +425,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 		Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 		Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 		
-		FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+		FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 				.mapKey(Choice::getId, ALREADY_ASSIGNED)
 				.map(Choice::getLabel);
 		
@@ -1046,7 +1046,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 			idx = choiceTable.addColumn("idx", int.class);
 			
-			FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 					.mapKey(Choice::getId, ALREADY_ASSIGNED)
 					.map(Choice::getLabel);
 			
@@ -1117,7 +1117,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			Column<Table, Identifier> id = choiceTable.addColumn("id", Identifier.class).primaryKey();
 			Column<Table, Integer> idx = choiceTable.addColumn("idx", int.class);
 			
-			FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
+			FluentEntityMappingBuilder<Choice, Identifier<Long>> choiceMappingConfiguration = entityBuilder(Choice.class, LONG_TYPE)
 					.mapKey(Choice::getId, ALREADY_ASSIGNED)
 					.map(Choice::getLabel);
 			
@@ -1131,7 +1131,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// like Aggregate (in Domain Driven Design) or CQRS, Answers are not in the same context than Questions so it requires a different
 			// mapping. For instance there's no need of Question relationship mapping.
 			// BE AWARE THAT mapping Choice a second time is a bad practise
-			FluentMappingBuilderPropertyOptions<AnswerChoice, Identifier<Long>> answerChoiceMappingConfiguration = entityBuilder(AnswerChoice.class, LONG_TYPE)
+			FluentEntityMappingBuilder<AnswerChoice, Identifier<Long>> answerChoiceMappingConfiguration = entityBuilder(AnswerChoice.class, LONG_TYPE)
 					.mapKey(AnswerChoice::getId, ALREADY_ASSIGNED)
 					.map(AnswerChoice::getLabel);
 			

@@ -36,6 +36,11 @@ public class NullAwareResultSetReader<T> implements ResultSetReader<T> {
 		return surrogate.getType();
 	}
 	
+	@Override
+	public <O> Class<O> getColumnType() {
+		return surrogate.getColumnType();
+	}
+	
 	/**
 	 * Says if a column is null.
 	 *

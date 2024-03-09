@@ -42,6 +42,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -154,57 +155,57 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter) {
-		LinkageSupport<C, Object> linkage = addLinkage(new LinkageSupport<>(setter));
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableBiConsumer<C, O> setter) {
+		LinkageSupport<C, O> linkage = addLinkage(new LinkageSupport<>(setter));
 		return wrapWithPropertyOptions(linkage);
 	}
 	
 	@Override
-	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter) {
-		LinkageSupport<C, Object> linkage = addLinkage(new LinkageSupport<>(getter));
+	public <O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableFunction<C, O> getter) {
+		LinkageSupport<C, O> linkage = addLinkage(new LinkageSupport<>(getter));
 		return wrapWithPropertyOptions(linkage);
 	}
 	
-	public LinkageSupport<C, Object> addLinkage(LinkageSupport<C, Object> linkage) {
+	public <O> LinkageSupport<C, O> addLinkage(LinkageSupport<C, O> linkage) {
 		this.mapping.add(linkage);
 		return linkage;
 	}
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> wrapWithPropertyOptions(LinkageSupport<C, O> linkage) {
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> wrapWithPropertyOptions(LinkageSupport<C, O> linkage) {
 		return new MethodReferenceDispatcher()
-				.redirect(PropertyOptions.class, new PropertyOptions() {
+				.redirect(PropertyOptions.class, new PropertyOptions<O>() {
 					@Override
-					public PropertyOptions mandatory() {
+					public PropertyOptions<O> mandatory() {
 						linkage.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public PropertyOptions setByConstructor() {
+					public PropertyOptions<O> setByConstructor() {
 						linkage.setByConstructor();
 						return null;
 					}
 					
 					@Override
-					public PropertyOptions readonly() {
+					public PropertyOptions<O> readonly() {
 						linkage.readonly();
 						return null;
 					}
 					
 					@Override
-					public PropertyOptions columnName(String name) {
+					public PropertyOptions<O> columnName(String name) {
 						linkage.setColumnOptions(new ColumnLinkageOptionsByName(name));
 						return null;
 					}
 					
 					@Override
-					public PropertyOptions column(Column<? extends Table, ?> column) {
+					public PropertyOptions<O> column(Column<? extends Table, ? extends O> column) {
 						linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 						return null;
 					}
 					
 					@Override
-					public PropertyOptions fieldName(String name) {
+					public PropertyOptions<O> fieldName(String name) {
 						// Note that getField(..) will throw an exception if field is not found, at the opposite of findField(..)
 						// Note that we use "classToPersist" for field lookup instead of setter/getter declaring class
 						// because this one can be abstract/interface
@@ -212,37 +213,55 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 						linkage.setField(field);
 						return null;
 					}
+					
+					@Override
+					public PropertyOptions<O> readConverter(Converter<O, O> converter) {
+						linkage.setReadConverter(converter);
+						return null;
+					}
+					
+					@Override
+					public PropertyOptions<O> writeConverter(Converter<O, O> converter) {
+						linkage.setWriteConverter(converter);
+						return null;
+					}
+					
+					@Override
+					public <V> PropertyOptions<O> sqlBinder(ParameterBinder<V> parameterBinder) {
+						linkage.setParameterBinder(parameterBinder);
+						return null;
+					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
+				.build((Class<FluentEmbeddableMappingBuilderPropertyOptions<C, O>>) (Class) FluentEmbeddableMappingBuilderPropertyOptions.class);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableBiConsumer<C, E> setter) {
 		LinkageSupport<C, E> linkage = new LinkageSupport<>(setter);
 		this.mapping.add(linkage);
 		return wrapWithEnumOptions(linkage);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter) {
+	public <E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter) {
 		LinkageSupport<C, E> linkage = new LinkageSupport<>(getter);
 		this.mapping.add(linkage);
 		return wrapWithEnumOptions(linkage);
 	}
 	
-	<O extends Enum> FluentEmbeddableMappingBuilderEnumOptions<C> wrapWithEnumOptions(LinkageSupport<C, O> linkage) {
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> wrapWithEnumOptions(LinkageSupport<C, E> linkage) {
 		return new MethodReferenceDispatcher()
-				.redirect(EnumOptions.class, new EnumOptions() {
+				.redirect(EnumOptions.class, new EnumOptions<E>() {
 					
 					@Override
-					public EnumOptions byName() {
+					public EnumOptions<E> byName() {
 						setLinkageParameterBinder(EnumBindType.NAME);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public EnumOptions byOrdinal() {
+					public EnumOptions<E> byOrdinal() {
 						setLinkageParameterBinder(EnumBindType.ORDINAL);
 						return null;	// we can return null because dispatcher will return proxy
 					}
@@ -252,37 +271,37 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 					}
 					
 					@Override
-					public EnumOptions mandatory() {
+					public EnumOptions<E> mandatory() {
 						linkage.setNullable(false);
 						return null;	// we can return null because dispatcher will return proxy
 					}
 					
 					@Override
-					public EnumOptions setByConstructor() {
+					public EnumOptions<E> setByConstructor() {
 						linkage.setByConstructor();
 						return null;
 					}
 					
 					@Override
-					public EnumOptions readonly() {
+					public EnumOptions<E> readonly() {
 						linkage.readonly();
 						return null;
 					}
 					
 					@Override
-					public EnumOptions columnName(String name) {
+					public EnumOptions<E> columnName(String name) {
 						linkage.setColumnOptions(new ColumnLinkageOptionsByName(name));
 						return null;
 					}
 					
 					@Override
-					public EnumOptions column(Column<? extends Table, ?> column) {
+					public EnumOptions<E> column(Column<? extends Table, ? extends E> column) {
 						linkage.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 						return null;
 					}
 					
 					@Override
-					public EnumOptions fieldName(String name) {
+					public EnumOptions<E> fieldName(String name) {
 						Field field = Reflections.findField(FluentEmbeddableMappingConfigurationSupport.this.classToPersist, name);
 						if (field == null) {
 							throw new MappingConfigurationException(("Field " + name
@@ -291,9 +310,27 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 						linkage.setField(field);
 						return null;
 					}
+					
+					@Override
+					public EnumOptions<E> readConverter(Converter<E, E> converter) {
+						linkage.setReadConverter(converter);
+						return null;
+					}
+					
+					@Override
+					public EnumOptions<E> writeConverter(Converter<E, E> converter) {
+						linkage.setWriteConverter(converter);
+						return null;
+					}
+					
+					@Override
+					public <V> PropertyOptions<E> sqlBinder(ParameterBinder<V> parameterBinder) {
+						linkage.setParameterBinder(parameterBinder);
+						return null;
+					}
 				}, true)
 				.fallbackOn(this)
-				.build((Class<FluentEmbeddableMappingBuilderEnumOptions<C>>) (Class) FluentEmbeddableMappingBuilderEnumOptions.class);
+				.build((Class<FluentEmbeddableMappingBuilderEnumOptions<C, E>>) (Class) FluentEmbeddableMappingBuilderEnumOptions.class);
 	}
 	
 	@Override
@@ -361,11 +398,12 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 	 * Small contract for mapping definition storage. See add(..) methods.
 	 * 
 	 * @param <T> property owner type
+	 * @param <O> property type
 	 */
 	public static class LinkageSupport<T, O> implements Linkage<T, O> {
 		
 		/** Optional binder for this mapping */
-		private ParameterBinder<O> parameterBinder;
+		private ParameterBinder<?> parameterBinder;
 		
 		private boolean nullable = true;
 		
@@ -386,6 +424,10 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		private String extraTableName;
 		
+		private Converter<? /* value coming from database */, O> readConverter;
+		
+		private Converter<O, ? /* value going to database */> writeConverter;
+		
 		public LinkageSupport(SerializableFunction<T, ?> getter) {
 			this.getter = getter;
 			this.accessor = new AccessorFieldLazyInitializer();
@@ -396,13 +438,14 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			this.accessor = new AccessorFieldLazyInitializer();
 		}
 		
-		public void setParameterBinder(ParameterBinder<O> parameterBinder) {
+		public void setParameterBinder(ParameterBinder<?> parameterBinder) {
 			this.parameterBinder = parameterBinder;
 		}
 		
 		@Override
-		public ParameterBinder<O> getParameterBinder() {
-			return parameterBinder;
+		@Nullable
+		public ParameterBinder<Object> getParameterBinder() {
+			return (ParameterBinder<Object>) parameterBinder;
 		}
 		
 		@Override
@@ -428,7 +471,7 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 			return columnOptions;
 		}
 		
-		public void setColumnOptions(ColumnLinkageOptions columnOptions) {
+		public void setColumnOptions(@Nullable ColumnLinkageOptions columnOptions) {
 			this.columnOptions = columnOptions;
 		}
 		
@@ -476,6 +519,24 @@ public class FluentEmbeddableMappingConfigurationSupport<C> implements FluentEmb
 		
 		public void setExtraTableName(String extraTableName) {
 			this.extraTableName = extraTableName;
+		}
+		
+		@Override
+		public Converter<?, O> getReadConverter() {
+			return readConverter;
+		}
+		
+		public void setReadConverter(Converter<?, O> readConverter) {
+			this.readConverter = readConverter;
+		}
+		
+		@Override
+		public Converter<O, ?> getWriteConverter() {
+			return writeConverter;
+		}
+		
+		public void setWriteConverter(Converter<O, ?> writeConverter) {
+			this.writeConverter = writeConverter;
 		}
 		
 		/**

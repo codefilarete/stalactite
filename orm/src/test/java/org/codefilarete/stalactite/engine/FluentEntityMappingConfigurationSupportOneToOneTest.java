@@ -50,8 +50,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 	
 	private final HSQLDBDialect dialect = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
-	private FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personConfiguration;
-	private FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration;
+	private FluentEntityMappingBuilder<Person, Identifier<Long>> personConfiguration;
+	private FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration;
 	private PersistenceContext persistenceContext;
 	
 	@BeforeEach
@@ -60,12 +60,12 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
-		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName);
 		personConfiguration = personMappingBuilder;
 		
-		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(City::getName);
 		cityConfiguration = cityMappingBuilder;
@@ -419,7 +419,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationIsDefinedByColumnOnTargetSide() throws SQLException {
-			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName);
 			Table cityTable = new Table("city");
@@ -464,7 +464,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationIsDefinedByColumnOnTargetSideAndReverseAccessorIsUsed_columnOverrideIsUsed() throws SQLException {
-			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName);
 			Table cityTable = new Table("city");
@@ -502,7 +502,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 		
 		@Test
 		void relationIsDefinedByColumnOnTargetSideAndReverseMutatorIsUsed_columnOverrideIsUsed() throws SQLException {
-			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName);
 			Table cityTable = new Table("city");

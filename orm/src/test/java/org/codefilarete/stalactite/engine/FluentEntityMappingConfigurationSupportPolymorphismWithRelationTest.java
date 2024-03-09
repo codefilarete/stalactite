@@ -193,11 +193,11 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 		PersistenceContext persistenceContext2 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		PersistenceContext persistenceContext3 = new PersistenceContext(new HSQLDBInMemoryDataSource(), DIALECT);
 		
-		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.map(Person::getName);
 		
-		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 				.mapKey(City::getId, ALREADY_ASSIGNED)
 				.map(City::getName);
 		

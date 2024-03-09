@@ -13,7 +13,6 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.Car.Radio;
 import org.codefilarete.stalactite.engine.model.City;
@@ -1347,7 +1346,7 @@ class FluentEntityMappingConfigurationSupportMapTest {
 		
 		@Test
 		void crud_associationOnly() {
-			FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<City, Identifier<Long>> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 					.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(City::getName);
 			EntityPersister<City, Identifier<Long>> cityPersister = cityPersisterConfiguration.build(persistenceContext);

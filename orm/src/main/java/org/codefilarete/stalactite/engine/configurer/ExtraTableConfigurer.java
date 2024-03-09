@@ -93,6 +93,8 @@ class ExtraTableConfigurer<C, I, T extends Table<T>> {
 				extraTable,
 				build.getMapping(),
 				build.getReadonlyMapping(),
+				build.getReadConverters(),
+				build.getWriteConverters(),
 				// we don't care a bit of those argument since they won't be used since we join with main persister with a merge join (no instance creation)
 				new ValueAccessPointSet<>(),
 				identification,

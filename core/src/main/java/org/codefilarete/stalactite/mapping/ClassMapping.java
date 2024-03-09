@@ -19,6 +19,7 @@ import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
@@ -28,6 +29,7 @@ import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Converter;
 
 /**
  * <p>
@@ -222,6 +224,16 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 			});
 		}
 		return result;
+	}
+	
+	@Override
+	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+		return mainMapping.getReadConverters();
+	}
+	
+	@Override
+	public ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+		return mainMapping.getWriteConverters();
 	}
 	
 	/**

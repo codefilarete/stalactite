@@ -7,6 +7,8 @@ import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.function.Converter;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -20,15 +22,15 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  */
 public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingConfigurationProvider<C> {
 	
-	/* Overwritting methods signature to return a type that aggregates options of this class */
+	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter);
 	
-	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter);
+	<O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter);
 	
 	<O, S extends Collection<O>> FluentSubEntityMappingBuilderElementCollectionOptions<C, I, O, S> mapCollection(SerializableFunction<C, S> getter, Class<O> componentType);
 	
@@ -125,53 +127,70 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	
 	FluentSubEntityMappingBuilder<C, I> mapPolymorphism(PolymorphismPolicy<C> polymorphismPolicy);
 	
-	interface FluentSubEntityMappingBuilderPropertyOptions<C, I> extends FluentSubEntityMappingBuilder<C, I>, ColumnOptions<C, I> {
+	interface FluentSubEntityMappingBuilderPropertyOptions<C, I, O> extends FluentSubEntityMappingBuilder<C, I>, ColumnOptions<O> {
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I> mandatory();
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> mandatory();
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I> setByConstructor();
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> setByConstructor();
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I> readonly();
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> readonly();
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I> columnName(String name);
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> columnName(String name);
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I> column(Column<? extends Table, ?> column);
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> column(Column<? extends Table, ? extends O> column);
 		
 		@Override
-		FluentSubEntityMappingBuilderPropertyOptions<C, I> fieldName(String name);
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> fieldName(String name);
+		
+		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> readConverter(Converter<O, O> converter);
+		
+		@Override
+		FluentSubEntityMappingBuilderPropertyOptions<C, I, O> writeConverter(Converter<O, O> converter);
+		
+		@Override
+		<V> FluentSubEntityMappingBuilderPropertyOptions<C, I,O> sqlBinder(ParameterBinder<V> parameterBinder);
 	}
 	
-	interface FluentSubEntityMappingConfigurationEnumOptions<C, I> extends FluentSubEntityMappingBuilder<C, I>, EnumOptions {
+	interface FluentSubEntityMappingConfigurationEnumOptions<C, I, E extends Enum<E>> extends FluentSubEntityMappingBuilder<C, I>, EnumOptions<E> {
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> byName();
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> byName();
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> byOrdinal();
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> byOrdinal();
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> mandatory();
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mandatory();
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> setByConstructor();
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> setByConstructor();
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> readonly();
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> readonly();
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> columnName(String name);
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> columnName(String name);
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> column(Column<? extends Table, ?> column);
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> column(Column<? extends Table, ? extends E> column);
 		
 		@Override
-		FluentSubEntityMappingConfigurationEnumOptions<C, I> fieldName(String name);
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> fieldName(String name);
 		
+		@Override
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> readConverter(Converter<E, E> converter);
+		
+		@Override
+		FluentSubEntityMappingConfigurationEnumOptions<C, I, E> writeConverter(Converter<E, E> converter);
+		
+		@Override
+		<V> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> sqlBinder(ParameterBinder<V> parameterBinder);
 	}
 	
 	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentSubEntityMappingBuilder<C, I>,

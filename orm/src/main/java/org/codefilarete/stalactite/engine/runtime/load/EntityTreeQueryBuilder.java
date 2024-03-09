@@ -21,8 +21,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReaderRegistry;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
@@ -41,14 +42,14 @@ import org.codefilarete.tool.function.Hanger.Holder;
 public class EntityTreeQueryBuilder<C> {
 	
 	private final EntityJoinTree<C, Object> tree;
-	private final ColumnBinderRegistry parameterBinderProvider;
+	private final ResultSetReaderRegistry parameterBinderProvider;
 	
 	private final AliasBuilder aliasBuilder = new AliasBuilder();
 	
 	/**
 	 * @param parameterBinderProvider Will give the {@link ParameterBinder} for the reading of the final select clause
 	 */
-	public EntityTreeQueryBuilder(EntityJoinTree<C, ?> tree, ColumnBinderRegistry parameterBinderProvider) {
+	public EntityTreeQueryBuilder(EntityJoinTree<C, ?> tree, ResultSetReaderRegistry parameterBinderProvider) {
 		this.tree = (EntityJoinTree<C, Object>) tree;
 		this.parameterBinderProvider = parameterBinderProvider;
 	}
@@ -131,13 +132,13 @@ public class EntityTreeQueryBuilder<C> {
 	// Simple class that helps to add columns to select, made as internal method class else it would take more parameters
 	private static class ResultHelper {
 		
-		private final ColumnBinderRegistry parameterBinderProvider;
+		private final ResultSetReaderRegistry parameterBinderProvider;
 		
 		private final AliasBuilder aliasBuilder;
 		
 		private final Query query;
 		
-		private final Map<String, ParameterBinder> selectParameterBinders;
+		private final Map<String, ResultSetReader> selectParameterBinders;
 		
 		// Made IdentityMap to support presence of same table multiple times in query, in particular for cycling bean graph (tables are cloned)
 		private final IdentityMap<Selectable, String> columnAliases;
@@ -146,15 +147,15 @@ public class EntityTreeQueryBuilder<C> {
 		private final Map<JoinNode, Fromable> tablePerJoinNode;
 		
 		private ResultHelper(Query query,
-							 ColumnBinderRegistry parameterBinderProvider,
+							 ResultSetReaderRegistry parameterBinderProvider,
 							 AliasBuilder aliasBuilder,
-							 Map<String, ParameterBinder> selectParameterBinders,
+							 Map<String, ? extends ResultSetReader> selectParameterBinders,
 							 IdentityMap<Selectable, String> columnAliases,
 							 Map<JoinNode, Fromable> tablePerJoinNode) {
 			this.parameterBinderProvider = parameterBinderProvider;
 			this.aliasBuilder = aliasBuilder;
 			this.query = query;
-			this.selectParameterBinders = selectParameterBinders;
+			this.selectParameterBinders = (Map<String, ResultSetReader>) selectParameterBinders;
 			this.columnAliases = columnAliases;
 			this.tablePerJoinNode = tablePerJoinNode;
 		}
@@ -205,7 +206,7 @@ public class EntityTreeQueryBuilder<C> {
 					Selectable columnClone = tablePerJoinNode.get(joinNode).findColumn(column.getName());
 					query.select(columnClone, alias);
 					// we link the column alias to the binder so it will be easy to read the ResultSet
-					selectParameterBinders.put(alias, parameterBinderProvider.getBinder(column));
+					selectParameterBinders.put(alias, parameterBinderProvider.getReader(column));
 					columnAliases.put(columnClone, alias);
 				} else {
 					PseudoColumn<?> pseudoColumn = (PseudoColumn<?>) selectableColumn;
@@ -213,7 +214,7 @@ public class EntityTreeQueryBuilder<C> {
 					Selectable columnClone = tablePerJoinNode.get(joinNode).findColumn(pseudoColumn.getExpression());
 					query.select(columnClone, alias);
 					// we link the column alias to the binder so it will be easy to read the ResultSet
-					selectParameterBinders.put(alias, parameterBinderProvider.getBinder(selectableColumn.getJavaType()));
+					selectParameterBinders.put(alias, parameterBinderProvider.getReader(selectableColumn.getJavaType()));
 					columnAliases.put(columnClone, alias);
 				}
 			}

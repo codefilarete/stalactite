@@ -150,7 +150,7 @@ public class DMLGenerator {
 		sqlDelete.cat(" where ");
 		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlDelete, where);
 		sqlDelete.cutTail(5);
-		return new ColumnParameterizedSQL<>(sqlDelete.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
+		return new ColumnParameterizedSQL<>(sqlDelete.toString(), parameterizedWhere.indexesPerColumn, parameterizedWhere.parameterBinders);
 	}
 	
 	/**
@@ -188,7 +188,7 @@ public class DMLGenerator {
 		sqlSelect.cat(" from ", table, " where ");
 		ParameterizedWhere<T> parameterizedWhere = appendWhere(sqlSelect, where);
 		sqlSelect.cutTail(5);
-		return new ColumnParameterizedSQL<>(sqlSelect.toString(), parameterizedWhere.columnToIndex, parameterizedWhere.parameterBinders);
+		return new ColumnParameterizedSQL<>(sqlSelect.toString(), parameterizedWhere.indexesPerColumn, parameterizedWhere.parameterBinders);
 	}
 	
 	/**
@@ -264,7 +264,7 @@ public class DMLGenerator {
 		ModifiableInt positionCounter = new ModifiableInt(1);
 		Iterables.stream(conditionColumns).forEach(column -> {
 			sql.cat(column, EQUAL_SQL_PARAMETER_MARK_AND);
-			result.columnToIndex.put(column, new int[] { positionCounter.getValue() });
+			result.indexesPerColumn.put(column, new int[] { positionCounter.getValue() });
 			positionCounter.increment();
 			result.parameterBinders.put(column, columnBinderRegistry.getBinder(column));
 		});
@@ -299,7 +299,7 @@ public class DMLGenerator {
 			ModifiableInt pkIndex = new ModifiableInt();
 			conditionColumns.forEach(keyColumn -> {
 				int pkColumnIndex = startKeyMarkIndex * conditionColumns.size() + pkIndex.increment();
-				result.columnToIndex.computeIfAbsent(keyColumn, k -> new int[whereValuesCount])[startKeyMarkIndex] = pkColumnIndex;
+				result.indexesPerColumn.computeIfAbsent(keyColumn, k -> new int[whereValuesCount])[startKeyMarkIndex] = pkColumnIndex;
 			});
 		}
 		conditionColumns.forEach(keyColumn -> result.parameterBinders.put(keyColumn, columnBinderRegistry.getBinder(keyColumn)));
@@ -309,12 +309,12 @@ public class DMLGenerator {
 	
 	public class ParameterizedWhere<T extends Table> {
 		
-		private Map<Column<T, Object>, int[]> columnToIndex = new HashMap<>();
+		private final Map<Column<T, Object>, int[]> indexesPerColumn = new HashMap<>();
 		
-		private Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
+		private final Map<Column<T, Object>, ParameterBinder> parameterBinders = new HashMap<>();
 		
 		public Map<Column<T, Object>, int[]> getColumnToIndex() {
-			return columnToIndex;
+			return indexesPerColumn;
 		}
 		
 		public Map<Column<T, Object>, ParameterBinder> getParameterBinders() {

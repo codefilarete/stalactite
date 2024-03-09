@@ -8,11 +8,13 @@ import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Converter;
 
 /**
  * A very general contract for mapping a type to a database table. Not expected to be used as this (for instance it lacks deletion contract)
@@ -105,6 +107,14 @@ public interface Mapping<C, T extends Table<T>> {
 	
 	Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn();
 	
+	default ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+		return new ValueAccessPointMap<>();
+	}
+	
+	default ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+		return new ValueAccessPointMap<>();
+	}
+	
 	default Set<Column<T, Object>> getWritableColumns() {
 		return new KeepOrderSet<>(getPropertyToColumn().values());
 	}
@@ -155,7 +165,7 @@ public interface Mapping<C, T extends Table<T>> {
 			for (Entry<? extends UpwhereColumn<T>, Object> entry : map.entrySet()) {
 				UpwhereColumn<T> upwhereColumn = entry.getKey();
 				if (upwhereColumn.update) {
-					updateColumns.put((Column<T, Object>) upwhereColumn.column, entry.getValue());
+					updateColumns.put(upwhereColumn.column, entry.getValue());
 				}
 			}
 			return updateColumns;
@@ -231,7 +241,7 @@ public interface Mapping<C, T extends Table<T>> {
 	}
 	
 	/**
-	 * Contract to provide values of some "non official" {@link Column}s out of a mapping strategy at insert and update
+	 * Contract to provide values of some "unofficial" {@link Column}s out of a mapping strategy at insert and update
 	 * time : those columns are not expected to be one of those mapped by properties but can be discriminator, list
 	 * index, etc...
 	 * <br/>

@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,8 +45,8 @@ import org.codefilarete.stalactite.sql.statement.DMLGenerator.NoopSorter;
 import org.codefilarete.stalactite.sql.statement.DMLGenerator.ParameterizedWhere;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLOperation.SQLOperationListener;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
-import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderIndex.ParameterBinderIndexFromMap;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
@@ -101,16 +102,13 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	
 	@VisibleForTesting
 	void prepareQuery() {
-		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
+		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, columnBinderRegistry).buildSelectQuery();
 		this.rawQuery = dialect.getQuerySQLBuilderFactory().queryBuilder(entityTreeQuery.getQuery()).toSQL();
 	}
 	
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return entityJoinTree;
-	}
-	
-	public ParameterBinderIndex<Column, ParameterBinder> getParameterBinderProvider() {
-		return dialect.getColumnBinderRegistry();
 	}
 	
 	public void setOperationListener(SQLOperationListener<Column<T, Object>> operationListener) {
@@ -119,7 +117,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	
 	/**
 	 * Adds an inner join to this executor.
-	 * Shorcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, java.util.Set)}
+	 * Shortcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
@@ -148,7 +146,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 
 	/**
 	 * Adds a join to this executor.
-	 * Shortcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, java.util.Set)}
+	 * Shortcut for {@link EntityJoinTree#addRelationJoin(String, EntityInflater, Key, Key, String, JoinType, BeanRelationFixer, Set)}
 	 *
 	 * @param leftStrategyName the name of a (previously) registered join. {@code leftJoinColumn} must be a {@link Column} of its left {@link Table}
 	 * @param strategy the strategy of the mapped bean. Used to give {@link Column}s and {@link RowTransformer}
@@ -313,7 +311,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	 */
 	private static class JoinDDLAppender extends DDLAppender {
 		
-		/** Made transient to comply with {@link java.io.Serializable} contract of parent class */
+		/** Made transient to comply with {@link Serializable} contract of parent class */
 		private final transient DMLNameProvider dmlNameProvider;
 		
 		private JoinDDLAppender(DMLNameProvider dmlNameProvider) {

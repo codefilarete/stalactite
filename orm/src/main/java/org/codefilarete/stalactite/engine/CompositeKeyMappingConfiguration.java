@@ -46,6 +46,7 @@ public interface CompositeKeyMappingConfiguration<C> {
 		
 		Class<O> getColumnType();
 		
-		ParameterBinder<O> getParameterBinder();
+		@Nullable
+		ParameterBinder<Object> getParameterBinder();
 	}
 }

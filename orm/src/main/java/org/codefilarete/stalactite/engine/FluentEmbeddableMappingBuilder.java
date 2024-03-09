@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.engine;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.function.Converter;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -16,22 +18,30 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 	
 	/* Overwriting methods signature to return a type that aggregates options of this class */
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
+	@Override
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableBiConsumer<C, O> setter);
 	
-	<O> FluentEmbeddableMappingBuilderPropertyOptions<C> map(SerializableFunction<C, O> getter);
+	@Override
+	<O> FluentEmbeddableMappingBuilderPropertyOptions<C, O> map(SerializableFunction<C, O> getter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
+	@Override
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
+	@Override
+	<E extends Enum<E>> FluentEmbeddableMappingBuilderEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter);
 	
+	@Override
 	FluentEmbeddableMappingBuilder<C> mapSuperClass(EmbeddableMappingConfigurationProvider<? super C> superMappingConfiguration);
 	
+	@Override
 	<O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableFunction<C, O> getter,
 																									 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
+	@Override
 	<O> FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O> embed(SerializableBiConsumer<C, O> setter,
 																									 EmbeddableMappingConfigurationProvider<? extends O> embeddableMappingBuilder);
 	
+	@Override
 	FluentEmbeddableMappingBuilder<C> withColumnNaming(ColumnNamingStrategy columnNamingStrategy);
 	
 	interface FluentEmbeddableMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions<C, O>
@@ -55,42 +65,68 @@ public interface FluentEmbeddableMappingBuilder<C> extends FluentEmbeddableMappi
 		
 	}
 	
-	interface FluentEmbeddableMappingBuilderEnumOptions<C>
-			extends FluentEmbeddableMappingConfigurationEnumOptions<C>,
+	interface FluentEmbeddableMappingBuilderEnumOptions<C, E extends Enum<E>>
+			extends FluentEmbeddableMappingConfigurationEnumOptions<C, E>,
 		FluentEmbeddableMappingBuilder<C> {
 		
 		@Override
-		FluentEmbeddableMappingBuilderEnumOptions<C> byName();
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> byName();
 		
 		@Override
-		FluentEmbeddableMappingBuilderEnumOptions<C> byOrdinal();
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> byOrdinal();
 		
 		@Override
-		FluentEmbeddableMappingBuilderEnumOptions<C> mandatory();
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> mandatory();
 		
 		@Override
-		FluentEmbeddableMappingBuilderEnumOptions<C> readonly();
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> readonly();
 		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> columnName(String name);
+		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> column(Column<? extends Table, ? extends E> column);
+		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> fieldName(String name);
+		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> readConverter(Converter<E, E> converter);
+		
+		@Override
+		FluentEmbeddableMappingBuilderEnumOptions<C, E> writeConverter(Converter<E, E> converter);
+		
+		@Override
+		<V> FluentEmbeddableMappingBuilderEnumOptions<C, E> sqlBinder(ParameterBinder<V> parameterBinder);
 	}
 	
-	interface FluentEmbeddableMappingBuilderPropertyOptions<C> extends FluentEmbeddableMappingConfigurationPropertyOptions<C>, FluentEmbeddableMappingBuilder<C> {
+	interface FluentEmbeddableMappingBuilderPropertyOptions<C, O> extends FluentEmbeddableMappingConfigurationPropertyOptions<C, O>, FluentEmbeddableMappingBuilder<C> {
 		
 		@Override
-		FluentEmbeddableMappingBuilderPropertyOptions<C> mandatory();
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> mandatory();
 		
 		@Override
-		FluentEmbeddableMappingBuilderPropertyOptions<C> setByConstructor();
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> setByConstructor();
 		
 		@Override
-		FluentEmbeddableMappingBuilderPropertyOptions<C> readonly();
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> readonly();
 		
 		@Override
-		FluentEmbeddableMappingBuilderPropertyOptions<C> columnName(String name);
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> columnName(String name);
 		
 		@Override
-		FluentEmbeddableMappingBuilderPropertyOptions<C> column(Column<? extends Table, ?> column);
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> column(Column<? extends Table, ? extends O> column);
 		
 		@Override
-		FluentEmbeddableMappingBuilderPropertyOptions<C> fieldName(String name);
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> fieldName(String name);
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> readConverter(Converter<O, O> converter);
+		
+		@Override
+		FluentEmbeddableMappingBuilderPropertyOptions<C, O> writeConverter(Converter<O, O> converter);
+		
+		@Override
+		<V> FluentEmbeddableMappingBuilderPropertyOptions<C, O> sqlBinder(ParameterBinder<V> parameterBinder);
 	}
 }

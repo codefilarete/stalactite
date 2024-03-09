@@ -1,12 +1,15 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
+import java.lang.invoke.MethodHandleInfo;
+import java.lang.invoke.SerializedLambda;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.MethodReferenceCapturer.MethodDefinition;
+import org.codefilarete.tool.function.SerializableThrowingFunction;
 import org.codefilarete.tool.function.SerializableThrowingTriConsumer;
 import org.codefilarete.tool.function.ThrowingTriConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.reflection.MethodReferenceCapturer.giveArgumentTypes;
 import static org.codefilarete.reflection.MethodReferences.buildSerializedLambda;
@@ -21,7 +24,7 @@ import static org.codefilarete.reflection.MethodReferences.buildSerializedLambda
  * @see ResultSetReader
  * @see DefaultPreparedStatementWriters
  */
-public interface PreparedStatementWriter<I> {
+public interface PreparedStatementWriter<I> extends JdbcBinder<I> {
 	
 	/**
 	 * Creates a {@link PreparedStatementWriter} from a method reference.
@@ -50,16 +53,40 @@ public interface PreparedStatementWriter<I> {
 	 * Builds a new {@link PreparedStatementWriter} from this one by applying a converter on the input object
 	 * 
 	 * @param converter the {@link Function} that turns input value to the colum type
-	 * @param <O> type of input accepted by resulting {@link PreparedStatementWriter} 
+	 * @param <O> type of input accepted by resulting {@link PreparedStatementWriter}
 	 * @return a new {@link PreparedStatementWriter} based on this one plus a converting {@link Function}
-	 * @see ResultSetReader#thenApply(SerializableFunction)
+	 * @see ResultSetReader#thenApply(SerializableThrowingFunction)
 	 */
-	default <O> PreparedStatementWriter<O> preApply(SerializableFunction<O, I> converter) {
-		Class<O> argumentType = giveArgumentTypes(buildSerializedLambda(converter)).getReturnType();
-		return new LambdaPreparedStatementWriter<O>((ps, valueIndex, value) -> this.set(ps, valueIndex, converter.apply(value)), argumentType);
+	default <O> PreparedStatementWriter<O> preApply(SerializableThrowingFunction<O, I, ? extends Throwable> converter) {
+		SerializedLambda methodReference = buildSerializedLambda(converter);
+		MethodDefinition methodDefinition = giveArgumentTypes(methodReference);
+		Class<O> argumentType;
+		if (methodReference.getImplMethodKind() == MethodHandleInfo.REF_invokeStatic) {
+			// static method reference : input of function is the type of our new PreparedStatementWriter
+			argumentType = methodDefinition.getArgumentTypes()[0];
+		} else {
+			if (methodDefinition.getArgumentTypes().length == 0) {
+				// method reference is "regular one" : one of a class
+				argumentType = methodDefinition.getDeclaringClass();
+			} else {
+				// case of a captured argument : either an instance method reference, or a real lambda expression
+				argumentType = methodDefinition.getArgumentTypes()[0];
+			}
+		}
+		
+		return new LambdaPreparedStatementWriter<O>((ps, valueIndex, value) -> {
+			try {
+				this.set(ps, valueIndex, converter.apply(value));
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+		}, argumentType) {
+			@Override
+			public <U> Class<U> getColumnType() {
+				return PreparedStatementWriter.this.getColumnType();
+			}
+		};
 	}
-	
-	Class<I> getType();
 	
 	/**
 	 * Class that helps to wrap a {@link PreparedStatement} method as a {@link PreparedStatementWriter}

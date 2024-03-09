@@ -60,7 +60,7 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private static FluentMappingBuilderPropertyOptions<City, Identifier<Long>> CITY_MAPPING_CONFIGURATION;
+	private static FluentEntityMappingBuilder<City, Identifier<Long>> CITY_MAPPING_CONFIGURATION;
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;
@@ -119,7 +119,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	
 	@Test
 	void mappedBy_set_crud() {
-		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
 				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(City::getName);
 		
@@ -180,7 +180,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	
 	@Test
 	void mappedBy_set_ordered_crud() {
-		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
 				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(City::getName);
 		
@@ -238,7 +238,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 	
 	@Test
 	void associationTable_set_crud() {
-		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityConfiguration = entityBuilder(City.class, LONG_TYPE)
 				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(City::getName);
 		
@@ -694,7 +694,7 @@ class FluentEntityMappingConfigurationSupportOneToManySetTest {
 		
 		@Test
 		void update_multipleTimes() {
-			FluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
+			FluentEntityMappingBuilder<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
 					.mapKey(State::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 					.map(State::getName);
 			

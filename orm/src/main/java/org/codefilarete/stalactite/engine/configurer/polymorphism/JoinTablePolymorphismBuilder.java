@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
@@ -31,6 +32,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Converter;
 
 import static org.codefilarete.tool.Nullable.nullable;
 
@@ -98,15 +100,23 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 		BeanMapping<D, SUBT> beanMapping = beanMappingBuilder.build();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityPropertiesMapping = beanMapping.getMapping();
 		Map<ReversibleAccessor<D, Object>, Column<SUBT, Object>> subEntityReadonlyPropertiesMapping = beanMapping.getReadonlyMapping();
+		ValueAccessPointMap<D,Converter<Object, Object>> subEntityPropertiesConverters = beanMapping.getReadConverters();
+		ValueAccessPointMap<D, Converter<Object, Object>> subEntityPropertiesWriteConverters = beanMapping.getWriteConverters();
 		addPrimarykey(subTable);
 		addForeignKey(subTable);
-		Mapping<D, SUBT> subEntityMapping = new Mapping<>(subConfiguration, subTable, subEntityPropertiesMapping, subEntityReadonlyPropertiesMapping, false);
+		Mapping<D, SUBT> subEntityMapping = new Mapping<>(subConfiguration, subTable,
+				subEntityPropertiesMapping, subEntityReadonlyPropertiesMapping,
+				subEntityPropertiesConverters,
+				subEntityPropertiesWriteConverters,
+				false);
 		addIdentificationToMapping(identification, subEntityMapping);
 		ClassMapping<D, I, SUBT> classMappingStrategy = PersisterBuilderImpl.createClassMappingStrategy(
 				false,
 				subTable,
 				subEntityPropertiesMapping,
 				subEntityReadonlyPropertiesMapping,
+				subEntityPropertiesConverters,
+				subEntityPropertiesWriteConverters,
 				new ValueAccessPointSet<>(),    // TODO: implement properties set by constructor feature in joined-tables polymorphism
 				(AbstractIdentification<D, I>) identification,
 				subConfiguration.getPropertiesMapping().getBeanType(),

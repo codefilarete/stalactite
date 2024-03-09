@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.configurer.polymorphism;
 import java.util.Map;
 
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism;
@@ -18,6 +19,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Converter;
 
 /**
  * Builder of polymorphic persisters. Handles {@link PolymorphismPolicy} subtypes, as such, it is the main entry point for polymorphic persisters :
@@ -35,6 +37,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping;
 	private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping;
+	private final ValueAccessPointMap<C, Converter<Object, Object>> mainReadConverters;
+	private final ValueAccessPointMap<C, Converter<Object, Object>> mainWriteConverters;
 	private final NamingConfiguration namingConfiguration;
 	
 	public PolymorphismPersisterBuilder(PolymorphismPolicy<C> polymorphismPolicy,
@@ -43,6 +47,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 										ColumnBinderRegistry columnBinderRegistry,
 										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainMapping,
 										Map<? extends ReversibleAccessor<C, Object>, Column<T, Object>> mainReadonlyMapping,
+										ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainReadConverters,
+										ValueAccessPointMap<C, ? extends Converter<Object, Object>> mainWriteConverters,
 										NamingConfiguration namingConfiguration) {
 		this.polymorphismPolicy = polymorphismPolicy;
 		this.identification = identification;
@@ -50,6 +56,8 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		this.columnBinderRegistry = columnBinderRegistry;
 		this.mainMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainMapping;
 		this.mainReadonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mainReadonlyMapping;
+		this.mainReadConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainReadConverters;
+		this.mainWriteConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) mainWriteConverters;
 		this.namingConfiguration = namingConfiguration;
 	}
 	
@@ -58,10 +66,16 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 		PolymorphismBuilder<C, I, T> polymorphismBuilder;
 		if (polymorphismPolicy instanceof PolymorphismPolicy.SingleTablePolymorphism) {
 			polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, ?>) polymorphismPolicy,
-					this.identification, this.mainPersister, this.mainMapping, this.mainReadonlyMapping, this.columnBinderRegistry, this.namingConfiguration);
+					this.identification, this.mainPersister,
+					this.mainMapping, this.mainReadonlyMapping,
+					this.mainReadConverters, this.mainWriteConverters,
+					this.columnBinderRegistry, this.namingConfiguration);
 		} else if (polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism) {
 			polymorphismBuilder = new TablePerClassPolymorphismBuilder<>((TablePerClassPolymorphism<C>) polymorphismPolicy,
-					this.identification, this.mainPersister, this.mainMapping, this.mainReadonlyMapping, this.columnBinderRegistry, this.namingConfiguration);
+					this.identification, this.mainPersister,
+					this.mainMapping, this.mainReadonlyMapping,
+					this.mainReadConverters, this.mainWriteConverters,
+					this.columnBinderRegistry, this.namingConfiguration);
 		} else if (polymorphismPolicy instanceof PolymorphismPolicy.JoinTablePolymorphism) {
 			polymorphismBuilder = new JoinTablePolymorphismBuilder<>((JoinTablePolymorphism<C>) polymorphismPolicy,
 					this.identification, this.mainPersister, this.columnBinderRegistry, this.namingConfiguration);

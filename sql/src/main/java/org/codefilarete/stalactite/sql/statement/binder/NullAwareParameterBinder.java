@@ -56,6 +56,11 @@ public class NullAwareParameterBinder<T> implements ParameterBinder<T> {
 	}
 	
 	@Override
+	public <O> Class<O> getColumnType() {
+		return this.nullAwareResultSetReader.getColumnType();
+	}
+	
+	@Override
 	public T doGet(ResultSet resultSet, String columnName) {
 		return nullAwareResultSetReader.get(resultSet, columnName);
 	}

@@ -192,7 +192,7 @@ public class EntityJoinTree<C, I> {
 		}
 		
 		@Override
-		public Set<Selectable<?>> getSelectableColumns() {
+		public Set<Selectable<Object>> getSelectableColumns() {
 			return (Set) subPersister.getMapping().getSelectableColumns();
 		}
 	}

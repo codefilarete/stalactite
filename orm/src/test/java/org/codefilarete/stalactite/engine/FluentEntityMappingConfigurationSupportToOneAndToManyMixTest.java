@@ -42,8 +42,8 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	private final HSQLDBDialect dialect = new HSQLDBDialect();
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private PersistenceContext persistenceContext;
-	private FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingConfiguration;
-	private FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingConfiguration;
+	private FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingConfiguration;
+	private FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingConfiguration;
 	
 	@BeforeEach
 	public void initTest() {
@@ -52,12 +52,12 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 		persistenceContext = new PersistenceContext(dataSource, dialect);
 		
-		FluentMappingBuilderPropertyOptions<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<Person, Identifier<Long>> personMappingBuilder = MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName);
 		personMappingConfiguration = personMappingBuilder;
 		
-		FluentMappingBuilderPropertyOptions<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<City, Identifier<Long>> cityMappingBuilder = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
 				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(City::getName);
 		cityMappingConfiguration = cityMappingBuilder;
@@ -165,7 +165,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	public void testCascade_SetSetMix_update() {
-		FluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
 				.mapKey(State::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(State::getName);
 		
@@ -237,7 +237,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 	
 	@Test
 	public void testCascade_ListSetMix_listContainsDuplicate_CRUD() {
-		FluentMappingBuilderPropertyOptions<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
+		FluentEntityMappingBuilder<State, Identifier<Long>> stateMappingBuilder = MappingEase.entityBuilder(State.class, Identifier.LONG_TYPE)
 				.mapKey(State::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(State::getName);
 		

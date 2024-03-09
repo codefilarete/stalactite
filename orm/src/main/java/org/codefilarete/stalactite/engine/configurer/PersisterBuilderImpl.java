@@ -18,6 +18,7 @@ import java.util.function.Function;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
 import org.codefilarete.stalactite.engine.ColumnOptions.AfterInsertIdentifierPolicy;
 import org.codefilarete.stalactite.engine.ColumnOptions.AlreadyAssignedIdentifierPolicy;
@@ -60,11 +61,11 @@ import org.codefilarete.stalactite.engine.runtime.EntityIsManagedByPersisterAsse
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ComposedIdMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
-import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.id.assembly.ComposedIdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
@@ -85,6 +86,7 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
+import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
@@ -244,7 +246,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		if (polymorphismPolicy != null) {
 			PolymorphismPersisterBuilder<C, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
 					polymorphismPolicy, identification, mainPersister, this.columnBinderRegistry,
-					mainMapping.getMapping(), (Map) mainMapping.getReadonlyMapping(), this.namingConfiguration);
+					mainMapping.getMapping(), mainMapping.getReadonlyMapping(),
+					mainMapping.getReadConverters(),
+					mainMapping.getWriteConverters(),
+					this.namingConfiguration);
 			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 		}
 		
@@ -370,6 +375,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					castedMapping.targetTable,
 					castedMapping.getMapping(),
 					castedMapping.getReadonlyMapping(),
+					castedMapping.getReadConverters(),
+					castedMapping.getWriteConverters(),
 					castedMapping.propertiesSetByConstructor,
 					identification,
 					mapping.giveEmbeddableConfiguration().getBeanType(),
@@ -397,6 +404,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				mapping.targetTable,
 				mapping.mapping,
 				mapping.readonlyMapping,
+				mapping.readConverters,
+				mapping.writeConverters,
 				mapping.propertiesSetByConstructor,
 				identification,
 				mappingConfiguration.getEntityType(),
@@ -584,6 +593,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			private Map<ReversibleAccessor<C, Object>, Column<T, Object>> currentReadonlyColumnMap = new HashMap<>();
 			
+			private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters = new ValueAccessPointMap<>();
+			
+			private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters = new ValueAccessPointMap<>();
+			
 			private Mapping<C, T> currentMapping;
 			
 			private Object currentKey;
@@ -610,10 +623,22 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				});
 				currentColumnMap.putAll(propertiesMapping.getMapping());
 				currentReadonlyColumnMap.putAll(propertiesMapping.getReadonlyMapping());
+				readConverters.putAll(propertiesMapping.getReadConverters());
+				writeConverters.putAll(propertiesMapping.getWriteConverters());
 				if (currentMapping == null) {
-					currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable, currentColumnMap, currentReadonlyColumnMap, mappedSuperClass);
+					currentMapping = result.add(preventNull(currentKey, embeddableMappingConfiguration), currentTable,
+							// Note that we clone maps because ours are reused while iterating
+							currentColumnMap, currentReadonlyColumnMap,
+							new ValueAccessPointMap<>(readConverters),// new HashMap<>(resultSetReaders),
+							new ValueAccessPointMap<>(writeConverters),// new HashMap<>(preparedStatementWriters),
+							mappedSuperClass);
 				} else {
-					currentMapping = result.add(embeddableMappingConfiguration, currentTable, currentColumnMap, currentReadonlyColumnMap, mappedSuperClass);
+					currentMapping = result.add(embeddableMappingConfiguration, currentTable,
+							// Note that we clone maps because ours are reused while iterating
+							currentColumnMap, currentReadonlyColumnMap,
+							new ValueAccessPointMap<>(readConverters),// new HashMap<>(resultSetReaders),
+							new ValueAccessPointMap<>(writeConverters),// new HashMap<>(preparedStatementWriters),
+							mappedSuperClass);
 					currentMapping.getMapping().putAll(currentColumnMap);
 				}
 				embeddableMappingConfiguration.getPropertiesMapping().stream()
@@ -634,8 +659,11 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			public void accept(EntityMappingConfiguration entityMappingConfiguration) {
 				mappingCollector.currentKey = entityMappingConfiguration;
 				if (initMapping) {
-					mappingCollector.currentColumnMap = new HashMap<>();
-					mappingCollector.currentReadonlyColumnMap = new HashMap<>();
+					// we can't clear those maps since they are given to 
+					mappingCollector.currentColumnMap = new HashMap();
+					mappingCollector.currentReadonlyColumnMap = new HashMap();
+					mappingCollector.readConverters.clear();
+					mappingCollector.writeConverters.clear();
 					mappingCollector.currentMapping = null;
 				}
 				
@@ -847,8 +875,10 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	public static <E, I, T extends Table<T>> ClassMapping<E, I, T> createClassMappingStrategy(
 			boolean isIdentifyingConfiguration,
 			T targetTable,
-			Map<ReversibleAccessor<E, Object>, Column<T, Object>> mapping,
-			Map<ReversibleAccessor<E, Object>, Column<T, Object>> readOnlyMapping,
+			Map<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> mapping,
+			Map<? extends ReversibleAccessor<E, Object>, ? extends Column<T, Object>> readOnlyMapping,
+			ValueAccessPointMap<E, ? extends Converter<Object, Object>> readConverters,
+			ValueAccessPointMap<E, ? extends Converter<Object, Object>> writeConverters,
 			ValueAccessPointSet<E> propertiesSetByConstructor,
 			AbstractIdentification<E, I> identification,
 			Class<E> beanType,
@@ -938,6 +968,8 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 		
 		ClassMapping<E, I, T> result = new ClassMapping<>(beanType, targetTable, mapping, readOnlyMapping, idMappingStrategy, beanFactory, identifierSetByBeanFactory);
+		result.getMainMapping().setReadConverters(readConverters);
+		result.getMainMapping().setWriteConverters(writeConverters);
 		propertiesSetByConstructor.forEach(result::addPropertySetByConstructor);
 		return result;
 	}
@@ -951,8 +983,14 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				T table,
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> mapping,
 				Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping,
+				ValueAccessPointMap<C, ? extends Converter<Object, Object>> readConverters,
+				ValueAccessPointMap<C, ? extends Converter<Object, Object>> writeConverters,
 				boolean mappedSuperClass) {
-			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table, mapping, readonlyMapping, mappedSuperClass);
+			Mapping<C, T> newMapping = new Mapping<>(mappingConfiguration, table,
+					mapping, readonlyMapping,
+					readConverters,
+					writeConverters,
+					mappedSuperClass);
 			this.mappings.add(newMapping);
 			return newMapping;
 		}
@@ -985,16 +1023,22 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			private final ValueAccessPointSet<C> propertiesSetByConstructor = new ValueAccessPointSet<>();
 			private final boolean mappedSuperClass;
 			private Duo<ReversibleAccessor<C, ?>, PrimaryKey<T, ?>> identifier;
+			private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters;
+			private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters;
 			
 			public Mapping(Object mappingConfiguration,
 						   T targetTable,
 						   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> mapping,
 						   Map<? extends ReversibleAccessor<C, Object>, ? extends Column<T, Object>> readonlyMapping,
+						   ValueAccessPointMap<C, ? extends Converter<Object, Object>> readConverters,
+						   ValueAccessPointMap<C, ? extends Converter<Object, Object>> writeConverters,
 						   boolean mappedSuperClass) {
 				this.mappingConfiguration = mappingConfiguration;
 				this.targetTable = targetTable;
 				this.mapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) mapping;
 				this.readonlyMapping = (Map<ReversibleAccessor<C, Object>, Column<T, Object>>) readonlyMapping;
+				this.readConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) readConverters;
+				this.writeConverters = (ValueAccessPointMap<C, Converter<Object, Object>>) writeConverters;
 				this.mappedSuperClass = mappedSuperClass;
 			}
 			
@@ -1024,6 +1068,14 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			
 			public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyMapping() {
 				return readonlyMapping;
+			}
+			
+			public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+				return readConverters;
+			}
+			
+			public ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+				return writeConverters;
 			}
 			
 			void registerIdentifier(ReversibleAccessor<C, ?> identifierAccessor) {

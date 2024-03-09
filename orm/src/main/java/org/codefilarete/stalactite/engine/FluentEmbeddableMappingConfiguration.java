@@ -1,10 +1,12 @@
 package org.codefilarete.stalactite.engine;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
+import org.codefilarete.tool.function.Converter;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
-import org.codefilarete.reflection.AccessorChain;
 
 /**
  * An interface describing a fluent way to declare the persistence mapping of a class as an embedded bean.
@@ -25,7 +27,7 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy) 
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableBiConsumer<C, O> setter);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializableBiConsumer<C, O> setter);
 	
 	/**
 	 * Adds a property to be mapped. Column name will be extracted from getter according to the Java Bean convention naming.
@@ -35,11 +37,11 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 	 * @return this
 	 * @see #withColumnNaming(ColumnNamingStrategy)
 	 */
-	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C> map(SerializableFunction<C, O> getter);
+	<O> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> map(SerializableFunction<C, O> getter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableBiConsumer<C, E> setter);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableBiConsumer<C, E> setter);
 	
-	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C> mapEnum(SerializableFunction<C, E> getter);
+	<E extends Enum<E>> FluentEmbeddableMappingConfigurationEnumOptions<C, E> mapEnum(SerializableFunction<C, E> getter);
 	
 	/**
 	 * Please note that we can't create a generic type for {@code ? super C} by prefixing the method signature with {@code <X super C>}
@@ -89,49 +91,66 @@ public interface FluentEmbeddableMappingConfiguration<C> {
 		<IN> FluentEmbeddableMappingConfigurationImportedEmbedOptions<C, O> exclude(SerializableBiConsumer<O, IN> setter);
 	}
 	
-	interface FluentEmbeddableMappingConfigurationEnumOptions<C> extends FluentEmbeddableMappingConfiguration<C>, EnumOptions {
+	interface FluentEmbeddableMappingConfigurationEnumOptions<C, E extends Enum<E>> extends FluentEmbeddableMappingConfiguration<C>, EnumOptions<E> {
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C> byName();
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> byName();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C> byOrdinal();
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> byOrdinal();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C> mandatory();
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> mandatory();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C> readonly();
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> readonly();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C> columnName(String name);
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> columnName(String name);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C> column(Column<? extends Table, ?> column);
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> column(Column<? extends Table, ? extends E> column);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationEnumOptions<C> fieldName(String name);
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> fieldName(String name);
 		
+		@Override
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> readConverter(Converter<E, E> converter);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationEnumOptions<C, E> writeConverter(Converter<E, E> converter);
+		
+		@Override
+		<V> FluentEmbeddableMappingConfigurationEnumOptions<C, E> sqlBinder(ParameterBinder<V> parameterBinder);
 	}
 	
-	interface FluentEmbeddableMappingConfigurationPropertyOptions<C> extends FluentEmbeddableMappingConfiguration<C>, PropertyOptions {
+	interface FluentEmbeddableMappingConfigurationPropertyOptions<C, O> extends FluentEmbeddableMappingConfiguration<C>, PropertyOptions<O> {
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> mandatory();
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> mandatory();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> setByConstructor();
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> setByConstructor();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> readonly();
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> readonly();
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> columnName(String name);
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> columnName(String name);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> column(Column<? extends Table, ?> column);
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> column(Column<? extends Table, ? extends O> column);
 		
 		@Override
-		FluentEmbeddableMappingConfigurationPropertyOptions<C> fieldName(String name);
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> fieldName(String name);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> readConverter(Converter<O, O> converter);
+		
+		@Override
+		FluentEmbeddableMappingConfigurationPropertyOptions<C, O> writeConverter(Converter<O, O> converter);
+		
+		@Override
+		<V> FluentEmbeddableMappingConfigurationPropertyOptions<C, O> sqlBinder(ParameterBinder<V> parameterBinder);
 	}
 }

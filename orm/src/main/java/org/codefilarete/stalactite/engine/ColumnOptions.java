@@ -14,35 +14,46 @@ import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Sequence;
 
 /**
  * @author Guillaume Mary
  */
-public interface ColumnOptions<C, I> extends PropertyOptions {
+public interface ColumnOptions<O> extends PropertyOptions<O> {
 	
 	/**
 	 * Marks the property as mandatory, which makes the mapped column not nullable : does not make a null checking at runtime.
 	 * Note that using this method on an identifier one as no purpose because identifiers are already mandatory.
 	 */
 	@Override
-	ColumnOptions<C, I> mandatory();
+	ColumnOptions<O> mandatory();
 	
 	@Override
-	ColumnOptions<C, I> setByConstructor();
+	ColumnOptions<O> setByConstructor();
 	
 	@Override
-	ColumnOptions<C, I> readonly();
+	ColumnOptions<O> readonly();
 	
 	@Override
-	ColumnOptions<C, I> columnName(String name);
+	ColumnOptions<O> columnName(String name);
 	
 	@Override
-	ColumnOptions<C, I> column(Column<? extends Table, ?> column);
+	ColumnOptions<O> column(Column<? extends Table, ? extends O> column);
 	
 	@Override
-	ColumnOptions<C, I> fieldName(String name);
+	ColumnOptions<O> fieldName(String name);
+	
+	@Override
+	ColumnOptions<O> readConverter(Converter<O, O> converter);
+	
+	@Override
+	ColumnOptions<O> writeConverter(Converter<O, O> converter);
+	
+	@Override
+	<V> PropertyOptions<O> sqlBinder(ParameterBinder<V> parameterBinder);
 	
 	/**
 	 * Available identifier policies for entities.

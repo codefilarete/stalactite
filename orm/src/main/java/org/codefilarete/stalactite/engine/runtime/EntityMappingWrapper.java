@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EmbeddedBeanMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -14,6 +15,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.function.Converter;
 
 /**
  * {@link EntityMapping} that wraps another one and delegates all its methods to it without any additionnal feature.
@@ -122,6 +124,11 @@ public class EntityMappingWrapper<C, I, T extends Table<T>> implements EntityMap
 	@Override
 	public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyPropertyToColumn() {
 		return surrogate.getReadonlyPropertyToColumn();
+	}
+	
+	@Override
+	public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+		return surrogate.getReadConverters();
 	}
 	
 	@Override

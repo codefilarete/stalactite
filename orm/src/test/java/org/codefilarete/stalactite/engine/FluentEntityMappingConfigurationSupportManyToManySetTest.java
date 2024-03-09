@@ -11,7 +11,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.id.Identified;
@@ -50,7 +49,7 @@ import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedId
 class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	
 	private static final HSQLDBDialect DIALECT = new HSQLDBDialect();
-	private static FluentMappingBuilderPropertyOptions<Choice, Identifier<Long>> CHOICE_MAPPING_CONFIGURATION;
+	private static FluentEntityMappingBuilder<Choice, Identifier<Long>> CHOICE_MAPPING_CONFIGURATION;
 	private final DataSource dataSource = new HSQLDBInMemoryDataSource();
 	private final ConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	private PersistenceContext persistenceContext;

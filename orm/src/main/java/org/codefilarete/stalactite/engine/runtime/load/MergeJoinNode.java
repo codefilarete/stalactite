@@ -29,7 +29,7 @@ public class MergeJoinNode<C, T1 extends Fromable, T2 extends Fromable, I> exten
 		this.merger = merger;
 	}
 	
-	EntityMerger<C> getMerger() {
+	public EntityMerger<C> getMerger() {
 		return merger;
 	}
 	

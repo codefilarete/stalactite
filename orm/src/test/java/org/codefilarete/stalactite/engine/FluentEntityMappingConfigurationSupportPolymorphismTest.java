@@ -324,6 +324,44 @@ class FluentEntityMappingConfigurationSupportPolymorphismTest {
 		}
 		
 		@Test
+		void twoSubClasses_withSqlBinder() {
+			// we create a local dialect to avoid conflict with sqlBinder(..) usage and ensure the test has the good context
+			HSQLDBDialect dialect = new HSQLDBDialect();
+			dialect.getColumnBinderRegistry().register((Class) Identifier.class, identifierBinder(LONG_PRIMITIVE_BINDER));
+			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
+			PersistenceContext persistenceContext = new PersistenceContext(connectionProvider, dialect);
+			
+			Table<?> abstractVehicleTable = new Table<>("AbstractVehicle");
+			// we define the column, else it has no type and the
+			EntityPersister<AbstractVehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(AbstractVehicle.class, LONG_TYPE, abstractVehicleTable)
+					// mapped super class defines id
+					.mapKey(AbstractVehicle::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+					.mapPolymorphism(PolymorphismPolicy.<AbstractVehicle>singleTable()
+							.addSubClass(subentityBuilder(Car.class)
+									.map(Car::getId)
+									.map(Car::getModel)
+									.map(Car::getColor)
+											.sqlBinder(INTEGER_PRIMITIVE_BINDER.wrap(Color::new, Color::getRgb))
+									, "CAR")
+							.addSubClass(subentityBuilder(Truck.class)
+									.map(Truck::getId), "TRUCK"))
+					.build(persistenceContext);
+			
+			// DML tests
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Car dummyCar = new Car(1L);
+			dummyCar.setModel("Renault");
+			dummyCar.setColor(new Color(666));
+			
+			// insert test
+			abstractVehiclePersister.insert(dummyCar);
+			
+			assertThat(((Car) abstractVehiclePersister.select(dummyCar.getId())).getColor()).isEqualTo(new Color(666));
+		}
+		
+		@Test
 		void twoSubClasses_withCommonProperties() {
 			EntityPersister<Vehicle, Identifier<Long>> abstractVehiclePersister = entityBuilder(Vehicle.class, LONG_TYPE)
 					// mapped super class defines id

@@ -38,6 +38,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.Strings;
+import org.codefilarete.tool.function.SerializableThrowingFunction;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -319,8 +320,12 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 	 */
 	protected static class LinkageSupport<T, O> implements CompositeKeyLinkage<T, O> {
 		
-		/** Optional binder for this mapping */
-		private ParameterBinder<O> parameterBinder;
+		/**
+		 * Optional binder for this mapping.
+		 * May be not of column type in cases of converted data with {@link ParameterBinder#preApply(SerializableThrowingFunction)}
+		 * or {@link ParameterBinder#thenApply(SerializableThrowingFunction)}.
+		 */
+		private ParameterBinder<Object> parameterBinder;
 		
 		@Nullable
 		private String columnName;
@@ -341,12 +346,13 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			this.setter = setter;
 		}
 		
-		public void setParameterBinder(ParameterBinder<O> parameterBinder) {
-			this.parameterBinder = parameterBinder;
+		public void setParameterBinder(ParameterBinder<?> parameterBinder) {
+			this.parameterBinder = (ParameterBinder<Object>) parameterBinder;
 		}
 		
 		@Override
-		public ParameterBinder<O> getParameterBinder() {
+		@Nullable
+		public ParameterBinder<Object> getParameterBinder() {
 			return parameterBinder;
 		}
 		

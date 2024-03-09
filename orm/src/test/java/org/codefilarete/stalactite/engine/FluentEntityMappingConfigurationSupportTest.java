@@ -4,11 +4,13 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -19,10 +21,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderEmbeddableMappingConfigurationImportedEmbedOptions;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.configurer.FluentEmbeddableMappingConfigurationSupport;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImplTest.ToStringBuilder;
 import org.codefilarete.stalactite.engine.model.AbstractCountry;
@@ -109,7 +111,7 @@ class FluentEntityMappingConfigurationSupportTest {
 	
 	@Test
 	void build_identifierIsNotDefined_throwsException() {
-		FluentMappingBuilderPropertyOptions<Toto, Identifier> mappingStrategy = MappingEase.entityBuilder(Toto.class, Identifier.class)
+		FluentEntityMappingBuilder<Toto, Identifier> mappingStrategy = MappingEase.entityBuilder(Toto.class, Identifier.class)
 				.map(Toto::getId)
 				.map(Toto::getName);
 		
@@ -622,6 +624,221 @@ class FluentEntityMappingConfigurationSupportTest {
 		// title column is expected to be added to the mapping and participate to DML actions 
 		assertThat(persister.getMapping().getInsertableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("id", "title"));
 		assertThat(persister.getMapping().getUpdatableColumns().stream().map(Column::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asSet("title"));
+	}
+	
+	@Test
+	void map_withReadConverter_converterIsUsed() {
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		Table totoTable = new Table("Toto");
+		Column<?, UUID> id = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		Column<?, String> name = totoTable.addColumn("name", String.class);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
+		
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.map(Toto::getName).readConverter(String::toUpperCase)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		toto.setName("toto");
+		persister.persist(toto);
+		
+		Toto select = persister.select(toto.getId());
+		
+		assertThat(select.getName()).isEqualTo("TOTO");
+		// database value is still in lower case
+		assertThat(persistenceContext.select(SerializableFunction.identity(), name)).containsExactly("toto");
+	}
+	
+	@Test
+	void map_withReadConverter_converterIsUsed_readOnlyProperty() {
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		Table totoTable = new Table("Toto");
+		Column<Table, Identifier<UUID>> id = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		Column<Table, String> name = totoTable.addColumn("name", String.class);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
+		
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.map(Toto::getName).readonly().readConverter(String::toUpperCase)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		PersistedIdentifier<UUID> identifier = new PersistedIdentifier<>(UUID.randomUUID());
+		persistenceContext.insert(totoTable).set(name, "toto").set(id, identifier).execute();
+		
+		Toto select = persister.select(identifier);
+		
+		assertThat(select.getName()).isEqualTo("TOTO");
+		// database value is still in lower case
+		assertThat(persistenceContext.select(SerializableFunction.identity(), name)).containsExactly("toto");
+	}
+	
+	@Test
+	void map_withWriteConverter_converterIsUsed() {
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		Table totoTable = new Table("Toto");
+		Column id = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		Column name = totoTable.addColumn("name", String.class);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
+		
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				.usingConstructor(uuidIdentifier -> new Toto((PersistedIdentifier<UUID>) uuidIdentifier))
+				.map(Toto::getName).writeConverter(String::toUpperCase)
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		toto.setName("toto");
+		persister.persist(toto);
+		
+		Toto select = persister.select(toto.getId());
+		
+		assertThat(select.getName()).isEqualTo("TOTO");
+		
+		toto.setName("titi");
+		persister.update(toto, select, true);
+		
+		select = persister.select(toto.getId());
+		assertThat(select.getName()).isEqualTo("TITI");
+		// database value is in upper case
+		assertThat(persistenceContext.select(SerializableFunction.identity(), name)).containsExactly("TITI");
+	}
+	
+	@Test
+	void map_withSqlBinder_binderIsUsed_readCase() {
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		
+		Table totoTable = new Table("Toto");
+		Column id = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		Column name = totoTable.addColumn("name", String.class);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
+		
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				// upper casing data coming from database
+				.map(Toto::getName).sqlBinder(new NullAwareParameterBinder<>(new LambdaResultSetReader<>(
+						(resultSet, columnName) -> resultSet.getString(columnName).toUpperCase(), String.class), DefaultParameterBinders.STRING_BINDER))
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		toto.setName("toto");
+		persister.persist(toto);
+		
+		Toto select = persister.select(toto.getId());
+		
+		assertThat(select.getName()).isEqualTo("TOTO");
+	}
+	
+	@Test
+	void map_withSqlBinder_binderIsUsed_writeCase() {
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping().put(Set.class, "varchar(255)");
+		
+		Table totoTable = new Table("Toto");
+		Column id = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
+		
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				// upper casing data going to database
+				.map(Toto::getPossibleStates)
+				// getPossibleStates is (de)serialized as a String
+				.sqlBinder(new NullAwareParameterBinder<>(
+						// converting String to a Set by parsing it
+						DefaultParameterBinders.STRING_BINDER.thenApply(setAsString -> {
+							String[] databaseValue = setAsString.substring(1, setAsString.length() - 1).split(", ");
+							return EnumSet.copyOf(Stream.of(databaseValue).map(State::valueOf).collect(Collectors.toSet()));
+						}),
+						// writing Set as a String
+						DefaultParameterBinders.STRING_BINDER.preApply(Set::toString)))
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		toto.setPossibleStates(EnumSet.of(State.DONE, State.IN_PROGRESS));
+		persister.insert(toto);
+		
+		Toto select = persister.select(toto.getId());
+		
+		assertThat(select.getPossibleStates()).isEqualTo(Arrays.asSet(State.DONE, State.IN_PROGRESS));
+	}
+	
+	@Test
+	void map_withSqlBinderOnEmbeddedProperty_binderIsUsed_writeCase() {
+		HSQLDBDialect dialect = new HSQLDBDialect();
+		PersistenceContext persistenceContext = new PersistenceContext(new HSQLDBInMemoryDataSource(), dialect);
+		dialect.getSqlTypeRegistry().getJavaTypeToSqlTypeMapping().put(Set.class, "varchar(255)");
+		
+		Table totoTable = new Table("Toto");
+		Column id = totoTable.addColumn("id", UUID_TYPE).primaryKey();
+		// this column may conflict by its name and type with mapping definition below, if the test is green, then
+		// it means we handle it correctly down the code  
+		Column creationDate = totoTable.addColumn("creationDate", String.class);
+		// binder creation for our identifier
+		dialect.getColumnBinderRegistry().register(id, Identifier.identifierBinder(DefaultParameterBinders.UUID_BINDER));
+		dialect.getSqlTypeRegistry().put(id, "varchar(255)");
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		ConfiguredPersister<Toto, Identifier<UUID>> persister = (ConfiguredPersister<Toto, Identifier<UUID>>) MappingEase.entityBuilder(Toto.class, UUID_TYPE, totoTable)
+				.mapKey(Toto::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.UUID_ALREADY_ASSIGNED)
+				// we remove hours from the date while writing to database
+				.embed(Toto::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+						.map(Timestamp::getCreationDate).sqlBinder(new NullAwareParameterBinder<>(
+								// converting String to a Set by parsing it
+								DefaultParameterBinders.STRING_BINDER.thenApply(sdf::parse),
+								// writing Date as a String
+								DefaultParameterBinders.STRING_BINDER.preApply(sdf::format)))
+						.map(Timestamp::getModificationDate))
+				.build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		Toto toto = new Toto();
+		toto.setPossibleStates(EnumSet.of(State.DONE, State.IN_PROGRESS));
+		Timestamp timestamp = new Timestamp();
+		toto.setTimestamp(timestamp);
+		persister.insert(toto);
+		
+		Toto select = persister.select(toto.getId());
+		
+		// Expected Timestamp is "today" on creation date, and current moment for modification date since the sql binder
+		// removes hour + minute part only on creation date
+		Date toDayAsDate = Date.from(Dates.today().atStartOfDay(ZoneId.systemDefault()).toInstant());
+		Timestamp expected = new Timestamp(toDayAsDate, timestamp.getModificationDate());
+		assertThat(select.getTimestamp()).isEqualTo(expected);
 	}
 	
 	@Test

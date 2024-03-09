@@ -10,8 +10,8 @@ import org.codefilarete.reflection.MethodReferenceCapturer.MethodDefinition;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.function.SerializableThrowingBiFunction;
+import org.codefilarete.tool.function.SerializableThrowingFunction;
 import org.codefilarete.tool.function.ThrowingBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static org.codefilarete.reflection.MethodReferenceCapturer.giveArgumentTypes;
 import static org.codefilarete.reflection.MethodReferences.buildSerializedLambda;
@@ -26,7 +26,7 @@ import static org.codefilarete.reflection.MethodReferences.buildSerializedLambda
  * @see PreparedStatementWriter
  * @see DefaultResultSetReaders
  */
-public interface ResultSetReader<I> {
+public interface ResultSetReader<I> extends JdbcBinder<I> {
 	
 	/**
 	 * Creates a {@link ResultSetReader} from a method reference.
@@ -64,8 +64,6 @@ public interface ResultSetReader<I> {
 		}
 	}
 	
-	Class<I> getType();
-	
 	/**
 	 * Method expected to be overridden for really reading {@link ResultSet} value if one want to benefit from exception handling by {@link #get(ResultSet, String)}
 	 *
@@ -82,19 +80,37 @@ public interface ResultSetReader<I> {
 	 * @param converter the {@link Function} that turns output value to the final type
 	 * @param <O> final type
 	 * @return a new {@link ResultSetReader} based on this one plus a converting {@link Function}
-	 * @see PreparedStatementWriter#preApply(SerializableFunction)
+	 * @see PreparedStatementWriter#preApply(SerializableThrowingFunction)
 	 */
-	default <O> ResultSetReader<O> thenApply(SerializableFunction<I, O> converter) {
+	default <O> ResultSetReader<O> thenApply(SerializableThrowingFunction<I, O, ? extends Throwable> converter) {
 		// Determining the type of next ResultSetReader: this is based 
 		SerializedLambda methodReference = buildSerializedLambda(converter);
 		MethodDefinition methodDefinition = giveArgumentTypes(methodReference);
-		Class<O> argumentType;
+		Class<O> readerType;
 		if (methodReference.getImplMethodKind() == MethodHandleInfo.REF_invokeStatic) {
-			argumentType = methodDefinition.getArgumentTypes()[0];
+			// static method reference : its result type is the type of our new ResultSetReader
+			readerType = methodDefinition.getReturnType();
 		} else {
-			argumentType = methodDefinition.getDeclaringClass();
+			if (methodDefinition.getName().equals("<init>")) {
+				// referenced method is a constructor
+				readerType = methodDefinition.getDeclaringClass();
+			} else {
+				// case of an instance method reference, or a real lambda expression
+				readerType = methodDefinition.getReturnType();
+			}
 		}
-		return new LambdaResultSetReader<O>((rs, columnName) -> converter.apply(this.get(rs, columnName)), argumentType);
+		return new LambdaResultSetReader<O>((rs, columnName) -> {
+			try {
+				return converter.apply(this.get(rs, columnName));
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+		}, readerType) {
+			@Override
+			public <U> Class<U> getColumnType() {
+				return ResultSetReader.this.getColumnType();
+			}
+		};
 	}
 	
 	/**

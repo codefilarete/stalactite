@@ -43,7 +43,9 @@ import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -138,36 +140,36 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 	}
 	
 	@Override
-	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableBiConsumer<C, O> setter) {
+	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter) {
 		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> map(SerializableFunction<C, O> getter) {
+	public <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> map(SerializableFunction<C, O> getter) {
 		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(getter);
 		return this.propertiesMappingConfigurationSurrogate.wrapForAdditionalOptions(mapping);
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableBiConsumer<C, E> setter) {
+	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableBiConsumer<C, E> setter) {
 		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(setter);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.wrapWithEnumOptions(linkage));
 	}
 	
 	@Override
-	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I> mapEnum(SerializableFunction<C, E> getter) {
+	public <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> mapEnum(SerializableFunction<C, E> getter) {
 		LinkageSupport<C, E> linkage = propertiesMappingConfigurationSurrogate.addMapping(getter);
 		return handleEnumOptions(propertiesMappingConfigurationSurrogate.wrapWithEnumOptions(linkage));
 	}
 	
-	private FluentSubEntityMappingConfigurationEnumOptions<C, I> handleEnumOptions(FluentEmbeddableMappingBuilderEnumOptions<C> enumOptionsHandler) {
+	private <E extends Enum<E>> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> handleEnumOptions(FluentEmbeddableMappingBuilderEnumOptions<C, E> enumOptionsHandler) {
 		// we redirect all of the EnumOptions method to the instance that can handle them, returning the dispatcher on this methods so one can chain
 		// with some other methods, other methods are redirected to this instance because it can handle them.
 		return new MethodDispatcher()
 				.redirect(EnumOptions.class, enumOptionsHandler, true)
 				.fallbackOn(this)
-				.build((Class<FluentSubEntityMappingConfigurationEnumOptions<C, I>>) (Class) FluentSubEntityMappingConfigurationEnumOptions.class);
+				.build((Class<FluentSubEntityMappingConfigurationEnumOptions<C, I, E>>) (Class) FluentSubEntityMappingConfigurationEnumOptions.class);
 	}
 	
 	@Override
@@ -503,41 +505,41 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			return newLinkage;
 		}
 		
-		private <O> FluentSubEntityMappingBuilderPropertyOptions<C, I> wrapForAdditionalOptions(LinkageSupport<C, O> newMapping) {
+		private <O> FluentSubEntityMappingBuilderPropertyOptions<C, I, O> wrapForAdditionalOptions(LinkageSupport<C, O> newMapping) {
 			return new MethodDispatcher()
-					.redirect(PropertyOptions.class, new PropertyOptions() {
+					.redirect(PropertyOptions.class, new PropertyOptions<O>() {
 						@Override
-						public PropertyOptions mandatory() {
+						public PropertyOptions<O> mandatory() {
 							newMapping.setNullable(false);
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions setByConstructor() {
+						public PropertyOptions<O> setByConstructor() {
 							newMapping.setByConstructor();
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions readonly() {
+						public PropertyOptions<O> readonly() {
 							newMapping.readonly();
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions columnName(String name) {
+						public PropertyOptions<O> columnName(String name) {
 							newMapping.setColumnOptions(new ColumnLinkageOptionsByName(name));
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions column(Column column) {
+						public PropertyOptions<O> column(Column column) {
 							newMapping.setColumnOptions(new ColumnLinkageOptionsByColumn(column));
 							return null;
 						}
 						
 						@Override
-						public PropertyOptions fieldName(String name) {
+						public PropertyOptions<O> fieldName(String name) {
 							Field field = Reflections.findField(SubEntityDecoratedEmbeddableConfigurationSupport.this.entityConfigurationSupport.classToPersist, name);
 							if (field == null) {
 								throw new MappingConfigurationException(("Field " + name
@@ -546,9 +548,27 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 							newMapping.setField(field);
 							return null;
 						}
+						
+						@Override
+						public PropertyOptions<O> readConverter(Converter<O, O> converter) {
+							newMapping.setReadConverter(converter);
+							return null;
+						}
+						
+						@Override
+						public PropertyOptions<O> writeConverter(Converter<O, O> converter) {
+							newMapping.setWriteConverter(converter);
+							return null;
+						}
+						
+						@Override
+						public <V> PropertyOptions<O> sqlBinder(ParameterBinder<V> parameterBinder) {
+							newMapping.setParameterBinder(parameterBinder);
+							return null;
+						}
 					}, true)
 					.fallbackOn(entityConfigurationSupport)
-					.build((Class<FluentSubEntityMappingBuilderPropertyOptions<C, I>>) (Class) FluentSubEntityMappingBuilderPropertyOptions.class);
+					.build((Class<FluentSubEntityMappingBuilderPropertyOptions<C, I, O>>) (Class) FluentSubEntityMappingBuilderPropertyOptions.class);
 		}
 	}
 	

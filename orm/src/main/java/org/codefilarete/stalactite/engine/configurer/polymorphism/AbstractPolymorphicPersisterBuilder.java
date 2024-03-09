@@ -149,13 +149,15 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 																								 PersisterRegistry persisterRegistry) {
 		// we only have to call a polymorphic builder with given methods arguments, and same configuration values as this instance
 		PolymorphismPersisterBuilder<D, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
-			subPolymorphismPolicy,
-			(Identification<D, I>) identification,
-			subPersister,
-			columnBinderRegistry,
-			(Map) subPersister.getMapping().getPropertyToColumn(),
-			(Map) subPersister.getMapping().getReadonlyPropertyToColumn(),
-			namingConfiguration);
+				subPolymorphismPolicy,
+				(Identification<D, I>) identification,
+				subPersister,
+				columnBinderRegistry,
+				(Map) subPersister.getMapping().getPropertyToColumn(),
+				(Map) subPersister.getMapping().getReadonlyPropertyToColumn(),
+				subPersister.getMapping().getReadConverters(),
+				subPersister.getMapping().getWriteConverters(),
+				namingConfiguration);
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}
 	

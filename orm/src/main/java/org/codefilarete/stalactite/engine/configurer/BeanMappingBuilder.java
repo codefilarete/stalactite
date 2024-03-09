@@ -49,6 +49,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
 import org.codefilarete.tool.collection.StreamSplitter;
 import org.codefilarete.tool.exception.NotImplementedException;
+import org.codefilarete.tool.function.Converter;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Predicates;
 
@@ -141,8 +142,8 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 	
 	private final BeanMappingConfiguration<C> mainMappingConfiguration;
 	private final T targetTable;
-	private final ColumnNameProvider columnNameProvider;
 	private final ColumnBinderRegistry columnBinderRegistry;
+	private final ColumnNameProvider columnNameProvider;
 	
 	public BeanMappingBuilder(EmbeddableMappingConfiguration<C> mappingConfiguration,
 							  T targetTable,
@@ -245,6 +246,10 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
 								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
 								result.mapping.put(mapping.getLeft(), mapping.getRight());
+								Converter<Object, Object> readConverter = linkage.getReadConverter();
+								result.readConverters.put(mapping.getLeft(), readConverter);
+								Converter<Object, Object> writeConverter = linkage.getWriteConverter();
+								result.writeConverters.put(mapping.getLeft(), writeConverter);
 							})
 					.dispatch(Linkage::isReadonly,
 							linkage -> {
@@ -255,6 +260,8 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 								assertMappingIsNotAlreadyDefinedByInheritance(linkage, columnName, mappingConfiguration);
 								Duo<ReversibleAccessor<C, Object>, Column<T, Object>> mapping = includeMapping(linkage, accessorPrefix, columnName, overriddenColumn, mappingConfiguration.getBeanType());
 								result.readonlyMapping.put(mapping.getLeft(), mapping.getRight());
+								Converter<Object, Object> readConverter = linkage.getReadConverter();
+								result.readConverters.put(mapping.getLeft(), readConverter);
 							})
 					.split();
 		}
@@ -289,7 +296,15 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		}
 		
 		protected <O> Column<T, O> addColumnToTable(Linkage<C, O> linkage, String columnName) {
-			Column<T, O> addedColumn = targetTable.addColumn(columnName, linkage.getColumnType());
+			Column<T, O> addedColumn;
+			Class<O> columnType;
+			if (linkage.getParameterBinder() != null) {
+				// when a parameter binder is defined, then the column type must be binder one
+				columnType = linkage.getParameterBinder().getColumnType();
+			} else {
+				columnType = linkage.getColumnType();
+			}
+			addedColumn = targetTable.addColumn(columnName, columnType);
 			addedColumn.setNullable(linkage.isNullable());
 			return addedColumn;
 		}
@@ -448,6 +463,10 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		
 		private final Map<ReversibleAccessor<C, Object>, Column<T, Object>> readonlyMapping = new HashMap<>();
 		
+		private final ValueAccessPointMap<C, Converter<Object, Object>> readConverters = new ValueAccessPointMap<>();
+		
+		private final ValueAccessPointMap<C, Converter<Object, Object>> writeConverters = new ValueAccessPointMap<>();
+		
 		/**
 		 * @return mapped properties
 		 */
@@ -460,6 +479,14 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 		 */
 		public Map<ReversibleAccessor<C, Object>, Column<T, Object>> getReadonlyMapping() {
 			return readonlyMapping;
+		}
+		
+		public ValueAccessPointMap<C, Converter<Object, Object>> getReadConverters() {
+			return readConverters;
+		}
+		
+		public ValueAccessPointMap<C, Converter<Object, Object>> getWriteConverters() {
+			return writeConverters;
 		}
 	}
 	
@@ -548,8 +575,9 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 						return null;
 					}
 					
+					@Nullable
 					@Override
-					public ParameterBinder getParameterBinder() {
+					public ParameterBinder<Object> getParameterBinder() {
 						return embeddableLinkage.getParameterBinder();
 					}
 					
@@ -561,6 +589,20 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					@Override
 					public boolean isReadonly() {
 						return false;
+					}
+					
+					@Nullable
+					@Override
+					public Converter getReadConverter() {
+						// no special converter for composite key (makes no sense), not available by API too
+						return null;
+					}
+					
+					@Nullable
+					@Override
+					public Converter getWriteConverter() {
+						// no special converter for composite key (makes no sense), not available by API too
+						return null;
 					}
 				});
 				
@@ -657,7 +699,8 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					}
 					
 					@Override
-					public ParameterBinder getParameterBinder() {
+					@Nullable
+					public ParameterBinder<Object> getParameterBinder() {
 						return embeddableLinkage.getParameterBinder();
 					}
 					
@@ -669,6 +712,18 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 					@Override
 					public boolean isReadonly() {
 						return embeddableLinkage.isReadonly();
+					}
+					
+					@Nullable
+					@Override
+					public Converter getReadConverter() {
+						return embeddableLinkage.getReadConverter();
+					}
+					
+					@Nullable
+					@Override
+					public Converter getWriteConverter() {
+						return embeddableLinkage.getWriteConverter();
 					}
 				});
 				
@@ -814,11 +869,18 @@ public class BeanMappingBuilder<C, T extends Table<T>> {
 			@Nullable
 			String getExtraTableName();
 			
-			ParameterBinder<O> getParameterBinder();
+			@Nullable
+			ParameterBinder<Object> getParameterBinder();
 			
 			boolean isNullable();
 			
 			boolean isReadonly();
+			
+			@Nullable
+			Converter<O, O> getReadConverter();
+			
+			@Nullable
+			Converter<O, O> getWriteConverter();
 		}
 	}
 }

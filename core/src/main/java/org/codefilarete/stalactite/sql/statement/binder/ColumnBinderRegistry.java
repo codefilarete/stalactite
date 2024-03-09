@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.statement.binder;
 
-import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -10,12 +9,15 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 
 /**
- * Registry of {@link ParameterBinder}s per {@link Column} to simplify access to method of {@link PreparedStatement} for {@link Column}s.
+ * Registry of {@link ParameterBinder}s per {@link Column} and {@link Class}.
  * See {@link #register(Column, ParameterBinder)} and {@link #register(Class, ParameterBinder)} to specify binder for a column or type.
  *
  * @author Guillaume Mary
  */
-public class ColumnBinderRegistry extends ParameterBinderRegistry implements ParameterBinderIndex<Column, ParameterBinder> {
+public class ColumnBinderRegistry extends ParameterBinderRegistry
+		implements ParameterBinderIndex<Column, ParameterBinder>,
+		ResultSetReaderRegistry,
+		PreparedStatementWriterRegistry {
 	
 	/**
 	 * Registry for {@link Column}s
@@ -57,4 +59,15 @@ public class ColumnBinderRegistry extends ParameterBinderRegistry implements Par
 		return bindersPerColumn.entrySet();
 	}
 	
+	@Override
+	public <T> ResultSetReader<T> doGetReader(Class<T> key) {
+		// since ParameterBinder is also a ResultSetReader we just return it
+		return super.getBinder(key);
+	}
+	
+	@Override
+	public <T> PreparedStatementWriter<T> doGetWriter(Class<T> key) {
+		// since ParameterBinder is also a PreparedStatementWriter we just return it
+		return super.getBinder(key);
+	}
 }
