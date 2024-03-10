@@ -9,7 +9,7 @@ import org.springframework.data.repository.Repository;
 /**
  * Stalactite specific extension of {@link org.springframework.data.repository.Repository}.
  * <ul>As a difference with {@link CrudRepository} it doesn't define :
- * <li> {@link CrudRepository#count()} because it's a bit complex to implement for all cases (table-per-class polymorphism in mind) and doesn't seem a current expected behavior </li>
+ * <li> {@link CrudRepository#count()} because it's a bit complex to implement for all cases (table-per-class polymorphism in mind) and doesn't seem to be highly required feature </li>
  * <li> {@link CrudRepository#findAll()} because it may consume too many resources </li>
  * <li> {@link CrudRepository#deleteAll()} because it may consume too many resources and it's quite dangerous </li>
  * <li> {@link CrudRepository#existsById(Object)} because it's a bit complex to implement and one can use {@link #findById(Object)} as a substitute </li>
@@ -58,7 +58,7 @@ public interface StalactiteRepository<C, I> extends Repository<C, I> {
 	 * <p>
 	 * If some ids are not found, no entities are returned for these IDs.
 	 * <p>
-	 * Note that the order of elements in the reslit is not guaranteed.
+	 * Note that the order of elements in the result is not guaranteed.
 	 *
 	 * @param ids any objects of type {@code I}
 	 * @return the entities with the given ids. The size can be equal or less than the number of given {@literal ids}.

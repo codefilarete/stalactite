@@ -18,19 +18,18 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 /**
  * @author Guillaume Mary
  */
-@SpringBootTest(classes = {
+@SpringJUnitConfig(classes = {
 		StalactiteRepositoryConfigExtensionTest.StalactiteRepositoryContextConfiguration.class
 })
-//@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.sql.spring.repository.config")
-//@ContextConfiguration(classes = StalactiteRepositoryConfigExtensionTest.StalactiteRepositoryContextConfiguration.class)
+@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.sql.spring.repository.config")
 class StalactiteRepositoryConfigExtensionTest {
     
 	@Autowired
@@ -56,7 +55,27 @@ class StalactiteRepositoryConfigExtensionTest {
 		Assertions.assertThat(loadedPerson).isNotEmpty();
 	}
 	
-	@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.sql.spring.repository.config")
+	@Test
+	void crud() {
+		Person person = new Person(42);
+		person.setName("Toto");
+		
+		// trying to insert
+		dummyStalactiteRepository.save(person);
+		Optional<Person> loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
+		Assertions.assertThat(loadedPerson).isNotEmpty();
+		
+		// trying with update
+		person.setName("Titi");
+		dummyStalactiteRepository.save(person);
+		loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
+		Assertions.assertThat(loadedPerson).map(Person::getName).get().isEqualTo("Titi");
+		
+		dummyStalactiteRepository.delete(person);
+		loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
+		Assertions.assertThat(loadedPerson).isEmpty();
+	}
+	
 	public static class StalactiteRepositoryContextConfiguration {
 		
 		@Bean

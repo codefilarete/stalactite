@@ -64,7 +64,7 @@
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-core</artifactId>
 			<!--
-			 Version doesn't matter because this dependency was added to avoid NoClassDefFoundError org/hibernate/HibernateException in tests 
+			 Version doesn't matter because this dependency was added to avoid NoClassDefFoundError org/hibernate/HibernateException in tests
 			 when creating HibernateTransactionManager
 			-->
 			<version>5.6.15.Final</version>
@@ -79,10 +79,25 @@
 			</exclusions>
 		</dependency>
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j-api.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<version>${spring-data.version}</version>
 			<scope>test</scope>
+			<!-- we remove Spring dependency on logging because it's in conflict with log4j (dependency above) -->
+			<!-- and make ir raises the error "LoggerFactory is not a Logback LoggerContext but Logback is on the classpath" -->
+			<!-- See solution at https://tedblob.com/loggerfactory-is-not-a-logback-loggercontext-but-logback-is-on-the-classpath/ -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<!-- for HSQLDBInMemoryDataSource to do IT tests -->
 		<dependency>
