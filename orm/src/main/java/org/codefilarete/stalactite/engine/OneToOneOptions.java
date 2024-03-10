@@ -9,10 +9,10 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 /**
  * @author Guillaume Mary
  */
-public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
+public interface OneToOneOptions<C, I, T extends Table, O> extends CascadeOptions {
 	
 	/** Marks the relation as mandatory. Hence joins will be inner ones and a checking for non null value will be done before insert and update */
-	OneToOneOptions<C, I, T> mandatory();
+	OneToOneOptions<C, I, T, O> mandatory();
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -22,10 +22,9 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (setter)
-	 * @param <O> owner type
 	 * @return the global mapping configurer
 	 */
-	<O> OneToOneOptions<C, I, T> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+	OneToOneOptions<C, I, T, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink);
 	
 	/**
 	 * Defines the bidirectional relationship.
@@ -35,10 +34,9 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * guaranty about which one will be taken first. Algorithm is defined in {@link OneToManyRelationConfigurer}.
 	 *
 	 * @param reverseLink opposite owner of the relation (getter)
-	 * @param <O> owner type
 	 * @return the global mapping configurer
 	 */
-	<O> OneToOneOptions<C, I, T> mappedBy(SerializableFunction<O, C> reverseLink);
+	OneToOneOptions<C, I, T, O> mappedBy(SerializableFunction<? super O, C> reverseLink);
 	
 	/**
 	 * Defines reverse side owner.
@@ -51,12 +49,12 @@ public interface OneToOneOptions<C, I, T extends Table> extends CascadeOptions {
 	 * @param reverseLink opposite owner of the relation
 	 * @return the global mapping configurer
 	 */
-	OneToOneOptions<C, I, T> mappedBy(Column<T, I> reverseLink);
+	OneToOneOptions<C, I, T, O> mappedBy(Column<T, I> reverseLink);
 	
 	/**
 	 * Asks to load relation in some separate query (actually may use several queries according to association table presence or polymorphism)
 	 *
 	 * @return the global mapping configurer
 	 */
-	OneToOneOptions<C, I, T> fetchSeparately();
+	OneToOneOptions<C, I, T, O> fetchSeparately();
 }

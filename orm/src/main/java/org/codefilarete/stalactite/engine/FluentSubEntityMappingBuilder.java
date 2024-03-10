@@ -53,7 +53,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -64,7 +64,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -76,7 +76,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
@@ -88,7 +88,7 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 	 * @param <J> type of identifier of {@code O}
 	 * @return a enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
+	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, T table);
 	
 	/**
 	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
@@ -193,30 +193,28 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		<V> FluentSubEntityMappingConfigurationEnumOptions<C, I, E> sqlBinder(ParameterBinder<V> parameterBinder);
 	}
 	
-	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table> extends FluentSubEntityMappingBuilder<C, I>,
-			OneToOneOptions<C, I, T> {
+	interface FluentMappingBuilderOneToOneOptions<C, I, T extends Table, O> extends FluentSubEntityMappingBuilder<C, I>,
+			OneToOneOptions<C, I, T, O> {
 		
 		/**
 		 * {@inheritDoc}
 		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (setter)
-		 * @param <O> owner type
 		 * @return the global mapping configurer
 		 */
 		@Override
-		<O> FluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableBiConsumer<O, C> reverseLink);
+		FluentMappingBuilderOneToOneOptions<C, I, T, O> mappedBy(SerializableBiConsumer<? super O, C> reverseLink);
 		
 		/**
 		 * {@inheritDoc}
 		 * Declaration overridden to adapt return type to this class.
 		 *
 		 * @param reverseLink opposite owner of the relation (getter)
-		 * @param <O> owner type
 		 * @return the global mapping configurer
 		 */
 		@Override
-		<O> FluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(SerializableFunction<O, C> reverseLink);
+		FluentMappingBuilderOneToOneOptions<C, I, T, O> mappedBy(SerializableFunction<? super O, C> reverseLink);
 		
 		/**
 		 * {@inheritDoc}
@@ -226,13 +224,13 @@ public interface FluentSubEntityMappingBuilder<C, I> extends SubEntityMappingCon
 		 * @return the global mapping configurer
 		 */
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, T> mappedBy(Column<T, I> reverseLink);
+		FluentMappingBuilderOneToOneOptions<C, I, T, O> mappedBy(Column<T, I> reverseLink);
 		
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, T> cascading(RelationMode relationMode);
+		FluentMappingBuilderOneToOneOptions<C, I, T, O> cascading(RelationMode relationMode);
 		
 		@Override
-		FluentMappingBuilderOneToOneOptions<C, I, T> fetchSeparately();
+		FluentMappingBuilderOneToOneOptions<C, I, T, O> fetchSeparately();
 	}
 	
 	interface FluentMappingBuilderOneToManyOptions<C, I, O, S extends Collection<O>> extends FluentSubEntityMappingBuilder<C, I>, OneToManyOptions<C, I, O, S> {

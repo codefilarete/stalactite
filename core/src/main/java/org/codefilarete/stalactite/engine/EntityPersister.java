@@ -62,7 +62,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * Groups statements to benefit from JDBC batch. Useful overall when allColumnsStatement
 	 * is set to false.
 	 *
-	 * @param modified the supposing entity that has differences againt {@code unmodified} entity
+	 * @param modified the supposing entity that has differences against {@code unmodified} entity
 	 * @param unmodified the "original" (freshly loaded from database ?) entity
 	 * @param allColumnsStatement true if all columns must be in the SQL statement, false if only modified ones should be in
 	 */

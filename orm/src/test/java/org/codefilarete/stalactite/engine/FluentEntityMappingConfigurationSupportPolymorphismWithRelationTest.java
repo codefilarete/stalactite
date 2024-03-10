@@ -11,7 +11,6 @@ import java.util.stream.Stream;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToManyOptions;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderOneToOneOptions;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyQueryMapper;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -66,7 +65,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
-import static org.codefilarete.stalactite.engine.MappingEase.*;
+import static org.codefilarete.stalactite.engine.MappingEase.embeddableBuilder;
+import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.engine.MappingEase.subentityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
@@ -1813,7 +1814,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 			
 			EntityPersister<Person, Identifier<Long>> testInstance = entityBuilder(Person.class, LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
-					.mapOneToOne(Person::getVehicle, vehicleConfiguration).cascading(RelationMode.ALL_ORPHAN_REMOVAL).mappedBy(Vehicle::getOwner)
+					.mapOneToOne(Person::getVehicle, vehicleConfiguration).mappedBy(Vehicle::getOwner).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					.mapSuperClass(timestampedPersistentBeanMapping)
 					.build(persistenceContext);
 			
@@ -2091,7 +2092,7 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						.mapPolymorphism(giveVehiclePolymorphismPolicy(type)
 						);
 		
-		FluentMappingBuilderOneToOneOptions<Person, Identifier<Long>, ?> persisterConfiguration = entityBuilder(Person.class, LONG_TYPE)
+		FluentMappingBuilderOneToOneOptions<Person, Identifier<Long>, ?, Vehicle> persisterConfiguration = entityBuilder(Person.class, LONG_TYPE)
 				.mapKey(Person::getId, ALREADY_ASSIGNED)
 				.mapOneToOne(Person::getVehicle, vehicleConfiguration)
 				.cascading(RelationMode.ALL_ORPHAN_REMOVAL);
