@@ -25,6 +25,10 @@ public class Person {
 		return id;
 	}
 	
+	public void setId(PersonId id) {
+		this.id = id;
+	}
+	
 	public int getAge() {
 		return age;
 	}

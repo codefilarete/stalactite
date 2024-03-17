@@ -95,7 +95,25 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 */
 	FluentEntityMappingBuilderKeyOptions<C, I> mapKey(SerializableBiConsumer<C, I> setter, IdentifierPolicy<I> identifierPolicy, String columnName);
 	
+	/**
+	 * Maps given property as a composite-identifier. The {@link IdentifierPolicy} is already-assigned.
+	 * By default, the entity no-arg constructor is used to instantiate them.
+	 *
+	 * @param getter getter of the property to be used as key
+	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
+	 * @return an object for configuration chaining
+	 */
 	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder);
+	
+	/**
+	 * Maps given property as a composite-identifier. The {@link IdentifierPolicy} is already-assigned.
+	 * By default, the entity no-arg constructor is used to instantiate them.
+	 *
+	 * @param setter setter of the property to be used as key
+	 * @param compositeKeyMappingBuilder a configuration that details the properties that composes the identifier
+	 * @return an object for configuration chaining
+	 */
+	FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder);
 	
 	/**
 	 * Interface for {@link #mapKey(SerializableFunction, IdentifierPolicy)} family methods return. Aimed at chaining to configure entity key mapping. 

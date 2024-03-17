@@ -228,7 +228,7 @@ public class FluentEntityMappingConfigurationSupportCompositeKeyTest {
 	@Test
 	void crud() {
 		EntityPersister<Person, PersonId> personPersister = MappingEase.entityBuilder(Person.class, PersonId.class)
-				.mapCompositeKey(Person::getId, MappingEase.compositeKeyBuilder(PersonId.class)
+				.mapCompositeKey(Person::setId, MappingEase.compositeKeyBuilder(PersonId.class)
 						.map(PersonId::getFirstName)
 						.map(PersonId::getLastName)
 						.map(PersonId::getAddress))

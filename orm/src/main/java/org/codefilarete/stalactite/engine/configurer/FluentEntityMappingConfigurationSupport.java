@@ -313,6 +313,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
+	public FluentEntityMappingBuilderCompositeKeyOptions<C, I> mapCompositeKey(SerializableBiConsumer<C, I> setter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+		CompositeKeyLinkageSupport<C, I> mapping = propertiesMappingConfigurationSurrogate.addCompositeKeyMapping(setter, compositeKeyMappingBuilder);
+		return this.propertiesMappingConfigurationSurrogate.wrapWithKeyOptions(mapping);
+	}
+	
+	@Override
 	public <O> FluentMappingBuilderPropertyOptions<C, I, O> map(SerializableBiConsumer<C, O> setter) {
 		LinkageSupport<C, O> mapping = propertiesMappingConfigurationSurrogate.addMapping(setter);
 		return this.propertiesMappingConfigurationSurrogate.wrapWithAdditionalPropertyOptions(mapping);
@@ -1084,6 +1090,10 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		
 		CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(SerializableFunction<C, I> getter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
 			return addCompositeKeyMapping(Accessors.accessor(getter), compositeKeyMappingBuilder);
+		}
+		
+		CompositeKeyLinkageSupport<C, I> addCompositeKeyMapping(SerializableBiConsumer<C, I> setter, CompositeKeyMappingConfigurationProvider<I> compositeKeyMappingBuilder) {
+			return addCompositeKeyMapping(Accessors.mutator(setter), compositeKeyMappingBuilder);
 		}
 		
 		/**
