@@ -50,7 +50,7 @@
 		<slf4j-api.version>1.7.36</slf4j-api.version>
 		<assertj-core.version>3.23.1</assertj-core.version>
 		<!-- Tools lib dependency must be aligned with sql module Reflection lib dependency which also has its Tools lib dep -->
-		<tools.version>1.0.2-SNAPSHOT</tools.version>
+		<tools.version>1.0.2</tools.version>
 	</properties>
 	
 	<dependencies>
@@ -211,7 +211,7 @@
 	
 	<scm>
 		<connection>scm:git:https://github.com/codefilarete/stalactite.git</connection>
-		<developerConnection>scm:git:ssh://git@github.com/codefilarete/stalactite.git</developerConnection>
+		<developerConnection>scm:git:https://github.com/codefilarete/stalactite.git</developerConnection>
 		<url>https://github.com/codefilarete/stalactite.git</url>
 		<tag>HEAD</tag>
 	</scm>

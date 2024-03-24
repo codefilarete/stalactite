@@ -10,7 +10,7 @@
 	<artifactId>sql</artifactId>
 	
 	<properties>
-		<reflection.version>1.0.1-SNAPSHOT</reflection.version>
+		<reflection.version>1.1.0</reflection.version>
 	</properties>
 	
 	<build>
