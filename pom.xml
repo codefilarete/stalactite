@@ -50,7 +50,7 @@
 		<slf4j-api.version>1.7.36</slf4j-api.version>
 		<assertj-core.version>3.23.1</assertj-core.version>
 		<!-- Tools lib dependency must be aligned with sql module Reflection lib dependency which also has its Tools lib dep -->
-		<tools.version>1.0.2</tools.version>
+		<tools.version>1.1.0</tools.version>
 	</properties>
 	
 	<dependencies>
