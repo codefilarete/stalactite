@@ -10,7 +10,7 @@
     <artifactId>sql-derby-adapter</artifactId>
     
     <properties>
-        <derby.version>10.17.1.0</derby.version>
+        <derby.version>10.14.2.0</derby.version>
     </properties>
 
     <dependencies>
