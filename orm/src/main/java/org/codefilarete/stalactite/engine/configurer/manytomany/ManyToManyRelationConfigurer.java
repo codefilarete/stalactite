@@ -49,7 +49,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
 	private final PersisterRegistry persisterRegistry;
-	private PrimaryKey<?, SRCID> sourcePrimaryKey;
 	private final ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> configurer;
 	private final ManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> associationConfiguration;
 	
@@ -84,20 +83,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 				dialect,
 				maintenanceMode == RelationMode.ASSOCIATION_ONLY,
 				connectionConfiguration);
-	}
-	
-	/**
-	 * Sets source primary key. Necessary for foreign key creation in case of inheritance and many relation defined for each subclass :
-	 * by default a foreign key will be created from target entity table to subclass source primary key which will create several one pointing
-	 * to different table, hence when inserting target entity the column owning relation should point to each subclass table, which is not possible,
-	 * throwing a foreign key violation.
-	 * 
-	 * @param sourcePrimaryKey primary key to which the foreign key from side that owns relation must point to
-	 * @return this
-	 */
-	public ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1, C2> setSourcePrimaryKey(PrimaryKey<?, SRCID> sourcePrimaryKey) {
-		this.sourcePrimaryKey = sourcePrimaryKey;
-		return this;
 	}
 	
 	public void configure(PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
