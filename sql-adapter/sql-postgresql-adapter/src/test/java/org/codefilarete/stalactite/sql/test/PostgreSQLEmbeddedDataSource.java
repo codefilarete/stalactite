@@ -1,20 +1,17 @@
 package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.stalactite.sql.UrlAwareDataSource;
 import org.postgresql.ds.PGSimpleDataSource;
-import ru.yandex.qatools.embed.postgresql.EmbeddedPostgres;
-
-import static ru.yandex.qatools.embed.postgresql.distribution.Version.Main.V9_6;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Simple PostgreSQL DataSource for tests
@@ -25,9 +22,10 @@ public class PostgreSQLEmbeddedDataSource extends UrlAwareDataSource implements 
 	
 	public static final int DEFAULT_PORT = 5432;
 	
-	private static final Map<Integer, EmbeddedPostgres> usedPorts = new HashMap<>();
+	// we reuse containers on same ports : databases/schemas will be created on-demand 
+	private static final Map<Integer, PostgreSQLContainer> USED_PORTS = new HashMap<>();
 	
-	private EmbeddedPostgres db;
+	private PostgreSQLContainer container;
 	private final int port;
 	private final String databaseName;
 	
@@ -44,20 +42,14 @@ public class PostgreSQLEmbeddedDataSource extends UrlAwareDataSource implements 
 		super("jdbc:postgresql://localhost:" + port + "/" + databaseName);
 		this.port = port;
 		this.databaseName = databaseName;
-		start();
-		final Connection conn;
-		try {
-			conn = DriverManager.getConnection(db.getConnectionUrl().get());
-			conn.createStatement().execute("CREATE SCHEMA " + databaseName + ";");
-		} catch (SQLException e) {
-			throw Exceptions.asRuntimeException(e);
-		}
+		start(databaseName);
 		PGSimpleDataSource delegate = new PGSimpleDataSource();
-		delegate.setDatabaseName("test");
+		delegate.setDatabaseName(container.getDatabaseName());
 		delegate.setServerNames(new String[] { "localhost" });
 		delegate.setPortNumbers(new int[] { port });
-		delegate.setUser(EmbeddedPostgres.DEFAULT_USER);
-		delegate.setPassword(EmbeddedPostgres.DEFAULT_PASSWORD);
+		delegate.setUser(container.getUsername());
+		delegate.setPassword(container.getPassword());
+		
 		delegate.setCurrentSchema(databaseName);
 		setDelegate(delegate);
 	}
@@ -68,23 +60,32 @@ public class PostgreSQLEmbeddedDataSource extends UrlAwareDataSource implements 
 		conn.createStatement().execute("SET search_path TO " + databaseName + ";");
 		return conn;
 	}
-
-	private void start() {
-		db = usedPorts.get(port);
-		if (db == null) {
-			try {
-				db = new EmbeddedPostgres(V9_6);
-				db.start("localhost", port, "test", EmbeddedPostgres.DEFAULT_USER, EmbeddedPostgres.DEFAULT_PASSWORD);
-				usedPorts.put(port, db);
-			} catch (IOException e) {
-				throw Exceptions.asRuntimeException(e);
-			}
+	
+	private void start(String databaseName) {
+		container = USED_PORTS.get(port);
+		if (container == null) {
+			PostgreSQLContainer<?> mariaDBContainer = new PostgreSQLContainer<>(DockerImageName.parse("postgres:14.11"));
+			mariaDBContainer
+					.withReuse(true)
+					.withDatabaseName("test")
+					.withUsername("test")
+					.withPassword("test")
+					.setPortBindings(Arrays.asList(this.port + ":" + DEFAULT_PORT))
+			;
+			mariaDBContainer.start();
+			USED_PORTS.put(port, mariaDBContainer);
+			container = mariaDBContainer;
+		}
+		try {
+			container.createConnection("").prepareStatement("create schema " + databaseName).execute();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
 		}
 	}
 	
 	@Override
 	public void close() {
 		// stop Postgres
-		db.stop();
+		container.stop();
 	}
 }

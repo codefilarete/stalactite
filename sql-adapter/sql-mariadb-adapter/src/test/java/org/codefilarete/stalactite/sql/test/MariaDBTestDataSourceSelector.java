@@ -33,6 +33,6 @@ public class MariaDBTestDataSourceSelector extends TestDataSourceSelector {
 	
 	@Override
 	protected DataSource buildEmbeddedDataSource() {
-		return new MariaDBEmbeddableDataSource(3406);
+		return new MariaDBEmbeddableDataSource();
 	}
 }

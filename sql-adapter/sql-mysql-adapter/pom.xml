@@ -11,7 +11,7 @@
 
     <properties>
         <mysql-connector-java.version>8.0.28</mysql-connector-java.version>
-        <wix-embedded-mysql.version>4.6.1</wix-embedded-mysql.version>
+        <testcontainer.version>1.17.2</testcontainer.version>
     </properties>
 
     <dependencies>
@@ -21,9 +21,9 @@
             <version>${mysql-connector-java.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.wix</groupId>
-            <artifactId>wix-embedded-mysql</artifactId>
-            <version>${wix-embedded-mysql.version}</version>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <version>${testcontainer.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

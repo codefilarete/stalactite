@@ -10,7 +10,7 @@
     <artifactId>core-postgresql-adapter</artifactId>
 
 	<properties>
-		<postgresql-embedded.version>2.10</postgresql-embedded.version>
+		<testcontainer.version>1.17.2</testcontainer.version>
 	</properties>
     
     <dependencies>
@@ -28,22 +28,9 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>ru.yandex.qatools.embed</groupId>
-			<artifactId>postgresql-embedded</artifactId>
-			<version>${postgresql-embedded.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>de.flapdoodle.embed</groupId>
-			<artifactId>de.flapdoodle.embed.process</artifactId>
-			<version>2.0.5</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- To avoid NoClassDefFoundError thrown by CachedPostgresArtifactStore.extractFileSet(..) -->
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.7</version>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>${testcontainer.version}</version>
 			<scope>test</scope>
 		</dependency>
     </dependencies>

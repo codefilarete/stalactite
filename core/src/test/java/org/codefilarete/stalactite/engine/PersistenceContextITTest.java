@@ -225,7 +225,7 @@ public abstract class PersistenceContextITTest extends DatabaseIntegrationTest {
 				.map(tataCombiner, new ResultSetRowTransformer<>(Tata.class, "tataName", DefaultResultSetReaders.STRING_READER, Tata::new))
 				.execute(Accumulators.toSet());
 		Toto expectedToto1 = new Toto(1, "Hello");
-		expectedToto1.setTatas(Arrays.asSet(new Tata("World"), new Tata("Tout le monde")));
+		expectedToto1.setTatas(Arrays.asHashSet(new Tata("World"), new Tata("Tout le monde")));
 		Toto expectedToto2 = new Toto(2, "Bonjour");
 		assertThat(records)
 				.usingRecursiveFieldByFieldElementComparator()

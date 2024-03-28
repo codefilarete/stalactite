@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>org.codefilarete.stalactite</groupId>
-        <artifactId>core-adapter</artifactId>
-        <version>2.0.1-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>core-mariadb-adapter</artifactId>
-    
-    <dependencies>
-        <dependency>
-            <groupId>org.codefilarete.stalactite</groupId>
-            <artifactId>sql-mariadb-adapter</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<parent>
+		<groupId>org.codefilarete.stalactite</groupId>
+		<artifactId>core-adapter</artifactId>
+		<version>2.0.1-SNAPSHOT</version>
+	</parent>
+	<modelVersion>4.0.0</modelVersion>
+	
+	<artifactId>core-mariadb-adapter</artifactId>
+	
+	<properties>
+		<testcontainer.version>1.17.2</testcontainer.version>
+	</properties>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>sql-mariadb-adapter</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 		<!-- To get MariaDBEmbeddableDataSource in test -->
 		<dependency>
 			<groupId>org.codefilarete.stalactite</groupId>
@@ -24,11 +29,11 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>ch.vorburger.mariaDB4j</groupId>
-			<artifactId>mariaDB4j</artifactId>
-			<version>2.5.3</version>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mariadb</artifactId>
+			<version>${testcontainer.version}</version>
 			<scope>test</scope>
 		</dependency>
-    </dependencies>
+	</dependencies>
 
 </project>

@@ -1,17 +1,15 @@
 package org.codefilarete.stalactite.sql.test;
 
 import java.io.Closeable;
+import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import com.wix.mysql.EmbeddedMysql;
-import com.wix.mysql.config.MysqldConfig;
-import com.wix.mysql.config.SchemaConfig;
 import org.codefilarete.stalactite.sql.UrlAwareDataSource;
-
-import static com.wix.mysql.config.Charset.UTF8;
-import static com.wix.mysql.distribution.Version.v5_6_latest;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Simple MariaDB DataSource for tests
@@ -20,11 +18,14 @@ import static com.wix.mysql.distribution.Version.v5_6_latest;
  */
 public class MySQLEmbeddableDataSource extends UrlAwareDataSource implements Closeable {
 	
+	public static final int MYSQL_DEFAULT_PORT = 3306;
+	
 	public static final int DEFAULT_PORT = 3306;
 	
-	private static final Map<Integer, EmbeddedMysql> USED_PORTS = new HashMap<>();
+	// we reuse containers on same ports : databases/schemas will be created on-demand 
+	private static final Map<Integer, MySQLContainer> USED_PORTS = new HashMap<>();
 	
-	private EmbeddedMysql db;
+	private MySQLContainer container;
 	
 	/** DB port. Stored because configuration of DB is not accessible. */
 	private final int port;
@@ -41,29 +42,26 @@ public class MySQLEmbeddableDataSource extends UrlAwareDataSource implements Clo
 	private MySQLEmbeddableDataSource(int port, String databaseName) {
 		super("jdbc:mariadb://localhost:" + port + "/" + databaseName);
 		this.port = port;
-		start();
-		db.addSchema(SchemaConfig.aSchemaConfig(databaseName).build());
-
-		MySQLDataSource delegate = new MySQLDataSource("localhost:" + port, databaseName, db.getConfig().getUsername(), db.getConfig().getPassword());
-		setDelegate(delegate);
+		start(databaseName);
+		setDelegate(new MySQLDataSource("localhost:" + port, databaseName, container.getUsername(), container.getPassword()));
 	}
 	
-	private void start() {
-		db = USED_PORTS.get(port);
-		if (db == null) {
-			MysqldConfig config = MysqldConfig.aMysqldConfig(v5_6_latest)
-				.withCharset(UTF8)
-				.withPort(port)
-				.withUser("dev", "dev")
-				// avoid warning popup about incoming network connections acceptance on some OS
-				// see https://github.com/wix/wix-embedded-mysql/issues/122
-				.withServerVariable("bind-address", "localhost")
-				.build();
-			
-			// /!\ if Mysql doesn't start under Windows, you may miss MSVCR100.dll,
-			// which is available in Microsoft Visual Studio 2010 redistributable package, download it and install it
-			db = com.wix.mysql.EmbeddedMysql.anEmbeddedMysql(config).start();
-			USED_PORTS.put(port, db);
+	private void start(String databaseName) {
+		container = USED_PORTS.get(port);
+		if (container == null) {
+			MySQLContainer<?> mariaDBContainer = new MySQLContainer<>(DockerImageName.parse("mysql:8.0"));
+			mariaDBContainer
+					.withUsername("root")
+					.withPassword("")
+					.setPortBindings(Arrays.asList(this.port + ":" + MYSQL_DEFAULT_PORT));
+			mariaDBContainer.start();
+			USED_PORTS.put(port, mariaDBContainer);
+			container = mariaDBContainer;
+		}
+		try {
+			container.createConnection("").prepareStatement("create schema " + databaseName).execute();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
 		}
 	}
 	

@@ -28,6 +28,6 @@ public class MySQLTestDataSourceSelector extends TestDataSourceSelector {
 	
 	@Override
 	protected DataSource buildEmbeddedDataSource() {
-		return new MySQLEmbeddableDataSource(3406);
+		return new MySQLEmbeddableDataSource();
 	}
 }
