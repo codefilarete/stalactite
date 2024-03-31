@@ -92,7 +92,7 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 			assertThat(isSelectExecuted.get()).isFalse();
 			// this must free select order
 			testInstance.cancel();
-			// The Thread should still be stuck because the statment is cancelled, not him
+			// The Thread should still be stuck because the statement is cancelled, not him
 			selectCommandThread.join(200);	// waiting to let the Thread eventually access the isSelectExecuted.set(true) code
 			assertThat(isSelectExecuted.get()).isFalse();
 			// we let thread stops else it generates unexpected exception (caused by test exit)
