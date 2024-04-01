@@ -119,7 +119,7 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 		public void onStep() {
 			super.onStep();
 			try {
-				List<I> rows = generatedKeysReader.read(getWriteOperation());
+				List<I> rows = generatedKeysReader.convert(getWriteOperation());
 				// we have a row for each entity in insertion order, so we iterate them to apply generated keys
 				PairIterator<T, I> pairIterator = new PairIterator<>(elementsOfStep, rows);
 				while (pairIterator.hasNext()) {

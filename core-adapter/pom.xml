@@ -17,6 +17,7 @@
 		<module>core-mariadb-adapter</module>
 		<module>core-mysql-adapter</module>
 		<module>core-postgresql-adapter</module>
+		<module>core-sqlite-adapter</module>
 	</modules>
 	
 	<dependencies>

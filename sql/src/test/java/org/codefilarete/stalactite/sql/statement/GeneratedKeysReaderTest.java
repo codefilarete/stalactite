@@ -23,9 +23,9 @@ import static org.mockito.Mockito.mock;
 class GeneratedKeysReaderTest {
 	
 	@Test
-	void read() {
+	void convert() {
 		GeneratedKeysReader<Long> testInstance = new GeneratedKeysReader<>("key", ResultSet::getLong);
-		List<Long> readValues = testInstance.read(new InMemoryResultSet(Arrays.asList(
+		List<Long> readValues = testInstance.convert(new InMemoryResultSet(Arrays.asList(
 				asMap("key", 13L),
 				asMap("key", 17L),
 				asMap("key", 19L)
@@ -37,13 +37,13 @@ class GeneratedKeysReaderTest {
 	void read_writeOperation() throws SQLException {
 		GeneratedKeysReader<Long> testInstance = new GeneratedKeysReader<Long>("key", ResultSet::getLong) {
 			@Override
-			List<Long> read(ResultSet generatedKeys) {
+			public List<Long> convert(ResultSet generatedKeys) {
 				return Collections.emptyList();
 			}
 		};
 		WriteOperation<String> dummySQL = new WriteOperation<>(new StringParamedSQL("dummySQL", new HashMap<>()), mock(ConnectionProvider.class), writeCount -> {});
 		dummySQL.preparedStatement = mock(PreparedStatement.class);
-		testInstance.read(dummySQL);
+		testInstance.convert(dummySQL);
 		Mockito.verify(dummySQL.preparedStatement).getGeneratedKeys();
 	}
 }

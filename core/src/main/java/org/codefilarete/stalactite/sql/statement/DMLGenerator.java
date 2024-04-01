@@ -36,11 +36,11 @@ public class DMLGenerator {
 	
 	private static final String EQUAL_SQL_PARAMETER_MARK_AND = " = " + SQL_PARAMETER_MARK + " and ";
 	
-	private final ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry;
+	protected final ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry;
 	
-	private Sorter<Column> columnSorter;
+	protected Sorter<Column> columnSorter;
 	
-	private final DMLNameProvider dmlNameProvider;
+	protected final DMLNameProvider dmlNameProvider;
 	
 	public DMLGenerator(ParameterBinderIndex<Column, ParameterBinder> columnBinderRegistry) {
 		this(columnBinderRegistry, NoopSorter.INSTANCE);
@@ -216,7 +216,7 @@ public class DMLGenerator {
 		return new ColumnParameterizedSelect<>(sqlSelect.toString(), columnToIndex, parameterBinders, selectParameterBinders);
 	}
 	
-	private Iterable<Column> sort(Iterable<? extends Column> columns) {
+	protected Iterable<Column> sort(Iterable<? extends Column> columns) {
 		return this.columnSorter.sort(columns);
 	}
 	

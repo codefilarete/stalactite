@@ -8,7 +8,6 @@ import java.util.List;
 
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.SerializableThrowingBiFunction;
 
@@ -18,13 +17,13 @@ import org.codefilarete.tool.function.SerializableThrowingBiFunction;
  * It assumes that the key is a primitive {@link Long}.
  * As specified by {@link Statement#getGeneratedKeys()}, it expected that a key is returned for each inserted row.
  * 
- * The key is noly used to fill the rows returned by {@link #read(WriteOperation)}, it's not used for ResultSet read.
+ * The key is only used to fill the rows returned by {@link #convert(WriteOperation)}, it's not used for ResultSet read.
  * 
  * As databases support differently generated keys feature, you may override some behaviors. For instance if the
  * key is not in the first column or you don't want to read it as a long, you may override {@link #readKey(ResultSet)}.
  * 
  * If only one row is returned even in multi-row statement (Derby behaves like this, see https://issues.apache.org/jira/browse/DERBY-3609),
- * then you may override {@link #read(WriteOperation)} to simulate multiple rows reading.
+ * then you may override {@link #convert(WriteOperation)} to simulate multiple rows reading.
  * 
  * @param <I> generated keys type
  * @author Guillaume Mary
@@ -71,14 +70,13 @@ public class GeneratedKeysReader<I> {
 	 * @return a {@link List} of database-generated keys during operation execution
 	 * @throws SQLException in case of reading problem
 	 */
-	public List<I> read(WriteOperation writeOperation) throws SQLException {
+	public List<I> convert(WriteOperation writeOperation) throws SQLException {
 		try (ResultSet generatedKeys = writeOperation.preparedStatement.getGeneratedKeys()) {
-			return read(generatedKeys);
+			return convert(generatedKeys);
 		}
 	}
 	
-	@VisibleForTesting
-	List<I> read(ResultSet generatedKeys) {
+	public List<I> convert(ResultSet generatedKeys) {
 		ResultSetIterator<I> iterator = new ResultSetIterator<I>(generatedKeys) {
 			@Override
 			public I convert(ResultSet rs) throws SQLException {

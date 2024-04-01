@@ -24,8 +24,8 @@ public class DerbyGeneratedKeysReader extends GeneratedKeysReader<Integer> {
 	
 	/** Overridden to simulate generated keys for Derby because it only returns the highest generated key */
 	@Override
-	public List<Integer> read(WriteOperation writeOperation) throws SQLException {
-		List<Integer> rows = super.read(writeOperation);
+	public List<Integer> convert(WriteOperation writeOperation) throws SQLException {
+		List<Integer> rows = super.convert(writeOperation);
 		// Derby only returns one row: the highest generated key
 		int first = Iterables.first(rows);
 		// we append the missing values in incrementing order, assuming that's a one by one increment
