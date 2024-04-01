@@ -208,6 +208,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> the type of the persisted entity
 	 * @return null if class has no compatible persister registered
 	 */
+	@Override
 	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
 		if (persisterCache.get(clazz) != null) {
 			return persisterCache.get(clazz);

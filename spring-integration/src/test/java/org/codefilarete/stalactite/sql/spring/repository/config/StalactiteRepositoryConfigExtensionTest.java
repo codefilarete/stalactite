@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.sql.spring.repository.config;
 
 import java.util.Optional;
 
-import org.assertj.core.api.Assertions;
 import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.MappingEase;
@@ -23,6 +22,8 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * @author Guillaume Mary
  */
@@ -42,7 +43,7 @@ class StalactiteRepositoryConfigExtensionTest {
 	void injectionIsDone() {
 		// Line below serves no purpose actually since Spring will throw an error if field is not injected
 		// but a test without assertion is not a test ;)
-		Assertions.assertThat(dummyStalactiteRepository).isNotNull();
+		assertThat(dummyStalactiteRepository).isNotNull();
 		
 		Table person = new Table<>("Person");
 		Column<Table<?>, Long> idColumn = person.addColumn("id", Long.class);
@@ -52,7 +53,7 @@ class StalactiteRepositoryConfigExtensionTest {
 				.set(nameColumn, "John Do")
 				.execute();
 		Optional<Person> loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(1L));
-		Assertions.assertThat(loadedPerson).isNotEmpty();
+		assertThat(loadedPerson).isNotEmpty();
 	}
 	
 	@Test
@@ -63,17 +64,17 @@ class StalactiteRepositoryConfigExtensionTest {
 		// trying to insert
 		dummyStalactiteRepository.save(person);
 		Optional<Person> loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
-		Assertions.assertThat(loadedPerson).isNotEmpty();
+		assertThat(loadedPerson).isNotEmpty();
 		
 		// trying with update
 		person.setName("Titi");
 		dummyStalactiteRepository.save(person);
 		loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
-		Assertions.assertThat(loadedPerson).map(Person::getName).get().isEqualTo("Titi");
+		assertThat(loadedPerson).map(Person::getName).get().isEqualTo("Titi");
 		
 		dummyStalactiteRepository.delete(person);
 		loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
-		Assertions.assertThat(loadedPerson).isEmpty();
+		assertThat(loadedPerson).isEmpty();
 	}
 	
 	public static class StalactiteRepositoryContextConfiguration {
