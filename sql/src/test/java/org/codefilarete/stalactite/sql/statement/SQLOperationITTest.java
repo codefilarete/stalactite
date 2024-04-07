@@ -13,6 +13,7 @@ import java.util.function.Predicate;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.test.DatabaseIntegrationTest;
+import org.codefilarete.tool.Duo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,10 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 	protected BiFunction<PreparedSQL, ConnectionProvider, ReadOperation<Integer>> readOperationFactory;
 	
 	abstract String giveLockStatement();
+	
+	protected String giveCreateTableStatement() {
+		return "create table Toto(id bigint)";
+	}
 
 	abstract Predicate<Throwable> giveCancelOperationPredicate();
 	
@@ -62,19 +67,19 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 		try (Connection lockingConnection = connectionProvider.giveConnection()) {
 			// activate manual transaction
 			lockingConnection.setAutoCommit(false);
-			lockingConnection.prepareStatement("create table Toto(id bigint)").execute();
+			lockingConnection.prepareStatement(giveCreateTableStatement()).execute();
 			lockingConnection.commit();	// some databases require a commit to have DDL elements available to other transactions, like DML elements (PostgreSQL)
 			// current Thread locks table
 			lockTable(lockingConnection);
 			
 			CountDownLatch threadStartedMarker = new CountDownLatch(1);
 			AtomicBoolean isSelectExecuted = new AtomicBoolean(false);
-			ReadOperation<Integer> testInstance = readOperationFactory.apply(new PreparedSQL("select * from Toto", new HashMap<>()), connectionProvider);
+			Duo<Runnable, SQLOperation> testInstance = createLockingStatement();
 			Throwable[] capturedException = new Throwable[1];
 			Thread selectCommandThread = new Thread(() -> {
-				try (ReadOperation<Integer> localTestInstance = testInstance) {
+				try (SQLOperation<?> localTestInstance = testInstance.getRight()) {
 					threadStartedMarker.countDown();
-					localTestInstance.execute();
+					testInstance.getLeft().run();
 					isSelectExecuted.set(true);
 				} catch (Throwable t) {
 					capturedException[0] = t;
@@ -91,7 +96,7 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 			// really ensure that select is stuck
 			assertThat(isSelectExecuted.get()).isFalse();
 			// this must free select order
-			testInstance.cancel();
+			testInstance.getRight().cancel();
 			// The Thread should still be stuck because the statement is cancelled, not him
 			selectCommandThread.join(200);	// waiting to let the Thread eventually access the isSelectExecuted.set(true) code
 			assertThat(isSelectExecuted.get()).isFalse();
@@ -103,6 +108,11 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 			
 			((CurrentThreadConnectionProvider) connectionProvider).releaseConnection();
 		}
+	}
+	
+	protected Duo<Runnable, SQLOperation> createLockingStatement() {
+		ReadOperation<Integer> testInstance = readOperationFactory.apply(new PreparedSQL("select * from Toto", new HashMap<>()), connectionProvider);
+		return new Duo<>(testInstance::execute, testInstance);
 	}
 	
 	protected void lockTable(Connection lockingConnection) throws SQLException {

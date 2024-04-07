@@ -16,6 +16,7 @@
 		<module>sql-hsqldb-adapter</module>
 		<module>sql-mariadb-adapter</module>
 		<module>sql-mysql-adapter</module>
+		<module>sql-oracle-adapter</module>
 		<module>sql-postgresql-adapter</module>
 		<module>sql-sqlite-adapter</module>
 	</modules>

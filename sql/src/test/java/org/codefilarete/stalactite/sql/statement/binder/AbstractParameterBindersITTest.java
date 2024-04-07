@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.MathContext;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Blob;
@@ -26,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.assertj.core.data.Offset;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.codefilarete.tool.collection.Iterables.first;
 
 /**
  * Template class for database integration tests of dedicated {@link ParameterBinder}s
@@ -146,7 +147,11 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 	
 	@Test
 	void bigDecimalBinder() throws SQLException {
-		testParameterBinder(BigDecimal.class, Arrays.asSet(null, new BigDecimal("42.6600", new MathContext(6))));
+		BigDecimal nullInsertion = insertAndSelect(BigDecimal.class, (BigDecimal) null);
+		assertThat(nullInsertion).isNull();
+		clearSchema();
+		BigDecimal real = insertAndSelect(BigDecimal.class, BigDecimal.valueOf(42.66));
+		assertThat(real).isCloseTo(BigDecimal.valueOf(42.66), Offset.offset(BigDecimal.valueOf(0.001)));
 	}
 	
 	@Test
@@ -295,10 +300,24 @@ public abstract class AbstractParameterBindersITTest extends DatabaseIntegration
 		}).collect(Collectors.toSet());
 	}
 	
+	protected <T> T insertAndSelect(Class<T> typeToTest, T valuesToInsert) throws SQLException {
+		ParameterBinder<T> testInstance = parameterBinderRegistry.getBinder(typeToTest);
+		String sqlColumnType = javaTypeToSqlTypeMapping.getTypeName(typeToTest);
+		return first(insertAndSelect(testInstance, sqlColumnType, Arrays.asSet(valuesToInsert), connectionProvider.giveConnection()));
+	}
+	
 	protected <T> Set<T> insertAndSelect(Class<T> typeToTest, Set<T> valuesToInsert) throws SQLException {
 		ParameterBinder<T> testInstance = parameterBinderRegistry.getBinder(typeToTest);
 		String sqlColumnType = javaTypeToSqlTypeMapping.getTypeName(typeToTest);
 		return insertAndSelect(testInstance, sqlColumnType, valuesToInsert, connectionProvider.giveConnection());
+	}
+	
+	protected void clearSchema() {
+		try {
+			connectionProvider.giveConnection().prepareStatement("drop table Toto").execute();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	protected <T> Set<T> insertAndSelect(ParameterBinder<T> testInstance, String sqlColumnType, Set<T> valuesToInsert, Connection connection) throws SQLException {
