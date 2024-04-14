@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Iterator;
 
 import org.codefilarete.stalactite.sql.result.ResultSetIterator;
 import org.codefilarete.tool.exception.Exceptions;
@@ -38,7 +39,7 @@ public class DatabaseHelper {
 		};
 	}
 	
-	protected void dropTable(Connection connection, ResultSetIterator<String> tablesIterator) {
+	public void dropTable(Connection connection, Iterator<String> tablesIterator) {
 		tablesIterator.forEachRemaining(tableName -> {
 			try {
 				Statement statement = connection.createStatement();

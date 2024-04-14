@@ -34,6 +34,14 @@ public class ColumnParameterizedSQL<T extends Table<T>> extends ExpandableStatem
 		this.columnIndexes = columnIndexes;
 	}
 	
+	/**
+	 * Gives available columns in the statement and their positions in it as placeholder marks 
+	 * @return available columns in the statement and their positions in it as placeholder marks
+	 */
+	public Map<Column<T, Object>, int[]> getColumnIndexes() {
+		return columnIndexes;
+	}
+	
 	@Override
 	protected String getParameterName(Column<T, Object> column) {
 		return column.getAbsoluteName();

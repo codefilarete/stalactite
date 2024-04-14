@@ -1,9 +1,7 @@
 package org.codefilarete.stalactite.mapping.id.manager;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -12,13 +10,13 @@ import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.WriteExecutor.JDBCBatchingIterator;
 import org.codefilarete.stalactite.mapping.IdAccessor;
-import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.PairIterator;
-import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.GeneratedKeysReader;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.PairIterator;
+import org.codefilarete.tool.exception.Exceptions;
 
 /**
  * Identifier manager that gets its values from {@link PreparedStatement#getGeneratedKeys()} (available after insert SQL statement). 
@@ -44,12 +42,6 @@ public class JDBCGeneratedKeysIdentifierManager<T, I> implements IdentifierInser
 	@Override
 	public Class<I> getIdentifierType() {
 		return identifierType;
-	}
-	
-	@Override
-	public PreparedStatement prepareStatement(Connection connection, String sql) throws SQLException {
-		// we must flag the PreparedStatement with RETURN_GENERATED_KEYS
-		return connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 	}
 	
 	@Override

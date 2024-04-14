@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -83,6 +84,7 @@ import static org.codefilarete.tool.collection.Iterables.map;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -1363,7 +1365,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		PreparedStatement statementMock = mock(PreparedStatement.class);
 		when(statementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		Map<Column<Table, Object>, Object> capturedValues = new HashMap<>();
-		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
+		when(connectionMock.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
 		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {
@@ -1456,7 +1458,7 @@ class FluentEntityMappingConfigurationSupportTest {
 		PreparedStatement statementMock = mock(PreparedStatement.class);
 		when(statementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 		Map<Column<Table, Object>, Object> capturedValues = new HashMap<>();
-		when(connectionMock.prepareStatement(anyString())).thenReturn(statementMock);
+		when(connectionMock.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(statementMock);
 		
 		StringBuilder capturedSQL = new StringBuilder();
 		((SimpleRelationalEntityPersister) (((PersisterWrapper) persister).getDeepestSurrogate())).getInsertExecutor().setOperationListener(new SQLOperationListener<Column<Table, Object>>() {

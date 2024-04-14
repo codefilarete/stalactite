@@ -20,6 +20,8 @@ public class OracleTypeMapping extends DefaultTypeMapping {
 		put(BigInteger.class, "integer");
 		put(Double.class, "float");
 		put(Double.TYPE, "float");
+		// Oracle doesn't support varchar without size
+		put(String.class, "varchar(255)");
 		put(Path.class, "varchar(255)");
 		put(Path.class, "varchar($l)", 255);
 		put(File.class, "varchar(255)");

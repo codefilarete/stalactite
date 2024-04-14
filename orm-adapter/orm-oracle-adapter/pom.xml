@@ -3,29 +3,16 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.codefilarete.stalactite</groupId>
-		<artifactId>parent</artifactId>
+		<artifactId>orm-adapter</artifactId>
 		<version>2.0.1-SNAPSHOT</version>
 	</parent>
 	
-	<artifactId>orm-adapter</artifactId>
-	<packaging>pom</packaging>
-	
-	<modules>
-		<module>orm-all-adapters</module>
-		<module>orm-h2-adapter</module>
-		<module>orm-derby-adapter</module>
-		<module>orm-hsqldb-adapter</module>
-		<module>orm-mariadb-adapter</module>
-		<module>orm-mysql-adapter</module>
-		<module>orm-oracle-adapter</module>
-		<module>orm-postgresql-adapter</module>
-		<module>orm-sqlite-adapter</module>
-	</modules>
+	<artifactId>orm-oracle-adapter</artifactId>
 	
 	<dependencies>
 		<dependency>
 			<groupId>org.codefilarete.stalactite</groupId>
-			<artifactId>orm</artifactId>
+			<artifactId>core-oracle-adapter</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 	</dependencies>

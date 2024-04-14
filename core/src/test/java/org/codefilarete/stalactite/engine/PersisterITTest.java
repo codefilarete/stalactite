@@ -10,10 +10,10 @@ import java.util.Set;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
-import org.codefilarete.stalactite.mapping.ClassMapping;
-import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
-import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
+import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
+import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
@@ -85,7 +85,10 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
 			@Override
 			public Map convert(ResultSet resultSet) throws SQLException {
-				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
+				return Maps.forHashMap(String.class, Integer.class)
+						.add("a", resultSet.getInt("a"))
+						.add("b", resultSet.getInt("b"))
+						.add("c", resultSet.getInt("c"));
 			}
 		};
 		ResultSet resultSet = connection.prepareStatement("select * from Toto order by a").executeQuery();
@@ -105,7 +108,10 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
 			@Override
 			public Map convert(ResultSet resultSet) throws SQLException {
-				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
+				return Maps.forHashMap(String.class, Integer.class)
+						.add("a", resultSet.getInt("a"))
+						.add("b", resultSet.getInt("b"))
+						.add("c", resultSet.getInt("c"));
 			}
 		};
 		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();
@@ -126,7 +132,10 @@ abstract class PersisterITTest extends DatabaseIntegrationTest {
 		ResultSetIterator<Map> resultSetIterator = new ResultSetIterator<Map>() {
 			@Override
 			public Map convert(ResultSet resultSet) throws SQLException {
-				return Maps.asMap("a", resultSet.getObject("a")).add("b", resultSet.getObject("b")).add("c", resultSet.getObject("c"));
+				return Maps.forHashMap(String.class, Integer.class)
+						.add("a", resultSet.getInt("a"))
+						.add("b", resultSet.getInt("b"))
+						.add("c", resultSet.getInt("c"));
 			}
 		};
 		ResultSet resultSet = connection.prepareStatement("select * from Toto").executeQuery();

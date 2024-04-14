@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.stream.LongStream;
 
+import org.apache.derby.impl.jdbc.EmbedConnection;
+import org.apache.derby.impl.jdbc.EmbedStatement;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DerbyDDLTableGenerator;
 import org.codefilarete.stalactite.sql.statement.DerbyReadOperation;
@@ -96,6 +98,18 @@ public class DerbyDialect extends Dialect {
 			long[] rowCounts = super.doExecuteBatch();
 			this.updatedRowCount = LongStream.of(rowCounts).sum();
 			return rowCounts;
+		}
+		
+		/**
+		 * Overridden to use Derby special {@link EmbedConnection#cancelRunningStatement()} method
+		 * to avoid exception "ERROR 0A000: Feature not implemented: cancel" (see {@link EmbedStatement#cancel()} implementation).
+		 *
+		 * @throws SQLException if cancellation fails
+		 */
+		@Override
+		public void cancel() throws SQLException {
+			EmbedConnection conn = preparedStatement.getConnection().unwrap(EmbedConnection.class);
+			conn.cancelRunningStatement();
 		}
 	}
 }

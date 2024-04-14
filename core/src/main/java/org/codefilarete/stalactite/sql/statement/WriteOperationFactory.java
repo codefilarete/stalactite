@@ -7,10 +7,12 @@ import java.sql.Statement;
 import java.util.function.LongSupplier;
 
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
-import org.codefilarete.stalactite.sql.Dialect;
-import org.codefilarete.tool.function.ThrowingBiFunction;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.WriteOperation.RowCountListener;
+import org.codefilarete.tool.function.ThrowingBiFunction;
 
 /**
  * As its name mentions it, this class is a factory for {@link WriteOperation}, introduced to be overridden for database specific behavior.
@@ -109,6 +111,24 @@ public class WriteOperationFactory {
 																ThrowingBiFunction<Connection, String, PreparedStatement, SQLException> statementProvider,
 																LongSupplier expectedRowCount) {
 		return createInstance(sqlGenerator, connectionProvider, statementProvider, new JDBCRowCountChecker(expectedRowCount));
+	}
+	
+	/**
+	 * Delegation of statement creation for insertion of entities, because some database vendor may need to ask JDBC for generated keys retrieval.
+	 * This implementation will call {@link Connection#prepareStatement(String, int)}
+	 *
+	 * @param sqlGenerator the SQL order to be executed, expected to be an INSERT, UPDATE or DELETE one
+	 * @param connectionProvider will provide {@link Connection} of the {@link PreparedStatement} to be created
+	 * @param expectedRowCount dynamic counter of expected count of rows to be updated by given SQL statement
+	 * @return a new {@link WriteOperation} with checking of updated row count to given one
+	 */
+	public <T extends Table<T>> WriteOperation<Column<T, Object>> createInstanceForInsertion(ColumnParameterizedSQL<T> sqlGenerator,
+																							 ConnectionProvider connectionProvider,
+																							 LongSupplier expectedRowCount) {
+		return createInstance(sqlGenerator, connectionProvider, (connection, sql) -> {
+			// we must flag the PreparedStatement with RETURN_GENERATED_KEYS
+			return connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+		}, new JDBCRowCountChecker(expectedRowCount));
 	}
 	
 	protected <ParamType> WriteOperation<ParamType> createInstance(SQLStatement<ParamType> sqlGenerator,

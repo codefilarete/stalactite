@@ -4,6 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -77,6 +78,7 @@ import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterB
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.LONG_PRIMITIVE_BINDER;
 import static org.codefilarete.tool.function.Functions.chain;
 import static org.codefilarete.tool.function.Functions.link;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -574,7 +576,7 @@ public class PersisterBuilderImplTest {
 			when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
 			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-			when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+			when(connectionMock.prepareStatement(sqlCaptor.capture(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(preparedStatementMock);
 			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 			EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 			Car entity = new Car(1L);
@@ -607,7 +609,7 @@ public class PersisterBuilderImplTest {
 			when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 			ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
 			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-			when(connectionMock.prepareStatement(sqlCaptor.capture())).thenReturn(preparedStatementMock);
+			when(connectionMock.prepareStatement(sqlCaptor.capture(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(preparedStatementMock);
 			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 			EntityPersister<Car, Identifier> result = testInstance.build(new PersistenceContext(connectionProviderMock, DIALECT));
 			Car entity = new Car(1L);
@@ -640,7 +642,7 @@ public class PersisterBuilderImplTest {
 			when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
 			ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
 			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
-			when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
+			when(connectionMock.prepareStatement(insertCaptor.capture(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(preparedStatementMock);
 			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 			when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Collections.emptyIterator()));
 			
@@ -693,6 +695,7 @@ public class PersisterBuilderImplTest {
 			ArgumentCaptor<String> insertCaptor = ArgumentCaptor.forClass(String.class);
 			PreparedStatement preparedStatementMock = mock(PreparedStatement.class);
 			when(connectionMock.prepareStatement(insertCaptor.capture())).thenReturn(preparedStatementMock);
+			when(connectionMock.prepareStatement(insertCaptor.capture(), eq(Statement.RETURN_GENERATED_KEYS))).thenReturn(preparedStatementMock);
 			when(preparedStatementMock.executeLargeBatch()).thenReturn(new long[] { 1 });
 			when(preparedStatementMock.executeQuery()).thenReturn(new InMemoryResultSet(Arrays.asList(Maps.forHashMap(String.class, Object.class)
 																										  .add("Car_id", 1L)
