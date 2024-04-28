@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
@@ -204,11 +205,20 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
-						(Accumulator<C, ?, Set<C>> accumulator) -> getPersisterListener().doWithSelectListener(emptySet(), () -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria())))
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
+						wrapGraphLoad(localCriteriaSupport))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
+	}
+	
+	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<C, Set<C>, R> accumulator) -> {
+			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
+					entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria())
+			);
+			return accumulator.collect(result);
+		};
 	}
 	
 	/**
