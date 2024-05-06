@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingHashMap;
@@ -66,6 +65,49 @@ class OptimizedUpdatePersisterTest {
 	}
 	
 	@Test
+	void cachingQueryConnectionProvider_releasesConnectionOnCommit() throws SQLException {
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
+		when(connectionProviderMock.giveConnection()).thenReturn(mock(Connection.class));
+		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
+				new ConnectionConfigurationSupport(new TransactionAwareConnectionProvider(connectionProviderMock), 10)).getConnectionProvider();
+		
+		Connection connection = testInstance.giveConnection();
+		assertThat(connection).isSameAs(testInstance.giveConnection());
+		connection.commit();
+		assertThat(connection).isNotSameAs(testInstance.giveConnection());
+	}
+	
+	@Test
+	void cachingQueryConnectionProvider_releasesConnectionOnRollback() throws SQLException {
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
+		when(connectionProviderMock.giveConnection()).thenReturn(mock(Connection.class));
+		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
+				new ConnectionConfigurationSupport(new TransactionAwareConnectionProvider(connectionProviderMock), 10)).getConnectionProvider();
+		
+		
+		Connection connection = testInstance.giveConnection();
+		assertThat(connection).isSameAs(testInstance.giveConnection());
+		connection.rollback();
+		assertThat(connection).isNotSameAs(testInstance.giveConnection());
+	}
+	
+	@Test
+	void cachingQueryConnectionProvider_releasesConnectionOnClose() throws SQLException {
+		ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class);
+		Connection connectionMock = mock(Connection.class);
+		when(connectionProviderMock.giveConnection()).thenReturn(connectionMock);
+		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
+				new ConnectionConfigurationSupport(new TransactionAwareConnectionProvider(connectionProviderMock), 10)).getConnectionProvider();
+		
+		Connection connection = testInstance.giveConnection();
+		assertThat(connection).isSameAs(testInstance.giveConnection());
+		// we mimic a real closed connection (connection.close() serve no purpose actually since it's a mock)
+		connection.close();
+		when(connectionMock.isClosed()).thenReturn(true);
+		assertThat(connection).isNotSameAs(testInstance.giveConnection());
+	}
+	
+	@Test
 	void cachingQueryConnectionProvider_cachesQuery() throws SQLException {
 		DataSource dataSourceMock = mock(DataSource.class);
 		Connection connectionMock = mock(Connection.class);
@@ -80,7 +122,7 @@ class OptimizedUpdatePersisterTest {
 		ConnectionProvider testInstance = OptimizedUpdatePersister.wrapWithQueryCache(
 				new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSourceMock), 10)).getConnectionProvider();
 		
-		OptimizedUpdatePersister.QUERY_CACHE.set(new HashMap<>());
+		OptimizedUpdatePersister.CURRENT_QUERY.set(new HashMap<>());
 		Connection currentConnection = testInstance.giveConnection();
 		PreparedStatement preparedStatement1 = currentConnection.prepareStatement("Select * from WhateverYouWant");
 		ResultSet effectiveResultSet = preparedStatement1.executeQuery();
@@ -101,7 +143,7 @@ class OptimizedUpdatePersisterTest {
 		
 		// executeQuery() must have been called once thanks to cache
 		Mockito.verify(preparedStatementMock).executeQuery();
-		OptimizedUpdatePersister.QUERY_CACHE.remove();
+		OptimizedUpdatePersister.CURRENT_QUERY.remove();
 		
 		assertThat(data).isEqualTo(cachedValues);
 	}

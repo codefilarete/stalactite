@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.engine.runtime;
 
-import javax.annotation.Nonnull;
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.reflect.Proxy;
@@ -14,6 +13,7 @@ import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -29,6 +29,17 @@ import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.engine.NotYetSupportedOperationException;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
+import org.codefilarete.stalactite.sql.CommitListener;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration;
+import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
+import org.codefilarete.stalactite.sql.RollbackListener;
+import org.codefilarete.stalactite.sql.RollbackObserver;
+import org.codefilarete.stalactite.sql.TransactionAwareConnectionProvider;
+import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
+import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
+import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLOperation;
 import org.codefilarete.tool.Experimental;
 import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
@@ -40,14 +51,6 @@ import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.ThrowingTriConsumer;
 import org.codefilarete.tool.sql.ConnectionWrapper;
 import org.codefilarete.tool.sql.ResultSetWrapper;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
-import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
-import org.codefilarete.stalactite.sql.RollbackObserver;
-import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
-import org.codefilarete.stalactite.sql.statement.SQLOperation;
-import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
-import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
 
 /**
  * Persister with optimized {@link #update(Object, Consumer)} method by leveraging an internal cache so only one select is really executed. 
@@ -63,7 +66,7 @@ import org.codefilarete.stalactite.sql.result.NoopPreparedStatement;
 public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	
 	@VisibleForTesting
-	static final ThreadLocal<Map<ResultSetCacheKey, ResultSet>> QUERY_CACHE = new ThreadLocal<>();
+	static final ThreadLocal<Map<ResultSetCacheKey, ResultSet>> CURRENT_QUERY = new ThreadLocal<>();
 	
 	/**
 	 * Creates a new {@link ConnectionConfiguration} from given one and wraps its {@link ConnectionProvider} with one that caches select queries
@@ -102,7 +105,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	 * tied to one for bugs and features  
 	 * 
 	 * @param id key of entity to be modified 
-	 * @param entityConsumer businness code expected to modify its given entity
+	 * @param entityConsumer business code expected to modify its given entity
 	 */
 	@Experimental
 	@Override
@@ -118,14 +121,14 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 	 * tied to one for bugs and features  
 	 *
 	 * @param ids keys of entities to be modified 
-	 * @param entityConsumer businness code expected to modify its given entity
+	 * @param entityConsumer business code expected to modify its given entity
 	 */
 	@Experimental
 	@Override
 	public void update(Iterable<I> ids, Consumer<C> entityConsumer) {
 		Holder<Set<C>> referenceEntity = new Holder<>();
 		Holder<Set<C>> entityToModify = new Holder<>();
-		ThreadLocals.doWithThreadLocal(QUERY_CACHE, HashMap::new, (Runnable) () -> {
+		ThreadLocals.doWithThreadLocal(CURRENT_QUERY, HashMap::new, (Runnable) () -> {
 			// Thanks to query cache this first select will be executed and its result put into QUERY_CACHE
 			referenceEntity.set(select(ids));
 			// Thanks to query cache, this second (and same) select won't be executed and it allows to get a copy of first entity 
@@ -203,13 +206,54 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 			this.delegate = delegate;
 		}
 		
-		@Nonnull
 		@Override
 		public Connection giveConnection() {
-			if (currentConnection == null) {
-				currentConnection = new CachingQueryConnectionWrapper(delegate.giveConnection());
+			try {
+				if (currentConnection == null || currentConnection.isClosed()) {
+					currentConnection = new CachingQueryConnectionWrapper(delegate.giveConnection());
+					if (delegate instanceof TransactionAwareConnectionProvider) {
+						((TransactionAwareConnectionProvider) delegate).addCommitListener(new CommitListener() {
+							@Override
+							public void beforeCommit() {
+								
+							}
+							
+							@Override
+							public void afterCommit() {
+								releaseCurrentConnection();
+							}
+						});
+						((TransactionAwareConnectionProvider) delegate).addRollbackListener(new RollbackListener() {
+							@Override
+							public void beforeRollback() {
+								
+							}
+							
+							@Override
+							public void afterRollback() {
+								releaseCurrentConnection();
+							}
+							
+							@Override
+							public void beforeRollback(Savepoint savepoint) {
+								
+							}
+							
+							@Override
+							public void afterRollback(Savepoint savepoint) {
+								releaseCurrentConnection();
+							}
+						});
+					}
+				}
+			} catch (SQLException e) {
+				throw new RuntimeException(e);
 			}
 			return currentConnection;
+		}
+		
+		private void releaseCurrentConnection() {
+			this.currentConnection = null;
 		}
 	}
 	
@@ -229,7 +273,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 		
 		@Override
 		public PreparedStatement prepareStatement(String sql) throws SQLException {
-			if (QUERY_CACHE.get() == null) {
+			if (CURRENT_QUERY.get() == null) {
 				// No cache active so we let default behavior
 				return super.prepareStatement(sql);
 			} else {
@@ -431,7 +475,7 @@ public class OptimizedUpdatePersister<C, I> extends PersisterWrapper<C, I> {
 			}
 			
 			private ResultSet executeQueryAndCacheResult(String sql, ResultSetCacheKey resultSetCacheKey) throws SQLException {
-				Map<ResultSetCacheKey, ResultSet> resultSetCache = QUERY_CACHE.get();
+				Map<ResultSetCacheKey, ResultSet> resultSetCache = CURRENT_QUERY.get();
 				ResultSet previousResult = resultSetCache.get(resultSetCacheKey);
 				if (previousResult != null) {
 					// we trace cache usage in log to prevent user from becoming crazy by not seeing any real call to RDBMS
