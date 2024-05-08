@@ -1,11 +1,9 @@
 package org.codefilarete.stalactite.sql.spring.transaction;
 
 import javax.sql.DataSource;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.sql.spring.transaction.Hibernate5ConnectionProvider;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.ConnectionHolder;
