@@ -30,7 +30,12 @@ class OperatorSQLBuilderTest {
 		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
 		StringAppender result = new StringAppender();
 		
-		testInstance.cat(new ConditionalOperator() {
+		testInstance.cat(new ConditionalOperator<Object, Object>() {
+			@Override
+			public void setValue(Object value) {
+				
+			}
+			
 			@Override
 			public boolean isNull() {
 				return true;

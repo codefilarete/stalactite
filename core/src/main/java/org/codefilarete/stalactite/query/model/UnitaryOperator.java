@@ -5,10 +5,13 @@ package org.codefilarete.stalactite.query.model;
  * 
  * @author Guillaume Mary
  */
-public abstract class UnitaryOperator<V> extends ConditionalOperator<V> {
+public abstract class UnitaryOperator<V> extends ConditionalOperator<V, V> {
 	
 	/** Value of the operator */
 	private V value;
+	
+	public UnitaryOperator() {
+	}
 	
 	public UnitaryOperator(V value) {
 		this.value = value;
@@ -25,6 +28,7 @@ public abstract class UnitaryOperator<V> extends ConditionalOperator<V> {
 	 * Sets the value of this operator
 	 * @param value the new value
 	 */
+	@Override
 	public void setValue(V value) {
 		this.value = value;
 	}

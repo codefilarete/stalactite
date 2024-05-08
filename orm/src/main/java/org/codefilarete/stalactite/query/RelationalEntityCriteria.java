@@ -14,22 +14,22 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
 public interface RelationalEntityCriteria<C> extends EntityCriteria<C> {
 	
 	@Override
-	<O> RelationalEntityCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+	<O> RelationalEntityCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 	
 	@Override
-	<O> RelationalEntityCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+	<O> RelationalEntityCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 	
 	@Override
-	<O> RelationalEntityCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+	<O> RelationalEntityCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 	
 	@Override
-	<O> RelationalEntityCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+	<O> RelationalEntityCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 	
 	@Override
-	<A, B> RelationalEntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
+	<A, B> RelationalEntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 	
 	@Override
-	<O> RelationalEntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator);
+	<O> RelationalEntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
 	
-	<S extends Collection<A>, A, B> RelationalEntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
+	<S extends Collection<A>, A, B> RelationalEntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 }

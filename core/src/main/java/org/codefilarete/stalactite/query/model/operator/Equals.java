@@ -9,6 +9,9 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
  */
 public class Equals<O> extends UnitaryOperator<O> {
 	
+	public Equals() {
+	}
+	
 	public Equals(O value) {
 		super(value);
 	}

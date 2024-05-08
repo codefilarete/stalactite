@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.repository.config.BootstrapMode;
 import org.springframework.data.repository.config.DefaultRepositoryBaseClass;
-import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -63,22 +62,6 @@ public @interface EnableStalactiteRepositories {
 	 * @return
 	 */
 	String repositoryImplementationPostfix() default "Impl";
-	
-	/**
-	 * Configures the location of where to find the Spring Data named queries properties file. Will default to
-	 * {@code META-INF/jpa-named-queries.properties}.
-	 *
-	 * @return
-	 */
-	String namedQueriesLocation() default "";
-	
-	/**
-	 * Returns the key of the {@link QueryLookupStrategy} to be used for lookup queries for query methods. Defaults to
-	 * {@link QueryLookupStrategy.Key#CREATE_IF_NOT_FOUND}.
-	 *
-	 * @return
-	 */
-	QueryLookupStrategy.Key queryLookupStrategy() default QueryLookupStrategy.Key.CREATE_IF_NOT_FOUND;
 	
 	/**
 	 * Returns the {@link FactoryBean} class to be used for each repository instance. Defaults to

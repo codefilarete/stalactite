@@ -80,15 +80,15 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		return rootConfiguration.registerRelation(relation, entityMapping);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(logicalOperator, rootConfiguration.getColumn(Arrays.asList(new AccessorByMethodReference<>(getter))), operator);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(logicalOperator, rootConfiguration.getColumn(Arrays.asList(new MutatorByMethodReference<>(setter))), operator);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, Column column, ConditionalOperator<O> operator) {
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, Column column, ConditionalOperator<O, ?> operator) {
 		if (logicalOperator == LogicalOperator.OR) {
 			criteria.or(column, operator);
 		} else {
@@ -98,39 +98,39 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.AND, getter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.AND, setter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.OR, getter, operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.OR, setter, operator);
 	}
 	
 	@Override
-	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator) {
+	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
 		criteria.and(rootConfiguration.getColumn(AccessorChain.chain(getter1, getter2).getAccessors()), operator);
 		return this;
 	}
 	
 	@Override
-	public <O> RelationalEntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator) {
+	public <O> RelationalEntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator) {
 		criteria.and(rootConfiguration.getColumn(getter.getAccessors()), operator);
 		return this;
 	}
 	
 	@Override
-	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator) {
+	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
 		criteria.and(rootConfiguration.getColumn(Arrays.asList(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2))), operator);
 		return this;
 	}

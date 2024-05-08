@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import javax.annotation.Nonnull;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -45,7 +44,6 @@ public class CurrentThreadConnectionProvider implements ConnectionProvider {
 	 * @see #releaseConnection()
 	 * @see #fillCurrentConnection() 
 	 */
-	@Nonnull
 	@Override
 	public Connection giveConnection() {
 		Connection connection = this.currentConnection.get();

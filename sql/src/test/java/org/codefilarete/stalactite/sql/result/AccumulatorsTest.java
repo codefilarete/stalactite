@@ -147,6 +147,6 @@ class AccumulatorsTest {
 	void getFirstUnique() {
 		Accumulator<String, ?, String> testInstance = Accumulators.getFirstUnique();
 		assertThatCode(() -> testInstance.collect(Arrays.asList("tata", "titi", "toto")))
-				.hasMessage("Object was expected to be a lonely one but another object is already present");
+				.hasMessage("Object was expected to be a lonely one but another object is present");
 	}
 }

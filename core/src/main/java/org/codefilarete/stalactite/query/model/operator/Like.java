@@ -14,6 +14,18 @@ public class Like extends UnitaryOperator<CharSequence> {
 	private final boolean endingStar;
 	
 	/**
+	 * Constructor for "startsWith" and "endsWith" operator without value for now : must be set later with
+	 * {@link super#setValue(Object)}
+	 * 
+	 * @param leadingStar true to add a leading generic '%' character
+	 * @param endingStar true to add a ending generic '%' character
+	 */
+	public Like(boolean leadingStar, boolean endingStar) {
+		this.leadingStar = leadingStar;
+		this.endingStar = endingStar;
+	}
+	
+	/**
 	 * Basic constructor
 	 * @param value something that looks like a String, may contain '%' characters
 	 */

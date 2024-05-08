@@ -8,9 +8,12 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
  * 
  * @author Guillaume Mary
  */
-public class In<O> extends ConditionalOperator<O> {
+public class In<O> extends ConditionalOperator<O, Iterable<O>> {
 	
-	private final Iterable<O> value;
+	private Iterable<O> value;
+	
+	public In() {
+	}
 	
 	public In(Iterable<O> value) {
 		this.value = value;
@@ -22,6 +25,11 @@ public class In<O> extends ConditionalOperator<O> {
 	
 	public Iterable<O> getValue() {
 		return value;
+	}
+	
+	@Override
+	public void setValue(Iterable<O> value) {
+		this.value = value;
 	}
 	
 	@Override

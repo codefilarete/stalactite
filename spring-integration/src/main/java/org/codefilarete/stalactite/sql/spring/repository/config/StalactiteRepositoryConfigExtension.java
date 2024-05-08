@@ -9,11 +9,14 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepository;
 import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepositoryFactoryBean;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.repository.config.AnnotationRepositoryConfigurationSource;
+import org.springframework.data.repository.config.DefaultRepositoryConfiguration;
+import org.springframework.data.repository.config.RepositoryConfiguration;
 import org.springframework.data.repository.config.RepositoryConfigurationExtensionSupport;
 import org.springframework.data.repository.config.RepositoryConfigurationSource;
 import org.springframework.data.repository.config.XmlRepositoryConfigurationSource;
@@ -26,8 +29,6 @@ import org.springframework.util.StringUtils;
  * {@link EnableJpaRepositories} annotation.
  * Implementation is inspired by {@link org.springframework.data.jpa.repository.config.JpaRepositoryConfigExtension}
  * which was taken as an example.
- * 
- * Note that 
  * 
  * @author Guillaume Mary
  */
@@ -97,6 +98,26 @@ public class StalactiteRepositoryConfigExtension extends RepositoryConfiguration
 		return classLoader != null && LazyJvmAgent.isActive(loader.getClassLoader())
 				? new InspectionClassLoader(loader.getClassLoader())
 				: loader.getClassLoader();
+	}
+	
+	/**
+	 * Overridden to adapt the configSource argument to Stalactite case and ovoid exception throwing : some expected
+	 * options are not available in {@link EnableStalactiteRepositories} but {@link AnnotationRepositoryConfigurationSource}
+	 * doesn't handle their missing correctly and throws an exception.
+	 * 
+	 * @param definition the definition of the bean-repository being created
+	 * @param configSource a {@link AnnotationRepositoryConfigurationSource} that gives access to the real {@link EnableStalactiteRepositories} info
+	 * @return a {@link DefaultRepositoryConfiguration}
+	 * @param <T> type of configuration source, for us a {@link AnnotationRepositoryConfigurationSource}
+	 */
+	@Override
+	protected <T extends RepositoryConfigurationSource> RepositoryConfiguration<T> getRepositoryConfiguration(
+			BeanDefinition definition, T configSource) {
+		// Note that we can cast given argument to AnnotationRepositoryConfigurationSource because that's what is
+		// instantiated in RepositoryBeanDefinitionRegistrarSupport.registerBeanDefinitions(..) which is the code
+		// that invokes us with different intermediaries.
+		T repositoryConfigurationSource = (T) new EnableStalactiteRepositoriesRepositoryConfigurationSource((AnnotationRepositoryConfigurationSource) configSource);
+		return new DefaultRepositoryConfiguration<>(repositoryConfigurationSource, definition, this);
 	}
 
 	/**

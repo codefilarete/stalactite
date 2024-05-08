@@ -10,11 +10,11 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  *
  * @author Guillaume Mary
  */
-public class TupleIn extends ConditionalOperator<Object[]> {
+public class TupleIn extends ConditionalOperator<Object[], List<Object[]>> {
 	
 	private final Column[] columns;
 	
-	private final List<Object[]> values;
+	private List<Object[]> values;
 	
 	public TupleIn(Column[] columns, List<Object[]> values) {
 		this.columns = columns;
@@ -27,6 +27,11 @@ public class TupleIn extends ConditionalOperator<Object[]> {
 	
 	public List<Object[]> getValue() {
 		return values;
+	}
+	
+	@Override
+	public void setValue(List<Object[]> value) {
+		this.values = value;
 	}
 	
 	@Override

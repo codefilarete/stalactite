@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 
 /**
  * Represents a between operator.
@@ -8,9 +9,9 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
  * 
  * @author Guillaume Mary
  */
-public class Between<O> extends ConditionalOperator<O> {
+public class Between<O> extends ConditionalOperator<O, Interval<O>> {
 	
-	private final Interval<O> value;
+	private Interval<O> value;
 	
 	public Between(Interval<O> value) {
 		this.value = value;
@@ -28,6 +29,11 @@ public class Between<O> extends ConditionalOperator<O> {
 	 */
 	public Interval<O> getValue() {
 		return (value == null || value.isEmpty()) ? null : value;
+	}
+	
+	@Override
+	public void setValue(Interval<O> value) {
+		this.value = value;
 	}
 	
 	@Override

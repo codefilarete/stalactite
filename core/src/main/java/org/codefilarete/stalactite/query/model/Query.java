@@ -252,7 +252,7 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
-	public <O> FluentWhereClause where(Column<?, O> column, ConditionalOperator<? super O> condition) {
+	public <O> FluentWhereClause where(Column<?, O> column, ConditionalOperator<? super O, ?> condition) {
 		this.whereSurrogate.and(new ColumnCriterion(column, condition));
 		return where;
 	}

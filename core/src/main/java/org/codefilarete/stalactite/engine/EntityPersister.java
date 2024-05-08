@@ -171,7 +171,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
@@ -183,7 +183,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 	
 	/**
 	 * Variation of {@link #selectWhere(SerializableFunction, ConditionalOperator)} with a criteria on property of a property
@@ -196,7 +196,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	default <O, A> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O> operator) {
+	default <O, A> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
 		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
 	}
 	
@@ -210,7 +210,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O> operator);
+	<O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator);
 	
 	Set<C> selectAll();
 	
@@ -227,22 +227,22 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C> {
 		
 		@Override
-		<O> ExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+		<O> ExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<O> ExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+		<O> ExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<O> ExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+		<O> ExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<O> ExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+		<O> ExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<A, B> ExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
+		<A, B> ExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 		
 		@Override
-		<O> ExecutableEntityQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator);
+		<O> ExecutableEntityQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
 	}
 	
 	/**
@@ -261,7 +261,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * @return this
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
-		<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+		<O> EntityCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 		
 		/**
 		 * Combines with "and" given criteria on property  
@@ -272,7 +272,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * @return this
 		 * @throws IllegalArgumentException if column matching setter was not found
 		 */
-		<O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+		<O> EntityCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 		
 		/**
 		 * Combines with "or" given criteria on property  
@@ -283,7 +283,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * @return this
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
-		<O> EntityCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O> operator);
+		<O> EntityCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 		
 		/**
 		 * Combines with "or" given criteria on property  
@@ -294,7 +294,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * @return this
 		 * @throws IllegalArgumentException if column matching setter was not found
 		 */
-		<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O> operator);
+		<O> EntityCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 		
 		/**
 		 * Combines with "and" given criteria on an embedded or one-to-one bean property
@@ -307,8 +307,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		 * @return this
 		 * @throws IllegalArgumentException if column matching getter was not found
 		 */
-		<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B> operator);
+		<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 		
-		<O> EntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O> operator);
+		<O> EntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
 	}
 }

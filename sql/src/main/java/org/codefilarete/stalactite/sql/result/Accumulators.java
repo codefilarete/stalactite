@@ -209,7 +209,7 @@ public final class Accumulators {
 	public static <T> Accumulator<T, ?, T> getFirstUnique() {
 		return new AccumulatorSupport<T, Holder<T>, T>(Holder::new, (holder, t) -> {
 			if (holder.get() != null) {
-				throw new NonUniqueObjectException("Object was expected to be a lonely one but another object is already present");
+				throw new NonUniqueObjectException("Object was expected to be a lonely one but another object is present");
 			}
 			holder.set(t);
 		}, Holder::get);
