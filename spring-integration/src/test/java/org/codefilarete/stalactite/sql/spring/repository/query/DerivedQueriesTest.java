@@ -233,6 +233,18 @@ class DerivedQueriesTest {
 			Set<Country> loadedCountries = derivedQueriesRepository.findByIdGreaterThanEqual(new PersistedIdentifier<>(42L));
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		}
+		
+		
+		@Test
+		void between() {
+			Country country1 = new Country(42);
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdBetween(new PersistedIdentifier<>(40L), new PersistedIdentifier<>(50L));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+		}
 	}
 	
 	public static class StalactiteRepositoryContextConfiguration {

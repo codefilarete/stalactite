@@ -42,4 +42,6 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	Set<Country> findByIdGreaterThan(Identifier<Long> id);
 	
 	Set<Country> findByIdGreaterThanEqual(Identifier<Long> id);
+	
+	Set<Country> findByIdBetween(Identifier<Long> id1, Identifier<Long> id2);
 }

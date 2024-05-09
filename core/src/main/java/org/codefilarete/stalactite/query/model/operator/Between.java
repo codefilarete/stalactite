@@ -13,6 +13,9 @@ public class Between<O> extends ConditionalOperator<O, Interval<O>> {
 	
 	private Interval<O> value;
 	
+	public Between() {
+	}
+	
 	public Between(Interval<O> value) {
 		this.value = value;
 	}
