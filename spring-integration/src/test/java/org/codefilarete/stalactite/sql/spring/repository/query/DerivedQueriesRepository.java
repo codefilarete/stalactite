@@ -13,9 +13,33 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DerivedQueriesRepository extends StalactiteRepository<Country, Identifier<Long>> {
 	
+	Set<Country> findByIdIn(Iterable<Identifier<Long>> ids);
+	
+	Set<Country> findByIdNotIn(Iterable<Identifier<Long>> ids);
+	
 	Country findByName(String name);
+	
+	Country findByNameNot(String name);
 	
 	Country findByIdAndName(Identifier<Long> id, String name);
 	
 	Set<Country> findByDescriptionLike(String name);
+	
+	Set<Country> findByDescriptionNotLike(String name);
+	
+	Set<Country> findByDescriptionStartsWith(String name);
+	
+	Set<Country> findByDescriptionEndsWith(String name);
+	
+	Set<Country> findByNameIsNull();
+	
+	Set<Country> findByNameIsNotNull();
+	
+	Set<Country> findByIdLessThan(Identifier<Long> id);
+	
+	Set<Country> findByIdLessThanEqual(Identifier<Long> id);
+	
+	Set<Country> findByIdGreaterThan(Identifier<Long> id);
+	
+	Set<Country> findByIdGreaterThanEqual(Identifier<Long> id);
 }

@@ -6,7 +6,7 @@ package org.codefilarete.stalactite.query.model;
  * @param <V> dealing-with value type (not always value type)
  * @author Guillaume Mary
  */
-@SuppressWarnings("squid:S2326")	// T is voluntary let, even if not used in this class, for using-API
+@SuppressWarnings("squid:S2326")	// T is voluntary left, even if not used in this class, for using-API
 public abstract class ConditionalOperator<T, V> {
 	
 	/** Is this operator must be negated ? */
@@ -30,8 +30,9 @@ public abstract class ConditionalOperator<T, V> {
 	/**
 	 * Negates this operator
 	 */
-	public void setNot() {
+	public ConditionalOperator<T, V> not() {
 		setNot(true);
+		return this;
 	}
 	
 	/**

@@ -9,7 +9,11 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.operator.Equals;
+import org.codefilarete.stalactite.query.model.operator.Greater;
+import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.query.model.operator.Lower;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.function.Hanger.Holder;
@@ -79,7 +83,6 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 		private final ExecutableEntityQuery<T> executableEntityQuery;
 		private final EntityPersister<T, ?> entityPersister;
 		
-//		private final Map<Parameter, ConditionalOperator> arguments = new HashMap<>();
 		private final Map<Integer, ConditionalOperator> argumentsPerIndex = new HashMap<>();
 		
 		Query(EntityPersister<T, ?> entityPersister, PartTree tree, Parameters<?, ?> parameters) {
@@ -97,7 +100,7 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 		}
 		
 		private void append(Parameters<?, ?> parameters, Part part, Holder<ExecutableEntityQuery<T>> resultHolder, int partIndex) {
-			ConditionalOperator<Object, ?> operator = operator(part);
+			ConditionalOperator<?, ?> operator = operator(part);
 			// entityPersister doesn't support the creation of a ExecutableEntityQuery from scratch and requires to
 			// create it from entityPersister.selectWhere : we call it for first part
 			if (partIndex == 0) {
@@ -106,43 +109,43 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 			} else {
 				resultHolder.get().and(accessorChain(part.getProperty()), operator);
 			}
-//			this.arguments.put(parameters.getBindableParameter(partIndex), operator);
-			this.argumentsPerIndex.put(parameters.getBindableParameter(partIndex).getIndex(), operator);
+			if (!(operator instanceof IsNull)) {	// null has no argument, protecting it with if avoid a IndexOutOfBoundsException
+				this.argumentsPerIndex.put(parameters.getBindableParameter(partIndex).getIndex(), operator);
+			}
 		}
 		
 		ConditionalOperator<Object, Object> giveOperator(int index) {
 			return argumentsPerIndex.get(index);
-//			return Iterables.find(arguments.entrySet(), entry -> entry.getKey().getIndex() == index).getValue();
 		}
 		
-		private <O> ConditionalOperator<O, ?> operator(Part part) {
+		private ConditionalOperator<?, ?> operator(Part part) {
 			switch (part.getType()) {
 				case BETWEEN:
 					break;
 				case IS_NOT_NULL:
-					break;
+					return new IsNull().not();
 				case IS_NULL:
-					break;
+					return new IsNull();
 				case LESS_THAN:
-					break;
+					return new Lower<>();
 				case LESS_THAN_EQUAL:
-					break;
+					return new Lower<>().equals();
 				case GREATER_THAN:
-					break;
+					return new Greater<>();
 				case GREATER_THAN_EQUAL:
-					break;
+					return new Greater<>().equals();
 				case BEFORE:
 					break;
 				case AFTER:
 					break;
 				case NOT_LIKE:
-					break;
+					return new Like(true, true).not();
 				case LIKE:
-					return (ConditionalOperator<O, ?>) new Like(true, true);
+					return new Like(true, true);
 				case STARTING_WITH:
-					break;
+					return new Like(false, true);
 				case ENDING_WITH:
-					break;
+					return new Like(true, false);
 				case IS_NOT_EMPTY:
 					break;
 				case IS_EMPTY:
@@ -152,9 +155,9 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 				case CONTAINING:
 					break;
 				case NOT_IN:
-					break;
+					return new In<>().not();
 				case IN:
-					break;
+					return new In<>();
 				case NEAR:
 					break;
 				case WITHIN:
@@ -168,11 +171,11 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 				case FALSE:
 					break;
 				case NEGATING_SIMPLE_PROPERTY:
-					break;
+					return new Equals<>().not();
 				case SIMPLE_PROPERTY:
 					return new Equals<>();
 			}
-			return null;
+			throw new UnsupportedOperationException("Unsupported operator type: " + part.getType());
 		}
 		
 		private <O> AccessorChain<T, O> accessorChain(PropertyPath property) {

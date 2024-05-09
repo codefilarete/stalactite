@@ -46,11 +46,36 @@ class DerivedQueriesTest {
 	@Autowired
 	private DerivedQueriesRepository derivedQueriesRepository;
 	
+	
+	@Test
+	void twoCriteria() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Country country2 = new Country(43);
+		country2.setName("Toto");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		Country loadedCountry = derivedQueriesRepository.findByIdAndName(new PersistedIdentifier<>(42L), "Toto");
+		assertThat(loadedCountry).isEqualTo(country1);
+	}
+	
+	@Test
+	void oneResultExpected_severalResults_throwsException() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Country country2 = new Country(43);
+		country2.setName("Toto");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		assertThatCode(() -> derivedQueriesRepository.findByName("Toto"))
+				.isInstanceOf(Accumulators.NonUniqueObjectException.class);
+	}
+	
 	@Nested
-	class EqualCriteria {
+	class Criteria {
 		
 		@Test
-		void oneCriteria_oneResult() {
+		void equal() {
 			Country country1 = new Country(42);
 			country1.setName("Toto");
 			derivedQueriesRepository.save(country1);
@@ -60,45 +85,154 @@ class DerivedQueriesTest {
 		}
 		
 		@Test
-		void twoCriteria_severalResults_throwsException() {
+		void notEqual() {
 			Country country1 = new Country(42);
 			country1.setName("Toto");
-			Country country2 = new Country(43);
-			country2.setName("Toto");
-			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
-
-			Country loadedCountry = derivedQueriesRepository.findByIdAndName(new PersistedIdentifier<>(42L), "Toto");
+			derivedQueriesRepository.save(country1);
+			
+			Country loadedCountry = derivedQueriesRepository.findByNameNot("Titi");
 			assertThat(loadedCountry).isEqualTo(country1);
 		}
-		
+	
 		@Test
-		void oneCriteria_severalResults_throwsException() {
+		void in() {
 			Country country1 = new Country(42);
 			country1.setName("Toto");
 			Country country2 = new Country(43);
 			country2.setName("Toto");
 			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 			
-			assertThatCode(() -> derivedQueriesRepository.findByName("Toto"))
-					.isInstanceOf(Accumulators.NonUniqueObjectException.class);
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdIn(Arrays.asList(new PersistedIdentifier<>(42L), new PersistedIdentifier<>(43L), new PersistedIdentifier<>(44L)));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		}
-	}
 	
-	@Nested
-	class LikeCriteria {
+		@Test
+		void notIn() {
+			Country country1 = new Country(42);
+			country1.setName("Toto");
+			Country country2 = new Country(43);
+			country2.setName("Toto");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdNotIn(Arrays.asList(new PersistedIdentifier<>(42L)));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		}
 		
 		@Test
-		void oneCriteria_severalResults() {
+		void like() {
 			Country country1 = new Country(42);
 			country1.setDescription("a description with a keyword");
 			Country country2 = new Country(43);
-			country2.setDescription("a keyword contains in the description");
+			country2.setDescription("a keyword contained in the description");
 			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 			
 			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionLike("keyword");
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		}
 	
+		@Test
+		void notLike() {
+			Country country1 = new Country(42);
+			country1.setDescription("a description with a keyword");
+			Country country2 = new Country(43);
+			country2.setDescription("a keyword contained in the description");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionNotLike("contained");
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
+		}
+		
+		@Test
+		void startsWith() {
+			Country country1 = new Country(42);
+			country1.setDescription("a description with a keyword");
+			Country country2 = new Country(43);
+			country2.setDescription("a keyword contained in the description");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionStartsWith("a keyword");
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		}
+	
+		@Test
+		void endsWith() {
+			Country country1 = new Country(42);
+			country1.setDescription("a description with a keyword");
+			Country country2 = new Country(43);
+			country2.setDescription("a keyword contained in the description");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionEndsWith("a keyword");
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
+		}
+	
+		@Test
+		void isNull() {
+			Country country1 = new Country(42);
+			country1.setName("Toto");
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByNameIsNull();
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		}
+		
+		@Test
+		void isNotNull() {
+			Country country1 = new Country(42);
+			country1.setName("Toto");
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByNameIsNotNull();
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
+		}
+		
+		@Test
+		void lower() {
+			Country country1 = new Country(42);
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdLessThan(new PersistedIdentifier<>(43L));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
+		}
+		
+		@Test
+		void lowerEquals() {
+			Country country1 = new Country(42);
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdLessThanEqual(new PersistedIdentifier<>(43L));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+		}
+		
+		@Test
+		void greater() {
+			Country country1 = new Country(42);
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdGreaterThan(new PersistedIdentifier<>(42L));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		}
+		
+		@Test
+		void greaterEquals() {
+			Country country1 = new Country(42);
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdGreaterThanEqual(new PersistedIdentifier<>(42L));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+		}
 	}
 	
 	public static class StalactiteRepositoryContextConfiguration {

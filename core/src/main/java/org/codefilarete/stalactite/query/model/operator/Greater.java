@@ -11,6 +11,9 @@ public class Greater<O> extends UnitaryOperator<O> {
 	
 	private boolean equals;
 	
+	public Greater() {
+	}
+	
 	public Greater(O value) {
 		this(value, false);
 	}
@@ -22,6 +25,11 @@ public class Greater<O> extends UnitaryOperator<O> {
 	
 	public void setEquals(boolean equals) {
 		this.equals = equals;
+	}
+	
+	public Greater<O> equals() {
+		setEquals(true);
+		return this;
 	}
 	
 	public boolean isEquals() {

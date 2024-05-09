@@ -32,7 +32,7 @@ public interface Operators {
 	}
 	
 	static <I extends ConditionalOperator> I not(I operator) {
-		operator.setNot();
+		operator.not();
 		return operator;
 	}
 	
@@ -59,7 +59,7 @@ public interface Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Greater}
 	 */
-	static <O> Greater<O>  gt(O value) {
+	static <O> Greater<O> gt(O value) {
 		return new Greater<>(value);
 	}
 	
