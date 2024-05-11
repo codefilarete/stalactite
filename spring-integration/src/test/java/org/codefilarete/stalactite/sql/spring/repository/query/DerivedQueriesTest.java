@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.TransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.model.Country;
+import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -56,6 +57,29 @@ class DerivedQueriesTest {
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
 		Country loadedCountry = derivedQueriesRepository.findByIdAndName(new PersistedIdentifier<>(42L), "Toto");
+		assertThat(loadedCountry).isEqualTo(country1);
+	}
+	
+	@Test
+	void oneToOneCriteria() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		
+		Country country2 = new Country(43);
+		country2.setName("Toto");
+		Person president2 = new Person(237);
+		president2.setName("you");
+		country2.setPresident(president2);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		Country loadedCountry = derivedQueriesRepository.findByPresidentId(new PersistedIdentifier<>(666L));
+		assertThat(loadedCountry).isEqualTo(country1);
+		
+		loadedCountry = derivedQueriesRepository.findByPresidentName("me");
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
@@ -274,6 +298,9 @@ class DerivedQueriesTest {
 					.mapKey(Country::getId, ColumnOptions.IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 					.map(Country::getName)
 					.map(Country::getDescription)
+					.mapOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+							.mapKey(Person::getId, ColumnOptions.IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+							.map(Person::getName))
 					.build(persistenceContext);
 		}
 		
@@ -287,5 +314,4 @@ class DerivedQueriesTest {
 			ddlDeployer.deployDDL();
 		}
 	}
-	
 }

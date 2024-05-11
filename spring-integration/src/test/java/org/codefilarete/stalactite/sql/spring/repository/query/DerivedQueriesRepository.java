@@ -4,6 +4,7 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepository;
 import org.springframework.stereotype.Repository;
 
@@ -44,4 +45,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	Set<Country> findByIdGreaterThanEqual(Identifier<Long> id);
 	
 	Set<Country> findByIdBetween(Identifier<Long> id1, Identifier<Long> id2);
+	
+	Country findByPresidentId(PersistedIdentifier<Long> longPersistedIdentifier);
+	
+	Country findByPresidentName(String name);
 }

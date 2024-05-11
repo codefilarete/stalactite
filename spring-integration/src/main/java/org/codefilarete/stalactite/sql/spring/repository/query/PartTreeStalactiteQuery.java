@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.spring.repository.query;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister;
@@ -212,7 +213,10 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 		}
 		
 		private <O> AccessorChain<T, O> accessorChain(PropertyPath property) {
-			return new AccessorChain<>(Accessors.accessor(property.getOwningType().getType(), property.getSegment()));
+			List<Accessor<?, ?>> accessorChain = new ArrayList<>(); 
+			property.forEach(path -> 
+					accessorChain.add(Accessors.accessor(path.getOwningType().getType(), path.getSegment())));
+			return new AccessorChain<>(accessorChain);
 		}
 		
 		/**
