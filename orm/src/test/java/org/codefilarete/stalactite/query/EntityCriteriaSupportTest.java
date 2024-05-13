@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -114,7 +114,7 @@ class EntityCriteriaSupportTest {
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
-				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
+				((RelationalEntityPersister) dummyPersistenceContext.getPersister(City.class)));
 		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getCapital, City::getName).getAccessors())).isEqualTo(nameColumn);
 	}
 	
@@ -141,7 +141,7 @@ class EntityCriteriaSupportTest {
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
-				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)).getMapping());
+				((RelationalEntityPersister) dummyPersistenceContext.getPersister(City.class)));
 		assertThat(testInstance.getColumn(new AccessorChain<>(
 				new AccessorByMethodReference<>(Country::getCities),
 				new AccessorByMethodReference<>(City::getName))

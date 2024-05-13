@@ -254,7 +254,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		
 		@Override
 		public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
-			sourcePersister.getCriteriaSupport().registerRelation(targetEntityAccessor, targetPersister.getMapping());
+			sourcePersister.getCriteriaSupport().registerRelation(targetEntityAccessor, targetPersister);
 		}
 	}
 }

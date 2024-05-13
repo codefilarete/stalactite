@@ -3,12 +3,14 @@ package org.codefilarete.stalactite.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
@@ -100,6 +102,11 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 				selectGraphExecutor.getEntityJoinTree(),
 				persister.getConnectionProvider(),
 				dialect);
+	}
+	
+	@Override
+	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+		return criteriaSupport.getRootConfiguration().getColumn(accessorChain);
 	}
 	
 	/**

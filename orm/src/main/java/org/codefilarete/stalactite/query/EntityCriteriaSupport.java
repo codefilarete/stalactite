@@ -13,6 +13,8 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
@@ -35,24 +37,24 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * Implementation of {@link EntityCriteria}
  * 
  * @author Guillaume Mary
- * @see #registerRelation(ValueAccessPoint, EntityMapping) 
+ * @see #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister) 
  */
 public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	
 	/** Delegate of the query : targets of the API methods */
 	private final Criteria criteria = new Criteria();
 	
-	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, EntityMapping)} */
+	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister)} */
 	private final EntityGraphNode<C> rootConfiguration;
 	
 	/**
 	 * Base constructor to start configuring an instance.
-	 * Relations must be registered through {@link #registerRelation(ValueAccessPoint, EntityMapping)}.
+	 * Relations must be registered through {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister)}.
 	 * 
 	 * @param entityMapping entity mapping for direct and embedded properties
 	 */
 	public EntityCriteriaSupport(EntityMapping<C, ?, ?> entityMapping) {
-		this.rootConfiguration = new EntityGraphNode<C>(entityMapping);
+		this.rootConfiguration = new EntityGraphNode<>(entityMapping);
 	}
 	
 	/**
@@ -71,13 +73,13 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	}
 	
 	/**
-	 * Adds a relation to the root of the property-mapping graph representation
-	 * @param relation the representation of the method that gives access to the value
-	 * @param entityMapping the mapping of related entities
-	 * @return a newly created node to configure relations of this just-declared relation
+	 * Adds a simple relation to the root of the property-mapping graph representation.
+	 * 
+	 * @param relation the representation of the method that gives access to the value, shouldn't be a chain of accessor
+	 * @param persister the persister of related entities
 	 */
-	public EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relation, EntityMapping<?, ?, ?> entityMapping) {
-		return rootConfiguration.registerRelation(relation, entityMapping);
+	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
+		rootConfiguration.registerRelation(relation, persister);
 	}
 	
 	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
@@ -187,17 +189,13 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		private final Class<?> entityClass;
 		
 		/** Relations mapping : one-to-one or one-to-many */
-		private final ValueAccessPointMap<C, EntityGraphNode<?>> relations = new ValueAccessPointMap<>();
+		private final ValueAccessPointMap<C, RelationalEntityPersister<?, ?>> relations = new ValueAccessPointMap<>();
 		
 		@VisibleForTesting
 		EntityGraphNode(EntityMapping<C, ?, ?> entityMapping) {
 			this.entityClass = entityMapping.getClassToPersist();
-			entityMapping.getPropertyToColumn().forEach((p, c) -> {
-				propertyToColumn.put(Arrays.asList(p), c);
-			});
-			entityMapping.getReadonlyPropertyToColumn().forEach((p, c) -> {
-				propertyToColumn.put(Arrays.asList(p), c);
-			});
+			entityMapping.getPropertyToColumn().forEach((p, c) -> propertyToColumn.put(Arrays.asList(p), c));
+			entityMapping.getReadonlyPropertyToColumn().forEach((p, c) -> propertyToColumn.put(Arrays.asList(p), c));
 			// we add the identifier and primary key because they are not in the property mapping 
 			IdMapping<C, ?> idMapping = entityMapping.getIdMapping();
 			if (idMapping instanceof SimpleIdMapping) {
@@ -214,35 +212,33 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		 * 
 		 * @param relationProvider the accessor that gives access to a bean mapped by the {@link ClassMapping}
 		 * @param mappingStrategy a {@link ClassMapping}
-		 * @return a new {@link EntityGraphNode} containing
 		 */
 		@VisibleForTesting
-		EntityGraphNode<?> registerRelation(ValueAccessPoint<C> relationProvider, EntityMapping<?, ?, ?> mappingStrategy) {
-			EntityGraphNode<?> graphNode = new EntityGraphNode<>(mappingStrategy);
+		void registerRelation(ValueAccessPoint<C> relationProvider, RelationalEntityPersister<?, ?> mappingStrategy) {
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information
 			// at this time
 			propertyToColumn.remove(Arrays.asList(relationProvider));
-			relations.put(relationProvider, graphNode);
-			return graphNode;
+			relations.put(relationProvider, mappingStrategy);
 		}
 		
 		/**
 		 * Gives the column of a chain of access points
 		 * Note that it supports "many" accessor : given parameter acts as a "transport" of accessors, we don't use
-		 * its functionality such as get() or toMutator() hence it's not necessary that it be consistent. For exemple
+		 * its functionality such as get() or toMutator() hence it's not necessary that it be consistent. For example,
 		 * it can start with a Collection accessor then an accessor to the component of the Collection. See
 		 * 
 		 * @param valueAccessPoints chain of accessors to a property that has a matching column
 		 * @return the found column, throws an exception if not found
 		 */
-		@VisibleForTesting
-		Column getColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
+		public Column getColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
+			// looking among current properties
 			Column column = this.propertyToColumn.get(valueAccessPoints);
 			if (column != null) {
 				return column;
 			} else {
-				EntityGraphNode<?> entityGraphNode = relations.get(valueAccessPoints.get(0));
+				// asking to persister in relation
+				RelationalEntityPersister<?, ?> entityGraphNode = relations.get(valueAccessPoints.get(0));
 				if (entityGraphNode != null) {
 					column = entityGraphNode.getColumn(valueAccessPoints.subList(1, valueAccessPoints.size()));
 				}

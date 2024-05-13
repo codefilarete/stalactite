@@ -10,8 +10,10 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.TransactionalConnectionProvider;
+import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -21,6 +23,8 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.spring.repository.config.EnableStalactiteRepositories;
 import org.codefilarete.stalactite.sql.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
+import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 
 /**
  * @author Guillaume Mary
@@ -74,12 +79,19 @@ class DerivedQueriesTest {
 		president2.setName("you");
 		country2.setPresident(president2);
 		
+		Vehicle vehicle = new Vehicle(1438L);
+		vehicle.setColor(new Color(123));
+		president1.setVehicle(vehicle);
+		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
 		Country loadedCountry = derivedQueriesRepository.findByPresidentId(new PersistedIdentifier<>(666L));
 		assertThat(loadedCountry).isEqualTo(country1);
 		
 		loadedCountry = derivedQueriesRepository.findByPresidentName("me");
+		assertThat(loadedCountry).isEqualTo(country1);
+		
+		loadedCountry = derivedQueriesRepository.findByPresidentVehicleColor(new Color(123));
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
@@ -289,6 +301,9 @@ class DerivedQueriesTest {
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			
+			dialect.getColumnBinderRegistry().register(Color.class, new NullAwareParameterBinder<>(new LambdaParameterBinder<>(INTEGER_PRIMITIVE_BINDER, Color::new, Color::getRgb)));
+			dialect.getSqlTypeRegistry().put(Color.class, "int");
+			
 			return new PersistenceContext(dataSource, dialect);
 		}
 		
@@ -300,7 +315,10 @@ class DerivedQueriesTest {
 					.map(Country::getDescription)
 					.mapOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 							.mapKey(Person::getId, ColumnOptions.IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
-							.map(Person::getName))
+							.map(Person::getName)
+							.mapOneToOne(Person::getVehicle, MappingEase.entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
+									.mapKey(Vehicle::getId, ColumnOptions.IdentifierPolicy.<Vehicle, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+									.map(Vehicle::getColor)))
 					.build(persistenceContext);
 		}
 		

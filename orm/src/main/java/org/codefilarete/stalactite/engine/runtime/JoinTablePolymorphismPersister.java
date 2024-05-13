@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
@@ -130,6 +131,11 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 																					dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
+	}
+	
+	@Override
+	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+		return criteriaSupport.getRootConfiguration().getColumn(accessorChain);
 	}
 	
 	@Override

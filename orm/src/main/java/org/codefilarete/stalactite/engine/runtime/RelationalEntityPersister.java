@@ -3,10 +3,12 @@ package org.codefilarete.stalactite.engine.runtime;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
@@ -147,6 +149,16 @@ public interface RelationalEntityPersister<C, I> {
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 */
 	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
+	
+	/**
+	 * Gives the column on which the last element of the given accessor chain is persisted.
+	 * The first element of the given accessor chain is expected to match a property of this persister.
+	 * The lookup will go down the tree / graph of persistence.
+	 * 
+	 * @param accessorChain a suite of accessor describing a property of current persisted class
+	 * @return the column matching the property, will throw an exception if a property of the chain is not mapped or found by this persister
+	 */
+	Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain);
 	
 	/**
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable

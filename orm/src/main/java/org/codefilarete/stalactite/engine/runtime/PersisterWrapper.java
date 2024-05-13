@@ -2,11 +2,13 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
@@ -56,6 +58,11 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 			result = ((PersisterWrapper<C, I>) result).getSurrogate();
 		}
 		return result;
+	}
+	
+	@Override
+	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+		return surrogate.getColumn(accessorChain);
 	}
 	
 	@Override

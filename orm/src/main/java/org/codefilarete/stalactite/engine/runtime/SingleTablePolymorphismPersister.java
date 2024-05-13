@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
@@ -136,6 +138,11 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 				dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
+	}
+	
+	@Override
+	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+		return criteriaSupport.getRootConfiguration().getColumn(accessorChain);
 	}
 	
 	@Override
