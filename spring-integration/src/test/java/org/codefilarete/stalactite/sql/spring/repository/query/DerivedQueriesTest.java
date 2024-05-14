@@ -7,14 +7,15 @@ import java.util.Set;
 
 import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.TransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
+import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
+import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
@@ -37,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 
 /**
@@ -69,6 +71,8 @@ class DerivedQueriesTest {
 	void oneToOneCriteria() {
 		Country country1 = new Country(42);
 		country1.setName("Toto");
+		country1.addState(new State(new PersistableIdentifier<>(100L)));
+		country1.addState(new State(new PersistableIdentifier<>(200L)));
 		Person president1 = new Person(666);
 		president1.setName("me");
 		country1.setPresident(president1);
@@ -92,6 +96,9 @@ class DerivedQueriesTest {
 		assertThat(loadedCountry).isEqualTo(country1);
 		
 		loadedCountry = derivedQueriesRepository.findByPresidentVehicleColor(new Color(123));
+		assertThat(loadedCountry).isEqualTo(country1);
+		
+		loadedCountry = derivedQueriesRepository.findByStatesIdIn(Arrays.asList(new PersistableIdentifier<>(100L)));
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
@@ -309,16 +316,19 @@ class DerivedQueriesTest {
 		
 		@Bean
 		public EntityPersister<Country, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {
-			return MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+			return entityBuilder(Country.class, Identifier.LONG_TYPE)
 					.mapKey(Country::getId, ColumnOptions.IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 					.map(Country::getName)
 					.map(Country::getDescription)
-					.mapOneToOne(Country::getPresident, MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+					.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)
 							.mapKey(Person::getId, ColumnOptions.IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 							.map(Person::getName)
-							.mapOneToOne(Person::getVehicle, MappingEase.entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
+							.mapOneToOne(Person::getVehicle, entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
 									.mapKey(Vehicle::getId, ColumnOptions.IdentifierPolicy.<Vehicle, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 									.map(Vehicle::getColor)))
+					.mapOneToMany(Country::getStates, entityBuilder(State.class, Identifier.LONG_TYPE)
+							.mapKey(State::getId, ColumnOptions.IdentifierPolicy.<State, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
+							.map(State::getName))
 					.build(persistenceContext);
 		}
 		

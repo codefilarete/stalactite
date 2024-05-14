@@ -51,4 +51,6 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	Country findByPresidentName(String name);
 	
 	Country findByPresidentVehicleColor(Color color);
+	
+	Country findByStatesIdIn(Iterable<Identifier<Long>> names);
 }
