@@ -92,4 +92,4 @@ And then use one of the subclasses of [PlatformTransactionManagerConnectionProvi
 
 # Documentation
 
-The API documentation, and more, is available at [Codefilarete web site](https://www.codefilarete.org/stalactite-doc/)
+The API documentation, and more, is available at [Codefilarete web site](https://www.codefilarete.org/stalactite-doc/2.0.0/)
