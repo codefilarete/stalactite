@@ -188,10 +188,10 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
-						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToOneCycleConfigurer && p.getEntityType() == targetEntityType);
+						Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToOneCycleConfigurer && ((OneToOneCycleConfigurer<?>) p).getEntityType() == targetEntityType);
 				if (cycleSolver == null) {
 					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
-					currentBuilderContext.addPostInitializers(cycleSolver);
+					currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 				}
 				cycleSolver.addCycleSolver(relationName, oneToOneRelationConfigurer);
 			} else {
@@ -218,7 +218,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 						oneToManyRelationConfigurer.configure((PersisterBuilderImpl) targetPersister);
 					}
 				};
-				PersisterBuilderContext.CURRENT.get().addPostInitializers(postInitializer);
+				PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(postInitializer);
 			} else {
 				oneToManyRelationConfigurer.configure(
 						new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));

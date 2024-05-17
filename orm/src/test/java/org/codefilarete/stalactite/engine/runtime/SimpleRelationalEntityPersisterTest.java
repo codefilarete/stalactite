@@ -21,6 +21,7 @@ import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
@@ -36,8 +37,8 @@ import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
-import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
+import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.query.model.Operators;
@@ -73,7 +74,12 @@ import org.mockito.stubbing.Answer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -203,11 +209,10 @@ class SimpleRelationalEntityPersisterTest {
 		
 		@BeforeEach
 		void setUp() throws SQLException {
-			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(mock(PersisterRegistry.class)));
 			initMapping();
 			initTest();
-			PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(initializer -> initializer.consume(
-					(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterBuild);
 			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
 		}
 		
@@ -513,11 +518,10 @@ class SimpleRelationalEntityPersisterTest {
 		
 		@BeforeEach
 		void setUp() throws SQLException {
-			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(mock(PersisterRegistry.class)));
 			initMapping();
 			initTest();
-			PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(initializer -> initializer.consume(
-				(SimpleRelationalEntityPersister) SimpleRelationalEntityPersisterTest.this.testInstance));
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterBuild);
 			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
 		}
 		

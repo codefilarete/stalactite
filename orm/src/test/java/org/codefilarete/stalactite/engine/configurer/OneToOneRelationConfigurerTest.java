@@ -65,7 +65,7 @@ class OneToOneRelationConfigurerTest {
 	
 	@BeforeEach
 	void initEntityCandidates() {
-		PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
+		PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(mock(PersisterRegistry.class)));
 	}
 	
 	@AfterEach

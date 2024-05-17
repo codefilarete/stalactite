@@ -1,10 +1,8 @@
 package org.codefilarete.stalactite.engine.configurer;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
@@ -12,7 +10,6 @@ import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -45,14 +42,22 @@ public class PersisterBuilderContext {
 	/**
 	 * List of post initializers to be invoked after persister instantiation and main configuration
 	 */
-	private final List<PostInitializer<Object>> postInitializers = new ArrayList<>();
-	
 	private final KeepOrderSet<BuildLifeCycleListener> buildLifeCycleListeners = new KeepOrderSet<>();
 	
 	/**
 	 * Currently treated configurations. Made to detect cycle in graph. 
 	 */
 	private final Queue<Class> treatedConfigurations = Collections.asLifoQueue(new ArrayDeque<>());
+	
+	private final PersisterRegistry persisterRegistry;
+	
+	public PersisterBuilderContext(PersisterRegistry persisterRegistry) {
+		this.persisterRegistry = persisterRegistry;
+	}
+	
+	public PersisterRegistry getPersisterRegistry() {
+		return persisterRegistry;
+	}
 	
 	void addEntity(Class<?> entityType) {
 		this.entityCandidates.add(entityType);
@@ -62,16 +67,8 @@ public class PersisterBuilderContext {
 		return entityCandidates.contains(entityType);
 	}
 	
-	public List<PostInitializer<Object>> getPostInitializers() {
-		return postInitializers;
-	}
-	
 	public KeepOrderSet<BuildLifeCycleListener> getBuildLifeCycleListeners() {
 		return buildLifeCycleListeners;
-	}
-	
-	public void addPostInitializers(PostInitializer<?> postInitializer) {
-		postInitializers.add((PostInitializer<Object>) postInitializer);
 	}
 	
 	public void addBuildLifeCycleListener(BuildLifeCycleListener listener) {

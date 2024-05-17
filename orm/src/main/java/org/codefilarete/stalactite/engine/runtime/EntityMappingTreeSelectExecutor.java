@@ -14,6 +14,7 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.JoinableSelectExecutor;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
+import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -97,7 +98,17 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		parameterBinderForPKInSelect = new ParameterBinderIndexFromMap<>(Iterables.map(primaryKey.getColumns(), Function.identity(), dialect.getColumnBinderRegistry()::getBinder));
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
-		currentBuilderContext.addBuildLifeCycleListener(this::prepareQuery);
+		currentBuilderContext.addBuildLifeCycleListener(new BuildLifeCycleListener() {
+			@Override
+			public void afterBuild() {
+				
+			}
+			
+			@Override
+			public void afterAllBuild() {
+				prepareQuery();
+			}
+		});
 	}
 	
 	@VisibleForTesting

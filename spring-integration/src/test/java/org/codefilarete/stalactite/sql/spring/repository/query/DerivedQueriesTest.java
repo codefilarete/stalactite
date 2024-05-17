@@ -75,6 +75,9 @@ class DerivedQueriesTest {
 		country1.addState(new State(new PersistableIdentifier<>(200L)));
 		Person president1 = new Person(666);
 		president1.setName("me");
+		president1.initNicknames();
+		president1.addNickname("John Do");
+		president1.addNickname("Jane Do");
 		country1.setPresident(president1);
 		
 		Country country2 = new Country(43);
@@ -99,6 +102,9 @@ class DerivedQueriesTest {
 		assertThat(loadedCountry).isEqualTo(country1);
 		
 		loadedCountry = derivedQueriesRepository.findByStatesIdIn(Arrays.asList(new PersistableIdentifier<>(100L)));
+		assertThat(loadedCountry).isEqualTo(country1);
+		
+		loadedCountry = derivedQueriesRepository.findByPresidentNicknamesIn(Arrays.asList("John Do"));
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
@@ -323,6 +329,7 @@ class DerivedQueriesTest {
 					.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)
 							.mapKey(Person::getId, ColumnOptions.IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 							.map(Person::getName)
+							.mapCollection(Person::getNicknames, String.class)
 							.mapOneToOne(Person::getVehicle, entityBuilder(Vehicle.class, Identifier.LONG_TYPE)
 									.mapKey(Vehicle::getId, ColumnOptions.IdentifierPolicy.<Vehicle, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 									.map(Vehicle::getColor)))

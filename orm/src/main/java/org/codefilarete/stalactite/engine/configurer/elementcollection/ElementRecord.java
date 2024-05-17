@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.engine.diff.CollectionDiffer;
  * @param <TRGT> raw value type (element collection type)
  * @param <ID> source bean identifier type
  */
-class ElementRecord<TRGT, ID> {
+public class ElementRecord<TRGT, ID> {
 	
 	static final PropertyAccessor<ElementRecord<Object, Object>, Object> IDENTIFIER_ACCESSOR = PropertyAccessor.fromMethodReference(
 			ElementRecord::getId,

@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ClassMapping;
@@ -68,7 +69,7 @@ public class EntityMappingTreeSelectExecutorTest {
 	
 	@BeforeEach
 	void initEntityCandidates() {
-		PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
+		PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(mock(PersisterRegistry.class)));
 	}
 	
 	@AfterEach

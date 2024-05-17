@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementRecord;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelationConfigurer;
 import org.codefilarete.stalactite.engine.configurer.map.EntityAsKeyAndValueMapRelationConfigurer;
@@ -83,17 +84,17 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 				Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
-						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToOneCycleConfigurer && p.getEntityType() == targetEntityType);
+						Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToOneCycleConfigurer && ((OneToOneCycleConfigurer<?>) p).getEntityType() == targetEntityType);
 				if (cycleSolver == null) {
 					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
-					currentBuilderContext.addPostInitializers(cycleSolver);
+					currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 				}
 				cycleSolver.addCycleSolver(relationName, oneToOneRelationConfigurer);
 			} else {
 				oneToOneRelationConfigurer.configure(relationName, new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration()), oneToOneRelation.isFetchSeparately());
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(oneToOneRelation.getTargetMappingConfiguration().getEntityType(),
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(oneToOneRelation.getTargetMappingConfiguration().getEntityType(),
 					oneToOneRelation.getTargetProvider()));
 		}
 		for (OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>> oneToManyRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToManys()) {
@@ -116,17 +117,17 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 				Class<TRGT> targetEntityType = oneToManyRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				OneToManyCycleConfigurer<TRGT> cycleSolver = (OneToManyCycleConfigurer<TRGT>)
-						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof OneToManyCycleConfigurer && p.getEntityType() == targetEntityType);
+						Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToManyCycleConfigurer && ((OneToManyCycleConfigurer<?>) p).getEntityType() == targetEntityType);
 				if (cycleSolver == null) {
 					cycleSolver = new OneToManyCycleConfigurer<>(targetEntityType);
-					currentBuilderContext.addPostInitializers(cycleSolver);
+					currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 				}
 				cycleSolver.addCycleSolver(relationName, oneToManyRelationConfigurer);
 			} else {
 				oneToManyRelationConfigurer.configure(new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));
 			}
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
-			currentBuilderContext.addPostInitializers(new GraphLoadingRelationRegisterer<>(oneToManyRelation.getTargetMappingConfiguration().getEntityType(),
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(oneToManyRelation.getTargetMappingConfiguration().getEntityType(),
 					oneToManyRelation.getCollectionProvider()));
 		}
 		
@@ -151,10 +152,10 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 				Class<TRGT> targetEntityType = manyToManyRelation.getTargetMappingConfiguration().getEntityType();
 				// adding the relation to an eventually already existing cycle configurer for the entity
 				ManyToManyCycleConfigurer<TRGT> cycleSolver = (ManyToManyCycleConfigurer<TRGT>)
-						Iterables.find(currentBuilderContext.getPostInitializers(), p -> p instanceof ManyToManyCycleConfigurer && p.getEntityType() == targetEntityType);
+						Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof ManyToManyCycleConfigurer && ((ManyToManyCycleConfigurer<?>) p).getEntityType() == targetEntityType);
 				if (cycleSolver == null) {
 					cycleSolver = new ManyToManyCycleConfigurer<>(targetEntityType);
-					currentBuilderContext.addPostInitializers(cycleSolver);
+					currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
 				}
 				cycleSolver.addCycleSolver(relationName, manyRelationConfigurer);
 			} else {
@@ -172,7 +173,20 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					namingConfiguration.getElementCollectionTableNamingStrategy(),
 					dialect,
 					connectionConfiguration);
-			elementCollectionRelationConfigurer.configure();
+			SimpleRelationalEntityPersister<? extends ElementRecord<?, I>, ? extends ElementRecord<?, I>, ?> collectionPersister = elementCollectionRelationConfigurer.configure();
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<C>(entityMappingConfiguration.getEntityType(),
+					elementCollection.getCollectionProvider()) {
+
+				@Override
+				public void consume(ConfiguredRelationalPersister<C, ?> targetPersister) {
+					// targetPersister is not the one we need : it's owning class one's (see constructor) whereas
+					// we need the one created by the configure() method above because it manages the relation through
+					// the generic ElementRecord which can't be found in the PersisterRegistry.
+					// Note that we could have used BuildLifeCycleListener directly but I prefer using GraphLoadingRelationRegisterer to clarify the intention
+					super.consume((ConfiguredRelationalPersister<C, ?>) collectionPersister);
+				}
+			});
 		}
 		
 		// taking map relations into account

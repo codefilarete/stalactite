@@ -158,7 +158,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		boolean isInitiator = PersisterBuilderContext.CURRENT.get() == null;
 		
 		if (isInitiator) {
-			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext());
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(persisterRegistry));
 		}
 		
 		try {
@@ -176,14 +176,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 				// This if is only there to execute code below only once, at the very end of persistence graph build,
 				// even if it could seem counterintuitive since it compares "isInitiator" whereas this comment talks about end of graph :
 				// because persistence configuration is made with a deep-first algorithm, this code (after doBuild()) will be called at the very end.
-				PersisterBuilderContext.CURRENT.get().getPostInitializers().forEach(invocation -> {
-					try {
-						invocation.consume((ConfiguredRelationalPersister) persisterRegistry.getPersister(invocation.getEntityType()));
-					} catch (RuntimeException e) {
-						throw new MappingConfigurationException("Error while post processing persister of type "
-								+ Reflections.toString(invocation.getEntityType()), e);
-					}
-				});
+				PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterBuild);
 				PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
 			}
 			return result;
@@ -311,14 +304,33 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		}
 	}
 	
+	
 	/**
-	 * Contract triggered after a persister has been built, made to fulfill some more configuration.
+	 * Contract triggered after a persister has been built, made to complete some more configuration.
+	 */
+	public interface BuildLifeCycleListener {
+		
+		/**
+		 * Invoked after main entity persister creation. At this stage all persisters involved in the entity graph
+		 * are expected to be available in the {@link PersisterRegistry}
+		 */
+		void afterBuild();
+		
+		/**
+		 * Invoked after all {@link #afterBuild()} of all the registered {@link BuildLifeCycleListener}s have been called.
+		 * Made for finalization cases.
+		 */
+		void afterAllBuild();
+	}
+	
+	/**
+	 * Dedicated {@link BuildLifeCycleListener} that will consume the persister found in the registry.
 	 * Used in particular to deal with bean cycle load.
 	 * 
 	 * @param <P> entity type to be persisted
-	 * @see #consume(ConfiguredRelationalPersister) 
+	 * @see #consume(ConfiguredRelationalPersister)
 	 */
-	public static abstract class PostInitializer<P> {
+	public static abstract class PostInitializer<P> implements BuildLifeCycleListener {
 		
 		/** Entity type of persister to be post initialized */
 		private final Class<P> entityType;
@@ -331,20 +343,27 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 			return entityType;
 		}
 		
+		@Override
+		public final void afterBuild() {
+			try {
+				consume((ConfiguredRelationalPersister<P, ?>) PersisterBuilderContext.CURRENT.get().getPersisterRegistry().getPersister(entityType));
+			} catch (RuntimeException e) {
+				throw new MappingConfigurationException("Error while post processing persister of type "
+						+ Reflections.toString(entityType), e);
+			}
+		}
+		
+		@Override
+		public final void afterAllBuild() {
+			// nothing special to do here
+		}
+		
 		/**
 		 * Invoked after main entity graph creation
 		 * 
 		 * @param persister entity type persister
 		 */
 		public abstract void consume(ConfiguredRelationalPersister<P, ?> persister);
-	}
-	
-	public interface BuildLifeCycleListener {
-		
-		/**
-		 * Invoked after main entity graph creation
-		 */
-		void afterAllBuild();
 	}
 	
 	private <T extends Table<T>> void handleVersioningStrategy(SimpleRelationalEntityPersister<C, I, T> result) {

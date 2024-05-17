@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -16,6 +17,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorChain.ValueInitializerOnNullValue;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.ReversibleAccessor;
+import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ElementCollectionTableNamingStrategy;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
@@ -89,7 +91,8 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		this.connectionConfiguration = connectionConfiguration;
 	}
 	
-	public <T extends Table<T>, TARGETTABLE extends Table<TARGETTABLE>> void configure() {
+	public <T extends Table<T>, TARGETTABLE extends Table<TARGETTABLE>> SimpleRelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, TARGETTABLE>
+	configure() {
 		
 		AccessorDefinition collectionProviderDefinition = AccessorDefinition.giveDefinition(linkage.getCollectionProvider());
 		// schema configuration
@@ -164,7 +167,7 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 			
 		// Note that table will be added to schema thanks to select cascade because join is added to source persister
 		SimpleRelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, TARGETTABLE> elementRecordPersister =
-			new SimpleRelationalEntityPersister<>(elementRecordMapping, dialect, connectionConfiguration);
+				new ElementRecordPersister<>(elementRecordMapping, dialect, connectionConfiguration);
 		
 		// insert management
 		Accessor<SRC, C> collectionAccessor = linkage.getCollectionProvider();
@@ -183,6 +186,8 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 		addSelectCascade(sourcePersister, elementRecordPersister, sourcePK, reverseForeignKey,
 				linkage.getCollectionProvider().toMutator()::set, collectionAccessor::get,
 				collectionFactory);
+		
+		return elementRecordPersister;
 	}
 	
 	private void registerColumnBinder(ForeignKey<?, ?, ID> reverseColumn, PrimaryKey<?, ID> sourcePK) {
@@ -293,4 +298,17 @@ public class ElementCollectionRelationConfigurer<SRC, TRGT, ID, C extends Collec
 			return collectionGetter.apply(source);
 		}
 	}
+	
+	public static class ElementRecordPersister<TRGT, ID, T extends Table<T>> extends SimpleRelationalEntityPersister<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, T> {
+		
+		public ElementRecordPersister(ClassMapping<ElementRecord<TRGT, ID>, ElementRecord<TRGT, ID>, T> elementRecordMapping, Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+			super(elementRecordMapping, dialect, connectionConfiguration);
+		}
+		
+		@Override
+		public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
+			return Iterables.first(getMapping().getSelectableColumns());
+		}
+	}
+	
 }
