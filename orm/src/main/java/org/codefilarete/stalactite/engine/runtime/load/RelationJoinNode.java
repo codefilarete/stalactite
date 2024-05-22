@@ -138,14 +138,18 @@ public class RelationJoinNode<C, T1 extends Fromable, T2 extends Fromable, JOINT
 			// enhancement even if it hasn't been measured.
 			RelationIdentifier eventuallyApplied = new RelationIdentifier(parentJoinEntity, this.entityType, relationIdentifierComputer.apply(row, columnedRow), this);
 			// primary key null means no entity => nothing to do
-			if (rightIdentifier != null && context.isTreatedOrAppend(eventuallyApplied)) {
+			if (rightIdentifier != null) {
 				C rightEntity = (C) context.giveEntityFromCache(entityType, rightIdentifier, () -> rowTransformer.transform(row));
-				beanRelationFixer.apply(parentJoinEntity, rightEntity);
-				if (this.consumptionListener != null) {
-					this.consumptionListener.onNodeConsumption(rightEntity, col -> columnedRow.getValue(col, row));
+				if (context.isTreatedOrAppend(eventuallyApplied)) {
+					beanRelationFixer.apply(parentJoinEntity, rightEntity);
+					if (this.consumptionListener != null) {
+						this.consumptionListener.onNodeConsumption(rightEntity, col -> columnedRow.getValue(col, row));
+					}
 				}
+				// we return the entity found for the row to let caller go deeper in the hierarchy
 				return rightEntity;
 			}
+			// null is a marker for caller to not go deeper in the hierarchy : no entity was found on row, we can't go deeper
 			return null;
 		}
 	}
