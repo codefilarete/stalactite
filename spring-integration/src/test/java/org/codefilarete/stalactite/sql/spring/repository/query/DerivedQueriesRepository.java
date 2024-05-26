@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.spring.repository.query;
 
+import java.util.Date;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Color;
@@ -55,4 +56,6 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	Country findByStatesIdIn(Iterable<Identifier<Long>> ids);
 	
 	Country findByPresidentNicknamesIn(Iterable<String> names);
+	
+	Country findByTimestampCreationDateLessThan(Date date);
 }

@@ -4,11 +4,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
@@ -194,8 +196,17 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		@VisibleForTesting
 		EntityGraphNode(EntityMapping<C, ?, ?> entityMapping) {
 			this.entityClass = entityMapping.getClassToPersist();
-			entityMapping.getPropertyToColumn().forEach((p, c) -> propertyToColumn.put(Arrays.asList(p), c));
-			entityMapping.getReadonlyPropertyToColumn().forEach((p, c) -> propertyToColumn.put(Arrays.asList(p), c));
+			Stream.concat(entityMapping.getPropertyToColumn().entrySet().stream(), entityMapping.getReadonlyPropertyToColumn().entrySet().stream())
+					.forEach((entry) -> {
+						ReversibleAccessor<C, Object> accessor = entry.getKey();
+						List<? extends ValueAccessPoint<?>> key;
+						if (accessor instanceof AccessorChain) {
+							key = ((AccessorChain<?, ?>) accessor).getAccessors();
+						} else {
+							key = Arrays.asList(accessor);
+						}
+						propertyToColumn.put(key, entry.getValue());
+					});
 			// we add the identifier and primary key because they are not in the property mapping 
 			IdMapping<C, ?> idMapping = entityMapping.getIdMapping();
 			if (idMapping instanceof SimpleIdMapping) {

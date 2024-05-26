@@ -2,17 +2,21 @@ package org.codefilarete.stalactite.sql.spring.repository.query;
 
 
 import javax.sql.DataSource;
+import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.Arrays;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.ColumnOptions;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.TransactionalConnectionProvider;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.State;
+import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -27,6 +31,7 @@ import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.NullAwareParameterBinder;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.codefilarete.tool.Dates;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +78,9 @@ class DerivedQueriesTest {
 		country1.setName("Toto");
 		country1.addState(new State(new PersistableIdentifier<>(100L)));
 		country1.addState(new State(new PersistableIdentifier<>(200L)));
+		country1.setTimestamp(new Timestamp(
+				LocalDateTime.of(2010, Month.JANUARY, 22, 11, 10, 23),
+				LocalDateTime.of(2024, Month.MAY, 10, 10, 30, 45)));
 		Person president1 = new Person(666);
 		president1.setName("me");
 		president1.initNicknames();
@@ -105,6 +113,9 @@ class DerivedQueriesTest {
 		assertThat(loadedCountry).isEqualTo(country1);
 		
 		loadedCountry = derivedQueriesRepository.findByPresidentNicknamesIn(Arrays.asList("John Do"));
+		assertThat(loadedCountry).isEqualTo(country1);
+		
+		loadedCountry = derivedQueriesRepository.findByTimestampCreationDateLessThan(Dates.nowAsDate());
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
@@ -142,7 +153,7 @@ class DerivedQueriesTest {
 			Country loadedCountry = derivedQueriesRepository.findByNameNot("Titi");
 			assertThat(loadedCountry).isEqualTo(country1);
 		}
-	
+		
 		@Test
 		void in() {
 			Country country1 = new Country(42);
@@ -154,7 +165,7 @@ class DerivedQueriesTest {
 			Set<Country> loadedCountries = derivedQueriesRepository.findByIdIn(Arrays.asList(new PersistedIdentifier<>(42L), new PersistedIdentifier<>(43L), new PersistedIdentifier<>(44L)));
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		}
-	
+		
 		@Test
 		void notIn() {
 			Country country1 = new Country(42);
@@ -178,7 +189,7 @@ class DerivedQueriesTest {
 			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionLike("keyword");
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		}
-	
+		
 		@Test
 		void notLike() {
 			Country country1 = new Country(42);
@@ -202,7 +213,7 @@ class DerivedQueriesTest {
 			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionStartsWith("a keyword");
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 		}
-	
+		
 		@Test
 		void endsWith() {
 			Country country1 = new Country(42);
@@ -214,7 +225,7 @@ class DerivedQueriesTest {
 			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionEndsWith("a keyword");
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 		}
-	
+		
 		@Test
 		void isNull() {
 			Country country1 = new Country(42);
@@ -326,6 +337,9 @@ class DerivedQueriesTest {
 					.mapKey(Country::getId, ColumnOptions.IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 					.map(Country::getName)
 					.map(Country::getDescription)
+					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
+							.map(Timestamp::getCreationDate)
+							.map(Timestamp::getModificationDate))
 					.mapOneToOne(Country::getPresident, entityBuilder(Person.class, Identifier.LONG_TYPE)
 							.mapKey(Person::getId, ColumnOptions.IdentifierPolicy.<Person, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 							.map(Person::getName)
