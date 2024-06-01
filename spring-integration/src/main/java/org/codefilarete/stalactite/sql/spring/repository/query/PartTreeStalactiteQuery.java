@@ -22,11 +22,15 @@ import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.springframework.data.jpa.repository.query.PartTreeJpaQuery;
 import org.springframework.data.mapping.PropertyPath;
+import org.springframework.data.repository.query.Parameter;
+import org.springframework.data.repository.query.ParameterOutOfBoundsException;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
+import org.springframework.data.repository.query.parser.Part.Type;
 import org.springframework.data.repository.query.parser.PartTree;
+import org.springframework.data.util.Streamable;
 import org.springframework.lang.Nullable;
 
 /**
@@ -41,9 +45,13 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 	
 	private final QueryMethod method;
 	private final Query<T> query;
+	private final Accumulator<T, ?, Object> accumulator;
 	
 	public PartTreeStalactiteQuery(QueryMethod method, EntityPersister<T, ?> entityPersister) {
 		this.method = method;
+		this.accumulator = method.isCollectionQuery()
+				? (Accumulator) Accumulators.toList()
+				: (Accumulator) Accumulators.getFirstUnique();
 		Parameters<?, ?> parameters = method.getParameters();
 		
 		Class<T> domainClass = entityPersister.getClassToPersist();
@@ -53,7 +61,7 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 		try {
 			
 			PartTree tree = new PartTree(method.getName(), domainClass);
-//			validate(tree, parameters, method.toString());
+			new QueryMethodValidator(tree, method).validate();
 //			this.countQuery = new CountQueryPreparer(recreationRequired);
 //			this.query = tree.isCountProjection() ? countQuery : new QueryPreparer(recreationRequired);
 			this.query = new Query<>(entityPersister, tree);
@@ -67,9 +75,6 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 	@Override
 	@Nullable
 	public Object execute(Object[] parameters) {
-		Accumulator<T, ?, Object> accumulator = method.isCollectionQuery()
-				? (Accumulator) Accumulators.toList()
-				: (Accumulator) Accumulators.getFirstUnique();
 		query.criteriaChain.consume(parameters);
 		return query.executableEntityQuery.execute(accumulator);
 	}
@@ -268,6 +273,75 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 					argumentIndex += criterion.argumentCount;
 				}
 			}
+		}
+	}
+	
+	/**
+	 * Validator for query method. Basically, it ensures that arguments match length and types of properties.
+	 * @author Guillaume Mary
+	 * @see #validate() 
+	 */
+	public static class QueryMethodValidator {
+		
+		private final PartTree tree;
+		private final QueryMethod method;
+		
+		public QueryMethodValidator(PartTree tree, QueryMethod method) {
+			this.tree = tree;
+			this.method = method;
+		}
+		
+		public void validate() {
+			int argCount = 0;
+			Iterable<Part> parts = () -> tree.stream().flatMap(Streamable::stream).iterator();
+			for (Part part : parts) {
+				int numberOfArguments = part.getNumberOfArguments();
+				for (int i = 0; i < numberOfArguments; i++) {
+					throwExceptionOnArgumentMismatch(part, argCount);
+					argCount++;
+				}
+			}
+		}
+		
+		private void throwExceptionOnArgumentMismatch(Part part, int index) {
+			Type type = part.getType();
+			String property = part.getProperty().toDotPath();
+			
+			Parameter parameter;
+			try {
+				parameter = method.getParameters().getBindableParameter(index);
+			} catch (ParameterOutOfBoundsException e) {
+				throw new IllegalStateException(String.format(
+						"Method %s expects at least %d arguments but only found %d. This leaves an operator of type %s for property %s unbound.",
+						method.getName(), index + 1, index, type.name(), property));
+			}
+			
+			if (expectsCollection(type) && !parameterIsCollectionLike(parameter)) {
+				throw new IllegalStateException(wrongParameterTypeMessage(property, type, "Collection", parameter));
+			} else if (!expectsCollection(type) && !parameterIsScalarLike(parameter)) {
+				throw new IllegalStateException(wrongParameterTypeMessage(property, type, "scalar", parameter));
+			}
+		}
+		
+		private String wrongParameterTypeMessage(String property, Type operatorType, String expectedArgumentType, Parameter parameter) {
+			
+			return String.format("Operator %s on %s requires a %s argument, found %s in method %s.", operatorType.name(),
+					property, expectedArgumentType, parameter.getType(), method.getName());
+		}
+		
+		private boolean parameterIsCollectionLike(Parameter parameter) {
+			return Iterable.class.isAssignableFrom(parameter.getType()) || parameter.getType().isArray();
+		}
+		
+		/**
+		 * Arrays are may be treated as collection like or in the case of binary data as scalar
+		 */
+		private boolean parameterIsScalarLike(Parameter parameter) {
+			return !Iterable.class.isAssignableFrom(parameter.getType());
+		}
+		
+		private boolean expectsCollection(Type type) {
+			return type == Type.IN || type == Type.NOT_IN;
 		}
 	}
 }
