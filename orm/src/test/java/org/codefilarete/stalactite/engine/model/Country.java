@@ -44,6 +44,8 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private Timestamp timestamp;
 	
+	private Set<Language> languages = new HashSet<>();
+	
 	public Country() {
 	}
 	
@@ -180,6 +182,14 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	public void setTimestamp(Timestamp timestamp) {
 		this.timestamp = timestamp;
+	}
+	
+	public Set<Language> getLanguages() {
+		return languages;
+	}
+	
+	public void setLanguages(Set<Language> languages) {
+		this.languages = languages;
 	}
 	
 	/**

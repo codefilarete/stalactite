@@ -161,6 +161,10 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 			} else {
 				manyRelationConfigurer.configure(new PersisterBuilderImpl<>(manyToManyRelation.getTargetMappingConfiguration()));
 			}
+			
+			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
+			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(manyToManyRelation.getTargetMappingConfiguration().getEntityType(),
+					manyToManyRelation.getCollectionProvider()));
 		}
 		
 		// taking element collections into account

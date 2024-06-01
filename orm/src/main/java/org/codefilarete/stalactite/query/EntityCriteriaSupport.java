@@ -248,30 +248,34 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 			if (column != null) {
 				return column;
 			} else {
-				// asking to persister in relation
+				// asking persister relations
 				RelationalEntityPersister<?, ?> entityGraphNode = relations.get(valueAccessPoints.get(0));
 				if (entityGraphNode != null) {
 					column = entityGraphNode.getColumn(valueAccessPoints.subList(1, valueAccessPoints.size()));
 				}
 				if (column == null) {
-					StringAppender accessPointAsString = new StringAppender() {
-						@Override
-						public StringAppender cat(Object o) {
-							if (o instanceof ValueAccessPoint) {
-								super.cat(AccessorDefinition.toString((ValueAccessPoint) o));
-							} else {
-								super.cat(o);
-							}
-							return this;
-						}
-					};
-					accessPointAsString.ccat(valueAccessPoints, " > ");
-					throw new MappingConfigurationException("Error while looking for column of " + accessPointAsString
-							+ " : it is not declared in mapping of " + Reflections.toString(this.entityClass));
+					throw newConfigurationException(valueAccessPoints);
 				} else {
 					return column;
 				}
 			}
+		}
+		
+		private MappingConfigurationException newConfigurationException(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
+			StringAppender accessPointAsString = new StringAppender() {
+				@Override
+				public StringAppender cat(Object o) {
+					if (o instanceof ValueAccessPoint) {
+						super.cat(AccessorDefinition.toString((ValueAccessPoint) o));
+					} else {
+						super.cat(o);
+					}
+					return this;
+				}
+			};
+			accessPointAsString.ccat(valueAccessPoints, " > ");
+			return new MappingConfigurationException("Error while looking for column of " + accessPointAsString
+					+ " : it is not declared in mapping of " + Reflections.toString(this.entityClass));
 		}
 	}
 }

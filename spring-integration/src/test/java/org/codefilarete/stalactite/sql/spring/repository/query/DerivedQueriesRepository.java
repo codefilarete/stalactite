@@ -58,4 +58,6 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	Country findByPresidentNicknamesIn(Iterable<String> names);
 	
 	Country findByTimestampCreationDateLessThan(Date date);
+	
+	Set<Country> findByLanguagesCodeIs(String code);
 }
