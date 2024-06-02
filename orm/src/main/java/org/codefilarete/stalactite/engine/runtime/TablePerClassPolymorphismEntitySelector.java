@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.query.EntitySelectExecutor;
+import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
@@ -36,7 +36,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table<T>> implements EntitySelectExecutor<C> {
+public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
 	
 	private static final String UNION_ALL_SEPARATOR = ") union all (";
 	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
@@ -49,7 +49,7 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 	private final T mainTable;
 	private final Map<String, Class> discriminatorValues;
 	
-	public TablePerClassPolymorphismEntitySelectExecutor(
+	public TablePerClassPolymorphismEntitySelector(
 			IdentifierAssembler<I, T> identifierAssembler,
 			Map<Class<? extends C>, ? extends Table> tablePerSubConfiguration,
 			Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass,
@@ -71,13 +71,11 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 	}
 	
 	@Override
-	public Set<C> loadGraph(CriteriaChain where) {
+	public Set<C> select(CriteriaChain where) {
 		Set<PreparedSQL> queries = new HashSet<>();
-		Map<String, Class> discriminatorValues = new HashMap<>();
-		
 		
 		// selecting ids and their discriminator
-		PrimaryKey<T, I> pk = mainTable.getPrimaryKey();
+		PrimaryKey<T, Object> pk = mainTable.getPrimaryKey();
 		Map<String, String> aliasPerPKColumnName = Iterables.map(pk.getColumns(), Column::getName, Column::getAlias);
 		
 		// building readers and aliases for union-all query
@@ -90,7 +88,6 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 		});
 		
 		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
-			discriminatorValues.put(subEntityType.getSimpleName(), subEntityType);
 			Query query = buildSubConfigurationQuery("'" + subEntityType.getSimpleName() + "'", subEntityTable, aliasPerPKColumnName);
 			
 			Where projectedWhere = new Where();

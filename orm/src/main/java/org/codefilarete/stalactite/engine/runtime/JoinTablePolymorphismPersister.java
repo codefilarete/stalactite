@@ -91,7 +91,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	private final Map<Class<? extends C>, Table> tablePerSubEntityType;
 	private final PrimaryKey<?, I> mainTablePrimaryKey;
 	private final EntityCriteriaSupport<C> criteriaSupport;
-	private final JoinTablePolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
+	private final JoinTablePolymorphismEntitySelector<C, I, ?> entitySelectExecutor;
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	
 	public JoinTablePolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
@@ -124,7 +124,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 				tablePerSubEntityType, subclassSelectExecutors, connectionProvider,
 				dialect);
 		
-		this.entitySelectExecutor = new JoinTablePolymorphismEntitySelectExecutor<>(subEntitiesPersisters,
+		this.entitySelectExecutor = new JoinTablePolymorphismEntitySelector<>(subEntitiesPersisters,
 																					mainPersister.getMainTable(),
 																					mainPersister.getEntityJoinTree(),
 																					connectionProvider,
@@ -260,7 +260,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
-						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
+						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.select(localCriteriaSupport.getCriteria()))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
@@ -273,7 +273,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	
 	@Override
 	public Set<C> selectAll() {
-		return entitySelectExecutor.loadGraph(newWhere().getCriteria());
+		return entitySelectExecutor.select(newWhere().getCriteria());
 	}
 	
 	@Override

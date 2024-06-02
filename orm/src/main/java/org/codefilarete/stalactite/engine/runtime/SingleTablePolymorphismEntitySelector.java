@@ -12,7 +12,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
-import org.codefilarete.stalactite.query.EntitySelectExecutor;
+import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
@@ -31,7 +31,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 /**
  * @author Guillaume Mary
  */
-public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>, DTYPE> implements EntitySelectExecutor<C> {
+public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTYPE> implements EntitySelector<C, I> {
 	
 	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	
@@ -43,13 +43,13 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public SingleTablePolymorphismEntitySelectExecutor(IdentifierAssembler<I, T> identifierAssembler,
-													   Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
-													   Column<T, DTYPE> discriminatorColumn,
-													   SingleTablePolymorphism polymorphismPolicy,
-													   EntityJoinTree<C, I> mainEntityJoinTree,
-													   ConnectionProvider connectionProvider,
-													   Dialect dialect) {
+	public SingleTablePolymorphismEntitySelector(IdentifierAssembler<I, T> identifierAssembler,
+												 Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
+												 Column<T, DTYPE> discriminatorColumn,
+												 SingleTablePolymorphism polymorphismPolicy,
+												 EntityJoinTree<C, I> mainEntityJoinTree,
+												 ConnectionProvider connectionProvider,
+												 Dialect dialect) {
 		this.identifierAssembler = identifierAssembler;
 		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
 		this.discriminatorColumn = discriminatorColumn;
@@ -60,7 +60,7 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T
 	}
 	
 	@Override
-	public Set<C> loadGraph(CriteriaChain where) {
+	public Set<C> select(CriteriaChain where) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		

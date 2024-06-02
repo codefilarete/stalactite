@@ -35,15 +35,15 @@ import org.codefilarete.tool.collection.Maps.ChainingMap;
 import static org.codefilarete.stalactite.query.model.Operators.in;
 
 /**
- * Class aimed at loading an entity graph which is selected by properties criteria coming from {@link EntityCriteriaSupport}.
+ * Class aimed at loading an entity graph which is selected by properties criteria coming from {@link CriteriaChain}.
  * 
  * Implemented as a light version of {@link EntityMappingTreeSelectExecutor} focused on {@link EntityCriteriaSupport},
  * hence it is based on {@link EntityJoinTree} to build the bean graph.
  * 
  * @author Guillaume Mary
- * @see #loadGraph(CriteriaChain)
+ * @see #select(CriteriaChain)
  */
-public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntitySelectExecutor<C> {
+public class EntityGraphSelector<C, I, T extends Table> implements EntitySelector<C, I> {
 	
 	private static final String PRIMARY_KEY_ALIAS = "rootId";
 	
@@ -55,10 +55,10 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 	
 	private final EntityJoinTree<C, I> entityJoinTree;
 	
-	public EntityGraphSelectExecutor(ConfiguredPersister<C, I> entityPersister,
-									 EntityJoinTree<C, I> entityJoinTree,
-									 ConnectionProvider connectionProvider,
-									 Dialect dialect) {
+	public EntityGraphSelector(ConfiguredPersister<C, I> entityPersister,
+							   EntityJoinTree<C, I> entityJoinTree,
+							   ConnectionProvider connectionProvider,
+							   Dialect dialect) {
 		this.entityPersister = entityPersister;
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
@@ -76,7 +76,7 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 	 * @return root beans of aggregates that match criteria
 	 */
 	@Override
-	public Set<C> loadGraph(CriteriaChain where) {
+	public Set<C> select(CriteriaChain where) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		

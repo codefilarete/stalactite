@@ -93,7 +93,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private final Map<Class<? extends C>, UpdateExecutor<? extends C>> subclassUpdateExecutors;
 	private final Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	private final TablePerClassPolymorphicSelectExecutor<C, I, ?> selectExecutor;
-	private final TablePerClassPolymorphismEntitySelectExecutor<C, I, ?> entitySelectExecutor;
+	private final TablePerClassPolymorphismEntitySelector<C, I, ?> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public TablePerClassPolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
@@ -121,7 +121,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				connectionProvider,
 				dialect);
 		
-		this.entitySelectExecutor = new TablePerClassPolymorphismEntitySelectExecutor<>(
+		this.entitySelectExecutor = new TablePerClassPolymorphismEntitySelector<>(
 				mainPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 				tablePerSubEntity,
 				subEntitiesPersisters,
@@ -266,7 +266,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
-						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
+						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.select(localCriteriaSupport.getCriteria()))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
@@ -279,7 +279,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	
 	@Override
 	public Set<C> selectAll() {
-		return entitySelectExecutor.loadGraph(newWhere().getCriteria());
+		return entitySelectExecutor.select(newWhere().getCriteria());
 	}
 	
 	@Override

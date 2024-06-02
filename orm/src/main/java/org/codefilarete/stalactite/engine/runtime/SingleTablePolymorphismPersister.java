@@ -85,7 +85,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	private final SingleTablePolymorphismSelectExecutor<C, I, T, DTYPE> selectExecutor;
-	private final SingleTablePolymorphismEntitySelectExecutor<C, I, T, DTYPE> entitySelectExecutor;
+	private final SingleTablePolymorphismEntitySelector<C, I, T, DTYPE> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public SingleTablePolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
@@ -128,7 +128,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 				connectionProvider,
 				dialect);
 		
-		this.entitySelectExecutor = new SingleTablePolymorphismEntitySelectExecutor<>(
+		this.entitySelectExecutor = new SingleTablePolymorphismEntitySelector<>(
 				mainPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 				subEntitiesPersisters,
 				discriminatorColumn,
@@ -260,7 +260,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
-						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria()))
+						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.select(localCriteriaSupport.getCriteria()))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
@@ -273,7 +273,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	
 	@Override
 	public Set<C> selectAll() {
-		return entitySelectExecutor.loadGraph(newWhere().getCriteria());
+		return entitySelectExecutor.select(newWhere().getCriteria());
 	}
 	
 	@Override

@@ -39,7 +39,7 @@ import static org.codefilarete.tool.function.Functions.chain;
 class EntityGraphSelectExecutorTest {
 	
 	@Test
-	void loadGraph() throws SQLException {
+	void select() throws SQLException {
 		// This test must be done with a real Database because 2 queries are executed which can hardly be mocked
 		// Hence this test is more an integration test, but since it runs fast, we don't care
 		CurrentThreadConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(new HSQLDBInMemoryDataSource());
@@ -67,7 +67,7 @@ class EntityGraphSelectExecutorTest {
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(43, 'Lyon', 12)").execute();
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(44, 'Grenoble', 12)").execute();
 		
-		EntityGraphSelectExecutor<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelectExecutor<>(persister, persister.getEntityJoinTree(), connectionProvider, dialect);
+		EntityGraphSelector<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelector<>(persister, persister.getEntityJoinTree(), connectionProvider, dialect);
 		
 		// Criteria tied to data formerly persisted
 		EntityCriteria<Country> countryEntityCriteriaSupport =
@@ -88,7 +88,7 @@ class EntityGraphSelectExecutorTest {
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
 		Set<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
-				testInstance.loadGraph(((CriteriaProvider) countryEntityCriteriaSupport).getCriteria())
+				testInstance.select(((CriteriaProvider) countryEntityCriteriaSupport).getCriteria())
 		);
 		
 		assertThat(Iterables.first(select))
@@ -99,7 +99,7 @@ class EntityGraphSelectExecutorTest {
 	}
 	
 	@Test
-	void loadGraph_emptyResult() {
+	void select_emptyResult() {
 		// This test must be done with a real Database because 2 queries are executed which can hardly be mocked
 		// Hence this test is more an integration test, but since it runs fast, we don't care
 		CurrentThreadConnectionProvider connectionProvider = new CurrentThreadConnectionProvider(new HSQLDBInMemoryDataSource());

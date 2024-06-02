@@ -29,8 +29,8 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
-import org.codefilarete.stalactite.query.EntityGraphSelectExecutor;
-import org.codefilarete.stalactite.query.EntitySelectExecutor;
+import org.codefilarete.stalactite.query.EntityGraphSelector;
+import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -74,7 +74,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	private final BeanPersister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
-	private final EntitySelectExecutor<C> entitySelectExecutor;
+	private final EntitySelector<C, I> entitySelector;
 	/** Support for defining entity criteria on {@link #newWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
@@ -88,7 +88,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		this.persister = persister;
 		this.criteriaSupport = new EntityCriteriaSupport<>(persister.getMapping());
 		this.selectGraphExecutor = newSelectExecutor(persister.getMapping(), connectionConfiguration.getConnectionProvider(), dialect);
-		this.entitySelectExecutor = newEntitySelectExecutor(dialect);
+		this.entitySelector = newEntitySelectExecutor(dialect);
 	}
 	
 	protected EntityMappingTreeSelectExecutor<C, I, T> newSelectExecutor(EntityMapping<C, I, T> mappingStrategy,
@@ -97,8 +97,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		return new EntityMappingTreeSelectExecutor<>(mappingStrategy, dialect, connectionProvider);
 	}
 	
-	protected EntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
-		return new EntityGraphSelectExecutor<>(
+	protected EntitySelector<C, I> newEntitySelectExecutor(Dialect dialect) {
+		return new EntityGraphSelector<>(
 				persister,
 				selectGraphExecutor.getEntityJoinTree(),
 				persister.getConnectionProvider(),
@@ -223,7 +223,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
 		return (Accumulator<C, Set<C>, R> accumulator) -> {
 			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
-					entitySelectExecutor.loadGraph(localCriteriaSupport.getCriteria())
+					entitySelector.select(localCriteriaSupport.getCriteria())
 			);
 			return accumulator.collect(result);
 		};
@@ -237,7 +237,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	@Override
 	public Set<C> selectAll() {
 		return getPersisterListener().doWithSelectListener(emptyList(), () ->
-				entitySelectExecutor.loadGraph(newWhere().getCriteria())
+				entitySelector.select(newWhere().getCriteria())
 		);
 	}
 	

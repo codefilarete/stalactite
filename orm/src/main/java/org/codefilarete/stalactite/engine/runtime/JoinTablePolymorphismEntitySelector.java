@@ -11,7 +11,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.query.EntitySelectExecutor;
+import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
@@ -30,7 +30,7 @@ import org.codefilarete.tool.Duo;
 /**
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>> implements EntitySelectExecutor<C> {
+public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
 	
 	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	private final T mainTable;
@@ -38,11 +38,11 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>>
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinTablePolymorphismEntitySelectExecutor(Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
-													 T mainTable,
-													 EntityJoinTree<C, I> entityJoinTree,
-													 ConnectionProvider connectionProvider,
-													 Dialect dialect) {
+	public JoinTablePolymorphismEntitySelector(Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
+											   T mainTable,
+											   EntityJoinTree<C, I> entityJoinTree,
+											   ConnectionProvider connectionProvider,
+											   Dialect dialect) {
 		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
 		this.mainTable = mainTable;
 		this.entityJoinTree = entityJoinTree;
@@ -51,7 +51,7 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>>
 	}
 	
 	@Override
-	public Set<C> loadGraph(CriteriaChain where) {
+	public Set<C> select(CriteriaChain where) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
