@@ -69,18 +69,15 @@ public class JoinTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T>>
 		Map<Selectable<?>, String> aliases = query.getAliases();
 		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder, columnReaders, columnedRow);
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 		
 		Set<C> result = new HashSet<>();
 		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}
 	
-	private Map<Class, Set<I>> readIds(QuerySQLBuilder sqlQueryBuilder,
-									   Map<String, ResultSetReader> columnReaders,
-									   ColumnedRow columnedRow) {
+	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
 		Map<Class, Set<I>> result = new HashMap<>();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			

@@ -26,6 +26,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
+import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.StringAppender;
@@ -46,6 +47,7 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	private final T mainTable;
+	private final Map<String, Class> discriminatorValues;
 	
 	public TablePerClassPolymorphismEntitySelectExecutor(
 			IdentifierAssembler<I, T> identifierAssembler,
@@ -61,6 +63,11 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.mainTable = mainTable;
+		// building readers and aliases for union-all query
+		this.discriminatorValues = new HashMap<>();
+		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
+			discriminatorValues.put(subEntityType.getSimpleName(), subEntityType);
+		});
 	}
 	
 	@Override
@@ -87,7 +94,7 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 			Query query = buildSubConfigurationQuery("'" + subEntityType.getSimpleName() + "'", subEntityTable, aliasPerPKColumnName);
 			
 			Where projectedWhere = new Where();
-			for(AbstractCriterion c : ((CriteriaChain<?>) where)) {
+			for (AbstractCriterion c : ((CriteriaChain<?>) where)) {
 				// TODO: take other types into account
 				if (c instanceof ColumnCriterion) {
 					ColumnCriterion columnCriterion = (ColumnCriterion) c;
@@ -125,12 +132,20 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 		PreparedSQL preparedSQL = new PreparedSQL(unionSql.toString(), parameterBinders);
 		preparedSQL.setValues(values);
 		
-		ColumnedRow rowAliaser = new ColumnedRow(aliases::get);
-		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
-		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
-			ResultSet resultSet = readOperation.execute();
-			RowIterator resultSetIterator = new RowIterator(resultSet, readers);
-			resultSetIterator.forEachRemaining(row -> {
+		Map<Class, Set<I>> idsPerSubclass = readIds(preparedSQL, readers, new ColumnedRow(aliases::get));
+		
+		Set<C> result = new HashSet<>();
+		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
+		
+		return result;
+	}
+	
+	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
+		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+			ResultSet resultSet = closeableOperation.execute();
+			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
+			Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+			rowIterator.forEachRemaining(row -> {
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
 				String discriminatorValue = (String) row.get(DISCRIMINATOR_ALIAS);
@@ -139,14 +154,12 @@ public class TablePerClassPolymorphismEntitySelectExecutor<C, I, T extends Table
 				
 				// adding identifier to subclass' ids
 				idsPerSubclass.computeIfAbsent(entitySubclass, k -> new HashSet<>())
-						.add(identifierAssembler.assemble(row, rowAliaser));
+						.add(identifierAssembler.assemble(row, columnedRow));
 			});
+			return idsPerSubclass;
+		} catch (RuntimeException e) {
+			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
-		
-		Set<C> result = new HashSet<>();
-		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
-		
-		return result;
 	}
 	
 	/**

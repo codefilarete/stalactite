@@ -1,10 +1,8 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,7 +27,6 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.tool.Duo;
 
 /**
  * @author Guillaume Mary
@@ -80,24 +77,23 @@ public class SingleTablePolymorphismEntitySelectExecutor<C, I, T extends Table<T
 		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		
-		List<Duo<I, DTYPE>> ids = readIds(sqlQueryBuilder, columnReaders, columnedRow);
-		
-		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
-		ids.forEach(id -> idsPerSubclass.computeIfAbsent(polymorphismPolicy.getClass(id.getRight()), k -> new HashSet<>()).add(id.getLeft()));
+		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 		
 		Set<C> result = new HashSet<>();
-		
 		idsPerSubclass.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
 		return result;
 	}
 	
-	private List<Duo<I, DTYPE>> readIds(QuerySQLBuilder sqlQueryBuilder, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
-			List<Duo<I, DTYPE>> result = new ArrayList<>();
-			rowIterator.forEachRemaining(row -> result.add(new Duo<>(identifierAssembler.assemble(row, columnedRow), (DTYPE) row.get(DISCRIMINATOR_ALIAS))));
+			Map<Class, Set<I>> result = new HashMap<>();
+			rowIterator.forEachRemaining(row -> {
+				DTYPE dtype = (DTYPE) row.get(DISCRIMINATOR_ALIAS);
+				I id = identifierAssembler.assemble(row, columnedRow);
+				result.computeIfAbsent(polymorphismPolicy.getClass(dtype), k -> new HashSet<>()).add(id);
+			});
 			return result;
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);

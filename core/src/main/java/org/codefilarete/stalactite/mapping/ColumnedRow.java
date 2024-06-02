@@ -18,7 +18,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  */
 public class ColumnedRow {
 	
-	private final Function<? super Selectable<?>, String> aliasProvider;
+	private final Function<Selectable<?>, String> aliasProvider;
 	
 	/**
 	 * Default constructor, will take values in {@link Row}s by column names
@@ -31,8 +31,8 @@ public class ColumnedRow {
 	 * Constructor that will apply the given "sliding" function on column names in order to make them match {@link Row} keys
 	 * @param aliasProvider a {@link Function} that makes mapping between {@link Column} and {@link Row} keys
 	 */
-	public ColumnedRow(Function<? super Selectable<?>, String> aliasProvider) {
-		this.aliasProvider = aliasProvider;
+	public ColumnedRow(Function<? extends Selectable<?>, String> aliasProvider) {
+		this.aliasProvider = (Function<Selectable<?>, String>) aliasProvider;
 	}
 	
 	/**

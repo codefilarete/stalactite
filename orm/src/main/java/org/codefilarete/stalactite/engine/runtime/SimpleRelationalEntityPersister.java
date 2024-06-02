@@ -99,6 +99,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	protected EntitySelectExecutor<C> newEntitySelectExecutor(Dialect dialect) {
 		return new EntityGraphSelectExecutor<>(
+				persister,
 				selectGraphExecutor.getEntityJoinTree(),
 				persister.getConnectionProvider(),
 				dialect);

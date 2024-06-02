@@ -134,6 +134,7 @@ public interface PolymorphismPolicy<C> {
 			return this;
 		}
 		
+		@Override
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
 			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
 			return Iterables.collect(subClasses, Duo::getLeft, KeepOrderSet::new);
@@ -160,6 +161,7 @@ public interface PolymorphismPolicy<C> {
 			return this;
 		}
 		
+		@Override
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
 			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
 			return Iterables.collect(subClasses, Duo::getLeft, KeepOrderSet::new);
@@ -206,6 +208,7 @@ public interface PolymorphismPolicy<C> {
 			return Iterables.find(subClasses.entrySet(), e -> e.getValue().getEntityType().isAssignableFrom(instanceType)).getKey();
 		}
 		
+		@Override
 		public Set<SubEntityMappingConfiguration<? extends C>> getSubClasses() {
 			// we use a KeepOrderSet for stability order (overall for test assertions), not a strong expectation
 			return new KeepOrderSet<>(this.subClasses.values());

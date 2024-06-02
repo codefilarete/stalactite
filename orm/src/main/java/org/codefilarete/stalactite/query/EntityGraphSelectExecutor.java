@@ -2,14 +2,17 @@ package org.codefilarete.stalactite.query;
 
 import java.sql.ResultSet;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingTreeSelectExecutor;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
@@ -23,9 +26,11 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.Maps;
+import org.codefilarete.tool.collection.Maps.ChainingMap;
 
 import static org.codefilarete.stalactite.query.model.Operators.in;
 
@@ -46,11 +51,15 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 	
 	private final Dialect dialect;
 	
+	private final ConfiguredPersister<C, I> entityPersister;
+	
 	private final EntityJoinTree<C, I> entityJoinTree;
 	
-	public EntityGraphSelectExecutor(EntityJoinTree<C, I> entityJoinTree,
+	public EntityGraphSelectExecutor(ConfiguredPersister<C, I> entityPersister,
+									 EntityJoinTree<C, I> entityJoinTree,
 									 ConnectionProvider connectionProvider,
 									 Dialect dialect) {
+		this.entityPersister = entityPersister;
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
@@ -77,7 +86,10 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();
 		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
-		List<I> ids = readIds(sqlQueryBuilder, pk);
+		ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
+		Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
+		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 		
 		if (ids.isEmpty()) {
 			// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
@@ -94,12 +106,11 @@ public class EntityGraphSelectExecutor<C, I, T extends Table> implements EntityS
 		}
 	}
 	
-	private List<I> readIds(QuerySQLBuilder sqlQueryBuilder, Column<T, I> pk) {
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+	private Set<I> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk)));
-			return Iterables.collectToList(() -> rowIterator, row -> (I) row.get(PRIMARY_KEY_ALIAS));
+			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
+			return Iterables.collect(() -> rowIterator, row -> entityPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow), HashSet::new);
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}

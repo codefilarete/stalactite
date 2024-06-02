@@ -229,7 +229,7 @@ public class EntityTreeQueryBuilder<C> {
 			ConsumerNode consumerRoot = new ConsumerNode(tree.getRoot().toConsumer(createDedicatedRowDecoder(tree.getRoot())));
 			tree.foreachJoinWithDepth(consumerRoot, (targetOwner, currentNode) -> {
 				Holder<JoinRowConsumer> consumerHolder = new Holder<>();
-				Function<? super Selectable<?>, String> aliasProvider = column -> columnAliases.get(tablePerConsumer.get(consumerHolder.get()).findColumn(column.getExpression()));
+				Function<? extends Selectable<?>, String> aliasProvider = column -> columnAliases.get(tablePerConsumer.get(consumerHolder.get()).findColumn(column.getExpression()));
 				JoinRowConsumer consumer = currentNode.toConsumer(new ColumnedRow(aliasProvider));
 				consumerHolder.set(consumer);
 				ConsumerNode consumerNode = new ConsumerNode(consumer);
