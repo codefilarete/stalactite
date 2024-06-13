@@ -46,6 +46,8 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private Set<Language> languages = new HashSet<>();
 	
+	private boolean hasNuclearPower;
+	
 	public Country() {
 	}
 	
@@ -190,6 +192,14 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	public void setLanguages(Set<Language> languages) {
 		this.languages = languages;
+	}
+	
+	public boolean hasNuclearPower() {
+		return hasNuclearPower;
+	}
+	
+	public void nuclearPower(boolean hasNuclearPower) {
+		this.hasNuclearPower = hasNuclearPower;
 	}
 	
 	/**

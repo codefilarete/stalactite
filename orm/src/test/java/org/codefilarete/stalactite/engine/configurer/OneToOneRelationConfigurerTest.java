@@ -93,7 +93,7 @@ class OneToOneRelationConfigurerTest {
 				(Map) countryMapping, countryIdentifierAccessorByMethodReference,
 				(IdentifierInsertionManager) new AlreadyAssignedIdentifierManager<Country, Identifier>(Identifier.class, c -> {}, c -> false));
 		
-		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(City::getId);
+		LinkageSupport<City, Identifier<Long>> identifierLinkage = new LinkageSupport<>(City::getId);
 		identifierLinkage.setField(Reflections.findField(City.class, "id"));
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
 		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);
@@ -221,7 +221,7 @@ class OneToOneRelationConfigurerTest {
 				Accessors.mutatorByField(City.class, "id")
 		);
 		
-		LinkageSupport<City, Long> identifierLinkage = new LinkageSupport<>(City::getId);
+		LinkageSupport<City, Identifier<Long>> identifierLinkage = new LinkageSupport<>(City::getId);
 		identifierLinkage.setField(Reflections.findField(City.class, "id"));
 		identifierLinkage.setColumnOptions(new ColumnLinkageOptionsByName("id"));
 		LinkageSupport<City, String> nameLinkage = new LinkageSupport<>(City::getName);

@@ -8,19 +8,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import org.codefilarete.reflection.Accessor;
-import org.codefilarete.reflection.AccessorByField;
-import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorByMethod;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
-import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.reflection.Mutator;
-import org.codefilarete.reflection.MutatorByField;
-import org.codefilarete.reflection.MutatorByMember;
 import org.codefilarete.reflection.MutatorByMethod;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.PropertyAccessor;
@@ -33,11 +26,11 @@ import org.codefilarete.stalactite.engine.CompositeKeyMappingConfigurationProvid
 import org.codefilarete.stalactite.engine.CompositeKeyPropertyOptions;
 import org.codefilarete.stalactite.engine.FluentCompositeKeyMappingBuilder;
 import org.codefilarete.stalactite.engine.ImportedEmbedOptions;
+import org.codefilarete.stalactite.engine.configurer.PropertyAccessorResolver.PropertyMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinderRegistry.EnumBindType;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.function.SerializableThrowingFunction;
 import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.ThreadSafeLazyInitializer;
@@ -332,17 +325,17 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 		
 		private final AccessorFieldLazyInitializer accessor = new AccessorFieldLazyInitializer();
 		
-		private SerializableFunction<T, ?> getter;
+		private SerializableFunction<T, O> getter;
 		
-		private SerializableBiConsumer<T, ?> setter;
+		private SerializableBiConsumer<T, O> setter;
 		
 		private Field field;
 		
-		public LinkageSupport(SerializableFunction<T, ?> getter) {
+		public LinkageSupport(SerializableFunction<T, O> getter) {
 			this.getter = getter;
 		}
 		
-		public LinkageSupport(SerializableBiConsumer<T, ?> setter) {
+		public LinkageSupport(SerializableBiConsumer<T, O> setter) {
 			this.setter = setter;
 		}
 		
@@ -393,47 +386,22 @@ public class FluentCompositeKeyMappingConfigurationSupport<C> implements FluentC
 			
 			@Override
 			protected ReversibleAccessor<T, O> createInstance() {
-				Accessor<T, O> accessor = null;
-				Mutator<T, O> mutator = null;
-				if (LinkageSupport.this.getter != null) {
-					accessor = (Accessor<T, O>) Accessors.accessorByMethodReference(LinkageSupport.this.getter);
-					AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(accessor);
+				return new PropertyAccessorResolver<>(new PropertyMapping<T, O>() {
+					@Override
+					public SerializableFunction<T, O> getGetter() {
+							return LinkageSupport.this.getter;
+					}
 					
-					String capitalizedProperty = Strings.capitalize(accessorDefinition.getName());
-					String methodPrefix = boolean.class.equals(accessorDefinition.getMemberType()) || Boolean.class.equals(accessorDefinition.getMemberType())
-							? "is"
-							: "set";
-					Method method = Reflections.findMethod(accessorDefinition.getDeclaringClass(), methodPrefix + capitalizedProperty, accessorDefinition.getMemberType());
-					MutatorByMember<T, O, ?> propertySetter = null;
-					if (method != null) {
-						propertySetter = new MutatorByMethod<>(method);
+					@Override
+					public SerializableBiConsumer<T, O> getSetter() {
+						return LinkageSupport.this.setter;
 					}
-					if (propertySetter == null) {
-						if (LinkageSupport.this.field != null) {
-							propertySetter = new MutatorByField<>(LinkageSupport.this.field);
-						} else {
-							// NB: we use getField(..) instead of findField(..) because the latter returns null if field wasn't found
-							// so AccessorByField will throw a NPE later whereas getField(..) throws a MemberNotFoundException which is clearer
-							propertySetter = new MutatorByField<>(Reflections.getField(accessorDefinition.getDeclaringClass(), accessorDefinition.getName()));
-						}
+					
+					@Override
+					public Field getField() {
+						return LinkageSupport.this.getField();
 					}
-					mutator = propertySetter;
-				} else if (LinkageSupport.this.setter != null) {
-					mutator = (Mutator<T, O>) Accessors.mutatorByMethodReference(LinkageSupport.this.setter);
-					AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(mutator);
-					AccessorByMember<T, O, ?> propertyGetter = Accessors.accessorByMethod(accessorDefinition.getDeclaringClass(), accessorDefinition.getName());
-					if (propertyGetter == null) {
-						if (LinkageSupport.this.field != null) {
-							propertyGetter = new AccessorByField<>(LinkageSupport.this.field);
-						} else {
-							// NB: we use getField(..) instead of findField(..) because the latter returns null if field wasn't found
-							// so AccessorByField will throw a NPE later whereas getField(..) throws a MemberNotFoundException which is clearer
-							propertyGetter = new AccessorByField<>(Reflections.getField(accessorDefinition.getDeclaringClass(), accessorDefinition.getName()));
-						}
-					}
-					accessor = propertyGetter;
-				}
-				return new PropertyAccessor<>(accessor, mutator);
+				}).resolve();
 			}
 		}
 	}
