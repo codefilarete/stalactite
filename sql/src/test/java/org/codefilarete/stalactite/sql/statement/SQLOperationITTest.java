@@ -103,7 +103,7 @@ abstract class SQLOperationITTest extends DatabaseIntegrationTest {
 			// we let thread stops else it generates unexpected exception (caused by test exit)
 			selectCommandThread.join(200);
 			
-			assertThat(giveCancelOperationPredicate().test(capturedException[0])).isTrue();
+			assertThat(giveCancelOperationPredicate().test(capturedException[0])).withThreadDumpOnError().isTrue();
 			lockingConnection.rollback();    // release lock for clean test exit
 			
 			((CurrentThreadConnectionProvider) connectionProvider).releaseConnection();
