@@ -11,7 +11,6 @@
 	
 	<properties>
 		<postgresql-embedded.version>2.10</postgresql-embedded.version>
-		<testcontainer.version>1.17.2</testcontainer.version>
 	</properties>
 	
 	<dependencies>

@@ -10,10 +10,6 @@
 	
 	<artifactId>core-mariadb-adapter</artifactId>
 	
-	<properties>
-		<testcontainer.version>1.17.2</testcontainer.version>
-	</properties>
-	
 	<dependencies>
 		<dependency>
 			<groupId>org.codefilarete.stalactite</groupId>

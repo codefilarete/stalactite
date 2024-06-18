@@ -51,6 +51,7 @@
 		<assertj-core.version>3.23.1</assertj-core.version>
 		<!-- Tools lib dependency must be aligned with sql module Reflection lib dependency which also has its Tools lib dep -->
 		<tools.version>1.1.0</tools.version>
+		<testcontainer.version>1.19.8</testcontainer.version>
 	</properties>
 	
 	<dependencies>

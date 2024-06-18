@@ -12,7 +12,6 @@
 	
 	<properties>
 		<mariadb-java-client.version>3.0.7</mariadb-java-client.version>
-		<testcontainer.version>1.17.2</testcontainer.version>
 	</properties>
 	
 	<dependencies>
