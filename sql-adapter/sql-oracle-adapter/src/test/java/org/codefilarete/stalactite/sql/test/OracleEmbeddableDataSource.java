@@ -54,6 +54,7 @@ public class OracleEmbeddableDataSource extends UrlAwareDataSource implements Cl
 					// Oracle schema is tightly coupled to user so me use same thing for both
 					.withUsername(databaseName)
 					.withPassword(databaseName)
+					.withPrivilegedMode(true)	// for Jenkins with Docker In Docker
 					.setPortBindings(Arrays.asList(this.port + ":" + ORACLE_DEFAULT_PORT));
 			oracleContainer.start();
 			USED_PORTS.put(port, oracleContainer);
