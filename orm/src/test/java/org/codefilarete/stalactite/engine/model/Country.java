@@ -48,6 +48,8 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	private boolean hasNuclearPower;
 	
+	private boolean euMember;
+	
 	public Country() {
 	}
 	
@@ -200,6 +202,14 @@ public class Country extends AbstractCountry implements Identified<Long> {
 	
 	public void nuclearPower(boolean hasNuclearPower) {
 		this.hasNuclearPower = hasNuclearPower;
+	}
+	
+	public boolean isEuMember() {
+		return euMember;
+	}
+	
+	public void setEuMember(boolean euMember) {
+		this.euMember = euMember;
 	}
 	
 	/**

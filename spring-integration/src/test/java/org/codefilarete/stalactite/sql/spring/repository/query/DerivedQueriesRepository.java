@@ -23,6 +23,10 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	
 	Country findByNameNot(String name);
 	
+	Country findByEuMemberIsTrue();
+	
+	Country findByEuMemberIsFalse();
+	
 	Country findByIdAndName(Identifier<Long> id, String name);
 	
 	Set<Country> findByDescriptionLike(String name);

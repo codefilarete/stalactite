@@ -38,23 +38,23 @@ import org.springframework.lang.Nullable;
  * The parsing of the {@link QueryMethod} is made by Spring {@link PartTree}, hence this class only iterates over parts
  * to create a Stalactite query.
  * 
- * @param <T>
+ * @param <C> entity type
  * @author Guillaume Mary
  */
-public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
+public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 	
 	private final QueryMethod method;
-	private final Query<T> query;
-	private final Accumulator<T, ?, Object> accumulator;
+	private final Query<C> query;
+	private final Accumulator<C, ?, Object> accumulator;
 	
-	public PartTreeStalactiteQuery(QueryMethod method, EntityPersister<T, ?> entityPersister) {
+	public PartTreeStalactiteQuery(QueryMethod method, EntityPersister<C, ?> entityPersister) {
 		this.method = method;
 		this.accumulator = method.isCollectionQuery()
 				? (Accumulator) Accumulators.toList()
 				: (Accumulator) Accumulators.getFirstUnique();
 		Parameters<?, ?> parameters = method.getParameters();
 		
-		Class<T> domainClass = entityPersister.getClassToPersist();
+		Class<C> domainClass = entityPersister.getClassToPersist();
 		
 		boolean recreationRequired = parameters.hasDynamicProjection() || parameters.potentiallySortsDynamically();
 		
@@ -181,8 +181,10 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 				case EXISTS:
 					break;
 				case TRUE:
+					operator = new Equals<>(true);
 					break;
 				case FALSE:
+					operator = new Equals<>(false);
 					break;
 				case NEGATING_SIMPLE_PROPERTY:
 					operator = new Equals<>().not();
@@ -207,6 +209,15 @@ public class PartTreeStalactiteQuery<T> implements RepositoryQuery {
 						@Override
 						public void setValue(Object[] arguments, int argumentIndex) {
 							// IsNull doesn't set any value (at least it does nothing)
+							// moreover default behavior will throw exception due to argument position computation:
+							// findByNameIsNull() has no arg => arguments is empty making arguments[0] throws an IndexOutOfBoundsException 
+						}
+					};
+				} else if (part.getType() == Type.TRUE || part.getType() == Type.FALSE) {
+					return new Criterion(operator, 0) {
+						@Override
+						public void setValue(Object[] arguments, int argumentIndex) {
+							// TRUE and FALSE don't set any value
 							// moreover default behavior will throw exception due to argument position computation:
 							// findByNameIsNull() has no arg => arguments is empty making arguments[0] throws an IndexOutOfBoundsException 
 						}

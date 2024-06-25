@@ -222,6 +222,22 @@ class DerivedQueriesTest {
 		}
 		
 		@Test
+		void equalBoolean() {
+			Country country1 = new Country(42);
+			country1.setName("Toto");
+			Country country2 = new Country(43);
+			country2.setName("Toto");
+			country2.setEuMember(true);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+
+			Country loadedCountry = derivedQueriesRepository.findByEuMemberIsTrue();
+			assertThat(loadedCountry).isEqualTo(country2);
+
+			loadedCountry = derivedQueriesRepository.findByEuMemberIsFalse();
+			assertThat(loadedCountry).isEqualTo(country1);
+		}
+		
+		@Test
 		void in() {
 			Country country1 = new Country(42);
 			country1.setName("Toto");
@@ -404,6 +420,7 @@ class DerivedQueriesTest {
 					.mapKey(Country::getId, IdentifierPolicy.<Country, Identifier<Long>>alreadyAssigned(p -> p.getId().setPersisted(), p -> p.getId().isPersisted()))
 					.map(Country::getName)
 					.map(Country::getDescription)
+					.map(Country::isEuMember)
 					.embed(Country::getTimestamp, MappingEase.embeddableBuilder(Timestamp.class)
 							.map(Timestamp::getCreationDate)
 							.map(Timestamp::getModificationDate))
