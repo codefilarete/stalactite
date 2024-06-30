@@ -72,4 +72,6 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	Country findByTimestampCreationDateLessThan(Date date);
 	
 	Set<Country> findByLanguagesCodeIs(String code);
+	
+	long deleteByLanguagesCodeIs(String code);
 }

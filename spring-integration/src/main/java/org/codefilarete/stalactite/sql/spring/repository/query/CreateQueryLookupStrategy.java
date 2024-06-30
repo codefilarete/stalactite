@@ -3,12 +3,15 @@ package org.codefilarete.stalactite.sql.spring.repository.query;
 import java.lang.reflect.Method;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
+import org.springframework.data.repository.query.parser.PartTree;
 
 /**
  * {@link QueryLookupStrategy} that creates a query for each candidate derived-query-method.
@@ -29,6 +32,26 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 										RepositoryMetadata metadata,
 										ProjectionFactory factory,
 										NamedQueries namedQueries) {
-		return new PartTreeStalactiteQuery<>(new QueryMethod(method, metadata, factory), entityPersister);
+		PartTree partTree = new PartTree(method.getName(), entityPersister.getClassToPersist());
+		QueryMethod queryMethod = new QueryMethod(method, metadata, factory);
+		
+		new QueryMethodValidator(partTree, queryMethod).validate();
+		if (partTree.isDelete()) {
+			return new PartTreeStalactiteDelete<>(queryMethod, entityPersister, partTree);
+//		} else if (partTree.isCountProjection()) {
+//			
+//		} else if (partTree.isDistinct()) {
+			
+//		} else if (partTree.isExistsProjection()) {
+//			
+//		} else if (partTree.isLimiting()) {
+			
+		} else {
+			Accumulator<T, ?, ?> accumulator = queryMethod.isCollectionQuery()
+					? (Accumulator) Accumulators.toList()
+					: (Accumulator) Accumulators.getFirstUnique();
+			
+			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, accumulator);
+		}
 	}
 }
