@@ -106,21 +106,21 @@ public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 		}
 		
 		private void append(Part part, Holder<ExecutableEntityQuery<T>> resultHolder, int partIndex) {
-			Criterion criterion = operator(part);
+			Criterion criterion = convertToOperator(part.getType());
 			// entityPersister doesn't support the creation of a ExecutableEntityQuery from scratch and requires to
 			// create it from entityPersister.selectWhere : we call it for first part
 			if (partIndex == 0) {
-				ExecutableEntityQuery<T> criteriaHook = entityPersister.selectWhere(accessorChain(part.getProperty()), criterion.operator);
+				ExecutableEntityQuery<T> criteriaHook = entityPersister.selectWhere(convertToAccessorChain(part.getProperty()), criterion.operator);
 				resultHolder.set(criteriaHook);
 			} else {
-				resultHolder.get().and(accessorChain(part.getProperty()), criterion.operator);
+				resultHolder.get().and(convertToAccessorChain(part.getProperty()), criterion.operator);
 			}
 			this.criteriaChain.criteria.add(criterion);
 		}
 		
-		private Criterion operator(Part part) {
+		private Criterion convertToOperator(Type type) {
 			ConditionalOperator<?, ?> operator = null;
-			switch (part.getType()) {
+			switch (type) {
 				case BETWEEN:
 					operator = new Between<>();
 					break;
@@ -194,7 +194,7 @@ public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 				case EXISTS:
 			}
 			if (operator == null) {
-				throw new UnsupportedOperationException("Unsupported operator type: " + part.getType());
+				throw new UnsupportedOperationException("Unsupported operator type: " + type);
 			} else {
 				// Adapting result depending on kind of operator was instantiated
 				if (operator instanceof Between) {
@@ -213,7 +213,7 @@ public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 							// findByNameIsNull() has no arg => arguments is empty making arguments[0] throws an IndexOutOfBoundsException 
 						}
 					};
-				} else if (part.getType() == Type.TRUE || part.getType() == Type.FALSE) {
+				} else if (type == Type.TRUE || type == Type.FALSE) {
 					return new Criterion(operator, 0) {
 						@Override
 						public void setValue(Object[] arguments, int argumentIndex) {
@@ -228,7 +228,7 @@ public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 			}
 		}
 		
-		private <O> AccessorChain<T, O> accessorChain(PropertyPath property) {
+		private <O> AccessorChain<T, O> convertToAccessorChain(PropertyPath property) {
 			List<Accessor<?, ?>> accessorChain = new ArrayList<>(); 
 			property.forEach(path -> 
 					accessorChain.add(Accessors.accessor(path.getOwningType().getType(), path.getSegment())));
