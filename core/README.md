@@ -32,7 +32,7 @@ System.out.println(new QueryBuilder(q).toSQL())
 // will print : select p.firstname, p.lastname, c.color from Person as p inner join Car as c on p.id = c.owner where p.lastname like '%jo%'
 </pre>
 
-Please refer to [this test](src/test/java/org/codefilarete/stalactite/query/builder/SQLQueryBuilderTest.java) for examples.
+Please refer to [this test](src/test/java/org/codefilarete/stalactite/query/builder/QuerySQLBuilderTest.java) for examples.
 
 # Caveat
 

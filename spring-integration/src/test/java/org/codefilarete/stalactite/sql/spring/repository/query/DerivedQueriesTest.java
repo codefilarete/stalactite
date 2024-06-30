@@ -310,6 +310,30 @@ class DerivedQueriesTest {
 		}
 		
 		@Test
+		void contains() {
+			Country country1 = new Country(42);
+			country1.setDescription("a description with a keyword");
+			Country country2 = new Country(43);
+			country2.setDescription("a keyword contained in the description");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionContains("contained");
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		}
+		
+		@Test
+		void notContains() {
+			Country country1 = new Country(42);
+			country1.setDescription("a description with a keyword");
+			Country country2 = new Country(43);
+			country2.setDescription("a keyword contained in the description");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionNotContains("contained");
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
+		}
+		
+		@Test
 		void isNull() {
 			Country country1 = new Country(42);
 			country1.setName("Toto");
@@ -377,6 +401,27 @@ class DerivedQueriesTest {
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		}
 		
+		@Test
+		void before() {
+			Country country1 = new Country(42);
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdBefore(new PersistedIdentifier<>(43L));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
+		}
+		
+		@Test
+		void after() {
+			Country country1 = new Country(42);
+			derivedQueriesRepository.save(country1);
+			Country country2 = new Country(43);
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByIdAfter(new PersistedIdentifier<>(42L));
+			assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		}
 		
 		@Test
 		void between() {

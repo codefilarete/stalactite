@@ -37,6 +37,10 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	
 	Set<Country> findByDescriptionEndsWith(String name);
 	
+	Set<Country> findByDescriptionContains(String name);
+	
+	Set<Country> findByDescriptionNotContains(String name);
+	
 	Set<Country> findByNameIsNull();
 	
 	Set<Country> findByNameIsNotNull();
@@ -48,6 +52,10 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	Set<Country> findByIdGreaterThan(Identifier<Long> id);
 	
 	Set<Country> findByIdGreaterThanEqual(Identifier<Long> id);
+	
+	Set<Country> findByIdBefore(Identifier<Long> id);
+	
+	Set<Country> findByIdAfter(Identifier<Long> id);
 	
 	Set<Country> findByIdBetween(Identifier<Long> id1, Identifier<Long> id2);
 	

@@ -130,21 +130,19 @@ public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 				case IS_NULL:
 					operator = new IsNull();
 					break;
+				case BEFORE:
 				case LESS_THAN:
 					operator = new Lower<>();
 					break;
 				case LESS_THAN_EQUAL:
 					operator = new Lower<>().equals();
 					break;
+				case AFTER:
 				case GREATER_THAN:
 					operator = new Greater<>();
 					break;
 				case GREATER_THAN_EQUAL:
 					operator = new Greater<>().equals();
-					break;
-				case BEFORE:
-					break;
-				case AFTER:
 					break;
 				case NOT_LIKE:
 					operator = new Like(true, true).not();
@@ -153,32 +151,26 @@ public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 					operator = new Like(true, true);
 					break;
 				case STARTING_WITH:
-					operator = new Like(false, true);
+					operator = Like.startsWith();
 					break;
 				case ENDING_WITH:
-					operator = new Like(true, false);
+					operator = Like.endsWith();
 					break;
 				case IS_NOT_EMPTY:
 					break;
 				case IS_EMPTY:
 					break;
 				case NOT_CONTAINING:
+					operator = Like.contains().not();
 					break;
 				case CONTAINING:
+					operator = Like.contains();
 					break;
 				case NOT_IN:
 					operator = new In<>().not();
 					break;
 				case IN:
 					operator = new In<>();
-					break;
-				case NEAR:
-					break;
-				case WITHIN:
-					break;
-				case REGEX:
-					break;
-				case EXISTS:
 					break;
 				case TRUE:
 					operator = new Equals<>(true);
@@ -191,11 +183,19 @@ public class PartTreeStalactiteQuery<C> implements RepositoryQuery {
 					break;
 				case SIMPLE_PROPERTY:
 					operator = new Equals<>();
+					break;
+				// Hereafter operators are not supported for different reasons :
+				// - JPA doesn't either,
+				// - too database-specific,
+				// - don't know on which operator to bind them (no javadoc)
+				case NEAR:
+				case WITHIN:
+				case REGEX:
+				case EXISTS:
 			}
 			if (operator == null) {
 				throw new UnsupportedOperationException("Unsupported operator type: " + part.getType());
 			} else {
-				
 				// Adapting result depending on kind of operator was instantiated
 				if (operator instanceof Between) {
 					return new Criterion(operator, 2) {
