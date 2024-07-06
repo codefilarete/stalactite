@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
+import org.codefilarete.stalactite.query.builder.UnionSQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.DDLGenerator;
 import org.codefilarete.stalactite.sql.ddl.DDLTableGenerator;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
@@ -39,6 +40,8 @@ public class Dialect {
 	
 	private QuerySQLBuilderFactory querySQLBuilderFactory;
 	
+	private UnionSQLBuilderFactory unionSQLBuilderFactory;
+	
 	/**
 	 * Creates a default dialect, with a {@link DefaultTypeMapping} and a default {@link ColumnBinderRegistry}
 	 */
@@ -64,6 +67,7 @@ public class Dialect {
 		this.writeOperationFactory = newWriteOperationFactory();
 		this.readOperationFactory = newReadOperationFactory();
 		this.querySQLBuilderFactory = new QuerySQLBuilderFactoryBuilder(columnBinderRegistry, javaTypeToSqlTypeMapping).build();
+		this.unionSQLBuilderFactory = new UnionSQLBuilderFactory();
 	}
 	
 	protected DDLTableGenerator newDdlTableGenerator() {
@@ -100,6 +104,10 @@ public class Dialect {
 	
 	public QuerySQLBuilderFactory getQuerySQLBuilderFactory() {
 		return querySQLBuilderFactory;
+	}
+	
+	public UnionSQLBuilderFactory getUnionSQLBuilderFactory() {
+		return unionSQLBuilderFactory;
 	}
 	
 	/**

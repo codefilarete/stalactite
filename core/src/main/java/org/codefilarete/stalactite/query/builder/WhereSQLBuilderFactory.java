@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
+import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
@@ -119,7 +120,7 @@ public class WhereSQLBuilderFactory {
 			return result;
 		}
 		
-		public static class WhereAppender {
+		public class WhereAppender {
 			
 			private final SQLAppender sql;
 			
@@ -129,7 +130,10 @@ public class WhereSQLBuilderFactory {
 			
 			private final DMLNameProvider dmlNameProvider;
 			
-			public WhereAppender(SQLAppender sql, DMLNameProvider dmlNameProvider, OperatorSQLBuilder operatorSqlBuilder, FunctionSQLBuilder functionSQLBuilder) {
+			public WhereAppender(SQLAppender sql,
+								 DMLNameProvider dmlNameProvider,
+								 OperatorSQLBuilder operatorSqlBuilder,
+								 FunctionSQLBuilder functionSQLBuilder) {
 				this.sql = sql;
 				this.operatorSqlBuilder = operatorSqlBuilder;
 				this.functionSQLBuilder = functionSQLBuilder;
@@ -181,7 +185,7 @@ public class WhereSQLBuilderFactory {
 					} else if (o instanceof SQLFunction) {    // made for having(sum(col), eq(..))
 						cat((SQLFunction) o);
 					} else {
-						throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
+						throw new UnsupportedOperationException("Unknown criterion type " + Reflections.toString(o.getClass()));
 					}
 				}
 			}
@@ -195,7 +199,12 @@ public class WhereSQLBuilderFactory {
 				} else if (o instanceof ConditionalOperator) {
 					cat(criterion.getColumn(), (ConditionalOperator) o);
 				} else {
-					throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
+					try {
+						parameterBinderRegistry.getBinder(o.getClass());
+					} catch (BindingException e) {
+						throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
+					}
+					sql.catValue(o);
 				}
 			}
 			

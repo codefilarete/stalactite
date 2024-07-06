@@ -14,14 +14,16 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.*;
+import static org.codefilarete.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.gt;
+import static org.codefilarete.stalactite.query.model.Operators.lt;
+import static org.codefilarete.stalactite.query.model.Operators.sum;
 import static org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC;
 import static org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC;
 import static org.codefilarete.stalactite.query.model.QueryEase.select;
@@ -147,6 +149,17 @@ class QuerySQLBuilderTest {
 		}
 	}
 	
+	private PreparedSQLBuilder preparedSQLBuilder(QueryStatement queryStatement) {
+		QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
+		if (queryStatement instanceof Query) {
+			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
+		} else if (queryStatement instanceof Union) {
+			return dialect.getUnionSQLBuilderFactory().unionBuilder((Union) queryStatement, querySQLBuilderFactory);
+		} else {
+			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
+		}
+	}
+	
 	public static Object[][] toPreparedSQL() {
 		Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.addColumn("a", String.class);
@@ -180,15 +193,20 @@ class QuerySQLBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto).innerJoin(colTotoA, colTataA).setAlias(tableTata, "x").where(colTataB, eq(1)),
 						"select Toto.a, x.b from Toto inner join Tata as x on Toto.a = x.a where x.b = ?",
 						Maps.asHashMap(1, 1) },
+				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(11)).unionAll(
+						select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(22))),
+						"(select T.a, Tata.b from Toto as T where T.b = ?)"
+								+ " union all"
+								+ " (select T.a, Tata.b from Toto as T where T.b = ?)",
+						Maps.asHashMap(1, 11).add(2, 22)},
 		};
 	}
 	
 	@ParameterizedTest
 	@MethodSource("toPreparedSQL")
 	public void toPreparedSQL(QueryProvider<Query> queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		QuerySQLBuilderFactory testInstance = dialect.getQuerySQLBuilderFactory();
-		ColumnBinderRegistry parameterBinderRegistry = new ColumnBinderRegistry();
-		PreparedSQL preparedSQL = testInstance.queryBuilder(queryProvider.getQuery()).toPreparedSQL();
+		PreparedSQLBuilder testInstance = preparedSQLBuilder(queryProvider.getQuery());
+		PreparedSQL preparedSQL = testInstance.toPreparedSQL();
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}

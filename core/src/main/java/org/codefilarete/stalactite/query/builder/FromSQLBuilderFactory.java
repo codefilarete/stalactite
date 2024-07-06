@@ -17,7 +17,9 @@ import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.Strings;
 import org.codefilarete.tool.collection.PairIterator;
@@ -45,7 +47,7 @@ public class FromSQLBuilderFactory {
 	 * @author Guillaume Mary
 	 * @see #toSQL()
 	 */
-	public static class FromSQLBuilder implements SQLBuilder {
+	public static class FromSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
 		private final From from;
 		
@@ -65,17 +67,60 @@ public class FromSQLBuilderFactory {
 				// invalid SQL
 				throw new IllegalArgumentException("Empty from");
 			}
-			StringAppender fromGenerator = new FromGenerator();
+			StringAppender result = new StringAppender();
+			FromGenerator fromGenerator = new FromGenerator(new StringAppenderWrapper(result, dmlNameProvider), dmlNameProvider);
 			fromGenerator.cat(from.getRoot());
 			Iterator<Join> joinIterator = from.getJoins().iterator();
 			joinIterator.forEachRemaining(fromGenerator::cat);
-			return fromGenerator.toString();
+			return result.toString();
+		}
+		
+		@Override
+		public PreparedSQL toPreparedSQL() {
+			return toPreparedSQL(new StringAppender(), querySQLBuilderFactory.getParameterBinderRegistry());
+		}
+		
+		public PreparedSQL toPreparedSQL(StringAppender sql, ColumnBinderRegistry parameterBinderRegistry) {
+			PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
+			return toPreparedSQL(preparedSQLWrapper);
+		}
+		
+		public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
+			if (from.getRoot() == null) {
+				// invalid SQL
+				throw new IllegalArgumentException("Empty from");
+			}
+			FromGenerator fromGenerator = new FromGenerator(preparedSQLWrapper, dmlNameProvider) {
+				
+				/** Overridden to make it call unionBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
+				@Override
+				void cat(Query query) {
+					QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
+					unionBuilder.toPreparedSQL(preparedSQLWrapper);
+				}
+				
+				/** Overridden to make it call unionBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
+				@Override
+				void cat(UnionInFrom union) {
+					UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getUnion(), querySQLBuilderFactory);
+					// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
+					sql.cat("(");
+					unionSqlBuilder.toPreparedSQL(preparedSQLWrapper);
+					sql.cat(") as ").cat(getAliasOrDefault(union));
+				}
+			};
+			fromGenerator.cat(from.getRoot());
+			Iterator<Join> joinIterator = from.getJoins().iterator();
+			joinIterator.forEachRemaining(fromGenerator::cat);
+			PreparedSQL result = new PreparedSQL(preparedSQLWrapper.getSQL(), preparedSQLWrapper.getParameterBinders());
+			result.setValues(preparedSQLWrapper.getValues());
+			return result;
 		}
 		
 		/**
 		 * A dedicated {@link StringAppender} for the From clause
 		 */
-		private class FromGenerator extends StringAppender {
+		public class FromGenerator {
 			
 			private static final String INNER_JOIN = " inner join ";
 			private static final String LEFT_OUTER_JOIN = " left outer join ";
@@ -83,66 +128,62 @@ public class FromSQLBuilderFactory {
 			private static final String CROSS_JOIN = " cross join ";
 			private static final String ON = " on ";
 			
-			public FromGenerator() {
-				super(200);
+			final SQLAppender sql;
+			private final DMLNameProvider dmlNameProvider;
+			
+			public FromGenerator(SQLAppender sql,
+								 DMLNameProvider dmlNameProvider) {
+				
+				this.sql = sql;
+				this.dmlNameProvider = dmlNameProvider;
 			}
 			
 			/**
 			 * Overridden to dispatch to dedicated cat methods
 			 */
-			@Override
-			public StringAppender cat(Object o) {
+			public void cat(Object o) {
 				if (o instanceof String) {
-					return cat((String) o);
+					sql.cat((String) o);
 				} else if (o instanceof Table) {
-					return cat((Table) o);
+					cat((Table) o);
 				} else if (o instanceof Query) {
-					return cat((Query) o);
+					cat((Query) o);
 				} else if (o instanceof UnionInFrom) {
-					return cat((UnionInFrom) o);
+					cat((UnionInFrom) o);
 				} else if (o instanceof CrossJoin) {
-					return cat((CrossJoin) o);
+					cat((CrossJoin) o);
 				} else if (o instanceof AbstractJoin) {
-					return cat((AbstractJoin) o);
+					cat((AbstractJoin) o);
 				} else {
-					return super.cat(o);
+					throw new UnsupportedOperationException("Unknown From element " + Reflections.toString(o.getClass()));
 				}
 			}
 			
-			/**
-			 * Made to skip going through cat(Object) while calling it from internal method that passes String as argument. Small optimization, eases
-			 * debug, simplifies call.
-			 *
-			 * @param s any String
-			 * @return this
-			 */
-			private StringAppender cat(String s) {
-				super.appender.append(s);
-				return this;
-			}
-			
-			private StringAppender cat(Table table) {
+			private void cat(Table table) {
 				String tableAlias = dmlNameProvider.getAlias(table);
-				return cat(table.getName()).catIf(!Strings.isEmpty(tableAlias), " as " + tableAlias);
+				cat(table.getName());
+				sql.catIf(!Strings.isEmpty(tableAlias), " as " + tableAlias);
 			}
 			
-			private StringAppender cat(Query query) {
+			void cat(Query query) {
 				QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
-				return cat(unionBuilder.toSQL());
+				unionBuilder.toSQL(sql);
 			}
 			
-			private StringAppender cat(UnionInFrom union) {
+			void cat(UnionInFrom union) {
 				UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getUnion(), querySQLBuilderFactory);
 				// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
-				return cat("(", unionSqlBuilder.toSQL(), ") as ").cat(getAliasOrDefault(union));
+				sql.cat("(");
+				unionSqlBuilder.toSQL(sql);
+				sql.cat(") as ").cat(getAliasOrDefault(union));
 			}
 			
-			private StringAppender cat(CrossJoin join) {
-				catIf(length() > 0, CROSS_JOIN).cat(join.getRightTable());
-				return this;
+			private void cat(CrossJoin join) {
+				sql.catIf(!sql.isEmpty(), CROSS_JOIN);
+				cat(join.getRightTable());
 			}
 			
-			private StringAppender cat(AbstractJoin join) {
+			private void cat(AbstractJoin join) {
 				cat(join.getJoinDirection(), join.getRightTable());
 				if (join instanceof RawTableJoin) {
 					cat(((RawTableJoin) join).getJoinClause());
@@ -150,24 +191,23 @@ public class FromSQLBuilderFactory {
 					ColumnJoin columnJoin = (ColumnJoin) join;
 					CharSequence leftPrefix = getAliasOrDefault(columnJoin.getLeftColumn().getOwner());
 					CharSequence rightPrefix = getAliasOrDefault(columnJoin.getRightColumn().getOwner());
-					cat(leftPrefix, ".", columnJoin.getLeftColumn().getExpression(), " = ", rightPrefix, ".", columnJoin.getRightColumn().getExpression());
+					sql.cat(leftPrefix.toString(), ".", columnJoin.getLeftColumn().getExpression(), " = ", rightPrefix.toString(), ".", columnJoin.getRightColumn().getExpression());
 				} else if (join instanceof KeyJoin) {
 					KeyJoin keyJoin = (KeyJoin) join;
 					PairIterator<JoinLink<?, ?>, JoinLink<?, ?>> joinColumnsPairs = new PairIterator<>(keyJoin.getLeftKey().getColumns(), keyJoin.getRightKey().getColumns());
 					joinColumnsPairs.forEachRemaining(duo -> {
 						CharSequence leftPrefix = getAliasOrDefault(duo.getLeft().getOwner());
 						CharSequence rightPrefix = getAliasOrDefault(duo.getRight().getOwner());
-						cat(leftPrefix, ".", duo.getLeft().getExpression(), " = ", rightPrefix, ".", duo.getRight().getExpression(), " and ");
+						sql.cat(leftPrefix.toString(), ".", duo.getLeft().getExpression(), " = ", rightPrefix.toString(), ".", duo.getRight().getExpression(), " and ");
 					});
-					cutTail(" and ".length());
+					sql.removeLastChars(" and ".length());
 				} else {
 					// did I miss something ?
 					throw new UnsupportedOperationException("From building is not implemented for " + join.getClass().getName());
 				}
-				return this;
 			}
 			
-			private String getAliasOrDefault(Fromable fromable) {
+			String getAliasOrDefault(Fromable fromable) {
 				return Strings.preventEmpty(dmlNameProvider.getAlias(fromable), fromable.getName());
 			}
 			
@@ -186,7 +226,9 @@ public class FromSQLBuilderFactory {
 					default:
 						throw new IllegalArgumentException("Join type not implemented");
 				}
-				cat(joinType, table, ON);
+				sql.cat(joinType);
+				cat(table);
+				sql.cat(ON);
 			}
 		}
 	}

@@ -7,16 +7,18 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.EntitySelector;
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.query.model.Where;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -27,18 +29,14 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
-import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
-import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
  * @author Guillaume Mary
  */
 public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
 	
-	private static final String UNION_ALL_SEPARATOR = ") union all (";
 	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	
 	private final IdentifierAssembler<I, T> identifierAssembler;
@@ -72,21 +70,21 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 	
 	@Override
 	public Set<C> select(CriteriaChain where) {
-		Set<PreparedSQL> queries = new HashSet<>();
-		
-		// selecting ids and their discriminator
+		// Selecting ids and their discriminator by creating a union of select-per-table
+		// Columns of the union are the primary key ones, plus the discriminator
 		PrimaryKey<T, Object> pk = mainTable.getPrimaryKey();
 		Map<String, String> aliasPerPKColumnName = Iterables.map(pk.getColumns(), Column::getName, Column::getAlias);
 		
 		// building readers and aliases for union-all query
 		Map<String, ResultSetReader> readers = new HashMap<>();
-		Map<Column<T, Object>, String> aliases = new IdentityHashMap<>();
 		readers.put(DISCRIMINATOR_ALIAS, dialect.getColumnBinderRegistry().getBinder(String.class));
+		Map<Column<T, Object>, String> aliases = new IdentityHashMap<>();
 		pk.getColumns().forEach(pkColumn -> {
 			readers.put(aliasPerPKColumnName.get(pkColumn.getName()), dialect.getColumnBinderRegistry().getBinder(pkColumn));
 			aliases.put(pkColumn, pkColumn.getAlias());
 		});
 		
+		Set<Query> queries = new HashSet<>();
 		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
 			Query query = buildSubConfigurationQuery("'" + subEntityType.getSimpleName() + "'", subEntityTable, aliasPerPKColumnName);
 			
@@ -102,38 +100,20 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 			if (projectedWhere.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 				query.getWhere().and(projectedWhere);
 			}
-			
-			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
-			queries.add(preparedSQL);
+			queries.add(query);
 		});
 		
-		Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
-		Map<Integer, Object> values = new HashMap<>();
-		StringAppender unionSql = new StringAppender();
-		ModifiableInt parameterIndex = new ModifiableInt(1);
-		queries.forEach(preparedSQL -> {
-			unionSql.cat(preparedSQL.getSQL(), UNION_ALL_SEPARATOR);
-			preparedSQL.getValues().values().forEach(value -> {
-				// since ids are all
-				values.put(parameterIndex.getValue(), value);
-				// NB: parameter binder is expected to be always the same since we always put ids
-				parameterBinders.put(parameterIndex.getValue(),
-						preparedSQL.getParameterBinder(1 + parameterIndex.getValue() % preparedSQL.getValues().size()));
-				parameterIndex.increment();
-			});
-		});
-		unionSql.cutTail(UNION_ALL_SEPARATOR.length())
-				.wrap("(", ")");
+		Union union = new Union(queries);
+		Query queryWrappingUnion = new Query();
+		Set<Selectable<Object>> unionColumns = pk.getColumns().stream().map(pkColumn -> new Selectable.SelectableString<>(pkColumn.getAlias(), pkColumn.getJavaType())).collect(Collectors.toSet());
+		queryWrappingUnion.select(unionColumns);
+		queryWrappingUnion.select(DISCRIMINATOR_ALIAS, String.class);
+		queryWrappingUnion.from(union.asPseudoTable(mainTable.getName() + "_union"));
 		
-		PreparedSQL preparedSQL = new PreparedSQL(unionSql.toString(), parameterBinders);
-		preparedSQL.setValues(values);
-		
-		Map<Class, Set<I>> idsPerSubclass = readIds(preparedSQL, readers, new ColumnedRow(aliases::get));
-		
+		PreparedSQL preparedSql = dialect.getQuerySQLBuilderFactory().queryBuilder(queryWrappingUnion).toPreparedSQL();
+		Map<Class, Set<I>> idsPerSubclass = readIds(preparedSql, readers, new ColumnedRow(aliases::get));
 		Set<C> result = new HashSet<>();
 		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
-		
 		return result;
 	}
 	

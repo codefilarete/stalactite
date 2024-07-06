@@ -88,7 +88,7 @@ public class DeleteCommandBuilder implements SQLBuilder, PreparedSQLBuilder {
 		// append where clause
 		if (delete.getCriteria().iterator().hasNext()) {
 			result.cat(" where ");
-			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereSqlBuilder().whereBuilder(this.delete.getCriteria(), dmlNameProvider);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereBuilderFactory().whereBuilder(this.delete.getCriteria(), dmlNameProvider);
 			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();

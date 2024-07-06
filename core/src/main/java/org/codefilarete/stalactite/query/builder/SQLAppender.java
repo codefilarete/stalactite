@@ -54,5 +54,9 @@ public interface SQLAppender {
 		return this;
 	}
 	
+	default boolean isEmpty() {
+		return getSQL().isEmpty();
+	}
+	
 	String getSQL();
 }

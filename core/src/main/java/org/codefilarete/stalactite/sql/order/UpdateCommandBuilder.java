@@ -114,7 +114,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		// append where clause
 		if (!update.getCriteria().getConditions().isEmpty()) {
 			result.cat(" where ");
-			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereSqlBuilder().whereBuilder(this.update.getCriteria(), dmlNameProvider);
+			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereBuilderFactory().whereBuilder(this.update.getCriteria(), dmlNameProvider);
 			whereSqlBuilder.appendSQL(result);
 		}
 		return result.getSQL();

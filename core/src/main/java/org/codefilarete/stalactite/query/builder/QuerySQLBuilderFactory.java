@@ -36,30 +36,30 @@ import org.codefilarete.tool.StringAppender;
 public class QuerySQLBuilderFactory {
 	
 	private final ColumnBinderRegistry parameterBinderRegistry;
-	private final SelectSQLBuilderFactory selectBuilder;
-	private final FromSQLBuilderFactory fromSqlBuilder;
-	private final WhereSQLBuilderFactory whereSqlBuilder;
-	private final WhereSQLBuilderFactory havingBuilder;
+	private final SelectSQLBuilderFactory selectBuilderFactory;
+	private final FromSQLBuilderFactory fromBuilderFactory;
+	private final WhereSQLBuilderFactory whereBuilderFactory;
+	private final WhereSQLBuilderFactory havingBuilderFactory;
 	
 	/**
 	 * Main constructor
 	 *
 	 * @param parameterBinderRegistry necessary while using {@link PreparedSQLBuilder#toPreparedSQL()} after calling {@link #queryBuilder(Query)}
-	 * @param selectBuilder factory for select clause
-	 * @param fromSqlBuilder factory for from clause
-	 * @param whereSqlBuilder factory for where clause
-	 * @param havingBuilder factory for having clause
+	 * @param selectBuilderFactory factory for select clause
+	 * @param fromBuilderFactory factory for from clause
+	 * @param whereBuilderFactory factory for where clause
+	 * @param havingBuilderFactory factory for having clause
 	 */
 	public QuerySQLBuilderFactory(ColumnBinderRegistry parameterBinderRegistry,
-								  SelectSQLBuilderFactory selectBuilder,
-								  FromSQLBuilderFactory fromSqlBuilder,
-								  WhereSQLBuilderFactory whereSqlBuilder,
-								  WhereSQLBuilderFactory havingBuilder) {
+								  SelectSQLBuilderFactory selectBuilderFactory,
+								  FromSQLBuilderFactory fromBuilderFactory,
+								  WhereSQLBuilderFactory whereBuilderFactory,
+								  WhereSQLBuilderFactory havingBuilderFactory) {
 		this.parameterBinderRegistry = parameterBinderRegistry;
-		this.selectBuilder = selectBuilder;
-		this.fromSqlBuilder = fromSqlBuilder;
-		this.whereSqlBuilder = whereSqlBuilder;
-		this.havingBuilder = havingBuilder;
+		this.selectBuilderFactory = selectBuilderFactory;
+		this.fromBuilderFactory = fromBuilderFactory;
+		this.whereBuilderFactory = whereBuilderFactory;
+		this.havingBuilderFactory = havingBuilderFactory;
 	}
 	
 	/**
@@ -69,30 +69,30 @@ public class QuerySQLBuilderFactory {
 	 */
 	public QuerySQLBuilderFactory(JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping, ColumnBinderRegistry parameterBinderRegistry) {
 		this.parameterBinderRegistry = parameterBinderRegistry;
-		this.selectBuilder = new SelectSQLBuilderFactory(javaTypeToSqlTypeMapping);
-		this.fromSqlBuilder = new FromSQLBuilderFactory();
-		this.whereSqlBuilder = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
-		this.havingBuilder = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
+		this.selectBuilderFactory = new SelectSQLBuilderFactory(javaTypeToSqlTypeMapping);
+		this.fromBuilderFactory = new FromSQLBuilderFactory();
+		this.whereBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
+		this.havingBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
 	}
 	
 	public ColumnBinderRegistry getParameterBinderRegistry() {
 		return parameterBinderRegistry;
 	}
 	
-	public SelectSQLBuilderFactory getSelectBuilder() {
-		return selectBuilder;
+	public SelectSQLBuilderFactory getSelectBuilderFactory() {
+		return selectBuilderFactory;
 	}
 	
-	public FromSQLBuilderFactory getFromSqlBuilder() {
-		return fromSqlBuilder;
+	public FromSQLBuilderFactory getFromBuilderFactory() {
+		return fromBuilderFactory;
 	}
 	
-	public WhereSQLBuilderFactory getWhereSqlBuilder() {
-		return whereSqlBuilder;
+	public WhereSQLBuilderFactory getWhereBuilderFactory() {
+		return whereBuilderFactory;
 	}
 	
-	public WhereSQLBuilderFactory getHavingBuilder() {
-		return havingBuilder;
+	public WhereSQLBuilderFactory getHavingBuilderFactory() {
+		return havingBuilderFactory;
 	}
 	
 	public QuerySQLBuilder queryBuilder(Query query, CriteriaChain<?> where) {
@@ -120,10 +120,10 @@ public class QuerySQLBuilderFactory {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(query.getFromSurrogate().getTableAliases()::get);
 		return new QuerySQLBuilder(query,
 				dmlNameProvider,
-				selectBuilder.queryBuilder(query.getSelectSurrogate(), dmlNameProvider),
-				fromSqlBuilder.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this),
-				whereSqlBuilder.whereBuilder(query.getWhereSurrogate(), dmlNameProvider),
-				havingBuilder.whereBuilder(query.getHavingSurrogate(), dmlNameProvider),
+				selectBuilderFactory.queryBuilder(query.getSelectSurrogate(), dmlNameProvider),
+				fromBuilderFactory.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this),
+				whereBuilderFactory.whereBuilder(query.getWhereSurrogate(), dmlNameProvider),
+				havingBuilderFactory.whereBuilder(query.getHavingSurrogate(), dmlNameProvider),
 				parameterBinderRegistry);
 	}
 	
@@ -143,6 +143,7 @@ public class QuerySQLBuilderFactory {
 		private final WhereSQLBuilder whereSqlBuilder;
 		private final WhereSQLBuilder havingBuilder;
 		private final ColumnBinderRegistry parameterBinderRegistry;
+		private SQLAppender sqlAppender;
 		
 		public QuerySQLBuilder(Query query,
 							   DMLNameProvider dmlNameProvider,
@@ -170,8 +171,12 @@ public class QuerySQLBuilderFactory {
 		 */
 		@Override
 		public String toSQL() {
-			StringAppender sql = new StringAppender(500);
+			StringAppender result = new StringAppender(500);
+			toSQL(new StringAppenderWrapper(result, dmlNameProvider));
+			return result.toString();
+		}
 			
+		public void toSQL(SQLAppender sql) {
 			sql.cat("select ", selectSQLBuilder.toSQL());
 			sql.cat(" from ", fromSqlBuilder.toSQL());
 			if (!query.getWhereSurrogate().getConditions().isEmpty()) {
@@ -194,9 +199,7 @@ public class QuerySQLBuilderFactory {
 			}
 			
 			Limit limit = query.getLimitSurrogate();
-			sql.catIf(limit.getValue() != null, " limit ", limit.getValue());
-			
-			return sql.toString();
+			sql.catIf(limit.getValue() != null, " limit " + limit.getValue());
 		}
 		
 		/**
@@ -207,64 +210,68 @@ public class QuerySQLBuilderFactory {
 		@Override
 		public PreparedSQL toPreparedSQL() {
 			StringAppender sql = new StringAppender(500);
-			
 			PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
-			
-			sql.cat("select ", selectSQLBuilder.toSQL());
-			sql.cat(" from ", fromSqlBuilder.toSQL());
+			return toPreparedSQL(preparedSQLWrapper);
+		}
+		
+		public PreparedSQL toPreparedSQL(PreparedSQLWrapper sqlWrapper) {
+			sqlWrapper.cat("select ", selectSQLBuilder.toSQL());
+			sqlWrapper.cat(" from ");
+			fromSqlBuilder.toPreparedSQL(sqlWrapper);
 			if (!query.getWhereSurrogate().getConditions().isEmpty()) {
-				sql.cat(" where ");
-				whereSqlBuilder.toPreparedSQL(preparedSQLWrapper);
+				sqlWrapper.cat(" where ");
+				whereSqlBuilder.toPreparedSQL(sqlWrapper);
 			}
 			
 			GroupBy groupBy = query.getGroupBySurrogate();
 			if (!groupBy.getGroups().isEmpty()) {
-				cat(groupBy, sql.cat(" group by "));
+				cat(groupBy, sqlWrapper.cat(" group by "));
 			}
 			
 			Having having = query.getHavingSurrogate();
 			if (!having.getConditions().isEmpty()) {
-				sql.cat(" having ");
-				havingBuilder.toPreparedSQL(preparedSQLWrapper);
+				sqlWrapper.cat(" having ");
+				havingBuilder.toPreparedSQL(sqlWrapper);
 			}
 			
 			OrderBy orderBy = query.getOrderBySurrogate();
 			if (!orderBy.getColumns().isEmpty()) {
-				cat(orderBy, sql.cat(" order by "));
+				sqlWrapper.cat(" order by ");
+				cat(orderBy, sqlWrapper);
 			}
 			
 			Limit limit = query.getLimitSurrogate();
 			if (limit.getValue() != null) {
-				sql.cat(" limit ");
-				preparedSQLWrapper.catValue(limit.getValue());
+				sqlWrapper.cat(" limit ");
+				sqlWrapper.catValue(limit.getValue());
 			}
 			
-			PreparedSQL result = new PreparedSQL(sql.toString(), preparedSQLWrapper.getParameterBinders());
-			result.setValues(preparedSQLWrapper.getValues());
+			PreparedSQL result = new PreparedSQL(sqlWrapper.getSQL(), sqlWrapper.getParameterBinders());
+			result.setValues(sqlWrapper.getValues());
 			
 			return result;
 		}
 		
-		private void cat(OrderBy orderBy, StringAppender sql) {
+		private void cat(OrderBy orderBy, SQLAppender sql) {
 			for (OrderedColumn o : orderBy) {
 				Object column = o.getColumn();
 				cat(column, sql);
 				sql.catIf(o.getOrder() != null, o.getOrder() == Order.ASC ? " asc" : " desc").cat(", ");
 			}
-			sql.cutTail(2);
+			sql.removeLastChars(2);
 		}
 		
-		private void cat(GroupBy groupBy, StringAppender sql) {
+		private void cat(GroupBy groupBy, SQLAppender sql) {
 			for (Object o : groupBy) {
 				cat(o, sql);
 				sql.cat(", ");
 			}
-			sql.cutTail(2);
+			sql.removeLastChars(2);
 		}
 		
-		private void cat(Object column, StringAppender sql) {
+		private void cat(Object column, SQLAppender sql) {
 			if (column instanceof String) {
-				sql.cat(column);
+				sql.cat((String) column);
 			} else if (column instanceof Column) {
 				sql.cat(dmlNameProvider.getName((Column) column));
 			}

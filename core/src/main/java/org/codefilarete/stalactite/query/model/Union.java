@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query.model;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,6 +23,10 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	private final Map<Selectable<?>, String> aliases = new HashMap<>();
 	
 	private final KeepOrderSet<PseudoColumn<Object>> columns = new KeepOrderSet<>();
+	
+	public Union(Collection<Query> queries) {
+		this.queries = new KeepOrderSet<>(queries);
+	}
 	
 	public Union(Query ... queries) {
 		this.queries = new KeepOrderSet<>(queries);
