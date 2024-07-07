@@ -6,6 +6,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityMappingTreeSelectExecutor;
@@ -16,11 +19,13 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
@@ -66,14 +71,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 	}
 	
 	/**
-	 * Loads a bean graph that matches given criteria.
-	 * 
-	 * <strong>Please note that all beans under aggregate root will be loaded (aggregate that matches criteria will be fully loaded)</strong>
-	 * 
 	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
-	 *
-	 * @param where some criteria for aggregate selection
-	 * @return root beans of aggregates that match criteria
 	 */
 	@Override
 	public Set<C> select(CriteriaChain where) {
@@ -116,6 +114,34 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		}
 	}
 	
+	@Override
+	public <R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where) {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		Query query = entityTreeQuery.getQuery();
+		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
+		
+		// First phase : selecting ids (made by clearing selected elements for performance issue)
+		selectAdapter.accept(query.getSelectSurrogate());
+		Map<Selectable<?>, String> aliases = query.getAliases();
+		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		
+		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
+		
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
+	}
+	
+	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<String, ResultSetReader<?>> columnReaders, ColumnedRow columnedRow, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
+		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+			ResultSet resultSet = closeableOperation.execute();
+			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
+			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) selectable -> columnedRow.getValue(selectable, row)).collect(Collectors.toList()));
+		} catch (RuntimeException e) {
+			throw new SQLExecutionException(preparedSQL.getSQL(), e);
+		}
+	}
+	
 	/**
 	 * Small class to avoid passing {@link EntityTreeQuery} as argument to all methods
 	 */
@@ -150,6 +176,29 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		
 		protected Set<C> transform(Iterator<Row> rowIterator) {
 			return this.entityTreeQuery.getInflater().transform(() -> rowIterator, 50);
+		}
+	}
+	
+	/**
+	 * Small class that will be used to ensure that a {@link Selectable} as an alias in the query
+	 * @param <S>
+	 * @author Guillaume Mary
+	 */
+	private static class AliasAsserter<S extends Selectable> implements Function<S, String> {
+		
+		private final Function<S, String> delegate;
+		
+		private AliasAsserter(Function<S, String> delegate) {
+			this.delegate = delegate;
+		}
+		
+		@Override
+		public String apply(S selectable) {
+			String alias = delegate.apply(selectable);
+			if (alias == null) {
+				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
+			}
+			return alias;
 		}
 	}
 }

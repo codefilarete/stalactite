@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorChain;
@@ -46,6 +47,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -60,6 +62,7 @@ import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -254,6 +257,11 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(accessorChain, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		throw new NotImplementedException("Not yet implemented");
 	}
 	
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {

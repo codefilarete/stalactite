@@ -14,10 +14,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -42,6 +46,9 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
@@ -51,6 +58,7 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -467,6 +475,49 @@ class SimpleRelationalEntityPersisterTest {
 																									   new Toto(7, 1, 2)
 			).toString());
 		}
+		
+		@Test
+		void selectProjectionWhere() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			ResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap("count", 42L)
+			));
+			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
+			
+			Count count = Operators.count(new SelectableString<>("id", Integer.class));
+			ExecutableProjectionQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
+				select.clear();
+				select.add(count, "count");
+			}, Toto::getA, Operators.eq(77));
+			int countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableInt, Integer>() {
+				@Override
+				public Supplier<ModifiableInt> supplier() {
+					return ModifiableInt::new;
+				}
+				
+				@Override
+				public BiConsumer<ModifiableInt, Function<Selectable<Long>, Long>> aggregator() {
+					return (modifiableInt, selectableObjectFunction) -> {
+						Long apply = selectableObjectFunction.apply(count);
+						modifiableInt.reset(apply.intValue());
+					};
+				}
+				
+				@Override
+				public Function<ModifiableInt, Integer> finisher() {
+					return ModifiableInt::getValue;
+				}
+			});
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select count(id) as count from Toto1 where Toto1.a = ?"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			assertThat(countValue).isEqualTo(42);
+		}
 	}
 		
 	@Nested
@@ -511,6 +562,11 @@ class SimpleRelationalEntityPersisterTest {
 	}
 	
 	@Nested
+	class LoadProjectionByEntityCriteria {
+		
+	}		
+		
+		@Nested
 	class CRUD_WithListener {
 		
 		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy;

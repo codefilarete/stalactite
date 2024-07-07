@@ -6,11 +6,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
@@ -34,6 +36,8 @@ import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -227,6 +231,34 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 			);
 			return accumulator.collect(result);
 		};
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(getter, operator);
+		return wrapIntoExecutable2(selectAdapter, localCriteriaSupport);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(accessorChain, operator);
+		return wrapIntoExecutable2(selectAdapter, localCriteriaSupport);
+	}
+	
+	private ExecutableProjectionQuery<C> wrapIntoExecutable2(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		return methodDispatcher
+				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
+				.redirect(EntityCriteria.class, localCriteriaSupport, true)
+				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
+	}
+	
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
+			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria());
 	}
 	
 	/**

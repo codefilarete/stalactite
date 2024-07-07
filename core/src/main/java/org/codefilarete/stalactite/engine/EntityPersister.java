@@ -13,6 +13,7 @@ import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Experimental;
@@ -163,7 +164,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
+	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
 	 *
 	 * @param getter a property accessor
 	 * @param operator criteria for the property
@@ -175,7 +176,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
+	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
 	 *
 	 * @param setter a property accessor
 	 * @param operator criteria for the property
@@ -187,7 +188,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Variation of {@link #selectWhere(SerializableFunction, ConditionalOperator)} with a criteria on property of a property
-	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
+	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
 	 *
 	 * @param getter1 a property accessor
 	 * @param getter2 a property accessor
@@ -202,7 +203,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * Please note that whole bean graph is loaded, not only entities that satisfie criteria.
+	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
 	 *
 	 * @param accessorChain a property accessor
 	 * @param operator criteria for the property
@@ -211,6 +212,85 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	<O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator);
+	
+	/**
+	 * Creates a projection query which criteria target mapped properties.
+	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
+	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
+	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 *
+	 * @param selectAdapter the {@link Select} clause modifier
+	 * @param getter a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	default <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return null;
+	}
+	
+	/**
+	 * Creates a projection query which criteria target mapped properties.
+	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
+	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
+	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 *
+	 * @param selectAdapter the {@link Select} clause modifier
+	 * @param setter a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	default <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return null;
+	}
+	
+	/**
+	 * Creates a projection query which criteria target mapped properties.
+	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
+	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
+	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 *
+	 * @param selectAdapter the {@link Select} clause modifier
+	 * @param getter1 a property accessor
+	 * @param getter2 a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	default <O, A> ExecutableEntityQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
+	}
+	
+	/**
+	 * Creates a projection query which criteria target mapped properties.
+	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
+	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
+	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 *
+	 * @param selectAdapter the {@link Select} clause modifier
+	 * @param accessorChain a property accessor
+	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	<O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator);
 	
 	Set<C> selectAll();
 	
@@ -243,6 +323,31 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		
 		@Override
 		<O> ExecutableEntityQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
+	}
+	
+	/**
+	 * Mashup between {@link EntityCriteria} and {@link ExecutableProjection} to make an {@link EntityCriteria} executable
+	 * @param <C> type of object returned by query execution
+	 */
+	interface ExecutableProjectionQuery<C> extends EntityCriteria<C>, ExecutableProjection {
+		
+		@Override
+		<O> ExecutableProjectionQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
+		
+		@Override
+		<O> ExecutableProjectionQuery<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
+		
+		@Override
+		<O> ExecutableProjectionQuery<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
+		
+		@Override
+		<O> ExecutableProjectionQuery<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
+		
+		@Override
+		<A, B> ExecutableProjectionQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
+		
+		@Override
+		<O> ExecutableProjectionQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
 	}
 	
 	/**

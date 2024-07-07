@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.runtime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.PersistExecutor;
@@ -20,6 +21,7 @@ import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -237,6 +239,11 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	
 	@Override
 	public <O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	

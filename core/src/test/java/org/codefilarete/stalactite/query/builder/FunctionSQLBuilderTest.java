@@ -29,7 +29,7 @@ class FunctionSQLBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
 		
-		testInstance.cat(new Count<>(colA), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Count(colA), new StringAppenderWrapper(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("count(Toto.a)");
 	}
 	

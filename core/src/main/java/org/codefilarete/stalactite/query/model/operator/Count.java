@@ -7,9 +7,9 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Count<N> extends SQLFunction<N> {
+public class Count extends SQLFunction<Long> {
 	
-	public Count(Selectable<N> value) {
-		super("count", value.getJavaType(), value);
+	public Count(Selectable<?> value) {
+		super("count", Long.class, value);
 	}
 }
