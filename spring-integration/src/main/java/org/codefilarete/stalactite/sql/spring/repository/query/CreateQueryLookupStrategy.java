@@ -38,8 +38,8 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 		new QueryMethodValidator(partTree, queryMethod).validate();
 		if (partTree.isDelete()) {
 			return new PartTreeStalactiteDelete<>(queryMethod, entityPersister, partTree);
-//		} else if (partTree.isCountProjection()) {
-//			
+		} else if (partTree.isCountProjection()) {
+			return new PartTreeStalactiteCount<>(queryMethod, entityPersister, partTree);
 //		} else if (partTree.isDistinct()) {
 			
 //		} else if (partTree.isExistsProjection()) {

@@ -71,6 +71,7 @@ import org.codefilarete.tool.collection.PairIterator.EmptyIterator;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.trace.ModifiableInt;
+import org.codefilarete.tool.trace.ModifiableLong;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -489,23 +490,23 @@ class SimpleRelationalEntityPersisterTest {
 				select.clear();
 				select.add(count, "count");
 			}, Toto::getA, Operators.eq(77));
-			int countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableInt, Integer>() {
+			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {
 				@Override
-				public Supplier<ModifiableInt> supplier() {
-					return ModifiableInt::new;
+				public Supplier<ModifiableLong> supplier() {
+					return ModifiableLong::new;
 				}
 				
 				@Override
-				public BiConsumer<ModifiableInt, Function<Selectable<Long>, Long>> aggregator() {
+				public BiConsumer<ModifiableLong, Function<Selectable<Long>, Long>> aggregator() {
 					return (modifiableInt, selectableObjectFunction) -> {
 						Long apply = selectableObjectFunction.apply(count);
-						modifiableInt.reset(apply.intValue());
+						modifiableInt.reset(apply);
 					};
 				}
 				
 				@Override
-				public Function<ModifiableInt, Integer> finisher() {
-					return ModifiableInt::getValue;
+				public Function<ModifiableLong, Long> finisher() {
+					return ModifiableLong::getValue;
 				}
 			});
 			

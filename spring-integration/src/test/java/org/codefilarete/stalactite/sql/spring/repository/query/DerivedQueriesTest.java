@@ -187,6 +187,38 @@ class DerivedQueriesTest {
 	}
 	
 	@Test
+	void countByCriteria() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+		country1.setLanguages(asHashSet(frFr, enEn));
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		
+		Country country2 = new Country(43);
+		country2.setName("Toto");
+		Person president2 = new Person(237);
+		president2.setName("you");
+		country2.setPresident(president2);
+		country2.setLanguages(asHashSet(frFr, esEs));
+		
+		Vehicle vehicle = new Vehicle(1438L);
+		vehicle.setColor(new Color(123));
+		president1.setVehicle(vehicle);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		long loadedCountries = derivedQueriesRepository.countByLanguagesCodeIs("fr_fr");
+		assertThat(loadedCountries).isEqualTo(2);
+		
+		loadedCountries = derivedQueriesRepository.countByLanguagesCodeIs("en_en");
+		assertThat(loadedCountries).isEqualTo(1);
+	}
+	
+	@Test
 	void oneResultExpected_severalResults_throwsException() {
 		Country country1 = new Country(42);
 		country1.setName("Toto");
