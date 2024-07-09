@@ -9,7 +9,11 @@ import org.codefilarete.stalactite.query.model.Selectable;
  */
 public class Count extends SQLFunction<Long> {
 	
-	public Count(Selectable<?> value) {
-		super("count", Long.class, value);
+	public Count(Selectable<?>... values) {
+		super("count", Long.class, (Object[]) values);
+	}
+	
+	public Count(Iterable<? extends Selectable<?>> values) {
+		super("count", Long.class, values);
 	}
 }

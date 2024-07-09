@@ -13,7 +13,6 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.tool.trace.ModifiableLong;
@@ -22,7 +21,6 @@ import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
-import org.springframework.lang.Nullable;
 
 /**
  * {@link RepositoryQuery} for Stalactite count order.
@@ -43,8 +41,8 @@ class PartTreeStalactiteCount<C> implements RepositoryQuery {
 		boolean recreationRequired = parameters.hasDynamicProjection() || parameters.potentiallySortsDynamically();
 		
 		try {
-			Set<Column> columns = ((ConfiguredPersister) entityPersister).getMapping().getIdMapping().getIdentifierAssembler().getColumns();
-			count = Operators.count(Iterables.first(columns));
+			Set<Column<?, ?>> columns = ((ConfiguredPersister) entityPersister).getMapping().getIdMapping().getIdentifierAssembler().getColumns();
+			count = Operators.count(columns);
 			this.query = new Query<>(entityPersister, tree);
 			
 		} catch (RuntimeException o_O) {
@@ -54,7 +52,6 @@ class PartTreeStalactiteCount<C> implements RepositoryQuery {
 	}
 	
 	@Override
-	@Nullable
 	public Long execute(Object[] parameters) {
 		query.criteriaChain.consume(parameters);
 		return query.executableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {

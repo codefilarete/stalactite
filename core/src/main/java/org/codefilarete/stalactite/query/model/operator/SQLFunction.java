@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.tool.collection.Arrays;
 
 /**
  * Parent class that describes a function in some SQL statement
@@ -12,9 +13,13 @@ public abstract class SQLFunction<V> implements Selectable<V> {
 	
 	private final String functionName;
 	private final Class<V> javaType;
-	private final Object[] arguments;
+	private final Iterable<Object> arguments;
 	
 	protected SQLFunction(String functionName, Class<V> javaType, Object... arguments) {
+		this(functionName, javaType, Arrays.asList(arguments));
+	}
+	
+	protected SQLFunction(String functionName, Class<V> javaType, Iterable<Object> arguments) {
 		this.functionName = functionName;
 		this.javaType = javaType;
 		this.arguments = arguments;
@@ -24,7 +29,7 @@ public abstract class SQLFunction<V> implements Selectable<V> {
 		return functionName;
 	}
 	
-	public Object[] getArguments() {
+	public Iterable<Object> getArguments() {
 		return arguments;
 	}
 	

@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Implementation of cast SQL function
@@ -39,7 +40,7 @@ public class Cast<V> extends SQLFunction<V> {
 	}
 	
 	public Object getCastTarget() {
-		return getArguments()[0];
+		return Iterables.first(getArguments());
 	}
 	
 	public Integer getTypeSize() {
