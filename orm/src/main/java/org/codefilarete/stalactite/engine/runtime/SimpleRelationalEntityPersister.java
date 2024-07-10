@@ -237,17 +237,17 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(getter, operator);
-		return wrapIntoExecutable2(selectAdapter, localCriteriaSupport);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
 	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		localCriteriaSupport.and(accessorChain, operator);
-		return wrapIntoExecutable2(selectAdapter, localCriteriaSupport);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable2(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,

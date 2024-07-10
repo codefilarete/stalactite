@@ -476,49 +476,6 @@ class SimpleRelationalEntityPersisterTest {
 																									   new Toto(7, 1, 2)
 			).toString());
 		}
-		
-		@Test
-		void selectProjectionWhere() throws SQLException {
-			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			ResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-					Maps.asMap("count", 42L)
-			));
-			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
-			
-			Count count = Operators.count(new SelectableString<>("id", Integer.class));
-			ExecutableProjectionQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
-				select.clear();
-				select.add(count, "count");
-			}, Toto::getA, Operators.eq(77));
-			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {
-				@Override
-				public Supplier<ModifiableLong> supplier() {
-					return ModifiableLong::new;
-				}
-				
-				@Override
-				public BiConsumer<ModifiableLong, Function<Selectable<Long>, Long>> aggregator() {
-					return (modifiableInt, selectableObjectFunction) -> {
-						Long apply = selectableObjectFunction.apply(count);
-						modifiableInt.reset(apply);
-					};
-				}
-				
-				@Override
-				public Function<ModifiableLong, Long> finisher() {
-					return ModifiableLong::getValue;
-				}
-			});
-			
-			verify(preparedStatement, times(1)).executeQuery();
-			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select count(id) as count from Toto1 where Toto1.a = ?"));
-			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
-			assertCapturedPairsEqual(expectedPairs);
-			
-			assertThat(countValue).isEqualTo(42);
-		}
 	}
 		
 	@Nested
@@ -565,6 +522,48 @@ class SimpleRelationalEntityPersisterTest {
 	@Nested
 	class LoadProjectionByEntityCriteria {
 		
+		@Test
+		void selectProjectionWhere() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			ResultSet resultSet = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap("count", 42L)
+			));
+			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
+			
+			Count count = Operators.count(new SelectableString<>("id", Integer.class));
+			ExecutableProjectionQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
+				select.clear();
+				select.add(count, "count");
+			}, Toto::getA, Operators.eq(77));
+			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {
+				@Override
+				public Supplier<ModifiableLong> supplier() {
+					return ModifiableLong::new;
+				}
+				
+				@Override
+				public BiConsumer<ModifiableLong, Function<Selectable<Long>, Long>> aggregator() {
+					return (modifiableInt, selectableObjectFunction) -> {
+						Long apply = selectableObjectFunction.apply(count);
+						modifiableInt.reset(apply);
+					};
+				}
+				
+				@Override
+				public Function<ModifiableLong, Long> finisher() {
+					return ModifiableLong::getValue;
+				}
+			});
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select count(id) as count from Toto1 where Toto1.a = ?"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			assertThat(countValue).isEqualTo(42);
+		}
 	}		
 		
 		@Nested

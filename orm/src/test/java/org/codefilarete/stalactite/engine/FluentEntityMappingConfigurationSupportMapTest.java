@@ -172,7 +172,6 @@ class FluentEntityMappingConfigurationSupportMapTest {
 				.mapKey(Person::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
 				.map(Person::getName)
 				.mapMap(Person::getPhoneNumbers, String.class, String.class)
-				.mapCollection(Person::getNicknames, String.class)
 				.build(persistenceContext);
 		
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

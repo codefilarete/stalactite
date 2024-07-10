@@ -163,7 +163,7 @@ public interface Operators {
 	 * Shortcut to <code>new Count(column)</code> to ease a fluent write of queries for "count" operation
 	 * @return a new instance of {@link Count}
 	 */
-	static <N> Count count(Selectable<?>... columns) {
+	static Count count(Selectable<?>... columns) {
 		return new Count(columns);
 	}
 	
