@@ -522,6 +522,20 @@ class SimpleRelationalEntityPersisterTest {
 	@Nested
 	class LoadProjectionByEntityCriteria {
 		
+		@BeforeEach
+		void setUp() throws SQLException {
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(mock(PersisterRegistry.class)));
+			initMapping();
+			initTest();
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterBuild);
+			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
+		}
+		
+		@AfterEach
+		void removeEntityCandidates() {
+			PersisterBuilderContext.CURRENT.remove();
+		}
+		
 		@Test
 		void selectProjectionWhere() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
@@ -564,9 +578,9 @@ class SimpleRelationalEntityPersisterTest {
 			
 			assertThat(countValue).isEqualTo(42);
 		}
-	}		
+	}
 		
-		@Nested
+	@Nested
 	class CRUD_WithListener {
 		
 		private ClassMapping<Toto, Identifier<Integer>, ?> totoClassMappingStrategy;
