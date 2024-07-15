@@ -233,11 +233,11 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	private <D extends C> Map<EntityPersister<D, I>, Set<D>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
-		Map<EntityPersister<D, I>, Set<D>> entitiesPerType = new KeepOrderMap<>();
+		Map<EntityPersister<D, I>, Set<D>> entitiesPerType = new HashMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent((EntityPersister<D, I>) persister, p -> new HashSet<>()).add((D) entity);
+						entitiesPerType.computeIfAbsent((EntityPersister<D, I>) persister, p -> new KeepOrderSet<>()).add((D) entity);
 					}
 				})
 		);
