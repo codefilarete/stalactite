@@ -196,7 +196,11 @@ public interface PolymorphismPolicy<C> {
 		}
 		
 		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfiguration, D discriminatorValue) {
-			subClasses.put(discriminatorValue, entityMappingConfiguration.getConfiguration());
+			return addSubClass(entityMappingConfiguration.getConfiguration(), discriminatorValue);
+		}
+		
+		public SingleTablePolymorphism<C, D> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, D discriminatorValue) {
+			subClasses.put(discriminatorValue, entityMappingConfiguration);
 			return this;
 		}
 		

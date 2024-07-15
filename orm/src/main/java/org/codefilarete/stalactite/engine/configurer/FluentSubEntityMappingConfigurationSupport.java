@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.AccessorByMethod;
@@ -96,12 +95,6 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 			@Override
 			public Class<C> getEntityType() {
 				return classToPersist;
-			}
-			
-			@Override
-			public Function<Function<Column, Object>, C> getEntityFactory() {
-				// for now (until reason to expose this to user) instantiation type is the same as entity one
-				return row -> Reflections.newInstance(getEntityType());
 			}
 			
 			@Override

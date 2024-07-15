@@ -18,6 +18,7 @@ import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
@@ -67,7 +68,6 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -191,7 +191,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	@Override
 	public void updateById(Iterable<? extends C> entities) {
 		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = computeEntitiesPerPersister(entities);
-		entitiesPerType.forEach((updateExecutor, cs) -> updateExecutor.updateById(cs));
+		entitiesPerType.forEach(UpdateExecutor::updateById);
 	}
 	
 	@Override
@@ -259,11 +259,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
-	}
-	
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
@@ -272,6 +267,41 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(getter, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(setter, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(accessorChain, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		return methodDispatcher
+				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
+				.redirect(EntityCriteria.class, localCriteriaSupport, true)
+				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
+	}
+	
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
+				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria());
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
