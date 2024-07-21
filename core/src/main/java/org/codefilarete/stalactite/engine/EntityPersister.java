@@ -100,10 +100,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param entities the entities to be updated
 	 */
 	default void update(Iterable<C> entities) {
-		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have
-		// performance impacts but for good: KeepOrderSet uses a LinkedHashSet which is better at addition time because
-		// it doesn't require array allocation (meanwhile this is speculation and we are at very low level which would
-		// require a benchmark)
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
 		Set<I> ids = Iterables.collect(entities, this::getId, KeepOrderSet::new);
 		Set<C> entitiesFromDb = select(ids);
 		// Given entities may not be in same order than loaded ones from DB, whereas order is required for comparison (else everything is different !)

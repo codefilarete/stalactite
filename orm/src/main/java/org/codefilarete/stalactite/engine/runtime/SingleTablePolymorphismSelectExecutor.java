@@ -38,6 +38,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
 
 /**
  * @author Guillaume Mary
@@ -98,7 +99,8 @@ public class SingleTablePolymorphismSelectExecutor<C, I, T extends Table<T>, DTY
 		ColumnBinderRegistry columnBinderRegistry = dialect.getColumnBinderRegistry();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
-		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+		// using keep order Map for steady test, shouldn't have impact on performances
+		Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>(polymorphismPolicy.getSubClasses().size());
 		try(ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			Map<String, ResultSetReader> readers = new HashMap<>();

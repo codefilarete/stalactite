@@ -195,10 +195,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	 * to deal with generics "? extends C" of subclassUpdateExecutors (partly) 
 	 */
 	private <D extends C> void updateSubEntities(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have
-		// performance impacts but for good: KeepOrderSet uses a LinkedHashSet which is better at addition time because
-		// it doesn't require array allocation (meanwhile this is speculation and we are at very low level which would
-		// require a benchmark)
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
 		Map<Class<D>, Set<Duo<D, D>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload -> {
 			C entity = Objects.preventNull(payload.getLeft(), payload.getRight());

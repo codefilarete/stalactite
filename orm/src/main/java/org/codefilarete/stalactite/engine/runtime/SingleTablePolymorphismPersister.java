@@ -197,10 +197,8 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	
 	@Override
 	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have
-		// performance impacts but for good: KeepOrderSet uses a LinkedHashSet which is better at addition time because
-		// it doesn't require array allocation (meanwhile this is speculation and we are at very low level which would
-		// require a benchmark)
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
 		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
@@ -232,7 +230,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
-		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new HashMap<>();
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {

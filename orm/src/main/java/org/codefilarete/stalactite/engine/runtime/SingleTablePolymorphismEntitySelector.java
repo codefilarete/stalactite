@@ -34,6 +34,8 @@ import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * @author Guillaume Mary
@@ -129,11 +131,13 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
-			Map<Class, Set<I>> result = new HashMap<>();
+			// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+			// impacts but very difficult to measure
+			Map<Class, Set<I>> result = new KeepOrderMap<>();
 			rowIterator.forEachRemaining(row -> {
 				DTYPE dtype = (DTYPE) row.get(DISCRIMINATOR_ALIAS);
 				I id = identifierAssembler.assemble(row, columnedRow);
-				result.computeIfAbsent(polymorphismPolicy.getClass(dtype), k -> new HashSet<>()).add(id);
+				result.computeIfAbsent(polymorphismPolicy.getClass(dtype), k -> new KeepOrderSet<>()).add(id);
 			});
 			return result;
 		} catch (RuntimeException e) {
