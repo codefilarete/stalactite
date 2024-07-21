@@ -32,6 +32,7 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 
 /**
@@ -39,7 +40,8 @@ import org.codefilarete.tool.collection.Iterables;
  */
 public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTYPE> implements EntitySelector<C, I> {
 	
-	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
+	@VisibleForTesting
+	static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	
 	private final IdentifierAssembler<I, T> identifierAssembler;
 	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
@@ -72,7 +74,8 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		
-		// selecting ids and their discriminator
+		// First phase : selecting ids (made by clearing selected elements for performance issue)
+		query.getSelectSurrogate().clear();
 		PrimaryKey<T, I> pk = ((T) entityJoinTree.getRoot().getTable()).getPrimaryKey();
 		pk.getColumns().forEach(column -> query.select(column, column.getAlias()));
 		query.select(discriminatorColumn, DISCRIMINATOR_ALIAS);
@@ -85,8 +88,12 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 		
 		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 		
+		// Second phase : selecting entities by delegating it to each subclass loader
+		// It will generate 1 query per found subclass, made as this :
+		// - to avoid superfluous join and complex query in case of relation
+		// - make it simpler to implement
 		Set<C> result = new HashSet<>();
-		idsPerSubclass.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));
+		idsPerSubclass.forEach((subClass, subEntityIds) -> result.addAll(persisterPerSubclass.get(subClass).select(subEntityIds)));
 		return result;
 	}
 	

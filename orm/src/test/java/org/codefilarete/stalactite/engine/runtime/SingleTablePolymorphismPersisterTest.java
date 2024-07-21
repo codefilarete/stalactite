@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -32,6 +33,7 @@ import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildL
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.RelationalExecutableEntityQuery;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -52,6 +54,7 @@ import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.stalactite.test.PairSetList;
@@ -61,6 +64,7 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
+import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.tool.trace.ModifiableLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,6 +74,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.engine.runtime.SingleTablePolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -440,6 +445,116 @@ class SingleTablePolymorphismPersisterTest {
 					.newRow(1, 4);
 			assertCapturedPairsEqual(expectedPairs);
 		}
+		
+		
+		@Test
+		void select() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String totoIdAlias = "Toto_id";
+			String totoXAlias = "Toto_x";
+			String totoAAlias = "Toto_a";
+			String totoDTYPEAlias = "Toto_DTYPE";
+			when(preparedStatement.executeQuery()).thenReturn(
+					// first result if for id read
+					new InMemoryResultSet(Arrays.asList(
+							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 100)
+					)),
+					// second result is for entity read
+					new InMemoryResultSet(Arrays.asList(
+							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoAAlias, 41).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoAAlias, 53).add(totoDTYPEAlias, 100)
+					))
+			);
+			
+			Set<AbstractToto> select = testInstance.select(Arrays.asList(
+					new PersistedIdentifier<>(1),
+					new PersistedIdentifier<>(2),
+					new PersistedIdentifier<>(3),
+					new PersistedIdentifier<>(4)
+			));
+			
+			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
+			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
+			verify(preparedStatement, times(3)).executeQuery();
+			verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.DTYPE as " + totoDTYPEAlias
+							+ " from Toto where Toto.id in (?, ?, ?, ?)",
+					"select Toto.a as " + totoAAlias
+							+ ", Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ " from Toto where Toto.id in (?, ?, ?)",
+					"select Toto.a as " + totoAAlias
+							+ ", Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ " from Toto where Toto.id in (?)"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
+					.newRow(1, 1).add(2, 2).add(3, 3)
+					// this one if for the lonely last select
+					.add(1, 4);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			assertThat(select).usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(
+							new TotoA(1, 17, 23),
+							new TotoA(2, 29, 31),
+							new TotoA(3, 37, 41),
+							new TotoA(4, 43, 53));
+		}
+		
+		@Test
+		void selectWhere() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String totoIdAlias = "Toto_id";
+			String totoXAlias = "Toto_x";
+			String totoAAlias = "Toto_a";
+			String totoDTYPEAlias = "Toto_DTYPE";
+			ResultSet resultSetForCriteria = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap(totoIdAlias, (Object) 7).add(DISCRIMINATOR_ALIAS, 100)
+			));
+			ResultSet resultSetForFinalResult = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap(totoIdAlias, (Object) 7).add(totoXAlias, 1).add(totoAAlias, 2).add(totoDTYPEAlias, 100)
+			));
+			ModifiableInt queryCounter = new ModifiableInt();
+			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> {
+				queryCounter.increment();
+				switch (queryCounter.getValue()) {
+					case 1:
+						return resultSetForCriteria;
+					case 2:
+						return resultSetForFinalResult;
+				}
+				return null;
+			});
+			
+			RelationalExecutableEntityQuery<AbstractToto> totoRelationalExecutableEntityQuery = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
+			Set<AbstractToto> select = totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
+			
+			verify(preparedStatement, times(2)).executeQuery();
+			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.DTYPE as " + DISCRIMINATOR_ALIAS
+							+ " from Toto where Toto.x = ?",
+					"select Toto.a as " + totoAAlias
+							+ ", Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ " from Toto where Toto.id in (?)"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			Comparator<AbstractToto> totoComparator = Comparator.<AbstractToto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
+					new TotoA(7, 1, 2)
+			).toString());
+		}
 	}
 	
 	@Nested
@@ -510,8 +625,8 @@ class SingleTablePolymorphismPersisterTest {
 	}
 	
 	private static abstract class AbstractToto implements Identified<Integer> {
-		private Identifier<Integer> id;
-		private Integer x;
+		protected Identifier<Integer> id;
+		protected Integer x;
 		
 		public AbstractToto() {
 		}
@@ -557,6 +672,15 @@ class SingleTablePolymorphismPersisterTest {
 		TotoA(Integer x, Integer a) {
 			super(x);
 			this.a = a;
+		}
+		
+		@Override
+		public String toString() {
+			return getClass().getSimpleName() + "["
+					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate())
+						.add("x", x)
+						.add("a", a)
+					+ "]";
 		}
 	}
 	
