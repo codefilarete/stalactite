@@ -122,20 +122,16 @@ class SingleTablePolymorphismPersisterTest {
 	protected void initMapping() {
 		Field fieldId = Reflections.getField(AbstractToto.class, "id");
 		Field fieldA = Reflections.getField(AbstractToto.class, "x");
-		Field fieldB = Reflections.getField(AbstractToto.class, "y");
 		
 		Table totoTable = new Table("Toto");
 		Column<Table, Object> idColumn = totoTable.addColumn("id", fieldId.getType()).primaryKey();
 		Column<Table, Object> xColumn = totoTable.addColumn("x", fieldA.getType());
-		Column<Table, Object> yColumn = totoTable.addColumn("y", fieldB.getType());
-		Map<String, Column> columnMap = totoTable.mapColumnsOnName();
 		
 		PropertyAccessor<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
 		Map<PropertyAccessor<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
 				(Class<PropertyAccessor<AbstractToto, Object>>) (Class) PropertyAccessor.class, (Class<Column<Table, Object>>) (Class) Column.class)
 				.add((PropertyAccessor) identifierAccessor, idColumn)
-				.add(Accessors.propertyAccessor(fieldA), xColumn)
-				.add(Accessors.propertyAccessor(fieldB), yColumn);
+				.add(Accessors.propertyAccessor(fieldA), xColumn);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		
@@ -263,23 +259,185 @@ class SingleTablePolymorphismPersisterTest {
 		void insert() throws SQLException {
 			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 1, 1, 1 }, new long[] { 1 }, new long[] { 1, 1, 1 }, new long[] { 1 }));
 			testInstance.insert(Arrays.asList(
-					new TotoA(17, 23, 117, 123),
-					new TotoA(29, 31, 129, 131),
-					new TotoA(37, 41, 137, 141),
-					new TotoA(43, 53, 143, 153)
+					new TotoA(17, 23),
+					new TotoA(29, 31),
+					new TotoA(37, 41),
+					new TotoA(43, 53)
 			));
 			
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			// since all columns are of same type (Integer) we can capture them all in one statement, else (different types)
 			// it's much more difficult
-			verify(preparedStatement, times(24)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("insert into Toto(a, id, x, y, z, DTYPE) values (?, ?, ?, ?, ?, ?)"));
-			PairSetList<Integer, Object> expectedPairs = new PairSetList<Integer, Object>()
-					.newRow(1, 123).add(2, 1).add(3, 17).add(4, 23).add(5, 117).add(6, 100)
-					.newRow(1, 131).add(2, 2).add(3, 29).add(4, 31).add(5, 129).add(6, 100)
-					.newRow(1, 141).add(2, 3).add(3, 37).add(4, 41).add(5, 137).add(6, 100)
-					.newRow(1, 153).add(2, 4).add(3, 43).add(4, 53).add(5, 143).add(6, 100);
+			verify(preparedStatement, times(16)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("insert into Toto(a, id, x, DTYPE) values (?, ?, ?, ?)"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 23).add(2, 1).add(3, 17).add(4, 100)
+					.newRow(1, 31).add(2, 2).add(3, 29).add(4, 100)
+					.newRow(1, 41).add(2, 3).add(3, 37).add(4, 100)
+					.newRow(1, 53).add(2, 4).add(3, 43).add(4, 100);
+			assertCapturedPairsEqual(expectedPairs);
+		}
+		
+		@Test
+		void update() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String totoIdAlias = "Toto_id";
+			String totoXAlias = "Toto_x";
+			String totoAAlias = "Toto_a";
+			String totoDTYPEAlias = "Toto_DTYPE";
+			when(preparedStatement.executeQuery()).thenReturn(
+					// first result if for id read
+					new InMemoryResultSet(Arrays.asList(
+							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 100)
+					)),
+					// second result is for entity read
+					new InMemoryResultSet(Arrays.asList(
+							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoAAlias, 41).add(totoDTYPEAlias, 100),
+							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoAAlias, 53).add(totoDTYPEAlias, 100)
+					))
+			);
+			
+			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 3 }, new long[] { 1 }));
+			// Note that since we didn't Fluent API to build our test instance, the default process that computes
+			// differences between memory and DB is not used, then we'll use UpdateExecutor that roughly update all
+			testInstance.update(Arrays.asList(
+					new TotoA(1, 17, 123),
+					new TotoA(2, 29, 131),
+					new TotoA(3, 37, 141),
+					new TotoA(4, 43, 153)
+			));
+			
+			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
+			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
+			verify(preparedStatement, times(3)).executeQuery();
+			verify(preparedStatement, times(20)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(4)).addBatch();
+			verify(preparedStatement, times(2)).executeLargeBatch();
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.DTYPE as " + totoDTYPEAlias
+							+ " from Toto where Toto.id in (?, ?, ?, ?)",
+					"select Toto.a as " + totoAAlias
+							+ ", Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ " from Toto where Toto.id in (?, ?, ?)",
+					"select Toto.a as " + totoAAlias
+							+ ", Toto.id as " + totoIdAlias
+							+ ", Toto.x as " + totoXAlias
+							+ " from Toto where Toto.id in (?)",
+					"update Toto set a = ?, x = ? where id = ?"));
+			// captured setInt(..) is made of ids
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
+					.newRow(1, 1).add(2, 2).add(3, 3)
+						// this one if for the lonely last select
+						.add(1, 4)
+					.newRow(1, 123).add(2, 17).add(3, 1)
+					.newRow(1, 131).add(2, 29).add(3, 2)
+					.newRow(1, 141).add(2, 37).add(3, 3)
+					.newRow(1, 153).add(2, 43).add(3, 4);
+			assertCapturedPairsEqual(expectedPairs);
+		}
+		
+		@Test
+		void updateById() throws SQLException {
+			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 3 }, new long[] { 1 }, new long[] { 3 }, new long[] { 1 }));
+			testInstance.updateById(Arrays.asList(
+					new TotoA(1, 17, 123),
+					new TotoA(2, 29, 131),
+					new TotoA(3, 37, 141),
+					new TotoA(4, 43, 153)
+			));
+			
+			verify(preparedStatement, times(4)).addBatch();
+			verify(preparedStatement, times(2)).executeLargeBatch();
+			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("update Toto set a = ?, x = ? where id = ?"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 123).add(2, 17).add(3, 1)
+					.newRow(1, 131).add(2, 29).add(3, 2)
+					.newRow(1, 141).add(2, 37).add(3, 3)
+					.newRow(1, 153).add(2, 43).add(3, 4);
+			assertCapturedPairsEqual(expectedPairs);
+		}
+		
+		@Test
+		void delete() throws SQLException {
+			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 1 }, new long[] { 1 }));
+			testInstance.delete(Arrays.asList(new TotoA(7, 17, 23)));
+			
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id = ?"));
+			verify(preparedStatement, times(1)).addBatch();
+			verify(preparedStatement, times(1)).executeLargeBatch();
+			verify(preparedStatement, times(0)).executeUpdate();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 7);
+			assertCapturedPairsEqual(expectedPairs);
+		}
+		
+		@Test
+		void delete_multiple() throws SQLException {
+			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 3 }, new long[] { 1 }, new long[] { 3 }, new long[] { 1 }));
+			testInstance.delete(Arrays.asList(
+					new TotoA(1, 17, 23),
+					new TotoA(2, 29, 31),
+					new TotoA(3, 37, 41),
+					new TotoA(4, 43, 53)
+			));
+			
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id = ?"));
+			verify(preparedStatement, times(4)).addBatch();
+			verify(preparedStatement, times(2)).executeLargeBatch();
+			verify(preparedStatement, times(0)).executeUpdate();
+			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 1).add(1, 2).add(1, 3)
+					.newRow(1, 4);
+			assertCapturedPairsEqual(expectedPairs);
+		}
+		
+		@Test
+		void deleteById() throws SQLException {
+			expectedRowCountForUpdate.set(1L);
+			testInstance.deleteById(Arrays.asList(
+					new TotoA(7, 17, 23)
+			));
+			
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id in (?)"));
+			verify(preparedStatement, times(1)).executeLargeUpdate();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 7);
+			assertCapturedPairsEqual(expectedPairs);
+		}
+		
+		@Test
+		void deleteById_multiple() throws SQLException {
+			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 3 }, new long[] { 3 }));
+			expectedRowCountForUpdate.set(1L);
+			testInstance.deleteById(Arrays.asList(
+					new TotoA(1, 17, 23),
+					new TotoA(2, 29, 31),
+					new TotoA(3, 37, 41),
+					new TotoA(4, 43, 53)
+			));
+			// 4 statements because in operator is bounded to 3 values (see testInstance creation)
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id in (?, ?, ?)",
+					"delete from Toto where id in (?)"));
+			verify(preparedStatement, times(1)).addBatch();
+			verify(preparedStatement, times(1)).executeLargeBatch();
+			verify(preparedStatement, times(1)).executeLargeUpdate();
+			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 1).add(2, 2).add(3, 3)
+					.newRow(1, 4);
 			assertCapturedPairsEqual(expectedPairs);
 		}
 	}
@@ -333,19 +491,19 @@ class SingleTablePolymorphismPersisterTest {
 			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
 					"select count(id) as count from Toto where Toto.x = ?"));
-			PairSetList<Integer, Object> expectedPairs = new PairSetList<Integer, Object>().newRow(1, 77);
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
 			assertCapturedPairsEqual(expectedPairs);
 			
 			assertThat(countValue).isEqualTo(42);
 		}
 	}
 	
-	void assertCapturedPairsEqual(PairSetList<Integer, Object> expectedPairs) {
+	void assertCapturedPairsEqual(PairSetList<Integer, Integer> expectedPairs) {
 		// NB: even if Integer can't be inherited, PairIterator is a Iterator<? extends X, ? extends X>
 		List<Duo<Integer, Integer>> obtainedPairs = PairSetList.toPairs(indexCaptor.getAllValues(), valueCaptor.getAllValues());
 		List<Set<Duo<Integer, Integer>>> obtained = new ArrayList<>();
 		int startIndex = 0;
-		for (Set<Duo<Integer, Object>> expectedPair : expectedPairs.asList()) {
+		for (Set<Duo<Integer, Integer>> expectedPair : expectedPairs.asList()) {
 			obtained.add(new HashSet<>(obtainedPairs.subList(startIndex, startIndex += expectedPair.size())));
 		}
 		assertThat(obtained).isEqualTo(expectedPairs.asList());
@@ -353,22 +511,18 @@ class SingleTablePolymorphismPersisterTest {
 	
 	private static abstract class AbstractToto implements Identified<Integer> {
 		private Identifier<Integer> id;
-		private Integer x, y, z;
+		private Integer x;
 		
 		public AbstractToto() {
 		}
 		
-		public AbstractToto(int id, Integer x, Integer y, Integer z) {
+		public AbstractToto(int id, Integer x) {
 			this.id = new PersistableIdentifier<>(id);
 			this.x = x;
-			this.y = y;
-			this.z = z;
 		}
 		
-		public AbstractToto(Integer x, Integer y, Integer z) {
+		public AbstractToto(Integer x) {
 			this.x = x;
-			this.y = y;
-			this.z = z;
 		}
 		
 		@Override
@@ -383,7 +537,7 @@ class SingleTablePolymorphismPersisterTest {
 		@Override
 		public String toString() {
 			return getClass().getSimpleName() + "["
-					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate()).add("x", x).add("y", y).add("z", z)
+					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate()).add("x", x)
 					+ "]";
 		}
 	}
@@ -392,21 +546,27 @@ class SingleTablePolymorphismPersisterTest {
 		
 		private Integer a;
 		
-		TotoA(Integer x, Integer y, Integer z, Integer a) {
-			super(x, y, z);
+		TotoA() {
+		}
+		
+		TotoA(int id, Integer x, Integer a) {
+			super(id, x);
 			this.a = a;
 		}
 		
+		TotoA(Integer x, Integer a) {
+			super(x);
+			this.a = a;
+		}
 	}
 	
 	static class TotoB extends AbstractToto {
 		
 		private String b;
 		
-		TotoB(int id, Integer x, Integer y, Integer z) {
-			super(id, x, y, z);
+		TotoB(int id, Integer x) {
+			super(id, x);
 		}
-		
 	}
 	
 	private static class Tata {

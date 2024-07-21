@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -18,6 +16,8 @@ import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Experimental;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -100,13 +100,17 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @param entities the entities to be updated
 	 */
 	default void update(Iterable<C> entities) {
-		List<I> ids = Iterables.collect(entities, this::getId, ArrayList::new);
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have
+		// performance impacts but for good: KeepOrderSet uses a LinkedHashSet which is better at addition time because
+		// it doesn't require array allocation (meanwhile this is speculation and we are at very low level which would
+		// require a benchmark)
+		Set<I> ids = Iterables.collect(entities, this::getId, KeepOrderSet::new);
 		Set<C> entitiesFromDb = select(ids);
 		// Given entities may not be in same order than loaded ones from DB, whereas order is required for comparison (else everything is different !)
 		// so we join them by their id to make them match
-		Map<C, I> idPerEntity = Iterables.map(entities, Function.identity(), this::getId);
+		Map<C, I> idPerEntity = Iterables.map(entities, Function.identity(), this::getId, KeepOrderMap::new);
 		Map<I, C> entityFromDbPerId = Iterables.map(entitiesFromDb, this::getId, Function.identity());
-		Map<C, C> modifiedVsUnmodifiedEntities = Maps.innerJoinOnValuesAndKeys(idPerEntity, entityFromDbPerId);
+		Map<C, C> modifiedVsUnmodifiedEntities = Maps.innerJoinOnValuesAndKeys(idPerEntity, entityFromDbPerId, KeepOrderMap::new);
 		update(() -> new PairIterator<>(modifiedVsUnmodifiedEntities.keySet(), modifiedVsUnmodifiedEntities.values()), true);
 	}
 	

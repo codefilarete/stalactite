@@ -67,6 +67,7 @@ import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -196,12 +197,16 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	
 	@Override
 	public void update(Iterable<? extends Duo<C, C>> differencesIterable, boolean allColumnsStatement) {
-		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new HashMap<>();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have
+		// performance impacts but for good: KeepOrderSet uses a LinkedHashSet which is better at addition time because
+		// it doesn't require array allocation (meanwhile this is speculation and we are at very low level which would
+		// require a benchmark)
+		Map<UpdateExecutor<C>, Set<Duo<C, C>>> entitiesPerType = new KeepOrderMap<>();
 		differencesIterable.forEach(payload ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					C entity = Objects.preventNull(payload.getLeft(), payload.getRight());
 					if (persister.getClassToPersist().isInstance(entity)) {
-						entitiesPerType.computeIfAbsent((UpdateExecutor<C>) persister, p -> new HashSet<>()).add(payload);
+						entitiesPerType.computeIfAbsent(persister, p -> new KeepOrderSet<>()).add(payload);
 					}
 				})
 		);
