@@ -14,18 +14,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
 import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
+import org.codefilarete.stalactite.engine.PolymorphismPolicy.TablePerClassPolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
@@ -43,16 +39,12 @@ import org.codefilarete.stalactite.mapping.PersistentFieldHarvester;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.IdentifierInsertionManager;
 import org.codefilarete.stalactite.query.model.Operators;
-import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
-import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration.ConnectionConfigurationSupport;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.InMemoryResultSet;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -60,10 +52,10 @@ import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
-import org.codefilarete.tool.trace.ModifiableLong;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -72,16 +64,16 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.engine.runtime.SingleTablePolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
+import static org.codefilarete.stalactite.engine.runtime.TablePerClassPolymorphicSelectExecutor.DISCRIMINATOR_ALIAS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class SingleTablePolymorphismPersisterTest {
+class TablePerClassPolymorphismPersisterTest {
 	
-	private SingleTablePolymorphismPersister<AbstractToto, Identifier<Integer>, ?, String> testInstance;
+	private TablePerClassPolymorphismPersister<AbstractToto, Identifier<Integer>, ?> testInstance;
 	private PreparedStatement preparedStatement;
 	private ArgumentCaptor<Integer> valueCaptor;
 	private ArgumentCaptor<Integer> indexCaptor;
@@ -107,31 +99,31 @@ class SingleTablePolymorphismPersisterTest {
 		}
 	}
 	
-	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table totoTable) {
+	protected ConfiguredRelationalPersister<TotoA, Identifier<Integer>> initMappingTotoA(Table table) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<TotoA, Object>, Column<Table, Object>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, totoTable);
+		Map<PropertyAccessor<TotoA, Object>, Column<Table, Object>> mappedFields = persistentFieldHarvester.mapFields(TotoA.class, table);
 		PropertyAccessor<TotoA, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
 		IdentifierInsertionManager<TotoA, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoClassMapping.getIdMapping().getIdentifierInsertionManager();
 		
 		return new SimpleRelationalEntityPersister<>(new ClassMapping<>(TotoA.class,
-				totoTable,
+				table,
 				mappedFields,
 				primaryKeyAccessor,
 				identifierManager), dialect, new ConnectionConfigurationSupport(() -> connection, 3));
 	}
 	
-	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table totoTable) {
+	protected ConfiguredRelationalPersister<TotoB, Identifier<Integer>> initMappingTotoB(Table table) {
 		PersistentFieldHarvester persistentFieldHarvester = new PersistentFieldHarvester();
-		Map<PropertyAccessor<TotoB, Object>, Column<Table, Object>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, totoTable);
+		Map<PropertyAccessor<TotoB, Object>, Column<Table, Object>> mappedFields = persistentFieldHarvester.mapFields(TotoB.class, table);
 		PropertyAccessor<TotoB, Identifier<Integer>> primaryKeyAccessor = Accessors.propertyAccessor(persistentFieldHarvester.getField("id"));
 		persistentFieldHarvester.getColumn(primaryKeyAccessor).primaryKey();
 		
 		IdentifierInsertionManager<TotoB, Identifier<Integer>> identifierManager = (IdentifierInsertionManager) totoClassMapping.getIdMapping().getIdentifierInsertionManager();
 		
 		return new SimpleRelationalEntityPersister<>(new ClassMapping<>(TotoB.class,
-				totoTable,
+				table,
 				mappedFields,
 				primaryKeyAccessor,
 				identifierManager), dialect, new ConnectionConfigurationSupport(() -> connection, 3));
@@ -147,7 +139,7 @@ class SingleTablePolymorphismPersisterTest {
 		
 		PropertyAccessor<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
 		Map<PropertyAccessor<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
-				(Class<PropertyAccessor<AbstractToto, Object>>) (Class) PropertyAccessor.class, (Class<Column<Table, Object>>) (Class) Column.class)
+						(Class<PropertyAccessor<AbstractToto, Object>>) (Class) PropertyAccessor.class, (Class<Column<Table, Object>>) (Class) Column.class)
 				.add((PropertyAccessor) identifierAccessor, idColumn)
 				.add(Accessors.propertyAccessor(fieldA), xColumn);
 		
@@ -210,15 +202,16 @@ class SingleTablePolymorphismPersisterTest {
 		when(dataSource.getConnection()).thenReturn(connection);
 		
 		ConfiguredRelationalPersister<AbstractToto, Identifier<Integer>> mainPersister = new SimpleRelationalEntityPersister<>(totoClassMapping, dialect, new ConnectionConfigurationSupport(() -> connection, 3));
-		ConfiguredRelationalPersister<TotoA, Identifier<Integer>> totoAIdentifierConfiguredPersister = initMappingTotoA(mainPersister.getMainTable());
-		ConfiguredRelationalPersister<TotoB, Identifier<Integer>> totoBIdentifierConfiguredPersister = initMappingTotoB(mainPersister.getMainTable());
-		Map<Class<? extends AbstractToto>, ConfiguredPersister<? extends AbstractToto, Identifier<Integer>>> subclasses = Maps
-				.forHashMap((Class<Class<? extends AbstractToto>>) null, (Class<ConfiguredPersister<? extends AbstractToto, Identifier<Integer>>>) null)
-				.add(TotoA.class, totoAIdentifierConfiguredPersister)
-				.add(TotoB.class, totoBIdentifierConfiguredPersister);
+		Table<?> totoATable = new Table<>("TotoA");
+		Table<?> totoBTable = new Table<>("TotoB");
+		ConfiguredRelationalPersister<TotoA, Identifier<Integer>> totoAIdentifierConfiguredPersister = initMappingTotoA(totoATable);
+		ConfiguredRelationalPersister<TotoB, Identifier<Integer>> totoBIdentifierConfiguredPersister = initMappingTotoB(totoBTable);
+		// We keep order of subclasses to get steady unit tests, code has also been adapted to keep it
+		Map<Class<? extends AbstractToto>, ConfiguredPersister<? extends AbstractToto, Identifier<Integer>>> subclasses = new KeepOrderMap<>();
+		subclasses.put(TotoA.class, totoAIdentifierConfiguredPersister);
+		subclasses.put(TotoB.class, totoBIdentifierConfiguredPersister);
 		// We specify discriminator as an Integer because it's the same type as other tested columns and simplify data capture and comparison
-		Column<?, Integer> dtype = totoClassMapping.getTargetTable().addColumn("DTYPE", Integer.class);
-		SingleTablePolymorphism<AbstractToto, Integer> polymorphismPolicy = new SingleTablePolymorphism<>(dtype.getName(), dtype.getJavaType());
+		TablePerClassPolymorphism<AbstractToto> polymorphismPolicy = new TablePerClassPolymorphism<>();
 		polymorphismPolicy.addSubClass(new SubEntityMappingConfiguration<TotoA>() {
 			@Override
 			public Class<TotoA> getEntityType() {
@@ -249,7 +242,7 @@ class SingleTablePolymorphismPersisterTest {
 			public PolymorphismPolicy<TotoA> getPolymorphismPolicy() {
 				return null;
 			}
-		}, 100);
+		}, totoATable);
 		polymorphismPolicy.addSubClass(new SubEntityMappingConfiguration<TotoB>() {
 			@Override
 			public Class<TotoB> getEntityType() {
@@ -280,15 +273,13 @@ class SingleTablePolymorphismPersisterTest {
 			public PolymorphismPolicy<TotoB> getPolymorphismPolicy() {
 				return null;
 			}
-		}, 200);
+		}, totoBTable);
 		
-		testInstance = new SingleTablePolymorphismPersister<>(
+		testInstance = new TablePerClassPolymorphismPersister<>(
 				mainPersister,
 				(Map) subclasses,
 				new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 3).getConnectionProvider(),
-				dialect,
-				dtype,
-				polymorphismPolicy);
+				dialect);
 	}
 	
 	@Nested
@@ -322,44 +313,47 @@ class SingleTablePolymorphismPersisterTest {
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			// since all columns are of same type (Integer) we can capture them all in one statement, else (different types)
 			// it's much more difficult
-			verify(preparedStatement, times(16)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"insert into Toto(a, id, x, DTYPE) values (?, ?, ?, ?)",
-					"insert into Toto(b, id, x, DTYPE) values (?, ?, ?, ?)"
+					"insert into TotoA(a, id, x) values (?, ?, ?)",
+					"insert into TotoB(b, id, x) values (?, ?, ?)"
 			));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 23).add(2, 1).add(3, 17).add(4, 100)
-					.newRow(1, 31).add(2, 2).add(3, 29).add(4, 100)
-					.newRow(1, 41).add(2, 3).add(3, 37).add(4, 200)
-					.newRow(1, 53).add(2, 4).add(3, 43).add(4, 200);
+					.newRow(1, 23).add(2, 1).add(3, 17)
+					.newRow(1, 31).add(2, 2).add(3, 29)
+					.newRow(1, 41).add(2, 3).add(3, 37)
+					.newRow(1, 53).add(2, 4).add(3, 43);
 			assertCapturedPairsEqual(expectedPairs);
 		}
 		
 		@Test
 		void update() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String totoIdAlias = "Toto_id";
-			String totoXAlias = "Toto_x";
-			String totoAAlias = "Toto_a";
-			String totoBAlias = "Toto_b";
-			String totoDTYPEAlias = "Toto_DTYPE";
+			String idAlias = "id";
+			String totoAIdAlias = "TotoA_id";
+			String totoBIdAlias = "TotoB_id";
+			String totoAXAlias = "TotoA_x";
+			String totoBXAlias = "TotoB_x";
+			String totoAAlias = "TotoA_a";
+			String totoBAlias = "TotoB_b";
+			String totoDTYPEAlias = DISCRIMINATOR_ALIAS;
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 200)
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 1).add(totoDTYPEAlias, "TotoA"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 2).add(totoDTYPEAlias, "TotoA"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 3).add(totoDTYPEAlias, "TotoB"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 4).add(totoDTYPEAlias, "TotoB")
 					)),
 					// second result is for TotoA entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBAlias, null).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBAlias, null).add(totoDTYPEAlias, 100)
+							Maps.asMap(totoAIdAlias, 1).add(totoAXAlias, 17).add(totoAAlias, 23),
+							Maps.asMap(totoAIdAlias, 2).add(totoAXAlias, 29).add(totoAAlias, 31)
 					)),
 					// second result is for TotoB entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoAAlias, null).add(totoBAlias, 41).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoAAlias, null).add(totoBAlias, 53).add(totoDTYPEAlias, 200)
+							Maps.asMap(totoBIdAlias, 3).add(totoBXAlias, 37).add(totoBAlias, 41),
+							Maps.asMap(totoBIdAlias, 4).add(totoBXAlias, 43).add(totoBAlias, 53)
 					))
 			);
 			
@@ -376,29 +370,30 @@ class SingleTablePolymorphismPersisterTest {
 			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
 			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
 			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(20)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(24)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto.id as " + totoIdAlias
-							+ ", Toto.DTYPE as " + totoDTYPEAlias
-							+ " from Toto where Toto.id in (?, ?, ?, ?)",
-					"select Toto.a as " + totoAAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ " from Toto where Toto.id in (?, ?)",
-					"select Toto.b as " + totoBAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ " from Toto where Toto.id in (?, ?)",
-					"update Toto set a = ?, x = ? where id = ?",
-					"update Toto set b = ?, x = ? where id = ?"));
+					"(select TotoA.id as id, 'TotoA' as Y from TotoA where TotoA.id in (?, ?, ?, ?))" +
+							" union all" +
+							" (select TotoB.id as id, 'TotoB' as Y from TotoB where TotoB.id in (?, ?, ?, ?))",
+					"select TotoA.a as " + totoAAlias
+							+ ", TotoA.id as " + totoAIdAlias
+							+ ", TotoA.x as " + totoAXAlias
+							+ " from TotoA where TotoA.id in (?, ?)",
+					"select TotoB.b as " + totoBAlias
+							+ ", TotoB.id as " + totoBIdAlias
+							+ ", TotoB.x as " + totoBXAlias
+							+ " from TotoB where TotoB.id in (?, ?)",
+					"update TotoA set a = ?, x = ? where id = ?",
+					"update TotoB set b = ?, x = ? where id = ?"));
 			// captured setInt(..) is made of ids
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
+					.add(5, 1).add(6, 2).add(7, 3).add(8, 4)
 					// this one if for the lonely last select
 					.newRow(1, 1).add(2, 2)
-						// this one if for the lonely last select
+					// this one if for the lonely last select
 					.newRow(1, 3).add(2, 4)
 					.newRow(1, 123).add(2, 17).add(3, 1)
 					.newRow(1, 131).add(2, 29).add(3, 2)
@@ -421,8 +416,8 @@ class SingleTablePolymorphismPersisterTest {
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"update Toto set a = ?, x = ? where id = ?",
-					"update Toto set b = ?, x = ? where id = ?"
+					"update TotoA set a = ?, x = ? where id = ?",
+					"update TotoB set b = ?, x = ? where id = ?"
 			));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 123).add(2, 17).add(3, 1)
@@ -437,7 +432,7 @@ class SingleTablePolymorphismPersisterTest {
 			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 1 }));
 			testInstance.delete(Arrays.asList(new TotoA(7, 17, 23)));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from TotoA where id = ?"));
 			verify(preparedStatement, times(1)).addBatch();
 			verify(preparedStatement, times(1)).executeLargeBatch();
 			verify(preparedStatement, times(0)).executeUpdate();
@@ -458,8 +453,8 @@ class SingleTablePolymorphismPersisterTest {
 			));
 			
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"delete from Toto where id = ?",
-					"delete from Toto where id = ?"));
+					"delete from TotoA where id = ?",
+					"delete from TotoB where id = ?"));
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(0)).executeUpdate();
@@ -477,7 +472,7 @@ class SingleTablePolymorphismPersisterTest {
 					new TotoA(7, 17, 23)
 			));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id in (?)"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from TotoA where id in (?)"));
 			verify(preparedStatement, times(1)).executeLargeUpdate();
 			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -495,8 +490,9 @@ class SingleTablePolymorphismPersisterTest {
 					new TotoB(4, 43, 53)
 			));
 			// 4 statements because in operator is bounded to 3 values (see testInstance creation)
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id in (?, ?)",
-					"delete from Toto where id in (?, ?)"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"delete from TotoA where id in (?, ?)",
+					"delete from TotoB where id in (?, ?)"));
 			verify(preparedStatement, times(2)).executeLargeUpdate();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -507,28 +503,31 @@ class SingleTablePolymorphismPersisterTest {
 		
 		@Test
 		void select() throws SQLException {
-			String totoIdAlias = "Toto_id";
-			String totoXAlias = "Toto_x";
-			String totoAAlias = "Toto_a";
-			String totoBAlias = "Toto_b";
-			String totoDTYPEAlias = "Toto_DTYPE";
+			String idAlias = "id";
+			String totoAIdAlias = "TotoA_id";
+			String totoBIdAlias = "TotoB_id";
+			String totoAXAlias = "TotoA_x";
+			String totoBXAlias = "TotoB_x";
+			String totoAAlias = "TotoA_a";
+			String totoBAlias = "TotoB_b";
+			String totoDTYPEAlias = TablePerClassPolymorphicSelectExecutor.DISCRIMINATOR_ALIAS;
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 3).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoDTYPEAlias, 200)
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 1).add(totoDTYPEAlias, "TotoA"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 2).add(totoDTYPEAlias, "TotoA"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 3).add(totoDTYPEAlias, "TotoB"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 4).add(totoDTYPEAlias, "TotoB")
 					)),
 					// second result is for TotoA entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoDTYPEAlias, 100)
+							Maps.asMap(totoAIdAlias, 1).add(totoAXAlias, 17).add(totoAAlias, 23),
+							Maps.asMap(totoAIdAlias, 2).add(totoAXAlias, 29).add(totoAAlias, 31)
 					)),
-					// third result is for TotoB entities read
+					// second result is for TotoB entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoBAlias, 41).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoBAlias, 53).add(totoDTYPEAlias, 200)
+							Maps.asMap(totoBIdAlias, 3).add(totoBXAlias, 37).add(totoBAlias, 41),
+							Maps.asMap(totoBIdAlias, 4).add(totoBXAlias, 43).add(totoBAlias, 53)
 					))
 			);
 			
@@ -542,21 +541,22 @@ class SingleTablePolymorphismPersisterTest {
 			// 3 queries because we select ids first in a separate query, then we select 4 entities which is made
 			// through 2 queries, to be spread over in(..) operator that has a maximum size of 3
 			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(8)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto.id as " + totoIdAlias
-							+ ", Toto.DTYPE as " + totoDTYPEAlias
-							+ " from Toto where Toto.id in (?, ?, ?, ?)",
-					"select Toto.a as " + totoAAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ " from Toto where Toto.id in (?, ?)",
-					"select Toto.b as " + totoBAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ " from Toto where Toto.id in (?, ?)"));
+					"(select TotoA.id as id, 'TotoA' as Y from TotoA where TotoA.id in (?, ?, ?, ?))" +
+							" union all" +
+							" (select TotoB.id as id, 'TotoB' as Y from TotoB where TotoB.id in (?, ?, ?, ?))",
+					"select TotoA.a as " + totoAAlias
+							+ ", TotoA.id as " + totoAIdAlias
+							+ ", TotoA.x as " + totoAXAlias
+							+ " from TotoA where TotoA.id in (?, ?)",
+					"select TotoB.b as " + totoBAlias
+							+ ", TotoB.id as " + totoBIdAlias
+							+ ", TotoB.x as " + totoBXAlias
+							+ " from TotoB where TotoB.id in (?, ?)"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
+					.add(5, 1).add(6, 2).add(7, 3).add(8, 4)
 					// this one if for the selection of A instances
 					.newRow(1, 1).add(2, 2)
 					// this one if for the selection of B instances
@@ -574,28 +574,31 @@ class SingleTablePolymorphismPersisterTest {
 		@Test
 		void selectWhere() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String totoIdAlias = "Toto_id";
-			String totoXAlias = "Toto_x";
-			String totoAAlias = "Toto_a";
-			String totoBAlias = "Toto_b";
-			String totoDTYPEAlias = "Toto_DTYPE";
+			String idAlias = "Toto_id";
+			String totoAIdAlias = "TotoA_id";
+			String totoBIdAlias = "TotoB_id";
+			String totoAXAlias = "TotoA_x";
+			String totoBXAlias = "TotoB_x";
+			String totoAAlias = "TotoA_a";
+			String totoBAlias = "TotoB_b";
+			String totoDTYPEAlias = TablePerClassPolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
 			when(preparedStatement.executeQuery()).thenReturn(
 					// first result if for id read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(DISCRIMINATOR_ALIAS, 100),
-							Maps.asMap(totoIdAlias, 2).add(DISCRIMINATOR_ALIAS, 100),
-							Maps.asMap(totoIdAlias, 3).add(DISCRIMINATOR_ALIAS, 200),
-							Maps.asMap(totoIdAlias, 4).add(DISCRIMINATOR_ALIAS, 200)
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 1).add(totoDTYPEAlias, "TotoA"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 2).add(totoDTYPEAlias, "TotoA"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 3).add(totoDTYPEAlias, "TotoB"),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 4).add(totoDTYPEAlias, "TotoB")
 					)),
 					// second result is for TotoA entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 1).add(totoXAlias, 17).add(totoAAlias, 23).add(totoBAlias, null).add(totoDTYPEAlias, 100),
-							Maps.asMap(totoIdAlias, 2).add(totoXAlias, 29).add(totoAAlias, 31).add(totoBAlias, null).add(totoDTYPEAlias, 100)
+							Maps.asMap(totoAIdAlias, 1).add(totoAXAlias, 17).add(totoAAlias, 23),
+							Maps.asMap(totoAIdAlias, 2).add(totoAXAlias, 29).add(totoAAlias, 31)
 					)),
-					// third result is for TotoB entities read
+					// second result is for TotoB entities read
 					new InMemoryResultSet(Arrays.asList(
-							Maps.asMap(totoIdAlias, 3).add(totoXAlias, 37).add(totoAAlias, null).add(totoBAlias, 41).add(totoDTYPEAlias, 200),
-							Maps.asMap(totoIdAlias, 4).add(totoXAlias, 43).add(totoAAlias, null).add(totoBAlias, 53).add(totoDTYPEAlias, 200)
+							Maps.asMap(totoBIdAlias, 3).add(totoBXAlias, 37).add(totoBAlias, 41),
+							Maps.asMap(totoBIdAlias, 4).add(totoBXAlias, 43).add(totoBAlias, 53)
 					))
 			);
 			
@@ -603,19 +606,23 @@ class SingleTablePolymorphismPersisterTest {
 			Set<AbstractToto> select = totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(5)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(6)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto.id as " + totoIdAlias
-							+ ", Toto.DTYPE as " + DISCRIMINATOR_ALIAS
-							+ " from Toto where Toto.x = ?",
-					"select Toto.a as " + totoAAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ " from Toto where Toto.id in (?, ?)",
-					"select Toto.b as " + totoBAlias
-							+ ", Toto.id as " + totoIdAlias
-							+ ", Toto.x as " + totoXAlias
-							+ " from Toto where Toto.id in (?, ?)"));
+					"select " + idAlias + ", " + totoDTYPEAlias + " from (" +
+							"(select TotoA.id as " + idAlias + "," +
+							" 'TotoA' as " + totoDTYPEAlias + " from TotoA where (TotoA.x = ?))" +
+							" union all" +
+							" (select TotoB.id as " + idAlias + "," +
+							" 'TotoB' as " + totoDTYPEAlias + " from TotoB where (TotoB.x = ?)))" +
+							" as Toto_union",
+					"select TotoA.a as " + totoAAlias
+							+ ", TotoA.id as " + totoAIdAlias
+							+ ", TotoA.x as " + totoAXAlias
+							+ " from TotoA where TotoA.id in (?, ?)",
+					"select TotoB.b as " + totoBAlias
+							+ ", TotoB.id as " + totoBIdAlias
+							+ ", TotoB.x as " + totoBXAlias
+							+ " from TotoB where TotoB.id in (?, ?)"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
 			assertCapturedPairsEqual(expectedPairs);
 			
@@ -625,62 +632,6 @@ class SingleTablePolymorphismPersisterTest {
 							new TotoA(2, 29, 31),
 							new TotoB(3, 37, 41),
 							new TotoB(4, 43, 53));
-		}
-	}
-	
-	@Nested
-	class LoadProjectionByEntityCriteria {
-		
-		@BeforeEach
-		void setUp() throws SQLException {
-			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(mock(PersisterRegistry.class)));
-			initMapping();
-			initTest();
-			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterBuild);
-			PersisterBuilderContext.CURRENT.get().getBuildLifeCycleListeners().forEach(BuildLifeCycleListener::afterAllBuild);
-		}
-		
-		@Test
-		void selectProjectionWhere() throws SQLException {
-			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			ResultSet resultSet = new InMemoryResultSet(Arrays.asList(
-					Maps.asMap("count", 42L)
-			));
-			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
-			
-			Count count = Operators.count(new SelectableString<>("id", Integer.class));
-			ExecutableProjectionQuery<AbstractToto> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
-				select.clear();
-				select.add(count, "count");
-			}, AbstractToto::getX, Operators.eq(77));
-			long countValue = totoRelationalExecutableEntityQuery.execute(new Accumulator<Function<Selectable<Long>, Long>, ModifiableLong, Long>() {
-				@Override
-				public Supplier<ModifiableLong> supplier() {
-					return ModifiableLong::new;
-				}
-				
-				@Override
-				public BiConsumer<ModifiableLong, Function<Selectable<Long>, Long>> aggregator() {
-					return (modifiableInt, selectableObjectFunction) -> {
-						Long apply = selectableObjectFunction.apply(count);
-						modifiableInt.reset(apply);
-					};
-				}
-				
-				@Override
-				public Function<ModifiableLong, Long> finisher() {
-					return ModifiableLong::getValue;
-				}
-			});
-			
-			verify(preparedStatement, times(1)).executeQuery();
-			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select count(id) as count from Toto where Toto.x = ?"));
-			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
-			assertCapturedPairsEqual(expectedPairs);
-			
-			assertThat(countValue).isEqualTo(42);
 		}
 	}
 	
@@ -749,8 +700,8 @@ class SingleTablePolymorphismPersisterTest {
 		public String toString() {
 			return getClass().getSimpleName() + "["
 					+ Maps.asMap("id", id == null ? "null" : id.getSurrogate())
-						.add("x", x)
-						.add("a", a)
+					.add("x", x)
+					.add("a", a)
 					+ "]";
 		}
 	}
@@ -781,4 +732,5 @@ class SingleTablePolymorphismPersisterTest {
 					+ "]";
 		}
 	}
+	
 }

@@ -32,6 +32,8 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
@@ -40,6 +42,8 @@ import org.codefilarete.tool.trace.ModifiableInt;
 public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> implements SelectExecutor<C, I> {
 	
 	private static final String UNION_ALL_SEPARATOR = ") union all (";
+	@VisibleForTesting
+	protected static final String DISCRIMINATOR_ALIAS = "Y";
 	
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
@@ -62,7 +66,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 		this.subEntitiesPersisters = subEntitiesPersisters;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
-		this.discriminatorAlias = "Y";
+		this.discriminatorAlias = DISCRIMINATOR_ALIAS;
 		
 		this.discriminatorValuePerSubType = Iterables.map(this.tablePerSubEntity.entrySet(), Entry::getKey, entry -> entry.getKey().getSimpleName());
 		
@@ -81,7 +85,9 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 			throw new UnsupportedOperationException("Database doesn't support tuple-in so selection can't be done trivially, not yet supported");
 		}
 		
-		Set<PreparedSQL> queries = new HashSet<>();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
+		Set<PreparedSQL> queries = new KeepOrderSet<>();
 		Map<String, ResultSetReader> readers = new HashMap<>();
 		readers.put(discriminatorAlias, dialect.getColumnBinderRegistry().getBinder(String.class));
 		((T) mainPersister.getMainTable()).getPrimaryKey().getColumns().forEach(column -> {
@@ -142,7 +148,9 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 		preparedSQL.setValues(values);
 		
 		
-		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
+		Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			RowIterator resultSetIterator = new RowIterator(resultSet, readers);

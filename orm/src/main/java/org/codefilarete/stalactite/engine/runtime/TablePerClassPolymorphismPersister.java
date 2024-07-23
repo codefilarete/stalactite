@@ -105,12 +105,12 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 											  Dialect dialect) {
 		this.mainPersister = mainPersister;
 		Set<Entry<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>>> entries = subEntitiesPersisters.entrySet();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
 		this.subclassUpdateExecutors = Iterables.map(entries, Entry::getKey, Entry::getValue, KeepOrderMap::new);
-		
-		Map<Class<? extends C>, Table> tablePerSubEntity = new HashMap<>(Iterables.map(entries,
+		Map<Class<? extends C>, Table> tablePerSubEntity = Iterables.map(entries,
 				Entry::getKey,
-				Functions.<Entry<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>>, SimpleRelationalEntityPersister<? extends C, I, ?>, Table>
-						chain(Entry::getValue, SimpleRelationalEntityPersister::getMainTable)));
+				Functions.<Entry<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>>, SimpleRelationalEntityPersister<? extends C, I, ?>, Table>chain(Entry::getValue, SimpleRelationalEntityPersister::getMainTable), KeepOrderMap::new);
 		
 		this.subEntitiesPersisters = (Map) subEntitiesPersisters;
 		this.subEntitiesPersisters.forEach((type, persister) ->
@@ -235,7 +235,9 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	private <D extends C> Map<EntityPersister<D, I>, Set<D>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
-		Map<EntityPersister<D, I>, Set<D>> entitiesPerType = new HashMap<>();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
+		Map<EntityPersister<D, I>, Set<D>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {

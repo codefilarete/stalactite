@@ -30,14 +30,18 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
  * @author Guillaume Mary
  */
 public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
 	
-	private static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
+	@VisibleForTesting
+	static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	
 	private final IdentifierAssembler<I, T> identifierAssembler;
 	private final Map<Class<? extends C>, Table> tablePerSubConfiguration;
@@ -84,7 +88,9 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 			aliases.put(pkColumn, pkColumn.getAlias());
 		});
 		
-		Set<Query> queries = new HashSet<>();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
+		Set<Query> queries = new KeepOrderSet<>();
 		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
 			Query query = buildSubConfigurationQuery("'" + subEntityType.getSimpleName() + "'", subEntityTable, aliasPerPKColumnName);
 			
@@ -112,7 +118,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		
 		PreparedSQL preparedSql = dialect.getQuerySQLBuilderFactory().queryBuilder(queryWrappingUnion).toPreparedSQL();
 		Map<Class, Set<I>> idsPerSubclass = readIds(preparedSql, readers, new ColumnedRow(aliases::get));
-		Set<C> result = new HashSet<>();
+		Set<C> result = new KeepOrderSet<>();
 		idsPerSubclass.forEach((subclass, subclassIds) -> result.addAll(persisterPerSubclass.get(subclass).select(subclassIds)));
 		return result;
 	}
@@ -121,7 +127,9 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
-			Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+			// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+			// impacts but very difficult to measure
+			Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>();
 			rowIterator.forEachRemaining(row -> {
 				
 				// looking for entity type on row : we read each subclass PK and check for nullity. The non-null one is the good one
