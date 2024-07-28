@@ -26,6 +26,7 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.KeepOrderMap;
 
 /**
  * @author Guillaume Mary
@@ -77,7 +78,9 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 	}
 	
 	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
-		Map<Class, Set<I>> result = new HashMap<>();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
+		Map<Class, Set<I>> result = new KeepOrderMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			

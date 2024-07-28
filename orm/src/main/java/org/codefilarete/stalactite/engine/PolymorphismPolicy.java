@@ -167,7 +167,11 @@ public interface PolymorphismPolicy<C> {
 		}
 		
 		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfigurationProvider<? extends C> entityMappingConfigurationProvider, @Nullable Table table) {
-			subClasses.add(new Duo<>(entityMappingConfigurationProvider.getConfiguration(), table));
+			return addSubClass(entityMappingConfigurationProvider.getConfiguration(), table);
+		}
+		
+		public JoinTablePolymorphism<C> addSubClass(SubEntityMappingConfiguration<? extends C> entityMappingConfiguration, @Nullable Table table) {
+			subClasses.add(new Duo<>(entityMappingConfiguration, table));
 			return this;
 		}
 		

@@ -29,6 +29,7 @@ import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderMap;
 
 /**
  * @author Guillaume Mary
@@ -101,7 +102,9 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
 		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
-		Map<Class, Set<I>> idsPerSubclass = new HashMap<>();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
+		Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>();
 		try (ReadOperation readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			Map<String, ResultSetReader> readers = new HashMap<>();

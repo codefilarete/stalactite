@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -109,11 +108,13 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		
 		this.subEntitiesPersisters = (Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		Set<? extends Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
+		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
+		// impacts but very difficult to measure
 		Map<Class<? extends C>, ConfiguredRelationalPersister<? extends C, I>> subclassSelectExecutors = Iterables.map(subPersisterPerSubEntityType, Entry::getKey,
-				Entry::getValue);
+				Entry::getValue, KeepOrderMap::new);
 		this.subclassIdMappingStrategies = Iterables.map(subPersisterPerSubEntityType, Entry::getKey, e -> (IdMapping<C, I>) e.getValue().getMapping().getIdMapping());
 		
-		// sub entities persisters will be used to select sub entities but at this point they lacks subgraph loading, so we add it (from their parent)
+		// sub entities persisters will be used to select sub entities but at this point they lack subgraph loading, so we add it (from their parent)
 		subEntitiesPersisters.forEach((type, persister) ->
 				// NB: we can't use copyRootJoinsTo(..) because persister is composed of one join to parent table (the one of mainPersister),
 				// since there's no manner to find it cleanly we have to use get(0), dirty thing ...
@@ -122,7 +123,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 		
 		this.tablePerSubEntityType = Iterables.map(this.subEntitiesPersisters.entrySet(),
 				Entry::getKey,
-				entry -> entry.getValue().getMapping().getTargetTable());
+				entry -> entry.getValue().getMapping().getTargetTable(), KeepOrderMap::new);
 		this.selectExecutor = new JoinTablePolymorphismSelectExecutor<>(
 				mainPersister,
 				tablePerSubEntityType, subclassSelectExecutors, connectionProvider,
@@ -230,7 +231,7 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	}
 	
 	private Map<EntityPersister<C, I>, Set<C>> computeEntitiesPerPersister(Iterable<? extends C> entities) {
-		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new HashMap<>();
+		Map<EntityPersister<C, I>, Set<C>> entitiesPerType = new KeepOrderMap<>();
 		entities.forEach(entity ->
 				this.subEntitiesPersisters.values().forEach(persister -> {
 					if (persister.getClassToPersist().isInstance(entity)) {
