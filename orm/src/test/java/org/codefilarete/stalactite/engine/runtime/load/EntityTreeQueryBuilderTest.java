@@ -63,8 +63,8 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<JoinNode, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
-				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
 				tableCloneMap.put(joinNode, tableClone.getLeft());
 				return tableClone;
 			}
@@ -164,8 +164,8 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
-				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
 				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}
@@ -269,8 +269,8 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
-				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
 				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}
@@ -341,8 +341,8 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
-				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
 				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}
@@ -423,8 +423,8 @@ class EntityTreeQueryBuilderTest {
 		IdentityMap<Table, Fromable> tableCloneMap = new IdentityMap<>();
 		EntityTreeQueryBuilder testInstance = new EntityTreeQueryBuilder(entityJoinTree, new ColumnBinderRegistry()) {
 			@Override
-			Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
-				Duo<Fromable, IdentityHashMap<Column, Column>> tableClone = super.cloneTable(joinNode);
+			Duo<Fromable, IdentityHashMap<Selectable, Selectable>> cloneTable(JoinNode joinNode) {
+				Duo<Fromable, IdentityHashMap<Selectable, Selectable>> tableClone = super.cloneTable(joinNode);
 				tableCloneMap.put((Table) joinNode.getTable(), tableClone.getLeft());
 				return tableClone;
 			}

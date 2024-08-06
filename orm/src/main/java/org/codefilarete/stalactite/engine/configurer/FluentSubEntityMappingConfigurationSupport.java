@@ -388,12 +388,17 @@ public class FluentSubEntityMappingConfigurationSupport<C, I> implements FluentS
 		return mapOneToMany(propertyAccessor, setterReference, mappingConfiguration, table);
 	}
 	
-	private <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
+	private <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference<C> methodReference,
 			EntityMappingConfigurationProvider<? extends O, J> mappingConfiguration,
-			@javax.annotation.Nullable T table) {
-		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<C, O, J, S>(propertyAccessor, methodReference, mappingConfiguration, table);
+			@javax.annotation.Nullable Table table) {
+		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
+				propertyAccessor,
+				methodReference,
+				() -> polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
+				mappingConfiguration,
+				table);
 		this.oneToManyRelations.add(oneToManyRelation);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods

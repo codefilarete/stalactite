@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -50,7 +51,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 	public String toSQL() {
 		return toSQL(new StringAppenderWrapper(new StringAppender(), dmlNameProvider) {
 			@Override
-			public StringAppenderWrapper catValue(@Nullable Column column, Object value) {
+			public <V> StringAppenderWrapper catValue(@Nullable Selectable<V> column, V value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {
@@ -75,8 +76,8 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		// looking for additional Tables : more than the updated one, can be found in conditions
 		Set<Column<Table, Object>> whereColumns = new LinkedHashSet<>();
 		update.getCriteria().forEach(c -> {
-			if (c instanceof ColumnCriterion) {
-				whereColumns.add(((ColumnCriterion) c).getColumn());
+			if (c instanceof ColumnCriterion && ((ColumnCriterion) c).getColumn() instanceof Column) {
+				whereColumns.add((Column<Table, Object>) ((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();
 				if (condition instanceof UnitaryOperator && ((UnitaryOperator) condition).getValue() instanceof Column) {
 					whereColumns.add((Column) ((UnitaryOperator) condition).getValue());

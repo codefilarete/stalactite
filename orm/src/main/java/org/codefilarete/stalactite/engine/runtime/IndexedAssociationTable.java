@@ -34,9 +34,10 @@ public class IndexedAssociationTable<
 								   AccessorDefinition accessorDefinition,
 								   AssociationTableNamingStrategy namingStrategy,
 								   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+								   boolean createOneSideForeignKey,
 								   boolean createManySideForeignKey,
 								   @Nullable String columnName) {
-		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, createManySideForeignKey);
+		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, createOneSideForeignKey, createManySideForeignKey);
 		// index column is part of the primary key for indexed association 
 		this.indexColumn = addColumn(preventNull(columnName, DEFAULT_INDEX_COLUMN_NAME), int.class).primaryKey();
 		getPrimaryKey().addColumn(indexColumn);
@@ -49,9 +50,10 @@ public class IndexedAssociationTable<
 								   AccessorDefinition accessorDefinition,
 								   AssociationTableNamingStrategy namingStrategy,
 								   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+								   boolean createOneSideForeignKey,
 								   boolean createManySideForeignKey,
 								   Column<SELF, Integer> indexColumn) {
-		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, createManySideForeignKey);
+		super(schema, name, oneSidePrimaryKey, manySidePrimaryKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, createOneSideForeignKey, createManySideForeignKey);
 		// index column is part of the primary key for indexed association 
 		this.indexColumn = indexColumn == null ? addColumn(DEFAULT_INDEX_COLUMN_NAME, int.class) : indexColumn;
 		this.indexColumn.primaryKey();

@@ -9,7 +9,6 @@ import org.codefilarete.stalactite.engine.AssociationTableNamingStrategy.Referen
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
-import org.codefilarete.stalactite.sql.ddl.structure.ForeignKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
@@ -30,7 +29,7 @@ public class AssociationTable<
 	 * Foreign key pointing to left table primary key
 	 * Expected to be joined with {@link #oneSideKey}
 	 */
-	private final ForeignKey<SELF, LEFTTABLE, LEFTID> oneSideForeignKey;
+	private final Key<SELF, LEFTID> oneSideForeignKey;
 	
 	/**
 	 * Primary key of source entities table
@@ -61,6 +60,7 @@ public class AssociationTable<
 							AccessorDefinition accessorDefinition,
 							AssociationTableNamingStrategy namingStrategy,
 							ForeignKeyNamingStrategy foreignKeyNamingStrategy,
+							boolean createOneSideForeignKey,
 							boolean createManySideForeignKey) {
 		super(schema, name);
 		this.oneSideKey = oneSideKey;
@@ -74,7 +74,11 @@ public class AssociationTable<
 			leftIdentifierColumnMapping.put(oneSideKeyColumn, column);
 		});
 		Key<SELF, LEFTID> leftForeignKey = leftForeignKeyBuilder.build();
-		this.oneSideForeignKey = addForeignKey(foreignKeyNamingStrategy::giveName, leftForeignKey, oneSideKey);
+		if (createOneSideForeignKey) {
+			this.oneSideForeignKey = addForeignKey(foreignKeyNamingStrategy::giveName, leftForeignKey, oneSideKey);
+		} else {
+			this.oneSideForeignKey = leftForeignKey;
+		}
 		
 		// building many side key (eventually foreign key) 
 		KeyBuilder<SELF, RIGHTID> rightForeignKeyBuilder = Key.from((SELF) this);
@@ -99,14 +103,14 @@ public class AssociationTable<
 							AccessorDefinition accessorDefinition,
 							AssociationTableNamingStrategy namingStrategy,
 							ForeignKeyNamingStrategy foreignKeyNamingStrategy) {
-		this(schema, name, oneSideKey, manySideKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, true);
+		this(schema, name, oneSideKey, manySideKey, accessorDefinition, namingStrategy, foreignKeyNamingStrategy, true, true);
 	}
 	
 	/**
 	 * Gives the foreign key pointing to left table primary key. Expected to be joined with {@link #getOneSideKey()} 
 	 * @return the foreign key pointing to left table primary key
 	 */
-	public ForeignKey<SELF, LEFTTABLE, LEFTID> getOneSideForeignKey() {
+	public Key<SELF, LEFTID> getOneSideForeignKey() {
 		return oneSideForeignKey;
 	}
 	

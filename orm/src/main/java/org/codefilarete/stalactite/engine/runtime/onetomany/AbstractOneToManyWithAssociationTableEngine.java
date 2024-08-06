@@ -22,13 +22,13 @@ import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecord;
 import org.codefilarete.stalactite.engine.runtime.AssociationRecordPersister;
 import org.codefilarete.stalactite.engine.runtime.AssociationTable;
+import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.engine.runtime.CollectionUpdater;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteByIdTargetEntitiesBeforeDeleteByIdCascader;
 import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.DeleteTargetEntitiesBeforeDeleteCascader;
-import org.codefilarete.stalactite.engine.runtime.onetomany.OneToManyWithMappedAssociationEngine.AfterUpdateTrigger;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.model.Operators;
@@ -259,7 +259,8 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 						throw new UnsupportedOperationException("Can't use tupled-in because database doesn't support it");
 					}
 				} else {
-					associationTableDelete.where(first(associationPersister.getMainTable().getOneSideForeignKey().getColumns()), Operators.in(identifiers));
+					Set<Column<T, Object>> columns = (Set<Column<T, Object>>) associationPersister.getMainTable().getOneSideForeignKey().getColumns();
+					associationTableDelete.where(first(columns), Operators.in(identifiers));
 				}
 				
 				PreparedSQL deleteStatement = new DeleteCommandBuilder(associationTableDelete, dialect).toPreparedSQL();

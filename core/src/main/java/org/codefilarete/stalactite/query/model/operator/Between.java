@@ -49,19 +49,19 @@ public class Between<O> extends ConditionalOperator<O, Interval<O>> {
 	 */
 	public static class Interval<O> {
 		
-		private final Object value1;
-		private final Object value2;
+		private final O value1;
+		private final O value2;
 		
 		public Interval(O value1, O value2) {
 			this.value1 = value1;
 			this.value2 = value2;
 		}
 		
-		public Object getValue1() {
+		public O getValue1() {
 			return value1;
 		}
 		
-		public Object getValue2() {
+		public O getValue2() {
 			return value2;
 		}
 		

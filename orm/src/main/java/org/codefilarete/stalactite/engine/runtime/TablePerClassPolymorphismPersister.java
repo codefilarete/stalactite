@@ -11,6 +11,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorChain;
@@ -18,6 +19,7 @@ import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.SelectExecutor;
@@ -49,6 +51,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Select;
@@ -73,7 +76,6 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.ModifiableInt;
@@ -81,6 +83,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
+import static java.util.Collections.emptySet;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 import static org.codefilarete.stalactite.query.model.Operators.cast;
 
@@ -95,8 +98,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<? extends C>, UpdateExecutor<? extends C>> subclassUpdateExecutors;
 	private final Map<Class<? extends C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
-	private final TablePerClassPolymorphicSelectExecutor<C, I, ?> selectExecutor;
-	private final TablePerClassPolymorphismEntitySelector<C, I, ?> entitySelectExecutor;
+	private final TablePerClassPolymorphicSelectExecutor<C, I, T> selectExecutor;
+	private final TablePerClassPolymorphismEntitySelector<C, I, T> entitySelectExecutor;
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	
 	public TablePerClassPolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
@@ -124,15 +127,20 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 				connectionProvider,
 				dialect);
 		
-		this.entitySelectExecutor = new TablePerClassPolymorphismEntitySelector<>(
+		this.entitySelectExecutor = new TablePerClassPolymorphismEntitySelector<C, I, T>(
 				mainPersister.getMapping().getIdMapping().getIdentifierAssembler(),
 				tablePerSubEntity,
 				subEntitiesPersisters,
-				mainPersister.getMapping().getTargetTable(),
+				mainPersister.getEntityJoinTree(),
 				connectionProvider,
 				dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
+	}
+	
+	@Override
+	public EntityCriteriaSupport<C> getCriteriaSupport() {
+		return criteriaSupport;
 	}
 	
 	@Override
@@ -270,18 +278,57 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(getter, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(setter, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(accessorChain, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		return methodDispatcher
+				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
+				.redirect(EntityCriteria.class, localCriteriaSupport, true)
+				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
+	}
+	
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
+				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria());
 	}
 	
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
-						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.select(localCriteriaSupport.getCriteria()))
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
+						wrapGraphLoad(localCriteriaSupport))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
+	}
+	
+	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<C, Set<C>, R> accumulator) -> {
+			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
+					entitySelectExecutor.select(localCriteriaSupport.getCriteria())
+			);
+			return accumulator.collect(result);
+		};
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
@@ -662,12 +709,12 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 		// because taking it directly from Union is incorrect since a Union doesn't implement Fromable (because it hasn't
 		// any alias)
 		UnionInFrom unionInFrom = subPersistersUnion.asPseudoTable("unioned_" + mainPersister.getClassToPersist().getSimpleName());
-		KeyBuilder<UnionInFrom, JOINID> keyBuilder = Key.from(unionInFrom);
+		KeyBuilder<Fromable, JOINID> keyBuilder = Key.from(unionInFrom);
 		rightJoinColumn.getColumns().forEach(column -> {
 			keyBuilder.addColumn(subPersistersUnion.registerColumn(column.getExpression(), column.getJavaType()));
 		});
 		
-		Key<UnionInFrom, JOINID> rightJoinLink = keyBuilder.build();
+		Key<Fromable, JOINID> rightJoinLink = keyBuilder.build();
 		
 		return entityJoinTree.addMergeJoin(leftStrategyName,
 				tablePerClassFirstPhaseRelationLoader,

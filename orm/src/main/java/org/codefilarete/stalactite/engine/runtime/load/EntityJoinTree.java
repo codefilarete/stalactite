@@ -69,7 +69,7 @@ public class EntityJoinTree<C, I> {
 	
 	private final Set<Table> tablesToBeExcludedFromDDL = Collections.newIdentitySet();
 	
-	public <T extends Table> EntityJoinTree(EntityInflater<C, I> rootEntityInflater, T table) {
+	public EntityJoinTree(EntityInflater<C, I> rootEntityInflater, Fromable table) {
 		this.root = new JoinRoot<>(this, rootEntityInflater, table);
 		this.joinIndex.put(ROOT_STRATEGY_NAME, root);
 	}
@@ -192,7 +192,7 @@ public class EntityJoinTree<C, I> {
 		}
 		
 		@Override
-		public Set<Selectable<Object>> getSelectableColumns() {
+		public Set<Selectable<?>> getSelectableColumns() {
 			return (Set) subPersister.getMapping().getSelectableColumns();
 		}
 	}
@@ -386,7 +386,7 @@ public class EntityJoinTree<C, I> {
 	public Set<Table> giveTables() {
 		// because Table implements an hashCode on their name, we can use an HashSet to avoid duplicates
 		Set<Table> result = new HashSet<>();
-		result.add(root.getTable());
+		result.add((Table) root.getTable());
 		foreachJoin(node -> {
 			if (node.getTable() instanceof Table && !tablesToBeExcludedFromDDL.contains(node.getTable())) {
 				result.add((Table) node.getTable());
@@ -424,7 +424,7 @@ public class EntityJoinTree<C, I> {
 		foreachJoinWithDepth(joinNode, (targetOwner, currentNode) -> {
 			// cloning each node, the only difference lays on left column : target gets its matching column
 			currentNode.getLeftJoinLink().getColumns().forEach(leftColumn -> {
-				Column projectedLeftColumn = ((Table) targetOwner.getTable()).getColumn(leftColumn.getExpression());
+				Selectable<?> projectedLeftColumn = targetOwner.getTable().findColumn(leftColumn.getExpression());
 				if (projectedLeftColumn == null) {
 					throw new IllegalArgumentException("Expected column "
 							+ leftColumn.getExpression() + " to exist in target table " + targetOwner.getTable().getName());
@@ -456,7 +456,7 @@ public class EntityJoinTree<C, I> {
 	 * addition : consumer gets current parent as a first argument
 	 * 
 	 * @param initialNode very first parent given as first argument to consumer
-	 * @param consumer producer of target tree node, gets node of this tree and parent node of target tree to add created node to it
+	 * @param consumer producer of target tree node, gets previous created node (to add created node to it) and node of this tree 
 	 * @param <S> type of node of the equivalent tree
 	 */
 	<S> void foreachJoinWithDepth(S initialNode, BiFunction<S, AbstractJoinNode<?, ?, ?, ?>, S> consumer) {

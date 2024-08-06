@@ -74,6 +74,7 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
+import static java.util.Collections.emptySet;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
@@ -142,6 +143,11 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 				dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
+	}
+	
+	@Override
+	public EntityCriteriaSupport<C> getCriteriaSupport() {
+		return criteriaSupport;
 	}
 	
 	@Override
@@ -265,11 +271,20 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
-						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.select(localCriteriaSupport.getCriteria()))
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
+						wrapGraphLoad(localCriteriaSupport))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
+	}
+	
+	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<C, Set<C>, R> accumulator) -> {
+			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
+					entitySelectExecutor.select(localCriteriaSupport.getCriteria())
+			);
+			return accumulator.collect(result);
+		};
 	}
 	
 	@Override

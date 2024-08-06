@@ -14,6 +14,7 @@ import org.codefilarete.stalactite.query.model.OrderBy;
 import org.codefilarete.stalactite.query.model.OrderBy.OrderedColumn;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -102,12 +103,12 @@ public class QuerySQLBuilderFactory {
 		return queryBuilder(query);
 	}
 	
-	public QuerySQLBuilder queryBuilder(Query query, CriteriaChain<?> where, IdentityHashMap<Column, Column> columnClones) {
+	public QuerySQLBuilder queryBuilder(Query query, CriteriaChain<?> where, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>> columnClones) {
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			where.forEach(criterion -> {
 				if (criterion instanceof ColumnCriterion) {
-					ColumnCriterion columnCriterion = ((ColumnCriterion) criterion).copyFor(columnClones.get(((ColumnCriterion) criterion).getColumn()));
-					query.getWhere().and(columnCriterion);
+					ColumnCriterion columnCriterion = (ColumnCriterion) criterion;
+					query.getWhere().and(columnCriterion.copyFor(columnClones.get(columnCriterion.getColumn())));
 				} else {
 					query.getWhere().and(criterion);
 				}

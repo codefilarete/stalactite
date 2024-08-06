@@ -6,20 +6,20 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 
-import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.tool.collection.ReadOnlyList;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Row;
+import org.codefilarete.tool.collection.ReadOnlyList;
 
 /**
  * Very first table (and its joins) of a from clause
  * 
  * @author Guillaume Mary
  */
-public class JoinRoot<C, I, T extends Table<T>> implements JoinNode<T> {
+public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 
 	private final EntityJoinTree<C, I> tree;
 	

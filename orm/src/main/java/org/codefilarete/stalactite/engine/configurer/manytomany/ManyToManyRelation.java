@@ -27,6 +27,9 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	private final ValueAccessPointByMethodReference<SRC> methodReference;
 	
 	/** Configuration used for "many" side beans persistence */
+	private final EntityMappingConfigurationProvider<SRC, ?> sourceMappingConfiguration;
+	
+	/** Configuration used for "many" side beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
 	@Nullable
@@ -63,10 +66,13 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 */
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionProvider,
 							  ValueAccessPointByMethodReference<SRC> methodReference,
+							  EntityMappingConfiguration<? extends SRC, ?> sourceMappingConfiguration,
 							  EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
 							  @Nullable Table targetTable) {
 		this(collectionProvider, methodReference,
-				() -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration, targetTable);
+				() -> (EntityMappingConfiguration<SRC, Object>) sourceMappingConfiguration,
+				() -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration,
+				targetTable);
 	}
 	
 	/**
@@ -80,10 +86,12 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	 */
 	public ManyToManyRelation(ReversibleAccessor<SRC, C1> collectionProvider,
 							  ValueAccessPointByMethodReference<SRC> methodReference,
+							  EntityMappingConfigurationProvider<? extends SRC, ?> sourceMappingConfiguration,
 							  EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
 							  @Nullable Table targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;
+		this.sourceMappingConfiguration = (EntityMappingConfigurationProvider<SRC, ?>) sourceMappingConfiguration;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetTable = targetTable;
 	}
@@ -94,6 +102,15 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	
 	public ValueAccessPointByMethodReference<SRC> getMethodReference() {
 		return methodReference;
+	}
+	
+	/** @return the configuration used for "many" side beans persistence */
+	public EntityMappingConfiguration<SRC, ?> getSourceMappingConfiguration() {
+		return sourceMappingConfiguration.getConfiguration();
+	}
+	
+	public boolean isSourceTablePerClassPolymorphic() {
+		return getSourceMappingConfiguration().getPolymorphismPolicy() instanceof PolymorphismPolicy.TablePerClassPolymorphism;
 	}
 	
 	/** @return the configuration used for "many" side beans persistence */

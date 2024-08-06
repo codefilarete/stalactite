@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.configurer.onetomany;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -29,6 +30,10 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	private final ReversibleAccessor<SRC, C> collectionProvider;
 	
 	private final ValueAccessPointByMethodReference<SRC> methodReference;
+	
+	/** Indicator that says if source persister has table-per-class polymorphism */
+	private final BooleanSupplier sourceTablePerClassPolymorphic;
+	
 	/** Configuration used for "many" side beans persistence */
 	private final EntityMappingConfigurationProvider<TRGT, TRGTID> targetMappingConfiguration;
 	
@@ -66,33 +71,39 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	 * 
 	 * @param collectionProvider provider of the property to be persisted
 	 * @param methodReference equivalent to collectionProvider
+	 * @param sourceTablePerClassPolymorphic true if source persister has table-per-class polymorphism
 	 * @param targetMappingConfiguration persistence configuration of entities stored in the target collection
 	 * @param targetTable optional table to be used to store target entities
-	 * @param <T>
 	 */
-	public <T extends Table> OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
-											   ValueAccessPointByMethodReference<SRC> methodReference,
-											   EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
-											   @Nullable T targetTable) {
-		this(collectionProvider, methodReference, () -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration, targetTable);
+	public OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
+							 ValueAccessPointByMethodReference<SRC> methodReference,
+							 boolean sourceTablePerClassPolymorphic,
+							 EntityMappingConfiguration<? extends TRGT, TRGTID> targetMappingConfiguration,
+							 @Nullable Table targetTable) {
+		this(collectionProvider, methodReference,
+				() -> sourceTablePerClassPolymorphic,
+				() -> (EntityMappingConfiguration<TRGT, TRGTID>) targetMappingConfiguration,
+						targetTable);
 	}
 	
 	/**
 	 * Constructor with lazy configuration provider. To be used when target configuration is not defined while source configuration is defined, for
 	 * instance on cycling configuration.
-	 * 
-	 * @param collectionProvider
-	 * @param methodReference
-	 * @param targetMappingConfiguration
-	 * @param targetTable
-	 * @param <T>
+	 *
+	 * @param collectionProvider provider of the property to be persisted
+	 * @param methodReference equivalent to collectionProvider
+	 * @param sourceTablePerClassPolymorphic must return true if source persister has table-per-class polymorphism
+	 * @param targetMappingConfiguration must return persistence configuration of entities stored in the target collection
+	 * @param targetTable optional table to be used to store target entities
 	 */
-	public <T extends Table> OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
-											   ValueAccessPointByMethodReference<SRC> methodReference,
-											   EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
-											   @Nullable T targetTable) {
+	public OneToManyRelation(ReversibleAccessor<SRC, C> collectionProvider,
+							 ValueAccessPointByMethodReference<SRC> methodReference,
+							 BooleanSupplier sourceTablePerClassPolymorphic,
+							 EntityMappingConfigurationProvider<? extends TRGT, TRGTID> targetMappingConfiguration,
+							 @Nullable Table targetTable) {
 		this.collectionProvider = collectionProvider;
 		this.methodReference = methodReference;
+		this.sourceTablePerClassPolymorphic = sourceTablePerClassPolymorphic;
 		this.targetMappingConfiguration = (EntityMappingConfigurationProvider<TRGT, TRGTID>) targetMappingConfiguration;
 		this.targetTable = targetTable;
 	}
@@ -104,6 +115,10 @@ public class OneToManyRelation<SRC, TRGT, TRGTID, C extends Collection<TRGT>> {
 	public ValueAccessPointByMethodReference<SRC> getMethodReference() {
 		return methodReference;
 	}
+	
+	public boolean isSourceTablePerClassPolymorphic() {
+		return sourceTablePerClassPolymorphic.getAsBoolean();
+	} 
 	
 	/** @return the configuration used for "many" side beans persistence */
 	public EntityMappingConfiguration<TRGT, TRGTID> getTargetMappingConfiguration() {

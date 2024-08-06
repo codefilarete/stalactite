@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.query.builder.PreparedSQLWrapper;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
@@ -39,7 +40,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 	public String toSQL() {
 		return toSQL(new StringAppenderWrapper(new StringAppender(), new DMLNameProvider(new HashMap<>())) {
 			@Override
-			public StringAppenderWrapper catValue(@Nullable Column column, Object value) {
+			public <V> StringAppenderWrapper catValue(@Nullable Selectable<V> column, V value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {

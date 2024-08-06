@@ -96,6 +96,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which is not allowed by databases
+		boolean createOneSideForeignKey = !(associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic());
 		boolean createManySideForeignKey = !associationConfiguration.getOneToManyRelation().isTargetTablePerClassPolymorphic();
 		ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 				associationConfiguration.getLeftPrimaryKey().getTable().getSchema(),
@@ -105,6 +106,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				accessorDefinition,
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
+				createOneSideForeignKey,
 				createManySideForeignKey
 		);
 		
@@ -139,6 +141,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 		
 		// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 		// per entity) which is not allowed by databases
+		boolean createOneSideForeignKey = !(associationConfiguration.getOneToManyRelation().isSourceTablePerClassPolymorphic());
 		boolean createManySideForeignKey = !associationConfiguration.getOneToManyRelation().isTargetTablePerClassPolymorphic();
 		// NB: index column is part of the primary key
 		ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
@@ -149,6 +152,7 @@ class OneToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C extend
 				accessorDefinition,
 				associationTableNamingStrategy,
 				associationConfiguration.getForeignKeyNamingStrategy(),
+				createOneSideForeignKey,
 				createManySideForeignKey,
 				associationConfiguration.getOneToManyRelation().getIndexingColumn());
 		

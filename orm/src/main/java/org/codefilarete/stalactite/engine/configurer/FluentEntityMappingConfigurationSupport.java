@@ -725,12 +725,17 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		return mapOneToMany(propertyAccessor, setterReference, mappingConfiguration, table);
 	}
 	
-	private <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
+	private <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			ReversibleAccessor<C, S> propertyAccessor,
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
-			@javax.annotation.Nullable T table) {
-		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(propertyAccessor, methodReference, mappingConfiguration, table);
+			@javax.annotation.Nullable Table table) {
+		OneToManyRelation<C, O, J, S> oneToManyRelation = new OneToManyRelation<>(
+				propertyAccessor,
+				methodReference,
+				() -> this.polymorphismPolicy instanceof PolymorphismPolicy.TablePerClassPolymorphism,
+				mappingConfiguration,
+				table);
 		this.oneToManyRelations.add(oneToManyRelation);
 		return new MethodDispatcher()
 				.redirect(OneToManyOptions.class, new OneToManyOptionsSupport<>(oneToManyRelation), true)	// true to allow "return null" in implemented methods
@@ -768,9 +773,7 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 			ValueAccessPointByMethodReference methodReference,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			@javax.annotation.Nullable T table) {
-		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(
-				propertyAccessor, methodReference,
-				mappingConfiguration, table);
+		ManyToManyRelation<C, O, J, S1, S2> manyToManyRelation = new ManyToManyRelation<>(propertyAccessor, methodReference, this, mappingConfiguration, table);
 		this.manyToManyRelations.add(manyToManyRelation);
 		return new MethodDispatcher()
 				.redirect(ManyToManyOptions.class, new ManyToManyOptionsSupport<>(manyToManyRelation), true)	// true to allow "return null" in implemented methods

@@ -39,7 +39,5 @@ public interface EntitySelector<C, I> {
 	 * @param where some criteria for aggregate selection
 	 * @return entities that match criteria
 	 */
-	default <R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where) {
-		return null;
-	}
+	<R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where);
 }

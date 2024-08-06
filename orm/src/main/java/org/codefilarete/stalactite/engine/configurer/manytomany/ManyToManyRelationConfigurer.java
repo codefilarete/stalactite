@@ -276,6 +276,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 			// per entity) which is not allowed by databases
+			boolean createOneSideForeignKey = !(associationConfiguration.manyToManyRelation.isSourceTablePerClassPolymorphic());
 			boolean createManySideForeignKey = !associationConfiguration.manyToManyRelation.isTargetTablePerClassPolymorphic();
 			ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new AssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
 					associationConfiguration.leftPrimaryKey.getTable().getSchema(),
@@ -285,6 +286,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					accessorDefinition,
 					associationTableNamingStrategy,
 					associationConfiguration.foreignKeyNamingStrategy,
+					createOneSideForeignKey,
 					createManySideForeignKey
 			);
 			
@@ -315,6 +317,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			
 			// we don't create foreign key for table-per-class because source columns should reference different tables (the one
 			// per entity) which is not allowed by databases
+			boolean createOneSideForeignKey = !relation.isSourceTablePerClassPolymorphic();
 			boolean createManySideForeignKey = !relation.isTargetTablePerClassPolymorphic();
 			// NB: index column is part of the primary key
 			ASSOCIATIONTABLE intermediaryTable = (ASSOCIATIONTABLE) new IndexedAssociationTable<ASSOCIATIONTABLE, LEFTTABLE, RIGHTTABLE, SRCID, TRGTID>(
@@ -325,6 +328,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					accessorDefinition,
 					associationTableNamingStrategy,
 					associationConfiguration.foreignKeyNamingStrategy,
+					createOneSideForeignKey,
 					createManySideForeignKey,
 					indexingColumnName);
 			

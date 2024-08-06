@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.query.builder;
 
 import javax.annotation.Nullable;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
@@ -25,11 +26,12 @@ public interface SQLAppender {
 	 * @param column context of the value to be printed
 	 * @param value the object to be added/printed to the statement
 	 * @return this
+	 * @param <V> value type
 	 */
-	SQLAppender catValue(@Nullable Column column, Object value);
+	<V> SQLAppender catValue(@Nullable Selectable<V> column, V value);
 	
 	/**
-	 * Appends value to underlying statement. To be used when {@link #catValue(Column, Object)} can't be applied.
+	 * Appends value to underlying statement. To be used when {@link #catValue(Selectable, Object)} can't be applied.
 	 * 
 	 * @param value the value to be printed
 	 * @return this
@@ -37,7 +39,7 @@ public interface SQLAppender {
 	SQLAppender catValue(Object value);
 	
 	/**
-	 * Appends column name to underlying SQL statement. To be used when {@link #catValue(Column, Object)} can't be
+	 * Appends column name to underlying SQL statement. To be used when {@link #catValue(Selectable, Object)} can't be
 	 * applied.
 	 *
 	 * @param column the column to be printed

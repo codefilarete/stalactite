@@ -82,7 +82,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();
-		Column<T, I> pk = (Column<T, I>) Iterables.first(entityJoinTree.getRoot().getTable().getPrimaryKey().getColumns());
+		Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
 		query.select(pk, PRIMARY_KEY_ALIAS);
 		ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
 		Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);

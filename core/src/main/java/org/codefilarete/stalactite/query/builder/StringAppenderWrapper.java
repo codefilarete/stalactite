@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.query.builder;
 
 import javax.annotation.Nullable;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.StringAppender;
 
@@ -25,7 +26,7 @@ public class StringAppenderWrapper implements SQLAppender {
 	}
 	
 	@Override
-	public StringAppenderWrapper catValue(@Nullable Column column, Object value) {
+	public <V> StringAppenderWrapper catValue(@Nullable Selectable<V> column, V value) {
 		if (value instanceof CharSequence) {
 			// specialized case to escape single quotes
 			surrogate.cat("'", value.toString().replace("'", "''"), "'");

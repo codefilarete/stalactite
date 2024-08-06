@@ -183,7 +183,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		}
 	}
 	
-	public static class PseudoColumn<O> implements Selectable<O>, JoinLink<UnionInFrom, O> {
+	public static class PseudoColumn<O> implements Selectable<O>, JoinLink<Fromable, O> {
 		
 		private final SelectablesPod union;	// Union or UnionInFrom
 		
@@ -203,8 +203,8 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		 * @return UnionInFrom owning this column
 		 */
 		@Override
-		public UnionInFrom getOwner() {
-			return (UnionInFrom) union;
+		public Fromable getOwner() {
+			return (Fromable) union;
 		}
 		
 		@Override

@@ -10,6 +10,7 @@ import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 import org.codefilarete.stalactite.query.model.operator.Like;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -41,7 +42,7 @@ class DialectTest {
 							
 							/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
 							@Override
-							public void cat(Column column, ConditionalOperator operator, SQLAppender sql) {
+							public <V> void cat(Selectable<V> column, ConditionalOperator<?, V> operator, SQLAppender sql) {
 								if (operator instanceof Like) {
 									sql.cat("LIKE ").catValue(((Like) operator).getValue().toString());
 								} else {
@@ -94,7 +95,7 @@ class DialectTest {
 							
 							/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
 							@Override
-							public void cat(Column column, ConditionalOperator operator, SQLAppender sql) {
+							public <V> void cat(Selectable<V> column, ConditionalOperator<?, V> operator, SQLAppender sql) {
 								if (operator instanceof MyOperator) {
 									sql.cat("myOperator ").catValue(((MyOperator) operator).getValue());
 								} else {

@@ -8,10 +8,10 @@ import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.RawCriterion;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -176,14 +176,14 @@ public class WhereSQLBuilderFactory {
 						sql.cat("(");
 						cat((CriteriaChain) o);
 						sql.cat(")");
-					} else if (o instanceof Column) {
-						cat((Column) o);
+					} else if (o instanceof SQLFunction) {    // made for having(sum(col), eq(..))
+						cat((SQLFunction) o);
+					} else if (o instanceof Selectable) {
+						cat((Selectable) o);
 					} else if (o instanceof TupleIn) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
 						catTupledIn((TupleIn) o);
 					} else if (o instanceof ConditionalOperator) {
 						cat((ConditionalOperator) o);
-					} else if (o instanceof SQLFunction) {    // made for having(sum(col), eq(..))
-						cat((SQLFunction) o);
 					} else {
 						throw new UnsupportedOperationException("Unknown criterion type " + Reflections.toString(o.getClass()));
 					}
@@ -208,7 +208,7 @@ public class WhereSQLBuilderFactory {
 				}
 			}
 			
-			public void cat(Column column) {
+			public void cat(Selectable column) {
 				// delegated to dmlNameProvider
 				sql.cat(this.dmlNameProvider.getName(column));
 			}
@@ -231,7 +231,7 @@ public class WhereSQLBuilderFactory {
 				functionSQLBuilder.cat(sqlFunction, sql);
 			}
 			
-			public void cat(Column column, ConditionalOperator operator) {
+			public void cat(Selectable column, ConditionalOperator operator) {
 				operatorSqlBuilder.cat(column, operator, sql);
 			}
 			

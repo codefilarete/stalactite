@@ -283,6 +283,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		return persister.getClassToPersist();
 	}
 	
+	@Override
 	public EntityCriteriaSupport<C> getCriteriaSupport() {
 		return criteriaSupport;
 	}

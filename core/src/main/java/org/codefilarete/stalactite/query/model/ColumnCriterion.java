@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
  */
 public class ColumnCriterion extends AbstractCriterion {
 	
-	private final Column column;
+	private final Selectable column;
 	private final Object /* String or Operator */ condition;
 	
 	public <O> ColumnCriterion(Column<?, O> column, CharSequence condition) {
@@ -18,13 +18,13 @@ public class ColumnCriterion extends AbstractCriterion {
 		this(null, column, operator);
 	}
 	
-	public ColumnCriterion(LogicalOperator operator, Column column, Object /* String or Operator */ condition) {
+	public ColumnCriterion(LogicalOperator operator, Selectable column, Object /* String or Operator */ condition) {
 		super(operator);
 		this.column = column;
 		this.condition = condition;
 	}
 	
-	public Column getColumn() {
+	public Selectable getColumn() {
 		return column;
 	}
 
@@ -32,7 +32,7 @@ public class ColumnCriterion extends AbstractCriterion {
 		return condition;
 	}
 	
-	public ColumnCriterion copyFor(Column column) {
+	public ColumnCriterion copyFor(Selectable column) {
 		return new ColumnCriterion(getOperator(), column, getCondition());
 	}
 }

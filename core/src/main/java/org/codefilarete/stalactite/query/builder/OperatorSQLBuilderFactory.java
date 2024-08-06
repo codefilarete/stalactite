@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Equals;
@@ -43,23 +44,23 @@ public class OperatorSQLBuilderFactory {
 			}
 		}
 		
-		public void cat(Column column, ConditionalOperator operator, SQLAppender sql) {
+		public <V> void cat(Selectable<V> column, ConditionalOperator<?, V> operator, SQLAppender sql) {
 			if (operator.isNull()) {
 				catNullValue(operator.isNot(), sql);
 			} else {
 				// ugly way of dispatching concatenation, can't find a better way without heaving classes or struggling with single responsibility design
 				if (operator instanceof Equals) {
-					catEquals((Equals) operator, sql, column);
+					catEquals((Equals<V>) operator, sql, column);
 				} else if (operator instanceof Lower) {
-					catLower((Lower) operator, sql, column);
+					catLower((Lower<V>) operator, sql, column);
 				} else if (operator instanceof Greater) {
-					catGreater((Greater) operator, sql, column);
+					catGreater((Greater<V>) operator, sql, column);
 				} else if (operator instanceof Between) {
-					catBetween((Between) operator, sql, column);
+					catBetween((Between<V>) operator, sql, column);
 				} else if (operator instanceof In) {
-					catIn((In) operator, sql, column);
+					catIn((In<V>) operator, sql, column);
 				} else if (operator instanceof Like) {
-					catLike((Like) operator, sql, column);
+					catLike((Like) operator, sql, (Selectable<CharSequence>) column);
 				} else if (operator instanceof IsNull) {
 					catIsNull((IsNull) operator, sql);
 				} else {
@@ -77,7 +78,7 @@ public class OperatorSQLBuilderFactory {
 			catNullValue(isNull.isNot(), sql);
 		}
 		
-		void catLike(Like like, SQLAppender sql, Column column) {
+		void catLike(Like like, SQLAppender sql, Selectable<CharSequence> column) {
 			String value = (String) like.getValue();
 			if (like.withLeadingStar()) {
 				value = '%' + value;
@@ -88,9 +89,9 @@ public class OperatorSQLBuilderFactory {
 			sql.catIf(like.isNot(), "not ").cat("like ").catValue(column, value);
 		}
 		
-		void catIn(In in, SQLAppender sql, Column column) {
+		<V> void catIn(In<V> in, SQLAppender sql, Selectable<V> column) {
 			// we take collection into account : iterating over it to cat all values
-			Iterable value = in.getValue();
+			Iterable<V> value = in.getValue();
 			sql.catIf(in.isNot(), "not ").cat("in (");
 			catInValue(value, sql, column);
 			sql.cat(")");
@@ -134,7 +135,7 @@ public class OperatorSQLBuilderFactory {
 		 * @param column
 		 * @param value the iterable to be appended, not null (but may be empty, this method doesn't care)
 		 */
-		private void catInValue(Iterable value, SQLAppender sql, Column column) {
+		private <V> void catInValue(Iterable<V> value, SQLAppender sql, Selectable<V> column) {
 			// appending values (separated by a comma, boilerplate code)
 			boolean isFirst = true;
 			for (Object v : value) {
@@ -143,12 +144,12 @@ public class OperatorSQLBuilderFactory {
 				} else {
 					isFirst = false;
 				}
-				sql.catValue(column, v);
+				sql.catValue(column, (V) v);
 			}
 		}
 		
-		void catBetween(Between between, SQLAppender sql, Column column) {
-			Interval interval = between.getValue();
+		<V> void catBetween(Between<V> between, SQLAppender sql, Selectable<V> column) {
+			Interval<V> interval = between.getValue();
 			if (interval.getValue1() == null) {
 				sql.cat(between.isNot() ? ">= " : "< ").catValue(column, interval.getValue2());
 			} else if (interval.getValue2() == null) {
@@ -160,7 +161,7 @@ public class OperatorSQLBuilderFactory {
 		}
 		
 		@SuppressWarnings("squid:S3358")	// we can afford nesting ternary operators here, not so complex to understand 
-		void catGreater(Greater greater, SQLAppender sql, Column column) {
+		<V> void catGreater(Greater<V> greater, SQLAppender sql, Selectable<V> column) {
 			sql.cat(greater.isNot()
 							? (greater.isEquals() ? "< " : "<= ")
 							: (greater.isEquals() ? ">= " : "> "))
@@ -168,14 +169,14 @@ public class OperatorSQLBuilderFactory {
 		}
 		
 		@SuppressWarnings("squid:S3358")	// we can afford nesting ternary operators here, not so complex to understand
-		void catLower(Lower lower, SQLAppender sql, Column column) {
+		<V> void catLower(Lower<V> lower, SQLAppender sql, Selectable<V> column) {
 			sql.cat(lower.isNot()
 							? (lower.isEquals() ? "> " : ">= ")
 							: (lower.isEquals() ? "<= " : "< "))
 					.catValue(column, lower.getValue());
 		}
 		
-		void catEquals(Equals equals, SQLAppender sql, Column column) {
+		<V> void catEquals(Equals<V> equals, SQLAppender sql, Selectable<V> column) {
 			sql.catIf(equals.isNot(), "!").cat("= ").catValue(column, equals.getValue());
 		}
 	}

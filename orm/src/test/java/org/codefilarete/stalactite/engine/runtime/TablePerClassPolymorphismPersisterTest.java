@@ -574,7 +574,8 @@ class TablePerClassPolymorphismPersisterTest {
 		@Test
 		void selectWhere() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String idAlias = "Toto_id";
+			String idAlias = "id";
+			String xAlias = "x";
 			String totoAIdAlias = "TotoA_id";
 			String totoBIdAlias = "TotoB_id";
 			String totoAXAlias = "TotoA_x";
@@ -606,15 +607,17 @@ class TablePerClassPolymorphismPersisterTest {
 			Set<AbstractToto> select = totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(6)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(5)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select " + idAlias + ", " + totoDTYPEAlias + " from (" +
+					"select Toto.id as " + idAlias + ", " + totoDTYPEAlias + " from (" +
 							"(select TotoA.id as " + idAlias + "," +
-							" 'TotoA' as " + totoDTYPEAlias + " from TotoA where (TotoA.x = ?))" +
+							" TotoA.x as " + xAlias + "," +
+							" 'TotoA' as " + totoDTYPEAlias + " from TotoA)" +
 							" union all" +
 							" (select TotoB.id as " + idAlias + "," +
-							" 'TotoB' as " + totoDTYPEAlias + " from TotoB where (TotoB.x = ?)))" +
-							" as Toto_union",
+							" TotoB.x as " + xAlias + "," +
+							" 'TotoB' as " + totoDTYPEAlias + " from TotoB))" +
+							" as Toto where Toto.x = ?",
 					"select TotoA.a as " + totoAAlias
 							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias

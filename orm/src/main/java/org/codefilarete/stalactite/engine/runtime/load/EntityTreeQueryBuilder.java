@@ -6,7 +6,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.codefilarete.stalactite.engine.runtime.load.AbstractJoinNode.JoinNodeHierarchyIterator;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.ConsumerNode;
@@ -32,7 +31,6 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.IdentityMap;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.tool.function.Hanger.Holder;
 
 /**
  * Builder of a {@link Query} from an {@link EntityJoinTree}
@@ -67,7 +65,7 @@ public class EntityTreeQueryBuilder<C> {
 		// issue with entity graph load with criteria (EntityPersister.selectWhere(..)) containing Columns
 		// (ColumnCriterion) because they come from user which is one of source table, hence table alias are not found
 		// for them, which causes issue while setting criteria value (column is not found by database driver)
-		IdentityHashMap<Column, Column> columnClones = new IdentityHashMap<>();
+		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>();
 		
 		// Table clones storage per their initial node to manage several occurrence of same table in query
 		Map<JoinNode, Fromable> tableClonePerJoinNode = new HashMap<>();
@@ -83,7 +81,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// initialization of the From clause with the very first table
 		JoinRoot<C, Object, ?> joinRoot = this.tree.getRoot();
-		Duo<Fromable, IdentityHashMap<Column, Column>> rootClone = cloneTable(joinRoot);
+		Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> rootClone = cloneTable(joinRoot);
 		Fromable rootTableClone = rootClone.getLeft();
 		columnClones.putAll(rootClone.getRight());
 		tableClonePerJoinNode.put(joinRoot, rootTableClone);
@@ -92,7 +90,7 @@ public class EntityTreeQueryBuilder<C> {
 		
 		// completing from clause
 		this.tree.foreachJoin(join -> {
-			Duo<Fromable, IdentityHashMap<Column, Column>> joinClone = cloneTable(join);
+			Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> joinClone = cloneTable(join);
 			tableClonePerJoinNode.put(join, joinClone.getLeft());
 			columnClones.putAll(joinClone.getRight());
 		});
@@ -112,18 +110,24 @@ public class EntityTreeQueryBuilder<C> {
 	 * @return a copy (on name and columns) of given join table
 	 */
 	@VisibleForTesting
-	Duo<Fromable, IdentityHashMap<Column, Column>> cloneTable(JoinNode joinNode) {
+	Duo<Fromable, IdentityHashMap<Selectable<?>, Selectable<?>>> cloneTable(JoinNode joinNode) {
 		Fromable joinFromable = joinNode.getTable();
 		if (joinFromable instanceof Table) {
 			Table table = new Table(joinFromable.getName());
-			IdentityHashMap<Column, Column> columnClones = new IdentityHashMap<>(table.getColumns().size());
+			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(table.getColumns().size());
 			(((Table<?>) joinFromable).getColumns()).forEach(column -> {
 				Column clone = table.addColumn(column.getName(), column.getJavaType(), column.getSize());
 				columnClones.put(column, clone);
 			});
 			return new Duo<>(table, columnClones);
 		} else if (joinFromable instanceof UnionInFrom) {
-			return new Duo<>(new UnionInFrom(joinFromable.getName(), ((UnionInFrom) joinFromable).getUnion()), new IdentityHashMap<>());
+			UnionInFrom unionInFrom = new UnionInFrom(joinFromable.getName(), ((UnionInFrom) joinFromable).getUnion());
+			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(unionInFrom.getColumns().size());
+			(((UnionInFrom) joinFromable).getColumns()).forEach(column -> {
+				PseudoColumn<?> clone = unionInFrom.getUnion().registerColumn(column.getExpression(), column.getJavaType());
+				columnClones.put(column, clone);
+			});
+			return new Duo<>(unionInFrom, columnClones);
 		} else {
 			throw new UnsupportedOperationException("Cloning " + Reflections.toString(joinNode.getTable().getClass()) + " is not implemented");
 		}
@@ -199,41 +203,32 @@ public class EntityTreeQueryBuilder<C> {
 		
 		private <T1 extends Fromable> void addColumnsToSelect(JoinNode<T1> joinNode, String tableAlias) {
 			Set<Selectable<Object>> selectableColumns = joinNode.getColumnsToSelect();
-			for (Selectable selectableColumn : selectableColumns) {
+			for (Selectable<?> selectableColumn : selectableColumns) {
+				String alias = aliasBuilder.buildColumnAlias(tableAlias, selectableColumn);
+				Selectable columnClone = tablePerJoinNode.get(joinNode).findColumn(selectableColumn.getExpression());
+				query.select(columnClone, alias);
+				// we link the column alias to the binder so it will be easy to read the ResultSet
+				ResultSetReader<?> reader;
 				if (selectableColumn instanceof Column) {
-					Column<?, ?> column = (Column<?, ?>) selectableColumn;
-					String alias = aliasBuilder.buildColumnAlias(tableAlias, column);
-					Selectable columnClone = tablePerJoinNode.get(joinNode).findColumn(column.getName());
-					query.select(columnClone, alias);
-					// we link the column alias to the binder so it will be easy to read the ResultSet
-					selectParameterBinders.put(alias, parameterBinderProvider.getReader(column));
-					columnAliases.put(columnClone, alias);
+					reader = parameterBinderProvider.getReader((Column) selectableColumn);
+					selectParameterBinders.put(alias, reader);
 				} else {
-					PseudoColumn<?> pseudoColumn = (PseudoColumn<?>) selectableColumn;
-					String alias = aliasBuilder.buildColumnAlias(tableAlias, pseudoColumn);
-					Selectable columnClone = tablePerJoinNode.get(joinNode).findColumn(pseudoColumn.getExpression());
-					query.select(columnClone, alias);
-					// we link the column alias to the binder so it will be easy to read the ResultSet
-					selectParameterBinders.put(alias, parameterBinderProvider.getReader(selectableColumn.getJavaType()));
-					columnAliases.put(columnClone, alias);
+					reader = parameterBinderProvider.getReader(selectableColumn.getJavaType());
 				}
+				selectParameterBinders.put(alias, reader);
+				columnAliases.put(columnClone, alias);
 			}
 		}
 		
 		/**
 		 * Builds {@link ConsumerNode}s for the generated query
-		 * @return
+		 * @return the root {@link ConsumerNode} for given tree
 		 */
 		private ConsumerNode buildConsumerTree(EntityJoinTree<?, ?> tree) {
-			Map<JoinRowConsumer, Fromable> tablePerConsumer = new HashMap<>();
 			ConsumerNode consumerRoot = new ConsumerNode(tree.getRoot().toConsumer(createDedicatedRowDecoder(tree.getRoot())));
 			tree.foreachJoinWithDepth(consumerRoot, (targetOwner, currentNode) -> {
-				Holder<JoinRowConsumer> consumerHolder = new Holder<>();
-				Function<? extends Selectable<?>, String> aliasProvider = column -> columnAliases.get(tablePerConsumer.get(consumerHolder.get()).findColumn(column.getExpression()));
-				JoinRowConsumer consumer = currentNode.toConsumer(new ColumnedRow(aliasProvider));
-				consumerHolder.set(consumer);
+				JoinRowConsumer consumer = currentNode.toConsumer(createDedicatedRowDecoder(currentNode));
 				ConsumerNode consumerNode = new ConsumerNode(consumer);
-				tablePerConsumer.put(consumer, tablePerJoinNode.get(currentNode));
 				targetOwner.addConsumer(consumerNode);
 				return consumerNode;
 			});
@@ -241,9 +236,9 @@ public class EntityTreeQueryBuilder<C> {
 		}
 		
 		/**
-		 * Creates a {@link ColumnedRow} dedicated to given node : because we created table clones
-		 * @param node
-		 * @return
+		 * Creates a {@link ColumnedRow} dedicated to given node because we created table clones
+		 * @param node the node for which we'll create a {@link ColumnedRow}
+		 * @return a {@link ColumnedRow} that gives aliases according to them in {@link #columnAliases}
 		 */
 		private ColumnedRow createDedicatedRowDecoder(JoinNode node) {
 			return new ColumnedRow(column -> columnAliases.get(tablePerJoinNode.get(node).findColumn(column.getExpression())));
@@ -269,13 +264,13 @@ public class EntityTreeQueryBuilder<C> {
 		
 		private final EntityTreeInflater<C> entityTreeInflater;
 		
-		private final IdentityHashMap<Column, Column> columnClones;
+		private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
 		
 		private EntityTreeQuery(Query query,
 								Map<String, ParameterBinder> selectParameterBinders,
 								IdentityMap<Selectable, String> columnAliases,
 								EntityTreeInflater<C> entityTreeInflater,
-								IdentityHashMap<Column, Column> columnClones) {
+								IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
 			this.selectParameterBinders = selectParameterBinders;
 			this.query = query;
 			this.columnAliases = columnAliases;
@@ -299,7 +294,13 @@ public class EntityTreeQueryBuilder<C> {
 			return entityTreeInflater;
 		}
 		
-		public IdentityHashMap<Column, Column> getColumnClones() {
+		/**
+		 * Gives the mapping between original {@link Column} of {@link Table} in joins and {@link Column} of cloned
+		 * {@link Table}s.
+		 * Made to allow external users to find the internal column (cloned one) for their original one
+		 * @return the mapping between original {@link Column} of {@link Table} in joins and {@link Column} of cloned {@link Table}s.
+		 */
+		public IdentityHashMap<Selectable<?>, Selectable<?>> getColumnClones() {
 			return columnClones;
 		}
 	}

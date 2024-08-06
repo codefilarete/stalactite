@@ -10,6 +10,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.reflection.AccessorChain;
@@ -17,6 +18,7 @@ import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
@@ -47,6 +49,7 @@ import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -62,12 +65,12 @@ import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
-import org.codefilarete.tool.exception.NotImplementedException;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
+import static java.util.Collections.emptySet;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
@@ -136,6 +139,11 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 																					dialect);
 		
 		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
+	}
+	
+	@Override
+	public EntityCriteriaSupport<C> getCriteriaSupport() {
+		return criteriaSupport;
 	}
 	
 	@Override
@@ -264,18 +272,57 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	}
 	
 	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(getter, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(setter, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		localCriteriaSupport.and(accessorChain, operator);
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	}
+	
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		return methodDispatcher
+				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
+				.redirect(EntityCriteria.class, localCriteriaSupport, true)
+				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
+	}
+	
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
+				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria());
 	}
 	
 	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, ?, Set<C>>, Set<C>>) ExecutableQuery::execute,
-						(Accumulator<C, ?, Set<C>> accumulator) -> entitySelectExecutor.select(localCriteriaSupport.getCriteria()))
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
+						wrapGraphLoad(localCriteriaSupport))
 				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
+	}
+	
+	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
+		return (Accumulator<C, Set<C>, R> accumulator) -> {
+			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
+					entitySelectExecutor.select(localCriteriaSupport.getCriteria())
+			);
+			return accumulator.collect(result);
+		};
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {

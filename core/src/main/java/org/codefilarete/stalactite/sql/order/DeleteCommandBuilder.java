@@ -60,8 +60,8 @@ public class DeleteCommandBuilder implements SQLBuilder, PreparedSQLBuilder {
 		// looking for additional Tables : more than the updated one, can be found in conditions
 		Set<Column<Table, Object>> whereColumns = new LinkedHashSet<>();
 		delete.getCriteria().forEach(c -> {
-			if (c instanceof ColumnCriterion) {
-				whereColumns.add(((ColumnCriterion) c).getColumn());
+			if (c instanceof ColumnCriterion && ((ColumnCriterion) c).getColumn() instanceof Column) {
+				whereColumns.add((Column<Table, Object>) ((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();
 				if (condition instanceof UnitaryOperator && ((UnitaryOperator) condition).getValue() instanceof Column) {
 					whereColumns.add((Column) ((UnitaryOperator) condition).getValue());

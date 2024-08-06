@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
@@ -50,10 +51,19 @@ public class PreparedSQLWrapper implements SQLAppender {
 	 * @param column
 	 * @param value  the object to be added/printed to the statement
 	 * @return this
+	 * @param <V> value type
 	 */
 	@Override
-	public PreparedSQLWrapper catValue(@Nullable Column column, Object value) {
-		return catValue(value, () -> column == null ? getParameterBinderFromRegistry(value) : parameterBinderRegistry.getBinder(column));
+	public <V> PreparedSQLWrapper catValue(@Nullable Selectable<V> column, V value) {
+		return catValue(value, () -> {
+			if (column == null) {
+				return getParameterBinderFromRegistry(value);
+			} else if (column instanceof Column) {
+				return parameterBinderRegistry.getBinder((Column) column);
+			} else {
+				return parameterBinderRegistry.getBinder(column.getJavaType());
+			}
+		});
 	}
 	
 	@Override
@@ -67,9 +77,9 @@ public class PreparedSQLWrapper implements SQLAppender {
 	}
 	
 	private PreparedSQLWrapper catValue(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
-		if (value instanceof Column) {
+		if (value instanceof Selectable) {
 			// Columns are simply appended (no binder needed nor index increment)
-			surrogate.cat(dmlNameProvider.getName((Column) value));
+			surrogate.cat(dmlNameProvider.getName((Selectable) value));
 		} else {
 			surrogate.cat("?");
 			values.put(paramCounter.getValue(), value);
