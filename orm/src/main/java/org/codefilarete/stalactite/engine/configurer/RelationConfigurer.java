@@ -28,7 +28,6 @@ import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersiste
 import org.codefilarete.stalactite.engine.runtime.cycle.ManyToManyCycleConfigurer;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToManyCycleConfigurer;
 import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -275,8 +274,9 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
 			// we must dynamically retrieve the persister into the registry because sourcePersister might not be the
 			// final / registered one in particular in case of polymorphism 
-			EntityCriteriaSupport criteriaSupport = ((ConfiguredRelationalPersister) persisterRegistry.getPersister(sourcePersister.getClassToPersist())).getCriteriaSupport();
-			criteriaSupport.registerRelation(targetEntityAccessor, targetPersister);
+			ConfiguredRelationalPersister<C, I> registeredSourcePersister = ((ConfiguredRelationalPersister<C, I>) persisterRegistry.getPersister(sourcePersister.getClassToPersist()));
+			registeredSourcePersister.registerRelation(targetEntityAccessor, targetPersister);
+			
 		}
 	}
 }

@@ -235,6 +235,7 @@ public class PersistenceContext implements PersisterRegistry {
 	 * @param <C> type of persisted bean
 	 * @throws IllegalArgumentException if a persister already exists for class persisted by given persister
 	 */
+	@Override
 	public <C> void addPersister(EntityPersister<C, ?> persister) {
 		EntityPersister<C, ?> existingPersister = persisterCache.get(persister.getClassToPersist());
 		if (existingPersister != null && existingPersister != persister) {

@@ -15,7 +15,6 @@ import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -152,10 +151,10 @@ public interface RelationalEntityPersister<C, I> {
 	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 	
 	/**
-	 * Gives support of entity query criteria.
-	 * @return support of entity query criteria
+	 * Register a relation to another persister. Made to make {@link #selectWhere(SerializableFunction, ConditionalOperator)} methods working.
+	 * Called at a very late stage of persister configuration when all persisters are available. 
 	 */
-	EntityCriteriaSupport<C> getCriteriaSupport();
+	void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister);
 	
 	/**
 	 * Gives the column on which the last element of the given accessor chain is persisted.

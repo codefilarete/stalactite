@@ -20,7 +20,6 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -63,8 +62,8 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public EntityCriteriaSupport<C> getCriteriaSupport() {
-		return surrogate.getCriteriaSupport();
+	public void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister) {
+		this.surrogate.registerRelation(relation, persister);
 	}
 	
 	@Override

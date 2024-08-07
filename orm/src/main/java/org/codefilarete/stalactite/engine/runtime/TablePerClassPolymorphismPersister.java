@@ -139,8 +139,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> implem
 	}
 	
 	@Override
-	public EntityCriteriaSupport<C> getCriteriaSupport() {
-		return criteriaSupport;
+	public void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister) {
+		criteriaSupport.registerRelation(relation, persister);
 	}
 	
 	@Override

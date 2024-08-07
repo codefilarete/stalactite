@@ -15,7 +15,6 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -39,19 +38,19 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * Implementation of {@link EntityCriteria}
  * 
  * @author Guillaume Mary
- * @see #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister) 
+ * @see #registerRelation(ValueAccessPoint, RelationalEntityPersister) 
  */
 public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	
 	/** Delegate of the query : targets of the API methods */
 	private final Criteria criteria = new Criteria();
 	
-	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister)} */
+	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, RelationalEntityPersister)} */
 	private final EntityGraphNode<C> rootConfiguration;
 	
 	/**
 	 * Base constructor to start configuring an instance.
-	 * Relations must be registered through {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister)}.
+	 * Relations must be registered through {@link #registerRelation(ValueAccessPoint, RelationalEntityPersister)}.
 	 * 
 	 * @param entityMapping entity mapping for direct and embedded properties
 	 */
@@ -80,7 +79,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 	 * @param relation the representation of the method that gives access to the value, shouldn't be a chain of accessor
 	 * @param persister the persister of related entities
 	 */
-	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
+	public void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister) {
 		rootConfiguration.registerRelation(relation, persister);
 	}
 	

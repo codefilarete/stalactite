@@ -146,8 +146,8 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> i
 	}
 	
 	@Override
-	public EntityCriteriaSupport<C> getCriteriaSupport() {
-		return criteriaSupport;
+	public void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister) {
+		criteriaSupport.registerRelation(relation, persister);
 	}
 	
 	@Override

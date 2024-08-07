@@ -142,8 +142,8 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	}
 	
 	@Override
-	public EntityCriteriaSupport<C> getCriteriaSupport() {
-		return criteriaSupport;
+	public void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister) {
+		criteriaSupport.registerRelation(relation, persister);
 	}
 	
 	@Override
