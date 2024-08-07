@@ -9,17 +9,11 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.DeleteExecutor;
 import org.codefilarete.stalactite.engine.EntityPersister;
-import org.codefilarete.stalactite.engine.ExecutableProjection;
-import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.InsertExecutor;
 import org.codefilarete.stalactite.engine.UpdateExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
@@ -31,7 +25,6 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -45,18 +38,12 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.RowTransformer.TransformerListener;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
-import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
-import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
@@ -66,11 +53,7 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
-import static java.util.Collections.emptySet;
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
 
 /**
@@ -79,7 +62,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
  * 
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationalPersister<C, I>, PolymorphicPersister<C> {
+public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPersister<C, I> {
 	
 	/**
 	 * Current storage of entities to be loaded during the 2-Phases load algorithm.
@@ -89,27 +72,27 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	@SuppressWarnings("java:S5164" /* remove() is called by SecondPhaseRelationLoader.afterSelect() */)
 	private static final ThreadLocal<Queue<Set<RelationIds<Object /* E */, Object /* target */, Object /* target identifier */ >>>> CURRENT_2PHASES_LOAD_CONTEXT = new ThreadLocal<>();
 	
-	private final Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	/** The wrapper around sub entities loaders, for 2-phases load */
 	private final JoinTablePolymorphismSelectExecutor<C, I, ?> selectExecutor;
-	private final Class<C> parentClass;
 	private final Map<Class<? extends C>, IdMapping<C, I>> subclassIdMappingStrategies;
 	private final Map<Class<? extends C>, Table> tablePerSubEntityType;
 	private final PrimaryKey<?, I> mainTablePrimaryKey;
-	private final EntityCriteriaSupport<C> criteriaSupport;
-	private final JoinTablePolymorphismEntitySelector<C, I, ?> entitySelectExecutor;
-	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	
 	public JoinTablePolymorphismPersister(ConfiguredRelationalPersister<C, I> mainPersister,
 										  Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters,
 										  ConnectionProvider connectionProvider,
 										  Dialect dialect) {
-		this.mainPersister = mainPersister;
-		this.parentClass = this.mainPersister.getClassToPersist();
+		super(mainPersister,
+				subEntitiesPersisters,
+				new JoinTablePolymorphismEntitySelector<>(subEntitiesPersisters,
+						mainPersister.getMainTable(),
+						mainPersister.getEntityJoinTree(),
+						connectionProvider,
+						dialect));
 		Table<?> mainTable = mainPersister.<Table>getMapping().getTargetTable();
 		this.mainTablePrimaryKey = mainTable.getPrimaryKey();
 		
-		this.subEntitiesPersisters = (Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
+//		this.subEntitiesPersisters = (Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		Set<? extends Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure
@@ -131,14 +114,6 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 				mainPersister,
 				tablePerSubEntityType, subclassSelectExecutors, connectionProvider,
 				dialect);
-		
-		this.entitySelectExecutor = new JoinTablePolymorphismEntitySelector<>(subEntitiesPersisters,
-																					mainPersister.getMainTable(),
-																					mainPersister.getEntityJoinTree(),
-																					connectionProvider,
-																					dialect);
-		
-		this.criteriaSupport = new EntityCriteriaSupport<>(mainPersister.getMapping());
 	}
 	
 	@Override
@@ -251,108 +226,8 @@ public class JoinTablePolymorphismPersister<C, I> implements ConfiguredRelationa
 	}
 	
 	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(getter, operator);
-		return wrapIntoExecutable(localCriteriaSupport);
-	}
-	
-	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(setter, operator);
-		return wrapIntoExecutable(localCriteriaSupport);
-	}
-	
-	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(accessorChain, operator);
-		return wrapIntoExecutable(localCriteriaSupport);
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(getter, operator);
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(setter, operator);
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(accessorChain, operator);
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
-	}
-	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
-		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
-				.redirect(EntityCriteria.class, localCriteriaSupport, true)
-				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
-	}
-	
-	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
-		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria());
-	}
-	
-	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
-		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
-						wrapGraphLoad(localCriteriaSupport))
-				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
-				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
-				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
-	}
-	
-	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
-		return (Accumulator<C, Set<C>, R> accumulator) -> {
-			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
-					entitySelectExecutor.select(localCriteriaSupport.getCriteria())
-			);
-			return accumulator.collect(result);
-		};
-	}
-	
-	private EntityCriteriaSupport<C> newWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
-		return new EntityCriteriaSupport<>(criteriaSupport);
-	}
-	
-	@Override
-	public Set<C> selectAll() {
-		return entitySelectExecutor.select(newWhere().getCriteria());
-	}
-	
-	@Override
-	public boolean isNew(C entity) {
-		return mainPersister.isNew(entity);
-	}
-	
-	@Override
-	public Class<C> getClassToPersist() {
-		return parentClass;
-	}
-	
-	@Override
 	public <E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName) {
 		// nothing to do here, called by one-to-many engines, which actually call joinWithMany()
-	}
-	
-	@Override
-	public EntityJoinTree<C, I> getEntityJoinTree() {
-		return mainPersister.getEntityJoinTree();
 	}
 	
 	@Override

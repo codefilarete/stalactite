@@ -89,13 +89,12 @@ class TablePerClassPolymorphismBuilder<C, I, T extends Table<T>> extends Abstrac
 		if (this.identification instanceof Identification && ((Identification<C, I>) this.identification).getIdentifierPolicy() instanceof ColumnOptions.AfterInsertIdentifierPolicy) {
 			throw new UnsupportedOperationException("Table-per-class polymorphism is not compatible with auto-incremented primary key");
 		}
-		Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass =
-				(Map) collectSubClassPersister(dialect, connectionConfiguration);
+		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		// NB : we don't yet manage relations in table-per-class polymorphism because it causes problems of referential integrity when relation
 		// is owned by target table since one column has to reference all tables of the hierarchy ! 
 		// registerSubEntitiesRelations(dialect, connectionConfiguration, persisterRegistry, persisterPerSubclass);
-		registerCascades((Map) persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
+		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
 		
 		TablePerClassPolymorphismPersister<C, I, T> result = new TablePerClassPolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect);

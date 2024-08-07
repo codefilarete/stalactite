@@ -54,7 +54,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 	static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
 	
 	private final IdentifierAssembler<I, T> identifierAssembler;
-	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass;
+	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	private final EntityJoinTree<C, I> mainEntityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
@@ -64,21 +64,20 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 	
 	public TablePerClassPolymorphismEntitySelector(
 			IdentifierAssembler<I, T> identifierAssembler,
-			Map<Class<? extends C>, ? extends Table> tablePerSubConfiguration,
-			Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> persisterPerSubclass,
+			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 			EntityJoinTree<C, I> mainEntityJoinTree,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
 		this.identifierAssembler = identifierAssembler;
-		this.persisterPerSubclass = persisterPerSubclass;
+		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
 		this.mainEntityJoinTree = mainEntityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.mainTable = (T) mainEntityJoinTree.getRoot().getTable();
 		// building readers and aliases for union-all query
 		this.discriminatorValues = new HashMap<>();
-		tablePerSubConfiguration.forEach((subEntityType, subEntityTable) -> {
+		persisterPerSubclass.forEach((subEntityType, subEntityTable) -> {
 			discriminatorValues.put(subEntityType.getSimpleName(), subEntityType);
 		});
 		entityJoinTree = buildEntityJoinTree();

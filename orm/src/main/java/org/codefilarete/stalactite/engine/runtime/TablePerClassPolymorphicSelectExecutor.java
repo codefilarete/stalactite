@@ -34,6 +34,7 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Functions;
 import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
@@ -47,7 +48,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 	
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<? extends C>, Table> tablePerSubEntity;
-	private final Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I ,?>> subEntitiesPersisters;
+	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	private final String discriminatorAlias;
@@ -56,17 +57,20 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 	
 	public TablePerClassPolymorphicSelectExecutor(
 			ConfiguredRelationalPersister<C, I> mainPersister,
-			Map<Class<? extends C>, ? extends Table> tablePerSubEntity,
-			Map<Class<? extends C>, SimpleRelationalEntityPersister<? extends C, I, ?>> subEntitiesPersisters,
+			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> subEntitiesPersisters,
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
 		this.mainPersister = mainPersister;
-		this.tablePerSubEntity = (Map<Class<? extends C>, Table>) tablePerSubEntity;
-		this.subEntitiesPersisters = subEntitiesPersisters;
+		this.subEntitiesPersisters = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 		this.discriminatorAlias = DISCRIMINATOR_ALIAS;
+		
+		this.tablePerSubEntity = Iterables.map(subEntitiesPersisters.entrySet(),
+				Entry::getKey,
+				Functions.<Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>>, ConfiguredRelationalPersister<C, I>, Table>chain(Entry::getValue, ConfiguredRelationalPersister::getMainTable), KeepOrderMap::new);
+		
 		
 		this.discriminatorValuePerSubType = Iterables.map(this.tablePerSubEntity.entrySet(), Entry::getKey, entry -> entry.getKey().getSimpleName());
 		
