@@ -40,8 +40,6 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 			return new PartTreeStalactiteDelete<>(queryMethod, entityPersister, partTree);
 		} else if (partTree.isCountProjection()) {
 			return new PartTreeStalactiteCount<>(queryMethod, entityPersister, partTree);
-//		} else if (partTree.isDistinct()) {
-			
 //		} else if (partTree.isExistsProjection()) {
 //			
 //		} else if (partTree.isLimiting()) {

@@ -45,7 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
-import static org.codefilarete.stalactite.id.Identifier.*;
+import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
+import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.tool.collection.Arrays.asHashSet;
 
@@ -215,6 +216,44 @@ class DerivedQueriesTest {
 		assertThat(loadedCountries).isEqualTo(2);
 		
 		loadedCountries = derivedQueriesRepository.countByLanguagesCodeIs("en_en");
+		assertThat(loadedCountries).isEqualTo(1);
+	}
+	
+	@Test
+	void countDistinctByCriteria() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+		// we add a second language to make the query returns several time country1 id
+		Language frFr2 = new Language(new PersistableIdentifier<>(78L), "fr_fr");
+		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+		country1.setLanguages(asHashSet(frFr, frFr2, enEn));
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		
+		Country country2 = new Country(43);
+		country2.setName("Toto");
+		Person president2 = new Person(237);
+		president2.setName("you");
+		country2.setPresident(president2);
+		country2.setLanguages(asHashSet(frFr, esEs));
+		
+		Vehicle vehicle = new Vehicle(1438L);
+		vehicle.setColor(new Color(123));
+		president1.setVehicle(vehicle);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		// this is only to ensure that database is correct, else next assertions are useless
+		long loadedCountries = derivedQueriesRepository.countByLanguagesCodeIs("fr_fr");
+		assertThat(loadedCountries).isEqualTo(3);
+		
+		loadedCountries = derivedQueriesRepository.countDistinctByLanguagesCodeIs("fr_fr");
+		assertThat(loadedCountries).isEqualTo(2);
+		
+		loadedCountries = derivedQueriesRepository.countDistinctByLanguagesCodeIs("en_en");
 		assertThat(loadedCountries).isEqualTo(1);
 	}
 	

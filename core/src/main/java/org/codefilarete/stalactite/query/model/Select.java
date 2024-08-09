@@ -96,6 +96,10 @@ public class Select implements FluentSelect<Select> {
 		return this;
 	}
 	
+	public void setDistinct(boolean distinct) {
+		this.distinct = distinct;
+	}
+	
 	public KeepOrderMap<Selectable<?>, String> clear() {
 		KeepOrderMap<Selectable<?>, String> result = new KeepOrderMap<>(this.columns);
 		this.columns.clear();

@@ -37,7 +37,8 @@ public interface EntitySelector<C, I> {
 	 * @param selectAdapter the {@link Select} clause modifier
 	 * @param accumulator the aggregator of the projection
 	 * @param where some criteria for aggregate selection
+	 * @param distinct
 	 * @return entities that match criteria
 	 */
-	<R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where);
+	<R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where, boolean distinct);
 }

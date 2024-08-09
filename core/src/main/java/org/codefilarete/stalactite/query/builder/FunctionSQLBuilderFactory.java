@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.query.builder;
 
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Cast;
+import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 
@@ -52,6 +53,9 @@ public class FunctionSQLBuilderFactory {
 				catCast((Cast) operator, sql);
 			} else {
 				sql.cat(operator.getExpression(), "(");
+				if (operator instanceof Count && ((Count) operator).isDistinct()) {
+					sql.cat("distinct ");
+				}
 				for (Object argument : operator.getArguments()) {
 					if (argument instanceof SQLFunction) {
 						cat((SQLFunction) argument, sql);

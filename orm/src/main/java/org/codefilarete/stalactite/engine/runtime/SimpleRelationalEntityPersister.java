@@ -188,11 +188,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		return persister.getPersisterListener();
 	}
 	
-	private EntityCriteriaSupport<C> newWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
-		return new EntityCriteriaSupport<>(criteriaSupport);
-	}
-	
 	@Override
 	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
@@ -233,21 +228,26 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		};
 	}
 	
+	private EntityCriteriaSupport<C> newWhere() {
+		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
+		return new EntityCriteriaSupport<>(criteriaSupport);
+	}
+	
 	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
 		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
 	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
 		localCriteriaSupport.and(accessorChain, operator);
 		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
@@ -256,9 +256,14 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
-	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria());
+			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), localCriteriaSupport.isDistinct());
+	}
+	
+	private ProjectionCriteriaSupport<C> newProjectionWhere() {
+		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
+		return new ProjectionCriteriaSupport<>(criteriaSupport);
 	}
 	
 	/**
@@ -446,5 +451,23 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		
 		CriteriaChain getCriteria();
 		
+	}
+	
+	private static class ProjectionCriteriaSupport<C> extends EntityCriteriaSupport<C> {
+		
+		private boolean distinct;
+		
+		public ProjectionCriteriaSupport(EntityCriteriaSupport<C> source) {
+			super(source);
+		}
+		
+		public RelationalEntityCriteria<C> distinct() {
+			this.distinct = true;
+			return this;
+		}
+		
+		public boolean isDistinct() {
+			return distinct;
+		}
 	}
 }

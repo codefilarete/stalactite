@@ -31,6 +31,10 @@ class FunctionSQLBuilderTest {
 		
 		testInstance.cat(new Count(colA), new StringAppenderWrapper(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("count(Toto.a)");
+		
+		result = new StringAppender();
+		testInstance.cat(new Count(colA).distinct(), new StringAppenderWrapper(result, dmlNameProvider));
+		assertThat(result.toString()).isEqualTo("count(distinct Toto.a)");
 	}
 	
 	@Test

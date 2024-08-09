@@ -76,4 +76,6 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	long deleteByLanguagesCodeIs(String code);
 	
 	long countByLanguagesCodeIs(String code);
+	
+	long countDistinctByLanguagesCodeIs(String code);
 }

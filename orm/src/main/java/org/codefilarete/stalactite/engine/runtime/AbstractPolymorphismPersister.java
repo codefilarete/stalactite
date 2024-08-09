@@ -87,44 +87,50 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 		};
 	}
 	
+	private EntityCriteriaSupport<C> newWhere() {
+		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
+		return new EntityCriteriaSupport<>(criteriaSupport);
+	}
+	
 	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
 		localCriteriaSupport.and(getter, operator);
 		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
 	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
 		localCriteriaSupport.and(setter, operator);
 		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
 	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
+		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
 		localCriteriaSupport.and(accessorChain, operator);
 		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
 						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
+				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, localCriteriaSupport::distinct)
 				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
-	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria());
+				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), localCriteriaSupport.isDistinct());
 	}
 	
-	private EntityCriteriaSupport<C> newWhere() {
+	private ProjectionCriteriaSupport<C> newProjectionWhere() {
 		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
-		return new EntityCriteriaSupport<>(criteriaSupport);
+		return new ProjectionCriteriaSupport<>(criteriaSupport);
 	}
 	
 	@Override
@@ -145,5 +151,23 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return mainPersister.getEntityJoinTree();
+	}
+	
+	private static class ProjectionCriteriaSupport<C> extends EntityCriteriaSupport<C> {
+		
+		private boolean distinct;
+		
+		public ProjectionCriteriaSupport(EntityCriteriaSupport<C> source) {
+			super(source);
+		}
+		
+		public RelationalEntityCriteria<C> distinct() {
+			this.distinct = true;
+			return this;
+		}
+		
+		public boolean isDistinct() {
+			return distinct;
+		}
 	}
 }

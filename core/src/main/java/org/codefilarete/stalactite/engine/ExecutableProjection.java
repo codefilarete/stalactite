@@ -14,6 +14,12 @@ import org.codefilarete.stalactite.sql.result.Accumulator;
 public interface ExecutableProjection {
 	
 	/**
+	 * Marks this projection to apply the <code>distinct</code> SQL keyword
+	 * @return the current instance to chain with other methods
+	 */
+	ExecutableProjection distinct();
+	
+	/**
 	 * Will run an underlying projection and executes given {@link Accumulator} on its result.
 	 * 
 	 * @param accumulator projection result finalizer, {@link java.sql.ResultSet} values are read through the given {@link Function}

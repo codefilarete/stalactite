@@ -19,7 +19,7 @@ public abstract class SQLFunction<V> implements Selectable<V> {
 		this(functionName, javaType, Arrays.asList(arguments));
 	}
 	
-	protected SQLFunction(String functionName, Class<V> javaType, Iterable<? extends Object> arguments) {
+	protected SQLFunction(String functionName, Class<V> javaType, Iterable<?> arguments) {
 		this.functionName = functionName;
 		this.javaType = javaType;
 		this.arguments = (Iterable<Object>) arguments;

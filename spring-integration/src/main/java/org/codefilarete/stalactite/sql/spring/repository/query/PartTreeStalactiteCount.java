@@ -43,6 +43,9 @@ class PartTreeStalactiteCount<C> implements RepositoryQuery {
 		try {
 			Set<Column<?, ?>> columns = ((ConfiguredPersister) entityPersister).getMapping().getIdMapping().getIdentifierAssembler().getColumns();
 			count = Operators.count(columns);
+			if (tree.isDistinct()) {
+				count.distinct();
+			}
 			this.query = new Query<>(entityPersister, tree);
 			
 		} catch (RuntimeException o_O) {
