@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.spring.repository.query;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 
@@ -7,6 +8,7 @@ import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -78,4 +80,24 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	long countByLanguagesCodeIs(String code);
 	
 	long countDistinctByLanguagesCodeIs(String code);
+	
+	NamesOnly getByName(String name);
+	
+	<T> Collection<T> getByName(String name, Class<T> type);
+	
+	interface NamesOnly {
+		
+		String getName();
+		
+		@Value("#{target.president.name}")
+		String getPresidentName();
+		
+		SimplePerson getPresident();
+		
+		interface SimplePerson {
+			
+			String getName();
+			
+		}
+	}
 }

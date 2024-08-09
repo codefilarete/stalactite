@@ -4,6 +4,7 @@ package org.codefilarete.stalactite.sql.spring.repository.query;
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.Collection;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
@@ -26,6 +27,8 @@ import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.spring.repository.config.EnableStalactiteRepositories;
+import org.codefilarete.stalactite.sql.spring.repository.query.DerivedQueriesRepository.NamesOnly;
+import org.codefilarete.stalactite.sql.spring.repository.query.DerivedQueriesRepository.NamesOnly.SimplePerson;
 import org.codefilarete.stalactite.sql.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.statement.binder.LambdaParameterBinder;
@@ -49,6 +52,7 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
 import static org.codefilarete.tool.collection.Arrays.asHashSet;
+import static org.codefilarete.tool.function.Functions.chain;
 
 /**
  * @author Guillaume Mary
@@ -63,6 +67,45 @@ class DerivedQueriesTest {
 	@Autowired
 	private DerivedQueriesRepository derivedQueriesRepository;
 	
+	@Test
+	void projection() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		Country country2 = new Country(43);
+		country2.setName("Tata");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		DerivedQueriesRepository.NamesOnly loadedCountry = derivedQueriesRepository.getByName("Toto");
+		assertThat(loadedCountry.getName()).isEqualTo(country1.getName());
+		assertThat(loadedCountry.getPresidentName()).isEqualTo(country1.getPresident().getName());
+		assertThat(loadedCountry.getPresident().getName()).isEqualTo(country1.getPresident().getName());
+	}
+	
+	@Test
+	void projection_byExtraArgument() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("John Do");
+		country1.setPresident(president1);
+		Country country2 = new Country(43);
+		country2.setName("Toto");
+		Person president2 = new Person(777);
+		president2.setName("Jane Do");
+		country2.setPresident(president2);
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		Collection<DerivedQueriesRepository.NamesOnly> loadedCountries = derivedQueriesRepository.getByName("Toto", NamesOnly.class);
+		assertThat(loadedCountries).extracting(NamesOnly::getName)
+				.containsExactlyInAnyOrder(country1.getName(), country2.getName());
+		assertThat(loadedCountries).extracting(NamesOnly::getPresidentName)
+				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
+		assertThat(loadedCountries).extracting(chain(NamesOnly::getPresident, SimplePerson::getName))
+				.containsExactlyInAnyOrder(country1.getPresident().getName(), country2.getPresident().getName());
+	}
 	
 	@Test
 	void twoCriteria() {

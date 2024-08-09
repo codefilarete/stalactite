@@ -6,7 +6,9 @@ import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.springframework.data.jpa.repository.query.PartTreeJpaQuery;
+import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.Parameters;
+import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
@@ -47,7 +49,20 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 	@Nullable
 	public R execute(Object[] parameters) {
 		query.criteriaChain.consume(parameters);
-		return query.executableEntityQuery.execute(accumulator);
+		R result = query.executableEntityQuery.execute(accumulator);
+		
+		
+		ParameterAccessor accessor = new ParametersParameterAccessor(method.getParameters(), parameters);
+		
+		// - isProjecting() is for case of return type is not domain one (nor a compound one by Collection or other)
+		// - findDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)
+		if (method.getResultProcessor().getReturnedType().isProjecting()
+				|| accessor.findDynamicProjection() != null) {
+			// withDynamicProjection() handles the 2 cases of the "if" (with some not obvious algorithm)
+			return method.getResultProcessor().withDynamicProjection(accessor).processResult(result);
+		} else {
+			return result;
+		}
 	}
 	
 	@Override
