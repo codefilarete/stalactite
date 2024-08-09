@@ -633,19 +633,18 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 						.build(persistenceContext2),
 						persistenceContext2,
 						PolymorphismType.JOIN_TABLE},
-				// TODO: table-per-class with relation is not yet supported, see TablePerClassPolymorphismBuilder.buid(...)
-//				{	"table per class",
-//					entityBuilder(Vehicle.class, LONG_TYPE)
-//						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
-//						.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
-//								.addSubClass(subentityBuilder(Car.class)
-//										.map(Car::getModel)
-//										.mapCollection(Car::getPlates, String.class))
-//								.addSubClass(subentityBuilder(Truck.class)
-//										.map(Truck::getColor)))
-//						.build(persistenceContext3),
-//						persistenceContext3,
-//						PolymorphismType.TABLE_PER_CLASS},
+				{	"table per class",
+					entityBuilder(Vehicle.class, LONG_TYPE)
+						.mapKey(Vehicle::getId, ALREADY_ASSIGNED)
+						.mapPolymorphism(PolymorphismPolicy.<Vehicle>tablePerClass()
+								.addSubClass(subentityBuilder(Car.class)
+										.map(Car::getModel)
+										.mapCollection(Car::getPlates, String.class))
+								.addSubClass(subentityBuilder(Truck.class)
+										.map(Truck::getColor)))
+						.build(persistenceContext3),
+						persistenceContext3,
+						PolymorphismType.TABLE_PER_CLASS},
 		};
 		new DDLDeployer(persistenceContext1).deployDDL();
 		new DDLDeployer(persistenceContext2).deployDDL();
@@ -692,7 +691,8 @@ class FluentEntityMappingConfigurationSupportPolymorphismWithRelationTest {
 				sql = "select count(*) as cnt from Car_plates";
 				break;
 			case TABLE_PER_CLASS:
-				throw new NotYetSupportedOperationException();
+				sql = "select count(*) as cnt from Car_plates";
+				break;
 			default:
 				throw new IllegalArgumentException();
 		}
