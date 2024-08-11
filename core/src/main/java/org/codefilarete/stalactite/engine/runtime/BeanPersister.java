@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.StaleStateObjectException;
@@ -20,7 +19,6 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -32,8 +30,6 @@ import org.codefilarete.stalactite.sql.statement.WriteOperationFactory;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.NotImplementedException;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * Main class for CRUD operations of an entity class. Doesn't manage relation between entities.
@@ -228,32 +224,7 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	}
 	
 	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
-	}
-	
-	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
-	}
-	
-	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		throw new NotImplementedException("Not yet implemented");
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+	public ExecutableEntityQuery<C> selectWhere() {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	

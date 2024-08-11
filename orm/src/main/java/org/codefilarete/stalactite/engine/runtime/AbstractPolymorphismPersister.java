@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
@@ -14,12 +13,10 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.trace.ModifiableBoolean;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -49,23 +46,8 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	}
 	
 	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	public RelationalExecutableEntityQuery<C> selectWhere() {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(getter, operator);
-		return wrapIntoExecutable(localCriteriaSupport);
-	}
-	
-	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(setter, operator);
-		return wrapIntoExecutable(localCriteriaSupport);
-	}
-	
-	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		localCriteriaSupport.and(accessorChain, operator);
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	

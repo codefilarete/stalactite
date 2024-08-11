@@ -9,8 +9,7 @@ import java.util.function.BiFunction;
 
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
-import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -31,7 +30,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * 
  * @author Guillaume Mary
  */
-public interface RelationalEntityPersister<C, I> {
+public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	
 	/**
 	 * Called to join this instance with given persister. For this method, current instance is considered as the "right part" of the relation.
@@ -126,29 +125,40 @@ public interface RelationalEntityPersister<C, I> {
 	 */
 	<E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName);
 	
-	/**
-	 * Creates a query which criteria target mapped properties.
-	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
-	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
-	 *
-	 * @param <O> value type returned by property accessor
-	 * @param getter a property accessor
-	 * @param operator criteria for the property
-	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
-	 */
-	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
+	default <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return selectWhere().and(getter, operator);
+	}
+	
+	default <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return selectWhere().and(setter, operator);
+	}
+	
+	default <O, A> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
+	}
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
-	 * <strong>As for now aggregate result is truncated to entities returned by SQL selection : for example, if criteria on collection is used,
-	 * only entities returned by SQL criteria will be loaded. This does not respect aggregate principle and should be enhanced in future.</strong>
+	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
 	 *
-	 * @param <O> value type returned by property accessor
-	 * @param setter a property setter
+	 * @param accessorChain a property accessor
 	 * @param operator criteria for the property
+	 * @param <O> value type returned by property accessor
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
+	default <O> RelationalExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectWhere().and(accessorChain, operator);
+	}
+	
+	/**
+	 * Creates a query which criteria target mapped properties.
+	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
+	 *
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	RelationalExecutableEntityQuery<C> selectWhere();
 	
 	/**
 	 * Register a relation to another persister. Made to make {@link #selectWhere(SerializableFunction, ConditionalOperator)} methods working.

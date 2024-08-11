@@ -174,7 +174,9 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
+	default <O> ExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return selectWhere().and(getter, operator);
+	}
 	
 	/**
 	 * Creates a query which criteria target mapped properties.
@@ -186,7 +188,9 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
+	default <O> ExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return selectWhere().and(setter, operator);
+	}
 	
 	/**
 	 * Variation of {@link #selectWhere(SerializableFunction, ConditionalOperator)} with a criteria on property of a property
@@ -213,7 +217,18 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator);
+	default <O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectWhere().and(accessorChain, operator);
+	}
+	
+	/**
+	 * Creates a query which criteria target mapped properties.
+	 * Please note that whole bean graph is loaded, not only entities that satisfies criteria.
+	 *
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	ExecutableEntityQuery<C> selectWhere();
 	
 	/**
 	 * Creates a projection query which criteria target mapped properties.

@@ -7,7 +7,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -20,7 +19,6 @@ import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
@@ -28,8 +26,6 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 /**
  * {@link ConfiguredRelationalPersister} that wraps another {@link ConfiguredRelationalPersister}.
@@ -77,33 +73,8 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return surrogate.selectWhere(getter, operator);
-	}
-	
-	@Override
-	public <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return surrogate.selectWhere(setter, operator);
-	}
-	
-	@Override
-	public <O> ExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		return surrogate.selectWhere(accessorChain, operator);
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return surrogate.selectProjectionWhere(selectAdapter, getter, operator);
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return surrogate.selectProjectionWhere(selectAdapter, setter, operator);
-	}
-	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		return surrogate.selectProjectionWhere(selectAdapter, accessorChain, operator);
+	public RelationalExecutableEntityQuery<C> selectWhere() {
+		return surrogate.selectWhere();
 	}
 	
 	@Override
