@@ -243,7 +243,22 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	}
 	
 	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		throw new NotImplementedException("Not yet implemented");
+	}
+	
+	@Override
+	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	

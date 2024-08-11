@@ -92,8 +92,23 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return surrogate.selectProjectionWhere(selectAdapter, getter, operator);
+	}
+	
+	@Override
+	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return surrogate.selectProjectionWhere(selectAdapter, setter, operator);
+	}
+	
+	@Override
 	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
 		return surrogate.selectProjectionWhere(selectAdapter, accessorChain, operator);
+	}
+	
+	@Override
+	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
+		return surrogate.selectProjectionWhere(selectAdapter);
 	}
 	
 	@Override

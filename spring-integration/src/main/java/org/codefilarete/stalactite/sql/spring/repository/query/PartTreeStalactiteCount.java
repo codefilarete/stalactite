@@ -13,8 +13,6 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.tool.trace.ModifiableLong;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.QueryMethod;
@@ -91,31 +89,16 @@ class PartTreeStalactiteCount<C> implements RepositoryQuery {
 		
 		Query(EntityPersister<T, ?> entityPersister, PartTree tree) {
 			super(entityPersister);
-			Holder<ExecutableProjectionQuery<T>> resultHolder = new Holder<>();
-			ModifiableInt partIndex = new ModifiableInt();
-			tree.forEach(orPart -> {
-				orPart.forEach(part -> {
-							append(part, resultHolder, partIndex.getValue());
-							partIndex.increment();
-						}
-				);
+			executableEntityQuery = entityPersister.selectProjectionWhere(select -> {
+				select.clear();
+				select.add(count, COUNT_ALIAS);
 			});
-			executableEntityQuery = resultHolder.get();
+			tree.forEach(orPart -> orPart.forEach(this::append));
 		}
 		
-		private void append(Part part, Holder<ExecutableProjectionQuery<T>> resultHolder, int partIndex) {
+		private void append(Part part) {
 			Criterion criterion = convertToOperator(part.getType());
-			// entityPersister doesn't support the creation of a ExecutableProjectionQuery from scratch and requires to
-			// create it from entityPersister.selectWhere : we call it for first part
-			if (partIndex == 0) {
-				ExecutableProjectionQuery<T> criteriaHook = entityPersister.selectProjectionWhere(select ->  {
-					select.clear();
-					select.add(count, COUNT_ALIAS);
-				}, convertToAccessorChain(part.getProperty()), criterion.operator);
-				resultHolder.set(criteriaHook);
-			} else {
-				resultHolder.get().and(convertToAccessorChain(part.getProperty()), criterion.operator);
-			}
+			executableEntityQuery.and(convertToAccessorChain(part.getProperty()), criterion.operator);
 			this.criteriaChain.criteria.add(criterion);
 		}
 		

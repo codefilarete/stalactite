@@ -220,7 +220,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
-	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
 	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
 	 *
@@ -232,7 +232,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	default <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return null;
+		return selectProjectionWhere(selectAdapter).and(getter, operator);
 	}
 	
 	/**
@@ -240,7 +240,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
-	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
 	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
 	 *
@@ -252,7 +252,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
 	default <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return null;
+		return selectProjectionWhere(selectAdapter).and(setter, operator);
 	}
 	
 	/**
@@ -260,7 +260,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
-	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
 	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
 	 *
@@ -272,8 +272,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	default <O, A> ExecutableEntityQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
-		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
+	default <O, A> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter, AccessorChain.chain(getter1, getter2), operator);
 	}
 	
 	/**
@@ -281,7 +281,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
 	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
 	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
-	 * Consumption and aggregation of the result of the query is left to the user that must implement its {@link Accumulator}
+	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
 	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
 	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
 	 *
@@ -292,7 +292,24 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	<O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator);
+	default <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+		return selectProjectionWhere(selectAdapter).and(accessorChain, operator);
+	};
+	
+	/**
+	 * Creates a projection query which criteria target mapped properties.
+	 * {@link Select} must be modified by given select adapter (by default all column that would allow to load the entity are present).
+	 * User is expected to modify default {@link Select} by clearing it (optional) and add its {@link org.codefilarete.stalactite.query.model.Selectable}
+	 * ({@link org.codefilarete.stalactite.sql.ddl.structure.Column} or {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}).
+	 * Consumption and aggregation of query result is left to the user that must implement its {@link Accumulator}
+	 * while executing the result of this method through {@link ExecutableProjection#execute(Accumulator)}.
+	 * <strong>Note that all {@link org.codefilarete.stalactite.query.model.Selectable} added to the Select must have an alias</strong>.
+	 *
+	 * @param selectAdapter the {@link Select} clause modifier
+	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
+	 * @throws Exception if the column matching targeted property can't be found in entity mapping
+	 */
+	ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter);
 	
 	Set<C> selectAll();
 	

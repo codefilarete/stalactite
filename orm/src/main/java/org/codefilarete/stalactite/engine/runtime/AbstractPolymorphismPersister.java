@@ -18,6 +18,7 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -93,44 +94,30 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	}
 	
 	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
-		localCriteriaSupport.and(getter, operator);
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
+		return wrapIntoExecutable(selectAdapter, newWhere());
 	}
 	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
-		localCriteriaSupport.and(setter, operator);
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport, new ModifiableBoolean(false));
 	}
 	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
-		localCriteriaSupport.and(accessorChain, operator);
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
-	}
-	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport, ModifiableBoolean distinct) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
-				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, localCriteriaSupport::distinct)
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport, distinct.getValue()))
+				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, distinct::setTrue)
 				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
-	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
+			Consumer<Select> selectAdapter,
+			EntityCriteriaSupport<C> localCriteriaSupport,
+			boolean distinct) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), localCriteriaSupport.isDistinct());
-	}
-	
-	private ProjectionCriteriaSupport<C> newProjectionWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
-		return new ProjectionCriteriaSupport<>(criteriaSupport);
+				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), distinct);
 	}
 	
 	@Override
@@ -151,23 +138,5 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	@Override
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return mainPersister.getEntityJoinTree();
-	}
-	
-	private static class ProjectionCriteriaSupport<C> extends EntityCriteriaSupport<C> {
-		
-		private boolean distinct;
-		
-		public ProjectionCriteriaSupport(EntityCriteriaSupport<C> source) {
-			super(source);
-		}
-		
-		public RelationalEntityCriteria<C> distinct() {
-			this.distinct = true;
-			return this;
-		}
-		
-		public boolean isDistinct() {
-			return distinct;
-		}
 	}
 }

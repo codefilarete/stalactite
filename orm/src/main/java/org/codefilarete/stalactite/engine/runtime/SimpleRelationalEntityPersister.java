@@ -49,6 +49,7 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
@@ -234,36 +235,30 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
-		localCriteriaSupport.and(getter, operator);
+	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
+		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
 	}
 	
-	@Override
-	public <O> ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter, AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
-		ProjectionCriteriaSupport<C> localCriteriaSupport = newProjectionWhere();
-		localCriteriaSupport.and(accessorChain, operator);
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
+		return wrapIntoExecutable(selectAdapter, localCriteriaSupport, new ModifiableBoolean(false));
 	}
 	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport, ModifiableBoolean distinct) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, localCriteriaSupport))
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport, distinct))
 				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
-	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(Consumer<Select> selectAdapter, ProjectionCriteriaSupport<C> localCriteriaSupport) {
+	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
+			Consumer<Select> selectAdapter,
+			EntityCriteriaSupport<C> localCriteriaSupport,
+			ModifiableBoolean distinct) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), localCriteriaSupport.isDistinct());
-	}
-	
-	private ProjectionCriteriaSupport<C> newProjectionWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
-		return new ProjectionCriteriaSupport<>(criteriaSupport);
+			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), distinct.getValue());
 	}
 	
 	/**
@@ -451,23 +446,5 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		
 		CriteriaChain getCriteria();
 		
-	}
-	
-	private static class ProjectionCriteriaSupport<C> extends EntityCriteriaSupport<C> {
-		
-		private boolean distinct;
-		
-		public ProjectionCriteriaSupport(EntityCriteriaSupport<C> source) {
-			super(source);
-		}
-		
-		public RelationalEntityCriteria<C> distinct() {
-			this.distinct = true;
-			return this;
-		}
-		
-		public boolean isDistinct() {
-			return distinct;
-		}
 	}
 }
