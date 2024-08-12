@@ -85,6 +85,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	
 	<T> Collection<T> getByName(String name, Class<T> type);
 	
+	boolean existsByName(String name);
+	
 	interface NamesOnly {
 		
 		String getName();

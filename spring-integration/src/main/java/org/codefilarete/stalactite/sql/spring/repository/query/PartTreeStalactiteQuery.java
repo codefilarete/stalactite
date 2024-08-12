@@ -3,8 +3,6 @@ package org.codefilarete.stalactite.sql.spring.repository.query;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.function.Hanger.Holder;
-import org.codefilarete.tool.trace.ModifiableInt;
 import org.springframework.data.jpa.repository.query.PartTreeJpaQuery;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.Parameters;
@@ -51,13 +49,10 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		query.criteriaChain.consume(parameters);
 		R result = query.executableEntityQuery.execute(accumulator);
 		
-		
-		ParameterAccessor accessor = new ParametersParameterAccessor(method.getParameters(), parameters);
-		
 		// - isProjecting() is for case of return type is not domain one (nor a compound one by Collection or other)
-		// - findDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)
-		if (method.getResultProcessor().getReturnedType().isProjecting()
-				|| accessor.findDynamicProjection() != null) {
+		// - hasDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)
+		if (method.getResultProcessor().getReturnedType().isProjecting() || method.getParameters().hasDynamicProjection()) {
+			ParameterAccessor accessor = new ParametersParameterAccessor(method.getParameters(), parameters);
 			// withDynamicProjection() handles the 2 cases of the "if" (with some not obvious algorithm)
 			return method.getResultProcessor().withDynamicProjection(accessor).processResult(result);
 		} else {
@@ -70,36 +65,21 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		return method;
 	}
 	
-	static class Query<T> extends AbstractQuery<T> {
+	class Query<T> extends AbstractQuery<T> {
 		
 		private final ExecutableEntityQuery<T> executableEntityQuery;
 		
 		Query(EntityPersister<T, ?> entityPersister, PartTree tree) {
 			super(entityPersister);
-			Holder<ExecutableEntityQuery<T>> resultHolder = new Holder<>();
-			ModifiableInt partIndex = new ModifiableInt();
-			tree.forEach(orPart -> {
-				orPart.forEach(part -> {
-							append(part, resultHolder, partIndex.getValue());
-							partIndex.increment();
-						}
-				);
-			});
-			executableEntityQuery = resultHolder.get();
+			executableEntityQuery = entityPersister.selectWhere();
+			tree.forEach(orPart -> orPart.forEach(this::append));
 		}
 		
-		private void append(Part part, Holder<ExecutableEntityQuery<T>> resultHolder, int partIndex) {
+		private void append(Part part) {
 			Criterion criterion = convertToOperator(part.getType());
-			// entityPersister doesn't support the creation of a ExecutableEntityQuery from scratch and requires to
-			// create it from entityPersister.selectWhere : we call it for first part
-			if (partIndex == 0) {
-				ExecutableEntityQuery<T> criteriaHook = entityPersister.selectWhere(convertToAccessorChain(part.getProperty()), criterion.operator);
-				resultHolder.set(criteriaHook);
-			} else {
-				resultHolder.get().and(convertToAccessorChain(part.getProperty()), criterion.operator);
-			}
-			this.criteriaChain.criteria.add(criterion);
+			executableEntityQuery.and(convertToAccessorChain(part.getProperty()), criterion.operator);
+			super.criteriaChain.criteria.add(criterion);
 		}
-		
 	}
+	
 }

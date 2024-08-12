@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -40,5 +41,9 @@ public interface EntitySelector<C, I> {
 	 * @param distinct
 	 * @return entities that match criteria
 	 */
-	<R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where, boolean distinct);
+	<R, O> R selectProjection(Consumer<Select> selectAdapter,
+							  Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
+							  CriteriaChain where,
+							  boolean distinct,
+							  Consumer<FluentOrderByClause> orderByClauseConsumer);
 }

@@ -19,6 +19,8 @@ public interface ExecutableProjection {
 	 */
 	ExecutableProjection distinct();
 	
+	ExecutableProjection limit(int count);
+	
 	/**
 	 * Will run an underlying projection and executes given {@link Accumulator} on its result.
 	 * 

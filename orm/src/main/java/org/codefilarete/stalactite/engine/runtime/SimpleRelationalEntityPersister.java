@@ -47,11 +47,12 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
+import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
@@ -222,14 +223,13 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport, new ModifiableBoolean(false));
-	}
-	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport, ModifiableBoolean distinct) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		ExecutableProjectionQuerySupport querySugarSupport = new ExecutableProjectionQuerySupport();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, localCriteriaSupport, distinct))
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport, querySugarSupport))
+				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, querySugarSupport::distinct)
+				.redirect((SerializableBiFunction<ExecutableProjection, Integer, ExecutableProjection>) ExecutableProjection::limit, querySugarSupport::limit)
 				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
 	}
@@ -237,9 +237,10 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
 			Consumer<Select> selectAdapter,
 			EntityCriteriaSupport<C> localCriteriaSupport,
-			ModifiableBoolean distinct) {
+			ExecutableProjectionQuerySupport querySugarSupport) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), distinct.getValue());
+			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), querySugarSupport.isDistinct(),
+					fluentOrderByClause -> nullable(querySugarSupport.getLimit()).invoke(fluentOrderByClause::limit));
 	}
 	
 	/**
@@ -427,5 +428,31 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		
 		CriteriaChain getCriteria();
 		
+	}
+	
+	/**
+	 * Simple class that stores options of the query
+	 * @author Guillaume Mary
+	 */
+	private static class ExecutableProjectionQuerySupport {
+		
+		private boolean distinct;
+		private Integer limit;
+		
+		public boolean isDistinct() {
+			return distinct;
+		}
+		
+		void distinct() {
+			distinct = true;
+		}
+		
+		public Integer getLimit() {
+			return limit;
+		}
+		
+		void limit(int count) {
+			limit = count;
+		}
 	}
 }

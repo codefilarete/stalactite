@@ -19,6 +19,7 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -115,10 +116,16 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 	}
 	
 	@Override
-	public <R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where, boolean distinct) {
+	public <R, O> R selectProjection(Consumer<Select> selectAdapter,
+									 Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
+									 CriteriaChain where,
+									 boolean distinct,
+									 Consumer<FluentOrderByClause> orderByClauseConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		query.getSelectSurrogate().setDistinct(distinct);
+		orderByClauseConsumer.accept(query.getQuery().orderBy());
+		
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
 		

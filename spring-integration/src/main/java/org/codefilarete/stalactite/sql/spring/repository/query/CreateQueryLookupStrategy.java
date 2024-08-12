@@ -39,16 +39,15 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 		if (partTree.isDelete()) {
 			return new PartTreeStalactiteDelete<>(queryMethod, entityPersister, partTree);
 		} else if (partTree.isCountProjection()) {
-			return new PartTreeStalactiteCount<>(queryMethod, entityPersister, partTree);
-//		} else if (partTree.isExistsProjection()) {
-//			
+			return PartTreeStalactiteProjection.forCount(queryMethod, entityPersister, partTree);
+		} else if (partTree.isExistsProjection()) {
+			return PartTreeStalactiteProjection.forExists(queryMethod, entityPersister, partTree);
 //		} else if (partTree.isLimiting()) {
 			
 		} else {
 			Accumulator<T, ?, ?> accumulator = queryMethod.isCollectionQuery()
 					? (Accumulator) Accumulators.toList()
 					: (Accumulator) Accumulators.getFirstUnique();
-			
 			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, accumulator);
 		}
 	}

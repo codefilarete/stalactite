@@ -177,28 +177,28 @@ class QuerySQLBuilderTest {
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)
 						.having("sum(", colTotoB, ") ", gt(1)).limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = ? group by Toto.a having sum(Toto.b) > ? limit ?",
-						Maps.asHashMap(1, 1).add(2, 1).add(3, 2) },
+						Maps.forHashMap(Integer.class, Object.class).add(1, 1).add(2, 1).add(3, 2) },
 				{ select(colTotoA, colTataB).from(tableToto).where(colTotoB, eq(1)).groupBy(colTotoA)
 						.having(sum(colTotoB), lt(1)).limit(2),
 						"select Toto.a, Tata.b from Toto where Toto.b = ? group by Toto.a having sum(Toto.b)< ? limit ?",
-						Maps.asHashMap(1, 1).add(2, 1).add(3, 2) },
+						Maps.forHashMap(Integer.class, Object.class).add(1, 1).add(2, 1).add(3, 2) },
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(1)).groupBy(colTotoA)
 						.having(sum(colTotoB), gt(1)).limit(2),
 						"select T.a, Tata.b from Toto as T where T.b = ? group by T.a having sum(T.b)> ? limit ?",
-						Maps.asHashMap(1, 1).add(2, 1).add(3, 2) },
+						Maps.forHashMap(Integer.class, Object.class).add(1, 1).add(2, 1).add(3, 2) },
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(tupleIn).groupBy(colTotoA)
 						.having(sum(colTotoB), gt(1)).limit(2),
 						"select T.a, Tata.b from Toto as T where (T.a, Tata.b) in ((?, ?), (?, ?)) group by T.a having sum(T.b)> ? limit ?",
 						Maps.forHashMap(Integer.class, Object.class).add(1, "John").add(2, "Doe").add(3, "Jane").add(4, null).add(5, 1).add(6, 2) },
 				{ select(colTotoA, colTataB).from(tableToto).innerJoin(colTotoA, colTataA).setAlias(tableTata, "x").where(colTataB, eq(1)),
 						"select Toto.a, x.b from Toto inner join Tata as x on Toto.a = x.a where x.b = ?",
-						Maps.asHashMap(1, 1) },
+						Maps.forHashMap(Integer.class, Object.class).add(1, 1) },
 				{ select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(11)).unionAll(
 						select(colTotoA, colTataB).from(tableToto, "T").where(colTotoB, eq(22))),
 						"(select T.a, Tata.b from Toto as T where T.b = ?)"
 								+ " union all"
 								+ " (select T.a, Tata.b from Toto as T where T.b = ?)",
-						Maps.asHashMap(1, 11).add(2, 22)},
+						Maps.forHashMap(Integer.class, Object.class).add(1, 11).add(2, 22)},
 		};
 	}
 	

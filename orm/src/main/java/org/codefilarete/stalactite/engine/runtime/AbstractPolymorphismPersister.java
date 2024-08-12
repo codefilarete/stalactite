@@ -16,11 +16,11 @@ import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static java.util.Collections.emptySet;
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Parent class of polymorphic persisters, made to share common code.
@@ -80,16 +80,15 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 		return wrapIntoExecutable(selectAdapter, newWhere());
 	}
 	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport, new ModifiableBoolean(false));
-	}
-	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport, ModifiableBoolean distinct) {
+	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter,
+															EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		ExecutableProjectionQuerySupport querySugarSupport = new ExecutableProjectionQuerySupport();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, localCriteriaSupport, distinct.getValue()))
-				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, distinct::setTrue)
+						wrapProjectionLoad(selectAdapter, localCriteriaSupport, querySugarSupport))
+				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, querySugarSupport::distinct)
+				.redirect((SerializableBiFunction<ExecutableProjection, Integer, ExecutableProjection>) ExecutableProjection::limit, querySugarSupport::limit)
 				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
 	}
@@ -97,9 +96,11 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
 			Consumer<Select> selectAdapter,
 			EntityCriteriaSupport<C> localCriteriaSupport,
-			boolean distinct) {
+			ExecutableProjectionQuerySupport querySugarSupport) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), distinct);
+				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(),
+						querySugarSupport.isDistinct(),
+						fluentOrderByClause -> nullable(querySugarSupport.getLimit()).invoke(fluentOrderByClause::limit));
 	}
 	
 	@Override
@@ -121,4 +122,30 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	public EntityJoinTree<C, I> getEntityJoinTree() {
 		return mainPersister.getEntityJoinTree();
 	}
+	
+	/**
+	 * Simple class that stores options of the query
+	 * @author Guillaume Mary
+	 */
+	private static class ExecutableProjectionQuerySupport {
+		
+		private boolean distinct;
+		private Integer limit;
+		
+		public boolean isDistinct() {
+			return distinct;
+		}
+		
+		void distinct() {
+			distinct = true;
+		}
+		
+		public Integer getLimit() {
+			return limit;
+		}
+		
+		void limit(int count) {
+			limit = count;
+		}
+	} 
 }

@@ -298,6 +298,10 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 		return this;
 	}
 	
+	public FluentOrderByClause orderBy() {
+		return orderBy;
+	}
+	
 	@Override
 	public FluentOrderByClause orderBy(Column column, Order order) {
 		this.orderBySurrogate.add(column, order);

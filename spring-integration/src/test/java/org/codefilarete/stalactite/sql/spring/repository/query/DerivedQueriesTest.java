@@ -108,6 +108,23 @@ class DerivedQueriesTest {
 	}
 	
 	@Test
+	void exists() {
+		Country country1 = new Country(42);
+		country1.setName("Toto");
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		Country country2 = new Country(43);
+		country2.setName("Tata");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		boolean loadedCountry = derivedQueriesRepository.existsByName("Toto");
+		assertThat(loadedCountry).isTrue();
+		loadedCountry = derivedQueriesRepository.existsByName("Tutu");
+		assertThat(loadedCountry).isFalse();
+	}
+	
+	@Test
 	void twoCriteria() {
 		Country country1 = new Country(42);
 		country1.setName("Toto");
