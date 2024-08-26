@@ -42,8 +42,8 @@ class UnionTest {
 		Union testInstance = new Union();
 		PseudoColumn<Integer> createdColumn = testInstance.registerColumn("count(*)", int.class);
 		PseudoColumn<Integer> createdColumn2 = testInstance.registerColumn("count(*)", int.class, "count");
-		assertThat(createdColumn2).isSameAs(createdColumn);
-		assertThat(testInstance.getColumns()).hasSize(1);
+		assertThat(createdColumn2).isNotSameAs(createdColumn);
+		assertThat(testInstance.getColumns()).hasSize(2);
 	}
 	
 	@Test
@@ -52,6 +52,15 @@ class UnionTest {
 		testInstance.registerColumn("count(*)", int.class);
 		assertThatThrownBy(() -> testInstance.registerColumn("count(*)", Integer.class))
 				.hasMessage("Trying to add a column 'count(*)' that already exists with a different type : int vs j.l.Integer");
+	}
+	
+	@Test
+	void registerColumn_columnAlreadyExistsWithDifferentTypeButWithDifferentAlias_doesNotThrowsException() {
+		Union testInstance = new Union();
+		PseudoColumn<Integer> createdColumn = testInstance.registerColumn("count(*)", int.class, "a");
+		PseudoColumn<Integer> createdColumn2 = testInstance.registerColumn("count(*)", int.class, "b");
+		assertThat(createdColumn2).isNotSameAs(createdColumn);
+		assertThat(testInstance.getColumns()).hasSize(2);
 	}
 	
 	@Test
@@ -64,7 +73,6 @@ class UnionTest {
 		assertThat(columnPerName).isEqualTo(Maps.forHashMap(String.class, Selectable.class)
 				.add("count(*)", column1)
 				.add("name", column2)
-				.add("firstName", column3)
 				.add("FIRST_NAME", column3)
 		);
 	}

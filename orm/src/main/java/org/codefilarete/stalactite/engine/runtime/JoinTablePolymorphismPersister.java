@@ -123,7 +123,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 	
 	@Override
 	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getRootConfiguration().getColumn(accessorChain);
+		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
 	}
 	
 	@Override

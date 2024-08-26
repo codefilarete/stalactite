@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,7 +29,7 @@ import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildL
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.RelationalExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -53,9 +54,12 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderMap;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.Sequence;
+import org.hsqldb.jdbc.JDBCArrayBasic;
+import org.hsqldb.types.Type;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -132,16 +136,19 @@ class TablePerClassPolymorphismPersisterTest {
 	protected void initMapping() {
 		Field fieldId = Reflections.getField(AbstractToto.class, "id");
 		Field fieldA = Reflections.getField(AbstractToto.class, "x");
+		Field fieldQ = Reflections.getField(AbstractToto.class, "q");
 		
 		Table totoTable = new Table("Toto");
 		Column<Table, Object> idColumn = totoTable.addColumn("id", fieldId.getType()).primaryKey();
 		Column<Table, Object> xColumn = totoTable.addColumn("x", fieldA.getType());
+		Column<Table, Object> qColumn = totoTable.addColumn("q", fieldQ.getType());
 		
 		PropertyAccessor<AbstractToto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
 		Map<PropertyAccessor<AbstractToto, Object>, Column<Table, Object>> totoPropertyMapping = Maps.forHashMap(
 						(Class<PropertyAccessor<AbstractToto, Object>>) (Class) PropertyAccessor.class, (Class<Column<Table, Object>>) (Class) Column.class)
 				.add((PropertyAccessor) identifierAccessor, idColumn)
-				.add(Accessors.propertyAccessor(fieldA), xColumn);
+				.add(Accessors.propertyAccessor(fieldA), xColumn)
+				.add(Accessors.propertyAccessor(fieldQ), qColumn);
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		
@@ -174,6 +181,28 @@ class TablePerClassPolymorphismPersisterTest {
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, Identifier value) throws SQLException {
 				statement.setInt(valueIndex, (Integer) value.getSurrogate());
+			}
+		});
+		// Registering a binder of Set for the AbstractToto.q property
+		dialect.getColumnBinderRegistry().register((Class<Set<Integer>>) (Class) Set.class, new ParameterBinder<Set<Integer>>() {
+			@Override
+			public void set(PreparedStatement preparedStatement, int valueIndex, Set<Integer> value) throws SQLException {
+				if (value != null) {
+					preparedStatement.setArray(valueIndex, new JDBCArrayBasic(value.toArray(new Integer[0]), Type.SQL_INTEGER));
+				} else {
+					preparedStatement.setArray(valueIndex, null);
+				}
+			}
+			
+			@Override
+			public Set<Integer> doGet(ResultSet resultSet, String columnName) throws SQLException {
+				Array array = resultSet.getArray(columnName);
+				return array == null ? null : new KeepOrderSet<>((Integer[]) array.getArray());
+			}
+			
+			@Override
+			public Class<Set<Integer>> getType() {
+				return (Class<Set<Integer>>) (Class) Set.class;
 			}
 		});
 	}
@@ -315,8 +344,8 @@ class TablePerClassPolymorphismPersisterTest {
 			// it's much more difficult
 			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"insert into TotoA(a, id, x) values (?, ?, ?)",
-					"insert into TotoB(b, id, x) values (?, ?, ?)"
+					"insert into TotoA(a, id, x, q) values (?, ?, ?, ?)",
+					"insert into TotoB(b, id, x, q) values (?, ?, ?, ?)"
 			));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 23).add(2, 1).add(3, 17)
@@ -334,6 +363,8 @@ class TablePerClassPolymorphismPersisterTest {
 			String totoBIdAlias = "TotoB_id";
 			String totoAXAlias = "TotoA_x";
 			String totoBXAlias = "TotoB_x";
+			String totoAQAlias = "TotoA_q";
+			String totoBQAlias = "TotoB_q";
 			String totoAAlias = "TotoA_a";
 			String totoBAlias = "TotoB_b";
 			String totoDTYPEAlias = DISCRIMINATOR_ALIAS;
@@ -380,13 +411,15 @@ class TablePerClassPolymorphismPersisterTest {
 					"select TotoA.a as " + totoAAlias
 							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias
+							+ ", TotoA.q as " + totoAQAlias
 							+ " from TotoA where TotoA.id in (?, ?)",
 					"select TotoB.b as " + totoBAlias
 							+ ", TotoB.id as " + totoBIdAlias
 							+ ", TotoB.x as " + totoBXAlias
+							+ ", TotoB.q as " + totoBQAlias
 							+ " from TotoB where TotoB.id in (?, ?)",
-					"update TotoA set a = ?, x = ? where id = ?",
-					"update TotoB set b = ?, x = ? where id = ?"));
+					"update TotoA set a = ?, x = ?, q = ? where id = ?",
+					"update TotoB set b = ?, x = ?, q = ? where id = ?"));
 			// captured setInt(..) is made of ids
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
@@ -395,10 +428,11 @@ class TablePerClassPolymorphismPersisterTest {
 					.newRow(1, 1).add(2, 2)
 					// this one if for the lonely last select
 					.newRow(1, 3).add(2, 4)
-					.newRow(1, 123).add(2, 17).add(3, 1)
-					.newRow(1, 131).add(2, 29).add(3, 2)
-					.newRow(1, 141).add(2, 37).add(3, 3)
-					.newRow(1, 153).add(2, 43).add(3, 4);
+					// since PreparedStatement.setArray is not watched we don't have q property index (3)
+					.newRow(1, 123).add(2, 17).add(4, 1)
+					.newRow(1, 131).add(2, 29).add(4, 2)
+					.newRow(1, 141).add(2, 37).add(4, 3)
+					.newRow(1, 153).add(2, 43).add(4, 4);
 			assertCapturedPairsEqual(expectedPairs);
 		}
 		
@@ -416,14 +450,15 @@ class TablePerClassPolymorphismPersisterTest {
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"update TotoA set a = ?, x = ? where id = ?",
-					"update TotoB set b = ?, x = ? where id = ?"
+					"update TotoA set a = ?, x = ?, q = ? where id = ?",
+					"update TotoB set b = ?, x = ?, q = ? where id = ?"
 			));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 123).add(2, 17).add(3, 1)
-					.newRow(1, 131).add(2, 29).add(3, 2)
-					.newRow(1, 141).add(2, 37).add(3, 3)
-					.newRow(1, 153).add(2, 43).add(3, 4);
+					// since PreparedStatement.setArray is not watched we don't have q property index (3)
+					.newRow(1, 123).add(2, 17).add(4, 1)
+					.newRow(1, 131).add(2, 29).add(4, 2)
+					.newRow(1, 141).add(2, 37).add(4, 3)
+					.newRow(1, 153).add(2, 43).add(4, 4);
 			assertCapturedPairsEqual(expectedPairs);
 		}
 		
@@ -508,6 +543,8 @@ class TablePerClassPolymorphismPersisterTest {
 			String totoBIdAlias = "TotoB_id";
 			String totoAXAlias = "TotoA_x";
 			String totoBXAlias = "TotoB_x";
+			String totoAQAlias = "TotoA_q";
+			String totoBQAlias = "TotoB_q";
 			String totoAAlias = "TotoA_a";
 			String totoBAlias = "TotoB_b";
 			String totoDTYPEAlias = TablePerClassPolymorphicSelectExecutor.DISCRIMINATOR_ALIAS;
@@ -549,10 +586,12 @@ class TablePerClassPolymorphismPersisterTest {
 					"select TotoA.a as " + totoAAlias
 							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias
+							+ ", TotoA.q as " + totoAQAlias
 							+ " from TotoA where TotoA.id in (?, ?)",
 					"select TotoB.b as " + totoBAlias
 							+ ", TotoB.id as " + totoBIdAlias
 							+ ", TotoB.x as " + totoBXAlias
+							+ ", TotoB.q as " + totoBQAlias
 							+ " from TotoB where TotoB.id in (?, ?)"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 2).add(3, 3).add(4, 4)
@@ -574,12 +613,72 @@ class TablePerClassPolymorphismPersisterTest {
 		@Test
 		void selectWhere() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String idAlias = "Toto_id";
+			String xAlias = "Toto_x";
+			String qAlias = "Toto_q";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoDTYPEAlias = "Toto_" + TablePerClassPolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
+			when(preparedStatement.executeQuery()).thenReturn(
+					// first result if for id read
+					new InMemoryResultSet(Arrays.asList(
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 1).add(totoDTYPEAlias, "TotoA").add(xAlias, 17).add(totoAAlias, 23).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 2).add(totoDTYPEAlias, "TotoA").add(xAlias, 29).add(totoAAlias, 31).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 3).add(totoDTYPEAlias, "TotoB").add(xAlias, 37).add(totoAAlias, null).add(totoBAlias, 41),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 4).add(totoDTYPEAlias, "TotoB").add(xAlias, 43).add(totoAAlias, null).add(totoBAlias, 53)
+					))
+			);
+			
+			ExecutableEntityQueryCriteria<AbstractToto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
+			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + idAlias
+							+ ", Toto.x as " + xAlias
+							+ ", Toto.q as " + qAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias
+							+ " from ("
+							+ "(select TotoA.id as id,"
+							+ " TotoA.x as x,"
+							+ " TotoA.q as q,"
+							+ " TotoA.a as a,"
+							+ " cast(null as null) as b,"
+							+ " 'TotoA' as DISCRIMINATOR from TotoA)"
+							+ " union all"
+							+ " (select TotoB.id as id,"
+							+ " TotoB.x as x,"
+							+ " TotoB.q as q,"
+							+ " cast(null as null) as a,"
+							+ " TotoB.b as b,"
+							+ " 'TotoB' as DISCRIMINATOR from TotoB))"
+							+ " as Toto where Toto.x = ?"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			assertThat(select).usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(
+							new TotoA(1, 17, 23),
+							new TotoA(2, 29, 31),
+							new TotoB(3, 37, 41),
+							new TotoB(4, 43, 53));
+		}
+		
+		@Test
+		void selectWhere_collectionCriteria() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
 			String idAlias = "id";
 			String xAlias = "x";
+			String qAlias = "q";
 			String totoAIdAlias = "TotoA_id";
 			String totoBIdAlias = "TotoB_id";
 			String totoAXAlias = "TotoA_x";
 			String totoBXAlias = "TotoB_x";
+			String totoAQAlias = "TotoA_q";
+			String totoBQAlias = "TotoB_q";
 			String totoAAlias = "TotoA_a";
 			String totoBAlias = "TotoB_b";
 			String totoDTYPEAlias = TablePerClassPolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
@@ -603,30 +702,41 @@ class TablePerClassPolymorphismPersisterTest {
 					))
 			);
 			
-			RelationalExecutableEntityQuery<AbstractToto> totoRelationalExecutableEntityQuery = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
-			Set<AbstractToto> select = totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
+			// We test the collection criteria through the "q" property which is not really a production use case since it's an "embedded" one
+			// made of the storage of a set in an SQL Array : production use case we'll be more a *-to-many case. Meanwhile, this test should pass
+			// because even in that case it's hard to retrieve the entities with one select
+			ExecutableEntityQueryCriteria<AbstractToto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
+			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(3)).executeQuery();
-			verify(preparedStatement, times(5)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto.id as " + idAlias + ", " + totoDTYPEAlias + " from (" +
-							"(select TotoA.id as " + idAlias + "," +
-							" TotoA.x as " + xAlias + "," +
-							" 'TotoA' as " + totoDTYPEAlias + " from TotoA)" +
-							" union all" +
-							" (select TotoB.id as " + idAlias + "," +
-							" TotoB.x as " + xAlias + "," +
-							" 'TotoB' as " + totoDTYPEAlias + " from TotoB))" +
-							" as Toto where Toto.x = ?",
+			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).containsExactly(
+					"select Toto.id as " + idAlias + ", " + totoDTYPEAlias + " from ("
+							+ "(select TotoA.id as " + idAlias
+							+ ", TotoA.x as " + xAlias
+							+ ", TotoA.q as " + qAlias
+							+ ", 'TotoA' as " + totoDTYPEAlias + " from TotoA)"
+							+ " union all"
+							+ " (select TotoB.id as " + idAlias
+							+ ", TotoB.x as " + xAlias
+							+ ", TotoB.q as " + qAlias
+							+ ", 'TotoB' as " + totoDTYPEAlias + " from TotoB))"
+							+ " as Toto where Toto.q = ?",
 					"select TotoA.a as " + totoAAlias
 							+ ", TotoA.id as " + totoAIdAlias
 							+ ", TotoA.x as " + totoAXAlias
+							+ ", TotoA.q as " + totoAQAlias
 							+ " from TotoA where TotoA.id in (?, ?)",
 					"select TotoB.b as " + totoBAlias
 							+ ", TotoB.id as " + totoBIdAlias
 							+ ", TotoB.x as " + totoBXAlias
-							+ " from TotoB where TotoB.id in (?, ?)"));
-			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+							+ ", TotoB.q as " + totoBQAlias
+							+ " from TotoB where TotoB.id in (?, ?)");
+			// Here we don't test the "42" row of the first query because it requires to listen to PreparedStatement.setArray(..) whereas all this
+			// test class is bound to PreparedStatement.setInt(..) and Integer type.
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
+					.newRow(1, 1).add(2, 2)
+					.newRow(1, 3).add(2, 4);
 			assertCapturedPairsEqual(expectedPairs);
 			
 			assertThat(select).usingRecursiveFieldByFieldElementComparator()
@@ -652,6 +762,7 @@ class TablePerClassPolymorphismPersisterTest {
 	private static abstract class AbstractToto implements Identified<Integer> {
 		protected Identifier<Integer> id;
 		protected Integer x;
+		private Set<Integer> q;
 		
 		public AbstractToto() {
 		}
@@ -672,6 +783,14 @@ class TablePerClassPolymorphismPersisterTest {
 		
 		public Integer getX() {
 			return x;
+		}
+		
+		public Set<Integer> getQ() {
+			return q;
+		}
+		
+		public void setQ(Set<Integer> q) {
+			this.q = q;
 		}
 		
 		@Override

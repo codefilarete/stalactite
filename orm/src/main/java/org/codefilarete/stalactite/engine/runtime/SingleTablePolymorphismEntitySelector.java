@@ -15,6 +15,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
+import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -71,11 +72,11 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 	}
 	
 	@Override
-	public Set<C> select(CriteriaChain where) {
+	public Set<C> select(ConfiguredEntityCriteria where) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		
 		// First phase : selecting ids (made by clearing selected elements for performance issue)
 		query.getSelectSurrogate().clear();

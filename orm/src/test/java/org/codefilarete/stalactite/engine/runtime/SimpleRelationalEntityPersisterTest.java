@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -33,7 +34,7 @@ import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
 import org.codefilarete.stalactite.engine.listener.UpdateListener;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.RelationalExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
@@ -66,6 +67,7 @@ import org.codefilarete.stalactite.test.PairSetList;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.PairIterator.EmptyIterator;
 import org.codefilarete.tool.function.Hanger.Holder;
@@ -73,6 +75,8 @@ import org.codefilarete.tool.function.Sequence;
 import org.codefilarete.tool.trace.ModifiableInt;
 import org.codefilarete.tool.trace.ModifiableLong;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.hsqldb.jdbc.JDBCArrayBasic;
+import org.hsqldb.types.Type;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -127,19 +131,22 @@ class SimpleRelationalEntityPersisterTest {
 		Field fieldId = Reflections.getField(Toto.class, "id");
 		Field fieldA = Reflections.getField(Toto.class, "a");
 		Field fieldB = Reflections.getField(Toto.class, "b");
+		Field fieldQ = Reflections.getField(Toto.class, "q");
 		
-		Table totoClassTable1 = new Table("Toto1");
-		leftJoinColumn = Key.ofSingleColumn(totoClassTable1.addColumn("id", fieldId.getType()));
-		totoClassTable1.addColumn("a", fieldA.getType());
-		totoClassTable1.addColumn("b", fieldB.getType());
-		Map<String, Column> columnMap1 = totoClassTable1.mapColumnsOnName();
-		columnMap1.get("id").setPrimaryKey(true);
+		Table totoClassTable = new Table("Toto");
+		leftJoinColumn = Key.ofSingleColumn(totoClassTable.addColumn("id", fieldId.getType()));
+		totoClassTable.addColumn("a", fieldA.getType());
+		totoClassTable.addColumn("b", fieldB.getType());
+		totoClassTable.addColumn("q", fieldQ.getType());
+		Map<String, Column> columnMap = totoClassTable.mapColumnsOnName();
+		columnMap.get("id").setPrimaryKey(true);
 		
 		PropertyAccessor<Toto, Identifier<Integer>> identifierAccessor = Accessors.propertyAccessor(fieldId);
-		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping1 = Maps.asMap(
-						(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap1.get("id"))
-				.add(Accessors.propertyAccessor(fieldA), columnMap1.get("a"))
-				.add(Accessors.propertyAccessor(fieldB), columnMap1.get("b"));
+		Map<PropertyAccessor<Toto, Object>, Column<Table, Object>> totoClassMapping = Maps.asMap(
+						(PropertyAccessor) identifierAccessor, (Column<Table, Object>) columnMap.get("id"))
+				.add(Accessors.propertyAccessor(fieldA), columnMap.get("a"))
+				.add(Accessors.propertyAccessor(fieldB), columnMap.get("b"))
+				.add(Accessors.propertyAccessor(fieldQ), columnMap.get("q"));
 		
 		identifierGenerator = new InMemoryCounterIdentifierGenerator();
 		
@@ -148,8 +155,8 @@ class SimpleRelationalEntityPersisterTest {
 				() -> new PersistableIdentifier<>(identifierGenerator.next()),
 				(Class<Identifier<Integer>>) (Class) Identifier.class);
 		totoClassMappingStrategy_ontoTable1 = new ClassMapping<>(Toto.class,
-				totoClassTable1,
-				totoClassMapping1,
+				totoClassTable,
+				totoClassMapping,
 				identifierAccessor,
 				beforeInsertIdentifierManager);
 		
@@ -172,6 +179,28 @@ class SimpleRelationalEntityPersisterTest {
 			@Override
 			public void set(PreparedStatement statement, int valueIndex, Identifier value) throws SQLException {
 				statement.setInt(valueIndex, (Integer) value.getSurrogate());
+			}
+		});
+		// Registering a binder of Set for the Toto.q property
+		dialect.getColumnBinderRegistry().register((Class<Set<Integer>>) (Class) Set.class, new ParameterBinder<Set<Integer>>() {
+			@Override
+			public void set(PreparedStatement preparedStatement, int valueIndex, Set<Integer> value) throws SQLException {
+				if (value != null) {
+					preparedStatement.setArray(valueIndex, new JDBCArrayBasic(value.toArray(new Integer[0]), Type.SQL_INTEGER));
+				} else {
+					preparedStatement.setArray(valueIndex, null);
+				}
+			}
+			
+			@Override
+			public Set<Integer> doGet(ResultSet resultSet, String columnName) throws SQLException {
+				Array array = resultSet.getArray(columnName);
+				return array == null ? null : new KeepOrderSet<>((Integer[]) array.getArray());
+			}
+			
+			@Override
+			public Class<Set<Integer>> getType() {
+				return (Class<Set<Integer>>) (Class) Set.class;
 			}
 		});
 	}
@@ -243,7 +272,7 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("insert into Toto(id, a, b, q) values (?, ?, ?, ?)"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 17).add(3, 23)
 					.newRow(1, 2).add(2, 29).add(3, 31)
@@ -255,9 +284,10 @@ class SimpleRelationalEntityPersisterTest {
 		@Test
 		void update() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String totoIdAlias = "Toto1_id";
-			String totoAAlias = "Toto1_a";
-			String totoBAlias = "Toto1_b";
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
 			ResultSet resultSetMock = new InMemoryResultSet(Arrays.asList(
 					Maps.asMap(totoIdAlias, (Object) 7).add(totoAAlias, 1).add(totoBAlias, 2),
 					Maps.asMap(totoIdAlias, (Object) 13).add(totoAAlias, 1).add(totoBAlias, 2),
@@ -280,15 +310,17 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ " from Toto1 where Toto1.id in (?, ?, ?)",
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ " from Toto1 where Toto1.id in (?)",
-					"update Toto1 set a = ?, b = ? where id = ?"));
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto where Toto.id in (?, ?, ?)",
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto where Toto.id in (?)",
+					"update Toto set a = ?, b = ?, q = ? where id = ?"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 		}
@@ -306,12 +338,13 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(12)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("update Toto set a = ?, b = ?, q = ? where id = ?"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 17).add(2, 23).add(3, 1)
-					.newRow(1, 29).add(2, 31).add(3, 2)
-					.newRow(1, 37).add(2, 41).add(3, 3)
-					.newRow(1, 43).add(2, 53).add(3, 4);
+					// since PreparedStatement.setArray is not watched we don't have q property index (3)
+					.newRow(1, 17).add(2, 23).add(4, 1)
+					.newRow(1, 29).add(2, 31).add(4, 2)
+					.newRow(1, 37).add(2, 41).add(4, 3)
+					.newRow(1, 43).add(2, 53).add(4, 4);
 			assertCapturedPairsEqual(expectedPairs);
 		}
 		
@@ -320,7 +353,7 @@ class SimpleRelationalEntityPersisterTest {
 			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 1 }, new long[] { 1 }));
 			testInstance.delete(Arrays.asList(new Toto(7, 17, 23, 117, 123, -117)));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto1 where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id = ?"));
 			verify(preparedStatement, times(1)).addBatch();
 			verify(preparedStatement, times(1)).executeLargeBatch();
 			verify(preparedStatement, times(0)).executeUpdate();
@@ -340,7 +373,7 @@ class SimpleRelationalEntityPersisterTest {
 					new Toto(4, 43, 53, 143, 153, -143)
 			));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto1 where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id = ?"));
 			verify(preparedStatement, times(4)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(0)).executeUpdate();
@@ -358,7 +391,7 @@ class SimpleRelationalEntityPersisterTest {
 					new Toto(7, 17, 23, 117, 123, -117)
 			));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto1 where id in (?)"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id in (?)"));
 			verify(preparedStatement, times(1)).executeLargeUpdate();
 			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -377,8 +410,8 @@ class SimpleRelationalEntityPersisterTest {
 					new Toto(4, 43, 53, 143, 153, -143)
 			));
 			// 4 statements because in operator is bounded to 3 values (see testInstance creation)
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto1 where id in (?, ?, ?)",
-					"delete from Toto1 where id in (?)"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto where id in (?, ?, ?)",
+					"delete from Toto where id in (?)"));
 			verify(preparedStatement, times(1)).addBatch();
 			verify(preparedStatement, times(1)).executeLargeBatch();
 			verify(preparedStatement, times(1)).executeLargeUpdate();
@@ -392,9 +425,10 @@ class SimpleRelationalEntityPersisterTest {
 		@Test
 		void select() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String totoIdAlias = "Toto1_id";
-			String totoAAlias = "Toto1_a";
-			String totoBAlias = "Toto1_b";
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
 			ResultSet resultSetMock = new InMemoryResultSet(Arrays.asList(
 					Maps.asMap(totoIdAlias, (Object) 7).add(totoAAlias, 1).add(totoBAlias, 2),
 					Maps.asMap(totoIdAlias, (Object) 13).add(totoAAlias, 1).add(totoBAlias, 2),
@@ -413,14 +447,16 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ " from Toto1 where Toto1.id in (?, ?, ?)",
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ " from Toto1 where Toto1.id in (?)"));
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto where Toto.id in (?, ?, ?)",
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto where Toto.id in (?)"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
 			assertCapturedPairsEqual(expectedPairs);
 			
@@ -436,9 +472,42 @@ class SimpleRelationalEntityPersisterTest {
 		@Test
 		void selectWhere() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String totoIdAlias = "Toto1_id";
-			String totoAAlias = "Toto1_a";
-			String totoBAlias = "Toto1_b";
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
+			ResultSet resultSetForCriteria = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap(totoIdAlias, (Object) 7).add(totoAAlias, 1).add(totoBAlias, 2)
+			));
+			when(preparedStatement.executeQuery()).thenReturn(resultSetForCriteria);
+			
+			ExecutableEntityQueryCriteria<Toto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getA, Operators.eq(42));
+			Set<Toto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto where Toto.a = ?"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
+					new Toto(7, 1, 2)
+			).toString());
+		}
+		
+		@Test
+		void selectWhere_collectionCriteria() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
 			ResultSet resultSetForCriteria = new InMemoryResultSet(Arrays.asList(
 					Maps.asMap("rootId", (Object) 7)
 			));
@@ -457,23 +526,29 @@ class SimpleRelationalEntityPersisterTest {
 				return null;
 			});
 			
-			RelationalExecutableEntityQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectWhere(Toto::getA, Operators.eq(42));
-			Set<Toto> select = totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
+			// We test the collection criteria through the "q" property which is not really a production use case since it's an "embedded" one
+			// made of the storage of a set in an SQL Array : production use case we'll be more a *-to-many case. Meanwhile, this test should pass
+			// because even in that case it's hard to retrieve the entities with one select
+			ExecutableEntityQueryCriteria<Toto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getQ, Operators.eq(Arrays.asHashSet(42)));
+			Set<Toto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(2)).executeQuery();
-			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select Toto1.id as rootId from Toto1 where Toto1.a = ?",
-					"select Toto1.id as " + totoIdAlias
-							+ ", Toto1.a as " + totoAAlias
-							+ ", Toto1.b as " + totoBAlias
-							+ " from Toto1 where Toto1.id in (?)"));
-			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+					"select Toto.id as rootId from Toto where Toto.q = ?",
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto where Toto.id in (?)"));
+			// Here we don't test the "42" row of the first query because it requires to listen to PreparedStatement.setArray(..) whereas all this
+			// test class is bound to PreparedStatement.setInt(..) and Integer type.
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7);
 			assertCapturedPairsEqual(expectedPairs);
 			
 			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
-																									   new Toto(7, 1, 2)
+					new Toto(7, 1, 2)
 			).toString());
 		}
 	}
@@ -514,7 +589,7 @@ class SimpleRelationalEntityPersisterTest {
 			
 			totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
 			
-			assertThat(sqlCaptor.getValue()).isEqualTo("select Toto.a as rootId from Toto left outer join Tata as tata on Toto.tataId = tata.id where Toto.a = ? and tata.prop1 = ?");
+			assertThat(sqlCaptor.getValue()).isEqualTo("select Toto.a as Toto_a, tata.prop1 as tata_prop1, tata.id as tata_id from Toto left outer join Tata as tata on Toto.tataId = tata.id where Toto.a = ? and tata.prop1 = ?");
 			assertThat(argCaptor.getValue()).isEqualTo(42);
 		}
 	}
@@ -572,7 +647,7 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(1)).executeQuery();
 			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
-					"select count(id) as count from Toto1 where Toto1.a = ?"));
+					"select count(id) as count from Toto where Toto.a = ?"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 77);
 			assertCapturedPairsEqual(expectedPairs);
 			
@@ -687,8 +762,9 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(8)).addBatch();
 			verify(preparedStatement, times(4)).executeLargeBatch();
 			verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("insert into Toto1(id, a, b) values (?, ?, ?)", "insert into Toto2(id,"
-					+ " x, y, z) values (?, ?, ?, ?)"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"insert into Toto(id, a, b, q) values (?, ?, ?, ?)",
+					"insert into Toto2(id, x, y, z) values (?, ?, ?, ?)"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
 					.newRow(1, 1).add(2, 17).add(3, 23)
 					.newRow(1, 2).add(2, 29).add(3, 31)
@@ -705,9 +781,10 @@ class SimpleRelationalEntityPersisterTest {
 		@Test
 		void update() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String totoIdAlias = "Toto1_id";
-			String totoAAlias = "Toto1_a";
-			String totoBAlias = "Toto1_b";
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
 			String toto2IdAlias = "Toto2_id";
 			String toto2XAlias = "Toto2_x";
 			String toto2YAlias = "Toto2_y";
@@ -734,31 +811,33 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(8)).addBatch();
 			verify(preparedStatement, times(4)).executeLargeBatch();
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getColumns()).containsExactlyInAnyOrder(
-					"Toto1.id as " + totoIdAlias,
-							"Toto1.a as " + totoAAlias,
-							"Toto1.b as " + totoBAlias,
+					"Toto.id as " + totoIdAlias,
+							"Toto.a as " + totoAAlias,
+							"Toto.b as " + totoBAlias,
+							"Toto.q as " + totoQAlias,
 							"Toto2.z as " + toto2ZAlias,
 							"Toto2.x as " + toto2XAlias,
 							"Toto2.y as " + toto2YAlias,
 							"Toto2.id as " + toto2IdAlias
 			);
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getFrom()).isEqualTo(
-					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)"
+					"Toto inner join Toto2 as Toto2 on Toto.id = Toto2.id where Toto.id in (?, ?, ?)"
 			);
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getColumns()).containsExactlyInAnyOrder(
-					"Toto1.id as " + totoIdAlias,
-							"Toto1.a as " + totoAAlias,
-							"Toto1.b as " + totoBAlias,
+					"Toto.id as " + totoIdAlias,
+							"Toto.a as " + totoAAlias,
+							"Toto.b as " + totoBAlias,
+							"Toto.q as " + totoQAlias,
 							"Toto2.z as " + toto2ZAlias,
 							"Toto2.x as " + toto2XAlias,
 							"Toto2.y as " + toto2YAlias,
 							"Toto2.id as " + toto2IdAlias
 			);
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getFrom()).isEqualTo(
-					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"
+					"Toto inner join Toto2 as Toto2 on Toto.id = Toto2.id where Toto.id in (?)"
 			);
 			assertThat(statementArgCaptor.getAllValues().subList(2, 4)).isEqualTo(Arrays.asList(
-					"update Toto1 set a = ?, b = ? where id = ?",
+					"update Toto set a = ?, b = ?, q = ? where id = ?",
 					"update Toto2 set x = ?, y = ?, z = ? where id = ?"));
 			assertThat(statementArgCaptor.getAllValues()).hasSize(4);
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
@@ -778,13 +857,15 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(8)).addBatch();
 			verify(preparedStatement, times(4)).executeLargeBatch();
 			verify(preparedStatement, times(28)).setInt(indexCaptor.capture(), valueCaptor.capture());
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("update Toto1 set a = ?, b = ? where id = ?", "update Toto2 set x = ?,"
-					+ " y = ?, z = ? where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"update Toto set a = ?, b = ?, q = ? where id = ?",
+					"update Toto2 set x = ?, y = ?, z = ? where id = ?"));
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
-					.newRow(1, 17).add(2, 23).add(3, 1)
-					.newRow(1, 29).add(2, 31).add(3, 2)
-					.newRow(1, 37).add(2, 41).add(3, 3)
-					.newRow(1, 43).add(2, 53).add(3, 4)
+					// since PreparedStatement.setArray is not watched we don't have q property index (3)
+					.newRow(1, 17).add(2, 23).add(4, 1)
+					.newRow(1, 29).add(2, 31).add(4, 2)
+					.newRow(1, 37).add(2, 41).add(4, 3)
+					.newRow(1, 43).add(2, 53).add(4, 4)
 					
 					.newRow(1, 117).add(2, 123).add(3, -117).add(4, 1)
 					.newRow(1, 129).add(2, 131).add(3, -129).add(4, 2)
@@ -798,7 +879,7 @@ class SimpleRelationalEntityPersisterTest {
 			effectiveBatchedRowCount.setRowCounts(Arrays.asList(new long[] { 1 }, new long[] { 1 }));
 			testInstance.delete(Arrays.asList(new Toto(7, 17, 23, 117, 123, -117)));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto where id = ?"));
 			verify(preparedStatement, times(2)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(0)).executeUpdate();
@@ -819,7 +900,7 @@ class SimpleRelationalEntityPersisterTest {
 					new Toto(4, 43, 53, 143, 153, -143)
 			));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto1 where id = ?"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id = ?", "delete from Toto where id = ?"));
 			verify(preparedStatement, times(8)).addBatch();
 			verify(preparedStatement, times(4)).executeLargeBatch();
 			verify(preparedStatement, times(0)).executeUpdate();
@@ -839,7 +920,7 @@ class SimpleRelationalEntityPersisterTest {
 					new Toto(7, 17, 23, 117, 123, -117)
 			));
 			
-			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?)", "delete from Toto1 where id in (?)"));
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?)", "delete from Toto where id in (?)"));
 			verify(preparedStatement, times(2)).executeLargeUpdate();
 			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>()
@@ -860,8 +941,8 @@ class SimpleRelationalEntityPersisterTest {
 			// 4 statements because in operator is bounded to 3 values (see testInstance creation)
 			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList("delete from Toto2 where id in (?, ?, ?)",
 																				  "delete from Toto2 where id in (?)",
-																				  "delete from Toto1 where id in (?, ?, ?)",
-																				  "delete from Toto1 where id in (?)"));
+																				  "delete from Toto where id in (?, ?, ?)",
+																				  "delete from Toto where id in (?)"));
 			verify(preparedStatement, times(2)).addBatch();
 			verify(preparedStatement, times(2)).executeLargeBatch();
 			verify(preparedStatement, times(2)).executeLargeUpdate();
@@ -877,9 +958,10 @@ class SimpleRelationalEntityPersisterTest {
 		@Test
 		void select() throws SQLException {
 			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
-			String totoIdAlias = "Toto1_id";
-			String totoAAlias = "Toto1_a";
-			String totoBAlias = "Toto1_b";
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
 			String toto2IdAlias = "Toto2_id";
 			String toto2XAlias = "Toto2_x";
 			String toto2YAlias = "Toto2_y";
@@ -902,28 +984,30 @@ class SimpleRelationalEntityPersisterTest {
 			verify(preparedStatement, times(2)).executeQuery();
 			verify(preparedStatement, times(4)).setInt(indexCaptor.capture(), valueCaptor.capture());
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getColumns()).containsExactlyInAnyOrder(
-					"Toto1.id as " + totoIdAlias,
-							"Toto1.a as " + totoAAlias,
-							"Toto1.b as " + totoBAlias,
+					"Toto.id as " + totoIdAlias,
+							"Toto.a as " + totoAAlias,
+							"Toto.b as " + totoBAlias,
+							"Toto.q as " + totoQAlias,
 							"Toto2.z as " + toto2ZAlias,
 							"Toto2.x as " + toto2XAlias,
 							"Toto2.y as " + toto2YAlias,
 							"Toto2.id as " + toto2IdAlias
 			);
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(0)).getFrom()).isEqualTo(
-					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?, ?, ?)"
+					"Toto inner join Toto2 as Toto2 on Toto.id = Toto2.id where Toto.id in (?, ?, ?)"
 			);
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getColumns()).containsExactlyInAnyOrder(
-					"Toto1.id as " + totoIdAlias,
-							"Toto1.a as " + totoAAlias,
-							"Toto1.b as " + totoBAlias,
+					"Toto.id as " + totoIdAlias,
+							"Toto.a as " + totoAAlias,
+							"Toto.b as " + totoBAlias,
+							"Toto.q as " + totoQAlias,
 							"Toto2.z as " + toto2ZAlias,
 							"Toto2.x as " + toto2XAlias,
 							"Toto2.y as " + toto2YAlias,
 							"Toto2.id as " + toto2IdAlias
 			);
 			assertThat(new RawQuery(statementArgCaptor.getAllValues().get(1)).getFrom()).isEqualTo(
-					"Toto1 inner join Toto2 as Toto2 on Toto1.id = Toto2.id where Toto1.id in (?)"
+					"Toto inner join Toto2 as Toto2 on Toto.id = Toto2.id where Toto.id in (?)"
 			);
 			assertThat(statementArgCaptor.getAllValues()).hasSize(2);
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 7).add(2, 13).add(3, 17).add(1, 23);
@@ -942,6 +1026,7 @@ class SimpleRelationalEntityPersisterTest {
 	private static class Toto implements Identified<Integer> {
 		private Identifier<Integer> id;
 		private Integer a, b, x, y, z;
+		private Set<Integer> q;
 		
 		private Tata tata;
 		
@@ -976,6 +1061,14 @@ class SimpleRelationalEntityPersisterTest {
 		
 		public Integer getA() {
 			return a;
+		}
+		
+		public void setQ(Set<Integer> q) {
+			this.q = q;
+		}
+		
+		public Set<Integer> getQ() {
+			return q;
 		}
 		
 		/**

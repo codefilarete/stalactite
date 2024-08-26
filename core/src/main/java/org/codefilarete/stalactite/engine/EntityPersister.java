@@ -363,7 +363,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableProjection} to make an {@link EntityCriteria} executable
 	 * @param <C> type of object returned by query execution
 	 */
-	interface ExecutableProjectionQuery<C> extends EntityCriteria<C>, ExecutableProjection {
+	interface ExecutableProjectionQuery<C> extends ExecutableProjection, EntityCriteria<C> {
 		
 		@Override
 		<O> ExecutableProjectionQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);

@@ -47,7 +47,7 @@ import static org.codefilarete.stalactite.query.model.Operators.in;
  * hence it is based on {@link EntityJoinTree} to build the bean graph.
  * 
  * @author Guillaume Mary
- * @see #select(CriteriaChain)
+ * @see EntitySelector#select(ConfiguredEntityCriteria)
  */
 public class EntityGraphSelector<C, I, T extends Table> implements EntitySelector<C, I> {
 	
@@ -75,31 +75,42 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
 	 */
 	@Override
-	public Set<C> select(CriteriaChain where) {
+	public Set<C> select(ConfiguredEntityCriteria where) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		
-		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();
-		Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
-		query.select(pk, PRIMARY_KEY_ALIAS);
-		ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
-		Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
-		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-		Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
-		
-		if (ids.isEmpty()) {
-			// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
-			return Collections.emptySet();
-		} else {
-			// Second phase : selecting elements by main table pk (adding necessary columns)
-			query.getSelectSurrogate().remove(pk);    // previous pk selection removal
-			columns.forEach(query::select);
-			query.getWhereSurrogate().clear();
-			query.where(pk, in(ids));
+		// When condition contains some criteria on a collection, the ResultSet contains only data matching it,
+		// then the graph is a partial view of the real entity. Therefore, when the condition contains some Collection criteria
+		// we must load the graph in 2 phases : a first lookup for ids matching the result, and a second phase that loads the entity graph
+		// according to the ids
+		if (where.hasCollectionCriteria()) {
+			// First phase : selecting ids (made by clearing selected elements for performance issue)
+			KeepOrderMap<Selectable<?>, String> columns = query.getSelectSurrogate().clear();
+			Column<T, I> pk = (Column<T, I>) Iterables.first(((Table) entityJoinTree.getRoot().getTable()).getPrimaryKey().getColumns());
+			query.select(pk, PRIMARY_KEY_ALIAS);
+			ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
+			Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
+			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+			Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 			
+			if (ids.isEmpty()) {
+				// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
+				return Collections.emptySet();
+			} else {
+				// Second phase : selecting elements by main table pk (adding necessary columns)
+				query.getSelectSurrogate().remove(pk);    // previous pk selection removal
+				columns.forEach(query::select);
+				query.getWhereSurrogate().clear();
+				query.where(pk, in(ids));
+				
+				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
+			}
+		} else {
+			// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
+			// doesn't make a subset of the entity graph
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}

@@ -11,7 +11,6 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
@@ -125,15 +124,15 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 */
 	<E, ID> void copyRootJoinsTo(EntityJoinTree<E, ID> entityJoinTree, String joinName);
 	
-	default <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C> selectWhere(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return selectWhere().and(getter, operator);
 	}
 	
-	default <O> RelationalExecutableEntityQuery<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C> selectWhere(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return selectWhere().and(setter, operator);
 	}
 	
-	default <O, A> RelationalExecutableEntityQuery<C> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
+	default <O, A> ExecutableEntityQueryCriteria<C> selectWhere(SerializableFunction<C, A> getter1, SerializableFunction<A, O> getter2, ConditionalOperator<O, ?> operator) {
 		return selectWhere(AccessorChain.chain(getter1, getter2), operator);
 	}
 	
@@ -147,7 +146,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	default <O> RelationalExecutableEntityQuery<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
+	default <O> ExecutableEntityQueryCriteria<C> selectWhere(AccessorChain<C, O> accessorChain, ConditionalOperator<O, ?> operator) {
 		return selectWhere().and(accessorChain, operator);
 	}
 	
@@ -158,7 +157,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * @return a {@link EntityCriteria} enhance to be executed through {@link ExecutableQuery#execute(Accumulator)}
 	 * @throws Exception if the column matching targeted property can't be found in entity mapping
 	 */
-	RelationalExecutableEntityQuery<C> selectWhere();
+	ExecutableEntityQueryCriteria<C> selectWhere();
 	
 	/**
 	 * Register a relation to another persister. Made to make {@link #selectWhere(SerializableFunction, ConditionalOperator)} methods working.
@@ -180,28 +179,28 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
 	 * @param <C> type of object returned by query execution
 	 */
-	interface RelationalExecutableEntityQuery<C> extends ExecutableEntityQuery<C>, CriteriaProvider, RelationalEntityCriteria<C> {
+	interface ExecutableEntityQueryCriteria<C> extends ExecutableEntityQuery<C>, RelationalEntityCriteria<C> {
 		
 		@Override
-		<O> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
+		<O> ExecutableEntityQueryCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<O> RelationalExecutableEntityQuery<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
+		<O> ExecutableEntityQueryCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<O> RelationalExecutableEntityQuery<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
+		<O> ExecutableEntityQueryCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<O> RelationalExecutableEntityQuery<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
+		<O> ExecutableEntityQueryCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<A, B> RelationalExecutableEntityQuery<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
+		<A, B> ExecutableEntityQueryCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 		
 		@Override
-		<O> RelationalExecutableEntityQuery<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
+		<O> ExecutableEntityQueryCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
 		
 		@Override
-		<S extends Collection<A>, A, B> RelationalExecutableEntityQuery<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
+		<S extends Collection<A>, A, B> ExecutableEntityQueryCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 		
 	}
 }

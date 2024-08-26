@@ -40,13 +40,15 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * @author Guillaume Mary
  * @see #registerRelation(ValueAccessPoint, RelationalEntityPersister) 
  */
-public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
+public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, ConfiguredEntityCriteria {
 	
 	/** Delegate of the query : targets of the API methods */
 	private final Criteria criteria = new Criteria();
 	
 	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, RelationalEntityPersister)} */
 	private final EntityGraphNode<C> rootConfiguration;
+	
+	private boolean hasCollectionCriteria;
 	
 	/**
 	 * Base constructor to start configuring an instance.
@@ -83,63 +85,65 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		rootConfiguration.registerRelation(relation, persister);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return add(logicalOperator, rootConfiguration.getColumn(Arrays.asList(new AccessorByMethodReference<>(getter))), operator);
-	}
-	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return add(logicalOperator, rootConfiguration.getColumn(Arrays.asList(new MutatorByMethodReference<>(setter))), operator);
-	}
-	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, Column column, ConditionalOperator<O, ?> operator) {
+	private <O> RelationalEntityCriteria<C> add(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<O, ?> operator) {
+		Column column = rootConfiguration.giveColumn(accessPointChain);
 		if (logicalOperator == LogicalOperator.OR) {
 			criteria.or(column, operator);
 		} else {
 			criteria.and(column, operator);
 		}
+		computeCollectionCriteriaIndicator(accessPointChain);
 		return this;
 	}
 	
-	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.AND, getter, operator);
+	private void computeCollectionCriteriaIndicator(List<? extends ValueAccessPoint<?>> accessPointChain) {
+		this.hasCollectionCriteria |= accessPointChain.stream()
+				.anyMatch(valueAccessPoint -> Collection.class.isAssignableFrom(AccessorDefinition.giveDefinition(valueAccessPoint).getMemberType()));
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.AND, setter, operator);
+	public <O> RelationalEntityCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return add(LogicalOperator.AND, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.OR, getter, operator);
+	public <O> RelationalEntityCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return add(LogicalOperator.AND, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
 	@Override
-	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.OR, setter, operator);
+	public <O> RelationalEntityCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return add(LogicalOperator.OR, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
-	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
-		criteria.and(rootConfiguration.getColumn(AccessorChain.chain(getter1, getter2).getAccessors()), operator);
-		return this;
+	public <O> RelationalEntityCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+		return add(LogicalOperator.OR, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
+	}
+	
+	@Override
+	public <A, B> RelationalEntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
+		return and(AccessorChain.chain(getter1, getter2), operator);
 	}
 	
 	@Override
 	public <O> RelationalEntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator) {
-		criteria.and(rootConfiguration.getColumn(getter.getAccessors()), operator);
-		return this;
+		return add(LogicalOperator.AND, getter.getAccessors(), operator);
 	}
 	
 	@Override
-	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
-		criteria.and(rootConfiguration.getColumn(Arrays.asList(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2))), operator);
-		return this;
+	public <S extends Collection<A>, A, B> RelationalEntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
+		return add(LogicalOperator.AND, Arrays.asList(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 	}
 	
-	public CriteriaChain getCriteria() {
+	@Override
+	public CriteriaChain<?> getCriteria() {
 		return criteria;
+	}
+	
+	@Override
+	public boolean hasCollectionCriteria() {
+		return hasCollectionCriteria;
 	}
 	
 	/**
@@ -241,7 +245,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C> {
 		 * @param valueAccessPoints chain of accessors to a property that has a matching column
 		 * @return the found column, throws an exception if not found
 		 */
-		public Column getColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
+		public Column giveColumn(List<? extends ValueAccessPoint<?>> valueAccessPoints) {
 			// looking among current properties
 			Column column = this.propertyToColumn.get(valueAccessPoints);
 			if (column != null) {

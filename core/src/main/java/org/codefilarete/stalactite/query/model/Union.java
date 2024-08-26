@@ -1,9 +1,11 @@
 package org.codefilarete.stalactite.query.model;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -42,7 +44,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	}
 	
 	/**
-	 * Adds a column to this table.
+	 * Declares a column to this union.
 	 * May do nothing if a column already exists with same name and type.
 	 * Will throw an exception if a column with same name but with different type already exists.
 	 *
@@ -52,20 +54,36 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	 * @return the created column or the existing one
 	 */
 	public <O> PseudoColumn<O> addColumn(String expression, Class<O> javaType) {
-		return addertColumn(new PseudoColumn<>(this, expression, javaType));
+		return addColumn(expression, javaType, null);
 	}
 	
 	/**
-	 * Adds with presence assertion (add + assert = addert, poor naming)
+	 * Declares a column to this union with an alias.
+	 * May do nothing if a column already exists with same name and type.
+	 * Will throw an exception if a column with same name but with different type already exists.
 	 *
-	 * @param column the column to be added
+	 * @param expression column name
+	 * @param javaType column type
+	 * @param alias column alias (optional)
 	 * @param <O> column type
+	 * @return the created column or the existing one
+	 */
+	public <O> PseudoColumn<O> addColumn(String expression, Class<O> javaType, @Nullable String alias) {
+		return addertColumn(new PseudoColumn<>(this, expression, javaType), alias);
+	}
+	
+	/**
+	 * Adds a column with presence assertion (add + assert = addert, poor naming)
+	 *
+	 * @param <O> column type
+	 * @param column the column to be added
+	 * @param alias column alias (optional)
 	 * @return given column
 	 */
-	private <O> PseudoColumn<O> addertColumn(PseudoColumn<O> column) {
+	private <O> PseudoColumn<O> addertColumn(PseudoColumn<O> column, @Nullable String alias) {
 		// Quite close to Table.addertColumn(..)
-		PseudoColumn<O> existingColumn = findColumn(column.getExpression());
-		if (existingColumn != null && (!existingColumn.getJavaType().equals(column.getJavaType()))) {
+		PseudoColumn<O> existingColumn = findColumn(column.getExpression(), alias);
+		if (existingColumn != null && (Objects.equals(alias, aliases.get(existingColumn))) && !existingColumn.getJavaType().equals(column.getJavaType())) {
 			throw new IllegalArgumentException("Trying to add a column '" + existingColumn.getExpression() + "' that already exists with a different type : "
 													   + Reflections.toString(existingColumn.getJavaType()) + " vs " + Reflections.toString(column.getJavaType()));
 		}
@@ -77,14 +95,34 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		}
 	}
 	
+	private <C extends Selectable<?>> C findColumn(String columnName, @Nullable String alias) {
+		if (alias != null) {
+			for (Entry<? extends Selectable<?>, String> aliasPawn : getAliases().entrySet()) {
+				if (aliasPawn.getValue().equals(alias)) {
+					return (C) aliasPawn.getKey();
+				}
+			}
+		} else {
+//			for (Entry<? extends Selectable<?>, String> aliasPawn : getAliases().entrySet()) {
+//				if (aliasPawn.getValue().equals(columnName)) {
+//					return (C) aliasPawn.getKey();
+//				}
+//			}
+			for (Selectable<?> column : getColumns()) {
+				if (column instanceof JoinLink && column.getExpression().equals(columnName)) {
+					return (C) column;
+				}
+			}
+		}
+		return null;
+	}
+	
 	public <O> PseudoColumn<O> registerColumn(String expression, Class<O> javaType) {
 		return addColumn(expression, javaType);
 	}
 	
 	public <O> PseudoColumn<O> registerColumn(String expression, Class<O> javaType, String alias) {
-		PseudoColumn<O> newColumn = registerColumn(expression, javaType);
-		this.aliases.put(newColumn, alias);
-		return newColumn;
+		return addColumn(expression, javaType, alias);
 	}
 	
 	@Override

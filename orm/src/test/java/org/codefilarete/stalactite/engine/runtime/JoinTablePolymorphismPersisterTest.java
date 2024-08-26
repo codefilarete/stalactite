@@ -28,7 +28,7 @@ import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildL
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
 import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.RelationalExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
 import org.codefilarete.stalactite.id.Identified;
@@ -671,8 +671,8 @@ class JoinTablePolymorphismPersisterTest {
 					))
 			);
 			
-			RelationalExecutableEntityQuery<AbstractToto> totoRelationalExecutableEntityQuery = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
-			Set<AbstractToto> select = totoRelationalExecutableEntityQuery.execute(Accumulators.toSet());
+			ExecutableEntityQueryCriteria<AbstractToto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
+			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(3)).executeQuery();
 			verify(preparedStatement, times(5)).setInt(indexCaptor.capture(), valueCaptor.capture());

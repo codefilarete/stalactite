@@ -29,6 +29,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
+import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityGraphSelector;
 import org.codefilarete.stalactite.query.EntitySelector;
@@ -109,7 +110,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	@Override
 	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getRootConfiguration().getColumn(accessorChain);
+		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
 	}
 	
 	/**
@@ -187,25 +188,40 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public RelationalExecutableEntityQuery<C> selectWhere() {
+	public ExecutableEntityQueryCriteria<C> selectWhere() {
 		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
 		return wrapIntoExecutable(localCriteriaSupport);
 	}
 	
-	private RelationalExecutableEntityQuery<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
+	private ExecutableEntityQueryCriteria<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
 						wrapGraphLoad(localCriteriaSupport))
-				.redirect(CriteriaProvider::getCriteria, localCriteriaSupport::getCriteria)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
-				.build((Class<RelationalExecutableEntityQuery<C>>) (Class) RelationalExecutableEntityQuery.class);
+				// making an exception for 2 of the methods that can't return the proxy
+				.redirect((SerializableFunction<ConfiguredEntityCriteria, CriteriaChain>) ConfiguredEntityCriteria::getCriteria, localCriteriaSupport::getCriteria)
+				.redirect((SerializableFunction<ConfiguredEntityCriteria, Boolean>) ConfiguredEntityCriteria::hasCollectionCriteria, localCriteriaSupport::hasCollectionCriteria)
+				.build((Class<ConfiguredExecutableEntityQueryCriteria<C>>) (Class) ConfiguredExecutableEntityQueryCriteria.class);
+	}
+	
+	/**
+	 * A mashup to let redirect all {@link ExecutableEntityQueryCriteria} methods being redirected to {@link EntityCriteriaSupport} while redirecting
+	 * {@link ConfiguredEntityCriteria} methods to some specific methods of {@link EntityCriteriaSupport}.
+	 * Made as such to avoid to expose internal / implementation methods "getCriteria" and "hasCollectionCriteria" to the
+	 * configuration API ({@link ExecutableEntityQueryCriteria})
+	 *
+	 * @param <C>
+	 * @author Guillaume Mary
+	 */
+	private interface ConfiguredExecutableEntityQueryCriteria<C> extends ConfiguredEntityCriteria, ExecutableEntityQueryCriteria<C> {
+		
 	}
 	
 	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
 		return (Accumulator<C, Set<C>, R> accumulator) -> {
 			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
-					entitySelector.select(localCriteriaSupport.getCriteria())
+					entitySelector.select(localCriteriaSupport)
 			);
 			return accumulator.collect(result);
 		};
@@ -251,7 +267,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	@Override
 	public Set<C> selectAll() {
 		return getPersisterListener().doWithSelectListener(emptyList(), () ->
-				entitySelector.select(newWhere().getCriteria())
+				entitySelector.select(newWhere())
 		);
 	}
 	
@@ -417,17 +433,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	@Override
 	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		persister.addDeleteByIdListener(deleteListener);
-	}
-	
-	/**
-	 * Interface that allows access to the {@link CriteriaChain} of the {@link EntityCriteriaSupport} wrapped into the proxy returned by
-	 * {@link #wrapIntoExecutable(EntityCriteriaSupport)}.
-	 * Mainly created from test purpose that requires access to underlying objects
-	 */
-	public interface CriteriaProvider {
-		
-		CriteriaChain getCriteria();
-		
 	}
 	
 	/**

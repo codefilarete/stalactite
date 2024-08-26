@@ -30,7 +30,7 @@ public interface EntitySelector<C, I> {
 	 * @param where some criteria for aggregate selection
 	 * @return entities that match criteria
 	 */
-	Set<C> select(CriteriaChain where);
+	Set<C> select(ConfiguredEntityCriteria where);
 	
 	/**
 	 * Loads a projection that matches given criteria.

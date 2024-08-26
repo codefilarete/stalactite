@@ -5,8 +5,8 @@ import java.util.IdentityHashMap;
 import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
+import org.codefilarete.stalactite.query.model.AbstractCriterion;
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -96,14 +96,14 @@ public class QuerySQLBuilderFactory {
 		return havingBuilderFactory;
 	}
 	
-	public QuerySQLBuilder queryBuilder(Query query, CriteriaChain<?> where) {
+	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where) {
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			query.getWhere().and(where);
 		}
 		return queryBuilder(query);
 	}
 	
-	public QuerySQLBuilder queryBuilder(Query query, CriteriaChain<?> where, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>> columnClones) {
+	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>> columnClones) {
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			where.forEach(criterion -> {
 				if (criterion instanceof ColumnCriterion) {

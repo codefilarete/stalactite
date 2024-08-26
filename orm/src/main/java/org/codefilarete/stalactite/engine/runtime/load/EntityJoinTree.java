@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import javax.annotation.Nullable;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,6 +35,7 @@ import org.codefilarete.tool.bean.Randomizer;
 import org.codefilarete.tool.bean.Randomizer.LinearRandomGenerator;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
+import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.collection.ReadOnlyList;
 
 /**
@@ -155,7 +157,7 @@ public class EntityJoinTree<C, I> {
 				leftJoinColumn,
 				rightJoinColumn,
 				joinType,
-				new HashSet<>(Collections.cat(inflater.getSelectableColumns(), additionalSelectableColumns)),
+				new KeepOrderSet<>(Collections.cat(inflater.getSelectableColumns(), additionalSelectableColumns)),
 				rightTableAlias,
 				inflater,
 				beanRelationFixer,
@@ -427,7 +429,8 @@ public class EntityJoinTree<C, I> {
 				Selectable<?> projectedLeftColumn = targetOwner.getTable().findColumn(leftColumn.getExpression());
 				if (projectedLeftColumn == null) {
 					throw new IllegalArgumentException("Expected column "
-							+ leftColumn.getExpression() + " to exist in target table " + targetOwner.getTable().getName());
+							+ leftColumn.getExpression() + " to exist in target table " + targetOwner.getTable().getName()
+							+ " but couldn't be found among " + Iterables.collect(targetOwner.getTable().getColumns(), Selectable::getExpression, ArrayList::new));
 				}
 			});
 			AbstractJoinNode nodeClone = copyNodeToParent(currentNode, targetOwner, currentNode.getLeftJoinLink());

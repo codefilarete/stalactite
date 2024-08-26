@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.query;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.Accessors;
+import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
@@ -10,6 +12,7 @@ import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
+import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identifier;
@@ -22,12 +25,15 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.exception.Exceptions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -88,7 +94,7 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
-		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getName).getAccessors())).isEqualTo(nameColumn);
+		assertThat(testInstance.giveColumn(AccessorChain.chain(Country::getName).getAccessors())).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -115,7 +121,7 @@ class EntityCriteriaSupportTest {
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
 				((RelationalEntityPersister) dummyPersistenceContext.getPersister(City.class)));
-		assertThat(testInstance.getColumn(AccessorChain.chain(Country::getCapital, City::getName).getAccessors())).isEqualTo(nameColumn);
+		assertThat(testInstance.giveColumn(AccessorChain.chain(Country::getCapital, City::getName).getAccessors())).isEqualTo(nameColumn);
 	}
 	
 	@Test
@@ -142,7 +148,7 @@ class EntityCriteriaSupportTest {
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
 				((RelationalEntityPersister) dummyPersistenceContext.getPersister(City.class)));
-		assertThat(testInstance.getColumn(new AccessorChain<>(
+		assertThat(testInstance.giveColumn(new AccessorChain<>(
 				new AccessorByMethodReference<>(Country::getCities),
 				new AccessorByMethodReference<>(City::getName))
 				.getAccessors())).isEqualTo(nameColumn);
@@ -162,7 +168,7 @@ class EntityCriteriaSupportTest {
 				.getMapping();
 		
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
-		assertThatThrownBy(() -> testInstance.getColumn(AccessorChain.chain(Country::getName).getAccessors()))
+		assertThatThrownBy(() -> testInstance.giveColumn(AccessorChain.chain(Country::getName).getAccessors()))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Error while looking for column of Country::getName : it is not declared in mapping of o.c.s.e.m.Country");
 	}
@@ -184,5 +190,48 @@ class EntityCriteriaSupportTest {
 		assertThatThrownBy(() -> testInstance.andMany(Country::getCities, City::getName, Operators.eq("Grenoble")))
 				.extracting(t -> Exceptions.findExceptionInCauses(t, MappingConfigurationException.class), InstanceOfAssertFactories.THROWABLE)
 				.hasMessage("Error while looking for column of Country::getCities > City::getName : it is not declared in mapping of o.c.s.e.m.Country");
+	}
+	
+	@Test
+	void hasCollectionCriteria_noCollectionCriteria_returnsFalse() {
+		Table personTable = new Table("Person");
+		Column nameColumn = personTable.addColumn("name", String.class);
+		
+		EntityMapping entityMappingMock = mock(EntityMapping.class);
+		when(entityMappingMock.getPropertyToColumn()).thenReturn(Maps.forHashMap(ReversibleAccessor.class, Column.class).add(Accessors.accessor(Person::getName), nameColumn));
+		EntityCriteriaSupport<Person> testInstance = new EntityCriteriaSupport<Person>(entityMappingMock);
+		// first check: when criteria, there's also no collection criteria !
+		assertThat(testInstance.hasCollectionCriteria()).isFalse();
+		
+		testInstance.and(Person::getName, Operators.eq(""));
+		assertThat(testInstance.hasCollectionCriteria()).isFalse();
+	}
+	
+	@Test
+	void hasCollectionCriteria_embeddedCollectionCriteria_returnsTrue() {
+		Table personTable = new Table("Person");
+		Column nameColumn = personTable.addColumn("name", String.class);
+		
+		EntityCriteriaSupport<Person> testInstance = new EntityCriteriaSupport<Person>(mock(EntityMapping.class));
+		// we have to register the relation, that is expected by EntityGraphNode
+		RelationalEntityPersister<Person, Identifier<Long>> persisterMock = mock(RelationalEntityPersister.class);
+		when(persisterMock.getColumn(anyList())).thenReturn(nameColumn);
+		testInstance.registerRelation(new AccessorByMethodReference<>(Person::getNicknames), persisterMock);
+		testInstance.and(Person::getNicknames, Operators.eq(""));
+		assertThat(testInstance.hasCollectionCriteria()).isTrue();
+	}
+	
+	@Test
+	void hasCollectionCriteria_manyCriteria_returnsTrue() {
+		Table personTable = new Table("Person");
+		Column nameColumn = personTable.addColumn("name", String.class);
+		
+		EntityCriteriaSupport<Country> testInstance = new EntityCriteriaSupport<Country>(mock(EntityMapping.class));
+		// we have to register the relation, that is expected by EntityGraphNode
+		RelationalEntityPersister<Country, Identifier<Long>> persisterMock = mock(RelationalEntityPersister.class);
+		when(persisterMock.getColumn(anyList())).thenReturn(nameColumn);
+		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities), persisterMock);
+		testInstance.andMany(Country::getCities, City::getName, Operators.eq(""));
+		assertThat(testInstance.hasCollectionCriteria()).isTrue();
 	}
 }

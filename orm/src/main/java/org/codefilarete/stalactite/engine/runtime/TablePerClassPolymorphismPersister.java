@@ -89,9 +89,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		super(mainPersister,
 				subEntitiesPersisters,
 				new TablePerClassPolymorphismEntitySelector<C, I, T>(
-						mainPersister.getMapping().getIdMapping().getIdentifierAssembler(),
+						mainPersister,
 						subEntitiesPersisters,
-						mainPersister.getEntityJoinTree(),
 						connectionProvider,
 						dialect));
 		this.mainPersister = mainPersister;
@@ -117,7 +116,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 	
 	@Override
 	public Column getColumn(List<? extends ValueAccessPoint<?>> accessorChain) {
-		return criteriaSupport.getRootConfiguration().getColumn(accessorChain);
+		return criteriaSupport.getRootConfiguration().giveColumn(accessorChain);
 	}
 	
 	@Override

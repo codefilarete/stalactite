@@ -73,7 +73,7 @@ public class PersisterWrapper<C, I> implements ConfiguredRelationalPersister<C, 
 	}
 	
 	@Override
-	public RelationalExecutableEntityQuery<C> selectWhere() {
+	public ExecutableEntityQueryCriteria<C> selectWhere() {
 		return surrogate.selectWhere();
 	}
 	

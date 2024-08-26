@@ -6,14 +6,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Set;
 
-import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
-import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister.CriteriaProvider;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
@@ -70,10 +68,9 @@ class EntityGraphSelectExecutorTest {
 		EntityGraphSelector<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelector<>(persister, persister.getEntityJoinTree(), connectionProvider, dialect);
 		
 		// Criteria tied to data formerly persisted
-		EntityCriteria<Country> countryEntityCriteriaSupport =
-				persister.selectWhere(Country::getName, eq("France"))
-				.andMany(Country::getCities, City::getName, eq("Grenoble"))
-				;
+		ConfiguredEntityCriteria countryEntityCriteriaSupport =
+				(ConfiguredEntityCriteria) persister.selectWhere(Country::getName, eq("France"))
+						.andMany(Country::getCities, City::getName, eq("Grenoble"));
 		
 		
 		Country expectedCountry = new Country(new PersistedIdentifier<>(12L));
@@ -88,7 +85,7 @@ class EntityGraphSelectExecutorTest {
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
 		Set<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
-				testInstance.select(((CriteriaProvider) countryEntityCriteriaSupport).getCriteria())
+				testInstance.select(countryEntityCriteriaSupport)
 		);
 		
 		assertThat(Iterables.first(select))
