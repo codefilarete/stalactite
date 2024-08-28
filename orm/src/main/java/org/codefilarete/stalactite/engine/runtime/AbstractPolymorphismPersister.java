@@ -1,11 +1,17 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.codefilarete.reflection.AccessorByMethodReference;
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.ValueAccessPoint;
+import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
@@ -16,7 +22,12 @@ import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.KeepOrderSet;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
@@ -54,9 +65,12 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	
 	private ExecutableEntityQueryCriteria<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
+		ExecutableEntityQuerySupport<C> querySugarSupport = new ExecutableEntityQuerySupport<>();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
-						wrapGraphLoad(localCriteriaSupport))
+						wrapGraphLoad(localCriteriaSupport, querySugarSupport))
+				.redirect(OrderByChain.class, querySugarSupport)
+				.redirect(LimitAware.class, querySugarSupport)
 				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
 				// making an exception for 2 of the methods that can't return the proxy
 				.redirect((SerializableFunction<ConfiguredEntityCriteria, CriteriaChain>) ConfiguredEntityCriteria::getCriteria, localCriteriaSupport::getCriteria)
@@ -65,7 +79,7 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	}
 	
 	/**
-	 * A mashup to let redirect all {@link ExecutableEntityQueryCriteria} methods being redirected to {@link EntityCriteriaSupport} while redirecting
+	 * A mashup to redirect all {@link ExecutableEntityQueryCriteria} methods being redirected to {@link EntityCriteriaSupport} while redirecting
 	 * {@link ConfiguredEntityCriteria} methods to some specific methods of {@link EntityCriteriaSupport}.
 	 * Made as such to avoid to expose internal / implementation methods "getCriteria" and "hasCollectionCriteria" to the
 	 * configuration API ({@link ExecutableEntityQueryCriteria})
@@ -77,10 +91,19 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 		
 	}
 	
-	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport) {
+	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport, ExecutableEntityQuerySupport<C> querySugarSupport) {
 		return (Accumulator<C, Set<C>, R> accumulator) -> {
 			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
-					entitySelectExecutor.select(localCriteriaSupport)
+					entitySelectExecutor.select(
+							localCriteriaSupport,
+							orderByClause -> {
+								KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = querySugarSupport.orderBy;
+								orderBy.forEach(duo -> {
+									Column column = localCriteriaSupport.getRootConfiguration().giveColumn(duo.getLeft());
+									orderByClause.add(column, duo.getRight() == Order.ASC ? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC : org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
+								});
+							},
+							limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit))
 			);
 			return accumulator.collect(result);
 		};
@@ -99,12 +122,13 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter,
 															EntityCriteriaSupport<C> localCriteriaSupport) {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		ExecutableProjectionQuerySupport querySugarSupport = new ExecutableProjectionQuerySupport();
+		ExecutableProjectionQuerySupport<C> querySugarSupport = new ExecutableProjectionQuerySupport<>();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
 						wrapProjectionLoad(selectAdapter, localCriteriaSupport, querySugarSupport))
 				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, querySugarSupport::distinct)
-				.redirect((SerializableBiFunction<ExecutableProjection, Integer, ExecutableProjection>) ExecutableProjection::limit, querySugarSupport::limit)
+				.redirect(OrderByChain.class, querySugarSupport)
+				.redirect(LimitAware.class, querySugarSupport)
 				.redirect(EntityCriteria.class, localCriteriaSupport, true)
 				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
 	}
@@ -112,16 +136,17 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
 			Consumer<Select> selectAdapter,
 			EntityCriteriaSupport<C> localCriteriaSupport,
-			ExecutableProjectionQuerySupport querySugarSupport) {
+			ExecutableProjectionQuerySupport<C> querySugarSupport) {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
 				entitySelectExecutor.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(),
 						querySugarSupport.isDistinct(),
-						fluentOrderByClause -> nullable(querySugarSupport.getLimit()).invoke(fluentOrderByClause::limit));
+						orderByClause -> {},
+						limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit));
 	}
 	
 	@Override
 	public Set<C> selectAll() {
-		return entitySelectExecutor.select(newWhere());
+		return entitySelectExecutor.select(newWhere(), fluentOrderByClause -> {}, limitAware -> {});
 	}
 	
 	@Override
@@ -143,7 +168,8 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	 * Simple class that stores options of the query
 	 * @author Guillaume Mary
 	 */
-	private static class ExecutableProjectionQuerySupport {
+	private static class ExecutableProjectionQuerySupport<C>
+			implements OrderByChain<C, ExecutableProjectionQuerySupport<C>>, LimitAware<ExecutableProjectionQuerySupport<C>> {
 		
 		private boolean distinct;
 		private Integer limit;
@@ -156,12 +182,73 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 			distinct = true;
 		}
 		
+		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
+		
 		public Integer getLimit() {
 			return limit;
 		}
 		
-		void limit(int count) {
+		@Override
+		public ExecutableProjectionQuerySupport<C> limit(int count) {
 			limit = count;
+			return this;
 		}
-	} 
+		
+		@Override
+		public ExecutableProjectionQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
+			orderBy.add(new Duo<>(Arrays.asList(new AccessorByMethodReference<>(getter)), order));
+			return this;
+		}
+		
+		@Override
+		public ExecutableProjectionQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
+			orderBy.add(new Duo<>(Arrays.asList(new MutatorByMethodReference<>(setter)), order));
+			return this;
+		}
+		
+		@Override
+		public ExecutableProjectionQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
+			orderBy.add(new Duo<>(getter.getAccessors(), order));
+			return this;
+		}
+	}
+	
+	/**
+	 * Simple class that stores options of the query
+	 * @author Guillaume Mary
+	 */
+	private static class ExecutableEntityQuerySupport<C>
+			implements OrderByChain<C, ExecutableEntityQuerySupport<C>>, LimitAware<ExecutableEntityQuerySupport<C>> {
+		
+		private Integer limit;
+		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
+		
+		public Integer getLimit() {
+			return limit;
+		}
+		
+		@Override
+		public ExecutableEntityQuerySupport<C> limit(int count) {
+			limit = count;
+			return this;
+		}
+		
+		@Override
+		public ExecutableEntityQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
+			orderBy.add(new Duo<>(Arrays.asList(new AccessorByMethodReference<>(getter)), order));
+			return this;
+		}
+		
+		@Override
+		public ExecutableEntityQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
+			orderBy.add(new Duo<>(Arrays.asList(new MutatorByMethodReference<>(setter)), order));
+			return this;
+		}
+		
+		@Override
+		public ExecutableEntityQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
+			orderBy.add(new Duo<>(getter.getAccessors(), order));
+			return this;
+		}
+	}
 }

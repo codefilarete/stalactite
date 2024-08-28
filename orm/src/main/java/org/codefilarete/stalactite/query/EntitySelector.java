@@ -5,7 +5,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.model.CriteriaChain;
-import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
+import org.codefilarete.stalactite.query.model.LimitAware;
+import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -20,17 +21,19 @@ public interface EntitySelector<C, I> {
 	
 	/**
 	 * Loads entity graphs that matches given criteria.
-	 * 
+	 *
 	 * <strong>
 	 * Please note that the whole graph of matching entities is loaded : collections are fully loaded with all their
-	 * elements, even those that don't match the criteria. 
+	 * elements, even those that don't match the criteria.
 	 * As long as there is an element that matches the criterion the entire collection is loaded, and the whole graph too.
 	 * </strong>
 	 *
 	 * @param where some criteria for aggregate selection
+	 * @param orderByClauseConsumer
+	 * @param limitAwareConsumer
 	 * @return entities that match criteria
 	 */
-	Set<C> select(ConfiguredEntityCriteria where);
+	Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer);
 	
 	/**
 	 * Loads a projection that matches given criteria.
@@ -39,11 +42,13 @@ public interface EntitySelector<C, I> {
 	 * @param accumulator the aggregator of the projection
 	 * @param where some criteria for aggregate selection
 	 * @param distinct
+	 * @param limitAwareConsumer
 	 * @return entities that match criteria
 	 */
 	<R, O> R selectProjection(Consumer<Select> selectAdapter,
 							  Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
 							  CriteriaChain where,
 							  boolean distinct,
-							  Consumer<FluentOrderByClause> orderByClauseConsumer);
+							  Consumer<OrderByChain<?>> orderByClauseConsumer,
+							  Consumer<LimitAware<?>> limitAwareConsumer);
 }

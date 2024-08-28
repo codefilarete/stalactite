@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.apache.commons.collections4.map.LinkedMap;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor.EntityCreationResult;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
@@ -88,10 +89,10 @@ public class EntityTreeInflater<C> {
 	}
 	
 	private Set<C> transform(Iterable<Row> rows, int resultSize, EntityTreeInflater<?>.TreeInflationContext context) {
-		// we use an "IdentitySet" (doesn't exist directly, but can be done through IdentityHashMap) to avoid duplicate entity : with a HashSet
+		// we use an "IdentitySet" (doesn't exist directly, but can be done through IdentityLinkedMap) to avoid duplicate entity : with a HashSet
 		// duplicate can happen if equals/hashCode depends on relation, in particular Collection ones, because they are filled from row to row
-		// making hashCode value change
-		Set<C> result = Collections.newIdentitySet(resultSize);
+		// making hashCode value change. Moreover we need to keep track of the order because query might be sorted through "order by" clause.
+		Set<C> result = java.util.Collections.newSetFromMap(new IdentityLinkedMap<>(resultSize));
 		for (Row row : rows) {
 			Nullable<C> newInstance = transform(row, context);
 			newInstance.invoke(result::add);
@@ -391,6 +392,31 @@ public class EntityTreeInflater<C> {
 			}
 			Column<T, O> columnClone = table.findColumn(column.getName());
 			return (O) row.get(columnAliases.get(columnClone));
+		}
+	}
+	
+	/**
+	 * A {@link LinkedMap} basing its hash on {@link System#identityHashCode(Object)} one, and comparing key on their reference.
+	 * Made to have a {@link Map} that hashes on identity while keeping insertion order.
+	 *
+	 * @param <K>
+	 * @param <V>
+	 * @author Guillaume Mary
+	 */
+	private static class IdentityLinkedMap<K, V> extends LinkedMap<K, V> {
+		
+		public IdentityLinkedMap(int initialCapacity) {
+			super(initialCapacity);
+		}
+		
+		@Override
+		protected int hash(Object key) {
+			return System.identityHashCode(key);
+		}
+		
+		@Override
+		protected boolean isEqualKey(Object key1, Object key2) {
+			return key1 == key2;
 		}
 	}
 }

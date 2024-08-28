@@ -85,7 +85,7 @@ class EntityGraphSelectExecutorTest {
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
 		Set<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
-				testInstance.select(countryEntityCriteriaSupport)
+				testInstance.select(countryEntityCriteriaSupport, fluentOrderByClause -> {}, limitAware -> {})
 		);
 		
 		assertThat(Iterables.first(select))

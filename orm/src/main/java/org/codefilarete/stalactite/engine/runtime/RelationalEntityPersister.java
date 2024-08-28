@@ -163,7 +163,7 @@ public interface RelationalEntityPersister<C, I> extends EntityPersister<C, I> {
 	 * Register a relation to another persister. Made to make {@link #selectWhere(SerializableFunction, ConditionalOperator)} methods working.
 	 * Called at a very late stage of persister configuration when all persisters are available. 
 	 */
-	void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister);
+	void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister);
 	
 	/**
 	 * Gives the column on which the last element of the given accessor chain is persisted.

@@ -16,6 +16,12 @@
 			<artifactId>core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		<!-- to get HashMap and LinkedHashMap with hashing customization capability -->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-collections4</artifactId>
+			<version>4.4</version>
+		</dependency>
 		<!-- for HSQLDBTypeMapping to do IT tests -->
 		<dependency>
 			<groupId>org.codefilarete.stalactite</groupId>

@@ -338,7 +338,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableQuery} to make an {@link EntityCriteria} executable
 	 * @param <C> type of object returned by query execution
 	 */
-	interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C> {
+	interface ExecutableEntityQuery<C> extends EntityCriteria<C>, ExecutableQuery<C>, FluentOrderByClause<C> {
 		
 		@Override
 		<O> ExecutableEntityQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
@@ -363,7 +363,7 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 * Mashup between {@link EntityCriteria} and {@link ExecutableProjection} to make an {@link EntityCriteria} executable
 	 * @param <C> type of object returned by query execution
 	 */
-	interface ExecutableProjectionQuery<C> extends ExecutableProjection, EntityCriteria<C> {
+	interface ExecutableProjectionQuery<C> extends EntityCriteria<C>, ExecutableProjection, FluentOrderByClause<C> {
 		
 		@Override
 		<O> ExecutableProjectionQuery<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator);
@@ -449,5 +449,41 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		<A, B> EntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 		
 		<O> EntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
+	}
+	
+	
+	interface OrderByChain<C, SELF extends OrderByChain<C, SELF>> {
+		
+		default SELF orderBy(SerializableFunction<C, ?> getter) {
+			return orderBy(getter, Order.ASC);
+		}
+		
+		default SELF orderBy(SerializableBiConsumer<C, ?> setter) {
+			return orderBy(setter, Order.ASC);
+		}
+		
+		default SELF orderBy(AccessorChain<C, ?> getter) {
+			return orderBy(getter, Order.ASC);
+		}
+		
+		SELF orderBy(SerializableFunction<C, ?> getter, Order order);
+		
+		SELF orderBy(SerializableBiConsumer<C, ?> setter, Order order);
+		
+		SELF orderBy(AccessorChain<C, ?> getter, Order order);
+		
+		enum Order {
+			ASC,
+			DESC
+		}
+	}
+	
+	interface LimitAware<R> {
+		
+		R limit(int value);
+	}
+	
+	interface FluentOrderByClause<C> extends OrderByChain<C, FluentOrderByClause<C>>, LimitAware<ExecutableQuery<C>> {
+		
 	}
 }

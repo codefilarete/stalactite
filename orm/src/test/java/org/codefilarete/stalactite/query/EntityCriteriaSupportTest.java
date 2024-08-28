@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -120,7 +120,7 @@ class EntityCriteriaSupportTest {
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
-				((RelationalEntityPersister) dummyPersistenceContext.getPersister(City.class)));
+				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)));
 		assertThat(testInstance.giveColumn(AccessorChain.chain(Country::getCapital, City::getName).getAccessors())).isEqualTo(nameColumn);
 	}
 	
@@ -147,7 +147,7 @@ class EntityCriteriaSupportTest {
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
-				((RelationalEntityPersister) dummyPersistenceContext.getPersister(City.class)));
+				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)));
 		assertThat(testInstance.giveColumn(new AccessorChain<>(
 				new AccessorByMethodReference<>(Country::getCities),
 				new AccessorByMethodReference<>(City::getName))
@@ -214,7 +214,7 @@ class EntityCriteriaSupportTest {
 		
 		EntityCriteriaSupport<Person> testInstance = new EntityCriteriaSupport<Person>(mock(EntityMapping.class));
 		// we have to register the relation, that is expected by EntityGraphNode
-		RelationalEntityPersister<Person, Identifier<Long>> persisterMock = mock(RelationalEntityPersister.class);
+		ConfiguredRelationalPersister<Person, Identifier<Long>> persisterMock = mock(ConfiguredRelationalPersister.class);
 		when(persisterMock.getColumn(anyList())).thenReturn(nameColumn);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Person::getNicknames), persisterMock);
 		testInstance.and(Person::getNicknames, Operators.eq(""));
@@ -228,7 +228,7 @@ class EntityCriteriaSupportTest {
 		
 		EntityCriteriaSupport<Country> testInstance = new EntityCriteriaSupport<Country>(mock(EntityMapping.class));
 		// we have to register the relation, that is expected by EntityGraphNode
-		RelationalEntityPersister<Country, Identifier<Long>> persisterMock = mock(RelationalEntityPersister.class);
+		ConfiguredRelationalPersister<Country, Identifier<Long>> persisterMock = mock(ConfiguredRelationalPersister.class);
 		when(persisterMock.getColumn(anyList())).thenReturn(nameColumn);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities), persisterMock);
 		testInstance.andMany(Country::getCities, City::getName, Operators.eq(""));

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.AccessorDefinition;
@@ -15,6 +16,7 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
@@ -38,21 +40,21 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * Implementation of {@link EntityCriteria}
  * 
  * @author Guillaume Mary
- * @see #registerRelation(ValueAccessPoint, RelationalEntityPersister) 
+ * @see #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister) 
  */
 public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, ConfiguredEntityCriteria {
 	
 	/** Delegate of the query : targets of the API methods */
 	private final Criteria criteria = new Criteria();
 	
-	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, RelationalEntityPersister)} */
+	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister)} */
 	private final EntityGraphNode<C> rootConfiguration;
 	
 	private boolean hasCollectionCriteria;
 	
 	/**
 	 * Base constructor to start configuring an instance.
-	 * Relations must be registered through {@link #registerRelation(ValueAccessPoint, RelationalEntityPersister)}.
+	 * Relations must be registered through {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister)}.
 	 * 
 	 * @param entityMapping entity mapping for direct and embedded properties
 	 */
@@ -81,7 +83,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, Co
 	 * @param relation the representation of the method that gives access to the value, shouldn't be a chain of accessor
 	 * @param persister the persister of related entities
 	 */
-	public void registerRelation(ValueAccessPoint<C> relation, RelationalEntityPersister<?, ?> persister) {
+	public void registerRelation(ValueAccessPoint<C> relation, ConfiguredRelationalPersister<?, ?> persister) {
 		rootConfiguration.registerRelation(relation, persister);
 	}
 	
@@ -155,9 +157,9 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, Co
 		/**
 		 * Owned properties mapping
 		 * Implementations based on {@link AccessorDefinition}. Can be a quite heavy comparison but we have no other
-		 * solution : propertyToColumn is build from entity mapping which can contains
-		 * {@link org.codefilarete.reflection.PropertyAccessor} (for exemple) whereas getColumn() will get
-		 * {@link AccessorByMethodReference} which are quite different but should be compared.
+		 * solution : propertyToColumn is built from entity mapping which can contains
+		 * - {@link org.codefilarete.reflection.PropertyAccessor} (for exemple) whereas getColumn() will get
+		 * - {@link AccessorByMethodReference} which are quite different but should be compared.
 		 */
 		private final Map<List<? extends ValueAccessPoint<?>>, Column> propertyToColumn = new HashedMap<List<? extends ValueAccessPoint<?>>, Column>() {
 			@Override
@@ -221,19 +223,24 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, Co
 			);
 		}
 		
+		public boolean hasCollectionProperty() {
+			return Stream.concat(propertyToColumn.keySet().stream().flatMap(Collection::stream), relations.keySet().stream())
+					.anyMatch(valueAccessPoint -> Iterable.class.isAssignableFrom(AccessorDefinition.giveDefinition(valueAccessPoint).getMemberType()));
+		}
+		
 		/**
 		 * Adds a {@link ClassMapping} as a relation of this node
 		 * 
 		 * @param relationProvider the accessor that gives access to a bean mapped by the {@link ClassMapping}
-		 * @param mappingStrategy a {@link ClassMapping}
+		 * @param persister a {@link ClassMapping}
 		 */
 		@VisibleForTesting
-		void registerRelation(ValueAccessPoint<C> relationProvider, RelationalEntityPersister<?, ?> mappingStrategy) {
+		void registerRelation(ValueAccessPoint<C> relationProvider, ConfiguredRelationalPersister<?, ?> persister) {
 			// the relation may already be present as a simple property because mapping strategy needs its column for insertion for example, but we
 			// won't need it anymore. Note that it should be removed when propertyToColumn is populated but we don't have the relation information
 			// at this time
 			propertyToColumn.remove(Arrays.asList(relationProvider));
-			relations.put(relationProvider, mappingStrategy);
+			relations.put(relationProvider, persister);
 		}
 		
 		/**

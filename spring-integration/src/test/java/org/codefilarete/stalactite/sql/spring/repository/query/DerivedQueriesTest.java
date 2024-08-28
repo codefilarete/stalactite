@@ -40,6 +40,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan.Filter;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -61,7 +63,12 @@ import static org.codefilarete.tool.function.Functions.chain;
 		DerivedQueriesTest.StalactiteRepositoryContextConfiguration.class
 })
 @Transactional
-@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.sql.spring.repository.query")
+@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.sql.spring.repository.query",
+		// because we have another repository in the same package, we filter them to keep only the appropriate one (it also checks that filtering works !)
+		includeFilters = @Filter(
+		type = FilterType.ASSIGNABLE_TYPE,
+		classes = DerivedQueriesRepository.class)
+)
 class DerivedQueriesTest {
 	
 	@Autowired
@@ -596,6 +603,71 @@ class DerivedQueriesTest {
 			
 			Set<Country> loadedCountries = derivedQueriesRepository.findByIdBetween(new PersistedIdentifier<>(40L), new PersistedIdentifier<>(50L));
 			assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+		}
+	}
+	
+	@Nested
+	class OrderByLimit {
+		
+		@Test
+		void orderBy() {
+			Country country1 = new Country(42);
+			country1.setName("Toto");
+			Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+			Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+			Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+			country1.setLanguages(asHashSet(frFr, enEn));
+			Person president1 = new Person(666);
+			president1.setName("me");
+			country1.setPresident(president1);
+			
+			Country country2 = new Country(43);
+			country2.setName("Tata");
+			Person president2 = new Person(237);
+			president2.setName("you");
+			country2.setPresident(president2);
+			country2.setLanguages(asHashSet(frFr, esEs));
+			
+			Vehicle vehicle = new Vehicle(1438L);
+			vehicle.setColor(new Color(123));
+			president1.setVehicle(vehicle);
+			
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByNameAsc(frFr.getCode());
+			assertThat(loadedCountries).containsExactly(country2, country1);
+			loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByNameDesc(frFr.getCode());
+			assertThat(loadedCountries).containsExactly(country1, country2);
+		}
+		
+		@Test
+		void limit_throwsExceptionBecauseOfCollectionPropertyMapping() {
+			Country country1 = new Country(42);
+			country1.setName("Toto");
+			Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+			Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+			Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+			country1.setLanguages(asHashSet(frFr, enEn));
+			Person president1 = new Person(666);
+			president1.setName("me");
+			country1.setPresident(president1);
+			
+			Country country2 = new Country(43);
+			country2.setName("Tata");
+			Person president2 = new Person(237);
+			president2.setName("you");
+			country2.setPresident(president2);
+			country2.setLanguages(asHashSet(frFr, esEs));
+			
+			Vehicle vehicle = new Vehicle(1438L);
+			vehicle.setColor(new Color(123));
+			president1.setVehicle(vehicle);
+			
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+			
+			assertThatCode(() -> derivedQueriesRepository.findFirstByLanguagesCodeIsOrderByNameAsc(frFr.getCode()))
+					.isInstanceOf(UnsupportedOperationException.class)
+					.hasMessage("Can't limit query when entity graph contains Collection relations");
 		}
 	}
 	

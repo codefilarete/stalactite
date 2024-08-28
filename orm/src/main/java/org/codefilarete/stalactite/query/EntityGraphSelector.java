@@ -18,8 +18,9 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.En
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.LimitAware;
+import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -47,7 +48,7 @@ import static org.codefilarete.stalactite.query.model.Operators.in;
  * hence it is based on {@link EntityJoinTree} to build the bean graph.
  * 
  * @author Guillaume Mary
- * @see EntitySelector#select(ConfiguredEntityCriteria)
+ * @see EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer)
  */
 public class EntityGraphSelector<C, I, T extends Table> implements EntitySelector<C, I> {
 	
@@ -75,7 +76,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
 	 */
 	@Override
-	public Set<C> select(ConfiguredEntityCriteria where) {
+	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
@@ -104,6 +105,8 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 				columns.forEach(query::select);
 				query.getWhereSurrogate().clear();
 				query.where(pk, in(ids));
+				orderByClauseConsumer.accept(query.orderBy());
+				limitAwareConsumer.accept(query.orderBy());
 				
 				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
@@ -111,6 +114,8 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		} else {
 			// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
 			// doesn't make a subset of the entity graph
+			orderByClauseConsumer.accept(query.orderBy());
+			limitAwareConsumer.accept(query.orderBy());
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
@@ -131,7 +136,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 									 Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator,
 									 CriteriaChain where,
 									 boolean distinct,
-									 Consumer<FluentOrderByClause> orderByClauseConsumer) {
+									 Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		query.getSelectSurrogate().setDistinct(distinct);

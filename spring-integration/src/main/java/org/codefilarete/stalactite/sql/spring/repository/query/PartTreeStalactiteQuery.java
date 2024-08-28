@@ -1,9 +1,13 @@
 package org.codefilarete.stalactite.sql.spring.repository.query;
 
+import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
+import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.repository.query.PartTreeJpaQuery;
+import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.repository.query.ParameterAccessor;
 import org.springframework.data.repository.query.Parameters;
 import org.springframework.data.repository.query.ParametersParameterAccessor;
@@ -12,6 +16,8 @@ import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.lang.Nullable;
+
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * {@link RepositoryQuery} for Stalactite. Inspired by {@link PartTreeJpaQuery}.
@@ -36,7 +42,17 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		
 		try {
 			this.query = new Query<>(entityPersister, tree);
-			
+			// Applying sort if necessary
+			if (tree.getSort().isSorted()) {
+				tree.getSort().iterator().forEachRemaining(order -> {
+					PropertyPath propertyPath = PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
+					AccessorChain<C, Object> orderProperty = query.convertToAccessorChain(propertyPath);
+					query.executableEntityQuery
+							.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC);
+				});
+			}
+			// Applying limit if necessary
+			nullable(tree.getMaxResults()).invoke(query.executableEntityQuery::limit);
 		} catch (RuntimeException o_O) {
 			throw new IllegalArgumentException(
 					String.format("Failed to create query for method %s! %s", method, o_O.getMessage()), o_O);
