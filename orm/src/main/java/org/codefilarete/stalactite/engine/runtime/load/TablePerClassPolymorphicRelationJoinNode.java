@@ -66,7 +66,7 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 	 * {@link Column}
 	 */
 	@Override
-	public Set<Selectable<Object>> getColumnsToSelect() {
+	public Set<Selectable<?>> getColumnsToSelect() {
 		return (Set) unionInFrom.getColumns();
 	}
 	

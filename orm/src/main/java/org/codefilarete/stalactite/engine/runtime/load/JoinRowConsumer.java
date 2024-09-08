@@ -3,7 +3,9 @@ package org.codefilarete.stalactite.engine.runtime.load;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
+import org.codefilarete.stalactite.sql.result.Row;
 
 /**
  * Marking interface for consumers of {@link org.codefilarete.stalactite.sql.result.Row} during result set inflating phase
@@ -16,6 +18,12 @@ import org.codefilarete.stalactite.sql.ddl.structure.Key;
  * calling sub-class-dedicated methods because there's no common point between them to make an abstract method.
  */
 interface JoinRowConsumer {
+	
+	interface RootJoinRowConsumer<C> extends JoinRowConsumer {
+		
+		C createRootInstance(Row row, TreeInflationContext context);
+		
+	}
 	
 	interface ForkJoinRowConsumer extends JoinRowConsumer {
 		

@@ -84,15 +84,14 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 										  Dialect dialect) {
 		super(mainPersister,
 				subEntitiesPersisters,
-				new JoinTablePolymorphismEntitySelector<>(subEntitiesPersisters,
-						mainPersister.getMainTable(),
-						mainPersister.getEntityJoinTree(),
+				new JoinTablePolymorphismEntitySelector<>(
+						mainPersister,
+						subEntitiesPersisters,
 						connectionProvider,
 						dialect));
 		Table<?> mainTable = mainPersister.<Table>getMapping().getTargetTable();
 		this.mainTablePrimaryKey = mainTable.getPrimaryKey();
 		
-//		this.subEntitiesPersisters = (Map<? extends Class<C>, ConfiguredRelationalPersister<C, I>>) subEntitiesPersisters;
 		Set<? extends Entry<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>>> subPersisterPerSubEntityType = subEntitiesPersisters.entrySet();
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure
@@ -104,6 +103,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		subEntitiesPersisters.forEach((type, persister) ->
 				// NB: we can't use copyRootJoinsTo(..) because persister is composed of one join to parent table (the one of mainPersister),
 				// since there's no manner to find it cleanly we have to use get(0), dirty thing ...
+//				mainPersister.getEntityJoinTree().addMergeJoin(ROOT_STRATEGY_NAME, new EntityMergerAdapter<>((EntityMapping) persister.getMapping()), mainPersister.getMainTable().getPrimaryKey(), persister.getMainTable().getPrimaryKey(), JoinType.OUTER)
 				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree().getRoot().getJoins().get(0))
 		);
 		

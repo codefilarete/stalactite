@@ -29,7 +29,10 @@ import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Guillaume Mary
@@ -142,7 +145,7 @@ class EntityTreeInflaterTest {
 		
 		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null, null);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
-		testInstance.foreachNode(new NodeVisitor(root) {
+		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
 			@Override
 			EntityCreationResult apply(ConsumerNode joinRowConsumer, Object parentEntity) {
 				List<Object> newStack = new ArrayList<>(Iterables.last(entityStackHistory, new ArrayList<>()));
@@ -157,12 +160,13 @@ class EntityTreeInflaterTest {
 		});
 		List<List<Object>> expectedEntityStackHistory = new ArrayList<>();
 		expectedEntityStackHistory.add(Arrays.asList(root));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity111));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity111, entity1));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity111, entity1, root));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity111, entity1, root, root));
+		expectedEntityStackHistory.add(Arrays.asList(root, root));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11, entity111));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11, entity111, entity1));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11, entity111, entity1, root));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11, entity111, entity1, root, root));
 		assertThat(entityStackHistory).isEqualTo(expectedEntityStackHistory);
 	}
 	
@@ -196,7 +200,7 @@ class EntityTreeInflaterTest {
 		
 		EntityTreeInflater<Root> testInstance = new EntityTreeInflater<>(consumerRoot, null, null);
 		List<List<Object>> entityStackHistory = new ArrayList<>();
-		testInstance.foreachNode(new NodeVisitor(root) {
+		testInstance.foreachNode(Arrays.asList(consumerRoot), new NodeVisitor(root) {
 			@Override
 			EntityCreationResult apply(ConsumerNode joinRowConsumer, Object parentEntity) {
 				List<Object> newStack = new ArrayList<>(Iterables.last(entityStackHistory, new ArrayList<>()));
@@ -211,11 +215,12 @@ class EntityTreeInflaterTest {
 		});
 		List<List<Object>> expectedEntityStackHistory = new ArrayList<>();
 		expectedEntityStackHistory.add(Arrays.asList(root));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity1));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity1, root));
-		expectedEntityStackHistory.add(Arrays.asList(root, entity1, entity11, entity1, root, root));
+		expectedEntityStackHistory.add(Arrays.asList(root, root));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11, entity1));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11, entity1, root));
+		expectedEntityStackHistory.add(Arrays.asList(root, root, entity1, entity11, entity1, root, root));
 		assertThat(entityStackHistory).isEqualTo(expectedEntityStackHistory);
 	}
 	

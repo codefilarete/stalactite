@@ -76,6 +76,11 @@ public class EntityJoinTree<C, I> {
 		this.joinIndex.put(ROOT_STRATEGY_NAME, root);
 	}
 	
+	public EntityJoinTree(Function<EntityJoinTree<C, I>, JoinRoot<C, I, ?>> joinRootCreator) {
+		this.root = joinRootCreator.apply(this);
+		this.joinIndex.put(ROOT_STRATEGY_NAME, root);
+	}
+	
 	public JoinRoot<C, I, ?> getRoot() {
 		return root;
 	}

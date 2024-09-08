@@ -481,7 +481,13 @@ public class ClassMapping<C, I, T extends Table<T>> implements EntityMapping<C, 
 	@Override
 	public RowTransformer<C> copyTransformerWithAliases(ColumnedRow columnedRow) {
 		ToBeanRowTransformer<C> mainRowTransformer = getRowTransformer().copyWithAliases(columnedRow);
-		return new RowTransformer<C>() {
+		return new AbstractTransformer<C>(getClassToPersist()) {
+			
+			@Override
+			public C newBeanInstance(Row row) {
+				return mainRowTransformer.newBeanInstance(row);
+			}
+			
 			@Override
 			public C transform(Row row) {
 				C result = mainRowTransformer.transform(row);

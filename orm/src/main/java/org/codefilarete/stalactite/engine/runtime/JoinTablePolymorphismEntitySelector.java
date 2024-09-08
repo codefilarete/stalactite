@@ -11,8 +11,13 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
+import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode;
+import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntitySelector;
@@ -37,34 +42,84 @@ import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+
 /**
  * @author Guillaume Mary
  */
 public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
 	
+	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	private final T mainTable;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
 	
-	public JoinTablePolymorphismEntitySelector(Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
-											   T mainTable,
-											   EntityJoinTree<C, I> entityJoinTree,
-											   ConnectionProvider connectionProvider,
-											   Dialect dialect) {
+	public JoinTablePolymorphismEntitySelector(
+			ConfiguredRelationalPersister<C, I> mainPersister,
+			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
+			ConnectionProvider connectionProvider,
+			Dialect dialect) {
+		this.mainPersister = mainPersister;
 		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
-		this.mainTable = mainTable;
-		this.entityJoinTree = entityJoinTree;
+		this.mainTable = (T) mainPersister.getMainTable();
+		this.entityJoinTree = mainPersister.getEntityJoinTree();
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
 	}
 	
 	@Override
 	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		if (where.hasCollectionCriteria()) {
+			return selectIn2Phases(where);
+		} else {
+			return selectWithSingleQuery(where);
+		}
+	}
+	
+	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where) {
+		SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree = new SingleLoadEntityJoinTree<>(
+				mainPersister,
+				new HashSet<>(persisterPerSubclass.values())
+		);
+		// sub entities persisters will be used to create entities
+		persisterPerSubclass.forEach((type, persister) -> singleLoadEntityJoinTree.addMergeJoin(
+				ROOT_STRATEGY_NAME,
+				new EntityMergerAdapter<>(persister.<T>getMapping()),
+				mainPersister.getMainTable().getPrimaryKey(),
+				persister.getMainTable().getPrimaryKey(),
+				JoinType.OUTER,
+				columnedRow -> {
+					// implemented to add newly created sub consumer to root one, therefore it will be able to create the right sub-instance
+					MergeJoinRowConsumer<C> result = new MergeJoinRowConsumer<>(persister.getMapping().copyTransformerWithAliases(columnedRow));
+					((JoinTableRootJoinNode) singleLoadEntityJoinTree.getRoot()).addSubPersister(persister, result, columnedRow);
+					return result;
+				}
+		));
+		// we project main persister tree to keep its relations
+		mainPersister.getEntityJoinTree().projectTo(singleLoadEntityJoinTree, ROOT_STRATEGY_NAME);
+
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
+		
+		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+			ResultSet resultSet = readOperation.execute();
+			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
+			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
+			return inflater.transform(() -> rowIterator, 50);
+		} catch (RuntimeException e) {
+			throw new SQLExecutionException(preparedSQL.getSQL(), e);
+		}
+	}
+	
+	private Set<C> selectIn2Phases(ConfiguredEntityCriteria where) {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		Query query = entityTreeQuery.getQuery();
 		persisterPerSubclass.values().forEach(subclassPersister -> {
 			query.getFrom().leftOuterJoin(mainTable.getPrimaryKey(), subclassPersister.getMainTable().getPrimaryKey());
 			((T) subclassPersister.getMainTable()).getPrimaryKey().getColumns().forEach(column -> {
@@ -166,6 +221,26 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
 			}
 			return alias;
+		}
+	}
+	
+	/**
+	 * Appropriate {@link EntityJoinTree} to instantiate {@link JoinTableRootJoinNode} as root in order to handle join-node polymorphism of root entity. 
+	 * @param <C>
+	 * @param <I>
+	 * @author Guillaume Mary
+	 */
+	private static class SingleLoadEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
+		
+		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister,
+															 Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters) {
+			super(tree -> new JoinTableRootJoinNode<>(
+					tree,
+					mainPersister,
+					subPersisters,
+					mainPersister.<T>getMapping().getSelectableColumns(),
+					(T) mainPersister.getMainTable())
+			);
 		}
 	}
 }

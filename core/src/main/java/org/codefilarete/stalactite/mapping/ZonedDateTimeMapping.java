@@ -171,7 +171,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 		
 		@Nullable
 		@Override
-		protected ZonedDateTime newBeanInstance(Row row) {
+		public ZonedDateTime newBeanInstance(Row row) {
 			return buildZonedDateTime(new ColumnedRow(), row);
 		}
 		
@@ -180,7 +180,7 @@ public class ZonedDateTimeMapping<T extends Table<T>> implements EmbeddedBeanMap
 			return new ZonedDateTimeToBeanRowTransformer() {
 				@Nullable
 				@Override
-				protected ZonedDateTime newBeanInstance(Row row) {
+				public ZonedDateTime newBeanInstance(Row row) {
 					return buildZonedDateTime(columnedRow, row);
 				}
 			};

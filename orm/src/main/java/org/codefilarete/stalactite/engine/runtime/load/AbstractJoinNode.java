@@ -30,7 +30,7 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	/** Indicates if the join must be an inner or (left) outer join */
 	private final JoinType joinType;
 	
-	private final Set<Selectable<Object>> columnsToSelect;
+	private final Set<Selectable<?>> columnsToSelect;
 	
 	private final JoinNode<T1> parent;
 	
@@ -101,8 +101,8 @@ public abstract class AbstractJoinNode<C, T1 extends Fromable, T2 extends Fromab
 	}
 	
 	@Override
-	public Set<Selectable<Object>> getColumnsToSelect() {
-		return (Set) columnsToSelect;
+	public Set<Selectable<?>> getColumnsToSelect() {
+		return columnsToSelect;
 	}
 	
 	@Override

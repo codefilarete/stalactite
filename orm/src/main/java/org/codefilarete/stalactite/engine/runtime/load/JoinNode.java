@@ -15,7 +15,7 @@ public interface JoinNode<T extends Fromable> {
 	
 	T getTable();
 	
-	Set<Selectable<Object>> getColumnsToSelect();
+	Set<Selectable<?>> getColumnsToSelect();
 	
 	@Nullable
 	String getTableAlias();

@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime.load;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,8 +16,9 @@ import java.util.function.Supplier;
 import org.apache.commons.collections4.map.LinkedMap;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.NodeVisitor.EntityCreationResult;
-import org.codefilarete.stalactite.engine.runtime.load.JoinRoot.JoinRootRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
+import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode.JoinTablePolymorphicJoinRootRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.PassiveJoinNode.PassiveJoinRowConsumer;
 import org.codefilarete.stalactite.engine.runtime.load.RelationJoinNode.BasicEntityCache;
@@ -33,6 +35,10 @@ import org.codefilarete.tool.ThreadLocals;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.IdentityMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Bean graph creator from database rows. Based on a tree of {@link ConsumerNode}s which wraps some {@link JoinRowConsumer}.
@@ -41,6 +47,8 @@ import org.codefilarete.tool.collection.IdentityMap;
  * @author Guillaume Mary
  */
 public class EntityTreeInflater<C> {
+	
+	public static final Logger LOGGER = LoggerFactory.getLogger(EntityTreeInflater.class);
 	
 	@SuppressWarnings("java:S5164" /* remove() is called by ThreadLocals.AutoRemoveThreadLocal */)
 	private static final ThreadLocal<EntityTreeInflater<?>.TreeInflationContext> CURRENT_CONTEXT = new ThreadLocal<>();
@@ -105,13 +113,15 @@ public class EntityTreeInflater<C> {
 		// Algorithm : we iterate depth by depth the tree structure of the joins
 		// We start by hierarchy root.
 		// We process entity of current depth, process the direct relations, then add those relations to depth iterator
-		Nullable<C> result = Nullable.nullable(((JoinRootRowConsumer<C, ?>) this.consumerRoot.consumer).createRootInstance(row, context));
-		
-		if (result.isPresent()) {
-			foreachNode(new NodeVisitor(result.get()) {
+		LOGGER.debug("Creating instance with " + this.consumerRoot.consumer);
+		EntityCreationResult rootEntityCreationResult = getRootEntityCreationResult(row, context);
+
+		if (rootEntityCreationResult != null) {
+			foreachNode(rootEntityCreationResult.consumers, new NodeVisitor(rootEntityCreationResult.entity) {
 				
 				@Override
 				public EntityCreationResult apply(ConsumerNode join, Object entity) {
+					LOGGER.debug("Consuming " + join.consumer + " on object " + entity);
 					// processing current depth
 					JoinRowConsumer consumer = join.getConsumer();
 					if (consumer instanceof PassiveJoinNode.PassiveJoinRowConsumer) {
@@ -150,13 +160,31 @@ public class EntityTreeInflater<C> {
 				}
 			});
 		}
-		return result;
+		return nullable(rootEntityCreationResult).map(c -> (C) c.entity);
+	}
+	
+	private EntityCreationResult getRootEntityCreationResult(Row row, EntityTreeInflater<?>.TreeInflationContext context) {
+		C rootInstance = ((RootJoinRowConsumer<C>) this.consumerRoot.consumer).createRootInstance(row, context);
+		if (rootInstance != null) {
+			if (consumerRoot.consumer instanceof JoinTableRootJoinNode.JoinTablePolymorphicJoinRootRowConsumer) {
+				// In case of join-table polymorphism we have to provide the tree branch on which id was found
+				// in order to let created entity filled with right consumers. "Wrong" branches serve no purpose. 
+				Set<JoinRowConsumer> deadBranches = ((JoinTablePolymorphicJoinRootRowConsumer) consumerRoot.consumer).giveExcludedConsumers();
+				ArrayList<ConsumerNode> consumerNodes = new ArrayList<>(consumerRoot.consumers);
+				consumerNodes.removeIf(consumer -> deadBranches.contains(consumer.consumer));
+				return new EntityCreationResult(rootInstance, consumerNodes);
+			} else {
+				return new EntityCreationResult(rootInstance, consumerRoot.consumers);
+			}
+		} else {
+			return null;
+		}
 	}
 	
 	@VisibleForTesting
-	void foreachNode(NodeVisitor nodeVisitor) {
+	void foreachNode(Collection<ConsumerNode> seeds, NodeVisitor nodeVisitor) {
 		Queue<ConsumerNode> joinNodeStack = Collections.newLifoQueue();
-		joinNodeStack.addAll(this.consumerRoot.consumers);
+		joinNodeStack.addAll(seeds);
 		// Maintaining entities that will be given to each node : they are entities produced by parent node
 		Map<ConsumerNode, Object> entityPerConsumer = new HashMap<>(10);
 		joinNodeStack.forEach(node -> entityPerConsumer.put(node, nodeVisitor.entityRoot));

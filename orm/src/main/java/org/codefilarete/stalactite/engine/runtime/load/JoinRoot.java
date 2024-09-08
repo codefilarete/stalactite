@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater.TreeInflationContext;
+import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.RootJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
@@ -34,19 +35,31 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 	@Nullable
 	private String tableAlias;
 	
+	@Nullable
+	private EntityTreeJoinNodeConsumptionListener<C> consumptionListener;
+	
 	public JoinRoot(EntityJoinTree<C, I> tree, EntityInflater<C, I> entityInflater, T table) {
 		this.tree = tree;
 		this.entityInflater = entityInflater;
 		this.table = table;
 	}
 	
+	public EntityInflater<C, I> getEntityInflater() {
+		return entityInflater;
+	}
+	
+	@Nullable
+	EntityTreeJoinNodeConsumptionListener<C> getConsumptionListener() {
+		return consumptionListener;
+	}
+	
+	public void setConsumptionListener(@Nullable EntityTreeJoinNodeConsumptionListener<C> consumptionListener) {
+		this.consumptionListener = consumptionListener;
+	}
+	
 	@Override
 	public EntityJoinTree<C, I> getTree() {
 		return tree;
-	}
-	
-	public EntityInflater<C, I> getEntityInflater() {
-		return entityInflater;
 	}
 	
 	@Override
@@ -55,8 +68,8 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 	}
 	
 	@Override
-	public Set<Selectable<Object>> getColumnsToSelect() {
-		return (Set) getEntityInflater().getSelectableColumns();
+	public Set<Selectable<?>> getColumnsToSelect() {
+		return entityInflater.getSelectableColumns();
 	}
 	
 	@Override
@@ -76,11 +89,11 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 	}
 	
 	@Override
-	public JoinRootRowConsumer<C, I> toConsumer(ColumnedRow columnedRow) {
+	public RootJoinRowConsumer<C> toConsumer(ColumnedRow columnedRow) {
 		return new JoinRootRowConsumer<>(entityInflater, columnedRow);
 	}
 	
-	static class JoinRootRowConsumer<C, I> implements JoinRowConsumer {
+	static class JoinRootRowConsumer<C, I> implements RootJoinRowConsumer<C> {
 		
 		private final Class<C> entityType;
 		
@@ -98,7 +111,8 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 			this.columnedRow = columnedRow;
 		}
 		
-		C createRootInstance(Row row, TreeInflationContext context) {
+		@Override
+		public C createRootInstance(Row row, TreeInflationContext context) {
 			Object identifier = identifierDecoder.apply(row, columnedRow);
 			if (identifier == null) {
 				return null;
@@ -106,5 +120,5 @@ public class JoinRoot<C, I, T extends Fromable> implements JoinNode<T> {
 				return (C) context.giveEntityFromCache(entityType, identifier, () -> entityBuilder.transform(row));
 			}
 		}
-	} 
+	}
 }
