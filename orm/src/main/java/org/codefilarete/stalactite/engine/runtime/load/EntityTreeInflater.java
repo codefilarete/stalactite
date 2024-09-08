@@ -89,7 +89,7 @@ public class EntityTreeInflater<C> {
 	 *
 	 * @param rows rows (coming from database select) to be read to build beans graph
 	 * @param resultSize expected result size, only for resulting list optimization
-	 * @return a list of root beans, built from given rows by asking internal strategy joins to instantiate and complete them
+	 * @return a set of root beans, built from given rows by asking internal strategy joins to instantiate and complete them
 	 */
 	public Set<C> transform(Iterable<Row> rows, int resultSize) {
 		return ThreadLocals.doWithThreadLocal(CURRENT_CONTEXT, () -> this.new TreeInflationContext(), (Function<EntityTreeInflater<?>.TreeInflationContext, Set<C>>) context ->
@@ -155,7 +155,7 @@ public class EntityTreeInflater<C> {
 								+ Reflections.toString(PassiveJoinRowConsumer.class)
 								+ ", " + Reflections.toString(MergeJoinRowConsumer.class)
 								+ " and " + Reflections.toString(RelationJoinRowConsumer.class) + " are handled"
-								+ ", not " + Reflections.toString(join.getClass()));
+								+ ", not " + (consumer == null ? "null" : Reflections.toString(consumer.getClass())));
 					}
 				}
 			});

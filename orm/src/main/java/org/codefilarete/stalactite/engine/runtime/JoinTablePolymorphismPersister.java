@@ -388,9 +388,9 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			@Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
 		
 		Holder<JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>> createdJoinHolder = new Holder<>();
-		String relationJoinName = entityJoinTree.<T1>addJoin(leftStrategyName, parent -> {
+		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {
 			JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID> polymorphicRelationJoinNode = new JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>(
-					(JoinNode<T1>) (JoinNode)parent,
+					(JoinNode<T1>) (JoinNode) parent,
 					leftJoinColumn,
 					rightJoinColumn,
 					JoinType.OUTER,

@@ -15,7 +15,8 @@ import static org.codefilarete.tool.Nullable.nullable;
 /**
  * @param <SRC> type of input (left/source entities)
  * @param <TRGT> type of output (right/target entities)
- * @param <SRCID> identifier type of target entities
+ * @param <SRCID> identifier type of source entities
+ * @param <TRGTID>> identifier type of target entities
  * @author Guillaume Mary
  */
 public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {

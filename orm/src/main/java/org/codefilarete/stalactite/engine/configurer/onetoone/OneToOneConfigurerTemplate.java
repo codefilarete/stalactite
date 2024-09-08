@@ -25,6 +25,18 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
 
+/**
+ * Parent class for {@link OneToOneOwnedBySourceConfigurer} and {@link OneToOneOwnedByTargetConfigurer} to share similar behavior.
+ * 
+ * @param <SRC> type of input (left/source entities)
+ * @param <TRGT> type of output (right/target entities)
+ * @param <SRCID> identifier type of source entities
+ * @param <TRGTID> identifier type of target entities
+ * @param <LEFTTABLE> left (source entity) table type
+ * @param <RIGHTTABLE> right (target entity) table type
+ * @param <JOINID> joining columns type
+ * @author Guillaume Mary
+ */
 public abstract class OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID> {
 	
 	protected final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;

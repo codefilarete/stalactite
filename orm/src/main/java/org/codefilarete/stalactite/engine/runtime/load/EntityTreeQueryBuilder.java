@@ -202,10 +202,15 @@ public class EntityTreeQueryBuilder<C> {
 		}
 		
 		private <T1 extends Fromable> void addColumnsToSelect(JoinNode<T1> joinNode, String tableAlias) {
-			Set<Selectable<Object>> selectableColumns = joinNode.getColumnsToSelect();
+			Set<Selectable<?>> selectableColumns = joinNode.getColumnsToSelect();
 			for (Selectable<?> selectableColumn : selectableColumns) {
+				Fromable nodeTable = tablePerJoinNode.get(joinNode);
+				Selectable columnClone = nodeTable.findColumn(selectableColumn.getExpression());
+				if (columnClone == null) {
+					throw new IllegalArgumentException("Column '" + selectableColumn.getExpression() + "' not found in table "
+							+ nodeTable.getAbsoluteName());
+				}
 				String alias = aliasBuilder.buildColumnAlias(tableAlias, selectableColumn);
-				Selectable columnClone = tablePerJoinNode.get(joinNode).findColumn(selectableColumn.getExpression());
 				query.select(columnClone, alias);
 				// we link the column alias to the binder so it will be easy to read the ResultSet
 				ResultSetReader<?> reader;

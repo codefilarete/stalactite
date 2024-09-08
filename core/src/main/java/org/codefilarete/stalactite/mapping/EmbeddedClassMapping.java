@@ -353,11 +353,11 @@ public class EmbeddedClassMapping<C, T extends Table<T>> implements EmbeddedBean
 					propertyValue = converter.convert(propertyValue);
 				}
 				beanValues.put(columnFieldEntry, propertyValue);
-				boolean valueIsDefault = EmbeddedClassMapping.this.defaultValueDeterminer.isDefaultValue(
-						new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
 				if (columnFieldEntry.getValue() instanceof AccessorChainMutator) {
 					Accessor valuesAreDefaultOnesKey = (Accessor) ((AccessorChainMutator) columnFieldEntry.getValue()).getAccessors().get(0);
 					MutableBoolean mutableBoolean = valuesAreDefaultOnes.computeIfAbsent(valuesAreDefaultOnesKey, k -> new MutableBoolean(true));
+					boolean valueIsDefault = EmbeddedClassMapping.this.defaultValueDeterminer.isDefaultValue(
+							new Duo<>(columnFieldEntry.getKey(), columnFieldEntry.getValue()), propertyValue);
 					mutableBoolean.and(valueIsDefault);
 				}
 			}

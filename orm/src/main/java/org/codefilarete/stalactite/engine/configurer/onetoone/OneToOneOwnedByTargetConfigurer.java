@@ -32,13 +32,12 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 
 /**
- * 
- * @param <SRC> type of source entities (left side of one-to-one)
- * @param <TRGT> type of target entities (right side of one-to-one)
- * @param <SRCID> type of source entities identifier
- * @param <TRGTID> type of target entities identifier
- * @param <LEFTTABLE> type of source entities table
- * @param <RIGHTTABLE> type of target entities table
+ * @param <SRC> type of input (left/source entities)
+ * @param <TRGT> type of output (right/target entities)
+ * @param <SRCID> identifier type of source entities
+ * @param <TRGTID> identifier type of target entities
+ * @param <LEFTTABLE> left (source entity) table type
+ * @param <RIGHTTABLE> right (target entity) table type
  * @author Guillaume Mary
  */
 class OneToOneOwnedByTargetConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>>

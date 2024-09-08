@@ -25,6 +25,16 @@ import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
+/**
+ * @param <SRC> type of input (left/source entities)
+ * @param <TRGT> type of output (right/target entities)
+ * @param <SRCID> identifier type of source entities
+ * @param <TRGTID> identifier type of target entities
+ * @param <LEFTTABLE> left (source entity) table type
+ * @param <RIGHTTABLE> right (target entity) table type
+ * @param <JOINID> joining columns type
+ * @author Guillaume Mary
+ */
 class OneToOneOwnedBySourceConfigurer<SRC, TRGT, SRCID, TRGTID, LEFTTABLE extends Table<LEFTTABLE>, RIGHTTABLE extends Table<RIGHTTABLE>, JOINID>
 		extends OneToOneConfigurerTemplate<SRC, TRGT, SRCID, TRGTID, LEFTTABLE, RIGHTTABLE, JOINID> {
 	
