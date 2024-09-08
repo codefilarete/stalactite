@@ -318,7 +318,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 			
 			
 			// adding second phase loader
-			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 			
 			return createdJoinNodeName;
 		} else {
@@ -345,21 +345,6 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 																							  Set<? extends Column<T2, Object>> selectableColumns, boolean optional,
 																							  boolean loadSeparately) {
 		
-		PrimaryKey<T, ?> mainTablePK = mainPersister.<T>getMapping().getTargetTable().getPrimaryKey();
-		Map<ConfiguredRelationalPersister, Key> joinColumnPerSubPersister = new HashMap<>();
-		if (rightColumn.equals(mainTablePK)) {
-			// join is made on primary key => case is association table
-			subEntitiesPersisters.forEach((c, subPersister) -> {
-				joinColumnPerSubPersister.put(subPersister, subPersister.getMapping().getTargetTable().getPrimaryKey());
-			});
-		} else {
-			// join is made on a foreign key => case of relation owned by reverse side
-			subEntitiesPersisters.forEach((c, subPersister) -> {
-				KeyBuilder<?, Object> reverseKey = projectPrimaryKey(rightColumn, subPersister);
-				joinColumnPerSubPersister.put(subPersister, reverseKey.build());
-			});
-		}
-		
 		if (loadSeparately) {
 			// Subgraph loading is made in 2 phases (load ids, then entities in a second SQL request done by load listener)
 			SingleTableFirstPhaseRelationLoader singleTableFirstPhaseRelationLoader = new SingleTableFirstPhaseRelationLoader(mainPersister.getMapping().getIdMapping(),
@@ -371,7 +356,7 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 					leftColumn, rightColumn, JoinType.OUTER);
 			
 			// adding second phase loader
-			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 			
 			return createdJoinNodeName;
 		} else {

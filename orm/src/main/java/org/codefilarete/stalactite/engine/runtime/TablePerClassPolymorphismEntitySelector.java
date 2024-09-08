@@ -189,68 +189,76 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		// we must load the graph in 2 phases : a first lookup for ids matching the result, and a second phase that loads the entity graph
 		// according to the ids
 		if (where.hasCollectionCriteria()) {
-			EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(phasedLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-			Query query = entityTreeQuery.getQuery();
-			
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
-			IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
-			originalColumnsToClones.putAll(columnClones);
-			originalColumnsToClones.putAll(phasedLoadEntityJoinTree.getMainColumnToPseudoColumn());
-			// since criteria is passed to union subqueries, we don't need it into the entire query
-			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
-			
-			// First phase : selecting ids (made by clearing selected elements for performance issue)
-			query.getSelectSurrogate().clear();
-			mainTable.getPrimaryKey().getColumns().forEach(pkColumn -> {
-				Selectable<?> column = mainEntityJoinTree.getRoot().getTable().findColumn(pkColumn.getName());
-				query.select(column, pkColumn.getName());
-			});
-			query.select(DISCRIMINATOR_COLUMN);
-			
-			// selecting ids and their entity type
-			Map<String, ResultSetReader> columnReaders = new HashMap<>();
-			Map<Selectable<?>, String> aliases = query.getAliases();
-			aliases.forEach((selectable, s) -> {
-				ResultSetReader<?> reader;
-				if (selectable instanceof Column) {
-					reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
-				} else {
-					reader = dialect.getColumnBinderRegistry().getReader(selectable.getJavaType());
-				}
-				columnReaders.put(s, reader);
-			});
-			// Faking that we put the main table column into the query to let external user look for main table Columns,
-			// else it's very difficult for them to look through Column object since query contains pseudo column in select due to union usage.
-			mainTable.getColumns().forEach(column -> {
-				aliases.put(column, column.getName());
-			});
-			columnReaders.put(DISCRIMINATOR_ALIAS, dialect.getColumnBinderRegistry().getBinder(String.class));
-			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-			
-			Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
-			
-			// Second phase : selecting entities by delegating it to each subclass loader
-			// It will generate 1 query per found subclass, made as this :
-			// - to avoid superfluous join and complex query in case of relation
-			// - make it simpler to implement
-			Set<C> result = new HashSet<>();
-			idsPerSubclass.forEach((subClass, subEntityIds) -> result.addAll(persisterPerSubclass.get(subClass).select(subEntityIds)));
-			return result;
+			return selectIn2Phases(where);
 		} else {
-			// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
-			// doesn't make a subset of the entity graph
-			EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-			Query query = entityTreeQuery.getQuery();
-			
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
-			IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
-			originalColumnsToClones.putAll(columnClones);
-			originalColumnsToClones.putAll(singleLoadEntityJoinTree.getMainColumnToPseudoColumn());
-			originalColumnsToClones.put(DISCRIMINATOR_COLUMN, DISCRIMINATOR_COLUMN);
-			// since criteria is passed to union subqueries, we don't need it into the entire query
-			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
-			return new InternalExecutor(entityTreeQuery).execute(sqlQueryBuilder.toPreparedSQL());
+			return selectWithSingleQuery(where);
 		}
+	}
+	
+	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where) {
+		// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
+		// doesn't make a subset of the entity graph
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		Query query = entityTreeQuery.getQuery();
+		
+		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
+		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
+		originalColumnsToClones.putAll(columnClones);
+		originalColumnsToClones.putAll(singleLoadEntityJoinTree.getMainColumnToPseudoColumn());
+		originalColumnsToClones.put(DISCRIMINATOR_COLUMN, DISCRIMINATOR_COLUMN);
+		// since criteria is passed to union subqueries, we don't need it into the entire query
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
+		return new InternalExecutor(entityTreeQuery).execute(sqlQueryBuilder.toPreparedSQL());
+	}
+	
+	private Set<C> selectIn2Phases(ConfiguredEntityCriteria where) {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(phasedLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		Query query = entityTreeQuery.getQuery();
+		
+		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
+		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
+		originalColumnsToClones.putAll(columnClones);
+		originalColumnsToClones.putAll(phasedLoadEntityJoinTree.getMainColumnToPseudoColumn());
+		// since criteria is passed to union subqueries, we don't need it into the entire query
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
+		
+		// First phase : selecting ids (made by clearing selected elements for performance issue)
+		query.getSelectSurrogate().clear();
+		mainTable.getPrimaryKey().getColumns().forEach(pkColumn -> {
+			Selectable<?> column = mainEntityJoinTree.getRoot().getTable().findColumn(pkColumn.getName());
+			query.select(column, pkColumn.getName());
+		});
+		query.select(DISCRIMINATOR_COLUMN);
+		
+		// selecting ids and their entity type
+		Map<String, ResultSetReader> columnReaders = new HashMap<>();
+		Map<Selectable<?>, String> aliases = query.getAliases();
+		aliases.forEach((selectable, s) -> {
+			ResultSetReader<?> reader;
+			if (selectable instanceof Column) {
+				reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
+			} else {
+				reader = dialect.getColumnBinderRegistry().getReader(selectable.getJavaType());
+			}
+			columnReaders.put(s, reader);
+		});
+		// Faking that we put the main table column into the query to let external user look for main table Columns,
+		// else it's very difficult for them to look through Column object since query contains pseudo column in select due to union usage.
+		mainTable.getColumns().forEach(column -> {
+			aliases.put(column, column.getName());
+		});
+		columnReaders.put(DISCRIMINATOR_ALIAS, dialect.getColumnBinderRegistry().getBinder(String.class));
+		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		
+		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
+		
+		// Second phase : selecting entities by delegating it to each subclass loader
+		// It will generate 1 query per found subclass, made as this :
+		// - to avoid superfluous join and complex query in case of relation
+		// - make it simpler to implement
+		Set<C> result = new HashSet<>();
+		idsPerSubclass.forEach((subClass, subEntityIds) -> result.addAll(persisterPerSubclass.get(subClass).select(subEntityIds)));
+		return result;
 	}
 	
 	private Map<Class, Set<I>> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
