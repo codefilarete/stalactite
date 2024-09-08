@@ -24,7 +24,6 @@ import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
@@ -47,7 +46,6 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
-import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
@@ -83,11 +81,10 @@ public class SingleTablePolymorphismPersister<C, I, T extends Table<T>, DTYPE> e
 											SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
 		super(mainPersister,
 				subEntitiesPersisters,
-				new SingleTablePolymorphismEntitySelector<>(mainPersister.getMapping().getIdMapping().getIdentifierAssembler(),
+				new SingleTablePolymorphismEntitySelector<>(mainPersister,
 						subEntitiesPersisters,
 						discriminatorColumn,
 						polymorphismPolicy,
-						mainPersister.getEntityJoinTree(),
 						connectionProvider,
 						dialect));
 		this.mainPersister = mainPersister;

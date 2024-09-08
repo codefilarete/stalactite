@@ -11,8 +11,11 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
+import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode;
+import org.codefilarete.stalactite.engine.runtime.load.SingleTableRootJoinNode;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
@@ -40,6 +43,8 @@ import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
+import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
+
 /**
  * @author Guillaume Mary
  */
@@ -50,30 +55,69 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 	
 	private final IdentifierAssembler<I, T> identifierAssembler;
 	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
-	private final Column discriminatorColumn;
-	private final SingleTablePolymorphism polymorphismPolicy;
+	private final Column<T, DTYPE> discriminatorColumn;
+	private final SingleTablePolymorphism<C, DTYPE> polymorphismPolicy;
 	private final EntityJoinTree<C, I> entityJoinTree;
 	private final ConnectionProvider connectionProvider;
 	private final Dialect dialect;
+	private final EntityJoinTree<C, I> singleLoadEntityJoinTree;
 	
-	public SingleTablePolymorphismEntitySelector(IdentifierAssembler<I, T> identifierAssembler,
+	public SingleTablePolymorphismEntitySelector(ConfiguredRelationalPersister<C, I> mainPersister,
 												 Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 												 Column<T, DTYPE> discriminatorColumn,
-												 SingleTablePolymorphism polymorphismPolicy,
-												 EntityJoinTree<C, I> mainEntityJoinTree,
+												 SingleTablePolymorphism<C, DTYPE> polymorphismPolicy,
 												 ConnectionProvider connectionProvider,
 												 Dialect dialect) {
-		this.identifierAssembler = identifierAssembler;
+		this.identifierAssembler = mainPersister.getMapping().getIdMapping().getIdentifierAssembler();
 		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
 		this.discriminatorColumn = discriminatorColumn;
 		this.polymorphismPolicy = polymorphismPolicy;
-		this.entityJoinTree = mainEntityJoinTree;
+		this.entityJoinTree = mainPersister.getEntityJoinTree();
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainPersister, persisterPerSubclass);
+	}
+	
+	private SingleLoadEntityJoinTree<C, I, DTYPE> buildSingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister, Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass) {
+		SingleLoadEntityJoinTree<C, I, DTYPE> result = new SingleLoadEntityJoinTree<>(
+				mainPersister,
+				new HashSet<>(persisterPerSubclass.values()),
+				discriminatorColumn,
+				polymorphismPolicy
+		);
+		// we project main persister tree to keep its relations
+		mainPersister.getEntityJoinTree().projectTo(result, ROOT_STRATEGY_NAME);
+		return result;
 	}
 	
 	@Override
 	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+		if (where.hasCollectionCriteria()) {
+			return selectIn2Phases(where);
+		} else {
+			return selectWithSingleQuery(where);
+		}
+	}
+	
+	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where) {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+		Query query = entityTreeQuery.getQuery();
+		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
+		
+		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+			ResultSet resultSet = readOperation.execute();
+			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
+			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
+			return inflater.transform(() -> rowIterator, 50);
+		} catch (RuntimeException e) {
+			throw new SQLExecutionException(preparedSQL.getSQL(), e);
+		}
+	}
+	
+	private Set<C> selectIn2Phases(ConfiguredEntityCriteria where) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
@@ -170,6 +214,28 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
 			}
 			return alias;
+		}
+	}
+	
+	/**
+	 * Appropriate {@link EntityJoinTree} to instantiate {@link JoinTableRootJoinNode} as root in order to handle join-node polymorphism of root entity. 
+	 * @param <C>
+	 * @param <I>
+	 * @author Guillaume Mary
+	 */
+	private static class SingleLoadEntityJoinTree<C, I, DTYPE> extends EntityJoinTree<C, I> {
+		
+		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister,
+															 Set<? extends ConfiguredRelationalPersister<C, I>> subPersisters,
+															 Column<T, DTYPE> discriminatorColumn,
+															 SingleTablePolymorphism<C, DTYPE> polymorphismPolicy) {
+			super(self -> new SingleTableRootJoinNode<>(
+					self,
+					mainPersister,
+					subPersisters,
+					discriminatorColumn,
+					polymorphismPolicy)
+			);
 		}
 	}
 }
