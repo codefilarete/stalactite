@@ -117,7 +117,7 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 			Duo<I, SubPersisterConsumer<C, I>> subInflater = findSubInflater(row);
 			C result;
 			if (subInflater == null) {
-				CURRENTLY_FOUND_CONSUMER.set(null);
+				CURRENTLY_FOUND_CONSUMER.remove();
 				result = null;
 			} else {
 				CURRENTLY_FOUND_CONSUMER.set(subInflater.getRight().subPropertiesApplier);
@@ -150,8 +150,9 @@ public class JoinTableRootJoinNode<C, I, T extends Table<T>> extends JoinRoot<C,
 		 * @return the consumers that shouldn't be taken into account in next tree iteration
 		 */
 		public Set<JoinRowConsumer> giveExcludedConsumers() {
-			return subConsumers.stream().map(ciSubPersisterConsumer -> ciSubPersisterConsumer.subPropertiesApplier)
-					.filter(cMergeJoinRowConsumer -> CURRENTLY_FOUND_CONSUMER.get() != cMergeJoinRowConsumer)
+			return subConsumers.stream()
+					.map(subConsumer -> subConsumer.subPropertiesApplier)
+					.filter(consumerPawn -> CURRENTLY_FOUND_CONSUMER.get() != consumerPawn)
 					.collect(Collectors.toSet());
 		}
 	}
