@@ -567,4 +567,65 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		Set<Country> loadedCountries = derivedQueriesRepository.findByIdBetween(new PersistedIdentifier<>(40L), new PersistedIdentifier<>(50L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 	}
+	
+	@Test
+	void orderBy() {
+		Country country1 = new Republic(42);
+		country1.setName("Toto");
+		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+		country1.setLanguages(asHashSet(frFr, enEn));
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		
+		Country country2 = new Republic(43);
+		country2.setName("Tata");
+		Person president2 = new Person(237);
+		president2.setName("you");
+		country2.setPresident(president2);
+		country2.setLanguages(asHashSet(frFr, esEs));
+		
+		Vehicle vehicle = new Vehicle(1438L);
+		vehicle.setColor(new Color(123));
+		president1.setVehicle(vehicle);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		Set<Country> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByNameAsc(frFr.getCode());
+		assertThat(loadedCountries).containsExactly(country2, country1);
+		loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByNameDesc(frFr.getCode());
+		assertThat(loadedCountries).containsExactly(country1, country2);
+	}
+	
+	@Test
+	void limit_throwsExceptionBecauseOfCollectionPropertyMapping() {
+		Country country1 = new Republic(42);
+		country1.setName("Toto");
+		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+		country1.setLanguages(asHashSet(frFr, enEn));
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		
+		Country country2 = new Republic(43);
+		country2.setName("Tata");
+		Person president2 = new Person(237);
+		president2.setName("you");
+		country2.setPresident(president2);
+		country2.setLanguages(asHashSet(frFr, esEs));
+		
+		Vehicle vehicle = new Vehicle(1438L);
+		vehicle.setColor(new Color(123));
+		president1.setVehicle(vehicle);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		assertThatCode(() -> derivedQueriesRepository.findFirstByLanguagesCodeIs(frFr.getCode()))
+				.isInstanceOf(UnsupportedOperationException.class)
+				.hasMessage("Can't limit query when entity graph contains Collection relations");
+	}
 }

@@ -95,13 +95,15 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 		if (where.hasCollectionCriteria()) {
 			return selectIn2Phases(where);
 		} else {
-			return selectWithSingleQuery(where);
+			return selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
 		}
 	}
 	
-	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where) {
+	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
+		orderByClauseConsumer.accept(query.orderBy());
+		limitAwareConsumer.accept(query.orderBy());
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		

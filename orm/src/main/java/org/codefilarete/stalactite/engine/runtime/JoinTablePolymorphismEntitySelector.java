@@ -96,15 +96,17 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 	@Override
 	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		if (where.hasCollectionCriteria()) {
-			return selectIn2Phases(where);
+			return selectIn2Phases(where, orderByClauseConsumer, limitAwareConsumer);
 		} else {
-			return selectWithSingleQuery(where);
+			return selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
 		}
 	}
 	
-	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where) {
+	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
+		orderByClauseConsumer.accept(query.orderBy());
+		limitAwareConsumer.accept(query.orderBy());
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		
@@ -120,7 +122,7 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 		}
 	}
 	
-	private Set<C> selectIn2Phases(ConfiguredEntityCriteria where) {
+	private Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		persisterPerSubclass.values().forEach(subclassPersister -> {
@@ -137,6 +139,8 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 		Map<Selectable<?>, String> aliases = query.getAliases();
 		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		orderByClauseConsumer.accept(query.orderBy());
+		
 		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 		
 		Set<C> result = new HashSet<>();

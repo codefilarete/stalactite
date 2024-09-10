@@ -665,7 +665,7 @@ class DerivedQueriesTest {
 			
 			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 			
-			assertThatCode(() -> derivedQueriesRepository.findFirstByLanguagesCodeIsOrderByNameAsc(frFr.getCode()))
+			assertThatCode(() -> derivedQueriesRepository.findFirstByLanguagesCodeIs(frFr.getCode()))
 					.isInstanceOf(UnsupportedOperationException.class)
 					.hasMessage("Can't limit query when entity graph contains Collection relations");
 		}

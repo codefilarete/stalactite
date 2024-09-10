@@ -191,15 +191,17 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		if (where.hasCollectionCriteria()) {
 			return selectIn2Phases(where);
 		} else {
-			return selectWithSingleQuery(where);
+			return selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
 		}
 	}
 	
-	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where) {
+	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
 		// doesn't make a subset of the entity graph
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
+		orderByClauseConsumer.accept(query.orderBy());
+		limitAwareConsumer.accept(query.orderBy());
 		
 		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
 		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());

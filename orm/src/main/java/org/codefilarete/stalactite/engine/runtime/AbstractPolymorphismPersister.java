@@ -1,15 +1,23 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.Accessor;
+import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.MutatorByMethodReference;
+import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
@@ -25,6 +33,8 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
+import org.codefilarete.tool.Nullable;
+import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
@@ -93,6 +103,11 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	
 	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport, ExecutableEntityQuerySupport<C> querySugarSupport) {
 		return (Accumulator<C, Set<C>, R> accumulator) -> {
+			if (querySugarSupport.getLimit() != null) {
+				if (criteriaSupport.getRootConfiguration().hasCollectionProperty()) {
+					throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
+				}
+			}
 			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
 					entitySelectExecutor.select(
 							localCriteriaSupport,
@@ -105,9 +120,73 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 							},
 							limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit))
 			);
-			return accumulator.collect(result);
+			if (!querySugarSupport.orderBy.isEmpty()) {
+				// Note that we must wrap this creation in an if statement due to that entities don't implement Comparable, we avoid a
+				// ClassCastException of the addAll(..) operation
+				TreeSet<C> sortedResult = new TreeSet<>(buildComparator(querySugarSupport.orderBy));
+				sortedResult.addAll(result);
+				return accumulator.collect(sortedResult);
+			} else {
+				return accumulator.collect(result);
+			}
 		};
 	}
+	
+	@VisibleForTesting
+	static <C> Comparator<C> buildComparator(KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy) {
+		List<Duo<AccessorChain<Object, Comparable>, Order>> orderByAccessors = orderBy.stream().map(duo -> {
+			List<? extends ValueAccessPoint<?>> valueAccessPoints = duo.getLeft();
+			AccessorChain<Object, Comparable> localResult;
+			if (valueAccessPoints.size() == 1) {
+				ValueAccessPoint<?> valueAccessPoint = valueAccessPoints.get(0);
+				if (valueAccessPoint instanceof Accessor) {
+					localResult = new AccessorChain<>((Accessor<?, Comparable>) valueAccessPoint);
+				} else {
+					AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
+					localResult = new AccessorChain<>(Accessors.accessor(accessorDefinition.getDeclaringClass(), accessorDefinition.getName(), accessorDefinition.getMemberType()));
+				}
+			} else {
+				localResult = new AccessorChain<>(valueAccessPoints.stream().map(AbstractPolymorphismPersister::toAccessor).collect(Collectors.toList()));
+			}
+			localResult.setNullValueHandler(AccessorChain.RETURN_NULL);
+			return new Duo<>(localResult, duo.getRight());
+		}).collect(Collectors.toList());
+		Nullable<Comparator> result = nullable((Comparator) null);
+		orderByAccessors.forEach(orderByPawn -> {
+			Comparator comparator = Comparator.comparing(orderByPawn.getLeft()::get, Comparator.nullsLast(Comparator.naturalOrder()));
+			if (orderByPawn.getRight() == Order.DESC) {
+				comparator = comparator.reversed();
+			}
+			if (result.isPresent()) {
+				Comparator finalComparator = comparator;
+				result.map(c -> c.thenComparing(finalComparator));
+			} else {
+				result.set(comparator);
+			}
+		});
+		return result.get();
+	}
+	
+	
+	/**
+	 * Gives the {@link Accessor} underneath given {@link ValueAccessPoint}, either being itself or its mirror if it's a {@link ReversibleMutator}
+	 * @param valueAccessPoint a property accessor from which we need an {@link Accessor} 
+	 * @return given {@link ValueAccessPoint} as an {@link Accessor}
+	 * @param <C> declaring class type
+	 * @param <T> property type
+	 */
+	private static <C, T> Accessor<C, T> toAccessor(ValueAccessPoint<C> valueAccessPoint) {
+		if (valueAccessPoint instanceof Accessor) {
+			return (Accessor<C, T>) valueAccessPoint;
+		} else if (valueAccessPoint instanceof ReversibleMutator) {
+			return ((ReversibleMutator<C, T>) valueAccessPoint).toAccessor();
+		} else {
+			AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
+			AccessorByMember accessor = Accessors.accessor(accessorDefinition.getDeclaringClass(), accessorDefinition.getName(), accessorDefinition.getMemberType());
+			return (Accessor<C, T>) accessor;
+		}
+	}
+	
 	
 	private EntityCriteriaSupport<C> newWhere() {
 		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
