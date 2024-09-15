@@ -14,9 +14,7 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
 import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
-import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -33,12 +31,9 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityGraphSelector;
 import org.codefilarete.stalactite.query.EntitySelector;
-import org.codefilarete.stalactite.query.RelationalEntityCriteria;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
@@ -59,7 +54,6 @@ import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
 import static org.codefilarete.tool.Nullable.nullable;
 
 /**
@@ -196,59 +190,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	@Override
 	public ExecutableEntityQueryCriteria<C> selectWhere() {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		return wrapIntoExecutable(localCriteriaSupport);
-	}
-	
-	private ExecutableEntityQueryCriteria<C> wrapIntoExecutable(EntityCriteriaSupport<C> localCriteriaSupport) {
-		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		ExecutableEntityQuerySupport<C> querySugarSupport = new ExecutableEntityQuerySupport<>();
-		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
-						wrapGraphLoad(localCriteriaSupport, querySugarSupport))
-				.redirect(OrderByChain.class, querySugarSupport)
-				.redirect(LimitAware.class, querySugarSupport)
-				.redirect(RelationalEntityCriteria.class, localCriteriaSupport, true)
-				// making an exception for 2 of the methods that can't return the proxy
-				.redirect((SerializableFunction<ConfiguredEntityCriteria, CriteriaChain>) ConfiguredEntityCriteria::getCriteria, localCriteriaSupport::getCriteria)
-				.redirect((SerializableFunction<ConfiguredEntityCriteria, Boolean>) ConfiguredEntityCriteria::hasCollectionCriteria, localCriteriaSupport::hasCollectionCriteria)
-				.build((Class<ConfiguredExecutableEntityQueryCriteria<C>>) (Class) ConfiguredExecutableEntityQueryCriteria.class);
-	}
-	
-	/**
-	 * A mashup to redirect all {@link ExecutableEntityQueryCriteria} methods being redirected to {@link EntityCriteriaSupport} while redirecting
-	 * {@link ConfiguredEntityCriteria} methods to some specific methods of {@link EntityCriteriaSupport}.
-	 * Made as such to avoid to expose internal / implementation methods "getCriteria" and "hasCollectionCriteria" to the
-	 * configuration API ({@link ExecutableEntityQueryCriteria})
-	 *
-	 * @param <C>
-	 * @author Guillaume Mary
-	 */
-	private interface ConfiguredExecutableEntityQueryCriteria<C> extends ConfiguredEntityCriteria, ExecutableEntityQueryCriteria<C> {
-		
-	}
-	
-	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport, ExecutableEntityQuerySupport<C> querySugarSupport) {
-		return (Accumulator<C, Set<C>, R> accumulator) -> {
-			if (querySugarSupport.getLimit() != null) {
-				if (criteriaSupport.getRootConfiguration().hasCollectionProperty()) {
-					throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
-				}
-			}
-			Set<C> result = getPersisterListener().doWithSelectListener(emptySet(), () ->
-					entitySelector.select(
-							localCriteriaSupport,
-							orderByClause -> {
-								KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = querySugarSupport.orderBy;
-								orderBy.forEach(duo -> {
-									Column column = localCriteriaSupport.getRootConfiguration().giveColumn(duo.getLeft());
-									orderByClause.add(column, duo.getRight() == Order.ASC ? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC : org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
-								});
-							},
-							limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit))
-			);
-			return accumulator.collect(result);
-		};
+		EntityQueryCriteriaSupport<C, I> support = new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
+		return support.wrapIntoExecutable();
 	}
 	
 	private EntityCriteriaSupport<C> newWhere() {
@@ -505,45 +448,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 		
 		@Override
 		public ExecutableProjectionQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(getter.getAccessors(), order));
-			return this;
-		}
-	}
-	
-	/**
-	 * Simple class that stores options of the query
-	 * @author Guillaume Mary
-	 */
-	private static class ExecutableEntityQuerySupport<C>
-			implements OrderByChain<C, ExecutableEntityQuerySupport<C>>, LimitAware<ExecutableEntityQuerySupport<C>> {
-		
-		private Integer limit;
-		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
-		
-		public Integer getLimit() {
-			return limit;
-		}
-		
-		@Override
-		public ExecutableEntityQuerySupport<C> limit(int count) {
-			limit = count;
-			return this;
-		}
-		
-		@Override
-		public ExecutableEntityQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new AccessorByMethodReference<>(getter)), order));
-			return this;
-		}
-		
-		@Override
-		public ExecutableEntityQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new MutatorByMethodReference<>(setter)), order));
-			return this;
-		}
-		
-		@Override
-		public ExecutableEntityQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
 			orderBy.add(new Duo<>(getter.getAccessors(), order));
 			return this;
 		}

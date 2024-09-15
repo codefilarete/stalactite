@@ -18,14 +18,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AbstractPolymorphismPersisterTest {
+class EntityQueryCriteriaSupportTest {
 	
 	@Test
 	void buildComparator_singleDirectProperty() {
 		KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>(
 				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC)
 		);
-		Comparator<Country> objectComparator = AbstractPolymorphismPersister.buildComparator(orderBy);
+		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
 		country1.setName("A");
 		Country country2 = new Country(2);
@@ -44,7 +44,7 @@ class AbstractPolymorphismPersisterTest {
 				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC),
 				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getDescription)), Order.ASC)
 		);
-		Comparator<Country> objectComparator = AbstractPolymorphismPersister.buildComparator(orderBy);
+		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
 		country1.setName("A");
 		country1.setDescription("A");
@@ -69,7 +69,7 @@ class AbstractPolymorphismPersisterTest {
 				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC),
 				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getId), new AccessorByMethodReference<Identifier, Object>(Identifier::getSurrogate)), Order.ASC)
 		);
-		Comparator<Country> objectComparator = AbstractPolymorphismPersister.buildComparator(orderBy);
+		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
 		country1.setName("A");
 		Country country2 = new Country(2);
@@ -90,7 +90,7 @@ class AbstractPolymorphismPersisterTest {
 				new Duo<>(Arrays.asList(new MutatorByMethodReference<>(Country::setName)), Order.DESC),
 				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(City::setName)), Order.ASC)
 		);
-		Comparator<Country> objectComparator = AbstractPolymorphismPersister.buildComparator(orderBy);
+		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
 		country1.setName("A");
 		City cityA = new City(1);
@@ -123,7 +123,7 @@ class AbstractPolymorphismPersisterTest {
 				new Duo<>(Arrays.asList(new MutatorByMethodReference<>(Country::setName)), Order.DESC),
 				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(City::setName)), Order.ASC)
 		);
-		Comparator<Country> objectComparator = AbstractPolymorphismPersister.buildComparator(orderBy);
+		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
 		country1.setName("A");
 		City cityA = new City(1);

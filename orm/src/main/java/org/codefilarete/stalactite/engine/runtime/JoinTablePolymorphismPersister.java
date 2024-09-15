@@ -103,7 +103,6 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 		subEntitiesPersisters.forEach((type, persister) ->
 				// NB: we can't use copyRootJoinsTo(..) because persister is composed of one join to parent table (the one of mainPersister),
 				// since there's no manner to find it cleanly we have to use get(0), dirty thing ...
-//				mainPersister.getEntityJoinTree().addMergeJoin(ROOT_STRATEGY_NAME, new EntityMergerAdapter<>((EntityMapping) persister.getMapping()), mainPersister.getMainTable().getPrimaryKey(), persister.getMainTable().getPrimaryKey(), JoinType.OUTER)
 				mainPersister.getEntityJoinTree().projectTo(persister.getEntityJoinTree().getRoot().getJoins().get(0))
 		);
 		
