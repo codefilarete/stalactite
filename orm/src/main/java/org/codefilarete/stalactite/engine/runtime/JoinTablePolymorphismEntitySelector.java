@@ -7,39 +7,31 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
-import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.engine.runtime.load.JoinTableRootJoinNode;
 import org.codefilarete.stalactite.engine.runtime.load.MergeJoinNode.MergeJoinRowConsumer;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
 
 import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROOT_STRATEGY_NAME;
@@ -47,13 +39,9 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 /**
  * @author Guillaume Mary
  */
-public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
+public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> extends AbstractPolymorphicEntitySelector<C, I, T> {
 	
-	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
 	private final T mainTable;
-	private final EntityJoinTree<C, I> mainEntityJoinTree;
-	private final ConnectionProvider connectionProvider;
-	private final Dialect dialect;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
 	
 	public JoinTablePolymorphismEntitySelector(
@@ -61,11 +49,8 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 			Map<? extends Class<C>, ? extends ConfiguredRelationalPersister<C, I>> persisterPerSubclass,
 			ConnectionProvider connectionProvider,
 			Dialect dialect) {
-		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
+		super(mainPersister.getEntityJoinTree(), persisterPerSubclass, connectionProvider, dialect);
 		this.mainTable = (T) mainPersister.getMainTable();
-		this.mainEntityJoinTree = mainPersister.getEntityJoinTree();
-		this.connectionProvider = connectionProvider;
-		this.dialect = dialect;
 		this.singleLoadEntityJoinTree = buildSingleLoadEntityJoinTree(mainPersister, persisterPerSubclass);
 	}
 	
@@ -94,35 +79,12 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 	}
 	
 	@Override
-	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		if (where.hasCollectionCriteria()) {
-			return selectIn2Phases(where, orderByClauseConsumer, limitAwareConsumer);
-		} else {
-			return selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
-		}
+	Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+		return super.selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer, singleLoadEntityJoinTree, dialect, connectionProvider);
 	}
 	
-	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
-		orderByClauseConsumer.accept(query.orderBy());
-		limitAwareConsumer.accept(query.orderBy());
-		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
-		
-		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
-		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
-			ResultSet resultSet = readOperation.execute();
-			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
-			return inflater.transform(() -> rowIterator, 50);
-		} catch (RuntimeException e) {
-			throw new SQLExecutionException(preparedSQL.getSQL(), e);
-		}
-	}
-	
-	private Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+	@Override
+	Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		persisterPerSubclass.values().forEach(subclassPersister -> {
@@ -175,59 +137,6 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> imple
 			return result;
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
-		}
-	}
-	
-	@Override
-	public <R, O> R selectProjection(Consumer<Select> selectAdapter, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator, CriteriaChain where,
-									 boolean distinct, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.mainEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
-		Query query = entityTreeQuery.getQuery();
-		query.getSelectSurrogate().setDistinct(distinct);
-		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where, entityTreeQuery.getColumnClones());
-		
-		// First phase : selecting ids (made by clearing selected elements for performance issue)
-		selectAdapter.accept(query.getSelectSurrogate());
-		Map<Selectable<?>, String> aliases = query.getAliases();
-		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-		
-		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
-		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
-		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
-	}
-	
-	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<String, ResultSetReader<?>> columnReaders, ColumnedRow columnedRow, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
-		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
-			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
-			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) selectable -> columnedRow.getValue(selectable, row)).collect(Collectors.toList()));
-		} catch (RuntimeException e) {
-			throw new SQLExecutionException(preparedSQL.getSQL(), e);
-		}
-	}
-	
-	/**
-	 * Small class that will be used to ensure that a {@link Selectable} as an alias in the query
-	 * @param <S>
-	 * @author Guillaume Mary
-	 */
-	private static class AliasAsserter<S extends Selectable> implements Function<S, String> {
-		
-		private final Function<S, String> delegate;
-		
-		private AliasAsserter(Function<S, String> delegate) {
-			this.delegate = delegate;
-		}
-		
-		@Override
-		public String apply(S selectable) {
-			String alias = delegate.apply(selectable);
-			if (alias == null) {
-				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
-			}
-			return alias;
 		}
 	}
 	

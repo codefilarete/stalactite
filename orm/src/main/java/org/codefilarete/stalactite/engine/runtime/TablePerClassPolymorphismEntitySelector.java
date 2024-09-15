@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -14,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.engine.runtime.load.JoinRoot;
@@ -22,7 +22,6 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
@@ -58,7 +57,7 @@ import static org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.ROO
 /**
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
+public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> extends AbstractPolymorphicEntitySelector<C, I, T> {
 	
 	@VisibleForTesting
 	static final String DISCRIMINATOR_ALIAS = "DISCRIMINATOR";
@@ -66,10 +65,6 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 	
 	private final ConfiguredRelationalPersister<C, I> mainPersister;
 	private final IdentifierAssembler<I, T> identifierAssembler;
-	private final Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass;
-	private final EntityJoinTree<C, I> mainEntityJoinTree;
-	private final ConnectionProvider connectionProvider;
-	private final Dialect dialect;
 	private final T mainTable;
 	private final Map<String, Class> discriminatorValues;
 	private final SingleLoadEntityJoinTree<C, I> singleLoadEntityJoinTree;
@@ -81,12 +76,9 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 			ConnectionProvider connectionProvider,
 			Dialect dialect
 	) {
+		super(mainPersister.getEntityJoinTree(), persisterPerSubclass, connectionProvider, dialect);
 		this.mainPersister = mainPersister;
 		this.identifierAssembler = mainPersister.getMapping().getIdMapping().getIdentifierAssembler();
-		this.persisterPerSubclass = (Map<Class<C>, ConfiguredRelationalPersister<C, I>>) persisterPerSubclass;
-		this.mainEntityJoinTree = mainPersister.getEntityJoinTree();
-		this.connectionProvider = connectionProvider;
-		this.dialect = dialect;
 		this.mainTable = (T) mainPersister.getMainTable();
 		// building readers and aliases for union-all query
 		this.discriminatorValues = new HashMap<>();
@@ -183,19 +175,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 	}
 	
 	@Override
-	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
-		// When condition contains some criteria on a collection, the ResultSet contains only data matching it,
-		// then the graph is a partial view of the real entity. Therefore, when the condition contains some Collection criteria
-		// we must load the graph in 2 phases : a first lookup for ids matching the result, and a second phase that loads the entity graph
-		// according to the ids
-		if (where.hasCollectionCriteria()) {
-			return selectIn2Phases(where);
-		} else {
-			return selectWithSingleQuery(where, orderByClauseConsumer, limitAwareConsumer);
-		}
-	}
-	
-	private Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+	Set<C> selectWithSingleQuery(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
 		// doesn't make a subset of the entity graph
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
@@ -203,6 +183,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		orderByClauseConsumer.accept(query.orderBy());
 		limitAwareConsumer.accept(query.orderBy());
 		
+		// we add union columns
 		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
 		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
 		originalColumnsToClones.putAll(columnClones);
@@ -210,10 +191,20 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		originalColumnsToClones.put(DISCRIMINATOR_COLUMN, DISCRIMINATOR_COLUMN);
 		// since criteria is passed to union subqueries, we don't need it into the entire query
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
-		return new InternalExecutor(entityTreeQuery).execute(sqlQueryBuilder.toPreparedSQL());
+		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
+			ResultSet resultSet = readOperation.execute();
+			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
+			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
+			return inflater.transform(() -> rowIterator, 50);
+		} catch (RuntimeException e) {
+			throw new SQLExecutionException(preparedSQL.getSQL(), e);
+		}
 	}
 	
-	private Set<C> selectIn2Phases(ConfiguredEntityCriteria where) {
+	@Override
+	Set<C> selectIn2Phases(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(phasedLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
@@ -308,39 +299,6 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		
 		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
-	}
-	
-	private <R, O> R readProjection(PreparedSQL preparedSQL, Map<String, ResultSetReader<?>> columnReaders, ColumnedRow columnedRow, Accumulator<? super Function<Selectable<O>, O>, Object, R> accumulator) {
-		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
-			ResultSet resultSet = closeableOperation.execute();
-			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
-			return accumulator.collect(Iterables.stream(rowIterator).map(row -> (Function<Selectable<O>, O>) selectable -> columnedRow.getValue(selectable, row)).collect(Collectors.toList()));
-		} catch (RuntimeException e) {
-			throw new SQLExecutionException(preparedSQL.getSQL(), e);
-		}
-	}
-	
-	/**
-	 * Small class that will be used to ensure that a {@link Selectable} as an alias in the query
-	 * @param <S>
-	 * @author Guillaume Mary
-	 */
-	private static class AliasAsserter<S extends Selectable> implements Function<S, String> {
-		
-		private final Function<S, String> delegate;
-		
-		private AliasAsserter(Function<S, String> delegate) {
-			this.delegate = delegate;
-		}
-		
-		@Override
-		public String apply(S selectable) {
-			String alias = delegate.apply(selectable);
-			if (alias == null) {
-				throw new IllegalArgumentException("Item '" + selectable.getExpression() + "' must have an alias");
-			}
-			return alias;
-		}
 	}
 	
 	private static class PhasedEntityJoinTree<C, I> extends EntityJoinTree<C, I> {
@@ -469,40 +427,6 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> i
 		
 		public IdentityHashMap<Column<?, ?>, Selectable<?>> getMainColumnToPseudoColumn() {
 			return mainColumnToPseudoColumn;
-		}
-	}
-	
-	private class InternalExecutor {
-		
-		private final EntityTreeQuery<C> entityTreeQuery;
-		
-		private InternalExecutor(EntityTreeQuery<C> entityTreeQuery) {
-			this.entityTreeQuery = entityTreeQuery;
-		}
-		
-		protected Set<C> execute(PreparedSQL query) {
-			try (ReadOperation<Integer> readOperation = new ReadOperation<>(query, connectionProvider)) {
-				return execute(readOperation);
-			}
-		}
-		
-		private Set<C> execute(ReadOperation<Integer> operation) {
-			try (ReadOperation<Integer> closeableOperation = operation) {
-				return transform(closeableOperation);
-			} catch (RuntimeException e) {
-				throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
-			}
-		}
-		
-		protected Set<C> transform(ReadOperation<Integer> closeableOperation) {
-			ResultSet resultSet = closeableOperation.execute();
-			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
-			return transform(rowIterator);
-		}
-		
-		protected Set<C> transform(Iterator<Row> rowIterator) {
-			return this.entityTreeQuery.getInflater().transform(() -> rowIterator, 50);
 		}
 	}
 }
