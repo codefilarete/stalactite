@@ -7,14 +7,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
-import org.codefilarete.reflection.AccessorByMethodReference;
-import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.MethodReferenceDispatcher;
-import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ValueAccessPoint;
-import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.engine.PersistExecutor;
 import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
@@ -35,26 +29,18 @@ import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntityGraphSelector;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.model.Select;
-import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
-import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
-import org.codefilarete.tool.collection.KeepOrderSet;
-import org.danekja.java.util.function.serializable.SerializableBiConsumer;
-import org.danekja.java.util.function.serializable.SerializableBiFunction;
-import org.danekja.java.util.function.serializable.SerializableFunction;
 
 import static java.util.Collections.emptyList;
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
@@ -201,31 +187,8 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	@Override
 	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
-		EntityCriteriaSupport<C> localCriteriaSupport = newWhere();
-		return wrapIntoExecutable(selectAdapter, localCriteriaSupport);
-	}
-	
-	private ExecutableProjectionQuery<C> wrapIntoExecutable(Consumer<Select> selectAdapter, EntityCriteriaSupport<C> localCriteriaSupport) {
-		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		ExecutableProjectionQuerySupport<C> querySugarSupport = new ExecutableProjectionQuerySupport<>();
-		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableProjection, Accumulator<? super Function<? extends Selectable, Object>, Object, Object>, Object>) ExecutableProjection::execute,
-						wrapProjectionLoad(selectAdapter, localCriteriaSupport, querySugarSupport))
-				.redirect(OrderByChain.class, querySugarSupport)
-				.redirect(LimitAware.class, querySugarSupport)
-				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, querySugarSupport::distinct)
-				.redirect(EntityCriteria.class, localCriteriaSupport, true)
-				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
-	}
-	
-	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(
-			Consumer<Select> selectAdapter,
-			EntityCriteriaSupport<C> localCriteriaSupport,
-			ExecutableProjectionQuerySupport<C> querySugarSupport) {
-		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
-			entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), querySugarSupport.isDistinct(),
-					orderByClause -> {},
-					limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit));
+		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entitySelector, selectAdapter);
+		return projectionSupport.wrapIntoExecutable();
 	}
 	
 	/**
@@ -402,54 +365,5 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	@Override
 	public void addDeleteByIdListener(DeleteByIdListener<? extends C> deleteListener) {
 		persister.addDeleteByIdListener(deleteListener);
-	}
-	
-	/**
-	 * Simple class that stores options of the query
-	 * @author Guillaume Mary
-	 */
-	private static class ExecutableProjectionQuerySupport<C>
-			implements OrderByChain<C, ExecutableProjectionQuerySupport<C>>, LimitAware<ExecutableProjectionQuerySupport<C>> {
-		
-		private boolean distinct;
-		private Integer limit;
-		
-		public boolean isDistinct() {
-			return distinct;
-		}
-		
-		void distinct() {
-			distinct = true;
-		}
-		
-		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
-		
-		public Integer getLimit() {
-			return limit;
-		}
-		
-		@Override
-		public ExecutableProjectionQuerySupport<C> limit(int count) {
-			limit = count;
-			return this;
-		}
-		
-		@Override
-		public ExecutableProjectionQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new AccessorByMethodReference<>(getter)), order));
-			return this;
-		}
-		
-		@Override
-		public ExecutableProjectionQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new MutatorByMethodReference<>(setter)), order));
-			return this;
-		}
-		
-		@Override
-		public ExecutableProjectionQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(getter.getAccessors(), order));
-			return this;
-		}
 	}
 }
