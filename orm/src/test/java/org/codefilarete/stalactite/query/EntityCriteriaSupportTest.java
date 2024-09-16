@@ -57,7 +57,7 @@ class EntityCriteriaSupportTest {
 		
 		// Note that this constructor can't accept relation as criteria, else we should register relations on it
 		// which can be quite difficult because we don't have access to internal objects behind persister variable 
-		EntityCriteria<Country> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMapping())
+		EntityCriteria<Country, ?> countryEntityCriteriaSupport = new EntityCriteriaSupport<>(persister.getMapping())
 				.and(Country::getId, Operators.in("11"))
 				.and(Country::getName, Operators.eq("toto"))
 				.and(Country::getName, Operators.between("11", ""))

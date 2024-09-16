@@ -42,11 +42,9 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 			return PartTreeStalactiteProjection.forCount(queryMethod, entityPersister, partTree);
 		} else if (partTree.isExistsProjection()) {
 			return PartTreeStalactiteProjection.forExists(queryMethod, entityPersister, partTree);
-//		} else if (partTree.isLimiting()) {
-			
 		} else {
 			Accumulator<T, ?, ?> accumulator = queryMethod.isCollectionQuery()
-					? (Accumulator) Accumulators.toList()
+					? (Accumulator) Accumulators.toKeepingOrderSet()
 					: (Accumulator) Accumulators.getFirstUnique();
 			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, accumulator);
 		}

@@ -224,12 +224,12 @@ public class BeanPersister<C, I, T extends Table<T>> implements EntityConfigured
 	}
 	
 	@Override
-	public ExecutableEntityQuery<C> selectWhere() {
+	public ExecutableEntityQuery<C, ?> selectWhere() {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	
 	@Override
-	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
 		throw new NotImplementedException("Not yet implemented");
 	}
 	

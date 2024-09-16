@@ -69,6 +69,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -689,7 +690,7 @@ class JoinTablePolymorphismPersisterTest {
 					))
 			);
 			
-			ExecutableEntityQueryCriteria<AbstractToto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
+			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
 			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(1)).executeQuery();
@@ -716,6 +717,63 @@ class JoinTablePolymorphismPersisterTest {
 							new TotoA(2, 29, 31),
 							new TotoB(3, 37, 41),
 							new TotoB(4, 43, 53));
+		}
+		
+		@Test
+		void selectWhere_orderByOnNonCollectionProperty_orderByIsAddedToSQL() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String idAlias = "Toto_id";
+			String totoAIdAlias = "TotoA_id";
+			String totoBIdAlias = "TotoB_id";
+			String totoXAlias = "Toto_x";
+			String totoAAlias = "TotoA_a";
+			String totoBAlias = "TotoB_b";
+			when(preparedStatement.executeQuery()).thenReturn(
+					// first result if for id read
+					new InMemoryResultSet(Arrays.asList(
+							Maps.asMap(idAlias, 1).add(totoXAlias, 17).add(totoAIdAlias, 1).add(totoBIdAlias, null).add(totoAAlias, 23).add(totoBAlias, null),
+							Maps.asMap(idAlias, 2).add(totoXAlias, 29).add(totoAIdAlias, 2).add(totoBIdAlias, null).add(totoAAlias, 31).add(totoBAlias, null),
+							Maps.asMap(idAlias, 3).add(totoXAlias, 37).add(totoAIdAlias, null).add(totoBIdAlias, 3).add(totoAAlias, null).add(totoBAlias, 41),
+							Maps.asMap(idAlias, 4).add(totoXAlias, 43).add(totoAIdAlias, null).add(totoBIdAlias, 4).add(totoAAlias, null).add(totoBAlias, 53)
+					))
+			);
+			
+			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42))
+					.orderBy(AbstractToto::getX);
+			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select "
+							+ "Toto.x as " + totoXAlias
+							+ ", Toto.q as Toto_q"
+							+ ", Toto.id as " + idAlias
+							+ ", TotoA.a as " + totoAAlias
+							+ ", TotoA.id as " + totoAIdAlias
+							+ ", TotoB.b as " + totoBAlias
+							+ ", TotoB.id as " + totoBIdAlias
+							+ " from Toto left outer join TotoA as TotoA on Toto.id = TotoA.id"
+							+ " left outer join TotoB as TotoB on Toto.id = TotoB.id"
+							+ " where Toto.x = ?"
+							+ " order by Toto.x asc"
+			));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			assertThat(select).usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(
+							new TotoA(1, 17, 23),
+							new TotoA(2, 29, 31),
+							new TotoB(3, 37, 41),
+							new TotoB(4, 43, 53));
+		}
+		
+		@Test
+		void selectWhere_orderByOnCollectionProperty_throwsException() {
+			assertThatCode(() -> testInstance.selectWhere(AbstractToto::getX, Operators.eq(42)).orderBy(AbstractToto::getQ))
+					.hasMessage("OrderBy clause on a Collection property is unsupported due to eventual inconsistency with Collection nature :"
+							+ " o.c.s.e.r.JoinTablePolymorphismPersisterTest$AbstractToto::getQ");
 		}
 		
 		@Test
@@ -747,7 +805,7 @@ class JoinTablePolymorphismPersisterTest {
 					))
 			);
 			
-			ExecutableEntityQueryCriteria<AbstractToto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
+			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
 			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(3)).executeQuery();

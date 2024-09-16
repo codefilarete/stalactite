@@ -35,12 +35,11 @@ import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.result.BeanRelationFixer;
 import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Iterables;
-
-import static java.util.Collections.emptyList;
 
 /**
  * Persister that registers relations of entities joined on "foreign key = primary key".
@@ -175,18 +174,13 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	}
 	
 	@Override
-	public ExecutableEntityQueryCriteria<C> selectWhere() {
+	public ExecutableEntityQueryCriteria<C, ?> selectWhere() {
 		EntityQueryCriteriaSupport<C, I> support = new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
 		return support.wrapIntoExecutable();
 	}
 	
-	private EntityCriteriaSupport<C> newWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
-		return new EntityCriteriaSupport<>(criteriaSupport);
-	}
-	
 	@Override
-	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
 		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entitySelector, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}
@@ -198,9 +192,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	 */
 	@Override
 	public Set<C> selectAll() {
-		return getPersisterListener().doWithSelectListener(emptyList(), () ->
-				entitySelector.select(newWhere(), fluentOrderByClause -> {}, limitAware -> {})
-		);
+		return (Set<C>) selectWhere().execute(Accumulators.toSet());
 	}
 	
 	@Override

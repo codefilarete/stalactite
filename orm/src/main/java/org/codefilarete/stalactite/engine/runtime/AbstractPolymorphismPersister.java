@@ -8,6 +8,7 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.model.Select;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 
 /**
  * Parent class of polymorphic persisters, made to share common code.
@@ -33,25 +34,20 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	}
 	
 	@Override
-	public ExecutableEntityQueryCriteria<C> selectWhere() {
+	public ExecutableEntityQueryCriteria<C, ?> selectWhere() {
 		EntityQueryCriteriaSupport<C, I> support = new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
 		return support.wrapIntoExecutable();
 	}
 	
-	private EntityCriteriaSupport<C> newWhere() {
-		// we must clone the underlying support, else it would be modified for all subsequent invocations and criteria will aggregate
-		return new EntityCriteriaSupport<>(criteriaSupport);
-	}
-	
 	@Override
-	public ExecutableProjectionQuery<C> selectProjectionWhere(Consumer<Select> selectAdapter) {
+	public ExecutableProjectionQuery<C, ?> selectProjectionWhere(Consumer<Select> selectAdapter) {
 		ProjectionQueryCriteriaSupport<C, I> projectionSupport = new ProjectionQueryCriteriaSupport<>(criteriaSupport, entitySelector, selectAdapter);
 		return projectionSupport.wrapIntoExecutable();
 	}
 	
 	@Override
 	public Set<C> selectAll() {
-		return entitySelector.select(newWhere(), fluentOrderByClause -> {}, limitAware -> {});
+		return (Set<C>) selectWhere().execute(Accumulators.toSet());
 	}
 	
 	@Override

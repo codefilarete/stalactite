@@ -68,6 +68,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.engine.runtime.TablePerClassPolymorphicSelectExecutor.DISCRIMINATOR_ALIAS;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -629,7 +630,7 @@ class TablePerClassPolymorphismPersisterTest {
 					))
 			);
 			
-			ExecutableEntityQueryCriteria<AbstractToto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
+			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42));
 			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(1)).executeQuery();
@@ -665,6 +666,72 @@ class TablePerClassPolymorphismPersisterTest {
 							new TotoA(2, 29, 31),
 							new TotoB(3, 37, 41),
 							new TotoB(4, 43, 53));
+		}
+		
+		@Test
+		void selectWhere_orderByOnNonCollectionProperty_orderByIsAddedToSQL() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String idAlias = "Toto_id";
+			String xAlias = "Toto_x";
+			String qAlias = "Toto_q";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoDTYPEAlias = "Toto_" + TablePerClassPolymorphismEntitySelector.DISCRIMINATOR_ALIAS;
+			when(preparedStatement.executeQuery()).thenReturn(
+					// first result if for id read
+					new InMemoryResultSet(Arrays.asList(
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 1).add(totoDTYPEAlias, "TotoA").add(xAlias, 17).add(totoAAlias, 23).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 2).add(totoDTYPEAlias, "TotoA").add(xAlias, 29).add(totoAAlias, 31).add(totoBAlias, null),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 3).add(totoDTYPEAlias, "TotoB").add(xAlias, 37).add(totoAAlias, null).add(totoBAlias, 41),
+							Maps.forHashMap(String.class, Object.class).add(idAlias, 4).add(totoDTYPEAlias, "TotoB").add(xAlias, 43).add(totoAAlias, null).add(totoBAlias, 53)
+					))
+			);
+			
+			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getX, Operators.eq(42))
+					.orderBy(AbstractToto::getX);
+			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + idAlias
+							+ ", Toto.x as " + xAlias
+							+ ", Toto.q as " + qAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.DISCRIMINATOR as " + totoDTYPEAlias
+							+ " from ("
+							+ "(select TotoA.id as id,"
+							+ " TotoA.x as x,"
+							+ " TotoA.q as q,"
+							+ " TotoA.a as a,"
+							+ " cast(null as null) as b,"
+							+ " 'TotoA' as DISCRIMINATOR from TotoA)"
+							+ " union all"
+							+ " (select TotoB.id as id,"
+							+ " TotoB.x as x,"
+							+ " TotoB.q as q,"
+							+ " cast(null as null) as a,"
+							+ " TotoB.b as b,"
+							+ " 'TotoB' as DISCRIMINATOR from TotoB))"
+							+ " as Toto where Toto.x = ?"
+							+ " order by Toto.x asc"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			assertThat(select).usingRecursiveFieldByFieldElementComparator()
+					.containsExactlyInAnyOrder(
+							new TotoA(1, 17, 23),
+							new TotoA(2, 29, 31),
+							new TotoB(3, 37, 41),
+							new TotoB(4, 43, 53));
+		}
+		
+		@Test
+		void selectWhere_orderByOnCollectionProperty_throwsException() {
+			assertThatCode(() -> testInstance.selectWhere(AbstractToto::getX, Operators.eq(42)).orderBy(AbstractToto::getQ))
+					.hasMessage("OrderBy clause on a Collection property is unsupported due to eventual inconsistency with Collection nature :"
+							+ " o.c.s.e.r.TablePerClassPolymorphismPersisterTest$AbstractToto::getQ");
 		}
 		
 		@Test
@@ -705,7 +772,7 @@ class TablePerClassPolymorphismPersisterTest {
 			// We test the collection criteria through the "q" property which is not really a production use case since it's an "embedded" one
 			// made of the storage of a set in an SQL Array : production use case we'll be more a *-to-many case. Meanwhile, this test should pass
 			// because even in that case it's hard to retrieve the entities with one select
-			ExecutableEntityQueryCriteria<AbstractToto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
+			ExecutableEntityQueryCriteria<AbstractToto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(AbstractToto::getQ, Operators.eq(Arrays.asHashSet(42)));
 			Set<AbstractToto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(3)).executeQuery();

@@ -42,7 +42,7 @@ import org.danekja.java.util.function.serializable.SerializableFunction;
  * @author Guillaume Mary
  * @see #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister) 
  */
-public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, ConfiguredEntityCriteria {
+public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, EntityCriteriaSupport<C>>, ConfiguredEntityCriteria {
 	
 	/** Delegate of the query : targets of the API methods */
 	private final Criteria criteria = new Criteria();
@@ -87,7 +87,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, Co
 		rootConfiguration.registerRelation(relation, persister);
 	}
 	
-	private <O> RelationalEntityCriteria<C> add(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<O, ?> operator) {
+	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<O, ?> operator) {
 		Column column = rootConfiguration.giveColumn(accessPointChain);
 		if (logicalOperator == LogicalOperator.OR) {
 			criteria.or(column, operator);
@@ -104,37 +104,37 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, Co
 	}
 	
 	@Override
-	public <O> RelationalEntityCriteria<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.AND, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
-	public <O> RelationalEntityCriteria<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.AND, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
 	@Override
-	public <O> RelationalEntityCriteria<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.OR, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
-	public <O> RelationalEntityCriteria<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.OR, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
 	@Override
-	public <A, B> RelationalEntityCriteria<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
+	public <A, B> EntityCriteriaSupport<C> and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
 		return and(AccessorChain.chain(getter1, getter2), operator);
 	}
 	
 	@Override
-	public <O> RelationalEntityCriteria<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator) {
 		return add(LogicalOperator.AND, getter.getAccessors(), operator);
 	}
 	
 	@Override
-	public <S extends Collection<A>, A, B> RelationalEntityCriteria<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
+	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
 		return add(LogicalOperator.AND, Arrays.asList(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 	}
 	
@@ -179,9 +179,9 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C>, Co
 			protected boolean isEqualKey(Object key1, Object key2) {
 				List<ValueAccessPoint<?>> accessors1 = (List<ValueAccessPoint<?>>) key1;
 				List<ValueAccessPoint<?>> accessors2 = (List<ValueAccessPoint<?>>) key2;
-				List<AccessorDefinition> accessorDefintiions1 = accessors1.stream().map(AccessorDefinition::giveDefinition).collect(Collectors.toList());
-				List<AccessorDefinition> accessorDefintiions2 = accessors2.stream().map(AccessorDefinition::giveDefinition).collect(Collectors.toList());
-				PairIterator<AccessorDefinition, AccessorDefinition> pairIterator = new PairIterator<>(accessorDefintiions1, accessorDefintiions2);
+				List<AccessorDefinition> accessorDefinitions1 = accessors1.stream().map(AccessorDefinition::giveDefinition).collect(Collectors.toList());
+				List<AccessorDefinition> accessorDefinitions2 = accessors2.stream().map(AccessorDefinition::giveDefinition).collect(Collectors.toList());
+				PairIterator<AccessorDefinition, AccessorDefinition> pairIterator = new PairIterator<>(accessorDefinitions1, accessorDefinitions2);
 				boolean result = false;
 				while (!result && pairIterator.hasNext()) {
 					Duo<AccessorDefinition, AccessorDefinition> accessorsPair = pairIterator.next();

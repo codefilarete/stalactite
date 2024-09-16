@@ -119,7 +119,7 @@ class EntityGraphSelectExecutorTest {
 		ddlDeployer.deployDDL();
 		
 		// this won't retrieve any result since database is empty
-		ExecutableEntityQuery<Country> countryEntityCriteriaSupport = persister.selectWhere(Country::getName, eq("France"))
+		ExecutableEntityQuery<Country, ?> countryEntityCriteriaSupport = persister.selectWhere(Country::getName, eq("France"))
 				.andMany(Country::getCities, City::getName, eq("Grenoble"));
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)

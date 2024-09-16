@@ -6,8 +6,10 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.AbstractReflector;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorByMethodReference;
@@ -37,10 +39,13 @@ import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
+import org.codefilarete.tool.function.Hanger.Holder;
 import org.codefilarete.tool.function.ThrowingExecutable;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.emptySet;
 import static org.codefilarete.tool.Nullable.nullable;
@@ -59,6 +64,8 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class EntityQueryCriteriaSupport<C, I> {
 	
+	public static final Logger LOGGER = LoggerFactory.getLogger(EntityQueryCriteriaSupport.class);
+	
 	private final EntityCriteriaSupport<C> entityCriteriaSupport;
 	
 	/** Support for {@link EntityCriteria} query execution */
@@ -72,14 +79,14 @@ public class EntityQueryCriteriaSupport<C, I> {
 		this.persisterListener = persisterListener;
 	}
 	
-	public ExecutableEntityQueryCriteria<C> wrapIntoExecutable() {
+	public ExecutableEntityQueryCriteria<C, ?> wrapIntoExecutable() {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		ExecutableEntityQuerySupport<C> querySugarSupport = new ExecutableEntityQuerySupport<>();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
 						wrapGraphLoad(entityCriteriaSupport, querySugarSupport))
-				.redirect(OrderByChain.class, querySugarSupport)
-				.redirect(LimitAware.class, querySugarSupport)
+				.redirect(OrderByChain.class, querySugarSupport, true)
+				.redirect(LimitAware.class, querySugarSupport, true)
 				.redirect(RelationalEntityCriteria.class, entityCriteriaSupport, true)
 				// making an exception for 2 of the methods that can't return the proxy
 				.redirect((SerializableFunction<ConfiguredEntityCriteria, CriteriaChain>) ConfiguredEntityCriteria::getCriteria, entityCriteriaSupport::getCriteria)
@@ -96,37 +103,51 @@ public class EntityQueryCriteriaSupport<C, I> {
 	 * @param <C>
 	 * @author Guillaume Mary
 	 */
-	private interface ConfiguredExecutableEntityQueryCriteria<C> extends ConfiguredEntityCriteria, ExecutableEntityQueryCriteria<C> {
+	private interface ConfiguredExecutableEntityQueryCriteria<C> extends ConfiguredEntityCriteria, ExecutableEntityQueryCriteria<C, ConfiguredExecutableEntityQueryCriteria<C>> {
 		
 	}
 	
 	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport, ExecutableEntityQuerySupport<C> querySugarSupport) {
-		return (Accumulator<C, Set<C>, R> accumulator) -> {
+		Holder<Consumer<org.codefilarete.stalactite.query.model.OrderByChain<?>>> orderByAdapter = new Holder<>();
+		Supplier<Set<C>> entityLoader = () -> {
 			if (querySugarSupport.getLimit() != null) {
 				if (entityCriteriaSupport.getRootConfiguration().hasCollectionProperty()) {
 					throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
 				}
 			}
-			Set<C> result = persisterListener.doWithSelectListener(emptySet(), () ->
+		
+			return persisterListener.doWithSelectListener(emptySet(), () ->
 					entitySelector.select(
 							localCriteriaSupport,
-							orderByClause -> {
-								KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = querySugarSupport.orderBy;
-								orderBy.forEach(duo -> {
-									Column column = localCriteriaSupport.getRootConfiguration().giveColumn(duo.getLeft());
-									orderByClause.add(column, duo.getRight() == Order.ASC ? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC : org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
-								});
-							},
+							orderByAdapter.get(),
 							limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit))
 			);
-			if (!querySugarSupport.orderBy.isEmpty()) {
+		};
+		return (Accumulator<C, Set<C>, R> accumulatorParam) -> {
+			if (localCriteriaSupport.hasCollectionCriteria() && !querySugarSupport.getOrderBy().isEmpty()) {
+				// a collection property in criteria will trigger a 2 phases load (ids, then entities)
+				// which is no compatible with an SQL "order by" clause, therefore we sort the result in memory
+				// and we don't ask for SQL "order by" because it's useless
+				orderByAdapter.set(orderByClause -> {});
 				// Note that we must wrap this creation in an if statement due to that entities don't implement Comparable, we avoid a
 				// ClassCastException of the addAll(..) operation
-				TreeSet<C> sortedResult = new TreeSet<>(buildComparator(querySugarSupport.orderBy));
-				sortedResult.addAll(result);
-				return accumulator.collect(sortedResult);
+				LOGGER.debug("Sorting loaded entities in memory");
+				Set<C> loadedEntities = entityLoader.get();
+				TreeSet<C> sortedResult = new TreeSet<>(buildComparator(querySugarSupport.getOrderBy()));
+				sortedResult.addAll(loadedEntities);
+				return accumulatorParam.collect(sortedResult);
 			} else {
-				return accumulator.collect(result);
+				// single query
+				orderByAdapter.set(orderByClause -> {
+					KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = querySugarSupport.getOrderBy();
+					orderBy.forEach(duo -> {
+						Column column = localCriteriaSupport.getRootConfiguration().giveColumn(duo.getLeft());
+						orderByClause.add(column, duo.getRight() == Order.ASC
+								? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
+								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
+					});
+				});
+				return accumulatorParam.collect(entityLoader.get());
 			}
 		};
 	}
@@ -169,9 +190,9 @@ public class EntityQueryCriteriaSupport<C, I> {
 	/**
 	 * Gives the {@link Accessor} underneath given {@link ValueAccessPoint}, either being itself or its mirror if it's a {@link ReversibleMutator}
 	 * @param valueAccessPoint a property accessor from which we need an {@link Accessor}
-	 * @return given {@link ValueAccessPoint} as an {@link Accessor}
 	 * @param <C> declaring class type
 	 * @param <T> property type
+	 * @return given {@link ValueAccessPoint} as an {@link Accessor}
 	 */
 	private static <C, T> Accessor<C, T> toAccessor(ValueAccessPoint<C> valueAccessPoint) {
 		if (valueAccessPoint instanceof Accessor) {
@@ -200,6 +221,10 @@ public class EntityQueryCriteriaSupport<C, I> {
 			return limit;
 		}
 		
+		public KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> getOrderBy() {
+			return orderBy;
+		}
+		
 		@Override
 		public ExecutableEntityQuerySupport<C> limit(int count) {
 			limit = count;
@@ -208,20 +233,35 @@ public class EntityQueryCriteriaSupport<C, I> {
 		
 		@Override
 		public ExecutableEntityQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new AccessorByMethodReference<>(getter)), order));
+			AccessorByMethodReference<C, ?> methodReference = new AccessorByMethodReference<>(getter);
+			orderBy.add(new Duo<>(Arrays.asList(methodReference), order));
+			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());
 			return this;
 		}
 		
 		@Override
 		public ExecutableEntityQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
-			orderBy.add(new Duo<>(Arrays.asList(new MutatorByMethodReference<>(setter)), order));
+			MutatorByMethodReference<C, ?> methodReference = new MutatorByMethodReference<>(setter);
+			orderBy.add(new Duo<>(Arrays.asList(methodReference), order));
+			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());
 			return this;
 		}
 		
 		@Override
 		public ExecutableEntityQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
 			orderBy.add(new Duo<>(getter.getAccessors(), order));
+			getter.getAccessors().forEach(accessor -> assertAccessorIsNotIterable(accessor, AccessorDefinition.giveDefinition(accessor).getMemberType()));
 			return this;
 		}
-	}	
+		
+		private void assertAccessorIsNotIterable(ValueAccessPoint valueAccessPoint, Class memberType) {
+			if (Iterable.class.isAssignableFrom(memberType)) {
+				throw new IllegalArgumentException("OrderBy clause on a Collection property is unsupported due to eventual inconsistency"
+						+ " with Collection nature : "
+						+ (valueAccessPoint instanceof AbstractReflector
+							? ((AbstractReflector<?>) valueAccessPoint).getDescription()
+							: AccessorDefinition.giveDefinition(valueAccessPoint)).toString());
+			}
+		}
+	}
 }

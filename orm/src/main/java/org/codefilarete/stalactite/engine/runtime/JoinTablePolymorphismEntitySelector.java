@@ -102,6 +102,7 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> exten
 		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		orderByClauseConsumer.accept(query.orderBy());
+		limitAwareConsumer.accept(query.orderBy());
 		
 		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 		

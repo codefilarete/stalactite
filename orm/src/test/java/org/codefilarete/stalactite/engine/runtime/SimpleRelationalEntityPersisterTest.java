@@ -85,6 +85,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.mockito.Mockito.anyInt;
@@ -481,7 +482,7 @@ class SimpleRelationalEntityPersisterTest {
 			));
 			when(preparedStatement.executeQuery()).thenReturn(resultSetForCriteria);
 			
-			ExecutableEntityQueryCriteria<Toto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getA, Operators.eq(42));
+			ExecutableEntityQueryCriteria<Toto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getA, Operators.eq(42));
 			Set<Toto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(1)).executeQuery();
@@ -499,6 +500,49 @@ class SimpleRelationalEntityPersisterTest {
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 					new Toto(7, 1, 2)
 			).toString());
+		}
+		
+		@Test
+		void selectWhere_orderByOnNonCollectionProperty_orderByIsAddedToSQL() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
+			ResultSet resultSetForCriteria = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap(totoIdAlias, (Object) 7).add(totoAAlias, 1).add(totoBAlias, 2)
+			));
+			when(preparedStatement.executeQuery()).thenReturn(resultSetForCriteria);
+			
+			ExecutableEntityQueryCriteria<Toto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getA, Operators.eq(42))
+					.orderBy(Toto::getA);
+			Set<Toto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(1)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto"
+							+ " where Toto.a = ?"
+							+ " order by Toto.a asc"
+			));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
+			assertCapturedPairsEqual(expectedPairs);
+			
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
+					new Toto(7, 1, 2)
+			).toString());
+		}
+		
+		@Test
+		void selectWhere_orderByOnCollectionProperty_throwsException() {
+			assertThatCode(() -> testInstance.selectWhere(Toto::getA, Operators.eq(42)).orderBy(Toto::getQ))
+					.hasMessage("OrderBy clause on a Collection property is unsupported due to eventual inconsistency with Collection nature :"
+							+ " o.c.s.e.r.SimpleRelationalEntityPersisterTest$Toto::getQ");
 		}
 		
 		@Test
@@ -529,7 +573,7 @@ class SimpleRelationalEntityPersisterTest {
 			// We test the collection criteria through the "q" property which is not really a production use case since it's an "embedded" one
 			// made of the storage of a set in an SQL Array : production use case we'll be more a *-to-many case. Meanwhile, this test should pass
 			// because even in that case it's hard to retrieve the entities with one select
-			ExecutableEntityQueryCriteria<Toto> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getQ, Operators.eq(Arrays.asHashSet(42)));
+			ExecutableEntityQueryCriteria<Toto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getQ, Operators.eq(Arrays.asHashSet(42)));
 			Set<Toto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
 			
 			verify(preparedStatement, times(2)).executeQuery();
@@ -583,7 +627,7 @@ class SimpleRelationalEntityPersisterTest {
 			SerializableFunction<Toto, Tata> getTata = Toto::getTata;
 			SerializableFunction<Tata, String> getProp1 = Tata::getProp1;
 			Equals<String> dummy = Operators.eq("dummy");
-			EntityPersister.ExecutableEntityQuery<Toto> totoRelationalExecutableEntityQuery = totoPersister
+			EntityPersister.ExecutableEntityQuery<Toto, ?> totoRelationalExecutableEntityQuery = totoPersister
 					.selectWhere(Toto::getA, Operators.eq(42))
 					.and(getTata, getProp1, dummy);
 			
@@ -620,7 +664,7 @@ class SimpleRelationalEntityPersisterTest {
 			when(preparedStatement.executeQuery()).thenAnswer((Answer<ResultSet>) invocation -> resultSet);
 			
 			Count count = Operators.count(new SelectableString<>("id", Integer.class));
-			ExecutableProjectionQuery<Toto> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
+			ExecutableProjectionQuery<Toto, ?> totoRelationalExecutableEntityQuery = testInstance.selectProjectionWhere(select ->  {
 				select.clear();
 				select.add(count, "count");
 			}, Toto::getA, Operators.eq(77));

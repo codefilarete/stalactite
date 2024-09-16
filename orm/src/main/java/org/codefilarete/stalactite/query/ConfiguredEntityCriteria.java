@@ -13,6 +13,6 @@ public interface ConfiguredEntityCriteria {
 	
 	boolean hasCollectionCriteria();
 	
-	CriteriaChain getCriteria();
+	CriteriaChain<?> getCriteria();
 	
 }

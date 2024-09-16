@@ -56,7 +56,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 	}
 	
 	
-	public ExecutableProjectionQuery<C> wrapIntoExecutable() {
+	public ExecutableProjectionQuery<C, ?> wrapIntoExecutable() {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		ExecutableProjectionQuerySupport<C> querySugarSupport = new ExecutableProjectionQuerySupport<>();
 		return methodDispatcher
@@ -66,7 +66,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 				.redirect(LimitAware.class, querySugarSupport)
 				.redirect((SerializableFunction<ExecutableProjection, ExecutableProjection>) ExecutableProjection::distinct, querySugarSupport::distinct)
 				.redirect(EntityCriteria.class, entityCriteriaSupport, true)
-				.build((Class<ExecutableProjectionQuery<C>>) (Class) ExecutableProjectionQuery.class);
+				.build((Class<ExecutableProjectionQuery<C, ?>>) (Class) ExecutableProjectionQuery.class);
 	}
 	
 	private <R> Function<Accumulator<? super Function<? extends Selectable, Object>, Object, R>, R> wrapProjectionLoad(

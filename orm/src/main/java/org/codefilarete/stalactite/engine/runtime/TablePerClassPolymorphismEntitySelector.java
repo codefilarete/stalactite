@@ -242,6 +242,8 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		});
 		columnReaders.put(DISCRIMINATOR_ALIAS, dialect.getColumnBinderRegistry().getBinder(String.class));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+		orderByClauseConsumer.accept(query.orderBy());
+		limitAwareConsumer.accept(query.orderBy());
 		
 		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 		

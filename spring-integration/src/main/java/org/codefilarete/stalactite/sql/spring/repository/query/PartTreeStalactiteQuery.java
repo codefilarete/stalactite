@@ -83,7 +83,7 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 	
 	class Query<T> extends AbstractQuery<T> {
 		
-		private final ExecutableEntityQuery<T> executableEntityQuery;
+		private final ExecutableEntityQuery<T, ?> executableEntityQuery;
 		
 		Query(EntityPersister<T, ?> entityPersister, PartTree tree) {
 			super(entityPersister);

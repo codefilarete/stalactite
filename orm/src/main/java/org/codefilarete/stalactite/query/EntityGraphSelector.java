@@ -94,6 +94,8 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 			ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
 			Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
+			orderByClauseConsumer.accept(query.orderBy());
+			limitAwareConsumer.accept(query.orderBy());
 			Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 			
 			if (ids.isEmpty()) {
@@ -105,8 +107,6 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 				columns.forEach(query::select);
 				query.getWhereSurrogate().clear();
 				query.where(pk, in(ids));
-				orderByClauseConsumer.accept(query.orderBy());
-				limitAwareConsumer.accept(query.orderBy());
 				
 				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);

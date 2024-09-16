@@ -171,7 +171,7 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 	
 	class Query<T> extends AbstractQuery<T> {
 		
-		protected final ExecutableProjectionQuery<T> executableProjectionQuery;
+		protected final ExecutableProjectionQuery<T, ?> executableProjectionQuery;
 		
 		Query(EntityPersister<T, ?> entityPersister, PartTree tree) {
 			super(entityPersister);
