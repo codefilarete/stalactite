@@ -1,8 +1,10 @@
 package org.codefilarete.stalactite.query;
 
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +23,7 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
@@ -81,6 +84,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		Query query = entityTreeQuery.getQuery();
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
+		ColumnCloneAwareOrderBy cloneAwareOrderBy = new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones());
 		
 		// When condition contains some criteria on a collection, the ResultSet contains only data matching it,
 		// then the graph is a partial view of the real entity. Therefore, when the condition contains some Collection criteria
@@ -94,7 +98,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 			ChainingMap<String, ResultSetReader> columnReaders = Maps.asMap(PRIMARY_KEY_ALIAS, dialect.getColumnBinderRegistry().getBinder(pk));
 			Map<Column<?, ?>, String> aliases = Maps.asMap(pk, PRIMARY_KEY_ALIAS);
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-			orderByClauseConsumer.accept(query.orderBy());
+			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());
 			Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
 			
@@ -114,7 +118,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		} else {
 			// Condition doesn't have criteria on a collection property (*-to-many) : the load can be done with one query because the SQL criteria
 			// doesn't make a subset of the entity graph
-			orderByClauseConsumer.accept(query.orderBy());
+			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());
 			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
@@ -223,6 +227,74 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
 			}
 			return alias;
+		}
+	}
+	
+	/**
+	 * Wrapper around an {@link OrderByChain} that takes the {@link Column} from the clones {@link Map}.
+	 * Made to take {@link Column} aliases of a {@link Query} into account when caller doesn't know them.
+	 * 
+	 * @author Guillaume Mary
+	 */
+	private static class ColumnCloneAwareOrderBy implements OrderByChain {
+		
+		private final OrderByChain delegate;
+		private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
+		
+		private ColumnCloneAwareOrderBy(FluentOrderByClause delegate, IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+			this.delegate = delegate;
+			this.columnClones = columnClones;
+		}
+		
+		@Override
+		public OrderByChain add(Selectable column, Order order) {
+			return delegate.add(getColumn(column), order);
+		}
+		
+		private Selectable getColumn(Selectable column) {
+			return columnClones.get(column);
+		}
+		
+		@Override
+		public OrderByChain add(Selectable col1, Order order1, Selectable col2, Order order2) {
+			return delegate.add(
+					getColumn(col1), order1,
+					getColumn(col2), order2);
+		}
+		
+		@Override
+		public OrderByChain add(Selectable col1, Order order1, Selectable col2, Order order2, Selectable col3, Order order3) {
+			return delegate.add(
+					getColumn(col1), order1,
+					getColumn(col2), order2,
+					getColumn(col3), order3);
+		}
+		
+		@Override
+		public OrderByChain add(String column, Order order) {
+			return delegate.add(column, order);
+		}
+		
+		@Override
+		public OrderByChain add(String col1, Order order1, String col2, Order order2) {
+			return delegate.add(col1, order1, col2, order2);
+		}
+		
+		@Override
+		public OrderByChain add(String col1, Order order1, String col2, Order order2, String col3, Order order3) {
+			return delegate.add(col1, order1, col2, order2, col3, order3);
+		}
+		
+		@Override
+		public OrderByChain add(Selectable column, Selectable... columns) {
+			return delegate.add(
+					getColumn(column),
+					Arrays.stream(columns).map(this::getColumn).toArray(Column[]::new));
+		}
+		
+		@Override
+		public OrderByChain add(String column, String... columns) {
+			return delegate.add(column, columns);
 		}
 	}
 }

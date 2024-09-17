@@ -641,6 +641,76 @@ class DerivedQueriesTest {
 		}
 		
 		@Test
+		void orderBy_onDepthProperty() {
+			Country country1 = new Country(42);
+			country1.setName("Tonton");
+			Person president1 = new Person(666);
+			president1.setName("C");
+			country1.setPresident(president1);
+			
+			Country country2 = new Country(43);
+			country2.setName("Tintin");
+			Person president2 = new Person(237);
+			president2.setName("A");
+			country2.setPresident(president2);
+			
+			Country country3 = new Country(44);
+			country3.setName("Tantan");
+			Person president3 = new Person(123);
+			president3.setName("B");
+			country3.setPresident(president3);
+			
+			Country country4 = new Country(45);
+			country4.setName("Tata");
+			Person president4 = new Person(456);
+			president4.setName("me");
+			country4.setPresident(president4);
+			
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByNameLikeOrderByPresidentNameAsc("T%n");
+			assertThat(loadedCountries).containsExactly(country2, country3, country1);
+		}
+		
+		@Test
+		void orderBy_criteriaOnCollection_onDepthProperty() {
+			Country country1 = new Country(42);
+			country1.setName("Toto");
+			Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+			Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+			Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+			country1.setLanguages(asHashSet(frFr, enEn));
+			Person president1 = new Person(666);
+			president1.setName("C");
+			country1.setPresident(president1);
+			
+			Country country2 = new Country(43);
+			country2.setName("Tata");
+			Person president2 = new Person(237);
+			president2.setName("A");
+			country2.setPresident(president2);
+			country2.setLanguages(asHashSet(frFr, esEs));
+			
+			Country country3 = new Country(44);
+			country3.setName("Titi");
+			Person president3 = new Person(123);
+			president3.setName("B");
+			country3.setPresident(president3);
+			country3.setLanguages(asHashSet(frFr));
+			
+			Country country4 = new Country(45);
+			country4.setName("Tutu");
+			Person president4 = new Person(456);
+			president4.setName("me");
+			country4.setPresident(president4);
+			
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+			
+			Set<Country> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByPresidentNameAsc(frFr.getCode());
+			assertThat(loadedCountries).containsExactly(country2, country3, country1);
+		}
+		
+		@Test
 		void limit_throwsExceptionBecauseOfCollectionPropertyMapping() {
 			Country country1 = new Country(42);
 			country1.setName("Toto");

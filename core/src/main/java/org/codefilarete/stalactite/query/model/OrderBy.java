@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.query.model.OrderBy.OrderedColumn;
 
 /**
@@ -22,7 +21,7 @@ public class OrderBy implements Iterable<OrderedColumn>, OrderByChain<OrderBy> {
 		return this;
 	}
 	
-	private OrderBy add(Column column) {
+	private OrderBy add(Selectable column) {
 		return add(new OrderedColumn(column));
 	}
 	
@@ -35,17 +34,17 @@ public class OrderBy implements Iterable<OrderedColumn>, OrderByChain<OrderBy> {
 	}
 	
 	@Override
-	public OrderBy add(Column column, Order order) {
+	public OrderBy add(Selectable column, Order order) {
 		return add(new OrderedColumn(column, order));
 	}
 	
 	@Override
-	public OrderBy add(Column col1, Order order1, Column col2, Order order2) {
+	public OrderBy add(Selectable col1, Order order1, Selectable col2, Order order2) {
 		return add(col1, order1).add(col2, order2);
 	}
 	
 	@Override
-	public OrderBy add(Column col1, Order order1, Column col2, Order order2, Column col3, Order order3) {
+	public OrderBy add(Selectable col1, Order order1, Selectable col2, Order order2, Selectable col3, Order order3) {
 		return add(col1, order1).add(col2, order2).add(col3, order3);
 	}
 	
@@ -65,9 +64,9 @@ public class OrderBy implements Iterable<OrderedColumn>, OrderByChain<OrderBy> {
 	}
 	
 	@Override
-	public OrderBy add(Column column, Column... columns) {
+	public OrderBy add(Selectable column, Selectable... columns) {
 		add(column);
-		for (Column col : columns) {
+		for (Selectable col : columns) {
 			add(col);
 		}
 		return this;

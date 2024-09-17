@@ -1,6 +1,8 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -19,10 +21,12 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LimitAware;
 import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
+import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.RowIterator;
@@ -92,7 +96,7 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 										   ConnectionProvider connectionProvider) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
-		orderByClauseConsumer.accept(query.orderBy());
+		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
 		limitAwareConsumer.accept(query.orderBy());
 		
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
@@ -159,6 +163,74 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 				throw new IllegalArgumentException("Item " + selectable.getExpression() + " must have an alias");
 			}
 			return alias;
+		}
+	}
+	
+	/**
+	 * Wrapper around an {@link OrderByChain} that takes the {@link Column} from the clones {@link Map}.
+	 * Made to take {@link Column} aliases of a {@link Query} into account when caller doesn't know them.
+	 *
+	 * @author Guillaume Mary
+	 */
+	protected static class ColumnCloneAwareOrderBy implements OrderByChain {
+		
+		private final OrderByChain delegate;
+		private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
+		
+		protected ColumnCloneAwareOrderBy(FluentOrderByClause delegate, IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+			this.delegate = delegate;
+			this.columnClones = columnClones;
+		}
+		
+		@Override
+		public OrderByChain add(Selectable column, Order order) {
+			return delegate.add(getColumn(column), order);
+		}
+		
+		private Selectable getColumn(Selectable column) {
+			return columnClones.get(column);
+		}
+		
+		@Override
+		public OrderByChain add(Selectable col1, Order order1, Selectable col2, Order order2) {
+			return delegate.add(
+					getColumn(col1), order1,
+					getColumn(col2), order2);
+		}
+		
+		@Override
+		public OrderByChain add(Selectable col1, Order order1, Selectable col2, Order order2, Selectable col3, Order order3) {
+			return delegate.add(
+					getColumn(col1), order1,
+					getColumn(col2), order2,
+					getColumn(col3), order3);
+		}
+		
+		@Override
+		public OrderByChain add(String column, Order order) {
+			return delegate.add(column, order);
+		}
+		
+		@Override
+		public OrderByChain add(String col1, Order order1, String col2, Order order2) {
+			return delegate.add(col1, order1, col2, order2);
+		}
+		
+		@Override
+		public OrderByChain add(String col1, Order order1, String col2, Order order2, String col3, Order order3) {
+			return delegate.add(col1, order1, col2, order2, col3, order3);
+		}
+		
+		@Override
+		public OrderByChain add(Selectable column, Selectable... columns) {
+			return delegate.add(
+					getColumn(column),
+					Arrays.stream(columns).map(this::getColumn).toArray(Column[]::new));
+		}
+		
+		@Override
+		public OrderByChain add(String column, String... columns) {
+			return delegate.add(column, columns);
 		}
 	}
 }

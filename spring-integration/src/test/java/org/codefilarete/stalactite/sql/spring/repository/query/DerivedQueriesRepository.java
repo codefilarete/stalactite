@@ -79,6 +79,10 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Country, 
 	
 	Set<Country> findByLanguagesCodeIsOrderByNameAsc(String code);
 	
+	Set<Country> findByNameLikeOrderByPresidentNameAsc(String code);
+	
+	Set<Country> findByLanguagesCodeIsOrderByPresidentNameAsc(String code);
+	
 	Country findFirstByLanguagesCodeIs(String code);
 	
 	long deleteByLanguagesCodeIs(String code);

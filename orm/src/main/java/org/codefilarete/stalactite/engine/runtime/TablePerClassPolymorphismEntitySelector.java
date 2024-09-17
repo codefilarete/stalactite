@@ -180,8 +180,6 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		// doesn't make a subset of the entity graph
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(singleLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
-		orderByClauseConsumer.accept(query.orderBy());
-		limitAwareConsumer.accept(query.orderBy());
 		
 		// we add union columns
 		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
@@ -189,6 +187,9 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		originalColumnsToClones.putAll(columnClones);
 		originalColumnsToClones.putAll(singleLoadEntityJoinTree.getMainColumnToPseudoColumn());
 		originalColumnsToClones.put(DISCRIMINATOR_COLUMN, DISCRIMINATOR_COLUMN);
+		
+		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), originalColumnsToClones));
+		limitAwareConsumer.accept(query.orderBy());
 		// since criteria is passed to union subqueries, we don't need it into the entire query
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
@@ -242,7 +243,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		});
 		columnReaders.put(DISCRIMINATOR_ALIAS, dialect.getColumnBinderRegistry().getBinder(String.class));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-		orderByClauseConsumer.accept(query.orderBy());
+		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), originalColumnsToClones));
 		limitAwareConsumer.accept(query.orderBy());
 		
 		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);

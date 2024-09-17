@@ -273,8 +273,8 @@ public class QuerySQLBuilderFactory {
 		private void cat(Object column, SQLAppender sql) {
 			if (column instanceof String) {
 				sql.cat((String) column);
-			} else if (column instanceof Column) {
-				sql.cat(dmlNameProvider.getName((Column) column));
+			} else if (column instanceof Selectable) {
+				sql.cat(dmlNameProvider.getName((Selectable) column));
 			}
 		}
 	}

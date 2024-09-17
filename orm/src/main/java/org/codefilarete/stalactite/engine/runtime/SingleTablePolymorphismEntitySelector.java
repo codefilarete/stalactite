@@ -98,7 +98,7 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 		Map<Selectable<?>, String> aliases = query.getAliases();
 		aliases.forEach((selectable, s) -> columnReaders.put(s, dialect.getColumnBinderRegistry().getBinder((Column) selectable)));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
-		orderByClauseConsumer.accept(query.orderBy());
+		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
 		limitAwareConsumer.accept(query.orderBy());
 		
 		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
