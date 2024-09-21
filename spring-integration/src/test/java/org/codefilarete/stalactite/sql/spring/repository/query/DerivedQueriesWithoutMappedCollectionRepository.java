@@ -20,8 +20,8 @@ public interface DerivedQueriesWithoutMappedCollectionRepository extends Stalact
 	
 	Set<Country> findTop2ByOrderByNameAsc();
 	
-	Page<Country> findByNameLike(String name, Pageable pageable);
+	Page<Country> findByNameLikeOrderByIdAsc(String name, Pageable pageable);
 	
-	Slice<Country> searchByNameLike(String name, Pageable pageable);
+	Slice<Country> searchByNameLikeOrderByIdAsc(String name, Pageable pageable);
 	
 }

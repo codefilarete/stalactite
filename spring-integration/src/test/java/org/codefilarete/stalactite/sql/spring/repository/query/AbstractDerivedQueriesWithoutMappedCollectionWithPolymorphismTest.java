@@ -28,6 +28,11 @@ import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,6 +84,76 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionWithPolymorphismTest
 		
 		Set<Country> loadedCountries = derivedQueriesRepository.findTop2ByOrderByNameAsc();
 		assertThat(loadedCountries).containsExactly(country2, country3);
+	}
+	
+	@Test
+	void pageable() {
+		Country country1 = new Republic(42);
+		country1.setName("Titi");
+		Country country2 = new Republic(43);
+		country2.setName("Toto");
+		Country country3 = new Republic(44);
+		country3.setName("Tata");
+		Country country4 = new Republic(45);
+		country4.setName("Tutu");
+		Country country5 = new Republic(46);
+		country5.setName("Tonton");
+		Country country6 = new Republic(47);
+		country6.setName("TinTin");
+		Country country7 = new Republic(48);
+		country7.setName("Toutou");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+		
+		Page<Country> loadedCountries;
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
+		assertThat(loadedCountries.get()).containsExactly(country1, country2);
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T%o", PageRequest.ofSize(2));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
+		assertThat(loadedCountries.get()).containsExactly(country2, country5);
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T", PageRequest.of(1, 2));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
+		assertThat(loadedCountries.get()).containsExactly(country3, country4);
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T%o", PageRequest.of(1, 2));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
+		assertThat(loadedCountries.get()).containsExactly(country7);
+	}
+	
+	@Test
+	void slice() {
+		Country country1 = new Republic(42);
+		country1.setName("Titi");
+		Country country2 = new Republic(43);
+		country2.setName("Toto");
+		Country country3 = new Republic(44);
+		country3.setName("Tata");
+		Country country4 = new Republic(45);
+		country4.setName("Tutu");
+		Country country5 = new Republic(46);
+		country5.setName("Tonton");
+		Country country6 = new Republic(47);
+		country6.setName("TinTin");
+		Country country7 = new Republic(48);
+		country7.setName("Toutou");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+		
+		Slice<Country> loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2));
+		assertThat(loadedCountries.get()).containsExactly(country1, country2);
+		assertThat(loadedCountries.getContent()).containsExactly(country1, country2);
+		assertThat(loadedCountries.hasNext()).isTrue();
+		assertThat(loadedCountries.nextPageable()).isEqualTo(PageRequest.of(1, 2));
+		
+		loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T%o", PageRequest.of(1, 2));
+		assertThat(loadedCountries.get()).containsExactly(country7);
+		assertThat(loadedCountries.nextPageable()).isEqualTo(Pageable.unpaged());
 	}
 	
 	public static class StalactiteRepositoryContextConfigurationWithoutCollection {

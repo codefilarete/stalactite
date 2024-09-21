@@ -1,8 +1,13 @@
 package org.codefilarete.stalactite.sql.spring.repository.query;
 
+import java.lang.reflect.Member;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
+import org.codefilarete.reflection.AccessorByMember;
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.domain.Pageable;
@@ -53,12 +58,18 @@ public class PartialResultPartTreeStalactiteQuery<C, R extends Slice<C>> impleme
 	@Override
 	public R execute(Object[] parameters) {
 		StalactiteParametersParameterAccessor accessor = new StalactiteParametersParameterAccessor(getQueryMethod().getParameters(), parameters);
-		if (delegate.getQueryMethod().isSliceQuery() && accessor.getPageable().getPageNumber() == 0) {
+		Pageable pageable = accessor.getPageable();
+		if (delegate.getQueryMethod().isSliceQuery() && pageable.getPageNumber() == 0) {
 			// The + 1 is a look-ahead tip to make the returned Slice eventually return true on hasNext()
-			delegate.query.executableEntityQuery.limit(accessor.getPageable().getPageSize() + 1);
+			delegate.query.executableEntityQuery.limit(pageable.getPageSize() + 1);
 		} else {
 			// when the user asks for a page number (given Pageable is a Page instance or a Slice with page number) then we ask for the page number
-			delegate.query.executableEntityQuery.limit(accessor.getPageable().getPageSize(), (int) accessor.getPageable().getOffset());
+			delegate.query.executableEntityQuery.limit(pageable.getPageSize(), (int) pageable.getOffset());
+		}
+		if (pageable.getSort().isSorted()) {
+			List<? extends AccessorByMember<?, Object, Member>> sortingProperty = pageable.getSort().stream().map(order -> Accessors.accessor(delegate.getQueryMethod().getEntityInformation().getJavaType(), order.getProperty()))
+					.collect(Collectors.toList());
+			delegate.query.executableEntityQuery.orderBy(new AccessorChain<>(sortingProperty));
 		}
 		List<C> result = delegate.execute(parameters);
 		return queryResultAdapter.apply(accessor, result);

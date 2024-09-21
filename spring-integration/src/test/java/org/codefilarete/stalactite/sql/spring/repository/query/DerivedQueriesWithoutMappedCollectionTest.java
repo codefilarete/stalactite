@@ -119,22 +119,22 @@ public class DerivedQueriesWithoutMappedCollectionTest {
 			
 			Page<Country> loadedCountries;
 			
-			loadedCountries = derivedQueriesRepository.findByNameLike("T", PageRequest.ofSize(2));
+			loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2));
 			assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
 			assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
 			assertThat(loadedCountries.get()).containsExactly(country1, country2);
 			
-			loadedCountries = derivedQueriesRepository.findByNameLike("T%o", PageRequest.ofSize(2));
+			loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T%o", PageRequest.ofSize(2));
 			assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
 			assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
 			assertThat(loadedCountries.get()).containsExactly(country2, country5);
 			
-			loadedCountries = derivedQueriesRepository.findByNameLike("T", PageRequest.of(1, 2));
+			loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T", PageRequest.of(1, 2));
 			assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
 			assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
 			assertThat(loadedCountries.get()).containsExactly(country3, country4);
 			
-			loadedCountries = derivedQueriesRepository.findByNameLike("T%o", PageRequest.of(1, 2));
+			loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T%o", PageRequest.of(1, 2));
 			assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
 			assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
 			assertThat(loadedCountries.get()).containsExactly(country7);
@@ -158,13 +158,13 @@ public class DerivedQueriesWithoutMappedCollectionTest {
 			country7.setName("Toutou");
 			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
 			
-			Slice<Country> loadedCountries = derivedQueriesRepository.searchByNameLike("T", PageRequest.ofSize(2));
+			Slice<Country> loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2));
 			assertThat(loadedCountries.get()).containsExactly(country1, country2);
 			assertThat(loadedCountries.getContent()).containsExactly(country1, country2);
 			assertThat(loadedCountries.hasNext()).isTrue();
 			assertThat(loadedCountries.nextPageable()).isEqualTo(PageRequest.of(1, 2));
 			
-			loadedCountries = derivedQueriesRepository.searchByNameLike("T%o", PageRequest.of(1, 2));
+			loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T%o", PageRequest.of(1, 2));
 			assertThat(loadedCountries.get()).containsExactly(country7);
 			assertThat(loadedCountries.nextPageable()).isEqualTo(Pageable.unpaged());
 		}
