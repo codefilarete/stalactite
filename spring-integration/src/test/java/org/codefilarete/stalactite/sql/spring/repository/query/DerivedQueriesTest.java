@@ -337,7 +337,7 @@ class DerivedQueriesTest {
 	}
 	
 	@Nested
-	class delete {
+	class Delete {
 		
 		@Test
 		void manyToManyCriteria() {

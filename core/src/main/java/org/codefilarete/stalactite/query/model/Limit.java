@@ -5,15 +5,39 @@ package org.codefilarete.stalactite.query.model;
  */
 public class Limit implements LimitChain<Limit> {
 	
-	private Integer value;
+	private Integer count;
 	
-	public Integer getValue() {
-		return value;
+	private Integer offset;
+	
+	public Limit() {
+	}
+	
+	public Limit(Integer count) {
+		this.count = count;
+	}
+	
+	public Limit(Integer count, Integer offset) {
+		this.count = count;
+		this.offset = offset;
+	}
+	
+	public Integer getCount() {
+		return count;
+	}
+	
+	public Integer getOffset() {
+		return offset;
 	}
 	
 	@Override
-	public Limit setValue(Integer value) {
-		this.value = value;
+	public Limit setCount(Integer count) {
+		return setCount(count, null);
+	}
+	
+	@Override
+	public Limit setCount(Integer value, Integer offset) {
+		this.count = value;
+		this.offset = offset;
 		return this;
 	}
 }

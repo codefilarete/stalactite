@@ -5,5 +5,7 @@ package org.codefilarete.stalactite.query.model;
  */
 public interface LimitChain<SELF extends LimitChain<SELF>> {
 	
-	SELF setValue(Integer value);
+	SELF setCount(Integer count);
+	
+	SELF setCount(Integer value, Integer offset);
 }

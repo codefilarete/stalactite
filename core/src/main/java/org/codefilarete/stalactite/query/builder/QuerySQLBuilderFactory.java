@@ -200,7 +200,8 @@ public class QuerySQLBuilderFactory {
 			}
 			
 			Limit limit = query.getLimitSurrogate();
-			sql.catIf(limit.getValue() != null, " limit " + limit.getValue());
+			sql.catIf(limit.getCount() != null, " limit " + limit.getCount())
+					.catIf(limit.getOffset() != null, " offset " + limit.getOffset());
 		}
 		
 		/**
@@ -242,9 +243,13 @@ public class QuerySQLBuilderFactory {
 			}
 			
 			Limit limit = query.getLimitSurrogate();
-			if (limit.getValue() != null) {
+			if (limit.getCount() != null) {
 				sqlWrapper.cat(" limit ");
-				sqlWrapper.catValue(limit.getValue());
+				sqlWrapper.catValue(limit.getCount());
+				if (limit.getOffset() != null) {
+					sqlWrapper.cat(" offset ");
+					sqlWrapper.catValue(limit.getOffset());
+				}
 			}
 			
 			PreparedSQL result = new PreparedSQL(sqlWrapper.getSQL(), sqlWrapper.getParameterBinders());

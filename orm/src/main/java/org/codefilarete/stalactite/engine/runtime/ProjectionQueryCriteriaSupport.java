@@ -17,6 +17,7 @@ import org.codefilarete.stalactite.engine.ExecutableProjection;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
@@ -76,7 +77,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		return (Accumulator<? super Function<? extends Selectable, Object>, Object, R> accumulator) ->
 				entitySelector.selectProjection(selectAdapter, accumulator, localCriteriaSupport.getCriteria(), querySugarSupport.isDistinct(),
 						orderByClause -> {},
-						limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit));
+						limitAware -> nullable(querySugarSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())));
 	}
 	
 	/**
@@ -87,7 +88,7 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 			implements OrderByChain<C, ExecutableProjectionQuerySupport<C>>, LimitAware<ExecutableProjectionQuerySupport<C>> {
 		
 		private boolean distinct;
-		private Integer limit;
+		private Limit limit;
 		
 		public boolean isDistinct() {
 			return distinct;
@@ -99,13 +100,19 @@ public class ProjectionQueryCriteriaSupport<C, I> {
 		
 		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
 		
-		public Integer getLimit() {
+		public Limit getLimit() {
 			return limit;
 		}
 		
 		@Override
 		public ExecutableProjectionQuerySupport<C> limit(int count) {
-			limit = count;
+			limit = new Limit(count);
+			return this;
+		}
+		
+		@Override
+		public ExecutableProjectionQuerySupport<C> limit(int count, Integer offset) {
+			limit = new Limit(count, offset);
 			return this;
 		}
 		

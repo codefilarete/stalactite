@@ -46,7 +46,11 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 			Accumulator<T, ?, ?> accumulator = queryMethod.isCollectionQuery()
 					? (Accumulator) Accumulators.toKeepingOrderSet()
 					: (Accumulator) Accumulators.getFirstUnique();
-			return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, accumulator);
+			if (queryMethod.isPageQuery() || queryMethod.isSliceQuery()) {
+				return new PartialResultPartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree);
+			} else {
+				return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, accumulator);
+			}
 		}
 	}
 }

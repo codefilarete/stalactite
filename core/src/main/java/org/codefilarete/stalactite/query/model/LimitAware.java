@@ -6,4 +6,6 @@ package org.codefilarete.stalactite.query.model;
 public interface LimitAware<C> {
 	
 	C limit(int value);
+	
+	C limit(int value, Integer offset);
 }

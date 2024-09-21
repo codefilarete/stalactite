@@ -29,9 +29,9 @@ import static org.codefilarete.tool.Nullable.nullable;
  */
 public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 	
-	private final QueryMethod method;
-	private final Query<C> query;
-	private final Accumulator<C, ?, R> accumulator;
+	protected final QueryMethod method;
+	protected final Query<C> query;
+	protected final Accumulator<C, ?, R> accumulator;
 	
 	public PartTreeStalactiteQuery(QueryMethod method, EntityPersister<C, ?> entityPersister, PartTree tree, Accumulator<C, ?, R> accumulator) {
 		this.method = method;
@@ -83,7 +83,7 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 	
 	class Query<T> extends AbstractQuery<T> {
 		
-		private final ExecutableEntityQuery<T, ?> executableEntityQuery;
+		protected final ExecutableEntityQuery<T, ?> executableEntityQuery;
 		
 		Query(EntityPersister<T, ?> entityPersister, PartTree tree) {
 			super(entityPersister);

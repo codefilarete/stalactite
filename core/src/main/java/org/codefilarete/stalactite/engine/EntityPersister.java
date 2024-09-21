@@ -447,6 +447,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	interface LimitAware<R> {
 		
 		R limit(int value);
+		
+		R limit(int value, Integer offset);
 	}
 	
 	interface FluentOrderByClause<C, SELF extends FluentOrderByClause<C, SELF>> extends OrderByChain<C, SELF>, LimitAware<SELF> {

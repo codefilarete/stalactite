@@ -32,6 +32,7 @@ import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
@@ -120,7 +121,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 					entitySelector.select(
 							localCriteriaSupport,
 							orderByAdapter.get(),
-							limitAware -> nullable(querySugarSupport.getLimit()).invoke(limitAware::limit))
+							limitAware -> nullable(querySugarSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())))
 			);
 		};
 		return (Accumulator<C, Set<C>, R> accumulatorParam) -> {
@@ -214,10 +215,10 @@ public class EntityQueryCriteriaSupport<C, I> {
 	private static class ExecutableEntityQuerySupport<C>
 			implements OrderByChain<C, ExecutableEntityQuerySupport<C>>, LimitAware<ExecutableEntityQuerySupport<C>> {
 		
-		private Integer limit;
+		private Limit limit;
 		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
 		
-		public Integer getLimit() {
+		public Limit getLimit() {
 			return limit;
 		}
 		
@@ -227,7 +228,13 @@ public class EntityQueryCriteriaSupport<C, I> {
 		
 		@Override
 		public ExecutableEntityQuerySupport<C> limit(int count) {
-			limit = count;
+			limit = new Limit(count);
+			return this;
+		}
+		
+		@Override
+		public ExecutableEntityQuerySupport<C> limit(int count, Integer offset) {
+			limit = new Limit(count, offset);
 			return this;
 		}
 		

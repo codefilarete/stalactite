@@ -352,7 +352,13 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	
 	@Override
 	public FluentLimitClause limit(int value) {
-		this.limit.setValue(value);
+		this.limitSurrogate.setCount(value);
+		return limit;
+	}
+	
+	@Override
+	public FluentLimitClause limit(int value, Integer offset) {
+		this.limitSurrogate.setCount(value, offset);
 		return limit;
 	}
 	
