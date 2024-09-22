@@ -38,7 +38,7 @@ public interface StalactiteRepository<C, I> extends Repository<C, I> {
 	<D extends C> D save(D entity);
 	
 	/**
-	 * Saves all given entities. Same rlies apply as ones of {@link #save(Object)};
+	 * Saves all given entities. Same rules apply as ones of {@link #save(Object)};
 	 *
 	 * @param entities any objects of {@code C} type
 	 * @return given entities. The size can be equal or less than the number of given {@literal entities}.

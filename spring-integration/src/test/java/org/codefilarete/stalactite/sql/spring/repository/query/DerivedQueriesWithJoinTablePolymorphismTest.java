@@ -25,11 +25,12 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
  * @author Guillaume Mary
  */
 @SpringJUnitConfig(classes = {
+		StalactiteRepositoryContextConfigurationBase.class,
 		DerivedQueriesWithJoinTablePolymorphismTest.StalactiteRepositoryContextConfiguration.class
 })
 class DerivedQueriesWithJoinTablePolymorphismTest extends AbstractDerivedQueriesWithPolymorphismTest {
 	
-	public static class StalactiteRepositoryContextConfiguration extends DerivedQueriesTest.StalactiteRepositoryContextConfiguration {
+	public static class StalactiteRepositoryContextConfiguration {
 		
 		@Bean
 		public EntityPersister<Country, Identifier<Long>> countryPersister(PersistenceContext persistenceContext) {

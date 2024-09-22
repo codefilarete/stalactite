@@ -25,7 +25,7 @@ import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 @SpringJUnitConfig(classes = {
 		DerivedQueriesWithoutMappedCollectionWithSingleTablePolymorphismTest.StalactiteRepositoryContextConfiguration.class
 })
-class DerivedQueriesWithoutMappedCollectionWithSingleTablePolymorphismTest extends AbstractDerivedQueriesWithoutMappedCollectionWithPolymorphismTest {
+class DerivedQueriesWithoutMappedCollectionWithSingleTablePolymorphismTest extends AbstractDerivedQueriesWithoutMappedCollectionTest {
 	
 	public static class StalactiteRepositoryContextConfiguration extends StalactiteRepositoryContextConfigurationWithoutCollection {
 		

@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Color;
-import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Language;
 import org.codefilarete.stalactite.engine.model.Person;
 import org.codefilarete.stalactite.engine.model.Republic;
@@ -43,12 +42,12 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void projection() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Person president1 = new Person(666);
 		president1.setName("me");
 		country1.setPresident(president1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Tata");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
@@ -60,12 +59,12 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void projection_byExtraArgument() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Person president1 = new Person(666);
 		president1.setName("John Do");
 		country1.setPresident(president1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		Person president2 = new Person(777);
 		president2.setName("Jane Do");
@@ -83,12 +82,12 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void exists() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Person president1 = new Person(666);
 		president1.setName("me");
 		country1.setPresident(president1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Tata");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
@@ -100,25 +99,25 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void twoCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Country loadedCountry = derivedQueriesRepository.findByIdAndName(new PersistedIdentifier<>(42L), "Toto");
+		Republic loadedCountry = derivedQueriesRepository.findByIdAndName(new PersistedIdentifier<>(42L), "Toto");
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
 	@Test
 	void oneToOneCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Person president1 = new Person(666);
 		president1.setName("me");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		Person president2 = new Person(237);
 		president2.setName("you");
@@ -130,7 +129,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Country loadedCountry = derivedQueriesRepository.findByPresidentId(new PersistedIdentifier<>(666L));
+		Republic loadedCountry = derivedQueriesRepository.findByPresidentId(new PersistedIdentifier<>(666L));
 		assertThat(loadedCountry).isEqualTo(country1);
 		
 		loadedCountry = derivedQueriesRepository.findByPresidentName("me");
@@ -142,24 +141,24 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void embeddedCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		country1.setTimestamp(new Timestamp(
 				LocalDateTime.of(2010, Month.JANUARY, 22, 11, 10, 23),
 				LocalDateTime.of(2024, Month.MAY, 10, 10, 30, 45)));
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Country loadedCountry = derivedQueriesRepository.findByTimestampCreationDateLessThan(Dates.nowAsDate());
+		Republic loadedCountry = derivedQueriesRepository.findByTimestampCreationDateLessThan(Dates.nowAsDate());
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
 	@Test
 	void oneToManyCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		country1.addState(new State(new PersistableIdentifier<>(100L)));
 		country1.addState(new State(new PersistableIdentifier<>(200L)));
@@ -170,7 +169,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.addNickname("Jane Do");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		Person president2 = new Person(237);
 		president2.setName("you");
@@ -182,7 +181,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Country loadedCountry = derivedQueriesRepository.findByStatesIdIn(Arrays.asList(new PersistableIdentifier<>(100L)));
+		Republic loadedCountry = derivedQueriesRepository.findByStatesIdIn(Arrays.asList(new PersistableIdentifier<>(100L)));
 		assertThat(loadedCountry).isEqualTo(country1);
 		
 		loadedCountry = derivedQueriesRepository.findByPresidentNicknamesIn(Arrays.asList("John Do"));
@@ -191,7 +190,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void manyToManyCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
 		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
@@ -201,7 +200,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.setName("me");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		Person president2 = new Person(237);
 		president2.setName("you");
@@ -214,7 +213,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIs("fr_fr");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIs("fr_fr");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 		
 		loadedCountries = derivedQueriesRepository.findByLanguagesCodeIs("en_en");
@@ -223,7 +222,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void countByCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
 		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
@@ -233,7 +232,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.setName("me");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		Person president2 = new Person(237);
 		president2.setName("you");
@@ -255,7 +254,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void countDistinctByCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
 		// we add a second language to make the query returns several time country1 id
@@ -267,7 +266,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.setName("me");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		Person president2 = new Person(237);
 		president2.setName("you");
@@ -293,9 +292,9 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void oneResultExpected_severalResults_throwsException() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
@@ -305,7 +304,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void delete_manyToManyCriteria() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
 		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
@@ -315,7 +314,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.setName("me");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		Person president2 = new Person(237);
 		president2.setName("you");
@@ -337,34 +336,34 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 	@Test
 	void equal() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		derivedQueriesRepository.save(country1);
 		
-		Country loadedCountry = derivedQueriesRepository.findByName("Toto");
+		Republic loadedCountry = derivedQueriesRepository.findByName("Toto");
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
 	@Test
 	void notEqual() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		derivedQueriesRepository.save(country1);
 		
-		Country loadedCountry = derivedQueriesRepository.findByNameNot("Titi");
+		Republic loadedCountry = derivedQueriesRepository.findByNameNot("Titi");
 		assertThat(loadedCountry).isEqualTo(country1);
 	}
 	
 	@Test
 	void equalBoolean() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		country2.setEuMember(true);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 
-		Country loadedCountry = derivedQueriesRepository.findByEuMemberIsTrue();
+		Republic loadedCountry = derivedQueriesRepository.findByEuMemberIsTrue();
 		assertThat(loadedCountry).isEqualTo(country2);
 
 		loadedCountry = derivedQueriesRepository.findByEuMemberIsFalse();
@@ -373,204 +372,204 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void in() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdIn(Arrays.asList(new PersistedIdentifier<>(42L), new PersistedIdentifier<>(43L), new PersistedIdentifier<>(44L)));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdIn(Arrays.asList(new PersistedIdentifier<>(42L), new PersistedIdentifier<>(43L), new PersistedIdentifier<>(44L)));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 	}
 	
 	@Test
 	void notIn() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Toto");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdNotIn(Arrays.asList(new PersistedIdentifier<>(42L)));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdNotIn(Arrays.asList(new PersistedIdentifier<>(42L)));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test
 	void like() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setDescription("a description with a keyword");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionLike("keyword");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionLike("keyword");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 	}
 	
 	@Test
 	void notLike() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setDescription("a description with a keyword");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionNotLike("contained");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionNotLike("contained");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 	}
 	
 	@Test
 	void startsWith() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setDescription("a description with a keyword");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionStartsWith("a keyword");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionStartsWith("a keyword");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test
 	void endsWith() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setDescription("a description with a keyword");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionEndsWith("a keyword");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionEndsWith("a keyword");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 	}
 	
 	@Test
 	void contains() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setDescription("a description with a keyword");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionContains("contained");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionContains("contained");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test
 	void notContains() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setDescription("a description with a keyword");
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setDescription("a keyword contained in the description");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByDescriptionNotContains("contained");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionNotContains("contained");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 	}
 	
 	@Test
 	void isNull() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByNameIsNull();
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameIsNull();
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test
 	void isNotNull() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByNameIsNotNull();
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameIsNotNull();
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 	}
 	
 	@Test
 	void lower() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdLessThan(new PersistedIdentifier<>(43L));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdLessThan(new PersistedIdentifier<>(43L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 	}
 	
 	@Test
 	void lowerEquals() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdLessThanEqual(new PersistedIdentifier<>(43L));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdLessThanEqual(new PersistedIdentifier<>(43L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 	}
 	
 	@Test
 	void greater() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdGreaterThan(new PersistedIdentifier<>(42L));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdGreaterThan(new PersistedIdentifier<>(42L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test
 	void greaterEquals() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdGreaterThanEqual(new PersistedIdentifier<>(42L));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdGreaterThanEqual(new PersistedIdentifier<>(42L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 	}
 	
 	@Test
 	void before() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdBefore(new PersistedIdentifier<>(43L));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdBefore(new PersistedIdentifier<>(43L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
 	}
 	
 	@Test
 	void after() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdAfter(new PersistedIdentifier<>(42L));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdAfter(new PersistedIdentifier<>(42L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test
 	void between() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByIdBetween(new PersistedIdentifier<>(40L), new PersistedIdentifier<>(50L));
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdBetween(new PersistedIdentifier<>(40L), new PersistedIdentifier<>(50L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
 	}
 	
 	@Test
 	void orderBy() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
 		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
@@ -580,7 +579,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.setName("me");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Tata");
 		Person president2 = new Person(237);
 		president2.setName("you");
@@ -593,7 +592,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByNameAsc(frFr.getCode());
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByNameAsc(frFr.getCode());
 		assertThat(loadedCountries).containsExactly(country2, country1);
 		loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByNameDesc(frFr.getCode());
 		assertThat(loadedCountries).containsExactly(country1, country2);
@@ -601,25 +600,25 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Test
 	void orderBy_onDepthProperty() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Tonton");
 		Person president1 = new Person(666);
 		president1.setName("C");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Tintin");
 		Person president2 = new Person(237);
 		president2.setName("A");
 		country2.setPresident(president2);
 		
-		Country country3 = new Republic(44);
+		Republic country3 = new Republic(44);
 		country3.setName("Tantan");
 		Person president3 = new Person(123);
 		president3.setName("B");
 		country3.setPresident(president3);
 		
-		Country country4 = new Republic(45);
+		Republic country4 = new Republic(45);
 		country4.setName("Tata");
 		Person president4 = new Person(456);
 		president4.setName("me");
@@ -627,14 +626,14 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByNameLikeOrderByPresidentNameAsc("T%n");
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeOrderByPresidentNameAsc("T%n");
 		assertThat(loadedCountries).containsExactly(country2, country3, country1);
 	}
 	
 	
 	@Test
 	void orderBy_criteriaOnCollection_onDepthProperty() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
 		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
@@ -644,21 +643,21 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.setName("C");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Tata");
 		Person president2 = new Person(237);
 		president2.setName("A");
 		country2.setPresident(president2);
 		country2.setLanguages(asHashSet(frFr, esEs));
 		
-		Country country3 = new Republic(44);
+		Republic country3 = new Republic(44);
 		country3.setName("Titi");
 		Person president3 = new Person(123);
 		president3.setName("B");
 		country3.setPresident(president3);
 		country3.setLanguages(asHashSet(frFr));
 		
-		Country country4 = new Republic(45);
+		Republic country4 = new Republic(45);
 		country4.setName("Tutu");
 		Person president4 = new Person(456);
 		president4.setName("me");
@@ -666,13 +665,13 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
-		Set<Country> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByPresidentNameAsc(frFr.getCode());
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIsOrderByPresidentNameAsc(frFr.getCode());
 		assertThat(loadedCountries).containsExactly(country2, country3, country1);
 	}
 	
 	@Test
 	void limit_throwsExceptionBecauseOfCollectionPropertyMapping() {
-		Country country1 = new Republic(42);
+		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
 		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
@@ -682,7 +681,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		president1.setName("me");
 		country1.setPresident(president1);
 		
-		Country country2 = new Republic(43);
+		Republic country2 = new Republic(43);
 		country2.setName("Tata");
 		Person president2 = new Person(237);
 		president2.setName("you");

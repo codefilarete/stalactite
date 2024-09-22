@@ -5,7 +5,7 @@ import java.util.Date;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.model.Color;
-import org.codefilarete.stalactite.engine.model.Country;
+import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,75 +15,75 @@ import org.springframework.stereotype.Repository;
  * @author Guillaume Mary
  */
 @Repository
-public interface DerivedQueriesRepository extends StalactiteRepository<Country, Identifier<Long>> {
+public interface DerivedQueriesRepository extends StalactiteRepository<Republic, Identifier<Long>> {
 	
-	Set<Country> findByIdIn(Iterable<Identifier<Long>> ids);
+	Set<Republic> findByIdIn(Iterable<Identifier<Long>> ids);
 	
-	Set<Country> findByIdNotIn(Iterable<Identifier<Long>> ids);
+	Set<Republic> findByIdNotIn(Iterable<Identifier<Long>> ids);
 	
-	Country findByName(String name);
+	Republic findByName(String name);
 	
-	Country findByNameNot(String name);
+	Republic findByNameNot(String name);
 	
-	Country findByEuMemberIsTrue();
+	Republic findByEuMemberIsTrue();
 	
-	Country findByEuMemberIsFalse();
+	Republic findByEuMemberIsFalse();
 	
-	Country findByIdAndName(Identifier<Long> id, String name);
+	Republic findByIdAndName(Identifier<Long> id, String name);
 	
-	Set<Country> findByDescriptionLike(String name);
+	Set<Republic> findByDescriptionLike(String name);
 	
-	Set<Country> findByDescriptionNotLike(String name);
+	Set<Republic> findByDescriptionNotLike(String name);
 	
-	Set<Country> findByDescriptionStartsWith(String name);
+	Set<Republic> findByDescriptionStartsWith(String name);
 	
-	Set<Country> findByDescriptionEndsWith(String name);
+	Set<Republic> findByDescriptionEndsWith(String name);
 	
-	Set<Country> findByDescriptionContains(String name);
+	Set<Republic> findByDescriptionContains(String name);
 	
-	Set<Country> findByDescriptionNotContains(String name);
+	Set<Republic> findByDescriptionNotContains(String name);
 	
-	Set<Country> findByNameIsNull();
+	Set<Republic> findByNameIsNull();
 	
-	Set<Country> findByNameIsNotNull();
+	Set<Republic> findByNameIsNotNull();
 	
-	Set<Country> findByIdLessThan(Identifier<Long> id);
+	Set<Republic> findByIdLessThan(Identifier<Long> id);
 	
-	Set<Country> findByIdLessThanEqual(Identifier<Long> id);
+	Set<Republic> findByIdLessThanEqual(Identifier<Long> id);
 	
-	Set<Country> findByIdGreaterThan(Identifier<Long> id);
+	Set<Republic> findByIdGreaterThan(Identifier<Long> id);
 	
-	Set<Country> findByIdGreaterThanEqual(Identifier<Long> id);
+	Set<Republic> findByIdGreaterThanEqual(Identifier<Long> id);
 	
-	Set<Country> findByIdBefore(Identifier<Long> id);
+	Set<Republic> findByIdBefore(Identifier<Long> id);
 	
-	Set<Country> findByIdAfter(Identifier<Long> id);
+	Set<Republic> findByIdAfter(Identifier<Long> id);
 	
-	Set<Country> findByIdBetween(Identifier<Long> id1, Identifier<Long> id2);
+	Set<Republic> findByIdBetween(Identifier<Long> id1, Identifier<Long> id2);
 	
-	Country findByPresidentId(Identifier<Long> longPersistedIdentifier);
+	Republic findByPresidentId(Identifier<Long> longPersistedIdentifier);
 	
-	Country findByPresidentName(String name);
+	Republic findByPresidentName(String name);
 	
-	Country findByPresidentVehicleColor(Color color);
+	Republic findByPresidentVehicleColor(Color color);
 	
-	Country findByStatesIdIn(Iterable<Identifier<Long>> ids);
+	Republic findByStatesIdIn(Iterable<Identifier<Long>> ids);
 	
-	Country findByPresidentNicknamesIn(Iterable<String> names);
+	Republic findByPresidentNicknamesIn(Iterable<String> names);
 	
-	Country findByTimestampCreationDateLessThan(Date date);
+	Republic findByTimestampCreationDateLessThan(Date date);
 	
-	Set<Country> findByLanguagesCodeIs(String code);
+	Set<Republic> findByLanguagesCodeIs(String code);
 	
-	Set<Country> findByLanguagesCodeIsOrderByNameDesc(String code);
+	Set<Republic> findByLanguagesCodeIsOrderByNameDesc(String code);
 	
-	Set<Country> findByLanguagesCodeIsOrderByNameAsc(String code);
+	Set<Republic> findByLanguagesCodeIsOrderByNameAsc(String code);
 	
-	Set<Country> findByNameLikeOrderByPresidentNameAsc(String code);
+	Set<Republic> findByNameLikeOrderByPresidentNameAsc(String code);
 	
-	Set<Country> findByLanguagesCodeIsOrderByPresidentNameAsc(String code);
+	Set<Republic> findByLanguagesCodeIsOrderByPresidentNameAsc(String code);
 	
-	Country findFirstByLanguagesCodeIs(String code);
+	Republic findFirstByLanguagesCodeIs(String code);
 	
 	long deleteByLanguagesCodeIs(String code);
 	
