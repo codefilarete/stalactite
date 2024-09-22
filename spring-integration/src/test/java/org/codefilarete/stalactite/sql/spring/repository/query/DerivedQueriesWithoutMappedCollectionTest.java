@@ -45,6 +45,7 @@ import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
+import static org.springframework.data.domain.Sort.by;
 
 /**
  * Dedicated test class for orderBy and limit cases : both work only with a mapping that doesn't imply Collection property
@@ -141,6 +142,47 @@ public class DerivedQueriesWithoutMappedCollectionTest {
 		}
 		
 		@Test
+		void pageable_withOrder() {
+			Country country1 = new Country(42);
+			country1.setName("Titi");
+			Country country2 = new Country(43);
+			country2.setName("Toto");
+			Country country3 = new Country(44);
+			country3.setName("Tata");
+			Country country4 = new Country(45);
+			country4.setName("Tutu");
+			Country country5 = new Country(46);
+			country5.setName("Tonton");
+			Country country6 = new Country(47);
+			country6.setName("TinTin");
+			Country country7 = new Country(48);
+			country7.setName("Toutou");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+			
+			Page<Country> loadedCountries;
+			
+			loadedCountries = derivedQueriesRepository.findByNameLike("T", PageRequest.ofSize(2).withSort(by("id").ascending()));
+			assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
+			assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
+			assertThat(loadedCountries.get()).containsExactly(country1, country2);
+			
+			loadedCountries = derivedQueriesRepository.findByNameLike("T%o", PageRequest.ofSize(2).withSort(by("id").ascending()));
+			assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
+			assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
+			assertThat(loadedCountries.get()).containsExactly(country2, country5);
+			
+			loadedCountries = derivedQueriesRepository.findByNameLike("T", PageRequest.of(1, 2).withSort(by("id").ascending()));
+			assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
+			assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
+			assertThat(loadedCountries.get()).containsExactly(country3, country4);
+			
+			loadedCountries = derivedQueriesRepository.findByNameLike("T%o", PageRequest.of(1, 2).withSort(by("id").ascending()));
+			assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
+			assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
+			assertThat(loadedCountries.get()).containsExactly(country7);
+		}
+		
+		@Test
 		void slice() {
 			Country country1 = new Country(42);
 			country1.setName("Titi");
@@ -158,7 +200,8 @@ public class DerivedQueriesWithoutMappedCollectionTest {
 			country7.setName("Toutou");
 			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
 			
-			Slice<Country> loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2));
+			Slice<Country> loadedCountries;
+			loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2));
 			assertThat(loadedCountries.get()).containsExactly(country1, country2);
 			assertThat(loadedCountries.getContent()).containsExactly(country1, country2);
 			assertThat(loadedCountries.hasNext()).isTrue();
@@ -167,6 +210,32 @@ public class DerivedQueriesWithoutMappedCollectionTest {
 			loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T%o", PageRequest.of(1, 2));
 			assertThat(loadedCountries.get()).containsExactly(country7);
 			assertThat(loadedCountries.nextPageable()).isEqualTo(Pageable.unpaged());
+		}
+		
+		
+		@Test
+		void slice_withOrder() {
+			Country country1 = new Country(42);
+			country1.setName("Titi");
+			Country country2 = new Country(43);
+			country2.setName("Toto");
+			Country country3 = new Country(44);
+			country3.setName("Tata");
+			Country country4 = new Country(45);
+			country4.setName("Tutu");
+			Country country5 = new Country(46);
+			country5.setName("Tonton");
+			Country country6 = new Country(47);
+			country6.setName("TinTin");
+			Country country7 = new Country(48);
+			country7.setName("Toutou");
+			derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+			
+			Slice<Country> loadedCountries = derivedQueriesRepository.searchByNameLike("T", PageRequest.ofSize(2).withSort(by("id").ascending()));
+			assertThat(loadedCountries.get()).containsExactly(country1, country2);
+			assertThat(loadedCountries.getContent()).containsExactly(country1, country2);
+			assertThat(loadedCountries.hasNext()).isTrue();
+			assertThat(loadedCountries.nextPageable()).isEqualTo(PageRequest.of(1, 2).withSort(by("id").ascending()));
 		}
 	}
 	

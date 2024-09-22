@@ -32,12 +32,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.id.Identifier.identifierBinder;
 import static org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders.INTEGER_PRIMITIVE_BINDER;
+import static org.springframework.data.domain.Sort.by;
 
 /**
  * Dedicated test class for orderBy and limit cases : both work only with a mapping that doesn't imply Collection property
@@ -128,6 +128,47 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionWithPolymorphismTest
 	}
 	
 	@Test
+	void pageable_withOrder() {
+		Country country1 = new Republic(42);
+		country1.setName("Titi");
+		Country country2 = new Republic(43);
+		country2.setName("Toto");
+		Country country3 = new Republic(44);
+		country3.setName("Tata");
+		Country country4 = new Republic(45);
+		country4.setName("Tutu");
+		Country country5 = new Republic(46);
+		country5.setName("Tonton");
+		Country country6 = new Republic(47);
+		country6.setName("TinTin");
+		Country country7 = new Republic(48);
+		country7.setName("Toutou");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+		
+		Page<Country> loadedCountries;
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2).withSort(by("id").ascending()));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
+		assertThat(loadedCountries.get()).containsExactly(country1, country2);
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T%o", PageRequest.ofSize(2).withSort(by("id").ascending()));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
+		assertThat(loadedCountries.get()).containsExactly(country2, country5);
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T", PageRequest.of(1, 2).withSort(by("id").ascending()));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(4);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(7);
+		assertThat(loadedCountries.get()).containsExactly(country3, country4);
+		
+		loadedCountries = derivedQueriesRepository.findByNameLikeOrderByIdAsc("T%o", PageRequest.of(1, 2).withSort(by("id").ascending()));
+		assertThat(loadedCountries.getTotalPages()).isEqualTo(2);
+		assertThat(loadedCountries.getTotalElements()).isEqualTo(3);
+		assertThat(loadedCountries.get()).containsExactly(country7);
+	}
+	
+	@Test
 	void slice() {
 		Country country1 = new Republic(42);
 		country1.setName("Titi");
@@ -154,6 +195,31 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionWithPolymorphismTest
 		loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T%o", PageRequest.of(1, 2));
 		assertThat(loadedCountries.get()).containsExactly(country7);
 		assertThat(loadedCountries.nextPageable()).isEqualTo(Pageable.unpaged());
+	}
+	
+	@Test
+	void slice_withOrder() {
+		Country country1 = new Republic(42);
+		country1.setName("Titi");
+		Country country2 = new Republic(43);
+		country2.setName("Toto");
+		Country country3 = new Republic(44);
+		country3.setName("Tata");
+		Country country4 = new Republic(45);
+		country4.setName("Tutu");
+		Country country5 = new Republic(46);
+		country5.setName("Tonton");
+		Country country6 = new Republic(47);
+		country6.setName("TinTin");
+		Country country7 = new Republic(48);
+		country7.setName("Toutou");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4, country5, country6, country7));
+		
+		Slice<Country> loadedCountries = derivedQueriesRepository.searchByNameLikeOrderByIdAsc("T", PageRequest.ofSize(2).withSort(by("id").ascending()));
+		assertThat(loadedCountries.get()).containsExactly(country1, country2);
+		assertThat(loadedCountries.getContent()).containsExactly(country1, country2);
+		assertThat(loadedCountries.hasNext()).isTrue();
+		assertThat(loadedCountries.nextPageable()).isEqualTo(PageRequest.of(1, 2).withSort(by("id").ascending()));
 	}
 	
 	public static class StalactiteRepositoryContextConfigurationWithoutCollection {
