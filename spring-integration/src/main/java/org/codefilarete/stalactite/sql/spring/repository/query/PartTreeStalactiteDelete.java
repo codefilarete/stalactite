@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.spring.repository.query;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
@@ -23,7 +24,7 @@ class PartTreeStalactiteDelete<C> implements RepositoryQuery {
 	private final QueryMethod queryMethod;
 	private final EntityPersister<C, ?> entityPersister;
 	
-	public PartTreeStalactiteDelete(QueryMethod queryMethod, EntityPersister<C, ?> entityPersister, PartTree partTree) {
+	public PartTreeStalactiteDelete(QueryMethod queryMethod, AdvancedEntityPersister<C, ?> entityPersister, PartTree partTree) {
 		this.partTreeQuery = new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, Accumulators.toSet());
 		this.queryMethod = queryMethod;
 		this.entityPersister = entityPersister;

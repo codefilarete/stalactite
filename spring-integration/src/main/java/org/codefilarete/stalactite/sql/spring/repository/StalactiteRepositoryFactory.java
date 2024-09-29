@@ -2,7 +2,7 @@ package org.codefilarete.stalactite.sql.spring.repository;
 
 import java.util.Optional;
 
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.sql.spring.repository.query.CreateQueryLookupStrategy;
 import org.codefilarete.tool.exception.NotImplementedException;
 import org.springframework.data.repository.core.EntityInformation;
@@ -21,9 +21,9 @@ import org.springframework.lang.Nullable;
  */
 public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 	
-	private final EntityPersister<?, ?> entityPersister;
+	private final AdvancedEntityPersister<?, ?> entityPersister;
 	
-	public StalactiteRepositoryFactory(EntityPersister<?, ?> entityPersister) {
+	public StalactiteRepositoryFactory(AdvancedEntityPersister<?, ?> entityPersister) {
 		this.entityPersister = entityPersister;
 	}
 	
@@ -46,7 +46,7 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 	@Override
 	protected Optional<QueryLookupStrategy> getQueryLookupStrategy(@Nullable Key key,
 																   QueryMethodEvaluationContextProvider evaluationContextProvider) {
-		return Optional.of(new CreateQueryLookupStrategy(entityPersister));
+		return Optional.of(new CreateQueryLookupStrategy<>(entityPersister));
 	}
 	
 }

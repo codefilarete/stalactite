@@ -1,8 +1,9 @@
 package org.codefilarete.stalactite.sql.spring.repository.query;
 
 import java.lang.reflect.Method;
+import java.util.Collection;
 
-import org.codefilarete.stalactite.engine.EntityPersister;
+import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.springframework.data.projection.ProjectionFactory;
@@ -21,9 +22,9 @@ import org.springframework.data.repository.query.parser.PartTree;
  */
 public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 	
-	private final EntityPersister<T, ?> entityPersister;
+	private final AdvancedEntityPersister<T, ?> entityPersister;
 	
-	public CreateQueryLookupStrategy(EntityPersister<T, ?> entityPersister) {
+	public CreateQueryLookupStrategy(AdvancedEntityPersister<T, ?> entityPersister) {
 		this.entityPersister = entityPersister;
 	}
 	
@@ -47,9 +48,9 @@ public class CreateQueryLookupStrategy<T> implements QueryLookupStrategy {
 					? (Accumulator) Accumulators.toKeepingOrderSet()
 					: (Accumulator) Accumulators.getFirstUnique();
 			if (queryMethod.isPageQuery() || queryMethod.isSliceQuery()) {
-				return new PartialResultPartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree);
+				return new PartTreeStalactitePagedQuery<>(queryMethod, entityPersister, partTree);
 			} else {
-				return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, accumulator);
+				return new PartTreeStalactiteQuery<>(queryMethod, entityPersister, partTree, (Accumulator<T, ? extends Collection<T>, ?>) accumulator);
 			}
 		}
 	}

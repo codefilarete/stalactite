@@ -59,16 +59,18 @@ import org.codefilarete.tool.collection.Iterables;
  * @param <T> the main target table
  * @author Guillaume Mary
  */
-public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implements ConfiguredRelationalPersister<C, I> {
+public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
+		implements ConfiguredRelationalPersister<C, I>, AdvancedEntityPersister<C, I> {
 	
 	private final BeanPersister<C, I, T> persister;
 	/** Support for {@link EntityCriteria} query execution */
 	private final EntitySelector<C, I> entitySelector;
-	/** Support for defining entity criteria on {@link #newWhere()} */
+	/** Support for defining entity criteria on {@link #selectWhere()} */
 	private final EntityCriteriaSupport<C> criteriaSupport;
 	private final EntityMappingTreeSelectExecutor<C, I, T> selectGraphExecutor;
 	
-	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy, Dialect dialect,
+	public SimpleRelationalEntityPersister(ClassMapping<C, I, T> mainMappingStrategy,
+										   Dialect dialect,
 										   ConnectionConfiguration connectionConfiguration) {
 		this(new BeanPersister<>(mainMappingStrategy, dialect, connectionConfiguration), dialect, connectionConfiguration);
 	}
@@ -89,7 +91,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	protected EntitySelector<C, I> newEntitySelectExecutor(Dialect dialect) {
 		return new EntityGraphSelector<>(
 				persister,
-				selectGraphExecutor.getEntityJoinTree(),
+				getEntityJoinTree(),
 				persister.getConnectionProvider(),
 				dialect);
 	}
@@ -175,8 +177,12 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	
 	@Override
 	public ExecutableEntityQueryCriteria<C, ?> selectWhere() {
-		EntityQueryCriteriaSupport<C, I> support = new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
-		return support.wrapIntoExecutable();
+		return newCriteriaSupport().wrapIntoExecutable();
+	}
+	
+	@Override
+	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
+		return new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
 	}
 	
 	@Override
@@ -192,7 +198,7 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>> implement
 	 */
 	@Override
 	public Set<C> selectAll() {
-		return (Set<C>) selectWhere().execute(Accumulators.toSet());
+		return selectWhere().execute(Accumulators.toSet());
 	}
 	
 	@Override

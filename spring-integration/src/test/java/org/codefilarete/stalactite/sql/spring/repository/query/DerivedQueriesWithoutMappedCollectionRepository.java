@@ -8,6 +8,7 @@ import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -19,6 +20,8 @@ public interface DerivedQueriesWithoutMappedCollectionRepository extends Stalact
 	Republic findFirstByOrderByNameAsc();
 	
 	Set<Republic> findTop2ByOrderByNameAsc();
+	
+	Set<Republic> findByNameLike(String name, Sort sort);
 	
 	Page<Republic> findByNameLikeOrderByIdAsc(String name, Pageable pageable);
 	

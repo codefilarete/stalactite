@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -67,27 +68,58 @@ public class EntityQueryCriteriaSupport<C, I> {
 	
 	public static final Logger LOGGER = LoggerFactory.getLogger(EntityQueryCriteriaSupport.class);
 	
-	private final EntityCriteriaSupport<C> entityCriteriaSupport;
-	
 	/** Support for {@link EntityCriteria} query execution */
 	private final EntitySelector<C, I> entitySelector;
 	
+	private final EntityCriteriaSupport<C> entityCriteriaSupport;
+	
+	private final EntityQueryPageSupport<C> queryPageSupport;
+	
 	private final PersisterListenerCollection<C, I> persisterListener;
 	
-	EntityQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntitySelector<C, I> entitySelector, PersisterListenerCollection<C, I> persisterListener) {
-		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
+	public EntityQueryCriteriaSupport(EntityCriteriaSupport<C> source, EntitySelector<C, I> entitySelector, PersisterListenerCollection<C, I> persisterListener) {
 		this.entitySelector = entitySelector;
+		this.entityCriteriaSupport = new EntityCriteriaSupport<>(source);
+		this.queryPageSupport = new EntityQueryPageSupport<>();
 		this.persisterListener = persisterListener;
+	}
+	
+	private EntityQueryCriteriaSupport(EntitySelector<C, I> entitySelector,
+									  EntityCriteriaSupport<C> entityCriteriaSupport,
+									  EntityQueryPageSupport<C> queryPageSupport,
+									  PersisterListenerCollection<C, I> persisterListener) {
+		this.entitySelector = entitySelector;
+		this.entityCriteriaSupport = entityCriteriaSupport;
+		this.queryPageSupport = queryPageSupport;
+		this.persisterListener = persisterListener;
+	}
+	
+	/**
+	 * Makes a copy of this instance merged with given one
+	 * Made to handle Spring Data's different ways of sorting (should have been put closer to its usage, but was too complex)
+	 * 
+	 * @param otherPageSupport some other paging options
+	 * @return a merge of this instance with given page options
+	 */
+	public EntityQueryCriteriaSupport<C, I> copyFor(EntityQueryPageSupport<C> otherPageSupport) {
+		return new EntityQueryCriteriaSupport<>(entitySelector, entityCriteriaSupport, queryPageSupport.merge(otherPageSupport), persisterListener);
+	}
+	
+	public EntityCriteriaSupport<C> getEntityCriteriaSupport() {
+		return entityCriteriaSupport;
+	}
+	
+	public EntityQueryPageSupport<C> getQueryPageSupport() {
+		return queryPageSupport;
 	}
 	
 	public ExecutableEntityQueryCriteria<C, ?> wrapIntoExecutable() {
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
-		ExecutableEntityQuerySupport<C> querySugarSupport = new ExecutableEntityQuerySupport<>();
 		return methodDispatcher
-				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Set<C>, Object>, Object>) ExecutableQuery::execute,
-						wrapGraphLoad(entityCriteriaSupport, querySugarSupport))
-				.redirect(OrderByChain.class, querySugarSupport, true)
-				.redirect(LimitAware.class, querySugarSupport, true)
+				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Collection<C>, Object>, Object>) ExecutableQuery::execute,
+						wrapGraphLoad())
+				.redirect(OrderByChain.class, queryPageSupport, true)
+				.redirect(LimitAware.class, queryPageSupport, true)
 				.redirect(RelationalEntityCriteria.class, entityCriteriaSupport, true)
 				// making an exception for 2 of the methods that can't return the proxy
 				.redirect((SerializableFunction<ConfiguredEntityCriteria, CriteriaChain>) ConfiguredEntityCriteria::getCriteria, entityCriteriaSupport::getCriteria)
@@ -108,10 +140,10 @@ public class EntityQueryCriteriaSupport<C, I> {
 		
 	}
 	
-	private <R> Function<Accumulator<C, Set<C>, R>, R> wrapGraphLoad(EntityCriteriaSupport<C> localCriteriaSupport, ExecutableEntityQuerySupport<C> querySugarSupport) {
+	public <R> Function<Accumulator<C, Collection<C>, R>, R> wrapGraphLoad() {
 		Holder<Consumer<org.codefilarete.stalactite.query.model.OrderByChain<?>>> orderByAdapter = new Holder<>();
 		Supplier<Set<C>> entityLoader = () -> {
-			if (querySugarSupport.getLimit() != null) {
+			if (queryPageSupport.getLimit() != null) {
 				if (entityCriteriaSupport.getRootConfiguration().hasCollectionProperty()) {
 					throw new UnsupportedOperationException("Can't limit query when entity graph contains Collection relations");
 				}
@@ -119,13 +151,13 @@ public class EntityQueryCriteriaSupport<C, I> {
 		
 			return persisterListener.doWithSelectListener(emptySet(), () ->
 					entitySelector.select(
-							localCriteriaSupport,
+							entityCriteriaSupport,
 							orderByAdapter.get(),
-							limitAware -> nullable(querySugarSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())))
+							limitAware -> nullable(queryPageSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())))
 			);
 		};
-		return (Accumulator<C, Set<C>, R> accumulatorParam) -> {
-			if (localCriteriaSupport.hasCollectionCriteria() && !querySugarSupport.getOrderBy().isEmpty()) {
+		return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {
+			if (entityCriteriaSupport.hasCollectionCriteria() && !queryPageSupport.getOrderBy().isEmpty()) {
 				// a collection property in criteria will trigger a 2 phases load (ids, then entities)
 				// which is no compatible with an SQL "order by" clause, therefore we sort the result in memory
 				// and we don't ask for SQL "order by" because it's useless
@@ -134,15 +166,15 @@ public class EntityQueryCriteriaSupport<C, I> {
 				// ClassCastException of the addAll(..) operation
 				LOGGER.debug("Sorting loaded entities in memory");
 				Set<C> loadedEntities = entityLoader.get();
-				TreeSet<C> sortedResult = new TreeSet<>(buildComparator(querySugarSupport.getOrderBy()));
+				TreeSet<C> sortedResult = new TreeSet<>(buildComparator(queryPageSupport.getOrderBy()));
 				sortedResult.addAll(loadedEntities);
 				return accumulatorParam.collect(sortedResult);
 			} else {
 				// single query
 				orderByAdapter.set(orderByClause -> {
-					KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = querySugarSupport.getOrderBy();
+					KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = queryPageSupport.getOrderBy();
 					orderBy.forEach(duo -> {
-						Column column = localCriteriaSupport.getRootConfiguration().giveColumn(duo.getLeft());
+						Column column = entityCriteriaSupport.getRootConfiguration().giveColumn(duo.getLeft());
 						orderByClause.add(column, duo.getRight() == Order.ASC
 								? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
 								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
@@ -209,37 +241,37 @@ public class EntityQueryCriteriaSupport<C, I> {
 	
 	
 	/**
-	 * Simple class that stores options of the query
+	 * Simple class that stores paging options of the query
 	 * @author Guillaume Mary
 	 */
-	private static class ExecutableEntityQuerySupport<C>
-			implements OrderByChain<C, ExecutableEntityQuerySupport<C>>, LimitAware<ExecutableEntityQuerySupport<C>> {
+	public static class EntityQueryPageSupport<C>
+			implements OrderByChain<C, EntityQueryPageSupport<C>>, LimitAware<EntityQueryPageSupport<C>> {
 		
 		private Limit limit;
 		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
 		
-		public Limit getLimit() {
+		private Limit getLimit() {
 			return limit;
 		}
 		
-		public KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> getOrderBy() {
+		private KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> getOrderBy() {
 			return orderBy;
 		}
 		
 		@Override
-		public ExecutableEntityQuerySupport<C> limit(int count) {
+		public EntityQueryPageSupport<C> limit(int count) {
 			limit = new Limit(count);
 			return this;
 		}
 		
 		@Override
-		public ExecutableEntityQuerySupport<C> limit(int count, Integer offset) {
+		public EntityQueryPageSupport<C> limit(int count, Integer offset) {
 			limit = new Limit(count, offset);
 			return this;
 		}
 		
 		@Override
-		public ExecutableEntityQuerySupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
+		public EntityQueryPageSupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
 			AccessorByMethodReference<C, ?> methodReference = new AccessorByMethodReference<>(getter);
 			orderBy.add(new Duo<>(Arrays.asList(methodReference), order));
 			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());
@@ -247,7 +279,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		}
 		
 		@Override
-		public ExecutableEntityQuerySupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
+		public EntityQueryPageSupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
 			MutatorByMethodReference<C, ?> methodReference = new MutatorByMethodReference<>(setter);
 			orderBy.add(new Duo<>(Arrays.asList(methodReference), order));
 			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());
@@ -255,7 +287,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		}
 		
 		@Override
-		public ExecutableEntityQuerySupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
+		public EntityQueryPageSupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
 			orderBy.add(new Duo<>(getter.getAccessors(), order));
 			getter.getAccessors().forEach(accessor -> assertAccessorIsNotIterable(accessor, AccessorDefinition.giveDefinition(accessor).getMemberType()));
 			return this;
@@ -269,6 +301,32 @@ public class EntityQueryCriteriaSupport<C, I> {
 							? ((AbstractReflector<?>) valueAccessPoint).getDescription()
 							: AccessorDefinition.giveDefinition(valueAccessPoint)).toString());
 			}
+		}
+		
+		/**
+		 * Creates a copy of this instance by merging its options with another.
+		 * Made to handle Spring Data's different ways of sorting (should have been put closer to its usage, but was too complex) 
+		 * 
+		 * @param other some other paging options
+		 * @return a merge of this instance with given one
+		 */
+		private EntityQueryPageSupport<C> merge(EntityQueryPageSupport<C> other) {
+			EntityQueryPageSupport<C> duplicate = new EntityQueryPageSupport<>();
+			// applying this instance's limit and orderBy options
+			if (this.getLimit() != null) {
+				duplicate.limit(this.getLimit().getCount(), this.getLimit().getOffset());
+			}
+			this.orderBy.forEach(accessorOrderDuo -> {
+				duplicate.orderBy.add(new Duo<>(accessorOrderDuo.getLeft(), accessorOrderDuo.getRight()));
+			});
+			// adding other instance's limit and orderBy options (may overwrite info, but that's user responsibility, we can't do anything smart here)
+			if (other.getLimit() != null) {
+				duplicate.limit(other.getLimit().getCount(), other.getLimit().getOffset());
+			}
+			other.orderBy.forEach(accessorOrderDuo -> {
+				duplicate.orderBy.add(new Duo<>(accessorOrderDuo.getLeft(), accessorOrderDuo.getRight()));
+			});
+			return duplicate;
 		}
 	}
 }

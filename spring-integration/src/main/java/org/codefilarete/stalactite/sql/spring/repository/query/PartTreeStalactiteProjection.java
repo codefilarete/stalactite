@@ -116,7 +116,7 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 	
 	private final QueryMethod method;
 	private final Accumulator<Function<Selectable<Object>, Object>, ?, R> accumulator;
-	private final Query<C> query;
+	private final DerivedQuery<C> query;
 	private final Consumer<Select> selectConsumer;
 	
 	public <O> PartTreeStalactiteProjection(
@@ -136,7 +136,7 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 		
 		try {
 			this.selectConsumer = selectConsumer;
-			this.query = new Query<>(entityPersister, tree);
+			this.query = new DerivedQuery<>(entityPersister, tree);
 			
 		} catch (RuntimeException o_O) {
 			throw new IllegalArgumentException(
@@ -144,7 +144,7 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 		}
 	}
 	
-	public Query<C> getQuery() {
+	public DerivedQuery<C> getQuery() {
 		return query;
 	}
 	
@@ -169,19 +169,18 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 		return method;
 	}
 	
-	class Query<T> extends AbstractQuery<T> {
+	class DerivedQuery<T> extends AbstractDerivedQuery<T> {
 		
 		protected final ExecutableProjectionQuery<T, ?> executableProjectionQuery;
 		
-		Query(EntityPersister<T, ?> entityPersister, PartTree tree) {
-			super(entityPersister);
-			executableProjectionQuery = entityPersister.selectProjectionWhere(selectConsumer);
+		DerivedQuery(EntityPersister<T, ?> entityPersister, PartTree tree) {
+			this.executableProjectionQuery = entityPersister.selectProjectionWhere(selectConsumer);
 			tree.forEach(orPart -> orPart.forEach(this::append));
 		}
 		
 		private void append(Part part) {
-			Criterion criterion = convertToOperator(part.getType());
-			executableProjectionQuery.and(convertToAccessorChain(part.getProperty()), criterion.operator);
+			Criterion criterion = convertToCriterion(part.getType());
+			this.executableProjectionQuery.and(convertToAccessorChain(part.getProperty()), criterion.operator);
 			this.criteriaChain.criteria.add(criterion);
 		}
 	}

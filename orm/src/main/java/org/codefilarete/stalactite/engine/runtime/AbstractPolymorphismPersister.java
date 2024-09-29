@@ -17,7 +17,8 @@ import org.codefilarete.stalactite.sql.result.Accumulators;
  * @param <I>
  * @author Guillaume Mary
  */
-public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredRelationalPersister<C, I>, PolymorphicPersister<C> {
+public abstract class AbstractPolymorphismPersister<C, I>
+		implements ConfiguredRelationalPersister<C, I>, PolymorphicPersister<C>, AdvancedEntityPersister<C, I> {
 	
 	protected final Map<Class<C>, ConfiguredRelationalPersister<C, I>> subEntitiesPersisters;
 	protected final ConfiguredRelationalPersister<C, I> mainPersister;
@@ -35,8 +36,12 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	
 	@Override
 	public ExecutableEntityQueryCriteria<C, ?> selectWhere() {
-		EntityQueryCriteriaSupport<C, I> support = new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
-		return support.wrapIntoExecutable();
+		return newCriteriaSupport().wrapIntoExecutable();
+	}
+	
+	@Override
+	public EntityQueryCriteriaSupport<C, I> newCriteriaSupport() {
+		return new EntityQueryCriteriaSupport<>(criteriaSupport, entitySelector, getPersisterListener());
 	}
 	
 	@Override
@@ -47,7 +52,7 @@ public abstract class AbstractPolymorphismPersister<C, I> implements ConfiguredR
 	
 	@Override
 	public Set<C> selectAll() {
-		return (Set<C>) selectWhere().execute(Accumulators.toSet());
+		return selectWhere().execute(Accumulators.toSet());
 	}
 	
 	@Override

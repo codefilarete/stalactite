@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -78,6 +79,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	Set<Republic> findByLanguagesCodeIsOrderByNameDesc(String code);
 	
 	Set<Republic> findByLanguagesCodeIsOrderByNameAsc(String code);
+	
+	Set<Republic> findByLanguagesCodeIs(String code, Sort sort);
 	
 	Set<Republic> findByNameLikeOrderByPresidentNameAsc(String code);
 	

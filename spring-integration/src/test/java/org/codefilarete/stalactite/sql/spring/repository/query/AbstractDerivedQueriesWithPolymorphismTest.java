@@ -23,6 +23,7 @@ import org.codefilarete.tool.Dates;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -599,6 +600,37 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	}
 	
 	@Test
+	void orderBy_dynamic() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+		country1.setLanguages(asHashSet(frFr, enEn));
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		
+		Republic country2 = new Republic(43);
+		country2.setName("Tata");
+		Person president2 = new Person(237);
+		president2.setName("you");
+		country2.setPresident(president2);
+		country2.setLanguages(asHashSet(frFr, esEs));
+		
+		Vehicle vehicle = new Vehicle(1438L);
+		vehicle.setColor(new Color(123));
+		president1.setVehicle(vehicle);
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIs(frFr.getCode(), Sort.by("name"));
+		assertThat(loadedCountries).containsExactly(country2, country1);
+		loadedCountries = derivedQueriesRepository.findByLanguagesCodeIs(frFr.getCode(), Sort.by("name").descending());
+		assertThat(loadedCountries).containsExactly(country1, country2);
+	}
+	
+	@Test
 	void orderBy_onDepthProperty() {
 		Republic country1 = new Republic(42);
 		country1.setName("Tonton");
@@ -629,7 +661,6 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeOrderByPresidentNameAsc("T%n");
 		assertThat(loadedCountries).containsExactly(country2, country3, country1);
 	}
-	
 	
 	@Test
 	void orderBy_criteriaOnCollection_onDepthProperty() {

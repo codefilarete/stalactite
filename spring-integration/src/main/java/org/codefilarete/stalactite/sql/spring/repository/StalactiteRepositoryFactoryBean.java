@@ -5,7 +5,12 @@ import java.lang.reflect.Type;
 
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
+import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.tool.Reflections;
+import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
@@ -22,7 +27,7 @@ import org.springframework.util.Assert;
 public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 		extends TransactionalRepositoryFactoryBeanSupport<R, C, I> {
 	
-	private EntityPersister<?, ?> entityPersister;
+	private AdvancedEntityPersister<?, ?> entityPersister;
 	private Class<?> entityType;
 	
 	/**
@@ -53,7 +58,18 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 		if (foundPersister == null) {
 			throw new IllegalArgumentException("No persister found for entityType " + Reflections.toString(entityType) + " in persistence context.");
 		}
-		this.entityPersister = foundPersister;
+		// Converting found EntityPersister to an AdvancedEntityPersister
+		// This is hideous : due to the will to not expose AdvancedEntityPersister to the outside world, but combined to the need to use it and
+		// the fact that its implementing classes are hidden by several layers of interfaces, with "dig" into given result to find them
+		// and wrap the result into a proxy that dispatch called methods accordingly.
+		ConfiguredRelationalPersister deepestSurrogate = ((OptimizedUpdatePersister) foundPersister).getDeepestSurrogate();
+		MethodDispatcher methodDispatcher = new MethodDispatcher();
+		// Please note that order of precedence has an impact on getting a working result or not because AdvancedEntityPersister already extends
+		// ConfiguredPersister (yes, that's awful, but I couldn't find a better way without the constraint of not exposing AdvancedEntityPersister)
+		methodDispatcher
+				.redirect(AdvancedEntityPersister.class, (AdvancedEntityPersister) deepestSurrogate)
+				.redirect(ConfiguredPersister.class, (ConfiguredPersister) foundPersister);
+		this.entityPersister = methodDispatcher.build(AdvancedEntityPersister.class);
 	}
 	
 	@Override

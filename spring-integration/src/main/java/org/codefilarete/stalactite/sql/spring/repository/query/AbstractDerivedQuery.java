@@ -6,7 +6,6 @@ import java.util.List;
 import org.codefilarete.reflection.Accessor;
 import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
-import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Equals;
@@ -24,17 +23,15 @@ import org.springframework.data.repository.query.parser.Part.Type;
  * @param <T>
  * @author Guillaume Mary
  */
-public class AbstractQuery<T> {
+public abstract class AbstractDerivedQuery<T> {
 	
-	protected final EntityPersister<T, ?> entityPersister;
 	protected final CriteriaChain criteriaChain;
 	
-	public AbstractQuery(EntityPersister<T, ?> entityPersister) {
-		this.entityPersister = entityPersister;
+	public AbstractDerivedQuery() {
 		this.criteriaChain = new CriteriaChain(new ArrayList<>());
 	}
 	
-	protected Criterion convertToOperator(Type type) {
+	protected Criterion convertToCriterion(Type type) {
 		ConditionalOperator<?, ?> operator = null;
 		switch (type) {
 			case BETWEEN:
