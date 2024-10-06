@@ -1,7 +1,7 @@
 
 Stalactite aims at being an ORM, but also gives some tools to ease JDBC usage.
 
-[![Build Status](https://ci.codefilarete.org/jenkins/buildStatus/icon?job=Tools+pipeline)](https://ci.codefilarete.org/jenkins/job/Stalactite%20pipeline/)
+[![Build Status](https://ci.codefilarete.org/jenkins/buildStatus/icon?job=Stalactite+pipeline)](https://ci.codefilarete.org/jenkins/job/Stalactite%20pipeline/)
 [![Quality Gate Status](https://ci.codefilarete.org/sonar/api/project_badges/measure?project=Stalactite&metric=alert_status)](https://ci.codefilarete.org/sonar/dashboard?id=Stalactite)
 [![Coverage](https://ci.codefilarete.org/sonar/api/project_badges/measure?project=Stalactite&metric=coverage)](https://ci.codefilarete.org/sonar/dashboard?id=Stalactite)
 [![Vulnerabilities](https://ci.codefilarete.org/sonar/api/project_badges/measure?project=Stalactite&metric=vulnerabilities)](https://ci.codefilarete.org/sonar/dashboard?id=Stalactite)

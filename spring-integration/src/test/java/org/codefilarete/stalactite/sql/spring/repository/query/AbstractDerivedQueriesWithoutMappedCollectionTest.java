@@ -275,7 +275,7 @@ abstract class AbstractDerivedQueriesWithoutMappedCollectionTest {
 		Set<Republic> loadedCountries;
 		
 		loadedCountries = derivedQueriesRepository.findByNameLike("T%o", by("id").descending());
-		assertThat(loadedCountries).containsExactly(country2, country7);
+		assertThat(loadedCountries).containsExactly(country7, country2);
 		
 		loadedCountries = derivedQueriesRepository.findByNameLike("T", by("name").ascending().and(by("id").ascending()));
 		assertThat(loadedCountries).containsExactly(country3, country4, country5, country1, country6, country2, country7);
