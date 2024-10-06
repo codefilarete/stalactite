@@ -49,12 +49,13 @@ public class WhereSQLBuilderFactory {
 	}
 	
 	public WhereSQLBuilder whereBuilder(CriteriaChain where, DMLNameProvider dmlNameProvider) {
+		FunctionSQLBuilder functionSQLBuilder = functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider);
 		return new WhereSQLBuilder(
 				where,
 				dmlNameProvider,
 				parameterBinderRegistry,
-				operatorSqlBuilderFactory.operatorSQLBuilder(),
-				functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider));
+				operatorSqlBuilderFactory.operatorSQLBuilder(functionSQLBuilder),
+				functionSQLBuilder);
 	}
 	
 	/**

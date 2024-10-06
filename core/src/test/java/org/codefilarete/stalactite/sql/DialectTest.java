@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 
 import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
@@ -37,8 +38,8 @@ class DialectTest {
 		querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(
 				new OperatorSQLBuilderFactory() {
 					@Override
-					public OperatorSQLBuilder operatorSQLBuilder() {
-						return new OperatorSQLBuilder() {
+					public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
+						return new OperatorSQLBuilder(functionSQLBuilder) {
 							
 							/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
 							@Override
@@ -90,8 +91,8 @@ class DialectTest {
 		querySQLBuilderFactoryBuilder.withOperatorSQLBuilderFactory(
 				new OperatorSQLBuilderFactory() {
 					@Override
-					public OperatorSQLBuilder operatorSQLBuilder() {
-						return new OperatorSQLBuilder() {
+					public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
+						return new OperatorSQLBuilder(functionSQLBuilder) {
 							
 							/** Overridden to write "like" in upper case, just to check and demonstrate how to branch some behavior on operator print */
 							@Override

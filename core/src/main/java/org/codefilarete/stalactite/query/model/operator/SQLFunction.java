@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 import org.codefilarete.tool.collection.Arrays;
 
 /**
@@ -23,6 +24,14 @@ public abstract class SQLFunction<V> implements Selectable<V> {
 		this.functionName = functionName;
 		this.javaType = javaType;
 		this.arguments = (Iterable<Object>) arguments;
+	}
+	
+	protected SQLFunction(String functionName, SQLFunction<V> value) {
+		this(functionName, value.getJavaType(), new SQLFunctionWrapper<>(value));
+	}
+	
+	protected SQLFunction(String functionName, SQLFunction<V> value, Object... arguments) {
+		this(functionName, value.getJavaType(), Arrays.cat(new Object[] { new SQLFunctionWrapper<>(value) }, arguments));
 	}
 	
 	public String getFunctionName() {

@@ -468,7 +468,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 				if (subPersister.getMapping().getSelectableColumns().contains(column)) {
 					expression = new SelectableString<>(column.getName(), column.getJavaType());
 				} else {
-					expression = cast(null, column.getJavaType());
+					expression = cast((String) null, column.getJavaType());
 				}
 				// we put an alias else cast(..) as no name which makes it doesn't match official-column name, and then
 				// may cause an error since SQL in kind of invalid 

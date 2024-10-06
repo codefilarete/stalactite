@@ -25,7 +25,7 @@ public class Cast<V> extends SQLFunction<V> {
 	 * @param casted column to be cast to given type
 	 * @param castType Java type used to find SQL cast type through {@link org.codefilarete.stalactite.sql.Dialect} type mapping
 	 */
-	public Cast(Selectable<V> casted, Class<V> castType) {
+	public Cast(Selectable<?> casted, Class<V> castType) {
 		this(casted, castType, null);
 	}
 	
@@ -34,7 +34,7 @@ public class Cast<V> extends SQLFunction<V> {
 	 * @param castType Java type used to find SQL cast type through {@link org.codefilarete.stalactite.sql.Dialect} type mapping
 	 * @param typeSize to be used in case of type requiring a size
 	 */
-	public Cast(Selectable<V> casted, Class<V> castType, Integer typeSize) {
+	public Cast(Selectable<?> casted, Class<V> castType, Integer typeSize) {
 		super("cast", castType, casted);
 		this.typeSize = typeSize;
 	}

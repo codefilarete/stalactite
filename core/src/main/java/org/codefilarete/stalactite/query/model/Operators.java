@@ -11,9 +11,14 @@ import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Like;
 import org.codefilarete.stalactite.query.model.operator.Lower;
+import org.codefilarete.stalactite.query.model.operator.LowerCase;
 import org.codefilarete.stalactite.query.model.operator.Max;
 import org.codefilarete.stalactite.query.model.operator.Min;
+import org.codefilarete.stalactite.query.model.operator.SQLFunction;
+import org.codefilarete.stalactite.query.model.operator.Substring;
 import org.codefilarete.stalactite.query.model.operator.Sum;
+import org.codefilarete.stalactite.query.model.operator.Trim;
+import org.codefilarete.stalactite.query.model.operator.UpperCase;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
@@ -41,8 +46,8 @@ public interface Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lower}
 	 */
-	static Lower lt(Object value) {
-		return new Lower(value);
+	static <O> Lower<O> lt(O value) {
+		return new Lower<>(value);
 	}
 	
 	/**
@@ -50,8 +55,8 @@ public interface Operators {
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
 	 * @return a new instance of {@link Lower} with equals checking
 	 */
-	static Lower lteq(Object value) {
-		return new Lower(value, true);
+	static <O> Lower<O> lteq(O value) {
+		return new Lower<>(value, true);
 	}
 	
 	/**
@@ -120,35 +125,187 @@ public interface Operators {
 	}
 	
 	/**
+	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Trim<V> trim(V value) {
+		return new Trim<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Trim<V> trim(Selectable<V> value) {
+		return new Trim<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Trim<V> trim(SQLFunction<V> value) {
+		return new Trim<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> UpperCase<V> upperCase(V value) {
+		return new UpperCase<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> UpperCase<V> upperCase(Selectable<V> value) {
+		return new UpperCase<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> UpperCase<V> upperCase(SQLFunction<V> value) {
+		return new UpperCase<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> LowerCase<V> lowerCase(V value) {
+		return new LowerCase<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> LowerCase<V> lowerCase(Selectable<V> value) {
+		return new LowerCase<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> LowerCase<V> lowerCase(SQLFunction<V> value) {
+		return new LowerCase<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent write of queries for "substring" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Substring<V> substring(V value, int from) {
+		return new Substring<>(value, from);
+	}
+	
+	/**
+	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent write of queries for "substring" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Substring<V> substring(V value, int from, int to) {
+		return new Substring<>(value, from, to);
+	}
+	
+	/**
+	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent write of queries for "substring" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Substring<V> substring(Selectable<V> value, int from) {
+		return new Substring<>(value, from);
+	}
+	
+	/**
+	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent write of queries for "substring" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Substring<V> substring(Selectable<V> value, int from, int to) {
+		return new Substring<>(value, from, to);
+	}
+	
+	/**
+	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent write of queries for "substring" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Substring<V> substring(SQLFunction<V> value, int from) {
+		return new Substring<>(value, from);
+	}
+	
+	/**
+	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent write of queries for "substring" functions
+	 * @return a new instance of {@link Trim}
+	 */
+	static <V extends CharSequence> Substring<V> substring(SQLFunction<V> value, int from, int to) {
+		return new Substring<>(value, from, to);
+	}
+	
+	/**
 	 * Shortcut to <code>new Like(value)</code> to ease a fluent write of queries for "like" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static Like like(CharSequence value) {
-		return new Like(value);
+	static <V extends CharSequence> Like<V> like(V value) {
+		return new Like<>(value);
+	}
+	
+	/**
+	 * Shortcut to <code>new Like(value)</code> to ease a fluent write of queries for "like" comparisons
+	 * @return a new instance of {@link Like}
+	 */
+	static <V extends CharSequence> Like<V> like(SQLFunction<V> value) {
+		return new Like<>(value);
 	}
 	
 	/**
 	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent write of queries for "contains" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static Like contains(CharSequence value) {
-		return new Like(value, true, true);
+	static <V extends CharSequence> Like<V> contains(V value) {
+		return new Like<>(value, true, true);
+	}
+	
+	/**
+	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent write of queries for "contains" comparisons
+	 * @return a new instance of {@link Like}
+	 */
+	static <V extends CharSequence> Like<V> contains(SQLFunction<V> value) {
+		return new Like<>(value, true, true);
 	}
 	
 	/**
 	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent write of queries for "startsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static Like startsWith(CharSequence value) {
-		return new Like(value, false, true);
+	static <V extends CharSequence> Like<V> startsWith(V value) {
+		return new Like<>(value, false, true);
+	}
+	
+	/**
+	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent write of queries for "startsWith" comparisons
+	 * @return a new instance of {@link Like}
+	 */
+	static <V extends CharSequence> Like<V> startsWith(SQLFunction<V> value) {
+		return new Like<>(value, false, true);
 	}
 	
 	/**
 	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent write of queries for "endsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static Like endsWith(CharSequence value) {
-		return new Like(value, true, false);
+	static <V extends CharSequence> Like<V> endsWith(V value) {
+		return new Like<>(value, true, false);
+	}
+	
+	/**
+	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent write of queries for "endsWith" comparisons
+	 * @return a new instance of {@link Like}
+	 */
+	static <V extends CharSequence> Like<V> endsWith(SQLFunction<V> value) {
+		return new Like<>(value, true, false);
 	}
 	
 	/**
@@ -196,6 +353,14 @@ public interface Operators {
 	 * @return a new instance of {@link Cast}
 	 */
 	static <C> Cast<C> cast(String expression, Class<C> javaType) {
+		return new Cast<>(expression, javaType);
+	}
+	
+	/**
+	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent write of queries for "cast" operation
+	 * @return a new instance of {@link Cast}
+	 */
+	static <C> Cast<C> cast(Selectable<?> expression, Class<C> javaType) {
 		return new Cast<>(expression, javaType);
 	}
 	

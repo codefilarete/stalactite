@@ -111,7 +111,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 				if (column != null) {
 					subQueryColumns.put(column, column.getName());
 				} else {
-					subQueryColumns.put(Operators.cast(null, pseudoColumn.getJavaType()), pseudoColumn.getExpression());
+					subQueryColumns.put(Operators.cast((String) null, pseudoColumn.getJavaType()), pseudoColumn.getExpression());
 				}
 			});
 			Query query = QueryEase.

@@ -1,6 +1,8 @@
 package org.codefilarete.stalactite.query.builder;
 
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.ValueWrapper;
+import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
@@ -52,6 +54,7 @@ public class FunctionSQLBuilderFactory {
 			if (operator instanceof Cast) {
 				catCast((Cast) operator, sql);
 			} else {
+				// by default the SQLFunction is rendered only by its name
 				sql.cat(operator.getExpression(), "(");
 				if (operator instanceof Count && ((Count) operator).isDistinct()) {
 					sql.cat("distinct ");
@@ -59,10 +62,12 @@ public class FunctionSQLBuilderFactory {
 				for (Object argument : operator.getArguments()) {
 					if (argument instanceof SQLFunction) {
 						cat((SQLFunction) argument, sql);
+					} else if (argument instanceof ValueWrapper.SQLFunctionWrapper) {
+						cat(((SQLFunctionWrapper<?, ?, ?>) argument).getFunction(), sql);
 					} else if (argument instanceof Selectable) {
 						sql.cat(dmlNameProvider.getName((Selectable<?>) argument));
-					} else if (argument instanceof CharSequence) {
-						sql.cat(argument.toString());
+					} else {
+						sql.catValue(argument);
 					}
 					sql.cat(", ");
 				}

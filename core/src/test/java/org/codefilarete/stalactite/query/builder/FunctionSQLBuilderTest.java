@@ -16,6 +16,8 @@ import org.codefilarete.tool.StringAppender;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.codefilarete.stalactite.query.model.Operators.cast;
+import static org.codefilarete.stalactite.query.model.Operators.substring;
 
 class FunctionSQLBuilderTest {
 	
@@ -136,8 +138,8 @@ class FunctionSQLBuilderTest {
 		StringAppenderWrapper sql;
 		
 		Table tableToto = new Table("Toto");
-		Column colA = tableToto.addColumn("a", String.class);
-		Column colB = tableToto.addColumn("b", String.class);
+		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
+		Column<?, String> colB = tableToto.addColumn("b", String.class);
 		
 		
 		result = new StringAppender();
@@ -149,5 +151,15 @@ class FunctionSQLBuilderTest {
 		sql = new StringAppenderWrapper(result, dmlNameProvider);
 		testInstance.cat(new Max<>(new Coalesce<>(colA, new Cast<>(colB, String.class))), sql);
 		assertThat(result.toString()).isEqualTo("max(coalesce(Toto.a, cast(Toto.b as varchar)))");
+		
+		result = new StringAppender();
+		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		testInstance.cat(substring(colB, 2, 30), sql);
+		assertThat(result.toString()).isEqualTo("substring(Toto.b, 2, 30)");
+		
+		result = new StringAppender();
+		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		testInstance.cat(substring(cast(colA, String.class), 2, 30), sql);
+		assertThat(result.toString()).isEqualTo("substring(cast(Toto.a as varchar), 2, 30)");
 	}
 }

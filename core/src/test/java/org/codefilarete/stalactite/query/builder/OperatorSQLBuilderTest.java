@@ -4,11 +4,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.operator.Cast;
+import org.codefilarete.stalactite.query.model.operator.Coalesce;
+import org.codefilarete.stalactite.query.model.operator.DateFormat;
+import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Like;
+import org.codefilarete.stalactite.query.model.operator.LowerCase;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
+import org.codefilarete.stalactite.query.model.operator.UpperCase;
+import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.StringAppender;
@@ -16,7 +25,20 @@ import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.query.model.Operators.*;
+import static org.codefilarete.stalactite.query.model.Operators.between;
+import static org.codefilarete.stalactite.query.model.Operators.contains;
+import static org.codefilarete.stalactite.query.model.Operators.endsWith;
+import static org.codefilarete.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.gt;
+import static org.codefilarete.stalactite.query.model.Operators.gteq;
+import static org.codefilarete.stalactite.query.model.Operators.in;
+import static org.codefilarete.stalactite.query.model.Operators.lowerCase;
+import static org.codefilarete.stalactite.query.model.Operators.lt;
+import static org.codefilarete.stalactite.query.model.Operators.lteq;
+import static org.codefilarete.stalactite.query.model.Operators.not;
+import static org.codefilarete.stalactite.query.model.Operators.startsWith;
+import static org.codefilarete.stalactite.query.model.Operators.trim;
+import static org.codefilarete.stalactite.query.model.Operators.upperCase;
 
 /**
  * @author Guillaume Mary
@@ -27,7 +49,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void cat_nullValue_isTransformedToIsNull() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.cat(new ConditionalOperator<Object, Object>() {
@@ -46,7 +68,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catNullValue() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catNullValue(false, new StringAppenderWrapper(result, dmlNameProvider));
@@ -59,7 +81,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catIsNull() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIsNull(new IsNull(), new StringAppenderWrapper(result, dmlNameProvider));
@@ -79,7 +101,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catLike() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLike(new Like("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -95,11 +117,54 @@ class OperatorSQLBuilderTest {
 		
 		result = new StringAppender();
 		testInstance.catLike(endsWith("a"), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertThat(result.toString()).isEqualTo("like '%a'");	}
+		assertThat(result.toString()).isEqualTo("like '%a'");
+	}
+	
+	@Test
+	public void catLike_withFunction() {
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		StringAppender result = new StringAppender();
+		
+		testInstance.catLike(new Like<>(new LowerCase<>("a")), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower('a')");
+
+		result = new StringAppender();
+		testInstance.catLike(new Like<>(new LowerCase<>("a"), true, true), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower('%a%')");
+
+		result = new StringAppender();
+		testInstance.catLike(new Like<>(new LowerCase<>("a"), false, true), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower('a%')");
+
+		result = new StringAppender();
+		testInstance.catLike(new Like<>(new LowerCase<>("a"), true, false), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower('%a')");
+		
+		// checking deep composition
+		result = new StringAppender();
+		testInstance.catLike(new Like<>(new LowerCase<>(new UpperCase<>("a"))), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower(upper('a'))");
+		
+		result = new StringAppender();
+		testInstance.catLike(new Like<>(new LowerCase<>(new UpperCase<>(new DateFormat(new SelectableString<>("\"2018-09-24\"", CharSequence.class), "%D %b %Y")))), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower(upper(date_format(\"2018-09-24\", '%D %b %Y')))");
+		
+		result = new StringAppender();
+		testInstance.catLike(contains(lowerCase(upperCase(trim("a")))), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower(upper(trim('%a%')))");
+		
+		// The following makes no sense and is only made to document the behavior
+		Table tableToto = new Table("Toto");
+		Column<?, String> colA = tableToto.addColumn("a", String.class);
+		Column<?, String> colB = tableToto.addColumn("b", String.class);
+		result = new StringAppender();
+		testInstance.catLike(new Like<>(new LowerCase<>(new UpperCase<>(new Coalesce<>(colA, new Cast<>(colB, String.class)))), true, true), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("like lower(upper(coalesce(Toto.a, cast('%b%' as varchar))))");
+	}
 	
 	@Test
 	public void catIn() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catIn(in("a", "b"), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -118,7 +183,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catIn_tupled() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		Table dummyTable = new Table("dummyTable");
@@ -154,7 +219,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catBetween() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catBetween(between(1, 2), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -171,7 +236,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catGreater() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catGreater(gt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -192,7 +257,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catLower() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catLower(lt(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -213,7 +278,7 @@ class OperatorSQLBuilderTest {
 	
 	@Test
 	public void catEquals() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		testInstance.catEquals(eq(1), new StringAppenderWrapper(result, dmlNameProvider), null);
@@ -221,8 +286,34 @@ class OperatorSQLBuilderTest {
 	}
 	
 	@Test
+	public void catEquals_withFunction() {
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		StringAppender result = new StringAppender();
+		
+		testInstance.catEquals(new Equals<>(new LowerCase<>("a")), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("= lower('a')");
+
+		// checking deep composition
+		result = new StringAppender();
+		testInstance.catEquals(new Equals<>(new LowerCase<>(new UpperCase<>("a"))), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("= lower(upper('a'))");
+		
+		result = new StringAppender();
+		testInstance.catEquals(new Equals<>(new LowerCase<>(new UpperCase<>(new DateFormat(new SelectableString<>("\"2018-09-24\"", CharSequence.class), "%D %b %Y")))), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("= lower(upper(date_format(\"2018-09-24\", '%D %b %Y')))");
+		
+		// The following makes no sense and is only made to document the behavior
+		Table tableToto = new Table("Toto");
+		Column<?, String> colA = tableToto.addColumn("a", String.class);
+		Column<?, String> colB = tableToto.addColumn("b", String.class);
+		result = new StringAppender();
+		testInstance.catEquals(new Equals<>(new LowerCase<>(new UpperCase<>(new Coalesce<>(colA, new Cast<>(colB, String.class))))), new StringAppenderWrapper(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("= lower(upper(coalesce(Toto.a, cast(Toto.b as varchar))))");
+	}
+	
+	@Test
 	public void catEquals_column() {
-		OperatorSQLBuilder testInstance = new OperatorSQLBuilder();
+		OperatorSQLBuilder testInstance = new OperatorSQLBuilder(new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
 		StringAppender result = new StringAppender();
 		
 		Table tableToto = new Table("Toto");

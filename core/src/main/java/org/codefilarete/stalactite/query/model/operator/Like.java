@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 
 /**
  * Represents a like comparison.
@@ -8,15 +9,15 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
  * 
  * @author Guillaume Mary
  */
-public class Like extends UnitaryOperator<CharSequence> {
+public class Like<V extends CharSequence> extends UnitaryOperator<V> {
 	
 	/**
 	 * Shortcut that builds a {@link Like} instance for a "starts with" criterion.
 	 * @param value something that looks like a String (may contain '%' characters)
 	 * @return a new instance of {@link Like} that is a "starts with" criterion 
 	 */
-	public static Like startsWith(CharSequence value) {
-		return new Like(value, false, true);
+	public static <V extends CharSequence> Like<V> startsWith(V value) {
+		return new Like<>(value, false, true);
 	}
 	
 	/**
@@ -24,8 +25,8 @@ public class Like extends UnitaryOperator<CharSequence> {
 	 * later with {@link super#setValue(Object)}
 	 * @return a new instance of {@link Like} that is a "starts with" criterion 
 	 */
-	public static Like startsWith() {
-		return new Like(false, true);
+	public static <V extends CharSequence> Like<V> startsWith() {
+		return new Like<>(false, true);
 	}
 	
 	/**
@@ -33,8 +34,8 @@ public class Like extends UnitaryOperator<CharSequence> {
 	 * @param value something that looks like a String (may contain '%' characters)
 	 * @return a new instance of {@link Like} that is a "ends with" criterion 
 	 */
-	public static Like endsWith(CharSequence value) {
-		return new Like(value, true, false);
+	public static <V extends CharSequence> Like<V> endsWith(V value) {
+		return new Like<>(value, true, false);
 	}
 	
 	/**
@@ -42,8 +43,8 @@ public class Like extends UnitaryOperator<CharSequence> {
 	 * later with {@link super#setValue(Object)}
 	 * @return a new instance of {@link Like} that is a "ends with" criterion 
 	 */
-	public static Like endsWith() {
-		return new Like(true, false);
+	public static <V extends CharSequence> Like<V> endsWith() {
+		return new Like<>(true, false);
 	}
 	
 	/**
@@ -51,8 +52,8 @@ public class Like extends UnitaryOperator<CharSequence> {
 	 * @param value something that looks like a String (may contain '%' characters)
 	 * @return a new instance of {@link Like} that is a "contains" criterion 
 	 */
-	public static Like contains(CharSequence value) {
-		return new Like(value, true, true);
+	public static <V extends CharSequence> Like<V> contains(V value) {
+		return new Like<>(value, true, true);
 	}
 	
 	/**
@@ -60,8 +61,8 @@ public class Like extends UnitaryOperator<CharSequence> {
 	 * later with {@link super#setValue(Object)}
 	 * @return a new instance of {@link Like} that is a "contains" criterion 
 	 */
-	public static Like contains() {
-		return new Like(true, true);
+	public static <V extends CharSequence> Like<V> contains() {
+		return new Like<>(true, true);
 	}
 	
 	private final boolean leadingStar;
@@ -83,7 +84,7 @@ public class Like extends UnitaryOperator<CharSequence> {
 	 * Basic constructor
 	 * @param value something that looks like a String, may contain '%' characters
 	 */
-	public Like(CharSequence value) {
+	public Like(V value) {
 		this(value, false, false);
 	}
 	
@@ -93,8 +94,28 @@ public class Like extends UnitaryOperator<CharSequence> {
 	 * @param leadingStar true to add a leading generic '%' character
 	 * @param endingStar true to add a ending generic '%' character
 	 */
-	public Like(CharSequence value, boolean leadingStar, boolean endingStar) {
+	public Like(V value, boolean leadingStar, boolean endingStar) {
 		super(value);
+		this.leadingStar = leadingStar;
+		this.endingStar = endingStar;
+	}
+	
+	/**
+	 * Constructor for contains operator with a function as argument (for lower/upper case for example)
+	 * @param value the function that composing this like
+	 */
+	public Like(SQLFunction<V> value) {
+		this(value, false, false);
+	}
+	
+	/**
+	 * Constructor for "startsWith" and "endsWith" operator
+	 * @param value something that looks like a String, may contain '%' characters
+	 * @param leadingStar true to add a leading generic '%' character
+	 * @param endingStar true to add a ending generic '%' character
+	 */
+	public Like(SQLFunction<V> value, boolean leadingStar, boolean endingStar) {
+		super(new SQLFunctionWrapper<>(value));
 		this.leadingStar = leadingStar;
 		this.endingStar = endingStar;
 	}

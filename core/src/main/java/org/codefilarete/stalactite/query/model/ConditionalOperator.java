@@ -3,7 +3,8 @@ package org.codefilarete.stalactite.query.model;
 /**
  * General contract for SQL operator such as in, =, <, >, like, between, etc. 
  * 
- * @param <V> dealing-with value type (not always value type)
+ * @param <T> value type or type composing V
+ * @param <V> value type
  * @author Guillaume Mary
  */
 @SuppressWarnings("squid:S2326")	// T is voluntary left, even if not used in this class, for using-API

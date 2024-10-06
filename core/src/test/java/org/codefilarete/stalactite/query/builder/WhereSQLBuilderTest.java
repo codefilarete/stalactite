@@ -78,7 +78,8 @@ public class WhereSQLBuilderTest {
 	@MethodSource("toSQL_data")
 	public void toSQL(CriteriaChain where, Map<Table, String> tableAliases, String expected) {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(tableAliases);
-		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(), new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		FunctionSQLBuilder functionSQLBuilder = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
+		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(functionSQLBuilder), functionSQLBuilder);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
@@ -181,10 +182,11 @@ public class WhereSQLBuilderTest {
 	
 	@ParameterizedTest
 	@MethodSource("toPreparedSQL_data")
-	public void toPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases, 
-						  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
+	public void toPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases,
+							  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(tableAliases);
-		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(), new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping()));
+		FunctionSQLBuilder functionSQLBuilder = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
+		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(functionSQLBuilder), functionSQLBuilder);
 		PreparedSQL preparedSQL = testInstance.toPreparedSQL();
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);

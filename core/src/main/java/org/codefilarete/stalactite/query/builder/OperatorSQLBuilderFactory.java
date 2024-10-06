@@ -1,10 +1,14 @@
 package org.codefilarete.stalactite.query.builder;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.ValueWrapper;
+import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Equals;
@@ -27,11 +31,17 @@ public class OperatorSQLBuilderFactory {
 	public OperatorSQLBuilderFactory() {
 	}
 	
-	public OperatorSQLBuilder operatorSQLBuilder() {
-		return new OperatorSQLBuilder();
+	public OperatorSQLBuilder operatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
+		return new OperatorSQLBuilder(functionSQLBuilder);
 	}
 	
 	public static class OperatorSQLBuilder {
+		
+		private final FunctionSQLBuilder functionSQLBuilder;
+		
+		public OperatorSQLBuilder(FunctionSQLBuilder functionSQLBuilder) {
+			this.functionSQLBuilder = functionSQLBuilder;
+		}
 		
 		/**
 		 * Main entry point
@@ -78,15 +88,14 @@ public class OperatorSQLBuilderFactory {
 			catNullValue(isNull.isNot(), sql);
 		}
 		
-		void catLike(Like like, SQLAppender sql, Selectable<CharSequence> column) {
-			String value = (String) like.getValue();
-			if (like.withLeadingStar()) {
-				value = '%' + value;
+		void catLike(Like<?> like, SQLAppender sql, Selectable<CharSequence> column) {
+			LikePatternAppender likePatternAppender = new LikePatternAppender(like, sql);
+			sql.catIf(like.isNot(), "not ").cat("like ");
+			if (like.getValueWrapper() instanceof ValueWrapper.RawValueWrapper) {
+				likePatternAppender.catValue(column, like.getValue());
+			} else if (like.getValueWrapper() instanceof ValueWrapper.SQLFunctionWrapper) {
+				functionSQLBuilder.cat(((ValueWrapper.SQLFunctionWrapper) like.getValueWrapper()).getFunction(), likePatternAppender);
 			}
-			if (like.withEndingStar()) {
-				value += '%';
-			}
-			sql.catIf(like.isNot(), "not ").cat("like ").catValue(column, value);
 		}
 		
 		<V> void catIn(In<V> in, SQLAppender sql, Selectable<V> column) {
@@ -164,20 +173,89 @@ public class OperatorSQLBuilderFactory {
 		<V> void catGreater(Greater<V> greater, SQLAppender sql, Selectable<V> column) {
 			sql.cat(greater.isNot()
 							? (greater.isEquals() ? "< " : "<= ")
-							: (greater.isEquals() ? ">= " : "> "))
-					.catValue(column, greater.getValue());
+							: (greater.isEquals() ? ">= " : "> "));
+			catValue(column, greater.getValueWrapper(), sql);
 		}
 		
 		@SuppressWarnings("squid:S3358")	// we can afford nesting ternary operators here, not so complex to understand
 		<V> void catLower(Lower<V> lower, SQLAppender sql, Selectable<V> column) {
 			sql.cat(lower.isNot()
 							? (lower.isEquals() ? "> " : ">= ")
-							: (lower.isEquals() ? "<= " : "< "))
-					.catValue(column, lower.getValue());
+							: (lower.isEquals() ? "<= " : "< "));
+			catValue(column, lower.getValueWrapper(), sql);
 		}
 		
 		<V> void catEquals(Equals<V> equals, SQLAppender sql, Selectable<V> column) {
-			sql.catIf(equals.isNot(), "!").cat("= ").catValue(column, equals.getValue());
+			sql.catIf(equals.isNot(), "!").cat("= ");
+			catValue(column, equals.getValueWrapper(), sql);
+		}
+		
+		<V> void catValue(@Nullable Selectable<V> column, ValueWrapper<V> value, SQLAppender sql) {
+			if (value instanceof ValueWrapper.SQLFunctionWrapper) {
+				functionSQLBuilder.cat(((SQLFunctionWrapper<?, ?, ?>) value).getFunction(), sql);
+			} else {
+				sql.catValue(column, value.getValue());
+			}
+		}
+		
+		/**
+		 * Adds leading and ending "%" while appending Like values.
+		 * Made for cases composed Like with function as argument (lower, upper, ...) because they are not aware of being embedded in a Like operator.
+		 * 
+		 * @author Guillaume Mary
+		 */
+		private static class LikePatternAppender implements SQLAppender {
+			private final Like<?> like;
+			private final SQLAppender sql;
+			
+			public LikePatternAppender(Like<?> like, SQLAppender sql) {
+				this.like = like;
+				this.sql = sql;
+			}
+			
+			@Override
+			public <V> SQLAppender catValue(@Nullable Selectable<V> column, V value) {
+				return sql.catValue((Selectable<CharSequence>) column, addWildcards(like.getValue()));
+			}
+			
+			private CharSequence addWildcards(CharSequence effectiveValue) {
+				if (like.withLeadingStar()) {
+					effectiveValue = "%" + effectiveValue;
+				}
+				if (like.withEndingStar()) {
+					effectiveValue += "%";
+				}
+				return effectiveValue;
+			}
+			
+			@Override
+			public SQLAppender catValue(Object value) {
+				if (value instanceof Selectable) {
+					// unwrapping raw Selectable
+					value = ((Selectable<CharSequence>) value).getExpression();
+				}
+				return sql.catValue(addWildcards((CharSequence) value));
+			}
+			
+			@Override
+			public SQLAppender cat(String s, String... ss) {
+				return sql.cat(s, ss);
+			}
+			
+			@Override
+			public SQLAppender catColumn(Column column) {
+				return sql.catColumn(column);
+			}
+			
+			@Override
+			public SQLAppender removeLastChars(int length) {
+				return sql.removeLastChars(length);
+			}
+			
+			@Override
+			public String getSQL() {
+				return sql.getSQL();
+			}
 		}
 	}
 }

@@ -19,7 +19,8 @@ public interface Selectable<C> {
 	Class<C> getJavaType();
 	
 	/**
-	 * Implementation for String to be put in Select clause
+	 * Implementation for String to be put in Select clause or as a criteria.
+	 * Be aware that expression given at constructor will be rendered as it is to SQL without transformation.
 	 */
 	class SelectableString<C> implements Selectable<C> {
 		
@@ -27,6 +28,13 @@ public interface Selectable<C> {
 		
 		private final Class<C> javaType;
 		
+		/**
+		 * Straight constructor.
+		 * Be aware that expression will be rendered as it is to SQL without transformation.
+		 * 
+		 * @param expression the text to be put into SQL
+		 * @param javaType type returned by expression
+		 */
 		public SelectableString(String expression, Class<C> javaType) {
 			this.expression = expression;
 			this.javaType = javaType;
