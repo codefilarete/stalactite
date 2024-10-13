@@ -46,11 +46,15 @@ public class QueryEase {
 	}
 	
 	public static Where where(Column column, String condition) {
-		return new Where(column, condition);
+		return new Where<>(column, condition);
 	}
 	
 	public static Where where(Column column, ConditionalOperator condition) {
-		return new Where(column, condition);
+		return new Where<>(column, condition);
+	}
+	
+	public static Where where(Object... criteria) {
+		return new Where<>(criteria);
 	}
 	
 	/**
@@ -62,7 +66,7 @@ public class QueryEase {
 	 * @return a new {@link Criteria}
 	 */
 	public static Criteria filter(Column column, String condition) {
-		return new Criteria(column, condition);
+		return new Criteria<>(column, condition);
 	}
 	
 	/**
@@ -74,7 +78,7 @@ public class QueryEase {
 	 * @return a new {@link Criteria}
 	 */
 	public static Criteria filter(Column column, ConditionalOperator condition) {
-		return new Criteria(column, condition);
+		return new Criteria<>(column, condition);
 	}
 	
 	/**
@@ -85,6 +89,6 @@ public class QueryEase {
 	 * @return a new {@link Criteria}
 	 */
 	public static Criteria filter(Object ... columns) {
-		return new Criteria(columns);
+		return new Criteria<>(columns);
 	}
 }

@@ -1,8 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
-import org.codefilarete.stalactite.query.model.ValueWrapper;
-import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 
 /**
  * Represents an equals comparison
@@ -18,11 +17,17 @@ public class Equals<O> extends UnitaryOperator<O> {
 		super(value);
 	}
 	
-	public Equals(ValueWrapper<O> value) {
-		super(value);
-	}
-	
-	public Equals(SQLFunction<O> value) {
-		this(new SQLFunctionWrapper<>(value));
+	public BiOperandOperator<CharSequence> ignoringCase() {
+		return new BiOperandOperator<CharSequence>() {
+			@Override
+			public Object[] asRawCriterion(Selectable<CharSequence> selectable) {
+				return new Object[] { new LowerCase<>(selectable), Equals.this };
+			}
+			
+			@Override
+			public void setValue(CharSequence value) {
+				Equals.this.setValue((O) value);
+			}
+		};
 	}
 }

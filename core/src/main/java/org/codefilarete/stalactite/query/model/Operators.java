@@ -136,7 +136,7 @@ public interface Operators {
 	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> Trim<V> trim(Selectable<V> value) {
+	static <V extends CharSequence> Trim<Selectable<V>> trim(Selectable<V> value) {
 		return new Trim<>(value);
 	}
 	
@@ -144,7 +144,7 @@ public interface Operators {
 	 * Shortcut to <code>new Trim(value)</code> to ease a fluent write of queries for "trim" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> Trim<V> trim(SQLFunction<V> value) {
+	static <V extends CharSequence> Trim<SQLFunction<?, CharSequence>> trim(SQLFunction<?, CharSequence> value) {
 		return new Trim<>(value);
 	}
 	
@@ -160,7 +160,7 @@ public interface Operators {
 	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> UpperCase<V> upperCase(Selectable<V> value) {
+	static <V extends CharSequence> UpperCase<Selectable<V>> upperCase(Selectable<V> value) {
 		return new UpperCase<>(value);
 	}
 	
@@ -168,7 +168,7 @@ public interface Operators {
 	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "upper" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> UpperCase<V> upperCase(SQLFunction<V> value) {
+	static <V extends CharSequence> UpperCase<SQLFunction<?, V>> upperCase(SQLFunction<?, V> value) {
 		return new UpperCase<>(value);
 	}
 	
@@ -184,7 +184,7 @@ public interface Operators {
 	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> LowerCase<V> lowerCase(Selectable<V> value) {
+	static <V extends CharSequence> LowerCase<Selectable<V>> lowerCase(Selectable<V> value) {
 		return new LowerCase<>(value);
 	}
 	
@@ -192,7 +192,7 @@ public interface Operators {
 	 * Shortcut to <code>new UpperCase(value)</code> to ease a fluent write of queries for "lower" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> LowerCase<V> lowerCase(SQLFunction<V> value) {
+	static <V extends CharSequence> LowerCase<SQLFunction<?, V>> lowerCase(SQLFunction<?, V> value) {
 		return new LowerCase<>(value);
 	}
 	
@@ -232,7 +232,7 @@ public interface Operators {
 	 * Shortcut to <code>new Substring(value, from)</code> to ease a fluent write of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> Substring<V> substring(SQLFunction<V> value, int from) {
+	static <V extends CharSequence> Substring<V> substring(SQLFunction<?, V> value, int from) {
 		return new Substring<>(value, from);
 	}
 	
@@ -240,7 +240,7 @@ public interface Operators {
 	 * Shortcut to <code>new Substring(value, from, to)</code> to ease a fluent write of queries for "substring" functions
 	 * @return a new instance of {@link Trim}
 	 */
-	static <V extends CharSequence> Substring<V> substring(SQLFunction<V> value, int from, int to) {
+	static <V extends CharSequence> Substring<V> substring(SQLFunction<?, V> value, int from, int to) {
 		return new Substring<>(value, from, to);
 	}
 	
@@ -256,7 +256,7 @@ public interface Operators {
 	 * Shortcut to <code>new Like(value)</code> to ease a fluent write of queries for "like" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static <V extends CharSequence> Like<V> like(SQLFunction<V> value) {
+	static <V extends CharSequence> Like<SQLFunction<?, V>> like(SQLFunction<?, V> value) {
 		return new Like<>(value);
 	}
 	
@@ -272,7 +272,7 @@ public interface Operators {
 	 * Shortcut to <code>new Like(value, true, true)</code> to ease a fluent write of queries for "contains" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static <V extends CharSequence> Like<V> contains(SQLFunction<V> value) {
+	static <V extends CharSequence> Like<SQLFunction<?, V>> contains(SQLFunction<?, V> value) {
 		return new Like<>(value, true, true);
 	}
 	
@@ -288,7 +288,7 @@ public interface Operators {
 	 * Shortcut to <code>new Like(value, false, true)</code> to ease a fluent write of queries for "startsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static <V extends CharSequence> Like<V> startsWith(SQLFunction<V> value) {
+	static <V extends CharSequence> Like<SQLFunction<?, V>> startsWith(SQLFunction<?, V> value) {
 		return new Like<>(value, false, true);
 	}
 	
@@ -304,7 +304,7 @@ public interface Operators {
 	 * Shortcut to <code>new Like(value, true, false)</code> to ease a fluent write of queries for "endsWith" comparisons
 	 * @return a new instance of {@link Like}
 	 */
-	static <V extends CharSequence> Like<V> endsWith(SQLFunction<V> value) {
+	static <V extends CharSequence> Like<SQLFunction<?, V>> endsWith(SQLFunction<?, V> value) {
 		return new Like<>(value, true, false);
 	}
 	
@@ -352,7 +352,7 @@ public interface Operators {
 	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent write of queries for "cast" operation
 	 * @return a new instance of {@link Cast}
 	 */
-	static <C> Cast<C> cast(String expression, Class<C> javaType) {
+	static <O> Cast<?, O> cast(String expression, Class<O> javaType) {
 		return new Cast<>(expression, javaType);
 	}
 	
@@ -360,7 +360,7 @@ public interface Operators {
 	 * Shortcut to <code>new Cast(expression, javaType)</code> to ease a fluent write of queries for "cast" operation
 	 * @return a new instance of {@link Cast}
 	 */
-	static <C> Cast<C> cast(Selectable<?> expression, Class<C> javaType) {
+	static <C, O> Cast<C, O> cast(Selectable<C> expression, Class<O> javaType) {
 		return new Cast<>(expression, javaType);
 	}
 	

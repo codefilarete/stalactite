@@ -9,13 +9,13 @@ import org.codefilarete.tool.collection.Arrays;
  * @param <V> value type
  * @author Guillaume Mary
  */
-public class Coalesce<V> extends SQLFunction<V> {
+public class Coalesce<V> extends SQLFunction<Iterable<Object>, V> {
 	
 	public Coalesce(Selectable<V> column, Object... arguments) {
-		super("coalesce", column.getJavaType(), Arrays.cat(new Object[] { column }, arguments));
+		this(column.getJavaType(), Arrays.cat(new Object[] { column }, arguments));
 	}
 	
 	public Coalesce(Class<V> javaType, Object... arguments) {
-		super("coalesce", javaType, arguments);
+		super("coalesce", javaType, Arrays.asList(arguments));
 	}
 }

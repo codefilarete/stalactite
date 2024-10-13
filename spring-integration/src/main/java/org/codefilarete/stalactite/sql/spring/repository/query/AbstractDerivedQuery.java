@@ -31,7 +31,7 @@ public abstract class AbstractDerivedQuery<T> {
 		this.criteriaChain = new CriteriaChain(new ArrayList<>());
 	}
 	
-	protected Criterion convertToCriterion(Type type) {
+	protected Criterion convertToCriterion(Type type, Class propertyType, boolean ignoreCase) {
 		ConditionalOperator<?, ?> operator = null;
 		switch (type) {
 			case BETWEEN:
@@ -58,10 +58,14 @@ public abstract class AbstractDerivedQuery<T> {
 				operator = new Greater<>().equals();
 				break;
 			case NOT_LIKE:
-				operator = new Like(true, true).not();
+				operator = new Like<>(true, true).not();
 				break;
 			case LIKE:
-				operator = new Like(true, true);
+				if (ignoreCase) {
+					operator = new Like<>(true, true).ignoringCase();
+				} else {
+					operator = new Like<>(true, true);
+				}
 				break;
 			case STARTING_WITH:
 				operator = Like.startsWith();
@@ -95,7 +99,11 @@ public abstract class AbstractDerivedQuery<T> {
 				operator = new Equals<>().not();
 				break;
 			case SIMPLE_PROPERTY:
-				operator = new Equals<>();
+				if (ignoreCase) {
+					operator = new Equals<>().ignoringCase();
+				} else {
+					operator = new Equals<>();
+				}
 				break;
 			// Hereafter operators are not supported for different reasons :
 			// - JPA doesn't either,

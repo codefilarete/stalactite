@@ -18,4 +18,7 @@ public class Where<SELF extends Where<SELF>> extends Criteria<SELF> {
 		super(column, condition);
 	}
 	
+	public Where(Object... columns) {
+		super(columns);
+	}
 }

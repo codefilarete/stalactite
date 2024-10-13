@@ -1,45 +1,48 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
-import org.codefilarete.tool.collection.Arrays;
 
 /**
  * Parent class that describes a function in some SQL statement
  * 
- * @param <V> java type of the function result (stands for Value)
+ * @param <V> value type, can be a simple class as String or Integer or a complex one as {@link org.codefilarete.stalactite.query.model.operator.SQLFunction}
+ * @param <O> java type of the function result
  * @author Guillaume Mary
  */
-public abstract class SQLFunction<V> implements Selectable<V> {
+public abstract class SQLFunction<V, O> implements Selectable<O> {
 	
 	private final String functionName;
-	private final Class<V> javaType;
-	private final Iterable<Object> arguments;
+	private final Class<O> javaType;
+	/** Value of argument */
+	private V value;
 	
-	protected SQLFunction(String functionName, Class<V> javaType, Object... arguments) {
-		this(functionName, javaType, Arrays.asList(arguments));
+	protected SQLFunction(String functionName, Class<O> javaType) {
+		this(functionName, javaType, null);
 	}
 	
-	protected SQLFunction(String functionName, Class<V> javaType, Iterable<?> arguments) {
+	protected SQLFunction(String functionName, Class<O> javaType, V value) {
 		this.functionName = functionName;
 		this.javaType = javaType;
-		this.arguments = (Iterable<Object>) arguments;
-	}
-	
-	protected SQLFunction(String functionName, SQLFunction<V> value) {
-		this(functionName, value.getJavaType(), new SQLFunctionWrapper<>(value));
-	}
-	
-	protected SQLFunction(String functionName, SQLFunction<V> value, Object... arguments) {
-		this(functionName, value.getJavaType(), Arrays.cat(new Object[] { new SQLFunctionWrapper<>(value) }, arguments));
+		this.value = value;
 	}
 	
 	public String getFunctionName() {
 		return functionName;
 	}
 	
-	public Iterable<Object> getArguments() {
-		return arguments;
+	/**
+	 * @return the value of this operator
+	 */
+	public V getValue() {
+		return value;
+	}
+	
+	/**
+	 * Sets the value of this operator
+	 * @param value the new value
+	 */
+	public void setValue(V value) {
+		this.value = value;
 	}
 	
 	/**
@@ -52,7 +55,11 @@ public abstract class SQLFunction<V> implements Selectable<V> {
 	}
 	
 	@Override
-	public Class<V> getJavaType() {
+	public Class<O> getJavaType() {
+		return javaType;
+	}
+	
+	public Class<O> getType() {
 		return javaType;
 	}
 }

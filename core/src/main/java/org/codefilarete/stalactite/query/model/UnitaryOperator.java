@@ -1,25 +1,19 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.query.model.ValueWrapper.RawValueWrapper;
-
 /**
- * Parent class for operators that don't need a comparison value
+ * Parent class for operators with a single comparison value
  * 
  * @author Guillaume Mary
  */
 public abstract class UnitaryOperator<V> extends ConditionalOperator<V, V> {
 	
 	/** Value of the operator */
-	private ValueWrapper<V> value = new RawValueWrapper<>();
+	private V value;
 	
-	public UnitaryOperator() {
+	protected UnitaryOperator() {
 	}
 	
-	public UnitaryOperator(V value) {
-		this.value.setValue(value);
-	}
-	
-	public UnitaryOperator(ValueWrapper<V> value) {
+	protected UnitaryOperator(V value) {
 		this.value = value;
 	}
 	
@@ -27,7 +21,7 @@ public abstract class UnitaryOperator<V> extends ConditionalOperator<V, V> {
 	 * @return the value of this operator
 	 */
 	public V getValue() {
-		return value.getValue();
+		return value;
 	}
 	
 	/**
@@ -36,14 +30,6 @@ public abstract class UnitaryOperator<V> extends ConditionalOperator<V, V> {
 	 */
 	@Override
 	public void setValue(V value) {
-		this.value.setValue(value);
-	}
-	
-	public ValueWrapper<V> getValueWrapper() {
-		return this.value;
-	}
-	
-	public void setValueWrapper(ValueWrapper<V> value) {
 		this.value = value;
 	}
 	

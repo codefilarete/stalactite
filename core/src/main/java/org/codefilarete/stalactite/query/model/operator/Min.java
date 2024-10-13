@@ -7,9 +7,9 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Min<N extends Number> extends SQLFunction<N> {
+public class Min<N extends Number> extends SQLFunction<Selectable<N>, Long> {
 	
 	public Min(Selectable<N> value) {
-		super("min", value.getJavaType(), value);
+		super("min", Long.class, value);
 	}
 }

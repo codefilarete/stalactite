@@ -1,8 +1,6 @@
 package org.codefilarete.stalactite.query.builder;
 
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.ValueWrapper;
-import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
@@ -50,7 +48,7 @@ public class FunctionSQLBuilderFactory {
 		/**
 		 * Main entry point
 		 */
-		public <N> void cat(SQLFunction<N> operator, SQLAppender sql) {
+		public <N> void cat(SQLFunction<N, ?> operator, SQLAppender sql) {
 			if (operator instanceof Cast) {
 				catCast((Cast) operator, sql);
 			} else {
@@ -59,29 +57,33 @@ public class FunctionSQLBuilderFactory {
 				if (operator instanceof Count && ((Count) operator).isDistinct()) {
 					sql.cat("distinct ");
 				}
-				for (Object argument : operator.getArguments()) {
-					if (argument instanceof SQLFunction) {
-						cat((SQLFunction) argument, sql);
-					} else if (argument instanceof ValueWrapper.SQLFunctionWrapper) {
-						cat(((SQLFunctionWrapper<?, ?, ?>) argument).getFunction(), sql);
-					} else if (argument instanceof Selectable) {
-						sql.cat(dmlNameProvider.getName((Selectable<?>) argument));
-					} else {
-						sql.catValue(argument);
+				N functionArguments = operator.getValue();
+				if (functionArguments instanceof Iterable) {
+					for (Object argument : (Iterable) functionArguments) {
+						catArgument(sql, argument);
+						sql.cat(", ");
 					}
-					sql.cat(", ");
+					sql.removeLastChars(2);
+				} else {
+					catArgument(sql, functionArguments);
 				}
-				sql.removeLastChars(2).cat(")");
+				sql.cat(")");
 			}
 		}
 		
-		public void catCast(Cast<?> cast, SQLAppender sqlAppender) {
-			sqlAppender.cat(cast.getExpression(), "(");
-			if (cast.getCastTarget() instanceof SQLFunction) {
-				this.cat((SQLFunction) cast.getCastTarget(), sqlAppender);
+		private void catArgument(SQLAppender sql, Object argument) {
+			if (argument instanceof SQLFunction) {
+				cat((SQLFunction) argument, sql);
+			} else if (argument instanceof Selectable) {
+				sql.cat(dmlNameProvider.getName((Selectable) argument));
 			} else {
-				sqlAppender.catValue(cast.getCastTarget());
+				sql.catValue(argument);
 			}
+		}
+		
+		public void catCast(Cast<?, ?> cast, SQLAppender sqlAppender) {
+			sqlAppender.cat(cast.getExpression(), "(");
+			catArgument(sqlAppender, cast.getValue());
 			sqlAppender.cat(" as ", javaTypeToSqlTypeMapping.getTypeName(cast.getJavaType(), cast.getTypeSize()), ")");
 		}
 	}

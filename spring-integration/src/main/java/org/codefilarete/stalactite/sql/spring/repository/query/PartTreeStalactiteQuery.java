@@ -4,12 +4,14 @@ import java.util.Collection;
 
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.repository.query.PartTreeJpaQuery;
 import org.springframework.data.mapping.PropertyPath;
@@ -19,6 +21,7 @@ import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
+import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.PartTree;
 import org.springframework.lang.Nullable;
 
@@ -125,8 +128,10 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		}
 		
 		private void append(Part part) {
-			Criterion criterion = convertToCriterion(part.getType());
-			this.executableEntityQuery.getEntityCriteriaSupport().and(convertToAccessorChain(part.getProperty()), criterion.operator);
+			AccessorChain<T, Object> getter = convertToAccessorChain(part.getProperty());
+			Class propertyType = AccessorDefinition.giveDefinition(Iterables.last(getter.getAccessors())).getMemberType();
+			Criterion criterion = convertToCriterion(part.getType(), propertyType, part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
+			this.executableEntityQuery.getEntityCriteriaSupport().and(getter, criterion.operator);
 			super.criteriaChain.criteria.add(criterion);
 		}
 	}

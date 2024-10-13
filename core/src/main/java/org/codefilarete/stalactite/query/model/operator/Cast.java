@@ -1,14 +1,13 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.tool.collection.Iterables;
 
 /**
  * Implementation of cast SQL function
  * 
  * @author Guillaume Mary
  */
-public class Cast<V> extends SQLFunction<V> {
+public class Cast<V, O> extends SQLFunction<V, O> {
 	
 	private final Integer typeSize;
 	
@@ -16,8 +15,8 @@ public class Cast<V> extends SQLFunction<V> {
 	 * @param expression statement to be cast to given type
 	 * @param castType Java type used to find SQL cast type through {@link org.codefilarete.stalactite.sql.Dialect} type mapping
 	 */
-	public Cast(String expression, Class<V> castType) {
-		super("cast", castType, expression);
+	public Cast(String expression, Class<O> castType) {
+		super("cast", castType, (V) expression);
 		this.typeSize = null;
 	}
 	
@@ -25,7 +24,7 @@ public class Cast<V> extends SQLFunction<V> {
 	 * @param casted column to be cast to given type
 	 * @param castType Java type used to find SQL cast type through {@link org.codefilarete.stalactite.sql.Dialect} type mapping
 	 */
-	public Cast(Selectable<?> casted, Class<V> castType) {
+	public Cast(Selectable<?> casted, Class<O> castType) {
 		this(casted, castType, null);
 	}
 	
@@ -34,13 +33,9 @@ public class Cast<V> extends SQLFunction<V> {
 	 * @param castType Java type used to find SQL cast type through {@link org.codefilarete.stalactite.sql.Dialect} type mapping
 	 * @param typeSize to be used in case of type requiring a size
 	 */
-	public Cast(Selectable<?> casted, Class<V> castType, Integer typeSize) {
-		super("cast", castType, casted);
+	public Cast(Selectable<?> casted, Class<O> castType, Integer typeSize) {
+		super("cast", castType, (V) casted);
 		this.typeSize = typeSize;
-	}
-	
-	public Object getCastTarget() {
-		return Iterables.first(getArguments());
 	}
 	
 	public Integer getTypeSize() {

@@ -7,8 +7,6 @@ import java.util.Iterator;
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.ValueWrapper;
-import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Equals;
@@ -17,6 +15,7 @@ import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Like;
 import org.codefilarete.stalactite.query.model.operator.Lower;
+import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Reflections;
@@ -88,13 +87,13 @@ public class OperatorSQLBuilderFactory {
 			catNullValue(isNull.isNot(), sql);
 		}
 		
-		void catLike(Like<?> like, SQLAppender sql, Selectable<CharSequence> column) {
-			LikePatternAppender likePatternAppender = new LikePatternAppender(like, sql);
+		void catLike(Like like, SQLAppender sql, Selectable<CharSequence> column) {
 			sql.catIf(like.isNot(), "not ").cat("like ");
-			if (like.getValueWrapper() instanceof ValueWrapper.RawValueWrapper) {
-				likePatternAppender.catValue(column, like.getValue());
-			} else if (like.getValueWrapper() instanceof ValueWrapper.SQLFunctionWrapper) {
-				functionSQLBuilder.cat(((ValueWrapper.SQLFunctionWrapper) like.getValueWrapper()).getFunction(), likePatternAppender);
+			LikePatternAppender likePatternAppender = new LikePatternAppender(like, sql);
+			if (like.getValue() instanceof SQLFunction) {
+				functionSQLBuilder.cat((SQLFunction) like.getValue(), likePatternAppender);
+			} else {
+				likePatternAppender.catValue(column, (CharSequence) like.getValue());
 			}
 		}
 		
@@ -174,7 +173,7 @@ public class OperatorSQLBuilderFactory {
 			sql.cat(greater.isNot()
 							? (greater.isEquals() ? "< " : "<= ")
 							: (greater.isEquals() ? ">= " : "> "));
-			catValue(column, greater.getValueWrapper(), sql);
+			catValue(column, greater.getValue(), sql);
 		}
 		
 		@SuppressWarnings("squid:S3358")	// we can afford nesting ternary operators here, not so complex to understand
@@ -182,19 +181,19 @@ public class OperatorSQLBuilderFactory {
 			sql.cat(lower.isNot()
 							? (lower.isEquals() ? "> " : ">= ")
 							: (lower.isEquals() ? "<= " : "< "));
-			catValue(column, lower.getValueWrapper(), sql);
+			catValue(column, lower.getValue(), sql);
 		}
 		
 		<V> void catEquals(Equals<V> equals, SQLAppender sql, Selectable<V> column) {
 			sql.catIf(equals.isNot(), "!").cat("= ");
-			catValue(column, equals.getValueWrapper(), sql);
+			catValue(column, equals.getValue(), sql);
 		}
 		
-		<V> void catValue(@Nullable Selectable<V> column, ValueWrapper<V> value, SQLAppender sql) {
-			if (value instanceof ValueWrapper.SQLFunctionWrapper) {
-				functionSQLBuilder.cat(((SQLFunctionWrapper<?, ?, ?>) value).getFunction(), sql);
+		<V> void catValue(@Nullable Selectable<V> column, V value, SQLAppender sql) {
+			if (value instanceof SQLFunction) {
+				functionSQLBuilder.cat((SQLFunction<?, ?>) value, sql);
 			} else {
-				sql.catValue(column, value.getValue());
+				sql.catValue(column, value);
 			}
 		}
 		
@@ -205,11 +204,11 @@ public class OperatorSQLBuilderFactory {
 		 * @author Guillaume Mary
 		 */
 		private static class LikePatternAppender implements SQLAppender {
-			private final Like<?> like;
+			private final Like<CharSequence> like;
 			private final SQLAppender sql;
 			
 			public LikePatternAppender(Like<?> like, SQLAppender sql) {
-				this.like = like;
+				this.like = (Like<CharSequence>) like;
 				this.sql = sql;
 			}
 			
@@ -232,9 +231,13 @@ public class OperatorSQLBuilderFactory {
 			public SQLAppender catValue(Object value) {
 				if (value instanceof Selectable) {
 					// unwrapping raw Selectable
-					value = ((Selectable<CharSequence>) value).getExpression();
+					return sql.catValue(addWildcards(((Selectable<CharSequence>) value).getExpression()));
+				} else if (value instanceof CharSequence) {
+					return sql.catValue(addWildcards((CharSequence) value));
+				} else {
+					throw new UnsupportedOperationException("Appending '" + value + "'"
+							+ (value == null ? "" : " (type " + Reflections.toString(value.getClass()) + ")") + " is not supported"); 
 				}
-				return sql.catValue(addWildcards((CharSequence) value));
 			}
 			
 			@Override

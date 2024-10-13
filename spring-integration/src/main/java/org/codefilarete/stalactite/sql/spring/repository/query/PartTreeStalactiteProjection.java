@@ -6,6 +6,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.codefilarete.reflection.AccessorChain;
+import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQuery;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
@@ -15,6 +17,7 @@ import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.result.Accumulator;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.trace.ModifiableBoolean;
 import org.codefilarete.tool.trace.ModifiableLong;
 import org.springframework.data.repository.query.ParameterAccessor;
@@ -23,6 +26,7 @@ import org.springframework.data.repository.query.ParametersParameterAccessor;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
+import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.PartTree;
 
 /**
@@ -179,7 +183,9 @@ class PartTreeStalactiteProjection<C, R> implements RepositoryQuery {
 		}
 		
 		private void append(Part part) {
-			Criterion criterion = convertToCriterion(part.getType());
+			AccessorChain<T, Object> getter = convertToAccessorChain(part.getProperty());
+			Class propertyType = AccessorDefinition.giveDefinition(Iterables.last(getter.getAccessors())).getMemberType();
+			Criterion criterion = convertToCriterion(part.getType(), propertyType, part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
 			this.executableProjectionQuery.and(convertToAccessorChain(part.getProperty()), criterion.operator);
 			this.criteriaChain.criteria.add(criterion);
 		}

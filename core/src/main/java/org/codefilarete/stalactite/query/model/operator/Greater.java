@@ -12,6 +12,7 @@ public class Greater<O> extends UnitaryOperator<O> {
 	private boolean equals;
 	
 	public Greater() {
+		this.equals = false;
 	}
 	
 	public Greater(O value) {

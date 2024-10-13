@@ -7,9 +7,9 @@ import org.codefilarete.stalactite.query.model.Selectable;
  * 
  * @author Guillaume Mary
  */
-public class Max<N extends Number> extends SQLFunction<N> {
+public class Max<N extends Number> extends SQLFunction<Selectable<N>, Long> {
 	
 	public Max(Selectable<N> value) {
-		super("max", value.getJavaType(), value);
+		super("max", Long.class, value);
 	}
 }

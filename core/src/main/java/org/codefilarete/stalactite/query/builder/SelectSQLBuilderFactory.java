@@ -96,7 +96,7 @@ public class SelectSQLBuilderFactory {
 			sql.cat(dmlNameProvider.getName(column)).catIf(!Strings.isEmpty(alias), " as ", alias);
 		}
 		
-		private void cat(SQLFunction<?> operator, SQLAppender appenderWrapper) {
+		private void cat(SQLFunction<?, ?> operator, SQLAppender appenderWrapper) {
 			String alias = select.getAliases().get(operator);	// can be UnitaryOperator which is Selectable
 			functionSQLBuilder.cat(operator, appenderWrapper);
 			appenderWrapper.catIf(!Strings.isEmpty(alias), " as " + alias);

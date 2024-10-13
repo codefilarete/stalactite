@@ -340,6 +340,9 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		derivedQueriesRepository.save(country1);
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
 		Republic loadedCountry = derivedQueriesRepository.findByName("Toto");
 		assertThat(loadedCountry).isEqualTo(country1);
@@ -566,6 +569,38 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdBetween(new PersistedIdentifier<>(40L), new PersistedIdentifier<>(50L));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+	}
+	
+	@Test
+	void ignoreCase() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		derivedQueriesRepository.save(country1);
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Republic country3 = new Republic(44);
+		country3.setName("Tutu");
+		Republic country4 = new Republic(45);
+		country4.setName("Tonton");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country4));
+		
+//		Republic loadedCountry;
+//		
+//		loadedCountry = derivedQueriesRepository.findByNameIgnoreCase("TOTO");
+//		assertThat(loadedCountry).isEqualTo(country1);
+//		
+//		loadedCountry = derivedQueriesRepository.findByNameIgnoreCase("toto");
+//		assertThat(loadedCountry).isEqualTo(country1);
+//		
+//		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("TOTO");
+//		assertThat(loadedCountry).isEqualTo(country1);
+//		
+//		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("toto");
+//		assertThat(loadedCountry).isEqualTo(country1);
+		
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeIgnoreCase("O");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country4);
+		
 	}
 	
 	@Test

@@ -159,7 +159,7 @@ class OperatorSQLBuilderTest {
 		Column<?, String> colB = tableToto.addColumn("b", String.class);
 		result = new StringAppender();
 		testInstance.catLike(new Like<>(new LowerCase<>(new UpperCase<>(new Coalesce<>(colA, new Cast<>(colB, String.class)))), true, true), new StringAppenderWrapper(result, dmlNameProvider), null);
-		assertThat(result.toString()).isEqualTo("like lower(upper(coalesce(Toto.a, cast('%b%' as varchar))))");
+		assertThat(result.toString()).isEqualTo("like lower(upper(coalesce(Toto.a, cast(Toto.b as varchar))))");
 	}
 	
 	@Test

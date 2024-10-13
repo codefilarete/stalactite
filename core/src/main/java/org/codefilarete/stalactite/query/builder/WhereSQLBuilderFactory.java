@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.RawCriterion;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.operator.BiOperandOperator;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -169,43 +170,51 @@ public class WhereSQLBuilderFactory {
 			
 			public void cat(RawCriterion criterion) {
 				for (Object o : criterion.getCondition()) {
-					if (o instanceof ColumnCriterion) {
-						cat((ColumnCriterion) o);
-					} else if (o instanceof CharSequence) {
-						sql.cat(o.toString());
-					} else if (o instanceof CriteriaChain) {
-						sql.cat("(");
-						cat((CriteriaChain) o);
-						sql.cat(")");
-					} else if (o instanceof SQLFunction) {    // made for having(sum(col), eq(..))
-						cat((SQLFunction) o);
-					} else if (o instanceof Selectable) {
-						cat((Selectable) o);
-					} else if (o instanceof TupleIn) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
-						catTupledIn((TupleIn) o);
-					} else if (o instanceof ConditionalOperator) {
-						cat((ConditionalOperator) o);
-					} else {
-						throw new UnsupportedOperationException("Unknown criterion type " + Reflections.toString(o.getClass()));
-					}
+					catToto(o);
+				}
+			}
+			
+			private void catToto(Object o) {
+				if (o instanceof ColumnCriterion) {
+					cat((ColumnCriterion) o);
+				} else if (o instanceof CharSequence) {
+					sql.cat(o.toString());
+				} else if (o instanceof CriteriaChain) {
+					sql.cat("(");
+					cat((CriteriaChain) o);
+					sql.cat(")");
+				} else if (o instanceof SQLFunction) {    // made for having(sum(col), eq(..))
+					cat((SQLFunction) o);
+				} else if (o instanceof Selectable) {
+					cat((Selectable) o);
+				} else if (o instanceof TupleIn) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
+					catTupledIn((TupleIn) o);
+				} else if (o instanceof ConditionalOperator) {
+					cat((ConditionalOperator) o);
+				} else {
+					throw new UnsupportedOperationException("Unknown criterion type " + Reflections.toString(o.getClass()));
 				}
 			}
 			
 			public void cat(ColumnCriterion criterion) {
-				cat(criterion.getColumn());
-				sql.cat(" ");
 				Object o = criterion.getCondition();
-				if (o instanceof CharSequence) {
-					sql.cat(o.toString());
-				} else if (o instanceof ConditionalOperator) {
-					cat(criterion.getColumn(), (ConditionalOperator) o);
+				if (o instanceof BiOperandOperator) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
+					cat(criterion.getColumn(), (BiOperandOperator) o);
 				} else {
-					try {
-						parameterBinderRegistry.getBinder(o.getClass());
-					} catch (BindingException e) {
-						throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
+					cat(criterion.getColumn());
+					sql.cat(" ");
+					if (o instanceof CharSequence) {
+						sql.cat(o.toString());
+					} else if (o instanceof ConditionalOperator) {
+						cat(criterion.getColumn(), (ConditionalOperator) o);
+					} else {
+						try {
+							parameterBinderRegistry.getBinder(o.getClass());
+						} catch (BindingException e) {
+							throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
+						}
+						sql.catValue(o);
 					}
-					sql.catValue(o);
 				}
 			}
 			
@@ -218,6 +227,15 @@ public class WhereSQLBuilderFactory {
 				if (operator != null) {
 					sql.cat(" ", getName(operator), " ");
 				}
+			}
+			
+			public void cat(Selectable c, BiOperandOperator operator) {
+				Object[] rawCriterion = operator.asRawCriterion(c);
+				for (Object o : rawCriterion) {
+					catToto(o);
+					sql.cat(" ");
+				}
+				sql.removeLastChars(1);
 			}
 			
 			public void cat(ConditionalOperator operator) {

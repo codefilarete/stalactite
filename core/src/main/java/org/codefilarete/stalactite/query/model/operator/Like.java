@@ -1,7 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
-import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
 
 /**
  * Represents a like comparison.
@@ -9,7 +9,7 @@ import org.codefilarete.stalactite.query.model.ValueWrapper.SQLFunctionWrapper;
  * 
  * @author Guillaume Mary
  */
-public class Like<V extends CharSequence> extends UnitaryOperator<V> {
+public class Like<V> extends UnitaryOperator<V> {
 	
 	/**
 	 * Shortcut that builds a {@link Like} instance for a "starts with" criterion.
@@ -100,24 +100,20 @@ public class Like<V extends CharSequence> extends UnitaryOperator<V> {
 		this.endingStar = endingStar;
 	}
 	
-	/**
-	 * Constructor for contains operator with a function as argument (for lower/upper case for example)
-	 * @param value the function that composing this like
-	 */
-	public Like(SQLFunction<V> value) {
-		this(value, false, false);
-	}
-	
-	/**
-	 * Constructor for "startsWith" and "endsWith" operator
-	 * @param value something that looks like a String, may contain '%' characters
-	 * @param leadingStar true to add a leading generic '%' character
-	 * @param endingStar true to add a ending generic '%' character
-	 */
-	public Like(SQLFunction<V> value, boolean leadingStar, boolean endingStar) {
-		super(new SQLFunctionWrapper<>(value));
-		this.leadingStar = leadingStar;
-		this.endingStar = endingStar;
+	public BiOperandOperator<CharSequence> ignoringCase() {
+		LowerCase<CharSequence> charSequenceLowerCase = new LowerCase<>();
+		Like<LowerCase<CharSequence>> charSequenceLike = new Like<>(charSequenceLowerCase, this.leadingStar, this.endingStar);
+		return new BiOperandOperator<CharSequence>() {
+			@Override
+			public Object[] asRawCriterion(Selectable<CharSequence> selectable) {
+				return new Object[] { new LowerCase<>(selectable), charSequenceLike };
+			}
+			
+			@Override
+			public void setValue(CharSequence value) {
+				charSequenceLowerCase.setValue(value);
+			}
+		};
 	}
 	
 	public boolean withLeadingStar() {
