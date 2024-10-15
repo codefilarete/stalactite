@@ -125,6 +125,18 @@ public abstract class AbstractDerivedQuery<T> {
 						return new Between.Interval<>(arguments[argumentIndex], arguments[argumentIndex + 1]);
 					}
 				};
+			} else if (operator instanceof In) {
+				return new Criterion(operator, 2) {
+					@Override
+					public Object convert(Object[] arguments, int argumentIndex) {
+						Object argument = arguments[argumentIndex];
+						if (argument instanceof Object[]) {
+							return Arrays.asList((Object[]) argument);
+						} else {
+							return argument;
+						}
+					}
+				};
 			} else if (operator instanceof IsNull) {
 				return new Criterion(operator, 0) {
 					@Override

@@ -18,15 +18,17 @@ public class Equals<O> extends UnitaryOperator<O> {
 	}
 	
 	public BiOperandOperator<CharSequence> ignoringCase() {
+		LowerCase<CharSequence> lowerCase = new LowerCase<>();
+		Equals<LowerCase<CharSequence>> equals = new Equals<>(lowerCase);
 		return new BiOperandOperator<CharSequence>() {
 			@Override
 			public Object[] asRawCriterion(Selectable<CharSequence> selectable) {
-				return new Object[] { new LowerCase<>(selectable), Equals.this };
+				return new Object[] { new LowerCase<>(selectable), equals };
 			}
 			
 			@Override
 			public void setValue(CharSequence value) {
-				Equals.this.setValue((O) value);
+				lowerCase.setValue(value);
 			}
 		};
 	}

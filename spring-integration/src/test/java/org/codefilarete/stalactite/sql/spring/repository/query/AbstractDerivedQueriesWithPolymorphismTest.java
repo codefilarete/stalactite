@@ -382,8 +382,24 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		country2.setName("Toto");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdIn(Arrays.asList(new PersistedIdentifier<>(42L), new PersistedIdentifier<>(43L), new PersistedIdentifier<>(44L)));
+		Set<Republic> loadedCountries;
+		loadedCountries = derivedQueriesRepository.findByIdIn(Arrays.asList(new PersistedIdentifier<>(42L), new PersistedIdentifier<>(43L), new PersistedIdentifier<>(44L)));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+		
+		loadedCountries = derivedQueriesRepository.findByIdIn(new PersistedIdentifier<>(42L), new PersistedIdentifier<>(43L), new PersistedIdentifier<>(44L));
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+	}
+	
+	@Test
+	void in_string() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameIn("Titi");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
 	}
 	
 	@Test
@@ -584,19 +600,19 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		country4.setName("Tonton");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country4));
 		
-//		Republic loadedCountry;
-//		
-//		loadedCountry = derivedQueriesRepository.findByNameIgnoreCase("TOTO");
-//		assertThat(loadedCountry).isEqualTo(country1);
-//		
-//		loadedCountry = derivedQueriesRepository.findByNameIgnoreCase("toto");
-//		assertThat(loadedCountry).isEqualTo(country1);
-//		
-//		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("TOTO");
-//		assertThat(loadedCountry).isEqualTo(country1);
-//		
-//		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("toto");
-//		assertThat(loadedCountry).isEqualTo(country1);
+		Republic loadedCountry;
+
+		loadedCountry = derivedQueriesRepository.findByNameIgnoreCase("TOTO");
+		assertThat(loadedCountry).isEqualTo(country1);
+
+		loadedCountry = derivedQueriesRepository.findByNameIgnoreCase("toto");
+		assertThat(loadedCountry).isEqualTo(country1);
+
+		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("TOTO");
+		assertThat(loadedCountry).isEqualTo(country1);
+
+		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("toto");
+		assertThat(loadedCountry).isEqualTo(country1);
 		
 		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeIgnoreCase("O");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country4);

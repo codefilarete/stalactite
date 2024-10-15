@@ -101,8 +101,8 @@ public class Like<V> extends UnitaryOperator<V> {
 	}
 	
 	public BiOperandOperator<CharSequence> ignoringCase() {
-		LowerCase<CharSequence> charSequenceLowerCase = new LowerCase<>();
-		Like<LowerCase<CharSequence>> charSequenceLike = new Like<>(charSequenceLowerCase, this.leadingStar, this.endingStar);
+		LowerCase<CharSequence> lowerCase = new LowerCase<>();
+		Like<LowerCase<CharSequence>> charSequenceLike = new Like<>(lowerCase, this.leadingStar, this.endingStar);
 		return new BiOperandOperator<CharSequence>() {
 			@Override
 			public Object[] asRawCriterion(Selectable<CharSequence> selectable) {
@@ -111,7 +111,7 @@ public class Like<V> extends UnitaryOperator<V> {
 			
 			@Override
 			public void setValue(CharSequence value) {
-				charSequenceLowerCase.setValue(value);
+				lowerCase.setValue(value);
 			}
 		};
 	}
