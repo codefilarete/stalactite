@@ -61,12 +61,14 @@ public abstract class AbstractDerivedQuery<T> {
 				break;
 			case NOT_LIKE:
 				operator = new Like<>(true, true).not();
+				if (ignoreCase) {
+					operator = ((Like) operator).ignoringCase();
+				}
 				break;
 			case LIKE:
+				operator = new Like<>(true, true);
 				if (ignoreCase) {
-					operator = new Like<>(true, true).ignoringCase();
-				} else {
-					operator = new Like<>(true, true);
+					operator = ((Like) operator).ignoringCase();
 				}
 				break;
 			case STARTING_WITH:

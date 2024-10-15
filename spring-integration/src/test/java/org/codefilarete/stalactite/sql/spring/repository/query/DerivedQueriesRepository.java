@@ -76,6 +76,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	
 	Set<Republic> findByNameLikeIgnoreCase(String name);
 	
+	Set<Republic> findByNameNotLikeIgnoreCase(String name);
+	
 	Republic findByPresidentId(Identifier<Long> longPersistedIdentifier);
 	
 	Republic findByPresidentName(String name);

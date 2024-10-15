@@ -450,6 +450,23 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	}
 	
 	@Test
+	void like_ignoreCase() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Republic country3 = new Republic(44);
+		country3.setName("Tutu");
+		Republic country4 = new Republic(45);
+		country4.setName("Tonton");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeIgnoreCase("O");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country4);
+		
+	}
+	
+	@Test
 	void notLike() {
 		Republic country1 = new Republic(42);
 		country1.setDescription("a description with a keyword");
@@ -459,6 +476,23 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		
 		Set<Republic> loadedCountries = derivedQueriesRepository.findByDescriptionNotLike("contained");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country1);
+	}
+	
+	@Test
+	void notLike_ignoreCase() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Republic country3 = new Republic(44);
+		country3.setName("Tutu");
+		Republic country4 = new Republic(45);
+		country4.setName("Tonton");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameNotLikeIgnoreCase("O");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2, country3);
 	}
 	
 	@Test
@@ -534,7 +568,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	}
 	
 	@Test
-	void lower() {
+	void lesser() {
 		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
 		Republic country2 = new Republic(43);
@@ -545,7 +579,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	}
 	
 	@Test
-	void lowerEquals() {
+	void lesserEquals() {
 		Republic country1 = new Republic(42);
 		derivedQueriesRepository.save(country1);
 		Republic country2 = new Republic(43);
@@ -611,17 +645,12 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	}
 	
 	@Test
-	void ignoreCase() {
+	void equals_ignoreCase() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
-		derivedQueriesRepository.save(country1);
 		Republic country2 = new Republic(43);
 		country2.setName("Titi");
-		Republic country3 = new Republic(44);
-		country3.setName("Tutu");
-		Republic country4 = new Republic(45);
-		country4.setName("Tonton");
-		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country4));
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
 		Republic loadedCountry;
 
@@ -636,9 +665,6 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 
 		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("toto");
 		assertThat(loadedCountry).isEqualTo(country1);
-		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameLikeIgnoreCase("O");
-		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country4);
 		
 	}
 	

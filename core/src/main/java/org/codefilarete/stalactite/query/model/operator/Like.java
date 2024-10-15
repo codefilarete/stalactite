@@ -1,9 +1,6 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import java.util.List;
-
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
-import org.codefilarete.tool.collection.Arrays;
 
 /**
  * Represents a like comparison.
@@ -102,20 +99,8 @@ public class Like<V> extends UnitaryOperator<V> {
 		this.endingStar = endingStar;
 	}
 	
-	public BiOperandOperator<CharSequence> ignoringCase() {
-		LowerCase<CharSequence> lowerCase = new LowerCase<>();
-		Like<LowerCase<CharSequence>> charSequenceLike = new Like<>(lowerCase, this.leadingStar, this.endingStar);
-		return new BiOperandOperator<CharSequence>() {
-			@Override
-			public List<Object> asRawCriterion(Object selectable) {
-				return Arrays.asList(new LowerCase<>(selectable), charSequenceLike);
-			}
-			
-			@Override
-			public void setValue(CharSequence value) {
-				lowerCase.setValue(value);
-			}
-		};
+	public LikeIgnoreCase<V> ignoringCase() {
+		return new LikeIgnoreCase<>(this);
 	}
 	
 	public boolean withLeadingStar() {
