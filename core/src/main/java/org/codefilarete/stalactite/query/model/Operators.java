@@ -9,8 +9,8 @@ import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
+import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
-import org.codefilarete.stalactite.query.model.operator.Lower;
 import org.codefilarete.stalactite.query.model.operator.LowerCase;
 import org.codefilarete.stalactite.query.model.operator.Max;
 import org.codefilarete.stalactite.query.model.operator.Min;
@@ -42,21 +42,21 @@ public interface Operators {
 	}
 	
 	/**
-	 * Shortcut to <code>new Lower(value)</code> to ease a fluent write of queries for "lower than" comparisons
+	 * Shortcut to <code>new Lesser(value)</code> to ease a fluent write of queries for "lesser than" comparisons
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
-	 * @return a new instance of {@link Lower}
+	 * @return a new instance of {@link Lesser}
 	 */
-	static <O> Lower<O> lt(O value) {
-		return new Lower<>(value);
+	static <O> Lesser<O> lt(O value) {
+		return new Lesser<>(value);
 	}
 	
 	/**
-	 * Shortcut to <code>new Lower(value, true)</code> to ease a fluent write of queries for "lower than equals" comparisons
+	 * Shortcut to <code>new Lesser(value, true)</code> to ease a fluent write of queries for "lesser than equals" comparisons
 	 * @param value a value, null accepted, transformed to "is null" by {@link OperatorSQLBuilder})
-	 * @return a new instance of {@link Lower} with equals checking
+	 * @return a new instance of {@link Lesser} with equals checking
 	 */
-	static <O> Lower<O> lteq(O value) {
-		return new Lower<>(value, true);
+	static <O> Lesser<O> lteq(O value) {
+		return new Lesser<>(value, true);
 	}
 	
 	/**

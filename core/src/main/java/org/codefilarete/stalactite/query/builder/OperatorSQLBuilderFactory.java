@@ -13,8 +13,8 @@ import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
+import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
-import org.codefilarete.stalactite.query.model.operator.Lower;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -60,8 +60,8 @@ public class OperatorSQLBuilderFactory {
 				// ugly way of dispatching concatenation, can't find a better way without heaving classes or struggling with single responsibility design
 				if (operator instanceof Equals) {
 					catEquals((Equals<V>) operator, sql, column);
-				} else if (operator instanceof Lower) {
-					catLower((Lower<V>) operator, sql, column);
+				} else if (operator instanceof Lesser) {
+					catLower((Lesser<V>) operator, sql, column);
 				} else if (operator instanceof Greater) {
 					catGreater((Greater<V>) operator, sql, column);
 				} else if (operator instanceof Between) {
@@ -177,11 +177,11 @@ public class OperatorSQLBuilderFactory {
 		}
 		
 		@SuppressWarnings("squid:S3358")	// we can afford nesting ternary operators here, not so complex to understand
-		<V> void catLower(Lower<V> lower, SQLAppender sql, Selectable<V> column) {
-			sql.cat(lower.isNot()
-							? (lower.isEquals() ? "> " : ">= ")
-							: (lower.isEquals() ? "<= " : "< "));
-			catValue(column, lower.getValue(), sql);
+		<V> void catLower(Lesser<V> lesser, SQLAppender sql, Selectable<V> column) {
+			sql.cat(lesser.isNot()
+							? (lesser.isEquals() ? "> " : ">= ")
+							: (lesser.isEquals() ? "<= " : "< "));
+			catValue(column, lesser.getValue(), sql);
 		}
 		
 		<V> void catEquals(Equals<V> equals, SQLAppender sql, Selectable<V> column) {

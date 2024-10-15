@@ -7,19 +7,19 @@ import org.codefilarete.stalactite.query.model.UnitaryOperator;
  * 
  * @author Guillaume Mary
  */
-public class Lower<O> extends UnitaryOperator<O> {
+public class Lesser<O> extends UnitaryOperator<O> {
 	
 	private boolean equals;
 	
-	public Lower() {
+	public Lesser() {
 		this.equals = false;
 	}
 	
-	public Lower(O value) {
+	public Lesser(O value) {
 		this(value, false);
 	}
 	
-	public Lower(O value, boolean equals) {
+	public Lesser(O value, boolean equals) {
 		super(value);
 		this.equals = equals;
 	}
@@ -28,7 +28,7 @@ public class Lower<O> extends UnitaryOperator<O> {
 		this.equals = equals;
 	}
 	
-	public Lower<O> equals() {
+	public Lesser<O> equals() {
 		setEquals(true);
 		return this;
 	}

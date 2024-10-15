@@ -12,8 +12,9 @@ import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
 import org.codefilarete.stalactite.query.model.operator.In;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
+import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
-import org.codefilarete.stalactite.query.model.operator.Lower;
+import org.codefilarete.tool.collection.Arrays;
 import org.springframework.data.mapping.PropertyPath;
 import org.springframework.data.repository.query.parser.Part.Type;
 
@@ -45,10 +46,10 @@ public abstract class AbstractDerivedQuery<T> {
 				break;
 			case BEFORE:
 			case LESS_THAN:
-				operator = new Lower<>();
+				operator = new Lesser<>();
 				break;
 			case LESS_THAN_EQUAL:
-				operator = new Lower<>().equals();
+				operator = new Lesser<>().equals();
 				break;
 			case AFTER:
 			case GREATER_THAN:
