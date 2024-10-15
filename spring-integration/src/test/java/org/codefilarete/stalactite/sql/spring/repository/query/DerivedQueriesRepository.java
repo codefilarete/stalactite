@@ -24,7 +24,11 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	
 	Set<Republic> findByNameIn(String... name);
 	
+	Set<Republic> findByNameIgnoreCaseIn(String... name);
+	
 	Set<Republic> findByIdNotIn(Iterable<Identifier<Long>> ids);
+	
+	Set<Republic> findByNameIgnoreCaseNotIn(String... name);
 	
 	Republic findByName(String name);
 	

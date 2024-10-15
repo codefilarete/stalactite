@@ -36,4 +36,8 @@ public class In<O> extends ConditionalOperator<O, Iterable<O>> {
 	public boolean isNull() {
 		return getValue() == null;
 	}
+	
+	public InIgnoreCase ignoringCase() {
+		return new InIgnoreCase((In<CharSequence>) this);
+	}
 }

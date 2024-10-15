@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Equals;
 import org.codefilarete.stalactite.query.model.operator.Greater;
 import org.codefilarete.stalactite.query.model.operator.In;
+import org.codefilarete.stalactite.query.model.operator.InIgnoreCase;
 import org.codefilarete.stalactite.query.model.operator.IsNull;
 import org.codefilarete.stalactite.query.model.operator.Lesser;
 import org.codefilarete.stalactite.query.model.operator.Like;
@@ -86,9 +87,15 @@ public abstract class AbstractDerivedQuery<T> {
 				break;
 			case NOT_IN:
 				operator = new In<>().not();
+				if (ignoreCase) {
+					operator = ((In) operator).ignoringCase();
+				}
 				break;
 			case IN:
 				operator = new In<>();
+				if (ignoreCase) {
+					operator = ((In) operator).ignoringCase();
+				}
 				break;
 			case TRUE:
 				operator = new Equals<>(true);
@@ -98,12 +105,14 @@ public abstract class AbstractDerivedQuery<T> {
 				break;
 			case NEGATING_SIMPLE_PROPERTY:
 				operator = new Equals<>().not();
+				if (ignoreCase) {
+					operator = ((Equals) operator).ignoringCase();
+				}
 				break;
 			case SIMPLE_PROPERTY:
+				operator = new Equals<>();
 				if (ignoreCase) {
-					operator = new Equals<>().ignoringCase();
-				} else {
-					operator = new Equals<>();
+					operator = ((Equals) operator).ignoringCase();
 				}
 				break;
 			// Hereafter operators are not supported for different reasons :
@@ -126,12 +135,13 @@ public abstract class AbstractDerivedQuery<T> {
 						return new Between.Interval<>(arguments[argumentIndex], arguments[argumentIndex + 1]);
 					}
 				};
-			} else if (operator instanceof In) {
+			} else if (operator instanceof In || operator instanceof InIgnoreCase) {
 				return new Criterion(operator, 2) {
 					@Override
 					public Object convert(Object[] arguments, int argumentIndex) {
 						Object argument = arguments[argumentIndex];
 						if (argument instanceof Object[]) {
+							// converting varargs to an Iterable because it's what's expected by "In" class as value
 							return Arrays.asList((Object[]) argument);
 						} else {
 							return argument;

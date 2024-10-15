@@ -152,7 +152,11 @@ public class OperatorSQLBuilderFactory {
 				} else {
 					isFirst = false;
 				}
-				sql.catValue(column, (V) v);
+				if (v instanceof SQLFunction) {
+					functionSQLBuilder.cat((SQLFunction) v, sql);
+				} else {
+					sql.catValue(column, (V) v);
+				}
 			}
 		}
 		

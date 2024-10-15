@@ -396,10 +396,19 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		country1.setName("Toto");
 		Republic country2 = new Republic(43);
 		country2.setName("Titi");
-		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3));
 		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameIn("Titi");
+		Set<Republic> loadedCountries;
+		loadedCountries = derivedQueriesRepository.findByNameIn("Titi");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		
+		loadedCountries = derivedQueriesRepository.findByNameIgnoreCaseIn("tiTI");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+		
+		loadedCountries = derivedQueriesRepository.findByNameIgnoreCaseIn("tiTI", "TOto");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2, country1);
 	}
 	
 	@Test
@@ -407,11 +416,25 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
 		Republic country2 = new Republic(43);
-		country2.setName("Toto");
+		country2.setName("Titi");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
 		
 		Set<Republic> loadedCountries = derivedQueriesRepository.findByIdNotIn(Arrays.asList(new PersistedIdentifier<>(42L)));
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+	}
+	
+	@Test
+	void notIn_string() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		Republic country2 = new Republic(43);
+		country2.setName("Titi");
+		Republic country3 = new Republic(44);
+		country3.setName("Tata");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3));
+		
+		Set<Republic> loadedCountries = derivedQueriesRepository.findByNameIgnoreCaseNotIn("TATA");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2, country1);
 	}
 	
 	@Test

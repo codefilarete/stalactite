@@ -32,7 +32,15 @@ public abstract class ConditionalOperator<T, V> {
 	 * Negates this operator
 	 */
 	public ConditionalOperator<T, V> not() {
-		setNot(true);
+		return not(true);
+	}
+	
+	/**
+	 * Switch this operator negation and return this
+	 * @param not the new value of the negation
+	 */
+	public ConditionalOperator<T, V> not(boolean not) {
+		setNot(not);
 		return this;
 	}
 	

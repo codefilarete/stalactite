@@ -142,20 +142,10 @@ public class WhereSQLBuilderFactory {
 				this.dmlNameProvider = dmlNameProvider;
 			}
 			
-			public void cat(Object o) {
-				if (o instanceof CharSequence) {
-					sql.cat(o.toString());
-				} else if (o instanceof CriteriaChain) {
-					sql.cat("(");
-					cat((CriteriaChain) o);
-					sql.cat(")");
-				} else if (o instanceof RawCriterion) {
-					cat((RawCriterion) o);
-				} else if (o instanceof ColumnCriterion) {
-					cat((ColumnCriterion) o);
-				}
-			}
-			
+			/**
+			 * Main entry point
+			 * @param criteria the conditions that must be appended
+			 */
 			public void cat(CriteriaChain criteria) {
 				boolean isNotFirst = false;
 				for (Object criterion : criteria) {
@@ -168,52 +158,62 @@ public class WhereSQLBuilderFactory {
 				}
 			}
 			
-			public void cat(RawCriterion criterion) {
-				for (Object o : criterion.getCondition()) {
-					catToto(o);
-				}
-			}
-			
-			private void catToto(Object o) {
-				if (o instanceof ColumnCriterion) {
-					cat((ColumnCriterion) o);
-				} else if (o instanceof CharSequence) {
+			private void cat(Object o) {
+				if (o instanceof CharSequence) {
 					sql.cat(o.toString());
 				} else if (o instanceof CriteriaChain) {
 					sql.cat("(");
 					cat((CriteriaChain) o);
 					sql.cat(")");
-				} else if (o instanceof SQLFunction) {    // made for having(sum(col), eq(..))
-					cat((SQLFunction) o);
-				} else if (o instanceof Selectable) {
-					cat((Selectable) o);
-				} else if (o instanceof TupleIn) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
-					catTupledIn((TupleIn) o);
-				} else if (o instanceof ConditionalOperator) {
-					cat((ConditionalOperator) o);
+				} else if (o instanceof RawCriterion) {
+					for (Object conditionItem : ((RawCriterion) o).getCondition()) {
+						catConditionItem(conditionItem);
+					}
+				} else if (o instanceof ColumnCriterion) {
+					cat((ColumnCriterion) o);
+				}
+			}
+			
+			private void catConditionItem(Object conditionItem) {
+				if (conditionItem instanceof ColumnCriterion) {
+					cat((ColumnCriterion) conditionItem);
+				} else if (conditionItem instanceof CharSequence) {
+					sql.cat(conditionItem.toString());
+				} else if (conditionItem instanceof CriteriaChain) {
+					sql.cat("(");
+					cat((CriteriaChain) conditionItem);
+					sql.cat(")");
+				} else if (conditionItem instanceof SQLFunction) {    // made for having(sum(col), eq(..))
+					cat((SQLFunction) conditionItem);
+				} else if (conditionItem instanceof Selectable) {
+					cat((Selectable) conditionItem);
+				} else if (conditionItem instanceof TupleIn) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
+					catTupledIn((TupleIn) conditionItem);
+				} else if (conditionItem instanceof ConditionalOperator) {
+					cat((ConditionalOperator) conditionItem);
 				} else {
-					throw new UnsupportedOperationException("Unknown criterion type " + Reflections.toString(o.getClass()));
+					throw new UnsupportedOperationException("Unknown criterion type " + Reflections.toString(conditionItem.getClass()));
 				}
 			}
 			
 			public void cat(ColumnCriterion criterion) {
-				Object o = criterion.getCondition();
-				if (o instanceof BiOperandOperator) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
-					cat(criterion.getColumn(), (BiOperandOperator) o);
+				Object condition = criterion.getCondition();
+				if (condition instanceof BiOperandOperator) {    // "if" to be done before "if" about ConditionalOperator to take inheritance into account  
+					cat(criterion.getColumn(), (BiOperandOperator) condition);
 				} else {
 					cat(criterion.getColumn());
 					sql.cat(" ");
-					if (o instanceof CharSequence) {
-						sql.cat(o.toString());
-					} else if (o instanceof ConditionalOperator) {
-						cat(criterion.getColumn(), (ConditionalOperator) o);
+					if (condition instanceof CharSequence) {
+						sql.cat(condition.toString());
+					} else if (condition instanceof ConditionalOperator) {
+						cat(criterion.getColumn(), (ConditionalOperator) condition);
 					} else {
 						try {
-							parameterBinderRegistry.getBinder(o.getClass());
+							parameterBinderRegistry.getBinder(condition.getClass());
 						} catch (BindingException e) {
-							throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(o.getClass()));
+							throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(condition.getClass()));
 						}
-						sql.catValue(o);
+						sql.catValue(condition);
 					}
 				}
 			}
@@ -230,9 +230,8 @@ public class WhereSQLBuilderFactory {
 			}
 			
 			public void cat(Selectable c, BiOperandOperator operator) {
-				Object[] rawCriterion = operator.asRawCriterion(c);
-				for (Object o : rawCriterion) {
-					catToto(o);
+				for (Object o : operator.asRawCriterion(c)) {
+					catConditionItem(o);
 					sql.cat(" ");
 				}
 				sql.removeLastChars(1);

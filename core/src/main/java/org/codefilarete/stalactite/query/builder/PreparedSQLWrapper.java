@@ -1,18 +1,20 @@
 package org.codefilarete.stalactite.query.builder;
 
 import javax.annotation.Nullable;
+import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.statement.binder.ParameterBinder;
 import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
- * An appender to a {@link org.codefilarete.stalactite.sql.statement.PreparedSQL}
+ * An appender to a {@link PreparedSQL}
  */
 public class PreparedSQLWrapper implements SQLAppender {
 	
@@ -46,7 +48,7 @@ public class PreparedSQLWrapper implements SQLAppender {
 	}
 	
 	/**
-	 * Implemented such it adds the value as a {@link java.sql.PreparedStatement} mark (?) and keeps it for future use in the value list.
+	 * Implemented such it adds the value as a {@link PreparedStatement} mark (?) and keeps it for future use in the value list.
 	 *
 	 * @param column
 	 * @param value  the object to be added/printed to the statement
@@ -80,13 +82,25 @@ public class PreparedSQLWrapper implements SQLAppender {
 		if (value instanceof Selectable) {
 			// Columns are simply appended (no binder needed nor index increment)
 			surrogate.cat(dmlNameProvider.getName((Selectable) value));
+		} else if (value instanceof Iterable) {
+			for (Object v : (Iterable) value) {
+				appendParameter(v, binderSupplier);
+			}
+		} else if (value instanceof Object[]) {
+			for (Object v : (Object[]) value) {
+				appendParameter(v, binderSupplier);
+			}
 		} else {
-			surrogate.cat("?");
-			values.put(paramCounter.getValue(), value);
-			parameterBinders.put(paramCounter.getValue(), binderSupplier.get());
-			paramCounter.increment();
+			appendParameter(value, binderSupplier);
 		}
 		return this;
+	}
+	
+	private void appendParameter(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
+		surrogate.cat("?");
+		values.put(paramCounter.getValue(), value);
+		parameterBinders.put(paramCounter.getValue(), binderSupplier.get());
+		paramCounter.increment();
 	}
 	
 	@Override

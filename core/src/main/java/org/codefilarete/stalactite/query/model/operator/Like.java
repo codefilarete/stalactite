@@ -1,7 +1,9 @@
 package org.codefilarete.stalactite.query.model.operator;
 
-import org.codefilarete.stalactite.query.model.Selectable;
+import java.util.List;
+
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.tool.collection.Arrays;
 
 /**
  * Represents a like comparison.
@@ -105,8 +107,8 @@ public class Like<V> extends UnitaryOperator<V> {
 		Like<LowerCase<CharSequence>> charSequenceLike = new Like<>(lowerCase, this.leadingStar, this.endingStar);
 		return new BiOperandOperator<CharSequence>() {
 			@Override
-			public Object[] asRawCriterion(Selectable<CharSequence> selectable) {
-				return new Object[] { new LowerCase<>(selectable), charSequenceLike };
+			public List<Object> asRawCriterion(Object selectable) {
+				return Arrays.asList(new LowerCase<>(selectable), charSequenceLike);
 			}
 			
 			@Override
