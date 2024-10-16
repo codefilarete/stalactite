@@ -27,6 +27,7 @@ import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.ExecutableQuery;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
+import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntityCriteriaSupport;
@@ -34,7 +35,8 @@ import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
+import org.codefilarete.stalactite.query.model.Operators;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
@@ -172,12 +174,16 @@ public class EntityQueryCriteriaSupport<C, I> {
 			} else {
 				// single query
 				orderByAdapter.set(orderByClause -> {
-					KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = queryPageSupport.getOrderBy();
+					KeepOrderSet<OrderByItem> orderBy = queryPageSupport.getOrderBy();
 					orderBy.forEach(duo -> {
-						Column column = entityCriteriaSupport.getRootConfiguration().giveColumn(duo.getLeft());
-						orderByClause.add(column, duo.getRight() == Order.ASC
-								? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
-								: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
+						Selectable column = entityCriteriaSupport.getRootConfiguration().giveColumn(duo.getProperty());
+						orderByClause.add(
+								duo.isIgnoreCase()
+										? Operators.lowerCase(column)
+										: column,
+								duo.getDirection() == Order.ASC
+										? org.codefilarete.stalactite.query.model.OrderByChain.Order.ASC
+										: org.codefilarete.stalactite.query.model.OrderByChain.Order.DESC);
 					});
 				});
 				return accumulatorParam.collect(entityLoader.get());
@@ -186,9 +192,9 @@ public class EntityQueryCriteriaSupport<C, I> {
 	}
 	
 	@VisibleForTesting
-	static <C> Comparator<C> buildComparator(KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy) {
+	static <C> Comparator<C> buildComparator(KeepOrderSet<OrderByItem> orderBy) {
 		List<Duo<AccessorChain<Object, Comparable>, Order>> orderByAccessors = orderBy.stream().map(duo -> {
-			List<? extends ValueAccessPoint<?>> valueAccessPoints = duo.getLeft();
+			List<? extends ValueAccessPoint<?>> valueAccessPoints = duo.getProperty();
 			AccessorChain<Object, Comparable> localResult;
 			if (valueAccessPoints.size() == 1) {
 				ValueAccessPoint<?> valueAccessPoint = valueAccessPoints.get(0);
@@ -202,7 +208,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 				localResult = new AccessorChain<>(valueAccessPoints.stream().map(EntityQueryCriteriaSupport::toAccessor).collect(Collectors.toList()));
 			}
 			localResult.setNullValueHandler(AccessorChain.RETURN_NULL);
-			return new Duo<>(localResult, duo.getRight());
+			return new Duo<>(localResult, duo.getDirection());
 		}).collect(Collectors.toList());
 		Nullable<Comparator> result = nullable((Comparator) null);
 		orderByAccessors.forEach(orderByPawn -> {
@@ -248,13 +254,13 @@ public class EntityQueryCriteriaSupport<C, I> {
 			implements OrderByChain<C, EntityQueryPageSupport<C>>, LimitAware<EntityQueryPageSupport<C>> {
 		
 		private Limit limit;
-		private final KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>();
+		private final KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>();
 		
 		private Limit getLimit() {
 			return limit;
 		}
 		
-		private KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> getOrderBy() {
+		private KeepOrderSet<OrderByItem> getOrderBy() {
 			return orderBy;
 		}
 		
@@ -273,7 +279,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		@Override
 		public EntityQueryPageSupport<C> orderBy(SerializableFunction<C, ?> getter, Order order) {
 			AccessorByMethodReference<C, ?> methodReference = new AccessorByMethodReference<>(getter);
-			orderBy.add(new Duo<>(Arrays.asList(methodReference), order));
+			orderBy.add(new OrderByItem(Arrays.asList(methodReference), order, false));
 			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());
 			return this;
 		}
@@ -281,14 +287,18 @@ public class EntityQueryCriteriaSupport<C, I> {
 		@Override
 		public EntityQueryPageSupport<C> orderBy(SerializableBiConsumer<C, ?> setter, Order order) {
 			MutatorByMethodReference<C, ?> methodReference = new MutatorByMethodReference<>(setter);
-			orderBy.add(new Duo<>(Arrays.asList(methodReference), order));
+			orderBy.add(new OrderByItem(Arrays.asList(methodReference), order, false));
 			assertAccessorIsNotIterable(methodReference, methodReference.getPropertyType());
 			return this;
 		}
 		
 		@Override
 		public EntityQueryPageSupport<C> orderBy(AccessorChain<C, ?> getter, Order order) {
-			orderBy.add(new Duo<>(getter.getAccessors(), order));
+			return orderBy(getter, order, false);
+		}
+		
+		public EntityQueryPageSupport<C> orderBy(AccessorChain<C, ?> getter, Order order, boolean ignoreCase) {
+			orderBy.add(new OrderByItem(getter.getAccessors(), order, ignoreCase));
 			getter.getAccessors().forEach(accessor -> assertAccessorIsNotIterable(accessor, AccessorDefinition.giveDefinition(accessor).getMemberType()));
 			return this;
 		}
@@ -316,17 +326,38 @@ public class EntityQueryCriteriaSupport<C, I> {
 			if (this.getLimit() != null) {
 				duplicate.limit(this.getLimit().getCount(), this.getLimit().getOffset());
 			}
-			this.orderBy.forEach(accessorOrderDuo -> {
-				duplicate.orderBy.add(new Duo<>(accessorOrderDuo.getLeft(), accessorOrderDuo.getRight()));
-			});
+			duplicate.orderBy.addAll(this.orderBy);
 			// adding other instance's limit and orderBy options (may overwrite info, but that's user responsibility, we can't do anything smart here)
 			if (other.getLimit() != null) {
 				duplicate.limit(other.getLimit().getCount(), other.getLimit().getOffset());
 			}
-			other.orderBy.forEach(accessorOrderDuo -> {
-				duplicate.orderBy.add(new Duo<>(accessorOrderDuo.getLeft(), accessorOrderDuo.getRight()));
-			});
+			duplicate.orderBy.addAll(other.orderBy);
 			return duplicate;
+		}
+		
+		public static class OrderByItem {
+			
+			private final List<? extends ValueAccessPoint<?>> property;
+			private final Order direction;
+			private final boolean ignoreCase;
+			
+			public OrderByItem(List<? extends ValueAccessPoint<?>> property, Order direction, boolean ignoreCase) {
+				this.property = property;
+				this.direction = direction;
+				this.ignoreCase = ignoreCase;
+			}
+			
+			public List<? extends ValueAccessPoint<?>> getProperty() {
+				return property;
+			}
+			
+			public Order getDirection() {
+				return direction;
+			}
+			
+			public boolean isIgnoreCase() {
+				return ignoreCase;
+			}
 		}
 	}
 }

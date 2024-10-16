@@ -1,17 +1,15 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.TreeSet;
 
 import org.codefilarete.reflection.AccessorByMethodReference;
 import org.codefilarete.reflection.MutatorByMethodReference;
-import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
+import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.junit.jupiter.api.Test;
@@ -22,8 +20,8 @@ class EntityQueryCriteriaSupportTest {
 	
 	@Test
 	void buildComparator_singleDirectProperty() {
-		KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>(
-				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC)
+		KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>(
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC, false)
 		);
 		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
@@ -40,9 +38,9 @@ class EntityQueryCriteriaSupportTest {
 	
 	@Test
 	void buildComparator_severalDirectProperty() {
-		KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>(
-				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC),
-				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getDescription)), Order.ASC)
+		KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>(
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC, false),
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getDescription)), Order.ASC, false)
 		);
 		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
@@ -65,9 +63,9 @@ class EntityQueryCriteriaSupportTest {
 	
 	@Test
 	void buildComparator_severalCombinedProperty() {
-		KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>(
-				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC),
-				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getId), new AccessorByMethodReference<Identifier, Object>(Identifier::getSurrogate)), Order.ASC)
+		KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>(
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getName)), Order.DESC, false),
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getId), new AccessorByMethodReference<Identifier, Object>(Identifier::getSurrogate)), Order.ASC, false)
 		);
 		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
@@ -86,9 +84,9 @@ class EntityQueryCriteriaSupportTest {
 	
 	@Test
 	void buildComparator_severalCombinedSetter() {
-		KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>(
-				new Duo<>(Arrays.asList(new MutatorByMethodReference<>(Country::setName)), Order.DESC),
-				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(City::setName)), Order.ASC)
+		KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>(
+				new OrderByItem(Arrays.asList(new MutatorByMethodReference<>(Country::setName)), Order.DESC, false),
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(City::setName)), Order.ASC, false)
 		);
 		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);
@@ -119,9 +117,9 @@ class EntityQueryCriteriaSupportTest {
 	
 	@Test
 	void buildComparator_severalCombinedSetter_withNullValue() {
-		KeepOrderSet<Duo<List<? extends ValueAccessPoint<?>>, Order>> orderBy = new KeepOrderSet<>(
-				new Duo<>(Arrays.asList(new MutatorByMethodReference<>(Country::setName)), Order.DESC),
-				new Duo<>(Arrays.asList(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(City::setName)), Order.ASC)
+		KeepOrderSet<OrderByItem> orderBy = new KeepOrderSet<>(
+				new OrderByItem(Arrays.asList(new MutatorByMethodReference<>(Country::setName)), Order.DESC, false),
+				new OrderByItem(Arrays.asList(new AccessorByMethodReference<>(Country::getCapital), new MutatorByMethodReference<>(City::setName)), Order.ASC, false)
 		);
 		Comparator<Country> objectComparator = EntityQueryCriteriaSupport.buildComparator(orderBy);
 		Country country1 = new Country(1);

@@ -665,7 +665,27 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 
 		loadedCountry = derivedQueriesRepository.findByNameIgnoringCase("toto");
 		assertThat(loadedCountry).isEqualTo(country1);
+	}
+	
+	@Test
+	void equals_ignoreCase_dynamic() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto_b");
+		Republic country2 = new Republic(43);
+		country2.setName("TOtO_c");
+		Republic country3 = new Republic(44);
+		country3.setName("toTO_a");
+		Republic country4 = new Republic(45);
+		country4.setName("TonTon");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
+		Set<Republic> loadedCountry;
+
+		loadedCountry = derivedQueriesRepository.findByNameLike("t", Sort.by("name"));
+		assertThat(loadedCountry).containsExactly(country2, country1, country3);
+
+		loadedCountry = derivedQueriesRepository.findByNameLike("t", Sort.by(Sort.Order.by("name").ignoreCase()));
+		assertThat(loadedCountry).containsExactly(country3, country1, country2);
 	}
 	
 	@Test

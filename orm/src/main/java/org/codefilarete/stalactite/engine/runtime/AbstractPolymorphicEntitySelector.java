@@ -24,6 +24,7 @@ import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Union.PseudoColumn;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -188,7 +189,12 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 		}
 		
 		private Selectable getColumn(Selectable column) {
-			return columnClones.get(column);
+			if (column instanceof Column || column instanceof PseudoColumn) {
+				return columnClones.get(column);
+			} else {
+				// function case
+				return column;
+			}
 		}
 		
 		@Override

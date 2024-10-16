@@ -89,6 +89,6 @@ public class QuerySQLBuilderFactoryBuilder {
 		if (selectBuilderFactory == null) {
 			withSelectBuilderFactory(new SelectSQLBuilderFactory(functionSQLBuilderFactory));
 		}
-		return new QuerySQLBuilderFactory(parameterBinderRegistry, selectBuilderFactory, fromSqlBuilderFactory, whereSqlBuilderFactory, havingBuilderFactory);
+		return new QuerySQLBuilderFactory(parameterBinderRegistry, selectBuilderFactory, fromSqlBuilderFactory, whereSqlBuilderFactory, havingBuilderFactory, functionSQLBuilderFactory);
 	}
 }

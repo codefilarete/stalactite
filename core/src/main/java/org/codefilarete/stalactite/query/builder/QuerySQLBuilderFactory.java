@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.query.builder;
 import java.util.IdentityHashMap;
 
 import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
+import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
@@ -15,6 +16,7 @@ import org.codefilarete.stalactite.query.model.OrderBy.OrderedColumn;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -41,6 +43,7 @@ public class QuerySQLBuilderFactory {
 	private final FromSQLBuilderFactory fromBuilderFactory;
 	private final WhereSQLBuilderFactory whereBuilderFactory;
 	private final WhereSQLBuilderFactory havingBuilderFactory;
+	private final FunctionSQLBuilderFactory functionSQLBuilderFactory;
 	
 	/**
 	 * Main constructor
@@ -55,12 +58,14 @@ public class QuerySQLBuilderFactory {
 								  SelectSQLBuilderFactory selectBuilderFactory,
 								  FromSQLBuilderFactory fromBuilderFactory,
 								  WhereSQLBuilderFactory whereBuilderFactory,
-								  WhereSQLBuilderFactory havingBuilderFactory) {
+								  WhereSQLBuilderFactory havingBuilderFactory,
+								  FunctionSQLBuilderFactory functionSQLBuilderFactory) {
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.selectBuilderFactory = selectBuilderFactory;
 		this.fromBuilderFactory = fromBuilderFactory;
 		this.whereBuilderFactory = whereBuilderFactory;
 		this.havingBuilderFactory = havingBuilderFactory;
+		this.functionSQLBuilderFactory = functionSQLBuilderFactory;
 	}
 	
 	/**
@@ -74,6 +79,7 @@ public class QuerySQLBuilderFactory {
 		this.fromBuilderFactory = new FromSQLBuilderFactory();
 		this.whereBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
 		this.havingBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
+		this.functionSQLBuilderFactory = new FunctionSQLBuilderFactory(javaTypeToSqlTypeMapping);
 	}
 	
 	public ColumnBinderRegistry getParameterBinderRegistry() {
@@ -94,6 +100,10 @@ public class QuerySQLBuilderFactory {
 	
 	public WhereSQLBuilderFactory getHavingBuilderFactory() {
 		return havingBuilderFactory;
+	}
+	
+	public FunctionSQLBuilderFactory getFunctionSQLBuilderFactory() {
+		return functionSQLBuilderFactory;
 	}
 	
 	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where) {
@@ -125,6 +135,7 @@ public class QuerySQLBuilderFactory {
 				fromBuilderFactory.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this),
 				whereBuilderFactory.whereBuilder(query.getWhereSurrogate(), dmlNameProvider),
 				havingBuilderFactory.whereBuilder(query.getHavingSurrogate(), dmlNameProvider),
+				functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider),
 				parameterBinderRegistry);
 	}
 	
@@ -143,8 +154,8 @@ public class QuerySQLBuilderFactory {
 		private final FromSQLBuilder fromSqlBuilder;
 		private final WhereSQLBuilder whereSqlBuilder;
 		private final WhereSQLBuilder havingBuilder;
+		private final FunctionSQLBuilder functionSQLBuilder;
 		private final ColumnBinderRegistry parameterBinderRegistry;
-		private SQLAppender sqlAppender;
 		
 		public QuerySQLBuilder(Query query,
 							   DMLNameProvider dmlNameProvider,
@@ -152,6 +163,7 @@ public class QuerySQLBuilderFactory {
 							   FromSQLBuilder fromSqlBuilder,
 							   WhereSQLBuilder whereSqlBuilder,
 							   WhereSQLBuilder havingBuilder,
+							   FunctionSQLBuilder functionSQLBuilder,
 							   ColumnBinderRegistry parameterBinderRegistry) {
 			this.query = query;
 			this.dmlNameProvider = dmlNameProvider;
@@ -159,6 +171,7 @@ public class QuerySQLBuilderFactory {
 			this.fromSqlBuilder = fromSqlBuilder;
 			this.whereSqlBuilder = whereSqlBuilder;
 			this.havingBuilder = havingBuilder;
+			this.functionSQLBuilder = functionSQLBuilder;
 			this.parameterBinderRegistry = parameterBinderRegistry;
 		}
 		
@@ -278,6 +291,8 @@ public class QuerySQLBuilderFactory {
 		private void cat(Object column, SQLAppender sql) {
 			if (column instanceof String) {
 				sql.cat((String) column);
+			} else if (column instanceof SQLFunction) {
+				functionSQLBuilder.cat((SQLFunction) column, sql);
 			} else if (column instanceof Selectable) {
 				sql.cat(dmlNameProvider.getName((Selectable) column));
 			}

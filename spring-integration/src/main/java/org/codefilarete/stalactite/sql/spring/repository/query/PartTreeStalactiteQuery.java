@@ -57,7 +57,7 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 					PropertyPath propertyPath = PropertyPath.from(order.getProperty(), entityPersister.getClassToPersist());
 					AccessorChain<C, Object> orderProperty = query.convertToAccessorChain(propertyPath);
 					query.executableEntityQuery.getQueryPageSupport()
-							.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC);
+							.orderBy(orderProperty, order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
 				});
 			}
 			// Applying limit if necessary
@@ -98,7 +98,7 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 			// therefore we create AccessorChain of only one property 
 			parameterHelper.getSort().stream().forEachOrdered(order -> {
 				AccessorByMember<?, ?, ?> accessor = Accessors.accessor(declaringClass, order.getProperty());
-				derivedQuery.dynamicSortSupport.orderBy(new AccessorChain<>(accessor), order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC);
+				derivedQuery.dynamicSortSupport.orderBy(new AccessorChain<>(accessor), order.getDirection() == Direction.ASC ? Order.ASC : Order.DESC, order.isIgnoreCase());
 			});
 			derivedQueryToUse = derivedQuery.executableEntityQuery.copyFor(derivedQuery.dynamicSortSupport);
 		} else {
