@@ -82,14 +82,6 @@ public class PreparedSQLWrapper implements SQLAppender {
 		if (value instanceof Selectable) {
 			// Columns are simply appended (no binder needed nor index increment)
 			surrogate.cat(dmlNameProvider.getName((Selectable) value));
-		} else if (value instanceof Iterable) {
-			for (Object v : (Iterable) value) {
-				appendParameter(v, binderSupplier);
-			}
-		} else if (value instanceof Object[]) {
-			for (Object v : (Object[]) value) {
-				appendParameter(v, binderSupplier);
-			}
 		} else {
 			appendParameter(value, binderSupplier);
 		}
