@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.query;
+package org.codefilarete.stalactite.engine.runtime;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codefilarete.reflection.AccessorByMethodReference;
@@ -13,12 +13,10 @@ import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.engine.model.Person;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport.EntityGraphNode;
+import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport.EntityGraphNode;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;

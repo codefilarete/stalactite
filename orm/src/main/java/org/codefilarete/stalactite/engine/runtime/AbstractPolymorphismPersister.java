@@ -5,7 +5,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.result.Accumulators;

@@ -14,7 +14,6 @@ import org.codefilarete.stalactite.engine.EntityPersister.ExecutableProjectionQu
 import org.codefilarete.stalactite.engine.EntityPersister.LimitAware;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.ExecutableProjection;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.Limit;

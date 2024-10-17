@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.query;
+package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -10,11 +10,10 @@ import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.PersistenceContext;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;

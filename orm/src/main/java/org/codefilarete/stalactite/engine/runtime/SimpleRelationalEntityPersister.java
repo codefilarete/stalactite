@@ -25,8 +25,6 @@ import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree.JoinType;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.mapping.EntityMapping;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
-import org.codefilarete.stalactite.query.EntityGraphSelector;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;

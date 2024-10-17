@@ -1,4 +1,4 @@
-package org.codefilarete.stalactite.query;
+package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Collection;
 import java.util.List;
@@ -16,13 +16,14 @@ import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.EntityMapping;
 import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
+import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
+import org.codefilarete.stalactite.query.LogicalOperator;
+import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;

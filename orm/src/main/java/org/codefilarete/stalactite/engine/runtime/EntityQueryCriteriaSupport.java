@@ -30,7 +30,6 @@ import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport.OrderByItem;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.EntityCriteriaSupport;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
