@@ -720,6 +720,46 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	}
 	
 	@Test
+	void ignoreCase_and() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		country1.setDescription("a description with a keyword");
+		Republic country2 = new Republic(43);
+		country2.setName("TOtO");
+		country2.setDescription("a keyword contained in the description");
+		Republic country3 = new Republic(44);
+		country3.setName("toTO");
+		Republic country4 = new Republic(45);
+		country4.setName("TonTon");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		Set<Republic> loadedCountries;
+		
+		loadedCountries = derivedQueriesRepository.findByNameIgnoreCaseAndDescriptionLike("toTO", "contained");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+	}
+	
+	@Test
+	void ignoreCase_all() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		country1.setDescription("a description with a keyword");
+		Republic country2 = new Republic(43);
+		country2.setName("TOtO");
+		country2.setDescription("a keyword contained in the description");
+		Republic country3 = new Republic(44);
+		country3.setName("toTO");
+		Republic country4 = new Republic(45);
+		country4.setName("TonTon");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		Set<Republic> loadedCountries;
+		
+		loadedCountries = derivedQueriesRepository.findByNameAndDescriptionLikeAllIgnoreCase("toTO", "CoNtAINed");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
+	}
+	
+	@Test
 	void orderBy() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto");
