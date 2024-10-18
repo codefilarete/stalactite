@@ -668,7 +668,7 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	}
 	
 	@Test
-	void equals_ignoreCase_dynamic() {
+	void ignoreCase_dynamic() {
 		Republic country1 = new Republic(42);
 		country1.setName("Toto_b");
 		Republic country2 = new Republic(43);
@@ -679,13 +679,44 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 		country4.setName("TonTon");
 		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
 		
-		Set<Republic> loadedCountry;
+		Set<Republic> loadedCountries;
 
-		loadedCountry = derivedQueriesRepository.findByNameLike("t", Sort.by("name"));
-		assertThat(loadedCountry).containsExactly(country2, country1, country3);
+		loadedCountries = derivedQueriesRepository.findByNameLike("t", Sort.by("name"));
+		assertThat(loadedCountries).containsExactly(country2, country1, country3);
 
-		loadedCountry = derivedQueriesRepository.findByNameLike("t", Sort.by(Sort.Order.by("name").ignoreCase()));
-		assertThat(loadedCountry).containsExactly(country3, country1, country2);
+		loadedCountries = derivedQueriesRepository.findByNameLike("t", Sort.by(Sort.Order.by("name").ignoreCase()));
+		assertThat(loadedCountries).containsExactly(country3, country1, country2);
+	}
+	
+	@Test
+	void ignoreCase_dynamic_inMemory() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto_b");
+		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
+		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
+		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
+		country1.setLanguages(asHashSet(frFr, enEn));
+		
+		Republic country2 = new Republic(43);
+		country2.setName("TOtO_c");
+		country2.setLanguages(asHashSet(frFr, esEs));
+		
+		Republic country3 = new Republic(44);
+		country3.setName("toTO_a");
+		country3.setLanguages(asHashSet(frFr, esEs));
+		
+		Republic country4 = new Republic(45);
+		country4.setName("TonTon");
+		
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		Set<Republic> loadedCountries;
+		
+		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("_", Sort.by("name"));
+		assertThat(loadedCountries).containsExactly(country2, country1, country3);
+		
+		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("_", Sort.by(Sort.Order.by("name").ignoreCase()));
+		assertThat(loadedCountries).containsExactly(country3, country1, country2);
 	}
 	
 	@Test

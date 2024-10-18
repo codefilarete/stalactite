@@ -100,6 +100,8 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	
 	Set<Republic> findByLanguagesCodeIs(String code, Sort sort);
 	
+	Set<Republic> findByLanguagesCodeLike(String code, Sort sort);
+	
 	Set<Republic> findByNameLikeOrderByPresidentNameAsc(String code);
 	
 	Set<Republic> findByLanguagesCodeIsOrderByPresidentNameAsc(String code);

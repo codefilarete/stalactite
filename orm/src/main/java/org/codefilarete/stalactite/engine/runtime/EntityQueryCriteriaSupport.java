@@ -37,7 +37,6 @@ import org.codefilarete.stalactite.query.model.Limit;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
@@ -192,27 +191,17 @@ public class EntityQueryCriteriaSupport<C, I> {
 	
 	@VisibleForTesting
 	static <C> Comparator<C> buildComparator(KeepOrderSet<OrderByItem> orderBy) {
-		List<Duo<AccessorChain<Object, Comparable>, Order>> orderByAccessors = orderBy.stream().map(duo -> {
-			List<? extends ValueAccessPoint<?>> valueAccessPoints = duo.getProperty();
-			AccessorChain<Object, Comparable> localResult;
-			if (valueAccessPoints.size() == 1) {
-				ValueAccessPoint<?> valueAccessPoint = valueAccessPoints.get(0);
-				if (valueAccessPoint instanceof Accessor) {
-					localResult = new AccessorChain<>((Accessor<?, Comparable>) valueAccessPoint);
-				} else {
-					AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
-					localResult = new AccessorChain<>(Accessors.accessor(accessorDefinition.getDeclaringClass(), accessorDefinition.getName(), accessorDefinition.getMemberType()));
-				}
-			} else {
-				localResult = new AccessorChain<>(valueAccessPoints.stream().map(EntityQueryCriteriaSupport::toAccessor).collect(Collectors.toList()));
-			}
-			localResult.setNullValueHandler(AccessorChain.RETURN_NULL);
-			return new Duo<>(localResult, duo.getDirection());
-		}).collect(Collectors.toList());
 		Nullable<Comparator> result = nullable((Comparator) null);
-		orderByAccessors.forEach(orderByPawn -> {
-			Comparator comparator = Comparator.comparing(orderByPawn.getLeft()::get, Comparator.nullsLast(Comparator.naturalOrder()));
-			if (orderByPawn.getRight() == Order.DESC) {
+		orderBy.forEach(orderByPawn -> {
+			AccessorChain<Object, Comparable> propertyAccessor = orderByPawn.propertyAsAccessorChain();
+			Comparator comparator;
+			if (orderByPawn.isIgnoreCase()) {
+				AccessorChain<Object, String> stringAccessor = (AccessorChain<Object, String>) (AccessorChain) propertyAccessor;
+				comparator = Comparator.comparing(stringAccessor::get, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER));
+			} else {
+				comparator = Comparator.comparing(propertyAccessor::get, Comparator.nullsLast(Comparator.naturalOrder()));
+			}
+			if (orderByPawn.getDirection() == Order.DESC) {
 				comparator = comparator.reversed();
 			}
 			if (result.isPresent()) {
@@ -356,6 +345,23 @@ public class EntityQueryCriteriaSupport<C, I> {
 			
 			public boolean isIgnoreCase() {
 				return ignoreCase;
+			}
+			
+			public AccessorChain<Object, Comparable> propertyAsAccessorChain() {
+				AccessorChain<Object, Comparable> result;
+				if (property.size() == 1) {
+					ValueAccessPoint<?> valueAccessPoint = property.get(0);
+					if (valueAccessPoint instanceof Accessor) {
+						result = new AccessorChain<>((Accessor<?, Comparable>) valueAccessPoint);
+					} else {
+						AccessorDefinition accessorDefinition = AccessorDefinition.giveDefinition(valueAccessPoint);
+						result = new AccessorChain<>(Accessors.accessor(accessorDefinition.getDeclaringClass(), accessorDefinition.getName(), accessorDefinition.getMemberType()));
+					}
+				} else {
+					result = new AccessorChain<>(property.stream().map(EntityQueryCriteriaSupport::toAccessor).collect(Collectors.toList()));
+				}
+				result.setNullValueHandler(AccessorChain.RETURN_NULL);
+				return result;
 			}
 		}
 	}
