@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.sql.spring.repository.query;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
@@ -8,8 +9,10 @@ import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
+import org.codefilarete.stalactite.engine.runtime.EntityCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport;
+import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.sql.result.Accumulator;
 import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.domain.Sort.Direction;
@@ -23,6 +26,7 @@ import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.data.repository.query.parser.Part;
 import org.springframework.data.repository.query.parser.Part.IgnoreCaseType;
 import org.springframework.data.repository.query.parser.PartTree;
+import org.springframework.data.repository.query.parser.PartTree.OrPart;
 import org.springframework.lang.Nullable;
 
 import static org.codefilarete.tool.Nullable.nullable;
@@ -118,20 +122,40 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		
 		protected final EntityQueryPageSupport<T> dynamicSortSupport = new EntityQueryPageSupport<>();
 		
+		protected EntityCriteriaSupport<T> currentSupport;
+		
 		private DerivedQuery(AdvancedEntityPersister<T, ?> entityPersister, PartTree tree) {
 			this.executableEntityQuery = entityPersister.newCriteriaSupport();
-			tree.forEach(orPart -> orPart.forEach(this::append));
+			tree.forEach(this::append);
 		}
 		
 		private DerivedQuery(EntityQueryCriteriaSupport<T, ?> executableEntityQuery) {
 			this.executableEntityQuery = executableEntityQuery;
 		}
 		
-		private void append(Part part) {
+		private void append(OrPart part) {
+			this.currentSupport = this.executableEntityQuery.getEntityCriteriaSupport();
+			boolean nested = false;
+			if (part.stream().count() > 1) {	// "if" made to avoid extra parenthesis (can be considered superfluous)
+				nested = true;
+				this.currentSupport = currentSupport.beginNested();
+			}
+			Iterator<Part> iterator = part.iterator();
+			if (iterator.hasNext()) {
+				append(iterator.next(), LogicalOperator.OR);
+			}
+			iterator.forEachRemaining(p -> this.append(p, LogicalOperator.AND));
+			if (nested) {	// "if" made to avoid extra parenthesis (can be considered superfluous)
+				this.currentSupport = currentSupport.endNested();
+			}
+		}
+		
+		private void append(Part part, LogicalOperator orOrAnd) {
 			AccessorChain<T, Object> getter = convertToAccessorChain(part.getProperty());
 			Class propertyType = AccessorDefinition.giveDefinition(Iterables.last(getter.getAccessors())).getMemberType();
 			Criterion criterion = convertToCriterion(part.getType(), propertyType, part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
-			this.executableEntityQuery.getEntityCriteriaSupport().and(getter, criterion.operator);
+			
+			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.operator);
 			super.criteriaChain.criteria.add(criterion);
 		}
 	}

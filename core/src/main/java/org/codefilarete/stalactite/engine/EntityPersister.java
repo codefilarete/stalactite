@@ -402,6 +402,23 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		<O> SELF or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator);
 		
 		/**
+		 * Starts a nested condition and returns it. At SQL rendering time, it should be embedded between parenthesis.
+		 * Result must be used to fill the nested condition, not current instance.
+		 * After filling it, it must be closed by {@link #endNested()}
+		 * 
+		 * @return a nested condition to be filled
+		 */
+		EntityCriteria<C, SELF> beginNested();
+		
+		/**
+		 * Ends a nested condition started with {@link #beginNested()}. It returns the enclosing instance (the one on which {@link #beginNested()}
+		 * was called).
+		 * 
+		 * @return the enclosing condition
+		 */
+		EntityCriteria<C, SELF> endNested();
+		
+		/**
 		 * Combines with "and" given criteria on an embedded or one-to-one bean property
 		 *
 		 * @param getter1 a method reference to the embedded bean
@@ -415,6 +432,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 		<A, B> SELF and(SerializableFunction<C, A> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator);
 		
 		<O> SELF and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
+		
+		<O> SELF or(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator);
 	}
 	
 	

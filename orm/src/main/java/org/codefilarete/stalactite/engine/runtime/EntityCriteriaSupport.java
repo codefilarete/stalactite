@@ -22,11 +22,11 @@ import org.codefilarete.stalactite.mapping.IdMapping;
 import org.codefilarete.stalactite.mapping.SimpleIdMapping;
 import org.codefilarete.stalactite.mapping.id.assembly.SimpleIdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
-import org.codefilarete.stalactite.query.LogicalOperator;
 import org.codefilarete.stalactite.query.RelationalEntityCriteria;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.Reflections;
@@ -36,6 +36,9 @@ import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.PairIterator;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableFunction;
+
+import static org.codefilarete.stalactite.query.model.LogicalOperator.AND;
+import static org.codefilarete.stalactite.query.model.LogicalOperator.OR;
 
 /**
  * Implementation of {@link EntityCriteria}
@@ -47,6 +50,8 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	
 	/** Delegate of the query : targets of the API methods */
 	private final Criteria criteria = new Criteria();
+	
+	private final EntityCriteriaSupport<C> parent;
 	
 	/** Root of the property-mapping graph representation. Might be completed with {@link #registerRelation(ValueAccessPoint, ConfiguredRelationalPersister)} */
 	private final EntityGraphNode<C> rootConfiguration;
@@ -60,7 +65,7 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 * @param entityMapping entity mapping for direct and embedded properties
 	 */
 	public EntityCriteriaSupport(EntityMapping<C, ?, ?> entityMapping) {
-		this.rootConfiguration = new EntityGraphNode<>(entityMapping);
+		this(new EntityGraphNode<>(entityMapping));
 	}
 	
 	/**
@@ -71,7 +76,17 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	 * @param source an already-configured {@link EntityCriteriaSupport}
 	 */
 	public EntityCriteriaSupport(EntityCriteriaSupport<C> source) {
-		this.rootConfiguration = source.rootConfiguration;
+		this(source.rootConfiguration);
+	}
+	
+	private EntityCriteriaSupport(EntityGraphNode<C> source) {
+		this.rootConfiguration = source;
+		this.parent = null;
+	}
+	
+	private EntityCriteriaSupport(EntityGraphNode<C> source, EntityCriteriaSupport<C> parent) {
+		this.rootConfiguration = source;
+		this.parent = parent;
 	}
 	
 	public EntityGraphNode<C> getRootConfiguration() {
@@ -88,12 +103,11 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 		rootConfiguration.registerRelation(relation, persister);
 	}
 	
-	private <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<O, ?> operator) {
+	public <O> EntityCriteriaSupport<C> add(LogicalOperator logicalOperator, List<? extends ValueAccessPoint<?>> accessPointChain, ConditionalOperator<O, ?> operator) {
 		Column column = rootConfiguration.giveColumn(accessPointChain);
-		if (logicalOperator == LogicalOperator.OR) {
-			criteria.or(column, operator);
-		} else {
-			criteria.and(column, operator);
+		criteria.add(logicalOperator, column, operator);
+		if (criteria.getOperator() == null) {
+			criteria.setOperator(logicalOperator);
 		}
 		computeCollectionCriteriaIndicator(accessPointChain);
 		return this;
@@ -106,22 +120,34 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	
 	@Override
 	public <O> EntityCriteriaSupport<C> and(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.AND, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
+		return add(AND, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
 	public <O> EntityCriteriaSupport<C> and(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.AND, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
+		return add(AND, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
 	}
 	
 	@Override
 	public <O> EntityCriteriaSupport<C> or(SerializableFunction<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.OR, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
+		return add(OR, Arrays.asList(new AccessorByMethodReference<>(getter)), operator);
 	}
 	
 	@Override
 	public <O> EntityCriteriaSupport<C> or(SerializableBiConsumer<C, O> setter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.OR, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
+		return add(OR, Arrays.asList(new MutatorByMethodReference<>(setter)), operator);
+	}
+	
+	@Override
+	public EntityCriteriaSupport<C> beginNested() {
+		EntityCriteriaSupport<C> abstractCriteria = new EntityCriteriaSupport<>(this.rootConfiguration, this);
+		this.criteria.add(abstractCriteria.criteria);
+		return abstractCriteria;
+	}
+	
+	@Override
+	public EntityCriteriaSupport<C> endNested() {
+		return this.parent;
 	}
 	
 	@Override
@@ -131,12 +157,17 @@ public class EntityCriteriaSupport<C> implements RelationalEntityCriteria<C, Ent
 	
 	@Override
 	public <O> EntityCriteriaSupport<C> and(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator) {
-		return add(LogicalOperator.AND, getter.getAccessors(), operator);
+		return add(AND, getter.getAccessors(), operator);
+	}
+	
+	@Override
+	public <O> EntityCriteriaSupport<C> or(AccessorChain<C, O> getter, ConditionalOperator<O, ?> operator) {
+		return add(OR, getter.getAccessors(), operator);
 	}
 	
 	@Override
 	public <S extends Collection<A>, A, B> EntityCriteriaSupport<C> andMany(SerializableFunction<C, S> getter1, SerializableFunction<A, B> getter2, ConditionalOperator<B, ?> operator) {
-		return add(LogicalOperator.AND, Arrays.asList(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
+		return add(AND, Arrays.asList(new AccessorByMethodReference<>(getter1), new AccessorByMethodReference<>(getter2)), operator);
 	}
 	
 	@Override

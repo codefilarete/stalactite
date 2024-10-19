@@ -2,24 +2,50 @@ package org.codefilarete.stalactite.query.model;
 
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
+import static org.codefilarete.stalactite.query.model.LogicalOperator.*;
+
 /**
  * @author Guillaume Mary
  */
 public interface CriteriaChain<SELF extends CriteriaChain<SELF>> extends Iterable<AbstractCriterion> {
 	
-	SELF and(Column column, CharSequence condition);
+	default SELF and(Column column, CharSequence condition) {
+		return add(AND, column, condition);
+	}
 	
-	SELF or(Column column, CharSequence condition);
+	default SELF or(Column column, CharSequence condition) {
+		return add(OR, column, condition);
+	}
 	
-	SELF and(Column column, ConditionalOperator condition);
+	default SELF and(Column column, ConditionalOperator condition) {
+		return add(AND, column, condition);
+	}
 	
-	SELF or(Column column, ConditionalOperator condition);
+	default SELF or(Column column, ConditionalOperator condition) {
+		return add(OR, column, condition);
+	}
 	
-	SELF and(Criteria criteria);
+	default SELF and(CriteriaChain<?> criteria) {
+		return add(AND, criteria);
+	}
 	
-	SELF or(Criteria criteria);
+	default SELF or(CriteriaChain<?> criteria) {
+		return add(OR, criteria);
+	}
 	
-	SELF and(Object... columns);
+	default SELF and(Object... columns) {
+		return add(AND, columns);
+	}
 	
-	SELF or(Object... columns);
+	default SELF or(Object... columns) {
+		return add(OR, columns);
+	}
+	
+	SELF add(LogicalOperator logicalOperator, Column column, CharSequence condition);
+	
+	SELF add(LogicalOperator logicalOperator, Column column, ConditionalOperator condition);
+	
+	SELF add(LogicalOperator logicalOperator, CriteriaChain<?> criteria);
+	
+	SELF add(LogicalOperator logicalOperator, Object... columns);
 }

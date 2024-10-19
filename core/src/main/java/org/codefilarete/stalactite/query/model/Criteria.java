@@ -1,14 +1,13 @@
 package org.codefilarete.stalactite.query.model;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 
-import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
-
-import static org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator.AND;
-import static org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalOperator.OR;
+import org.codefilarete.tool.collection.Iterables;
 
 /**
  * A basic implementation of {@link CriteriaChain}.
@@ -16,6 +15,29 @@ import static org.codefilarete.stalactite.query.model.AbstractCriterion.LogicalO
  * @author Guillaume Mary
  */
 public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion implements CriteriaChain<SELF> {
+	
+	/**
+	 * Replaces all {@link Column}s in given condition (source) by its match in <code>columnClones</code>.
+	 * This is done by cloning {@link ColumnCriterion} in source, and then pushed them in <code>target</code>.
+	 * 
+	 * Made to handle {@link Column} clones and aliases at query time.
+	 * 
+	 * @param source container of {@link Column} that must be replaced by the ones in columnClones
+	 * @param target container where to push the criteria clones
+	 * @param columnClones mapping between use columns and the ones of the query (the one with aliases), usually a {@link IdentityHashMap}
+	 */
+	public static void copy(Iterable<AbstractCriterion> source, CriteriaChain target, Function<Selectable<?>, Selectable<?>> columnClones) {
+		source.forEach(criterion -> {
+			if (criterion instanceof ColumnCriterion) {
+				ColumnCriterion columnCriterion = (ColumnCriterion) criterion;
+				target.add(criterion.getOperator(), columnCriterion.copyFor(columnClones.apply(columnCriterion.getColumn())));
+			} else if (criterion instanceof Criteria) {
+				target.add(criterion.getOperator(), ((Criteria<?>) criterion).copyFor(columnClones));
+			} else {
+				target.add(criterion.getOperator(), criterion);
+			}
+		});
+	}
 	
 	/** Criteria, ClosedCriteria */
 	protected List<AbstractCriterion> conditions = new ArrayList<>();
@@ -35,10 +57,6 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 		add(new RawCriterion(columns));
 	}
 
-	protected void setOperator(LogicalOperator operator) {
-		this.operator = operator;
-	}
-	
 	public List<AbstractCriterion> getConditions() {
 		return conditions;
 	}
@@ -56,45 +74,31 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	}
 
 	@Override
-	public SELF and(Column column, CharSequence condition) {
-		return add(new ColumnCriterion(AND, column, condition));
+	public SELF add(LogicalOperator logicalOperator, Column column, CharSequence condition) {
+		return add(new ColumnCriterion(logicalOperator, column, condition));
 	}
 	
 	@Override
-	public SELF and(Column column, ConditionalOperator condition) {
-		return add(new ColumnCriterion(AND, column, condition));
-	}
-
-	@Override
-	public SELF or(Column column, CharSequence condition) {
-		return add(new ColumnCriterion(OR, column, condition));
+	public SELF add(LogicalOperator logicalOperator, Column column, ConditionalOperator condition) {
+		return add(new ColumnCriterion(logicalOperator, column, condition));
 	}
 	
 	@Override
-	public SELF or(Column column, ConditionalOperator condition) {
-		return add(new ColumnCriterion(OR, column, condition));
+	public SELF add(LogicalOperator logicalOperator, CriteriaChain<?> criteria) {
+		Criteria toAdd;
+		if (criteria instanceof Criteria) {
+			toAdd = (Criteria) criteria;
+		} else {
+			toAdd = new Criteria();
+			copy(criteria, toAdd, Function.identity());
+		}
+		this.conditions.add(toAdd);
+		return (SELF) this;
 	}
 	
 	@Override
-	public SELF and(Criteria criteria) {
-		criteria.setOperator(AND);
-		return add(criteria);
-	}
-
-	@Override
-	public SELF or(Criteria criteria) {
-		criteria.setOperator(OR);
-		return add(criteria);
-	}
-	
-	@Override
-	public SELF and(Object... columns) {
-		return add(new RawCriterion(AND, columns));
-	}
-	
-	@Override
-	public SELF or(Object... columns) {
-		return add(new RawCriterion(OR, columns));
+	public SELF add(LogicalOperator logicalOperator, Object... columns) {
+		return add(new RawCriterion(logicalOperator, columns));
 	}
 	
 	public Object remove(int index) {
@@ -110,5 +114,12 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	@Override
 	public Iterator<AbstractCriterion> iterator() {
 		return this.conditions.iterator();
+	}
+	
+	public Criteria copyFor(Function<Selectable<?>, Selectable<?>> columnClones) {
+		Criteria<SELF> result = new Criteria<>();
+		result.setOperator(this.getOperator());
+		copy(conditions, result, columnClones);
+		return result;
 	}
 }

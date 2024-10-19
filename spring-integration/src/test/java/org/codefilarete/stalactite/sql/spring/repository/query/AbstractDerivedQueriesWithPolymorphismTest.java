@@ -920,4 +920,37 @@ abstract class AbstractDerivedQueriesWithPolymorphismTest {
 				.isInstanceOf(UnsupportedOperationException.class)
 				.hasMessage("Can't limit query when entity graph contains Collection relations");
 	}
+	
+	@Test
+	void or() {
+		Republic country1 = new Republic(42);
+		country1.setName("Toto");
+		country1.setDescription("a description with a keyword");
+		Person president1 = new Person(666);
+		president1.setName("me");
+		country1.setPresident(president1);
+		
+		Republic country2 = new Republic(43);
+		country2.setName("TOtO");
+		country2.setDescription("a keyword contained in the description");
+		country2.setEuMember(true);
+		Person president2 = new Person(237);
+		president2.setName("you");
+		
+		Republic country3 = new Republic(44);
+		country3.setName("toTO");
+		country3.setDescription("a keyword contained in the description");
+		country3.setEuMember(false);
+		
+		Republic country4 = new Republic(45);
+		country4.setName("TonTon");
+		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
+		
+		Set<Republic> loadedCountries;
+		
+		loadedCountries = derivedQueriesRepository.findByNameOrDescription("TOtO", "a description with a keyword");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2);
+		loadedCountries = derivedQueriesRepository.findByNameOrDescriptionAndEuMemberOrPresidentName("TonTon", "a keyword contained in the description", true, "me");
+		assertThat(loadedCountries).containsExactlyInAnyOrder(country1, country2, country4);
+	}
 }

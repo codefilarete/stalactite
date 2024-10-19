@@ -124,6 +124,10 @@ public interface DerivedQueriesRepository extends StalactiteRepository<Republic,
 	
 	boolean existsByName(String name);
 	
+	Set<Republic> findByNameOrDescription(String name, String description);
+	
+	Set<Republic> findByNameOrDescriptionAndEuMemberOrPresidentName(String name, String description, boolean euMember, String presidentName);
+	
 	interface NamesOnly {
 		
 		String getName();

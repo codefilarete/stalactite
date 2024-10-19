@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.Funct
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory.SelectSQLBuilder;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.AbstractCriterion;
-import org.codefilarete.stalactite.query.model.ColumnCriterion;
+import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.GroupBy;
 import org.codefilarete.stalactite.query.model.Having;
 import org.codefilarete.stalactite.query.model.Limit;
@@ -115,14 +115,7 @@ public class QuerySQLBuilderFactory {
 	
 	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>> columnClones) {
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
-			where.forEach(criterion -> {
-				if (criterion instanceof ColumnCriterion) {
-					ColumnCriterion columnCriterion = (ColumnCriterion) criterion;
-					query.getWhere().and(columnCriterion.copyFor(columnClones.get(columnCriterion.getColumn())));
-				} else {
-					query.getWhere().and(criterion);
-				}
-			});
+			Criteria.copy(where, query.getWhere(), columnClones::get);
 		}
 		return queryBuilder(query);
 	}

@@ -5,11 +5,6 @@ package org.codefilarete.stalactite.query.model;
  */
 public abstract class AbstractCriterion {
 	
-	public enum LogicalOperator {
-		AND,
-		OR,
-	}
-	
 	protected LogicalOperator operator;
 	
 	public AbstractCriterion() {
@@ -21,5 +16,9 @@ public abstract class AbstractCriterion {
 	
 	public LogicalOperator getOperator() {
 		return operator;
+	}
+	
+	public void setOperator(LogicalOperator operator) {
+		this.operator = operator;
 	}
 }
