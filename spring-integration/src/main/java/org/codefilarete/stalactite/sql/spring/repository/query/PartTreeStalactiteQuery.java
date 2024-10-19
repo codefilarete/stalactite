@@ -5,7 +5,6 @@ import java.util.Iterator;
 
 import org.codefilarete.reflection.AccessorByMember;
 import org.codefilarete.reflection.AccessorChain;
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
@@ -14,7 +13,6 @@ import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport;
 import org.codefilarete.stalactite.engine.runtime.EntityQueryCriteriaSupport.EntityQueryPageSupport;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.sql.result.Accumulator;
-import org.codefilarete.tool.collection.Iterables;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.jpa.repository.query.PartTreeJpaQuery;
 import org.springframework.data.mapping.PropertyPath;
@@ -152,8 +150,7 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		
 		private void append(Part part, LogicalOperator orOrAnd) {
 			AccessorChain<T, Object> getter = convertToAccessorChain(part.getProperty());
-			Class propertyType = AccessorDefinition.giveDefinition(Iterables.last(getter.getAccessors())).getMemberType();
-			Criterion criterion = convertToCriterion(part.getType(), propertyType, part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
+			Criterion criterion = convertToCriterion(part.getType(), part.shouldIgnoreCase() != IgnoreCaseType.NEVER);
 			
 			this.currentSupport.add(orOrAnd, getter.getAccessors(), criterion.operator);
 			super.criteriaChain.criteria.add(criterion);

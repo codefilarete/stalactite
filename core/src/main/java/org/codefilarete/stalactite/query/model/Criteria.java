@@ -92,6 +92,7 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 			toAdd = new Criteria();
 			copy(criteria, toAdd, Function.identity());
 		}
+		toAdd.setOperator(logicalOperator);
 		this.conditions.add(toAdd);
 		return (SELF) this;
 	}

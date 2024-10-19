@@ -33,7 +33,7 @@ public abstract class AbstractDerivedQuery<T> {
 		this.criteriaChain = new CriteriaChain(new ArrayList<>());
 	}
 	
-	protected Criterion convertToCriterion(Type type, Class propertyType, boolean ignoreCase) {
+	protected Criterion convertToCriterion(Type type, boolean ignoreCase) {
 		ConditionalOperator<?, ?> operator = null;
 		switch (type) {
 			case BETWEEN:
