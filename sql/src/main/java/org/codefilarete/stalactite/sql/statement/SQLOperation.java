@@ -9,11 +9,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
-import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
+import org.codefilarete.tool.bean.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -226,16 +225,15 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	}
 	
 	protected void logExecution() {
-		logExecution(() -> filterLoggable(sqlStatement.getValues()).toString());
+		logExecution(filterLoggable(sqlStatement.getValues()).toString());
 	}
 	
-	protected void logExecution(Supplier<String> valuesSupplier) {
+	protected void logExecution(String printableValues) {
 		// we log statement only in strict DEBUG mode because it's also logged in TRACE mode and DEBUG os also active at TRACE level
 		if (LOGGER.isDebugEnabled() && !LOGGER.isTraceEnabled()) {
 			LOGGER.debug(sqlStatement.getSQLSource());
-		}
-		if (LOGGER.isTraceEnabled()) {
-			LOGGER.debug("{} | {}", sqlStatement.getSQLSource(), valuesSupplier.get());
+		} else if (LOGGER.isTraceEnabled()) {
+			LOGGER.trace("{} | {}", sqlStatement.getSQLSource(), printableValues);
 		}
 	}
 	

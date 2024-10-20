@@ -477,31 +477,37 @@ public class WholeResultSetTransformer<C, I> implements ResultSetTransformer<C, 
 		
 		private final ResultSetRowTransformer<C, I> transformer;
 		
+		private final Function<ResultSet, C> newInstanceProvider;
+		
 		private CachingResultSetRowTransformer(ResultSetRowTransformer<C, I> transformer) {
 			this.transformer = transformer;
-		}
-		
-		public C transform(ResultSet resultSet) {
+			// computing the instance creator according to the given bean factory
 			BeanFactory<C> beanFactory = transformer.getBeanFactory();
 			if (beanFactory instanceof ResultSetRowTransformer.NoIdentifierBeanFactory) {
-				return ((NoIdentifierBeanFactory<C>) beanFactory).createInstance();
+				newInstanceProvider = rs -> ((NoIdentifierBeanFactory<C>) beanFactory).createInstance();
 			} else if (beanFactory instanceof ResultSetRowTransformer.IdentifierArgBeanFactory) {
-				I beanKey = ((IdentifierArgBeanFactory<I, C>) beanFactory).readBeanKey(resultSet);
-				try {
-					// we don't call the cache if the bean key is null
-					return beanKey == null ? null : CURRENT_BEAN_CACHE.get().computeIfAbsent(transformer.getBeanType(), beanKey, i -> transformer.transform(resultSet));
-				} catch (ClassCastException cce) {
-					// Trying to give a more accurate reason that the default one
-					// Put into places for rare cases of misusage by wrapping code that loses reader and bean factory types,
-					// ending with a constructor input type error
-					MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
-					throw new ClassCastException("Can't apply " + beanKey + " on constructor "
-						+ Reflections.toString(methodReferenceCapturer.findExecutable(((IdentifierArgBeanFactory<I, C>) beanFactory).getFactory())) + " : " + cce.getMessage());
-				}
+				newInstanceProvider = rs -> {
+					I beanKey = ((IdentifierArgBeanFactory<I, C>) beanFactory).readBeanKey(rs);
+					try {
+						// we don't call the cache if the bean key is null
+						return beanKey == null ? null : CURRENT_BEAN_CACHE.get().computeIfAbsent(transformer.getBeanType(), beanKey, i -> transformer.transform(rs));
+					} catch (ClassCastException cce) {
+						// Trying to give a more accurate reason that the default one
+						// Put into places for rare cases of misusage by wrapping code that loses reader and bean factory types,
+						// ending with a constructor input type error
+						MethodReferenceCapturer methodReferenceCapturer = new MethodReferenceCapturer();
+						throw new ClassCastException("Can't apply " + beanKey + " on constructor "
+								+ Reflections.toString(methodReferenceCapturer.findExecutable(((IdentifierArgBeanFactory<I, C>) beanFactory).getFactory())) + " : " + cce.getMessage());
+					}
+				};
 			} else {
 				// should not happen
 				throw new IllegalArgumentException("Class " + Reflections.toString(beanFactory.getClass()) + " is not implemented");
 			}
+		}
+		
+		public C transform(ResultSet resultSet) {
+			return newInstanceProvider.apply(resultSet);
 		}
 		
 		@Override

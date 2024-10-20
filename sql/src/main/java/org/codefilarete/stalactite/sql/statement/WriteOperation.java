@@ -74,11 +74,9 @@ public class WriteOperation<ParamType> extends SQLOperation<ParamType> {
 	}
 	
 	private <T, E extends SQLException> T doWithLogManagement(ThrowingExecutable<T, E> delegateWithResult) {
-		logExecution(() -> {
-			HashMap<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
-			valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
-			return valuesClone.toString();
-		});
+		Map<Integer, Map<ParamType, ?>> valuesClone = new HashMap<>(batchedValues);
+		valuesClone.entrySet().forEach(e -> e.setValue(filterLoggable(e.getValue())));
+		logExecution(valuesClone.toString());
 		try {
 			return delegateWithResult.execute();
 		} catch (SQLException e) {
