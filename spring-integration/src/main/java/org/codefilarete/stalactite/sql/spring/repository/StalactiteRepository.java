@@ -46,6 +46,13 @@ public interface StalactiteRepository<C, I> extends Repository<C, I> {
 	<D extends C> Iterable<D> saveAll(Iterable<D> entities);
 	
 	/**
+	 * Retrieves all instances of the type.
+	 *
+	 * @return all entities
+	 */
+	Iterable<C> findAll();
+	
+	/**
 	 * Retrieves an entity by its id.
 	 *
 	 * @param id any object of type {@code I}

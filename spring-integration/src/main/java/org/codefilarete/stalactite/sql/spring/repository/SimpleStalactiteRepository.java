@@ -35,6 +35,11 @@ public class SimpleStalactiteRepository<C, I> implements StalactiteRepository<C,
 	}
 	
 	@Override
+	public Iterable<C> findAll() {
+		return persister.selectAll();
+	}
+	
+	@Override
 	public Optional<C> findById(I id) {
 		return Optional.ofNullable(persister.select(id));
 	}
