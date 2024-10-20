@@ -238,9 +238,9 @@ class WriteOperationTest {
 		verify(preparedStatementMock).setString(2, "toto");
 		verify(preparedStatementMock).executeLargeBatch();
 		
-		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.TRACE,
 				"insert into Toto(id, name) values(?, ?) | {1={1=1, 2=tata}, 2={1=2, 2=toto}}", null));
-		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
+		assertThat(logsRecipient.toString()).contains(expectedLog);
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
@@ -287,9 +287,9 @@ class WriteOperationTest {
 		verify(preparedStatementMock).setString(2, "Toto");
 		verify(preparedStatementMock).executeLargeBatch();
 		
-		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.TRACE,
 				"insert into Toto(id, name) values(:id, :name) | {1={name=Tata, id=2}, 2={name=Toto, id=3}}", null));
-		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
+		assertThat(logsRecipient.toString()).contains(expectedLog);
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
@@ -326,9 +326,9 @@ class WriteOperationTest {
 		verify(preparedStatementMock).setString(2, "tata");
 		verify(preparedStatementMock).executeLargeUpdate();
 		
-		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.TRACE,
 				"insert into Toto(id, name) values(?, ?) | {1=1, 2=X-masked value-X}", null));
-		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
+		assertThat(logsRecipient.toString()).contains(expectedLog);
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
@@ -376,9 +376,9 @@ class WriteOperationTest {
 		verify(preparedStatementMock).setString(2, "Toto");
 		verify(preparedStatementMock).executeLargeBatch();
 		
-		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.DEBUG,
+		String expectedLog = layout.format(new LoggingEvent("toto", logger, Level.TRACE,
 				"insert into Toto(id, name) values(:id, :name) | {1={name=X-masked value-X, id=2}, 2={name=X-masked value-X, id=3}}", null));
-		assertThat(logsRecipient.toString().contains(expectedLog)).isTrue();
+		assertThat(logsRecipient.toString()).contains(expectedLog);
 		// back to normal
 		logger.setLevel(currentLevel);
 	}
