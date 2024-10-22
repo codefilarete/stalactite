@@ -20,9 +20,11 @@ import org.codefilarete.stalactite.sql.spring.repository.config.StalactitePlatfo
 import org.codefilarete.stalactite.sql.spring.transaction.StalactitePlatformTransactionManager;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -31,6 +33,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * @author Guillaume Mary
@@ -38,11 +41,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringJUnitConfig(classes = {
 		StalactiteTransactionalContextConfiguration.class
 })
-// Adding @Transactional marks the methods to be transactional with rollback after their execution,
-// without it StalactitePlatformTransactionManager won't find any running transaction nor pending connection in
-// TransactionSynchronizationManager, making it throw a NullPointerException
-// The mandatory transaction manager is created in StalactiteTransactionalContextConfiguration
-@Transactional
 @EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.sql.spring.repository.config")
 class StalactitePlatformTransactionManagerTest {
     
@@ -53,7 +51,11 @@ class StalactitePlatformTransactionManagerTest {
 	private PersistenceContext persistenceContext;
 	
 	@Nested
+	@TestMethodOrder(OrderAnnotation.class)
 	class WithRepository {
+		
+		// No @Transactional hence no rollback, the transaction only relies on SimpleStalactiteRepository.save(..)
+		// which impact the "createSameDataAgain" that can't persist the same data due to id constraint 
 		@Test
 		@Order(1)
 		void createData() {
@@ -69,17 +71,24 @@ class StalactitePlatformTransactionManagerTest {
 		@Order(2)
 		void createSameDataAgain() {
 			Person person = new Person(42);
-			person.setName("Toto");
+			person.setName("Tata");
 			
 			// trying to insert : this will throw an exception if data already exists due to primary key conflict
-			dummyStalactiteRepository.save(person);
-			Optional<Person> loadedPerson = dummyStalactiteRepository.findById(new PersistedIdentifier<>(42L));
-			assertThat(loadedPerson).isNotEmpty();
+			assertThatCode(() -> dummyStalactiteRepository.save(person))
+					.hasRootCauseMessage("integrity constraint violation: unique constraint or index violation; SYS_CT_10093 table: PERSON");
 		}
 	}
 	
 	@Nested
+	@TestMethodOrder(OrderAnnotation.class)
 	class WithPersistenceContext {
+		
+		// Adding @Transactional marks the methods to be transactional with rollback after their execution,
+		// without it StalactitePlatformTransactionManager won't find any running transaction nor pending connection in
+		// TransactionSynchronizationManager, making it throw a NullPointerException
+		// This is required because PersistenceContext.insert(..) is not marked as @Transactional
+		// as SimpleStalactiteRepository.save(..) is.
+		@Transactional
 		@Test
 		@Order(1)
 		void createData() {
@@ -92,6 +101,12 @@ class StalactitePlatformTransactionManagerTest {
 					.execute();
 		}
 		
+		// Adding @Transactional marks the methods to be transactional with rollback after their execution,
+		// without it StalactitePlatformTransactionManager won't find any running transaction nor pending connection in
+		// TransactionSynchronizationManager, making it throw a NullPointerException
+		// This is required because PersistenceContext.insert(..) is not marked as @Transactional
+		// as SimpleStalactiteRepository.save(..) is.
+		@Transactional
 		@Test
 		@Order(2)
 		void createSameDataAgain() {

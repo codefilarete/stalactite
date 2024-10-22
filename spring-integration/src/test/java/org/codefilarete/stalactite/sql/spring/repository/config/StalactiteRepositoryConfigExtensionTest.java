@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.sql.spring.repository.config;
 
+import javax.sql.DataSource;
 import java.util.Optional;
 
 import org.codefilarete.stalactite.engine.ColumnOptions;
@@ -20,7 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -80,13 +83,30 @@ class StalactiteRepositoryConfigExtensionTest {
 	public static class StalactiteRepositoryContextConfiguration {
 		
 		@Bean
-		public PersistenceContext persistenceContext() {
+		public DataSource dataSource() {
+			return new HSQLDBInMemoryDataSource();
+		}
+		
+		/**
+		 * A {@link PlatformTransactionManager} is required by {@link org.codefilarete.stalactite.sql.spring.repository.SimpleStalactiteRepository}
+		 * because it is annotated with @{@link org.springframework.transaction.annotation.Transactional}.
+		 * By default, Spring expects it to be named {@literal transactionManager}
+		 * 
+		 * @param dataSource the {@link DataSource} required by returned {@link PlatformTransactionManager}
+		 * @return a simple {@link DataSourceTransactionManager} for the tests
+		 */
+		@Bean
+		public PlatformTransactionManager transactionManager(DataSource dataSource) {
+			return new DataSourceTransactionManager(dataSource);
+		}
+		
+		@Bean
+		public PersistenceContext persistenceContext(DataSource dataSource) {
 			HSQLDBDialect dialect = new HSQLDBDialect();
-			HSQLDBInMemoryDataSource inMemoryDataSource = new HSQLDBInMemoryDataSource();
 			dialect.getColumnBinderRegistry().register((Class) Identifier.class, Identifier.identifierBinder(DefaultParameterBinders.LONG_PRIMITIVE_BINDER));
 			dialect.getSqlTypeRegistry().put(Identifier.class, "int");
 			
-			return new PersistenceContext(inMemoryDataSource, dialect);
+			return new PersistenceContext(dataSource, dialect);
 		}
 		
 		@Bean
