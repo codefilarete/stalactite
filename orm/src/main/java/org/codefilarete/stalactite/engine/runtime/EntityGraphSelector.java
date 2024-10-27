@@ -180,15 +180,9 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		
 		protected Set<C> execute(PreparedSQL query) {
 			try (ReadOperation<Integer> readOperation = new ReadOperation<>(query, connectionProvider)) {
-				return execute(readOperation);
-			}
-		}
-		
-		private Set<C> execute(ReadOperation<Integer> operation) {
-			try (ReadOperation<Integer> closeableOperation = operation) {
-				return transform(closeableOperation);
+				return transform(readOperation);
 			} catch (RuntimeException e) {
-				throw new SQLExecutionException(operation.getSqlStatement().getSQL(), e);
+				throw new SQLExecutionException(query.getSQL(), e);
 			}
 		}
 		
