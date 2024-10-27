@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.codefilarete.stalactite</groupId>
+		<artifactId>spring-integration</artifactId>
+		<version>2.0.1-SNAPSHOT</version>
+	</parent>
+	
+	<artifactId>spring-data</artifactId>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>orm</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>spring-transaction</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+			<version>${spring.version}</version>
+			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-commons</artifactId>
+			<version>${spring-data.version}</version>
+			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-jpa</artifactId>
+			<version>${spring-data.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+</project>

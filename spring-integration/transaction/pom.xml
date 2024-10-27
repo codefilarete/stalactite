@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.codefilarete.stalactite</groupId>
+		<artifactId>spring-integration</artifactId>
+		<version>2.0.1-SNAPSHOT</version>
+	</parent>
+	
+	<artifactId>spring-transaction</artifactId>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.codefilarete.stalactite</groupId>
+			<artifactId>core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
+			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<!--
+			 Version doesn't matter because this dependency was added to avoid NoClassDefFoundError org/hibernate/HibernateException in tests
+			 when creating HibernateTransactionManager
+			-->
+			<version>5.6.15.Final</version>
+			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<!-- excluded because has a lower version that this used by Mockito and lacks the method
+					 MultipleParentClassLoader$Builder.appendMostSpecific(Collection) -->
+					<groupId>net.bytebuddy</groupId>
+					<artifactId>byte-buddy</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+	</dependencies>
+
+</project>

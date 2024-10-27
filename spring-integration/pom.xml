@@ -8,91 +8,25 @@
 	<modelVersion>4.0.0</modelVersion>
 	
 	<artifactId>spring-integration</artifactId>
+	<packaging>pom</packaging>
 	
 	<properties>
 		<spring.version>5.3.28</spring.version>
 		<spring-data.version>2.7.13</spring-data.version>
 	</properties>
 	
+	<modules>
+		<module>transaction</module>
+		<module>spring-data</module>
+	</modules>
+	
 	<dependencies>
-		<dependency>
-			<groupId>org.codefilarete.stalactite</groupId>
-			<artifactId>orm</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-jdbc</artifactId>
-			<version>${spring.version}</version>
-			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
-			<scope>provided</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
 			<version>${spring.version}</version>
 			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
 			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-orm</artifactId>
-			<version>${spring.version}</version>
-			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-commons</artifactId>
-			<version>${spring-data.version}</version>
-			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-jpa</artifactId>
-			<version>${spring-data.version}</version>
-			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-core</artifactId>
-			<!--
-			 Version doesn't matter because this dependency was added to avoid NoClassDefFoundError org/hibernate/HibernateException in tests
-			 when creating HibernateTransactionManager
-			-->
-			<version>5.6.15.Final</version>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<!-- excluded because has a lower version that this used by Mockito and lacks the method
-					 MultipleParentClassLoader$Builder.appendMostSpecific(Collection) -->
-					<groupId>net.bytebuddy</groupId>
-					<artifactId>byte-buddy</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>${slf4j-api.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<version>${spring-data.version}</version>
-			<scope>test</scope>
-			<!-- we remove Spring dependency on logging because it's in conflict with log4j (dependency above) -->
-			<!-- and make ir raises the error "LoggerFactory is not a Logback LoggerContext but Logback is on the classpath" -->
-			<!-- See solution at https://tedblob.com/loggerfactory-is-not-a-logback-loggercontext-but-logback-is-on-the-classpath/ -->
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-logging</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 		<!-- for HSQLDBInMemoryDataSource to do IT tests -->
 		<dependency>
@@ -117,12 +51,32 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j-api.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.12.0</version>
 			<scope>test</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<version>${spring-data.version}</version>
+			<scope>test</scope>
+			<!-- we remove Spring dependency on logging because it's in conflict with log4j (dependency above) -->
+			<!-- and make ir raises the error "LoggerFactory is not a Logback LoggerContext but Logback is on the classpath" -->
+			<!-- See solution at https://tedblob.com/loggerfactory-is-not-a-logback-loggercontext-but-logback-is-on-the-classpath/ -->
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
 	</dependencies>
 
 </project>
