@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.codefilarete.stalactite</groupId>
 		<artifactId>orm-adapter</artifactId>
-		<version>2.0.1-SNAPSHOT</version>
+		<version>3.0.0-SNAPSHOT</version>
 	</parent>
 	
 	<artifactId>orm-sqlite-adapter</artifactId>
