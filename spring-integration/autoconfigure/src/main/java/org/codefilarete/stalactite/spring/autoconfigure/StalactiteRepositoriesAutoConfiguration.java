@@ -26,6 +26,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportSelector;
 import org.springframework.core.type.AnnotationMetadata;
 
+import static org.codefilarete.tool.Nullable.nullable;
+
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for Spring Data's Stalactite Repositories.
  * <p>
@@ -62,7 +64,7 @@ public class StalactiteRepositoriesAutoConfiguration {
 		try (Connection connection = dataSource.getConnection()) {
 			dialect = dialectResolver.determineDialect(connection);
 		}
-		dialectCustomizer.getIfAvailable().customize(dialect);
+		nullable(dialectCustomizer.getIfAvailable()).invoke(customizer -> customizer.customize(dialect));
 		return dialect;
 	}
 	
