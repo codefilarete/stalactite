@@ -33,8 +33,12 @@ class PartTreeStalactiteDelete<C> implements RepositoryQuery {
 	@Override
 	public Integer execute(Object[] parameters) {
 		Set<C> execute = partTreeQuery.execute(parameters);
-		entityPersister.delete(execute);
-		return execute.size();
+		if (execute == null || execute.isEmpty()) {
+			return 0;
+		} else {
+			entityPersister.delete(execute);
+			return execute.size();
+		}
 	}
 	
 	@Override

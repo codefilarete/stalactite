@@ -37,7 +37,11 @@ public class StalactitePlatformTransactionManager extends JdbcTransactionManager
 	@Override
 	public Connection giveConnection() {
 		ConnectionHolder resource = (ConnectionHolder) TransactionSynchronizationManager.getResource(getDataSource());
-		return resource.getConnection();
+		if (resource == null) {
+			throw new IllegalStateException("No connection available");
+		} else {
+			return resource.getConnection();
+		}
 	}
 	
 	/**

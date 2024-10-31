@@ -103,7 +103,7 @@ class TableTest {
 		Table testInstance = new Table("toto");
 		assertThat(testInstance.getPrimaryKey()).isNull();
 		
-		Column dummyColumn = testInstance.addColumn("dummyColumn", String.class);
+		testInstance.addColumn("dummyColumn", String.class);
 		assertThat(testInstance.getPrimaryKey()).isNull();
 		
 		Column id = testInstance.addColumn("id", long.class);
@@ -111,7 +111,7 @@ class TableTest {
 		Column subId = testInstance.addColumn("subId", long.class);
 		subId.primaryKey();
 		assertThat(testInstance.getPrimaryKey()).isNotNull();
-		assertThat(testInstance.getPrimaryKey().getColumns()).isEqualTo(Arrays.asHashSet(id, subId));
+		assertThat(testInstance.getPrimaryKey().getColumns()).containsExactly(id, subId);
 	}
 	
 	@Test
@@ -121,7 +121,7 @@ class TableTest {
 		
 		Column dummyColumn = testInstance.addColumn("dummyColumn", String.class);
 		Column id = testInstance.addColumn("id", long.class).primaryKey();
-		assertThat(testInstance.getPrimaryKey().getColumns()).isEqualTo(Arrays.asSet(id));
+		assertThat(testInstance.getPrimaryKey().getColumns()).containsExactly(id);
 		assertThat(testInstance.getColumnsNoPrimaryKey()).isEqualTo(Arrays.asHashSet(dummyColumn));
 	}
 	
