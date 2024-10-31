@@ -18,6 +18,7 @@
 	<modules>
 		<module>transaction</module>
 		<module>spring-data</module>
+		<module>autoconfigure</module>
 	</modules>
 	
 	<dependencies>
