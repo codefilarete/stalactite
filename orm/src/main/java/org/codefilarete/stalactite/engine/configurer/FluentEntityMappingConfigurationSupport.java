@@ -1335,6 +1335,12 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		}
 		
 		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+			manyToManyRelation.setReverseLink(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
 		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory) {
 			manyToManyRelation.setCollectionFactory(collectionFactory);
 			return null;	// we can return null because dispatcher will return proxy

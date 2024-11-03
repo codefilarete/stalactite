@@ -3,10 +3,21 @@ package org.codefilarete.stalactite.engine;
 import java.util.Collection;
 import java.util.function.Supplier;
 
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
+
 /**
  * @author Guillaume Mary
  */
 public interface ManyToManyOptions<C, I, O, S1 extends Collection<O>, S2 extends Collection<C>> extends CascadeOptions {
+	
+	/**
+	 * Defines setter of current entity on target entity.
+	 * This method has no consequence on database mapping since it only interacts in memory.
+	 *
+	 * @param reverseLink opposite owner of the relation
+	 * @return the global mapping configurer
+	 */
+	ManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink);
 	
 	/**
 	 * Defines the collection factory to be used at load time to initialize property if it is null.

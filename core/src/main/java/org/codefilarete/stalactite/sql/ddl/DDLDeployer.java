@@ -3,15 +3,16 @@ package org.codefilarete.stalactite.sql.ddl;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.PersistenceContext;
+import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
+import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class DDLDeployer {
 	 * @return a {@link Collection} of found tables
 	 */
 	public static Collection<Table> collectTables(PersistenceContext persistenceContext) {
-		List<Table> result = new ArrayList<>(20);
+		Set<Table> result = new LinkedHashSet<>(20);
 		persistenceContext.getPersisters().forEach(p -> result.addAll(((ConfiguredPersister) p).giveImpliedTables()));
 		return result;
 	}

@@ -12,6 +12,11 @@ import java.util.Set;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
+import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider.EntityMappingConfigurationProviderHolder;
+import org.codefilarete.stalactite.engine.listener.SelectListener;
+import org.codefilarete.stalactite.engine.model.book.Author;
+import org.codefilarete.stalactite.engine.model.book.Book;
 import org.codefilarete.stalactite.engine.runtime.PersisterWrapper;
 import org.codefilarete.stalactite.engine.runtime.SimpleRelationalEntityPersister;
 import org.codefilarete.stalactite.id.Identified;
@@ -72,8 +77,8 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		 */
 		@Test
 		void crud_cycleWithIntermediary_ownedBySource() {
-			Holder<FluentEntityMappingBuilder<Person, Identifier<Long>>> personMappingConfiguration = new Holder<>();
-			personMappingConfiguration.set(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
+			EntityMappingConfigurationProviderHolder<Person, Identifier<Long>> personMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+			personMappingConfiguration.setProvider(MappingEase.entityBuilder(Person.class, Identifier.LONG_TYPE)
 					.mapKey(Person::getId, ALREADY_ASSIGNED)
 					.map(Person::getName)
 					.mapOneToOne(Person::getHouse, MappingEase.entityBuilder(House.class, Identifier.LONG_TYPE)
@@ -81,12 +86,12 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 							.mapOneToOne(House::getAddress, MappingEase.entityBuilder(Address.class, Identifier.LONG_TYPE)
 									.mapKey(Address::getId, ALREADY_ASSIGNED)
 									.map(Address::getLocation))
-							.mapOneToOne(House::getGardener, () -> personMappingConfiguration.get().getConfiguration())
+							.mapOneToOne(House::getGardener, personMappingConfiguration)
 							.cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 					).cascading(RelationMode.ALL_ORPHAN_REMOVAL)
 			);
 			
-			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.get().build(persistenceContext);
+			EntityPersister<Person, Identifier<Long>> personPersister = personMappingConfiguration.getProvider().build(persistenceContext);
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
@@ -1525,6 +1530,78 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 		public String toString() {
 			return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
 		}
+	}
+	
+	
+	@Nested
+	class ManyToManyBidirectional {
+		
+		/**
+		 * Book <-> Author
+		 */
+		@Test
+		void simulatedBy_one2ManyAndASelectListener() {
+			// Considering the authors as a referential / registry, they are no more linked to a book for the feature "persisting a book"
+			// It's expected they exist before, or be persisted by the cascade 
+			EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+			EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+			authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
+					.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+					// no relation to Book here
+					.map(Author::getName));
+			bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
+					.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+					// this is sufficient to mimic the many-to-many relation for the feature "persisting a book"
+					.mapOneToMany(Book::getAuthors, authorMappingConfiguration)
+					.map(Book::getIsbn).columnName("isbn")
+					.map(Book::getPrice)
+					.map(Book::getTitle));
+			
+			Book book1 = new Book("a first book", 24.10, "AAA-BBB-CCC");
+			Book book2 = new Book("a second book", 33.50, "XXX-YYY-ZZZ");
+			Author author1 = new Author("John Doe");
+			Author author2 = new Author("Jane Doe");
+			
+			book1.setAuthors(Arrays.asSet(author1, author2));
+			book2.setAuthors(Arrays.asSet(author1));
+			
+			author1.setWrittenBooks(Arrays.asSet(book1, book2));
+			author2.setWrittenBooks(Arrays.asSet(book1));
+			
+			PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+			EntityPersister<Book, Long> bookPersister = bookMappingConfiguration.getProvider().build(persistenceContext);
+			// if the bidirectionality is required in memory, we can add a listener at loading time to fill the Collections
+			bookPersister.addSelectListener(new SelectListener<Book, Long>() {
+				@Override
+				public void afterSelect(Set<? extends Book> books) {
+					books.forEach(book -> book.getAuthors().forEach(author -> author.getWrittenBooks().add(book)));
+				}
+			});
+			
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			bookPersister.insert(book1);
+			bookPersister.insert(book2);
+			
+			Set<Book> select = bookPersister.select(Arrays.asSet(book1.getId(), book2.getId()));
+			
+			Book loadedBook1 = Iterables.find(select, Book::getTitle, "a first book"::equals).getLeft();
+			Book loadedBook2 = Iterables.find(select, Book::getTitle, "a second book"::equals).getLeft();
+			assertThat(loadedBook1.getAuthors()).extracting(Author::getName).containsExactlyInAnyOrder(author1.getName(), author2.getName());
+			assertThat(loadedBook2.getAuthors()).extracting(Author::getName).containsExactlyInAnyOrder(author1.getName());
+			
+			List<String> creationScripts = ddlDeployer.getCreationScripts();
+			assertThat(creationScripts).containsExactlyInAnyOrder(
+					"create table Book_authors(book_id bigint, authors_id bigint, unique (book_id, authors_id))",
+					"create table Author(name varchar(255), id bigint GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"create table Book(isbn varchar(255), price double, title varchar(255), id bigint GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+					"alter table Book_authors add constraint FK_Book_authors_authors_id_Author_id foreign key(authors_id) references Author(id)",
+					"alter table Book_authors add constraint FK_Book_authors_book_id_Book_id foreign key(book_id) references Book(id)"
+			);
+		}
+		
 	}
 	
 	public static class House implements Identified<Long> {

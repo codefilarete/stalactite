@@ -8,10 +8,15 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider.EntityMappingConfigurationProviderHolder;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
+import org.codefilarete.stalactite.engine.model.book.Author;
+import org.codefilarete.stalactite.engine.model.book.Book;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
@@ -309,7 +314,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		assertThat(choiceAnswerIds).containsExactlyInAnyOrder(new Trio<>(1, 17, 1), new Trio<>(1, 13, 2), new Trio<>(2, 13, 1), new Trio<>(2, 17, 2));
 	}		
 		
-		@Test
+	@Test
 	void select_collectionFactory() throws SQLException {
 		// mapping building thanks to fluent API
 		EntityPersister<Answer, Identifier<Long>> answerPersister = MappingEase.entityBuilder(Answer.class, Identifier.LONG_TYPE)
@@ -781,6 +786,57 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		Answer loadedAnswer = answerPersister.select(new PersistedIdentifier<>(42L));
 		assertThat(loadedAnswer.getChoices()).isEqualTo(null);
 
+	}
+	
+	@Test
+	void bidirectionality() {
+		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
+				.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+				.map(Author::getName));
+		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
+				.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+				.mapManyToMany(Book::getAuthors, authorMappingConfiguration).reverselySetBy((author, book) -> book.getAuthors().add(author))
+				.map(Book::getIsbn).columnName("isbn")
+				.map(Book::getPrice)
+				.map(Book::getTitle));
+		
+		Book book1 = new Book("a first book", 24.10, "AAA-BBB-CCC");
+		Book book2 = new Book("a second book", 33.50, "XXX-YYY-ZZZ");
+		Author author1 = new Author("John Doe");
+		Author author2 = new Author("Jane Doe");
+		
+		book1.setAuthors(Arrays.asSet(author1, author2));
+		book2.setAuthors(Arrays.asSet(author1));
+		
+		author1.setWrittenBooks(Arrays.asSet(book1, book2));
+		author2.setWrittenBooks(Arrays.asSet(book2));
+		
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		EntityPersister<Book, Long> bookPersister = bookMappingConfiguration.getProvider().build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		bookPersister.insert(book1);
+		bookPersister.insert(book2);
+		
+		Set<Book> select = bookPersister.select(Arrays.asSet(book1.getId(), book2.getId()));
+		Book loadedBook1 = Iterables.find(select, Book::getTitle, "a first book"::equals).getLeft();
+		Book loadedBook2 = Iterables.find(select, Book::getTitle, "a second book"::equals).getLeft();
+		assertThat(loadedBook1.getAuthors()).extracting(Author::getName).containsExactlyInAnyOrder(author1.getName(), author2.getName());
+		assertThat(loadedBook2.getAuthors()).extracting(Author::getName).containsExactlyInAnyOrder(author1.getName());
+		
+		
+		List<String> creationScripts = ddlDeployer.getCreationScripts();
+		assertThat(creationScripts).containsExactlyInAnyOrder(
+				"create table Book_authors(book_id bigint, authors_id bigint, unique (book_id, authors_id))",
+				"create table Author(name varchar(255), id bigint GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+				"create table Book(isbn varchar(255), price double, title varchar(255), id bigint GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1) not null, unique (id))",
+				"alter table Book_authors add constraint FK_Book_authors_authors_id_Author_id foreign key(authors_id) references Author(id)",
+				"alter table Book_authors add constraint FK_Book_authors_book_id_Book_id foreign key(book_id) references Book(id)"
+		);
 	}
 	
 	public static class Answer implements Identified<Long> {

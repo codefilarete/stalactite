@@ -71,6 +71,15 @@ public interface AssociationTableNamingStrategy {
 		}
 		
 		/**
+		 * Exposes all column references to simplify column name modification : without this access the user has to use {@link #getLeftColumnName(Column)}
+		 * which implies to have the {@link Column} object, this is cumbersome because it means the user must have declared its {@link Table}.
+		 * @return all column references
+		 */
+		public Map<Column<LEFTTABLE, Object>, String> getLeftColumnNames() {
+			return leftColumnNames;
+		}
+		
+		/**
 		 * Set right column name in association table that matches given right-table column
 		 * @param column the column coming from left table
 		 * @param name name of association table column for given left-table column
@@ -85,6 +94,15 @@ public interface AssociationTableNamingStrategy {
 		 */
 		public String getRightColumnName(Column<RIGHTTABLE, ?> column) {
 			return rightColumnNames.get(column);
+		}
+		
+		/**
+		 * Exposes all column references to simplify column name modification : without this access the user has to use {@link #getRightColumnName(Column)}
+		 * which implies to have the {@link Column} object, this is cumbersome because it means the user must have declared its {@link Table}.
+		 * @return all column references
+		 */
+		public Map<Column<RIGHTTABLE, Object>, String> getRightColumnNames() {
+			return rightColumnNames;
 		}
 	}
 	

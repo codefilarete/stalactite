@@ -144,6 +144,10 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 			this.writeAuthorized = writeAuthorized;
 		}
 		
+		public ManyToManyRelation<SRC, TRGT, TRGTID, C1, C2> getManyToManyRelation() {
+			return manyToManyRelation;
+		}
+		
 		public ColumnNamingStrategy getIndexColumnNamingStrategy() {
 			return indexColumnNamingStrategy;
 		}
@@ -234,7 +238,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 					associationConfiguration.collectionGetter::get,
 					associationConfiguration.setter::set,
 					associationConfiguration.giveCollectionFactory(),
-					null);	// no reverse setter since we don't support it for many-to-many (see 
+					associationConfiguration.getManyToManyRelation().getReverseLink());	// no reverse setter since we don't support it for many-to-many (see 
 			if (associationConfiguration.manyToManyRelation.isOrdered()) {
 				assignEngineForIndexedAssociation(rightPrimaryKey, associationTableName, manyRelationDescriptor, targetPersister);
 			} else {

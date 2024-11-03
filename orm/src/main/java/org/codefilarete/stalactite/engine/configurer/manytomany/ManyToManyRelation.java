@@ -11,6 +11,7 @@ import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityMappingConfigurationProvider;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 
 /**
  * 
@@ -34,6 +35,12 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 	
 	@Nullable
 	private final Table targetTable;
+	
+	/**
+	 * Source setter on target for bidirectionality (no consequence on database mapping).
+	 * Useful only for cases of association table because this case doesn't set any reverse information hence such setter can't be deduced.
+	 */
+	private SerializableBiConsumer<TRGT, SRC> reverseLink;
 	
 	/** Default relation mode is {@link RelationMode#ALL} */
 	private RelationMode relationMode = RelationMode.ALL;
@@ -183,4 +190,12 @@ public class ManyToManyRelation<SRC, TRGT, TRGTID, C1 extends Collection<TRGT>, 
 		setFetchSeparately(true);
 	}
 	
+	@Nullable
+	public SerializableBiConsumer<TRGT, SRC> getReverseLink() {
+		return reverseLink;
+	}
+	
+	public void setReverseLink(SerializableBiConsumer<TRGT, SRC> reverseLink) {
+		this.reverseLink = reverseLink;
+	}
 }
