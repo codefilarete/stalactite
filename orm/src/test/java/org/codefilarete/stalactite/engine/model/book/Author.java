@@ -9,7 +9,7 @@ public class Author {
 
     private String name;
 
-    private Set<Book> writtenBooks = new HashSet<>();
+    private Set<Book> writtenBooks;
 	
 	public Author() {
 	}
@@ -25,8 +25,23 @@ public class Author {
     public String getName() {
         return name;
     }
-    
-    public Set<Book> getWrittenBooks() {
+	
+	public Set<Book> getBooks() {
+		if (writtenBooks == null) {
+			writtenBooks = new HashSet<>();
+		}
+		return writtenBooks;
+	}
+	
+	public void setBooks(Set<Book> books) {
+		this.writtenBooks = books;
+	}
+	
+	public void addBook(Book book) {
+		getWrittenBooks().add(book);
+	}
+	
+	public Set<Book> getWrittenBooks() {
         return writtenBooks;
     }
 	

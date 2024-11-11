@@ -759,7 +759,9 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public <O, J, S1 extends Set<O>, S2 extends Set<C>, T extends Table>
 	FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2>
-	mapManyToMany(SerializableBiConsumer<C, S1> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table) {
+	mapManyToMany(SerializableBiConsumer<C, S1> setter,
+				  EntityMappingConfigurationProvider<O, J> mappingConfiguration,
+				  @javax.annotation.Nullable T table) {
 		MutatorByMethodReference<C, S1> setterReference = Accessors.mutatorByMethodReference(setter);
 		PropertyAccessor<C, S1> propertyAccessor = new PropertyAccessor<>(
 				Accessors.accessor(setterReference.getDeclaringClass(), propertyName(setterReference.getMethodName())),
@@ -1335,20 +1337,32 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		}
 		
 		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
-			manyToManyRelation.setReverseLink(reverseLink);
-			return null;	// we can return null because dispatcher will return proxy
-		}
-		
-		@Override
 		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> initializeWith(Supplier<S1> collectionFactory) {
 			manyToManyRelation.setCollectionFactory(collectionFactory);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		
 		@Override
-		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseInitializeWith(Supplier<S2> collectionFactory) {
-			manyToManyRelation.setReverseCollectionFactory(collectionFactory);
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselySetBy(SerializableBiConsumer<O, C> reverseLink) {
+			manyToManyRelation.getMappedByConfiguration().setReverseCombiner(reverseLink);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableFunction<O, S2> collectionAccessor) {
+			manyToManyRelation.getMappedByConfiguration().setReverseCollectionAccessor(collectionAccessor);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverseCollection(SerializableBiConsumer<O, S2> collectionMutator) {
+			manyToManyRelation.getMappedByConfiguration().setReverseCollectionMutator(collectionMutator);
+			return null;	// we can return null because dispatcher will return proxy
+		}
+		
+		@Override
+		public FluentMappingBuilderManyToManyOptions<C, I, O, S1, S2> reverselyInitializeWith(Supplier<S2> collectionFactory) {
+			manyToManyRelation.getMappedByConfiguration().setReverseCollectionFactory(collectionFactory);
 			return null;	// we can return null because dispatcher will return proxy
 		}
 		

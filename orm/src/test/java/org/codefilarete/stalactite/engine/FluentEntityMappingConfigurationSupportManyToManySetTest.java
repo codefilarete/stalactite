@@ -789,7 +789,7 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 	}
 	
 	@Test
-	void bidirectionality() {
+	void bidirectionality_reverselySetBy() {
 		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
 		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
@@ -797,7 +797,9 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 				.map(Author::getName));
 		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
 				.mapKey(Book::getId, IdentifierPolicy.afterInsert())
-				.mapManyToMany(Book::getAuthors, authorMappingConfiguration).reverselySetBy((author, book) -> book.getAuthors().add(author))
+				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
+					.reverselySetBy(Author::addBook)
+					.reverselyInitializeWith(LinkedHashSet::new)
 				.map(Book::getIsbn).columnName("isbn")
 				.map(Book::getPrice)
 				.map(Book::getTitle));
@@ -807,8 +809,8 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		Author author1 = new Author("John Doe");
 		Author author2 = new Author("Jane Doe");
 		
-		book1.setAuthors(Arrays.asSet(author1, author2));
-		book2.setAuthors(Arrays.asSet(author1));
+		book1.setAuthors(Arrays.asSet(author1));
+		book2.setAuthors(Arrays.asSet(author1, author2));
 		
 		author1.setWrittenBooks(Arrays.asSet(book1, book2));
 		author2.setWrittenBooks(Arrays.asSet(book2));
@@ -825,8 +827,10 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 		Set<Book> select = bookPersister.select(Arrays.asSet(book1.getId(), book2.getId()));
 		Book loadedBook1 = Iterables.find(select, Book::getTitle, "a first book"::equals).getLeft();
 		Book loadedBook2 = Iterables.find(select, Book::getTitle, "a second book"::equals).getLeft();
-		assertThat(loadedBook1.getAuthors()).extracting(Author::getName).containsExactlyInAnyOrder(author1.getName(), author2.getName());
-		assertThat(loadedBook2.getAuthors()).extracting(Author::getName).containsExactlyInAnyOrder(author1.getName());
+		assertThat(loadedBook1.getAuthors()).allSatisfy(author -> {
+			assertThat(author.getWrittenBooks()).isInstanceOf(LinkedHashSet.class);
+			assertThat(author.getWrittenBooks()).containsExactly(loadedBook1, loadedBook2);
+		});
 		
 		
 		List<String> creationScripts = ddlDeployer.getCreationScripts();
@@ -837,6 +841,91 @@ class FluentEntityMappingConfigurationSupportManyToManySetTest {
 				"alter table Book_authors add constraint FK_Book_authors_authors_id_Author_id foreign key(authors_id) references Author(id)",
 				"alter table Book_authors add constraint FK_Book_authors_book_id_Book_id foreign key(book_id) references Book(id)"
 		);
+	}
+	
+	@Test
+	void bidirectionality_reverseInitializedWith() {
+		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
+				.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+				.map(Author::getName));
+		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
+				.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
+						.reverselyInitializeWith(LinkedHashSet::new)
+				.map(Book::getIsbn).columnName("isbn")
+				.map(Book::getPrice)
+				.map(Book::getTitle));
+		
+		Book book1 = new Book("a first book", 24.10, "AAA-BBB-CCC");
+		Book book2 = new Book("a second book", 33.50, "XXX-YYY-ZZZ");
+		Author author1 = new Author("John Doe");
+		Author author2 = new Author("Jane Doe");
+		
+		book1.setAuthors(Arrays.asSet(author1));
+		book2.setAuthors(Arrays.asSet(author1, author2));
+		
+		author1.setWrittenBooks(Arrays.asSet(book1, book2));
+		author2.setWrittenBooks(Arrays.asSet(book2));
+		
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		EntityPersister<Book, Long> bookPersister = bookMappingConfiguration.getProvider().build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		bookPersister.insert(book1);
+		bookPersister.insert(book2);
+		
+		Set<Book> select = bookPersister.select(Arrays.asSet(book1.getId(), book2.getId()));
+		Book loadedBook1 = Iterables.find(select, Book::getTitle, "a first book"::equals).getLeft();
+		Book loadedBook2 = Iterables.find(select, Book::getTitle, "a second book"::equals).getLeft();
+		assertThat(loadedBook1.getAuthors()).allSatisfy(author -> assertThat(author.getWrittenBooks()).isInstanceOf(LinkedHashSet.class));
+	}
+	
+	@Test
+	void bidirectionality_reverseCollection() {
+		EntityMappingConfigurationProviderHolder<Author, Long> authorMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+		EntityMappingConfigurationProviderHolder<Book, Long> bookMappingConfiguration = new EntityMappingConfigurationProviderHolder<>();
+		authorMappingConfiguration.setProvider(MappingEase.entityBuilder(Author.class, Long.class)
+				.mapKey(Author::getId, IdentifierPolicy.afterInsert())
+				.map(Author::getName));
+		bookMappingConfiguration.setProvider(MappingEase.entityBuilder(Book.class, Long.class)
+				.mapKey(Book::getId, IdentifierPolicy.afterInsert())
+				.mapManyToMany(Book::getAuthors, authorMappingConfiguration)
+						.reverseCollection(Author::getBooks)
+				.map(Book::getIsbn).columnName("isbn")
+				.map(Book::getPrice)
+				.map(Book::getTitle));
+		
+		Book book1 = new Book("a first book", 24.10, "AAA-BBB-CCC");
+		Book book2 = new Book("a second book", 33.50, "XXX-YYY-ZZZ");
+		Author author1 = new Author("John Doe");
+		Author author2 = new Author("Jane Doe");
+		
+		book1.setAuthors(Arrays.asSet(author1));
+		book2.setAuthors(Arrays.asSet(author1, author2));
+		
+		author1.setWrittenBooks(Arrays.asSet(book1, book2));
+		author2.setWrittenBooks(Arrays.asSet(book2));
+		
+		PersistenceContext persistenceContext = new PersistenceContext(dataSource, DIALECT);
+		EntityPersister<Book, Long> bookPersister = bookMappingConfiguration.getProvider().build(persistenceContext);
+		
+		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+		ddlDeployer.deployDDL();
+		
+		bookPersister.insert(book1);
+		bookPersister.insert(book2);
+		
+		Set<Book> select = bookPersister.select(Arrays.asSet(book1.getId(), book2.getId()));
+		Book loadedBook1 = Iterables.find(select, Book::getTitle, "a first book"::equals).getLeft();
+		Book loadedBook2 = Iterables.find(select, Book::getTitle, "a second book"::equals).getLeft();
+		assertThat(loadedBook1.getAuthors()).allSatisfy(author -> {
+			assertThat(author.getWrittenBooks()).isExactlyInstanceOf(HashSet.class);
+			assertThat(author.getWrittenBooks()).containsExactlyInAnyOrder(loadedBook1, loadedBook2);
+		});
 	}
 	
 	public static class Answer implements Identified<Long> {

@@ -1574,10 +1574,16 @@ public class FluentEntityMappingConfigurationSupportCycleTest {
 			bookPersister.addSelectListener(new SelectListener<Book, Long>() {
 				@Override
 				public void afterSelect(Set<? extends Book> books) {
-					books.forEach(book -> book.getAuthors().forEach(author -> author.getWrittenBooks().add(book)));
+					books.forEach(book -> {
+						book.getAuthors().forEach(author -> {
+							if (author.getWrittenBooks() == null) {
+								author.setWrittenBooks(new HashSet<>());
+							}
+							author.getWrittenBooks().add(book);
+						});
+					});
 				}
 			});
-			
 			
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();

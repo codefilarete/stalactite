@@ -143,7 +143,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 					namingConfiguration.getAssociationTableNamingStrategy()
 			);
 			
-			String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionProvider()).getName();
+			String relationName = AccessorDefinition.giveDefinition(manyToManyRelation.getCollectionAccessor()).getName();
 			
 			if (currentBuilderContext.isCycling(manyToManyRelation.getTargetMappingConfiguration())) {
 				// cycle detected
@@ -164,7 +164,7 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 			
 			// Registering relation to EntityCriteria so one can use it as a criteria. Declared as a lazy initializer to work with lazy persister building such as cycling ones
 			currentBuilderContext.addBuildLifeCycleListener(new GraphLoadingRelationRegisterer<>(manyToManyRelation.getTargetMappingConfiguration().getEntityType(),
-					manyToManyRelation.getCollectionProvider()));
+					manyToManyRelation.getCollectionAccessor()));
 		}
 		
 		// taking element collections into account
