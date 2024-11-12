@@ -7,7 +7,6 @@ import java.util.Set;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
@@ -55,10 +54,10 @@ public class JoinTablePolymorphismBuilder<C, I, T extends Table<T>> extends Abst
 	}
 	
 	@Override
-	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
-		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
+		registerCascades(persisterPerSubclass, dialect, connectionConfiguration);
 		
 		return new JoinTablePolymorphismPersister<>(
 				mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(),

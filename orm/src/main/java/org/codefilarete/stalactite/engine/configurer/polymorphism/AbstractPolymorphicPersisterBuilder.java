@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
@@ -79,12 +78,10 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param persisterPerSubclass persisters that need relation
 	 * @param dialect the {@link Dialect} use for type binding
 	 * @param connectionConfiguration the connection configuration
-	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 */
 	protected <D extends C> void registerCascades(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
 												  Dialect dialect,
-												  ConnectionConfiguration connectionConfiguration,
-												  PersisterRegistry persisterRegistry) {
+												  ConnectionConfiguration connectionConfiguration) {
 		// we surround our relation configuration with cycle detection (see registerRelationCascades(..) implementation), this may seem too wide and
 		// could be closer to registerRelationCascades(..) method call (which actually requires it) but as doing such we also cover the case of 2
 		// subconfigurations using same entity in their relation 
@@ -93,7 +90,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				ConfiguredRelationalPersister<D, I> subEntityPersister = persisterPerSubclass.get(subConfiguration.getEntityType());
 				
 				if (subConfiguration.getPolymorphismPolicy() != null) {
-					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry, subConfiguration, subEntityPersister);
+					registerPolymorphismCascades(persisterPerSubclass, dialect, connectionConfiguration, subConfiguration, subEntityPersister);
 				}
 				
 				// We register relation of subclass persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
@@ -109,13 +106,11 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	private <D extends C> void registerPolymorphismCascades(Map<Class<D>, ConfiguredRelationalPersister<D, I>> persisterPerSubclass,
 															Dialect dialect,
 															ConnectionConfiguration connectionConfiguration,
-															PersisterRegistry persisterRegistry,
 															SubEntityMappingConfiguration<D> subConfiguration,
 															ConfiguredRelationalPersister<D, I> subEntityPersister) {
 		assertSubPolymorphismIsSupported(subConfiguration.getPolymorphismPolicy());
 		ConfiguredRelationalPersister<D, I> subclassPersister =
-				buildSubPolymorphicPersister(subEntityPersister, subConfiguration.getPolymorphismPolicy(), dialect, connectionConfiguration,
-						persisterRegistry);
+				buildSubPolymorphicPersister(subEntityPersister, subConfiguration.getPolymorphismPolicy(), dialect, connectionConfiguration);
 		persisterPerSubclass.put(subConfiguration.getEntityType(), subclassPersister);
 	}
 	
@@ -128,13 +123,11 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	 * @param subPolymorphismPolicy the sub persister {@link PolymorphismPolicy}
 	 * @param dialect the {@link Dialect} use for type binding
 	 * @param connectionConfiguration the connection configuration
-	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 */
 	private <D extends C> ConfiguredRelationalPersister<D, I> buildSubPolymorphicPersister(ConfiguredRelationalPersister<D, I> subPersister,
 																								 PolymorphismPolicy<D> subPolymorphismPolicy,
 																								 Dialect dialect,
-																								 ConnectionConfiguration connectionConfiguration,
-																								 PersisterRegistry persisterRegistry) {
+																								 ConnectionConfiguration connectionConfiguration) {
 		// we only have to call a polymorphic builder with given methods arguments, and same configuration values as this instance
 		PolymorphismPersisterBuilder<D, I, T> polymorphismPersisterBuilder = new PolymorphismPersisterBuilder<>(
 				subPolymorphismPolicy,
@@ -146,7 +139,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				subPersister.getMapping().getReadConverters(),
 				subPersister.getMapping().getWriteConverters(),
 				namingConfiguration);
-		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
+		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration);
 	}
 	
 	private <D extends C> void registerRelationCascades(RelationalMappingConfiguration<D> entityMappingConfiguration,

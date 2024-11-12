@@ -7,7 +7,6 @@ import java.util.Set;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
 import org.codefilarete.reflection.ValueAccessPointSet;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
@@ -57,9 +56,8 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 	}
 	
 	@Override
-	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
-		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass =
-				collectSubClassPersister(dialect, connectionConfiguration);
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
+		Map<Class<C>, ConfiguredRelationalPersister<C, I>> persisterPerSubclass = collectSubClassPersister(dialect, connectionConfiguration);
 		
 		Column<T, DTYPE> discriminatorColumn = ensureDiscriminatorColumn();
 		// NB: persisters are not registered into PersistenceContext because it may break implicit polymorphism principle (persisters are then
@@ -68,7 +66,7 @@ class SingleTablePolymorphismBuilder<C, I, T extends Table<T>, DTYPE> extends Ab
 			mainPersister, persisterPerSubclass, connectionConfiguration.getConnectionProvider(), dialect,
 			discriminatorColumn, (SingleTablePolymorphism<C, DTYPE>) polymorphismPolicy);
 		
-		registerCascades(persisterPerSubclass, dialect, connectionConfiguration, persisterRegistry);
+		registerCascades(persisterPerSubclass, dialect, connectionConfiguration);
 		
 		return result;
 	}

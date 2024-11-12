@@ -4,7 +4,6 @@ import java.util.Map;
 
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPointMap;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.SingleTablePolymorphism;
@@ -62,7 +61,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 	}
 	
 	@Override
-	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration, PersisterRegistry persisterRegistry) {
+	public ConfiguredRelationalPersister<C, I> build(Dialect dialect, ConnectionConfiguration connectionConfiguration) {
 		PolymorphismBuilder<C, I, T> polymorphismBuilder;
 		if (polymorphismPolicy instanceof PolymorphismPolicy.SingleTablePolymorphism) {
 			polymorphismBuilder = new SingleTablePolymorphismBuilder<>((SingleTablePolymorphism<C, ?>) polymorphismPolicy,
@@ -83,7 +82,7 @@ public class PolymorphismPersisterBuilder<C, I, T extends Table> implements Poly
 			// this exception is more to satisfy Sonar than for real case
 			throw new NotImplementedException("Given policy is not implemented : " + polymorphismPolicy);
 		}
-		ConfiguredRelationalPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration, persisterRegistry);
+		ConfiguredRelationalPersister<C, I> result = polymorphismBuilder.build(dialect, connectionConfiguration);
 		result = new PersisterListenerWrapper<>(result);
 		// We transfer listeners so that all actions are made in the same "event listener context" : all listeners are aggregated in a top level one.
 		// Made in particular for already-assigned mark-as-persisted mechanism and relation cascade triggering.

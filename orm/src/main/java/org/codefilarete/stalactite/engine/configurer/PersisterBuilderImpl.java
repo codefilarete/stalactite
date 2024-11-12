@@ -242,7 +242,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 					mainMapping.getReadConverters(),
 					mainMapping.getWriteConverters(),
 					this.namingConfiguration);
-			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
+			result = polymorphismPersisterBuilder.build(dialect, connectionConfiguration);
 		}
 		
 		// when identifier policy is already-assigned one, we must ensure that entity is marked as persisted when it comes back from database
