@@ -166,7 +166,6 @@ class OneToOneRelationConfigurerTest {
 				countryPersister,
 				dialect,
 				mock(ConnectionConfiguration.class),
-				mock(PersisterRegistry.class),
 				ForeignKeyNamingStrategy.DEFAULT,
 				JoinColumnNamingStrategy.JOIN_DEFAULT);
 		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);
@@ -286,7 +285,6 @@ class OneToOneRelationConfigurerTest {
 				countryPersister,
 				dialect,
 				mock(ConnectionConfiguration.class),
-				mock(PersisterRegistry.class),
 				ForeignKeyNamingStrategy.DEFAULT,
 				JoinColumnNamingStrategy.JOIN_DEFAULT);
 		testInstance.configure("city", new PersisterBuilderImpl<>(cityMappingConfiguration), false);

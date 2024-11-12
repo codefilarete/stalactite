@@ -5,7 +5,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
@@ -13,7 +12,6 @@ import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.codefilarete.tool.collection.Arrays;
 import org.danekja.java.util.function.serializable.SerializableFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,7 +115,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.build(persistenceContext);
 		
 		// by default inheritance is single_table one, to comply with default JPA inheritance strategy
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMapping().getTargetTable().getName()).isEqualTo("Car");
+		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).containsExactly("Car");
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -158,11 +156,7 @@ public class FluentEntityMappingConfigurationSupportPostInsertIdentifierTest {
 				.mapSuperClass(inheritanceConfiguration2).withJoinedTable()
 				.build(persistenceContext);
 		
-		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).isEqualTo(Arrays.asHashSet("Car", "Vehicle", "AbstractVehicle"));
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(AbstractVehicle.class)).getMapping().getTargetTable().getName()).isEqualTo("AbstractVehicle");
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Vehicle.class)).getMapping().getTargetTable().getName()).isEqualTo("Vehicle");
-		assertThat(((ConfiguredPersister) persistenceContext.getPersister(Car.class)).getMapping().getTargetTable().getName()).isEqualTo(
-				"Car");
+		assertThat(DDLDeployer.collectTables(persistenceContext).stream().map(Table::getName).collect(Collectors.toSet())).containsExactlyInAnyOrder("Car", "Vehicle", "AbstractVehicle");
 		
 		// DML tests
 		DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

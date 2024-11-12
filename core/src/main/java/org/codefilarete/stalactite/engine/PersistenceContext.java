@@ -6,7 +6,6 @@ import java.lang.reflect.Executable;
 import java.sql.Connection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -14,8 +13,8 @@ import java.util.function.Function;
 
 import org.codefilarete.reflection.MethodReferenceCapturer;
 import org.codefilarete.reflection.MethodReferenceDispatcher;
+import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
-import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
@@ -50,7 +49,6 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.WriteOperation;
 import org.codefilarete.tool.Nullable;
 import org.codefilarete.tool.Reflections;
-import org.codefilarete.tool.bean.ClassIterator;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.function.Converter;
@@ -66,12 +64,11 @@ import org.danekja.java.util.function.serializable.SerializableSupplier;
  * @author Guillaume Mary
  * @see #PersistenceContext(DataSource)
  */
-public class PersistenceContext implements PersisterRegistry {
+public class PersistenceContext {
 	
-	private final Map<Class<?>, EntityPersister> persisterCache = new HashMap<>();
 	private final Dialect dialect;
 	private final TransactionAwareConnectionConfiguration connectionConfiguration;
-	private final Map<Class, ClassMapping> mapping = new HashMap<>(50);
+	private final DefaultPersisterRegistry persisterRegistry = new DefaultPersisterRegistry();
 	
 	/**
 	 * Constructor with minimal but necessary information.
@@ -172,77 +169,34 @@ public class PersistenceContext implements PersisterRegistry {
 		return dialect;
 	}
 	
-	public <C, I, T extends Table<T>> ClassMapping<C, I, T> getMapping(Class<C> aClass) {
-		return mapping.get(aClass);
+	/**
+	 * Gives the persister of given class if exists.
+	 * Expected to work for aggregate root entity type, not for intermediary persisters, to keep a clean and sane behavior of cascades,
+	 * bi-directionality, polymorphism, etc.
+	 * Meanwhile, it depends on the context in which {@link #addPersister(EntityPersister)} was used.
+	 * 
+	 * @param clazz persister entity class
+	 * @return null if no persister was found for given class
+	 * @param <C> entity type
+	 * @param <I> entity identifier type
+	 */
+	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
+		return persisterRegistry.getPersister(clazz);
 	}
 	
 	/**
-	 * Adds a persistence configuration to this instance
+	 * Register a persister into this context. Then, it can be retrieved with {@link #getPersister(Class)}.
+	 * It's expected to give it an aggregate root persister, not intermediary persisters, to keep a clean and sane behavior of cascades,
+	 * bi-directionality, polymorphism, etc.
 	 * 
-	 * @param classMappingStrategy the persistence configuration
-	 * @param <C> the entity type that is configured for persistence
-	 * @param <I> the identifier type of the entity
-	 * @return the newly created {@link BeanPersister} for the configuration
+	 * @param persister the persister to be registered
 	 */
-	public <C, I, T extends Table<T>> BeanPersister<C, I, T> add(ClassMapping<C, I, T> classMappingStrategy) {
-		mapping.put(classMappingStrategy.getClassToPersist(), classMappingStrategy);
-		BeanPersister<C, I, T> persister = new BeanPersister<>(classMappingStrategy, this);
-		addPersister(persister);
-		return persister;
+	public void addPersister(EntityPersister<?, ?> persister) {
+		persisterRegistry.addPersister(persister);
 	}
 	
 	public Set<EntityPersister> getPersisters() {
-		// copy the Set because values() is backed by the Map and getPersisters() is not expected to permit such modifications
-		return new HashSet<>(persisterCache.values());
-	}
-	
-	public Map<Class<?>, EntityPersister> getPersisterCache() {
-		return persisterCache;
-	}
-	
-	/**
-	 * Looks for an {@link EntityPersister} registered for given class or one of its parent.
-	 * Found persister is then capable of persisting any instance of given class.
-	 * 
-	 * @param clazz the class for which the {@link EntityPersister} must be given
-	 * @param <C> the type of the persisted entity
-	 * @return null if class has no compatible persister registered
-	 */
-	@Override
-	public <C, I> EntityPersister<C, I> getPersister(Class<C> clazz) {
-		if (persisterCache.get(clazz) != null) {
-			return persisterCache.get(clazz);
-		} else {
-			ClassIterator classIterator = new ClassIterator(clazz);
-			EntityPersister<C, I> result;
-			Class<?> pawn;
-			do {
-				pawn = classIterator.next();
-				result = persisterCache.get(pawn);
-			} while (result == null && classIterator.hasNext());
-			// we add our finding to cache for future lookup
-			if (result != null) {
-				persisterCache.put(clazz, result);
-			}
-			return result;
-		}
-	}
-	
-	/**
-	 * Registers a {@link EntityPersister} on this instance. May overwrite an existing one
-	 * 
-	 * @param persister any {@link EntityPersister}
-	 * @param <C> type of persisted bean
-	 * @throws IllegalArgumentException if a persister already exists for class persisted by given persister
-	 */
-	@Override
-	public <C> void addPersister(EntityPersister<C, ?> persister) {
-		EntityPersister<C, ?> existingPersister = persisterCache.get(persister.getClassToPersist());
-		if (existingPersister != null && existingPersister != persister) {
-			throw new IllegalArgumentException("Persister already exists for class " + Reflections.toString(persister.getClassToPersist()));
-		}
-		
-		persisterCache.put(persister.getClassToPersist(), persister);
+		return persisterRegistry.getPersisters();
 	}
 	
 	public ConnectionConfiguration getConnectionConfiguration() {

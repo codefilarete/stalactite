@@ -324,10 +324,9 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapSuperClass(inheritanceConfiguration)
 					.build(persistenceContext);
 			
-			// as an inherited entity of non joined_tables policy, the table should not be in the context, but its persister does exist
+			// as an inherited entity of non joined_tables policy, the table should not be in the context
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
-			assertThat(persistenceContext.getPersister(Vehicle.class)).isNotNull();
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
@@ -383,11 +382,10 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 					.mapSuperClass(inheritanceConfiguration2)
 					.build(persistenceContext);
 			
-			// as an inherited entity, the table should not be in the context, and its persister does exist
+			// as an inherited entity, the table should not be in the context
 			Collection<Table> tables = DDLDeployer.collectTables(persistenceContext);
 			assertThat(tables.contains(mappedSuperClassData.vehicleTable)).isFalse();
 			assertThat(tables.contains(mappedSuperClassData.carTable)).isTrue();
-			assertThat(persistenceContext.getPersister(Vehicle.class)).isNotNull();
 			
 			// DML tests
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);

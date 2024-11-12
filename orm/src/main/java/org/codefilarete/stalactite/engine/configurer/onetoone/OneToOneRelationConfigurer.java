@@ -2,7 +2,6 @@ package org.codefilarete.stalactite.engine.configurer.onetoone;
 
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -23,7 +22,6 @@ public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 	
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final PersisterRegistry persisterRegistry;
 	private final OneToOneRelation<SRC, TRGT, TRGTID> oneToOneRelation;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
@@ -33,13 +31,11 @@ public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 									  ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									  Dialect dialect,
 									  ConnectionConfiguration connectionConfiguration,
-									  PersisterRegistry persisterRegistry,
 									  ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									  JoinColumnNamingStrategy joinColumnNamingStrategy) {
 		this.oneToOneRelation = oneToOneRelation;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
-		this.persisterRegistry = persisterRegistry;
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
 		if (oneToOneRelation.isRelationOwnedByTarget()) {
@@ -62,7 +58,7 @@ public class OneToOneRelationConfigurer<SRC, TRGT, SRCID, TRGTID> {
 						  boolean loadSeparately) {
 		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
 				// please note that even if no table is found in configuration, build(..) will create one
-				.build(dialect, connectionConfiguration, persisterRegistry,
+				.build(dialect, connectionConfiguration,
 						nullable(oneToOneRelation.getTargetTable()).getOr(nullable(oneToOneRelation.getReverseColumn()).map(Column::getTable).get()));
 		this.configurer.configure(tableAlias, targetPersister, loadSeparately);
 	}

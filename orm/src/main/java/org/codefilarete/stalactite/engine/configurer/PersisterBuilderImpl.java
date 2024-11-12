@@ -51,6 +51,7 @@ import org.codefilarete.stalactite.engine.cascade.BeforeInsertSupport;
 import org.codefilarete.stalactite.engine.configurer.BeanMappingBuilder.BeanMapping;
 import org.codefilarete.stalactite.engine.configurer.FluentEntityMappingConfigurationSupport.CompositeKeyLinkageSupport;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.MappingPerTable.Mapping;
+import org.codefilarete.stalactite.engine.PersisterRegistry.DefaultPersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.polymorphism.PolymorphismPersisterBuilder;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
@@ -135,42 +136,42 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
-		return build(
+		ConfiguredRelationalPersister<C, I> builtPersister = build(
 				persistenceContext.getDialect(),
 				OptimizedUpdatePersister.wrapWithQueryCache(persistenceContext.getConnectionConfiguration()),
-				persistenceContext,
 				this.table);
+		// making aggregate persister available for external usage 
+		persistenceContext.addPersister(builtPersister);
+		return builtPersister;
 	}
 	
 	/**
-	 * Method for reentrance. Made public for project usage.
+	 * Method for re-entrance. Made public for project usage.
 	 * 
 	 * @param dialect the {@link Dialect} use for type binding
 	 * @param connectionConfiguration the connection configuration 
-	 * @param persisterRegistry {@link PersisterRegistry} used to check for already defined persister
 	 * @param table persistence target table
 	 * @return the built persister, never null
 	 */
 	public ConfiguredRelationalPersister<C, I> build(Dialect dialect,
 	                                                 ConnectionConfiguration connectionConfiguration,
-	                                                 PersisterRegistry persisterRegistry,
 	                                                 @Nullable Table table) {
 		boolean isInitiator = PersisterBuilderContext.CURRENT.get() == null;
 		
 		if (isInitiator) {
-			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(persisterRegistry));
+			PersisterBuilderContext.CURRENT.set(new PersisterBuilderContext(new DefaultPersisterRegistry()));
 		}
 		
 		try {
 			// If a persister already exists for the type we return it : case of graph that declares twice / several times same mapped type 
 			// WARN : this does not take mapping configuration differences into account, so if configuration is different from previous one, since
 			// no check is done, then the very first persister is returned
-			EntityPersister<C, Object> existingPersister = persisterRegistry.getPersister(this.entityMappingConfiguration.getEntityType());
+			EntityPersister<C, Object> existingPersister = PersisterBuilderContext.CURRENT.get().getPersisterRegistry().getPersister(this.entityMappingConfiguration.getEntityType());
 			if (existingPersister != null) {
 				// we can cast because all persisters we registered implement the interface
 				return (ConfiguredRelationalPersister<C, I>) existingPersister;
 			}
-			ConfiguredRelationalPersister<C, I> result = doBuild(table, dialect, connectionConfiguration, persisterRegistry);
+			ConfiguredRelationalPersister<C, I> result = doBuild(table, dialect, connectionConfiguration, PersisterBuilderContext.CURRENT.get().getPersisterRegistry());
 			
 			if (isInitiator) {	
 				// This if is only there to execute code below only once, at the very end of persistence graph build,
@@ -217,8 +218,6 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		SimpleRelationalEntityPersister<C, I, T> mainPersister = buildMainPersister(identification, mainMapping, dialect, connectionConfiguration);
 		
 		applyExtraTableConfigurations(identification, mainPersister, dialect, connectionConfiguration);
-		
-		PersisterBuilderContext.CURRENT.get().addEntity(mainPersister.getMapping().getClassToPersist());
 		
 		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, persisterRegistry, mainPersister,
 				namingConfiguration);

@@ -7,7 +7,6 @@ import java.sql.SQLException;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.idprovider.LongProvider;
 import org.codefilarete.stalactite.engine.model.City;
 import org.codefilarete.stalactite.engine.model.Country;
@@ -81,8 +80,7 @@ public class FluentEntityMappingConfigurationSupportToOneAndToManyMixTest {
 		ddlDeployer.deployDDL();
 		
 		Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-				((ConfiguredPersister) persistenceContext.getPersister(Person.class)).getMapping().getTargetTable().getName().toUpperCase())) {
+		ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null, "PERSON")) {
 			@Override
 			public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 				return new JdbcForeignKey(

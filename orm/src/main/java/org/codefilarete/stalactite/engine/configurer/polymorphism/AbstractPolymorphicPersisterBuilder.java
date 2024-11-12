@@ -112,7 +112,6 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 						subConfiguration,
 						dialect,
 						connectionConfiguration,
-						persisterRegistry,
 						subEntityPersister);
 			}
 		});
@@ -164,7 +163,6 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 	private <D extends C, TRGT> void registerRelationCascades(SubEntityMappingConfiguration<D> entityMappingConfiguration,
 															  Dialect dialect,
 															  ConnectionConfiguration connectionConfiguration,
-															  PersisterRegistry persisterRegistry,
 															  ConfiguredRelationalPersister<D, I> subEntityPersister) {
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
@@ -175,7 +173,6 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 					subEntityPersister,
 					dialect,
 					connectionConfiguration,
-					persisterRegistry,
 					this.namingConfiguration.getForeignKeyNamingStrategy(),
 					this.namingConfiguration.getJoinColumnNamingStrategy());
 			
@@ -202,7 +199,6 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 			OneToManyRelationConfigurer oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(oneToManyRelation, subEntityPersister,
 					dialect,
 					connectionConfiguration,
-					persisterRegistry,
 					this.namingConfiguration.getForeignKeyNamingStrategy(),
 					this.namingConfiguration.getJoinColumnNamingStrategy(),
 					this.namingConfiguration.getAssociationTableNamingStrategy(),

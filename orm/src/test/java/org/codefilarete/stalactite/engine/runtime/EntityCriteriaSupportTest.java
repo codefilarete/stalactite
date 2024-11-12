@@ -6,7 +6,9 @@ import org.codefilarete.reflection.AccessorChain;
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
+import org.codefilarete.stalactite.engine.EntityPersister;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.MappingEase;
 import org.codefilarete.stalactite.engine.PersistenceContext;
@@ -105,20 +107,26 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
+		
+		FluentMappingBuilderPropertyOptions<City, Identifier<Long>, String> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, cityTable)
+				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(City::getName);
+		
 		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
-				.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.map(City::getName), cityTable)
+				.mapOneToOne(Country::getCapital, cityPersisterConfiguration)
 				.build(dummyPersistenceContext))
 				.getMapping();
+		
+		EntityPersister<City, Identifier<Long>> cityPersister = cityPersisterConfiguration.build(dummyPersistenceContext);
 		
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCapital),
-				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)));
+				((ConfiguredRelationalPersister) cityPersister));
+		
 		assertThat(testInstance.giveColumn(AccessorChain.chain(Country::getCapital, City::getName).getAccessors())).isEqualTo(nameColumn);
 	}
 	
@@ -131,21 +139,24 @@ class EntityCriteriaSupportTest {
 		Table countryTable = new Table("Country");
 		Table cityTable = new Table("City");
 		Column nameColumn = cityTable.addColumn("name", String.class);
+		FluentMappingBuilderPropertyOptions<City, Identifier<Long>, String> cityPersisterConfiguration = MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, cityTable)
+				.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+				.map(City::getName);
 		EntityMapping<Country, Identifier<Long>, ?> mappingStrategy =
 				((ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE, countryTable)
 				.mapKey(Country::getId, IdentifierPolicy.afterInsert())
 				.map(Country::getName)
-				.mapOneToMany(Country::getCities, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
-						.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
-						.map(City::getName), cityTable
-				)
+				.mapOneToMany(Country::getCities, cityPersisterConfiguration)
 				.build(dummyPersistenceContext))
 				.getMapping();
+		
+		EntityPersister<City, Identifier<Long>> cityPersister = cityPersisterConfiguration.build(dummyPersistenceContext);
 		
 		// we have to register the relation, that is expected by EntityGraphNode
 		EntityGraphNode<Country> testInstance = new EntityGraphNode<>(mappingStrategy);
 		testInstance.registerRelation(new AccessorByMethodReference<>(Country::getCities),
-				((ConfiguredRelationalPersister) dummyPersistenceContext.getPersister(City.class)));
+				((ConfiguredRelationalPersister) cityPersister));
+		
 		assertThat(testInstance.giveColumn(new AccessorChain<>(
 				new AccessorByMethodReference<>(Country::getCities),
 				new AccessorByMethodReference<>(City::getName))

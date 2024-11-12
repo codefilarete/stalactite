@@ -14,7 +14,6 @@ import org.codefilarete.stalactite.engine.CascadeOptions.RelationMode;
 import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.AssociationRecordMapping;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.IndexedAssociationRecordMapping;
@@ -57,7 +56,6 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 	
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final PersisterRegistry persisterRegistry;
 	private final ManyToManyWithAssociationTableConfigurer<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> configurer;
 	private final ManyToManyAssociationConfiguration<SRC, TRGT, SRCID, TRGTID, C1, C2, ?, ?> associationConfiguration;
 	
@@ -65,14 +63,12 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 										ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 										Dialect dialect,
 										ConnectionConfiguration connectionConfiguration,
-										PersisterRegistry persisterRegistry,
 										ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 										JoinColumnNamingStrategy joinColumnNamingStrategy,
 										ColumnNamingStrategy indexColumnNamingStrategy,
 										AssociationTableNamingStrategy associationTableNamingStrategy) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
-		this.persisterRegistry = persisterRegistry;
 		
 		PrimaryKey<?, SRCID> leftPrimaryKey = lookupSourcePrimaryKey(sourcePersister);
 		
@@ -97,7 +93,7 @@ public class ManyToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C1 extends C
 	public void configure(PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 		Table targetTable = determineTargetTable(associationConfiguration.getManyToManyRelation());
 		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
-				.build(dialect, connectionConfiguration, persisterRegistry, targetTable);
+				.build(dialect, connectionConfiguration, targetTable);
 		
 		configurer.configure(targetPersister, associationConfiguration.getManyToManyRelation().isFetchSeparately());
 	}

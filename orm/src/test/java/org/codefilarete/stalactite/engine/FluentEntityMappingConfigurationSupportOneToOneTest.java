@@ -116,7 +116,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			
 			assertThat(countryPersister.select(new PersistedIdentifier<>(42L))).isEqualTo(null);
 			// orphan was'nt removed because cascade is ALL, not ALL_ORPHAN_REMOVAL
-			assertThat(persistenceContext.getPersister(Person.class).select(new PersistedIdentifier<>(666L)).getId().getSurrogate()).isEqualTo(666L);
+			EntityPersister<Person, Identifier<Long>> personPersister = personConfiguration.build(persistenceContext);
+			assertThat(personPersister.select(new PersistedIdentifier<>(666L)).getId().getSurrogate()).isEqualTo(666L);
 		}
 		
 		@Test
@@ -216,7 +217,8 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			dummyCountry.setPresident(person);
 			
 			// person must be persisted before usage because cascade is marked as READ_ONLY
-			persistenceContext.getPersister(Person.class).insert(person);
+			EntityPersister<Person, Identifier<Long>> personPersister = personConfiguration.build(persistenceContext);
+			personPersister.insert(person);
 			
 			// insert doesn't throw integrity constraint and will update foreign key in Person table making relation available on load
 			countryPersister.insert(dummyCountry);
@@ -372,8 +374,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			ddlDeployer.deployDDL();
 			
 			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
-			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
-					((ConfiguredPersister) persistenceContext.getPersister(City.class)).getMapping().getTargetTable().getName().toUpperCase())) {
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null, "CITY")) {
 				@Override
 				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
 					return new JdbcForeignKey(
@@ -768,7 +769,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
 			ddlDeployer.deployDDL();
 			
-			LongProvider countryIdProvider = new LongProvider();
+			LongProvider countryIdProvider = new LongProvider(42);
 			Country dummyCountry = new Country(countryIdProvider.giveNewIdentifier());
 			dummyCountry.setName("France");
 			dummyCountry.setDescription("Smelly cheese !");
@@ -781,7 +782,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			// insert cascade test
 			countryPersister.insert(dummyCountry);
 			Country persistedCountry = countryPersister.select(dummyCountry.getId());
-			assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(0L));
+			assertThat(persistedCountry.getId()).isEqualTo(new PersistedIdentifier<>(42L));
 			assertThat(persistedCountry.getDescription()).isEqualTo("Smelly cheese !");
 			assertThat(persistedCountry.getCapital().getName()).isEqualTo("Paris");
 			assertThat(persistedCountry.getCapital().getId().isPersisted()).isTrue();
@@ -790,17 +791,22 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			Country modifiedCountry = persistedCountry;
 			Country referentCountry = dummyCountry;
 			
-			EntityPersister<City, Object> cityPersister = persistenceContext.getPersister(City.class);
 			// nullifiying relation test
 			modifiedCountry.setCapital(null);
 			countryPersister.update(modifiedCountry, referentCountry, false);
 			modifiedCountry = countryPersister.select(referentCountry.getId());
 			assertThat(modifiedCountry.getCapital()).isNull();
 			// ensuring that capital was not deleted nor updated (we didn't asked for orphan removal)
-			City loadedParis = cityPersister.select(paris.getId());
-			assertThat(loadedParis.getName()).isEqualTo("Paris");
+			
+			ExecutableBeanPropertyQueryMapper<LiteCity> citySelector = persistenceContext.newQuery("select name, countryId from City where id = :id", LiteCity.class)
+					.mapKey(LiteCity::new, "name", String.class, "countryId", Integer.class);
+			LiteCity city = citySelector
+					.set("id", paris.getId())
+					.execute(Accumulators.getFirstUnique());
 			// but relation is cut on both sides (because setCapital(..) calls setCountry(..))
-			assertThat(loadedParis.getCountry()).isNull();
+			assertThat(citySelector
+					.set("id", paris.getId())
+					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCity("Paris", null));
 			
 			// from null to a (new) object
 			referentCountry = countryPersister.select(referentCountry.getId());
@@ -811,7 +817,9 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			modifiedCountry = countryPersister.select(referentCountry.getId());
 			assertThat(modifiedCountry.getCapital()).isEqualTo(lyon);
 			// ensuring that capital was not deleted nor updated
-			assertThat(cityPersister.select(lyon.getId()).getName()).isEqualTo("Lyon");
+			assertThat(citySelector
+					.set("id", lyon.getId())
+					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCity("Lyon", 42));
 			
 			// testing update cascade
 			referentCountry = countryPersister.select(referentCountry.getId());
@@ -819,14 +827,16 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			countryPersister.update(modifiedCountry, referentCountry, false);
 			modifiedCountry = countryPersister.select(referentCountry.getId());
 			// ensuring that capital was not deleted nor updated
-			assertThat(cityPersister.select(lyon.getId()).getName()).isEqualTo("Lyon renamed");
+			assertThat(citySelector
+					.set("id", lyon.getId())
+					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCity("Lyon renamed", 42));
 			
 			// testing delete cascade
 			countryPersister.delete(modifiedCountry);
 			// ensuring that capital was not deleted nor updated
-			City loadedLyon = cityPersister.select(lyon.getId());
-			assertThat(loadedLyon.getName()).isEqualTo("Lyon renamed");
-			assertThat(loadedLyon.getCountry()).isNull();
+			assertThat(citySelector
+					.set("id", lyon.getId())
+					.execute(Accumulators.getFirstUnique())).usingRecursiveComparison().isEqualTo(new LiteCity("Lyon renamed", null));
 		}
 		
 		@Nested
@@ -1039,7 +1049,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				assertThat(countryFromDB.getPresident().getName()).isEqualTo("new French president");
 				assertThat(countryFromDB.getPresident().getId()).isEqualTo(newPresident.getId());
 				// and original one was left untouched
-				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = personConfiguration.build(persistenceContext);
 				assertThat(personPersister.select(originalPresident.getId()).getName()).isEqualTo("French president renamed");
 			}
 			
@@ -1086,7 +1096,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				assertThat(countryFromDB.getPresident().getName()).isEqualTo("new French president");
 				assertThat(countryFromDB.getPresident().getId()).isEqualTo(newPresident.getId());
 				// and original one was left untouched
-				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = personConfiguration.build(persistenceContext);
 				assertThat(personPersister.select(originalPresident.getId()).getName()).isEqualTo("French president renamed");
 				
 				// checking reverse side column value ...
@@ -1134,7 +1144,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country countryFromDB = countryPersister.select(dummyCountry.getId());
 				assertThat(countryFromDB.getPresident()).isNull();
 				// President shouldn't be deleted because orphan removal wasn't asked
-				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = personConfiguration.build(persistenceContext);
 				Person previousPresident = personPersister.select(president.getId());
 				assertThat(previousPresident).isNotNull();
 				// properties shouldn't have been nullified
@@ -1171,7 +1181,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country countryFromDB = countryPersister.select(dummyCountry.getId());
 				assertThat(countryFromDB.getPresident()).isNull();
 				// previous president has been deleted
-				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = personConfiguration.build(persistenceContext);
 				Person previousPresident = personPersister.select(president.getId());
 				assertThat(previousPresident).isNull();
 			}
@@ -1208,7 +1218,7 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				Country countryFromDB = countryPersister.select(dummyCountry.getId());
 				assertThat(countryFromDB.getPresident()).isEqualTo(newPresident);
 				// previous president has been deleted
-				EntityPersister<Person, Identifier<Long>> personPersister = persistenceContext.getPersister(Person.class);
+				EntityPersister<Person, Identifier<Long>> personPersister = personConfiguration.build(persistenceContext);
 				Person previousPresident = personPersister.select(president.getId());
 				assertThat(previousPresident).isNull();
 			}
@@ -1276,6 +1286,16 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 				resultSet = persistenceContext.getConnectionProvider().giveConnection().createStatement().executeQuery("select id from Person where id = 666");
 				assertThat(resultSet.next()).isTrue();
 			}
+		}
+	}
+	
+	public static class LiteCity {
+		private final String name;
+		private final Integer countryId;
+		
+		public LiteCity(String name, Integer countryId) {
+			this.name = name;
+			this.countryId = countryId;
 		}
 	}
 }

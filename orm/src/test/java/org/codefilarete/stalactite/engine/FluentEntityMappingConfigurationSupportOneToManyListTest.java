@@ -11,9 +11,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.assertj.core.groups.Tuple;
-import org.codefilarete.stalactite.engine.FluentEntityMappingBuilder.FluentMappingBuilderPropertyOptions;
 import org.codefilarete.stalactite.engine.PersistenceContext.ExecutableBeanPropertyKeyQueryMapper;
-import org.codefilarete.stalactite.engine.listener.UpdateListener;
 import org.codefilarete.stalactite.id.Identified;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
@@ -33,7 +31,6 @@ import org.codefilarete.stalactite.sql.result.Row;
 import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
-import org.codefilarete.tool.Duo;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.Maps;
@@ -41,17 +38,15 @@ import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.*;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ALL_ORPHAN_REMOVAL;
+import static org.codefilarete.stalactite.engine.CascadeOptions.RelationMode.ASSOCIATION_ONLY;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED;
 import static org.codefilarete.tool.function.Functions.chain;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 
 /**
  * @author Guillaume Mary
@@ -255,14 +250,7 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			// no modifications
 			modifiedQuestion.setChoices(newQuestion.getChoices());
 			
-			UpdateListener<Choice> updateListener = Mockito.mock(UpdateListener.class);
-			persistenceContext.getPersister(Choice.class).addUpdateListener(updateListener);
-			
 			questionPersister.update(modifiedQuestion, newQuestion, true);
-			// No change on List so no call to listener
-			verify(updateListener).beforeUpdate(argThat(argument ->
-					Iterables.collect(argument, Duo::getLeft, HashSet::new).equals(new HashSet<>(modifiedQuestion.getChoices()))
-					&& Iterables.collect(argument, Duo::getRight, HashSet::new).equals(new HashSet<>(newQuestion.getChoices()))), eq(true));
 			ExecutableQuery<Result> resultExecutableQuery = persistenceContext.newQuery(QueryEase.select(id, idx).from(choiceTable).orderBy(id), Result.class)
 					.mapKey(Result::new, id)
 					.map(idx, (SerializableBiConsumer<Result, Integer>) Result::setIdx);
@@ -577,8 +565,11 @@ class FluentEntityMappingConfigurationSupportOneToManyListTest {
 			questionPersister.insert(newQuestion);
 			
 			// does loading the target entity from its persister work ?
-			Choice loadedChoice = persistenceContext.getPersister(Choice.class).select(new PersistableIdentifier<>(10L));
-			assertThat(loadedChoice).isEqualTo(choice1);
+			Long loadedId= persistenceContext.newQuery("select id from CHOICE where id = :id", Long.class)
+					.mapKey("id", Long.class)
+					.set("id", 10L)
+					.execute(Accumulators.getFirstUnique());
+			assertThat(loadedId).isEqualTo(choice1.getId().getSurrogate());
 			
 			// loading the target entity from its aggregate persister
 			Question loadedQuestion = duplicatesTestData.questionPersister.select(new PersistableIdentifier<>(1L));

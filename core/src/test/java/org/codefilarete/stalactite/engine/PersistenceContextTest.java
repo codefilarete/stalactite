@@ -3,10 +3,7 @@ package org.codefilarete.stalactite.engine;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Date;
 
-import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.SimpleConnectionProvider;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -23,7 +20,9 @@ import org.mockito.internal.matchers.CapturingMatcher;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.query.model.Operators.eq;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.internal.util.Primitives.defaultValue;
 
 /**
@@ -147,16 +146,5 @@ public class PersistenceContextTest {
 		assertThat(count).isEqualTo(666);
 		assertThat(sqlStatementCaptor.getValue()).isEqualTo("select count(*) as count from Toto");
 		assertThat(valuesStatementCaptor.getAllValues()).isEmpty();
-	}
-	
-	@Test
-	void getPersister() {
-		PersistenceContext testInstance = new PersistenceContext(mock(ConnectionConfiguration.class), new Dialect());
-		EntityPersister persisterMock = mock(EntityPersister.class);
-		when(persisterMock.getClassToPersist()).thenReturn(Date.class);
-		testInstance.addPersister(persisterMock);
-		
-		assertThat(testInstance.getPersister(Timestamp.class)).isEqualTo(persisterMock);
-		assertThat(testInstance.getPersisterCache()).containsKey(Timestamp.class);
 	}
 }

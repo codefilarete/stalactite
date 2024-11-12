@@ -10,6 +10,8 @@ import java.util.function.Function;
 import org.assertj.core.presentation.StandardRepresentation;
 import org.codefilarete.stalactite.engine.runtime.load.EntityInflater.EntityMappingAdapter;
 import org.codefilarete.stalactite.mapping.ClassMapping;
+import org.codefilarete.stalactite.query.model.QueryEase;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.PrimaryKey;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -320,6 +322,32 @@ class EntityJoinTreeTest {
 		org.assertj.core.api.Assertions.assertThat(actualTables).isEqualTo(
 				Arrays.asHashSet(totoTable, tataTable, tataTableClone, titiTable, tutuTable, tutuTableClone));
 		
+	}
+	
+	@Test
+	void lookupTable() {
+		EntityJoinTree<?, ?> testInstance = new EntityJoinTree<Object, Object>(mock(EntityInflater.class), new Table<>("root Table"));
+		Table table1 = new Table("table1");
+		Column table1A = table1.addColumn("table1_a", String.class);
+		Table table2 = new Table("table2");
+		Column table2A = table1.addColumn("table2_a", String.class);
+		Table table3 = new Table("table3");
+		Column table3A = table1.addColumn("table3_a", String.class);
+		// we create a union that will be joined to a query of a union to check that the algorithm goes in depth 
+		Table table4 = new Table("table4");
+		Column table4A = table1.addColumn("table4_a", String.class);
+		Union table5 = new Union(
+				QueryEase.select(table4A, "a").from(table4).innerJoin(table3, "whatever join").getQuery()
+		);
+		Union union = new Union(
+				QueryEase.select(table1A, "a").from(table1).getQuery(),
+				QueryEase.select(table2A, "a").from(table2)
+						.innerJoin(table3, "whatever join 1")
+						.leftOuterJoin(table5.asPseudoTable("a sub pseudo table"), "whatever join 2")
+						.getQuery()
+		);
+		Set<Table> foundTables = testInstance.lookupTable(union.asPseudoTable("a pseudo table"));
+		assertThat(foundTables).containsExactlyInAnyOrder(table1, table2, table3, table4);
 	}
 	
 	private static class Printer<E> extends StandardRepresentation {

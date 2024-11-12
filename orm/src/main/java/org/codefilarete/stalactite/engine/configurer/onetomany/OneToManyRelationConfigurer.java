@@ -9,7 +9,6 @@ import org.codefilarete.stalactite.engine.ColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.ForeignKeyNamingStrategy;
 import org.codefilarete.stalactite.engine.JoinColumnNamingStrategy;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
-import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.configurer.CascadeConfigurationResult;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
@@ -37,7 +36,6 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 	private final ConfiguredRelationalPersister<SRC, SRCID> sourcePersister;
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final PersisterRegistry persisterRegistry;
 	private final ForeignKeyNamingStrategy foreignKeyNamingStrategy;
 	private final JoinColumnNamingStrategy joinColumnNamingStrategy;
 	private final AssociationTableNamingStrategy associationTableNamingStrategy;
@@ -47,7 +45,6 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 									   ConfiguredRelationalPersister<SRC, SRCID> sourcePersister,
 									   Dialect dialect,
 									   ConnectionConfiguration connectionConfiguration,
-									   PersisterRegistry persisterRegistry,
 									   ForeignKeyNamingStrategy foreignKeyNamingStrategy,
 									   JoinColumnNamingStrategy joinColumnNamingStrategy,
 									   AssociationTableNamingStrategy associationTableNamingStrategy,
@@ -56,7 +53,6 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 		this.sourcePersister = sourcePersister;
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
-		this.persisterRegistry = persisterRegistry;
 		
 		this.foreignKeyNamingStrategy = foreignKeyNamingStrategy;
 		this.joinColumnNamingStrategy = joinColumnNamingStrategy;
@@ -67,7 +63,7 @@ public class OneToManyRelationConfigurer<SRC, TRGT, SRCID, TRGTID, C extends Col
 	public <T extends Table<T>> void configure(PersisterBuilderImpl<TRGT, TRGTID> targetPersisterBuilder) {
 		Table targetTable = determineTargetTable(oneToManyRelation);
 		ConfiguredRelationalPersister<TRGT, TRGTID> targetPersister = targetPersisterBuilder
-				.build(dialect, connectionConfiguration, persisterRegistry, targetTable);
+				.build(dialect, connectionConfiguration, targetTable);
 		
 		configure(targetPersister);
 	}

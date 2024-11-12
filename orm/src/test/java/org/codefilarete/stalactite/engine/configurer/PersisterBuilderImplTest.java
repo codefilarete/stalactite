@@ -62,7 +62,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -537,13 +536,13 @@ public class PersisterBuilderImplTest {
 																			 .map(Country::getName)
 																			 .map(Country::getDescription));
 			ConnectionConfigurationSupport connectionConfiguration = new ConnectionConfigurationSupport(new CurrentThreadConnectionProvider(dataSource), 10);
-			assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, Mockito.mock(PersisterRegistry.class), null))
+			assertThatThrownBy(() -> testInstance.build(DIALECT, connectionConfiguration, null))
 				.isInstanceOf(UnsupportedOperationException.class)
 				.hasMessage("Version control is only supported with o.c.s.s.ConnectionProvider that also implements o.c.s.s.RollbackObserver");
 		}
 		
 		@Test
-		void build_returnsAlreadyExisintgPersister() {
+		void build_twiceForSameClass_throwsException() {
 			PersisterBuilderImpl testInstance = new PersisterBuilderImpl(
 				entityBuilder(Car.class, Identifier.LONG_TYPE)
 					.map(Car::getModel)
@@ -556,7 +555,10 @@ public class PersisterBuilderImplTest {
 			
 			ConnectionProvider connectionProviderMock = mock(ConnectionProvider.class, withSettings().defaultAnswer(Answers.RETURNS_MOCKS));
 			PersistenceContext persistenceContext = new PersistenceContext(connectionProviderMock, DIALECT);
-			assertThat(testInstance.build(persistenceContext)).isSameAs(testInstance.build(persistenceContext));
+			testInstance.build(persistenceContext);
+			assertThatCode(() -> testInstance.build(persistenceContext))
+					.isInstanceOf(UnsupportedOperationException.class)
+					.hasMessage("Persister already exists for class o.c.s.e.m.Car");
 		}
 		
 		@Test
