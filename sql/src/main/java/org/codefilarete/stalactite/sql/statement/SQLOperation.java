@@ -211,7 +211,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		Map<ParamType, Object> loggedValues = new HashMap<>(values);
 		loggedValues.entrySet().forEach(e -> {
 			if (notLoggedParams.contains(e.getKey())) {
-				// we change logged value so param is still present in mapped params, showing that it hasn't desappeared
+				// we change logged value so param is still present in mapped params, showing that it hasn't disappeared
 				e.setValue("X-masked value-X");
 			}
 		});
@@ -256,7 +256,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		 * Please note also that this behavior defers from {@link #onValueSet(Object, Object)} where the value is "readonly" : since it is passed
 		 * by reference (Java language), simple (non complex) types are considered readonly.
 		 * 
-		 * <strong>Be aware that sensible values are not filtered</strong> at the opposit to logged ones hence you get same values passed to SQL
+		 * <strong>Be aware that sensible values are not filtered</strong> at the opposite to logged ones hence you get same values passed to SQL
 		 * order, DON'T LOG THEM.
 		 * 
 		 * @param values
@@ -267,7 +267,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 		
 		/**
 		 * Called when the {@link SQLOperation#setValue(Object, Object)} is called.
-		 * <strong>Be aware that sensible values are not filtered</strong> at the opposit to logged ones hence you get same values passed to SQL
+		 * <strong>Be aware that sensible values are not filtered</strong> at the opposite to logged ones hence you get same values passed to SQL
 		 * order, DON'T LOG THEM.
 		 * 
 		 * @param param

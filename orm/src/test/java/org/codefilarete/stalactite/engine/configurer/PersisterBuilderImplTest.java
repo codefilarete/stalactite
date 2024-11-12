@@ -169,7 +169,7 @@ public class PersisterBuilderImplTest {
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
 				.setTable(dummyTable)
-				.mapEntityConfigurationPerTable();
+				.mapEntityConfigurationToTable();
 		
 		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
 		
@@ -211,7 +211,7 @@ public class PersisterBuilderImplTest {
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
 				.setTable(dummyTable)
-				.mapEntityConfigurationPerTable();
+				.mapEntityConfigurationToTable();
 		
 		MappingPerTable<?> mappingPerTable = testInstance.collectPropertiesMappingFromInheritance();
 		
@@ -264,7 +264,7 @@ public class PersisterBuilderImplTest {
 		
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
 				.setTable(carTable)
-				.mapEntityConfigurationPerTable();
+				.mapEntityConfigurationToTable();
 		
 		MappingPerTable<?> map = testInstance.collectPropertiesMappingFromInheritance();
 		
@@ -338,7 +338,7 @@ public class PersisterBuilderImplTest {
 		Table dummyTable = new Table("Car");
 		testInstance.setColumnBinderRegistry(DIALECT.getColumnBinderRegistry())
 				.setTable(dummyTable)
-				.mapEntityConfigurationPerTable();
+				.mapEntityConfigurationToTable();
 		
 		MappingPerTable map = testInstance.collectPropertiesMappingFromInheritance();
 		
@@ -374,7 +374,7 @@ public class PersisterBuilderImplTest {
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
 				.setTable(mainTable);
-		testInstance.mapEntityConfigurationPerTable();
+		testInstance.mapEntityConfigurationToTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -406,7 +406,7 @@ public class PersisterBuilderImplTest {
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
 				.setTable(mainTable);
-		testInstance.mapEntityConfigurationPerTable();
+		testInstance.mapEntityConfigurationToTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -430,7 +430,7 @@ public class PersisterBuilderImplTest {
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
 				.setTable(mainTable);
-		testInstance.mapEntityConfigurationPerTable();
+		testInstance.mapEntityConfigurationToTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
 		Function<Column, String> columnPrinter = ToStringBuilder.of(", ",
@@ -453,7 +453,7 @@ public class PersisterBuilderImplTest {
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
 				.setTable(mainTable);
-		testInstance.mapEntityConfigurationPerTable();
+		testInstance.mapEntityConfigurationToTable();
 		testInstance.addIdentifyingPrimarykey(AbstractIdentification.forSingleKey(identifyingConfiguration));
 		
 		Table tableB = new Table("Vehicle");
@@ -492,7 +492,7 @@ public class PersisterBuilderImplTest {
 		Table mainTable = new Table("AbstractVehicle");
 		PersisterBuilderImpl testInstance = new PersisterBuilderImpl(identifyingConfiguration)
 				.setTable(mainTable);
-		testInstance.mapEntityConfigurationPerTable();
+		testInstance.mapEntityConfigurationToTable();
 		
 		Table tableB = new Table("Vehicle");
 		Table tableC = new Table("Car");

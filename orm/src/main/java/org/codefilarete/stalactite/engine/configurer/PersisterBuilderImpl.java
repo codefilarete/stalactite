@@ -195,7 +195,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 																	 PersisterRegistry persisterRegistry) {
 		init(dialect.getColumnBinderRegistry(), table);
 		
-		mapEntityConfigurationPerTable();
+		mapEntityConfigurationToTable();
 		
 		AbstractIdentification<C, I> identification = determineIdentification();
 		
@@ -481,7 +481,12 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		});
 	}
 	
-	void mapEntityConfigurationPerTable() {
+	/**
+	 * Feeds {@link this#tableMap} with inherited {@link EntityMappingConfiguration} to their {@link Table}.
+	 * A table may be reused in case of inheritance configuration presence.
+	 * Tables are took from given configurations, or created by using the {@link org.codefilarete.stalactite.engine.TableNamingStrategy}
+	 */
+	void mapEntityConfigurationToTable() {
 		visitInheritedEntityMappingConfigurations(new Consumer<EntityMappingConfiguration>() {
 			
 			private Table currentTable = PersisterBuilderImpl.this.table;
