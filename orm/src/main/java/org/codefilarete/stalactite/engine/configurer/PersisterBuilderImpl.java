@@ -219,7 +219,7 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 		
 		applyExtraTableConfigurations(identification, mainPersister, dialect, connectionConfiguration);
 		
-		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, persisterRegistry, mainPersister,
+		RelationConfigurer<C, I, ?> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, mainPersister,
 				namingConfiguration);
 		
 		PersisterBuilderContext.CURRENT.get().runInContext(entityMappingConfiguration, () -> {

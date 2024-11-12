@@ -1,36 +1,25 @@
 package org.codefilarete.stalactite.engine.configurer.polymorphism;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.codefilarete.reflection.AccessorDefinition;
 import org.codefilarete.stalactite.engine.MappingConfigurationException;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy;
+import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification;
 import org.codefilarete.stalactite.engine.configurer.AbstractIdentification.Identification;
 import org.codefilarete.stalactite.engine.configurer.NamingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl;
-import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
-import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
-import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelationConfigurer;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelationConfigurer;
+import org.codefilarete.stalactite.engine.configurer.RelationConfigurer;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
-import org.codefilarete.stalactite.engine.runtime.cycle.OneToOneCycleConfigurer;
 import org.codefilarete.stalactite.sql.ConnectionConfiguration;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.collection.Arrays;
-import org.codefilarete.tool.collection.Iterables;
 
 /**
  * @author Guillaume Mary
@@ -108,7 +97,7 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 				}
 				
 				// We register relation of subclass persister to take into account its specific one-to-ones, one-to-manys and element collection mapping
-				registerRelationCascades(
+				this.<D>registerRelationCascades(
 						subConfiguration,
 						dialect,
 						connectionConfiguration,
@@ -160,80 +149,12 @@ abstract class AbstractPolymorphicPersisterBuilder<C, I, T extends Table<T>> imp
 		return polymorphismPersisterBuilder.build(dialect, connectionConfiguration, persisterRegistry);
 	}
 	
-	private <D extends C, TRGT> void registerRelationCascades(SubEntityMappingConfiguration<D> entityMappingConfiguration,
-															  Dialect dialect,
-															  ConnectionConfiguration connectionConfiguration,
-															  ConfiguredRelationalPersister<D, I> subEntityPersister) {
-		
-		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
-		
-		for (OneToOneRelation<D, TRGT, Object> oneToOneRelation : (List<OneToOneRelation<D, TRGT, Object>>) (List) entityMappingConfiguration.getOneToOnes()) {
-			OneToOneRelationConfigurer<D, TRGT, I, Object> oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(
-					oneToOneRelation,
-					subEntityPersister,
-					dialect,
-					connectionConfiguration,
-					this.namingConfiguration.getForeignKeyNamingStrategy(),
-					this.namingConfiguration.getJoinColumnNamingStrategy());
-			
-			String relationName = AccessorDefinition.giveDefinition(oneToOneRelation.getTargetProvider()).getName();
-			
-			if (currentBuilderContext.isCycling(oneToOneRelation.getTargetMappingConfiguration())) {
-				// cycle detected
-				// we had a second phase load because cycle can hardly be supported by simply joining things together because at one time we will
-				// fall into infinite loop (think to SQL generation of a cycling graph ...)
-				Class<TRGT> targetEntityType = oneToOneRelation.getTargetMappingConfiguration().getEntityType();
-				// adding the relation to an eventually already existing cycle configurer for the entity
-				OneToOneCycleConfigurer<TRGT> cycleSolver = (OneToOneCycleConfigurer<TRGT>)
-						Iterables.find(currentBuilderContext.getBuildLifeCycleListeners(), p -> p instanceof OneToOneCycleConfigurer && ((OneToOneCycleConfigurer<?>) p).getEntityType() == targetEntityType);
-				if (cycleSolver == null) {
-					cycleSolver = new OneToOneCycleConfigurer<>(targetEntityType);
-					currentBuilderContext.addBuildLifeCycleListener(cycleSolver);
-				}
-				cycleSolver.addCycleSolver(relationName, oneToOneRelationConfigurer);
-			} else {
-				oneToOneRelationConfigurer.configure(relationName, new PersisterBuilderImpl<>(oneToOneRelation.getTargetMappingConfiguration()), oneToOneRelation.isFetchSeparately());
-			}
-		}
-		for (OneToManyRelation<D, ?, ?, ? extends Collection> oneToManyRelation : entityMappingConfiguration.getOneToManys()) {
-			OneToManyRelationConfigurer oneToManyRelationConfigurer = new OneToManyRelationConfigurer<>(oneToManyRelation, subEntityPersister,
-					dialect,
-					connectionConfiguration,
-					this.namingConfiguration.getForeignKeyNamingStrategy(),
-					this.namingConfiguration.getJoinColumnNamingStrategy(),
-					this.namingConfiguration.getAssociationTableNamingStrategy(),
-					this.namingConfiguration.getIndexColumnNamingStrategy());
-			if (currentBuilderContext.isCycling(oneToManyRelation.getTargetMappingConfiguration())) {
-				// cycle detected
-				// we add a second phase load because cycle can hardly be supported by simply joining things together, in particular due to that
-				// Query and SQL generation don't support several instances of table and columns in them (aliases generation must be enhanced), and
-				// overall column reading will be messed up because of that (to avoid all of this we should have mapping strategy clones)
-				PostInitializer postInitializer = new PostInitializer(oneToManyRelation.getTargetMappingConfiguration().getEntityType()) {
-					@Override
-					public void consume(ConfiguredRelationalPersister targetPersister) {
-						oneToManyRelationConfigurer.configure((PersisterBuilderImpl) targetPersister);
-					}
-				};
-				PersisterBuilderContext.CURRENT.get().addBuildLifeCycleListener(postInitializer);
-			} else {
-				oneToManyRelationConfigurer.configure(
-						new PersisterBuilderImpl<>(oneToManyRelation.getTargetMappingConfiguration()));
-			}
-		}
-		// Please note that as a difference with PersisterBuilderImpl, we don't need to register relation in select because polymorphic selection
-		// is made in two phases, see JoinTablePolymorphismEntitySelectExecutor (instantiated in JoinTablePolymorphismPersister)
-		
-		// taking element collections into account
-		for (ElementCollectionRelation<D, ?, ? extends Collection> elementCollection : entityMappingConfiguration.getElementCollections()) {
-			ElementCollectionRelationConfigurer<D, ?, I, ? extends Collection> elementCollectionRelationConfigurer = new ElementCollectionRelationConfigurer<>(
-					elementCollection,
-					subEntityPersister,
-					this.namingConfiguration.getForeignKeyNamingStrategy(),
-					this.namingConfiguration.getColumnNamingStrategy(),
-					this.namingConfiguration.getElementCollectionTableNamingStrategy(),
-					dialect,
-					connectionConfiguration);
-			elementCollectionRelationConfigurer.configure();
-		}
+	private <D extends C> void registerRelationCascades(RelationalMappingConfiguration<D> entityMappingConfiguration,
+														Dialect dialect,
+														ConnectionConfiguration connectionConfiguration,
+														ConfiguredRelationalPersister<D, I> subEntityPersister) {
+		// Note that for now polymorphism configuration doesn't support many-to-many nor Map relation
+		RelationConfigurer<D, I, T> relationConfigurer = new RelationConfigurer<>(dialect, connectionConfiguration, subEntityPersister, namingConfiguration);
+		relationConfigurer.configureRelations(entityMappingConfiguration);
 	}
 }

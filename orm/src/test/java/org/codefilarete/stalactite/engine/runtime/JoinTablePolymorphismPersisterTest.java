@@ -8,8 +8,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -18,17 +16,11 @@ import java.util.Set;
 
 import org.codefilarete.reflection.Accessors;
 import org.codefilarete.reflection.PropertyAccessor;
-import org.codefilarete.stalactite.engine.EmbeddableMappingConfiguration;
 import org.codefilarete.stalactite.engine.InMemoryCounterIdentifierGenerator;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
-import org.codefilarete.stalactite.engine.PolymorphismPolicy;
 import org.codefilarete.stalactite.engine.PolymorphismPolicy.JoinTablePolymorphism;
-import org.codefilarete.stalactite.engine.SubEntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderContext;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.BuildLifeCycleListener;
-import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.engine.runtime.RelationalEntityPersister.ExecutableEntityQueryCriteria;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityMerger.EntityMergerAdapter;
@@ -258,68 +250,8 @@ class JoinTablePolymorphismPersisterTest {
 		subclasses.put(TotoB.class, totoBIdentifierConfiguredPersister);
 		// We specify discriminator as an Integer because it's the same type as other tested columns and simplify data capture and comparison
 		JoinTablePolymorphism<AbstractToto> polymorphismPolicy = new JoinTablePolymorphism<>();
-		polymorphismPolicy.addSubClass(new SubEntityMappingConfiguration<TotoA>() {
-			@Override
-			public Class<TotoA> getEntityType() {
-				return TotoA.class;
-			}
-			
-			@Override
-			public EmbeddableMappingConfiguration<TotoA> getPropertiesMapping() {
-				return null;
-			}
-			
-			@Override
-			public <TRGT, TRGTID> List<OneToOneRelation<TotoA, TRGT, TRGTID>> getOneToOnes() {
-				return Collections.emptyList();
-			}
-			
-			@Override
-			public <TRGT, TRGTID> List<OneToManyRelation<TotoA, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
-				return Collections.emptyList();
-			}
-			
-			@Override
-			public List<ElementCollectionRelation<TotoA, ?, ? extends Collection>> getElementCollections() {
-				return Collections.emptyList();
-			}
-			
-			@Override
-			public PolymorphismPolicy<TotoA> getPolymorphismPolicy() {
-				return null;
-			}
-		}, totoATable);
-		polymorphismPolicy.addSubClass(new SubEntityMappingConfiguration<TotoB>() {
-			@Override
-			public Class<TotoB> getEntityType() {
-				return TotoB.class;
-			}
-			
-			@Override
-			public EmbeddableMappingConfiguration<TotoB> getPropertiesMapping() {
-				return null;
-			}
-			
-			@Override
-			public <TRGT, TRGTID> List<OneToOneRelation<TotoB, TRGT, TRGTID>> getOneToOnes() {
-				return Collections.emptyList();
-			}
-			
-			@Override
-			public <TRGT, TRGTID> List<OneToManyRelation<TotoB, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys() {
-				return Collections.emptyList();
-			}
-			
-			@Override
-			public List<ElementCollectionRelation<TotoB, ?, ? extends Collection>> getElementCollections() {
-				return Collections.emptyList();
-			}
-			
-			@Override
-			public PolymorphismPolicy<TotoB> getPolymorphismPolicy() {
-				return null;
-			}
-		}, totoBTable);
+		polymorphismPolicy.addSubClass(new EmptySubEntityMappingConfiguration<>(TotoA.class), totoATable);
+		polymorphismPolicy.addSubClass(new EmptySubEntityMappingConfiguration<>(TotoB.class), totoBTable);
 		
 		subclasses.values().forEach(subclassPersister -> {
 			subclassPersister.getEntityJoinTree().addMergeJoin(EntityJoinTree.ROOT_STRATEGY_NAME,

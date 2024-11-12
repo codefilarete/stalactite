@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -10,11 +9,6 @@ import java.util.function.Function;
 import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
-import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
-import org.codefilarete.stalactite.engine.configurer.manytomany.ManyToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.map.MapRelation;
-import org.codefilarete.stalactite.engine.configurer.onetomany.OneToManyRelation;
-import org.codefilarete.stalactite.engine.configurer.onetoone.OneToOneRelation;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.ReadOnlyIterator;
@@ -24,9 +18,7 @@ import org.codefilarete.tool.collection.ReadOnlyIterator;
  * 
  * @author Guillaume Mary
  */
-public interface EntityMappingConfiguration<C, I> {
-	
-	Class<C> getEntityType();
+public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfiguration<C> {
 	
 	@Nullable
 	EntityFactoryProvider<C, Table> getEntityFactoryProvider();
@@ -39,16 +31,6 @@ public interface EntityMappingConfiguration<C, I> {
 	
 	EmbeddableMappingConfiguration<C> getPropertiesMapping();
 	
-	<TRGT, TRGTID> List<OneToOneRelation<C, TRGT, TRGTID>> getOneToOnes();
-	
-	<TRGT, TRGTID> List<OneToManyRelation<C, TRGT, TRGTID, ? extends Collection<TRGT>>> getOneToManys();
-	
-	<TRGT, TRGTID> List<ManyToManyRelation<C, TRGT, TRGTID, Collection<TRGT>, Collection<C>>> getManyToManyRelations();
-	
-	List<ElementCollectionRelation<C, ?, ? extends Collection>> getElementCollections();
-	
-	List<MapRelation<C, ?, ?, ? extends Map>> getMaps();
-		
 	VersioningStrategy getOptimisticLockOption();
 	
 	/** Gives inheritance information if inheritance has been defined, else returns null */

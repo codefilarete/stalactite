@@ -8,6 +8,7 @@ import org.codefilarete.reflection.ReversibleAccessor;
 import org.codefilarete.stalactite.engine.EntityMappingConfiguration;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
 import org.codefilarete.stalactite.engine.PersisterRegistry;
+import org.codefilarete.stalactite.engine.RelationalMappingConfiguration;
 import org.codefilarete.stalactite.engine.configurer.PersisterBuilderImpl.PostInitializer;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelation;
 import org.codefilarete.stalactite.engine.configurer.elementcollection.ElementCollectionRelationConfigurer;
@@ -46,28 +47,26 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 	
 	private final Dialect dialect;
 	private final ConnectionConfiguration connectionConfiguration;
-	private final PersisterRegistry persisterRegistry;
-	private final SimpleRelationalEntityPersister<C, I, T> sourcePersister;
+	private final ConfiguredRelationalPersister<C, I> sourcePersister;
 	private final NamingConfiguration namingConfiguration;
 	
 	public RelationConfigurer(Dialect dialect,
 							  ConnectionConfiguration connectionConfiguration,
-							  PersisterRegistry persisterRegistry,
-							  SimpleRelationalEntityPersister<C, I, T> sourcePersister,
+							  ConfiguredRelationalPersister<C, I> sourcePersister,
 							  NamingConfiguration namingConfiguration) {
 		this.dialect = dialect;
 		this.connectionConfiguration = connectionConfiguration;
-		this.persisterRegistry = persisterRegistry;
 		this.sourcePersister = sourcePersister;
 		this.namingConfiguration = namingConfiguration;
 	}
 	
-	<TRGT, TRGTID> void configureRelations(EntityMappingConfiguration<C, I> entityMappingConfiguration) {
+	public <TRGT, TRGTID> void configureRelations(RelationalMappingConfiguration<C> entityMappingConfiguration) {
 		
 		PersisterBuilderContext currentBuilderContext = PersisterBuilderContext.CURRENT.get();
 		
 		for (OneToOneRelation<C, TRGT, TRGTID> oneToOneRelation : entityMappingConfiguration.<TRGT, TRGTID>getOneToOnes()) {
-			OneToOneRelationConfigurer<C, TRGT, I, TRGTID> oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(oneToOneRelation,
+			OneToOneRelationConfigurer<C, TRGT, I, TRGTID> oneToOneRelationConfigurer = new OneToOneRelationConfigurer<>(
+					oneToOneRelation,
 					sourcePersister,
 					dialect,
 					connectionConfiguration,
@@ -270,7 +269,8 @@ public class RelationConfigurer<C, I, T extends Table<T>> {
 		@Override
 		public void consume(ConfiguredRelationalPersister<TRGT, ?> targetPersister) {
 			// we must dynamically retrieve the persister into the registry because sourcePersister might not be the
-			// final / registered one in particular in case of polymorphism 
+			// final / registered one in particular in case of polymorphism
+			PersisterRegistry persisterRegistry = PersisterBuilderContext.CURRENT.get().getPersisterRegistry();
 			ConfiguredRelationalPersister<C, I> registeredSourcePersister = ((ConfiguredRelationalPersister<C, I>) persisterRegistry.getPersister(sourcePersister.getClassToPersist()));
 			registeredSourcePersister.registerRelation(targetEntityAccessor, targetPersister);
 			
