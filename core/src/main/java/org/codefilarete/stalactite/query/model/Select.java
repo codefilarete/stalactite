@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.tool.collection.KeepOrderMap;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.reflect.MethodDispatcher;
@@ -72,18 +71,13 @@ public class Select implements FluentSelect<Select> {
 	}
 	
 	/**
-	 * Gives column aliases. If a {@link Column} is not present in result, then it means it has no alias
+	 * Gives column aliases. If a {@link Selectable} refers to a null value in returned {@link Map}, it means it has no alias
 	 * 
-	 * @return {@link Column} aliases of this instance, an empty {@link Map} if no {@link Column} was added to this instance
+	 * @return {@link Selectable} aliases of this instance
 	 */
+	@Override
 	public Map<Selectable<?>, String> getAliases() {
-		// TODO : remove this computation by a storage of aliased to avoid this algorithm at each call and complexity about ConcurrentModificationException
-		KeepOrderMap<Selectable<?>, String> result = new KeepOrderMap<>();
-		// don't use constructor parameter instead of putAll(..) because it gives it as surrogate, then, since we remove elements afterward,
-		// it throws ConcurrentModificationException while rendering SQL which need iteration over elements and access to aliases
-		result.putAll(columns);
-		result.values().remove(null);
-		return result;
+		return new KeepOrderMap<>(columns);
 	}
 	
 	public boolean isDistinct() {

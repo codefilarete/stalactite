@@ -1,7 +1,6 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Arrays;
-import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.model.OrderByChain;
@@ -20,9 +19,9 @@ import org.codefilarete.stalactite.sql.ddl.structure.Column;
 class ColumnCloneAwareOrderBy implements OrderByChain {
 	
 	private final OrderByChain delegate;
-	private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
+	private final Map<Selectable<?>, Selectable<?>> columnClones;
 	
-	ColumnCloneAwareOrderBy(FluentOrderByClause delegate, IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
+	ColumnCloneAwareOrderBy(FluentOrderByClause delegate, Map<Selectable<?>, Selectable<?>> columnClones) {
 		this.delegate = delegate;
 		this.columnClones = columnClones;
 	}

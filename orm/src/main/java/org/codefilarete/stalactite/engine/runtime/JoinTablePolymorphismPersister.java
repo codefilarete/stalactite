@@ -20,7 +20,6 @@ import org.codefilarete.stalactite.engine.listener.DeleteByIdListener;
 import org.codefilarete.stalactite.engine.listener.DeleteListener;
 import org.codefilarete.stalactite.engine.listener.InsertListener;
 import org.codefilarete.stalactite.engine.listener.PersistListener;
-import org.codefilarete.stalactite.engine.listener.PersisterListener;
 import org.codefilarete.stalactite.engine.listener.PersisterListenerCollection;
 import org.codefilarete.stalactite.engine.listener.SelectListener;
 import org.codefilarete.stalactite.engine.listener.UpdateByIdListener;
@@ -360,7 +359,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			});
 			
 			// adding second phase loader
-			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, CURRENT_2PHASES_LOAD_CONTEXT));
 			
 			return createdJoinName;
 		} else {
@@ -372,7 +371,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 					rightColumn,
 					new HashSet<>(this.subEntitiesPersisters.values()),
 					beanRelationFixer,
-					null);
+					duplicateIdentifierProvider);
 		}
 	}
 	
@@ -384,7 +383,7 @@ public class JoinTablePolymorphismPersister<C, I> extends AbstractPolymorphismPe
 			Key<T2, JOINID> rightJoinColumn,
 			Set<ConfiguredRelationalPersister<? extends U, ID>> subPersisters,
 			BeanRelationFixer<SRC, U> beanRelationFixer,
-			@Nullable BiFunction<Row, ColumnedRow, ID> relationIdentifierProvider) {
+			@Nullable BiFunction<Row, ColumnedRow, Object> relationIdentifierProvider) {
 		
 		Holder<JoinTablePolymorphicRelationJoinNode<U, T1, T2, JOINID, ID>> createdJoinHolder = new Holder<>();
 		String relationJoinName = entityJoinTree.addJoin(leftStrategyName, parent -> {

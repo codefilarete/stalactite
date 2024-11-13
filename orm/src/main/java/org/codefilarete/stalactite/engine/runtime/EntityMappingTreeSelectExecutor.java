@@ -79,7 +79,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 	private final DMLGenerator dmlGenerator;
 	private String rawQuery;
 	private EntityTreeQuery<C> entityTreeQuery;
-	private final ParameterBinderIndexFromMap<Column<T, Object>, ParameterBinder> parameterBinderForPKInSelect;
+	private final ParameterBinderIndexFromMap<Column<T, Object>, ParameterBinder<?>> parameterBinderForPKInSelect;
 	
 	public EntityMappingTreeSelectExecutor(EntityMapping<C, I, T> entityMapping,
 										   Dialect dialect,
@@ -225,13 +225,13 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 			InternalExecutor executor = newInternalExecutor(entityTreeQuery);
 			if (!parcels.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values
-				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
+				ParameterizedWhere<T> tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), blockSize);
 				result.addAll(executor.execute(rawQuery + " where " + identifierCriteria, parcels, tableParameterizedWhere.getColumnToIndex()));
 			}
 			if (!lastBlock.isEmpty()) {
 				// change parameter mark count to adapt "in" operator values, we must clear previous where clause
 				identifierCriteria.getAppender().setLength(0);
-				ParameterizedWhere tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), lastBlock.size());
+				ParameterizedWhere<T> tableParameterizedWhere = dmlGenerator.appendTupledWhere(identifierCriteria, primaryKey.getColumns(), lastBlock.size());
 				result.addAll(executor.execute(rawQuery + " where " + identifierCriteria, java.util.Collections.singleton(lastBlock), tableParameterizedWhere.getColumnToIndex()));
 			}
 		}
@@ -255,7 +255,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		// We store information to make this instance reusable with different parameters to execute(..) 
 		
 		private final EntityTreeInflater<C> entityTreeInflater;
-		private final Map<String, ParameterBinder> selectParameterBinders;
+		private final Map<String, ParameterBinder<?>> selectParameterBinders;
 		private final SelectExecutor.InternalExecutor executor;
 		private final ConnectionProvider connectionProvider;
 		
@@ -277,7 +277,7 @@ public class EntityMappingTreeSelectExecutor<C, I, T extends Table<T>> implement
 		List<C> execute(String sql, Collection<? extends List<I>> idsParcels, Map<Column<T, Object>, int[]> inOperatorValueIndexes) {
 			// binders must be exactly the ones necessary to the request, else an IllegalArgumentException is thrown at execution time
 			// so we have to extract them from what is in the request : only primary key columns are parameterized 
-			ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<>(
+			ColumnParameterizedSelect<T> preparedSelect = new ColumnParameterizedSelect<T>(
 					sql,
 					inOperatorValueIndexes,
 					parameterBinderForPKInSelect,

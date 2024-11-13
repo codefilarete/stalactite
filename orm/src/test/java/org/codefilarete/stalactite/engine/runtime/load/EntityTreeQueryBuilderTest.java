@@ -175,12 +175,10 @@ class EntityTreeQueryBuilderTest {
 		QuerySQLBuilder sqlQueryBuilder = new QuerySQLBuilderFactory(new DefaultTypeMapping(), new ColumnBinderRegistry()).queryBuilder(treeQuery.getQuery());
 		assertThat(sqlQueryBuilder.toSQL()).isEqualTo(expected);
 		
-		IdentityMap<Column, String> expectedColumnClones = new IdentityMap<>();
+		Map<Column, String> expectedColumnClones = new HashMap<>();
 		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), value));
 		
-		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-		assertThat(treeQuery.getColumnAliases().getDelegate())
-				.isEqualTo(expectedColumnClones.getDelegate());
+		assertThat(treeQuery.getColumnAliases()).isEqualTo(expectedColumnClones);
 	}
 	
 	private static Object[] inheritance_tablePerClass_2Classes_testData() {
@@ -297,15 +295,10 @@ class EntityTreeQueryBuilderTest {
 				.add(tutuPKColumn, "Tata_Tutu_id")
 				.add(tutuNameColumn, "Tata_Tutu_name");
 		
-		IdentityMap<Column, String> expectedColumnClones = new IdentityMap<>();
-		expectedAliases.entrySet().forEach(entry -> {
-			Column column = entry.getKey();
-			expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), entry.getValue());
-		});
+		Map<Column, String> expectedColumnClones = new HashMap<>();
+		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), value));
 		
-		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-		assertThat(entityTreeQuery.getColumnAliases().getDelegate())
-				.isEqualTo(expectedColumnClones.getDelegate());
+		assertThat(entityTreeQuery.getColumnAliases()).isEqualTo(expectedColumnClones);
 	}
 	
 	@Test
@@ -373,16 +366,11 @@ class EntityTreeQueryBuilderTest {
 				.add(tutuPKColumn, "Tutu_id")
 				.add(tutuNameColumn, "Tutu_name");
 		
-		IdentityMap<Column, String> expectedColumnClones = new IdentityMap<>();
-		expectedAliases.entrySet().forEach(entry -> {
-			Column column = entry.getKey();
-			expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), entry.getValue());
-		});
+		Map<Column, String> expectedColumnClones = new HashMap<>();
+		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), value));
 		
 		
-		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-		assertThat(entityTreeQuery.getColumnAliases().getDelegate())
-				.isEqualTo(expectedColumnClones.getDelegate());
+		assertThat(entityTreeQuery.getColumnAliases()).isEqualTo(expectedColumnClones);
 	}
 	
 	@Test
@@ -455,14 +443,9 @@ class EntityTreeQueryBuilderTest {
 				.add(titiPKColumn, "Titi_id")
 				.add(titiNameColumn, "Titi_name");
 		
-		IdentityMap<Column, String> expectedColumnClones = new IdentityMap<>();
-		expectedAliases.entrySet().forEach(entry -> {
-			Column column = entry.getKey();
-			expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), entry.getValue());
-		});
+		Map<Column, String> expectedColumnClones = new HashMap<>();
+		expectedAliases.forEach((column, value) -> expectedColumnClones.put(tableCloneMap.get(column.getTable()).findColumn(column.getName()), value));
 		
-		// because IdentityMap does not implement equals() / hashCode() (not need in production code) we compare them through their footprint
-		assertThat(entityTreeQuery.getColumnAliases().getDelegate())
-				.isEqualTo(expectedColumnClones.getDelegate());
+		assertThat(entityTreeQuery.getColumnAliases()).isEqualTo(expectedColumnClones);
 	}
 }

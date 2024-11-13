@@ -15,33 +15,33 @@ import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterI
  */
 public class ColumnParameterizedSelect<T extends Table<T>> extends ColumnParameterizedSQL<T> {
 	
-	private final ParameterBinderIndex<String, ParameterBinder> selectParameterBinders;
+	private final ParameterBinderIndex<String, ParameterBinder<?>> selectParameterBinders;
 	
 	public ColumnParameterizedSelect(String sql,
 									 Map<Column<T, Object>, int[]> columnIndexes,
-									 Map<Column<T, Object>, ParameterBinder> parameterBinders,
-									 Map<String, ParameterBinder> selectParameterBinders) {
+									 Map<Column<T, Object>, ParameterBinder<?>> parameterBinders,
+									 Map<String, ParameterBinder<?>> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinders);
 		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
 	}
 	
 	public ColumnParameterizedSelect(String sql,
 									 Map<Column<T, Object>, int[]> columnIndexes,
-									 PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder> parameterBinderProvider,
-									 Map<String, ParameterBinder> selectParameterBinders) {
+									 PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder<?>> parameterBinderProvider,
+									 Map<String, ParameterBinder<?>> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinderProvider);
 		this.selectParameterBinders = ParameterBinderIndex.fromMap(selectParameterBinders);
 	}
 	
 	public ColumnParameterizedSelect(String sql,
 									 Map<Column<T, Object>, int[]> columnIndexes,
-									 PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder> parameterBinderProvider,
-									 ParameterBinderIndex<String, ParameterBinder> selectParameterBinders) {
+									 PreparedStatementWriterIndex<Column<T, Object>, ParameterBinder<?>> parameterBinderProvider,
+									 ParameterBinderIndex<String, ParameterBinder<?>> selectParameterBinders) {
 		super(sql, columnIndexes, parameterBinderProvider);
 		this.selectParameterBinders = selectParameterBinders;
 	}
 	
-	public ParameterBinderIndex<String, ParameterBinder> getSelectParameterBinders() {
+	public ParameterBinderIndex<String, ParameterBinder<?>> getSelectParameterBinders() {
 		return selectParameterBinders;
 	}
 }

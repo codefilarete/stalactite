@@ -56,10 +56,7 @@ public class EntityTreeQueryBuilder<C> {
 	public EntityTreeQuery<C> buildSelectQuery() {
 		Query query = new Query();
 		
-		Map<String, ParameterBinder> selectParameterBinders = new HashMap<>();
-		
-		// Made IdentityMap to support presence of same table multiple times in query, in particular for cycling bean graph (tables are cloned)
-		IdentityMap<Selectable, String> columnAliases = new IdentityMap<>();
+		Map<String, ParameterBinder<?>> selectParameterBinders = new HashMap<>();
 		
 		// Mapping between original Column of table in joins and Column of cloned tables. Not perfect but made to solve
 		// issue with entity graph load with criteria (EntityPersister.selectWhere(..)) containing Columns
@@ -70,7 +67,7 @@ public class EntityTreeQueryBuilder<C> {
 		// Table clones storage per their initial node to manage several occurrence of same table in query
 		Map<JoinNode, Fromable> tableClonePerJoinNode = new HashMap<>();
 		
-		ResultHelper resultHelper = new ResultHelper(query, parameterBinderProvider, aliasBuilder, selectParameterBinders, columnAliases, tableClonePerJoinNode);
+		ResultHelper resultHelper = new ResultHelper(query, parameterBinderProvider, aliasBuilder, selectParameterBinders, tableClonePerJoinNode);
 		
 		/* In the following algorithm, node tables will be cloned and applied a unique alias to manage presence of twice the same table in different
 		 * nodes. This happens when tree contains sibling relations (like person->firstHouse and person->secondaryHouse), or, in a more general way,
@@ -97,10 +94,10 @@ public class EntityTreeQueryBuilder<C> {
 		resultHelper.applyJoinTree(this.tree);
 		
 		EntityTreeInflater<C> entityTreeInflater = new EntityTreeInflater<>(resultHelper.buildConsumerTree(tree),
-																			columnAliases,
+																			resultHelper.getColumnAliases(),
 																			Maps.innerJoinOnValuesAndKeys(tree.getJoinIndex(), tableClonePerJoinNode));
 		
-		return new EntityTreeQuery<>(query, selectParameterBinders, columnAliases, entityTreeInflater, columnClones);
+		return new EntityTreeQuery<>(query, selectParameterBinders, entityTreeInflater, columnClones);
 	}
 	
 	/**
@@ -145,7 +142,7 @@ public class EntityTreeQueryBuilder<C> {
 		private final Map<String, ResultSetReader> selectParameterBinders;
 		
 		// Made IdentityMap to support presence of same table multiple times in query, in particular for cycling bean graph (tables are cloned)
-		private final IdentityMap<Selectable, String> columnAliases;
+		private final IdentityMap<Selectable, String> columnAliases = new IdentityMap<>();
 		
 		// Table clones storage per their initial node to manage several occurrence of same table in query
 		private final Map<JoinNode, Fromable> tablePerJoinNode;
@@ -154,14 +151,16 @@ public class EntityTreeQueryBuilder<C> {
 							 ResultSetReaderRegistry parameterBinderProvider,
 							 AliasBuilder aliasBuilder,
 							 Map<String, ? extends ResultSetReader> selectParameterBinders,
-							 IdentityMap<Selectable, String> columnAliases,
 							 Map<JoinNode, Fromable> tablePerJoinNode) {
 			this.parameterBinderProvider = parameterBinderProvider;
 			this.aliasBuilder = aliasBuilder;
 			this.query = query;
 			this.selectParameterBinders = (Map<String, ResultSetReader>) selectParameterBinders;
-			this.columnAliases = columnAliases;
 			this.tablePerJoinNode = tablePerJoinNode;
+		}
+		
+		public IdentityMap<Selectable, String> getColumnAliases() {
+			return columnAliases;
 		}
 		
 		/**
@@ -260,25 +259,18 @@ public class EntityTreeQueryBuilder<C> {
 		private final Query query;
 		
 		/** Mapping between column name in select and their {@link ParameterBinder} for reading */
-		private final Map<String, ParameterBinder> selectParameterBinders;
-		
-		/**
-		 * Column aliases, made as a {@link IdentityMap} to handle {@link Column} clones presence in it
-		 */
-		private final IdentityMap<Selectable, String> columnAliases;
+		private final Map<String, ParameterBinder<?>> selectParameterBinders;
 		
 		private final EntityTreeInflater<C> entityTreeInflater;
 		
 		private final IdentityHashMap<Selectable<?>, Selectable<?>> columnClones;
 		
 		private EntityTreeQuery(Query query,
-								Map<String, ParameterBinder> selectParameterBinders,
-								IdentityMap<Selectable, String> columnAliases,
+								Map<String, ParameterBinder<?>> selectParameterBinders,
 								EntityTreeInflater<C> entityTreeInflater,
 								IdentityHashMap<Selectable<?>, Selectable<?>> columnClones) {
 			this.selectParameterBinders = selectParameterBinders;
 			this.query = query;
-			this.columnAliases = columnAliases;
 			this.entityTreeInflater = entityTreeInflater;
 			this.columnClones = columnClones;
 		}
@@ -287,12 +279,12 @@ public class EntityTreeQueryBuilder<C> {
 			return query;
 		}
 		
-		public Map<String, ParameterBinder> getSelectParameterBinders() {
+		public Map<String, ParameterBinder<?>> getSelectParameterBinders() {
 			return selectParameterBinders;
 		}
 		
-		public IdentityMap<Selectable, String> getColumnAliases() {
-			return columnAliases;
+		public Map<Selectable<?>, String> getColumnAliases() {
+			return query.getAliases();
 		}
 		
 		public EntityTreeInflater<C> getInflater() {
@@ -305,7 +297,7 @@ public class EntityTreeQueryBuilder<C> {
 		 * Made to allow external users to find the internal column (cloned one) for their original one
 		 * @return the mapping between original {@link Column} of {@link Table} in joins and {@link Column} of cloned {@link Table}s.
 		 */
-		public IdentityHashMap<Selectable<?>, Selectable<?>> getColumnClones() {
+		public Map<Selectable<?>, Selectable<?>> getColumnClones() {
 			return columnClones;
 		}
 	}

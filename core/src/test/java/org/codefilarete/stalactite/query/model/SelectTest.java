@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.query.model;
 
+import java.util.Map;
+
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.tool.collection.Maps;
@@ -27,11 +29,12 @@ class SelectTest {
 		);
 		testInstance.add("count(*)", Integer.class);
 		
-		assertThat(testInstance.getAliases()).isEqualTo(Maps.forHashMap(Column.class, String.class)
+		Map<Selectable<?>, String> expectedAliases = Maps.forHashMap((Class<Selectable<?>>) (Class) Selectable.class, String.class)
 				.add(abcColumn, "HeT4L")
 				.add(defColumn, "Gef75J")
 				.add(ghiColumn, "ae8MO")
-				.add(jklColumn, "47ETRg"));
+				.add(jklColumn, "47ETRg");
+		assertThat(testInstance.getAliases()).containsAllEntriesOf(expectedAliases);
 				
 	}
 }

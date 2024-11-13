@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query.builder;
 
-import java.util.IdentityHashMap;
+import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
@@ -113,7 +113,7 @@ public class QuerySQLBuilderFactory {
 		return queryBuilder(query);
 	}
 	
-	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where, IdentityHashMap<? extends Selectable<?>, ? extends Selectable<?>> columnClones) {
+	public QuerySQLBuilder queryBuilder(Query query, Iterable<AbstractCriterion> where, Map<? extends Selectable<?>, ? extends Selectable<?>> columnClones) {
 		if (where.iterator().hasNext()) {    // prevents from empty where causing malformed SQL
 			Criteria.copy(where, query.getWhere(), columnClones::get);
 		}

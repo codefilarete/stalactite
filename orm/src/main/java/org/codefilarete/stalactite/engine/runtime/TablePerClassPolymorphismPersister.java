@@ -397,7 +397,7 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 			});
 			
 			// adding second phase loader
-			((PersisterListener) sourcePersister).addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
+			sourcePersister.addSelectListener(new SecondPhaseRelationLoader<>(beanRelationFixer, DIFFERED_ENTITY_LOADER));
 			
 			// FIXME : we shouldn't return null here but a created join node name: which one since we have several table to join ? see joinAsOne(..) maybe ?
 			return null;

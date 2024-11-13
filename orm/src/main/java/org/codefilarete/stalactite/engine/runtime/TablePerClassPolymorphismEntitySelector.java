@@ -46,6 +46,7 @@ import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.VisibleForTesting;
+import org.codefilarete.tool.bean.Objects;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Collections;
 import org.codefilarete.tool.collection.Iterables;
@@ -182,8 +183,8 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		Query query = entityTreeQuery.getQuery();
 		
 		// we add union columns
-		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
-		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
+		Map<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
+		Map<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
 		originalColumnsToClones.putAll(columnClones);
 		originalColumnsToClones.putAll(singleLoadEntityJoinTree.getMainColumnToPseudoColumn());
 		originalColumnsToClones.put(DISCRIMINATOR_COLUMN, DISCRIMINATOR_COLUMN);
@@ -209,8 +210,8 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(phasedLoadEntityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
-		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
-		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
+		Map<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
+		Map<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
 		originalColumnsToClones.putAll(columnClones);
 		originalColumnsToClones.putAll(phasedLoadEntityJoinTree.getMainColumnToPseudoColumn());
 		// since criteria is passed to union subqueries, we don't need it into the entire query
@@ -227,21 +228,23 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		// selecting ids and their entity type
 		Map<String, ResultSetReader> columnReaders = new HashMap<>();
 		Map<Selectable<?>, String> aliases = query.getAliases();
-		aliases.forEach((selectable, s) -> {
+		aliases.forEach((selectable, alias) -> {
 			ResultSetReader<?> reader;
 			if (selectable instanceof Column) {
 				reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
 			} else {
 				reader = dialect.getColumnBinderRegistry().getReader(selectable.getJavaType());
 			}
-			columnReaders.put(s, reader);
+			// by default, in SQL, columns can be found through their name if they have no alias
+			// Note that this should only happen here for discriminator column because we didn't give it an alias (unnecessary)
+			alias = Objects.preventNull(alias, selectable.getExpression());
+			columnReaders.put(alias, reader);
 		});
 		// Faking that we put the main table column into the query to let external user look for main table Columns,
 		// else it's very difficult for them to look through Column object since query contains pseudo column in select due to union usage.
 		mainTable.getColumns().forEach(column -> {
 			aliases.put(column, column.getName());
 		});
-		columnReaders.put(DISCRIMINATOR_ALIAS, dialect.getColumnBinderRegistry().getBinder(String.class));
 		ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), originalColumnsToClones));
 		limitAwareConsumer.accept(query.orderBy());
@@ -287,8 +290,8 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		Query query = entityTreeQuery.getQuery();
 		query.getSelectSurrogate().setDistinct(distinct);
 		
-		IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
-		IdentityHashMap<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
+		Map<Selectable<?>, Selectable<?>> columnClones = entityTreeQuery.getColumnClones();
+		Map<Selectable<?>, Selectable<?>> originalColumnsToClones = new IdentityHashMap<>(columnClones.size());
 		originalColumnsToClones.putAll(columnClones);
 		originalColumnsToClones.putAll(singleLoadEntityJoinTree.getMainColumnToPseudoColumn());
 		// since criteria is passed to union subqueries, we don't need it into the entire query
