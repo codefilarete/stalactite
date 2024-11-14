@@ -47,8 +47,8 @@ import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.query.model.Union;
-import org.codefilarete.stalactite.query.model.Union.PseudoColumn;
-import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -579,8 +579,8 @@ public class TablePerClassPolymorphismPersister<C, I, T extends Table<T>> extend
 		// We take right join column from "union all" query : actually it must be taken from union made as a pseudo table
 		// because taking it directly from Union is incorrect since a Union doesn't implement Fromable (because it hasn't
 		// any alias)
-		UnionInFrom unionInFrom = subPersistersUnion.asPseudoTable("unioned_" + mainPersister.getClassToPersist().getSimpleName());
-		KeyBuilder<Fromable, JOINID> keyBuilder = Key.from(unionInFrom);
+		QueryInFrom queryInFrom = subPersistersUnion.asPseudoTable("unioned_" + mainPersister.getClassToPersist().getSimpleName());
+		KeyBuilder<Fromable, JOINID> keyBuilder = Key.from(queryInFrom);
 		rightJoinColumn.getColumns().forEach(column -> {
 			keyBuilder.addColumn(subPersistersUnion.registerColumn(column.getExpression(), column.getJavaType()));
 		});

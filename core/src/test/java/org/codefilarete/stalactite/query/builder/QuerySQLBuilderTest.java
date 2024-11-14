@@ -43,6 +43,10 @@ class QuerySQLBuilderTest {
 		Column colTataA = tableTata.addColumn("a", String.class);
 		Column colTataB = tableTata.addColumn("b", String.class);
 		
+		Query query1 = select(colTotoA, colTotoB).from(tableToto).getQuery();
+		Query query2 = select(colTataA, colTataB).from(tableTata).getQuery();
+		Union union = new Union(query1, query2);
+		
 		return new Object[][] {
 				{ select(colTotoA, colTotoB).from(tableToto),
 					"select Toto.a, Toto.b from Toto" },
@@ -60,6 +64,14 @@ class QuerySQLBuilderTest {
 						.setAlias(colTotoA.getTable(), "toto")
 						.setAlias(colTataB.getTable(), "tata"),
 						"select toto.a, tata.b from Toto as toto inner join Tata as tata on toto.a = tata.b" },
+				{ select(colTotoA, colTataB).from(query1.asPseudoTable()),
+						"select Toto.a, Tata.b from (select Toto.a, Toto.b from Toto)" },
+				{ select(colTotoA, colTataB).from(query1.asPseudoTable("a")),
+						"select Toto.a, Tata.b from (select Toto.a, Toto.b from Toto) as a" },
+				{ select(colTotoA, colTataB).from(union.asPseudoTable()),
+						"select Toto.a, Tata.b from (select Toto.a, Toto.b from Toto union all select Tata.a, Tata.b from Tata)" },
+				{ select(colTotoA, colTataB).from(union.asPseudoTable("a")),
+						"select Toto.a, Tata.b from (select Toto.a, Toto.b from Toto union all select Tata.a, Tata.b from Tata) as a" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1"),
 					"select Toto.a, Tata.b from Toto inner join Tata on x = y where Toto.b = 1" },
 				{ select(colTotoA, colTataB).from(tableToto, tableTata, "x = y").where(colTotoB, "= 1")
@@ -143,7 +155,7 @@ class QuerySQLBuilderTest {
 		if (queryStatement instanceof Query) {
 			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
 		} else if (queryStatement instanceof Union) {
-			return new UnionSQLBuilder((Union) queryStatement, querySQLBuilderFactory);
+			return new UnionSQLBuilder(queryStatement, querySQLBuilderFactory);
 		} else {
 			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
 		}
@@ -154,7 +166,7 @@ class QuerySQLBuilderTest {
 		if (queryStatement instanceof Query) {
 			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
 		} else if (queryStatement instanceof Union) {
-			return dialect.getUnionSQLBuilderFactory().unionBuilder((Union) queryStatement, querySQLBuilderFactory);
+			return dialect.getUnionSQLBuilderFactory().unionBuilder(queryStatement, querySQLBuilderFactory);
 		} else {
 			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
 		}

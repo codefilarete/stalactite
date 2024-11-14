@@ -103,11 +103,6 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 				}
 			}
 		} else {
-//			for (Entry<? extends Selectable<?>, String> aliasPawn : getAliases().entrySet()) {
-//				if (aliasPawn.getValue().equals(columnName)) {
-//					return (C) aliasPawn.getKey();
-//				}
-//			}
 			for (Selectable<?> column : getColumns()) {
 				if (column instanceof JoinLink && column.getExpression().equals(columnName)) {
 					return (C) column;
@@ -141,13 +136,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 		return this;
 	}
 	
-	public UnionInFrom asPseudoTable(String name) {
-		return new UnionInFrom(name, this);
-	}
-	
 	/**
-	 * Overridden to use {@link PseudoColumn} type instead of {@link Column}
-	 *
 	 * @return columns of this instance per their name and alias
 	 */
 	@Override
@@ -160,99 +149,5 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 			result.put(alias.getValue(), alias.getKey());
 		}
 		return result;
-	}
-	
-	static public class UnionInFrom implements Fromable {
-		
-		private final String name;
-		
-		private final Union union;
-		
-		private final KeepOrderSet<PseudoColumn<Object>> columns = new KeepOrderSet<>();
-		
-		private final Map<Selectable<?>, String> aliases = new HashMap<>();
-		
-		public UnionInFrom(String name, Union union) {
-			this.name = name;
-			this.union = union;
-			Map<Selectable<?>, String> unionAliases = union.getAliases();
-			for (PseudoColumn<?> column : union.getColumns()) {
-				PseudoColumn<?> newPseudoColumn = new PseudoColumn<>(this, column.getExpression(), column.getJavaType());
-				columns.add((PseudoColumn<Object>) newPseudoColumn);
-				String alias = unionAliases.get(column);
-				if (alias != null) {
-					this.aliases.put(newPseudoColumn, alias);
-				}
-			}
-		}
-		
-		public Union getUnion() {
-			return union;
-		}
-		
-		@Override
-		public String getName() {
-			return name;
-		}
-		
-		@Override
-		public String getAbsoluteName() {
-			return getName();
-		}
-		
-		@Override
-		public Set<PseudoColumn<?>> getColumns() {
-			return (Set) this.columns;
-		}
-		
-		@Override
-		public Map<Selectable<?>, String> getAliases() {
-			return this.aliases;
-		}
-		
-		/**
-		 * Overridden to use {@link PseudoColumn} type instead of {@link Column}
-		 * 
-		 * @return columns of this instance per their name and alias
-		 */
-		@Override
-		public Map<String, ? extends Selectable<?>> mapColumnsOnName() {
-			return union.mapColumnsOnName();
-		}
-	}
-	
-	public static class PseudoColumn<O> implements Selectable<O>, JoinLink<Fromable, O> {
-		
-		private final SelectablesPod union;	// Union or UnionInFrom
-		
-		private final String name;
-		
-		private final Class<O> javaType;
-		
-		
-		private PseudoColumn(SelectablesPod union, String name, Class<O> javaType) {
-			this.union = union;
-			this.name = name;
-			this.javaType = javaType;
-		}
-		
-		/**
-		 * To be called only for pseudo-column in a {@link UnionInFrom}, else would throw a {@link ClassCastException}
-		 * @return UnionInFrom owning this column
-		 */
-		@Override
-		public Fromable getOwner() {
-			return (Fromable) union;
-		}
-		
-		@Override
-		public String getExpression() {
-			return name;
-		}
-		
-		@Override
-		public Class<O> getJavaType() {
-			return javaType;
-		}
 	}
 }

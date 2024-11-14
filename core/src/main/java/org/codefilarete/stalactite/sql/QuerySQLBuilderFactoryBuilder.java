@@ -6,6 +6,7 @@ import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.builder.SelectSQLBuilderFactory;
+import org.codefilarete.stalactite.query.builder.UnionSQLBuilderFactory;
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -25,6 +26,7 @@ public class QuerySQLBuilderFactoryBuilder {
 	protected final JavaTypeToSqlTypeMapping javaTypeToSqlTypeMapping;
 	protected SelectSQLBuilderFactory selectBuilderFactory;
 	protected FromSQLBuilderFactory fromSqlBuilderFactory;
+	protected UnionSQLBuilderFactory unionSQLBuilderFactory;
 	protected WhereSQLBuilderFactory whereSqlBuilderFactory;
 	protected WhereSQLBuilderFactory havingBuilderFactory;
 	protected OperatorSQLBuilderFactory operatorSQLBuilderFactory;
@@ -42,6 +44,11 @@ public class QuerySQLBuilderFactoryBuilder {
 	
 	public QuerySQLBuilderFactoryBuilder withFromSqlBuilderFactory(FromSQLBuilderFactory fromSqlBuilderFactory) {
 		this.fromSqlBuilderFactory = fromSqlBuilderFactory;
+		return this;
+	}
+	
+	public QuerySQLBuilderFactoryBuilder withUnionSQLBuilderFactory(UnionSQLBuilderFactory unionSQLBuilderFactory) {
+		this.unionSQLBuilderFactory = unionSQLBuilderFactory;
 		return this;
 	}
 	
@@ -86,9 +93,13 @@ public class QuerySQLBuilderFactoryBuilder {
 			withFromSqlBuilderFactory(new FromSQLBuilderFactory());
 		}
 		
+		if (unionSQLBuilderFactory == null) {
+			withUnionSQLBuilderFactory(new UnionSQLBuilderFactory());
+		}
+		
 		if (selectBuilderFactory == null) {
 			withSelectBuilderFactory(new SelectSQLBuilderFactory(functionSQLBuilderFactory));
 		}
-		return new QuerySQLBuilderFactory(parameterBinderRegistry, selectBuilderFactory, fromSqlBuilderFactory, whereSqlBuilderFactory, havingBuilderFactory, functionSQLBuilderFactory);
+		return new QuerySQLBuilderFactory(parameterBinderRegistry, selectBuilderFactory, fromSqlBuilderFactory, unionSQLBuilderFactory, whereSqlBuilderFactory, havingBuilderFactory, functionSQLBuilderFactory);
 	}
 }

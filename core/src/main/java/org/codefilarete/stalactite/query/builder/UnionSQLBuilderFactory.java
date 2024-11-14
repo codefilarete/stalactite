@@ -2,14 +2,14 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Union;
+import org.codefilarete.stalactite.query.model.QueryStatement;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.StringAppender;
-import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
@@ -22,16 +22,16 @@ public class UnionSQLBuilderFactory {
 	public UnionSQLBuilderFactory() {
 	}
 	
-	public UnionSQLBuilder unionBuilder(Union union, QuerySQLBuilderFactory querySQLBuilderFactory) {
+	public UnionSQLBuilder unionBuilder(QueryStatement union, QuerySQLBuilderFactory querySQLBuilderFactory) {
 		return new UnionSQLBuilder(union, querySQLBuilderFactory);
 	}
 	
 	public static class UnionSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
 		
-		private final Union union;
+		private final QueryStatement union;
 		private final QuerySQLBuilderFactory querySQLBuilderFactory;
 		
-		public UnionSQLBuilder(Union union, QuerySQLBuilderFactory querySQLBuilderFactory) {
+		public UnionSQLBuilder(QueryStatement union, QuerySQLBuilderFactory querySQLBuilderFactory) {
 			this.union = union;
 			this.querySQLBuilderFactory = querySQLBuilderFactory;
 		}
@@ -54,7 +54,7 @@ public class UnionSQLBuilderFactory {
 		
 		@Override
 		public PreparedSQL toPreparedSQL() {
-			KeepOrderSet<Query> queries = union.getQueries();
+			Set<Query> queries = union.getQueries();
 			StringAppender unionSql = new StringAppender();
 			Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
 			Map<Integer, Object> values = new HashMap<>();
@@ -80,7 +80,7 @@ public class UnionSQLBuilderFactory {
 		}
 		
 		public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
-			KeepOrderSet<Query> queries = union.getQueries();
+			Set<Query> queries = union.getQueries();
 			Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
 			Map<Integer, Object> values = new HashMap<>();
 			ModifiableInt parameterIndex = new ModifiableInt(1);

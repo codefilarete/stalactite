@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.query.model.From.RawTableJoin;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
+import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -26,7 +26,8 @@ import org.codefilarete.tool.collection.PairIterator;
 
 /**
  * Factory for {@link FromSQLBuilder}. It's overridable by giving your own implementation to
- * {@link QuerySQLBuilderFactory#QuerySQLBuilderFactory(ColumnBinderRegistry, SelectSQLBuilderFactory, FromSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory)}
+ * {@link QuerySQLBuilderFactory#QuerySQLBuilderFactory(ColumnBinderRegistry, SelectSQLBuilderFactory,
+ * FromSQLBuilderFactory, UnionSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory, FunctionSQLBuilderFactory)}
  * 
  * @author Guillaume Mary
  */
@@ -35,8 +36,8 @@ public class FromSQLBuilderFactory {
 	public FromSQLBuilderFactory() {
 	}
 	
-	public FromSQLBuilder fromBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory) {
-		return new FromSQLBuilder(from, dmlNameProvider, querySQLBuilderFactory);
+	public FromSQLBuilder fromBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, UnionSQLBuilderFactory unionSQLBuilderFactory) {
+		return new FromSQLBuilder(from, dmlNameProvider, querySQLBuilderFactory, unionSQLBuilderFactory);
 	}
 	
 	/**
@@ -55,10 +56,13 @@ public class FromSQLBuilderFactory {
 		
 		private final QuerySQLBuilderFactory querySQLBuilderFactory;
 		
-		public FromSQLBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory) {
+		private final UnionSQLBuilderFactory unionSQLBuilderFactory;
+		
+		public FromSQLBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, UnionSQLBuilderFactory unionSQLBuilderFactory) {
 			this.from = from;
 			this.dmlNameProvider = dmlNameProvider;
 			this.querySQLBuilderFactory = querySQLBuilderFactory;
+			this.unionSQLBuilderFactory = unionSQLBuilderFactory;
 		}
 		
 		@Override
@@ -101,8 +105,8 @@ public class FromSQLBuilderFactory {
 				
 				/** Overridden to make it call unionBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
 				@Override
-				void cat(UnionInFrom union) {
-					UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getUnion(), querySQLBuilderFactory);
+				void cat(QueryInFrom union) {
+					UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getQueryStatement(), querySQLBuilderFactory);
 					// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 					sql.cat("(");
 					unionSqlBuilder.toPreparedSQL(preparedSQLWrapper);
@@ -148,8 +152,8 @@ public class FromSQLBuilderFactory {
 					cat((Table) o);
 				} else if (o instanceof Query) {
 					cat((Query) o);
-				} else if (o instanceof UnionInFrom) {
-					cat((UnionInFrom) o);
+				} else if (o instanceof QueryInFrom) {
+					cat((QueryInFrom) o);
 				} else if (o instanceof CrossJoin) {
 					cat((CrossJoin) o);
 				} else if (o instanceof AbstractJoin) {
@@ -170,12 +174,13 @@ public class FromSQLBuilderFactory {
 				unionBuilder.toSQL(sql);
 			}
 			
-			void cat(UnionInFrom union) {
-				UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getUnion(), querySQLBuilderFactory);
+			void cat(QueryInFrom union) {
+				UnionSQLBuilder unionSqlBuilder = unionSQLBuilderFactory.unionBuilder(union.getQueryStatement(), querySQLBuilderFactory);
 				// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 				sql.cat("(");
 				unionSqlBuilder.toSQL(sql);
-				sql.cat(") as ").cat(getAliasOrDefault(union));
+				String alias = getAliasOrDefault(union);
+				sql.cat(")").catIf(alias != null, " as " + alias);
 			}
 			
 			private void cat(CrossJoin join) {

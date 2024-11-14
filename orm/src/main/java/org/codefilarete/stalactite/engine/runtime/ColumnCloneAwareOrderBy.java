@@ -7,7 +7,7 @@ import org.codefilarete.stalactite.query.model.OrderByChain;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Query.FluentOrderByClause;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Union.PseudoColumn;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**

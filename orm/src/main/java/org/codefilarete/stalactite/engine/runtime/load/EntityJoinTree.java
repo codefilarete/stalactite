@@ -24,7 +24,7 @@ import org.codefilarete.stalactite.mapping.RowTransformer;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
+import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -398,30 +398,30 @@ public class EntityJoinTree<C, I> {
 		foreachJoin(node -> {
 			if (node.getTable() instanceof Table && !tablesToBeExcludedFromDDL.contains(node.getTable())) {
 				result.add((Table) node.getTable());
-			} else if (node.getTable() instanceof UnionInFrom) {
-				result.addAll(lookupTable((UnionInFrom) node.getTable()));
+			} else if (node.getTable() instanceof QueryInFrom) {
+				result.addAll(lookupTable((QueryInFrom) node.getTable()));
 			}
 		});
 		return result;
 	}
 	
 	@VisibleForTesting
-	Set<Table> lookupTable(UnionInFrom unionInFrom) {
+	Set<Table> lookupTable(QueryInFrom queryInFrom) {
 		Set<Table> result = new HashSet<>();
-		unionInFrom.getUnion().getQueries().forEach(query -> {
+		queryInFrom.getQueryStatement().getQueries().forEach(query -> {
 			Fromable rightTable =  query.getFromSurrogate().getRoot();
 			if (rightTable instanceof Table) {
 				result.add((Table) rightTable);
-			} else if (rightTable instanceof UnionInFrom) {
-				result.addAll(lookupTable((UnionInFrom) rightTable));
+			} else if (rightTable instanceof QueryInFrom) {
+				result.addAll(lookupTable((QueryInFrom) rightTable));
 			}
 		});
-		unionInFrom.getUnion().getQueries().forEach(query -> query.getFromSurrogate().getJoins().forEach(join -> {
+		queryInFrom.getQueryStatement().getQueries().forEach(query -> query.getFromSurrogate().getJoins().forEach(join -> {
 			Fromable rightTable = join.getRightTable();
 			if (rightTable instanceof Table) {
 				result.add((Table) rightTable);
-			} else if (rightTable instanceof UnionInFrom) {
-				result.addAll(lookupTable((UnionInFrom) rightTable));
+			} else if (rightTable instanceof QueryInFrom) {
+				result.addAll(lookupTable((QueryInFrom) rightTable));
 			}
 		}));
 		return result;

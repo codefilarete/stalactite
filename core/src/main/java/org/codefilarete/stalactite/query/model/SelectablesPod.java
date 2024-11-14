@@ -62,5 +62,5 @@ public interface SelectablesPod {
 	 * 
 	 * @return selected elements with real alias
 	 */
-	Map<? extends Selectable<?>, String> getAliases();
+	Map<Selectable<?>, String> getAliases();
 }

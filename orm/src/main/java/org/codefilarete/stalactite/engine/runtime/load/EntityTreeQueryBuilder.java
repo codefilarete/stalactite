@@ -13,9 +13,10 @@ import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Query;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
 import org.codefilarete.stalactite.query.model.Selectable;
-import org.codefilarete.stalactite.query.model.Union.PseudoColumn;
-import org.codefilarete.stalactite.query.model.Union.UnionInFrom;
+import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Key.KeyBuilder;
@@ -51,7 +52,6 @@ public class EntityTreeQueryBuilder<C> {
 		this.tree = (EntityJoinTree<C, Object>) tree;
 		this.parameterBinderProvider = parameterBinderProvider;
 	}
-	
 	
 	public EntityTreeQuery<C> buildSelectQuery() {
 		Query query = new Query();
@@ -117,14 +117,15 @@ public class EntityTreeQueryBuilder<C> {
 				columnClones.put(column, clone);
 			});
 			return new Duo<>(table, columnClones);
-		} else if (joinFromable instanceof UnionInFrom) {
-			UnionInFrom unionInFrom = new UnionInFrom(joinFromable.getName(), ((UnionInFrom) joinFromable).getUnion());
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(unionInFrom.getColumns().size());
-			(((UnionInFrom) joinFromable).getColumns()).forEach(column -> {
-				PseudoColumn<?> clone = unionInFrom.getUnion().registerColumn(column.getExpression(), column.getJavaType());
+		} else if (joinFromable instanceof QueryInFrom) {
+			QueryInFrom queryInFrom = new QueryInFrom(((QueryInFrom) joinFromable).getQueryStatement(), joinFromable.getName());
+			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(queryInFrom.getColumns().size());
+			(((QueryInFrom) joinFromable).getColumns()).forEach(column -> {
+				// we can only have Union in From clause, no sub-query, because of table-per-class polymorphism, so we can cast to Union
+				PseudoColumn<?> clone = ((Union) queryInFrom.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
 				columnClones.put(column, clone);
 			});
-			return new Duo<>(unionInFrom, columnClones);
+			return new Duo<>(queryInFrom, columnClones);
 		} else {
 			throw new UnsupportedOperationException("Cloning " + Reflections.toString(joinNode.getTable().getClass()) + " is not implemented");
 		}

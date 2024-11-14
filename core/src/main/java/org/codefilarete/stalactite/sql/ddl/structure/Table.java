@@ -11,6 +11,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.codefilarete.stalactite.query.model.Fromable;
+import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Database.Schema;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
@@ -81,7 +82,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 	}
 	
 	@Override
-	public Map<Column<SELF, ?>, String> getAliases() {
+	public Map<Selectable<?>, String> getAliases() {
 		Map<Column<SELF, ?>, String> result = new HashMap<>();
 		columnsPerName.forEach((key, value) -> result.put(value, key));
 		return Collections.unmodifiableMap(result);
