@@ -1,6 +1,6 @@
 package org.codefilarete.stalactite.query.builder;
 
-import org.codefilarete.stalactite.query.builder.UnionSQLBuilderFactory.UnionSQLBuilder;
+import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.query.model.Union;
@@ -13,7 +13,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.query.model.QueryEase.select;
 
-class UnionSQLBuilderFactoryTest {
+class PseudoTableSQLBuilderFactoryTest {
 	
 	private final Dialect dialect = new Dialect();
 	private final QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
@@ -40,7 +40,7 @@ class UnionSQLBuilderFactoryTest {
 	@ParameterizedTest
 	@MethodSource("toSQL")
 	public void toSQL(QueryProvider<?> queryProvider, String expected) {
-		UnionSQLBuilder testInstance = new UnionSQLBuilder(queryProvider.getQuery(), querySQLBuilderFactory);
+		PseudoTableSQLBuilder testInstance = new PseudoTableSQLBuilder(queryProvider.getQuery(), querySQLBuilderFactory);
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 }

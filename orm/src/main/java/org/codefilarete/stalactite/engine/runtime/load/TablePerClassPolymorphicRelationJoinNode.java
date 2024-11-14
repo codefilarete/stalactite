@@ -13,7 +13,7 @@ import org.codefilarete.stalactite.engine.runtime.load.JoinRowConsumer.ForkJoinR
 import org.codefilarete.stalactite.mapping.ColumnedRow;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Union;
-import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Key;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -33,11 +33,11 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, QueryInFrom, JOINCOLTYPE, I> {
+public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, JOINCOLTYPE, I> extends RelationJoinNode<C, T1, PseudoTable, JOINCOLTYPE, I> {
 	
 	private final Set<SubPersisterAndConsumer<C, ? extends C>> subPersisters = new HashSet<>();
 	
-	private final QueryInFrom queryInFrom;
+	private final PseudoTable pseudoTable;
 	private final Union.PseudoColumn<Integer> discriminatorColumn;
 	
 	public TablePerClassPolymorphicRelationJoinNode(JoinNode<T1> parent,
@@ -51,23 +51,23 @@ public class TablePerClassPolymorphicRelationJoinNode<C, T1 extends Table<T1>, J
 													BeanRelationFixer<Object, C> beanRelationFixer,
 													Union.PseudoColumn<Integer> discriminatorColumn) {
 		super(parent, leftJoinColumn, (Key) rightJoinColumn, joinType, columnsToSelect, tableAlias, entityInflater, beanRelationFixer, null);
-		this.queryInFrom = subPersistersUnion.asPseudoTable(getTableAlias());
+		this.pseudoTable = subPersistersUnion.asPseudoTable(getTableAlias());
 		this.discriminatorColumn = discriminatorColumn;
 	}
 	
 	@Override
-	public QueryInFrom getRightTable() {
-		return queryInFrom;
+	public PseudoTable getRightTable() {
+		return pseudoTable;
 	}
 	
 	/**
 	 * Overridden, else it returns the ones given at construction time which are from Union, meaning getOwner() is not
-	 * {@link QueryInFrom} which, out of throwing a {@link ClassCastException}, avoid to give access to correct
+	 * {@link PseudoTable} which, out of throwing a {@link ClassCastException}, avoid to give access to correct
 	 * {@link Column}
 	 */
 	@Override
 	public Set<Selectable<?>> getColumnsToSelect() {
-		return (Set) queryInFrom.getColumns();
+		return (Set) pseudoTable.getColumns();
 	}
 	
 	@Override

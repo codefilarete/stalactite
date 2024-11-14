@@ -18,7 +18,7 @@ public interface QueryStatement extends SelectablesPod {
 	 * Wraps current instance to make it appendable into a From clause
 	 * @return an instance containing current instance and appendable into a From clause
 	 */
-	default QueryInFrom asPseudoTable() {
+	default PseudoTable asPseudoTable() {
 		return asPseudoTable(null);
 	}
 	
@@ -28,11 +28,16 @@ public interface QueryStatement extends SelectablesPod {
 	 * @param name an optional name that serves as an alias of this instance into the From clause
 	 * @return an instance containing current instance and appendable into a From clause
 	 */
-	default QueryInFrom asPseudoTable(@Nullable String name) {
-		return new QueryInFrom(this, name);
+	default PseudoTable asPseudoTable(@Nullable String name) {
+		return new PseudoTable(this, name);
 	}
 	
-	class QueryInFrom implements Fromable {
+	/**
+	 * Wrapper of Query and Union (as {@link QueryStatement}) to make them capable of being added to a From clause.
+	 * 
+	 * @author Guillaume Mary
+	 */
+	class PseudoTable implements Fromable {
 		
 		@Nullable
 		private final String name;
@@ -43,7 +48,7 @@ public interface QueryStatement extends SelectablesPod {
 		
 		private final Map<Selectable<?>, String> aliases = new HashMap<>();
 		
-		public QueryInFrom(QueryStatement queryStatement, @Nullable String name) {
+		public PseudoTable(QueryStatement queryStatement, @Nullable String name) {
 			this.name = name;
 			this.queryStatement = queryStatement;
 			Map<Selectable<?>, String> unionAliases = queryStatement.getAliases();
@@ -93,26 +98,26 @@ public interface QueryStatement extends SelectablesPod {
 	
 	class PseudoColumn<O> implements Selectable<O>, JoinLink<Fromable, O> {
 		
-		private final SelectablesPod union;	// Union or UnionInFrom
+		private final SelectablesPod owner;	// Union or Query
 		
 		private final String name;
 		
 		private final Class<O> javaType;
 		
 		
-		public PseudoColumn(SelectablesPod union, String name, Class<O> javaType) {
-			this.union = union;
+		public PseudoColumn(SelectablesPod owner, String name, Class<O> javaType) {
+			this.owner = owner;
 			this.name = name;
 			this.javaType = javaType;
 		}
 		
 		/**
-		 * To be called only for pseudo-column in a {@link QueryInFrom}, else would throw a {@link ClassCastException}
-		 * @return {@link QueryInFrom} owning this column
+		 * To be called only for pseudo-column in a {@link PseudoTable}, else would throw a {@link ClassCastException}
+		 * @return {@link PseudoTable} owning this column
 		 */
 		@Override
 		public Fromable getOwner() {
-			return (Fromable) union;
+			return (Fromable) owner;
 		}
 		
 		@Override

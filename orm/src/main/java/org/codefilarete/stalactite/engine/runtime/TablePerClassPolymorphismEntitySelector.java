@@ -33,7 +33,7 @@ import org.codefilarete.stalactite.query.model.Select;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.query.model.Union;
-import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -128,7 +128,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		union.registerColumn(DISCRIMINATOR_COLUMN.getExpression(), String.class, DISCRIMINATOR_ALIAS);
 		
 		// Note that it's very important to use main table name to mimic virtual main table else joins (below) won't work
-		QueryInFrom pseudoTable = union.asPseudoTable(mainTable.getName());
+		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
 		// we add joins to the union clause
 		SingleLoadEntityJoinTree<C, I> result = new SingleLoadEntityJoinTree<>(mainPersister, discriminatorPerSubPersister, pseudoTable, allColumnsInHierarchy);
 		mainEntityJoinTree.projectTo(result, ROOT_STRATEGY_NAME);
@@ -152,7 +152,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		});
 		
 		// Note that it's very important to use main table name to mimic virtual main table else joins (below) won't work
-		QueryInFrom pseudoTable = union.asPseudoTable(mainTable.getName());
+		PseudoTable pseudoTable = union.asPseudoTable(mainTable.getName());
 		// we add joins to the union clause
 		PhasedEntityJoinTree<C, I> result = new PhasedEntityJoinTree<>(pseudoTable, mainTable);
 		mainEntityJoinTree.projectTo(result, ROOT_STRATEGY_NAME);
@@ -311,7 +311,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		
 		private final IdentityHashMap<Column<?, ?>, Selectable<?>> mainColumnToPseudoColumn = new IdentityHashMap<>();
 		
-		private PhasedEntityJoinTree(QueryInFrom pseudoTable, Table mainTable) {
+		private PhasedEntityJoinTree(PseudoTable pseudoTable, Table mainTable) {
 			super(
 					// There's no need to have a working EntityInflater here because the PhasedEntityJoinTree
 					// is not used to inflate the entities (it's done by dedicated select from sub-entities)
@@ -348,8 +348,8 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		}
 		
 		@Override
-		public JoinRoot<C, I, QueryInFrom> getRoot() {
-			return (JoinRoot<C, I, QueryInFrom>) super.getRoot();
+		public JoinRoot<C, I, PseudoTable> getRoot() {
+			return (JoinRoot<C, I, PseudoTable>) super.getRoot();
 		}
 		
 		public IdentityHashMap<Column<?, ?>, Selectable<?>> getMainColumnToPseudoColumn() {
@@ -363,7 +363,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		
 		public <T extends Table<T>> SingleLoadEntityJoinTree(ConfiguredRelationalPersister<C, I> mainPersister,
 															 Map<String, ConfiguredRelationalPersister<C, I>> discriminatorPerSubPersister,
-															 QueryInFrom pseudoTable,
+															 PseudoTable pseudoTable,
 															 Set<Selectable<?>> allColumnInHierarchy) {
 			super(new EntityInflater<C, I>() {
 						@Override
@@ -427,8 +427,8 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		}
 		
 		@Override
-		public JoinRoot<C, I, QueryInFrom> getRoot() {
-			return (JoinRoot<C, I, QueryInFrom>) super.getRoot();
+		public JoinRoot<C, I, PseudoTable> getRoot() {
+			return (JoinRoot<C, I, PseudoTable>) super.getRoot();
 		}
 		
 		public IdentityHashMap<Column<?, ?>, Selectable<?>> getMainColumnToPseudoColumn() {

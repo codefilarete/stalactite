@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.builder.UnionSQLBuilderFactory.UnionSQLBuilder;
+import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryProvider;
 import org.codefilarete.stalactite.query.model.QueryStatement;
@@ -144,18 +144,18 @@ class QuerySQLBuilderTest {
 	}
 	
 	/**
-	 * Creates a {@link QuerySQLBuilder} or a {@link UnionSQLBuilder} depending on given {@link QueryStatement} type.
+	 * Creates a {@link QuerySQLBuilder} or a {@link PseudoTableSQLBuilder} depending on given {@link QueryStatement} type.
 	 * Throws an exception if {@link QueryStatement} is neither a {@link Query} nor a {@link Union}.
 	 *
 	 * @param queryStatement a {@link Query} or a {@link Union}
-	 * @return a {@link QuerySQLBuilder} or a {@link UnionSQLBuilder}
+	 * @return a {@link QuerySQLBuilder} or a {@link PseudoTableSQLBuilder}
 	 */
 	private SQLBuilder sqlBuilder(QueryStatement queryStatement) {
 		QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
 		if (queryStatement instanceof Query) {
 			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
 		} else if (queryStatement instanceof Union) {
-			return new UnionSQLBuilder(queryStatement, querySQLBuilderFactory);
+			return new PseudoTableSQLBuilder(queryStatement, querySQLBuilderFactory);
 		} else {
 			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
 		}
@@ -166,7 +166,7 @@ class QuerySQLBuilderTest {
 		if (queryStatement instanceof Query) {
 			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
 		} else if (queryStatement instanceof Union) {
-			return dialect.getUnionSQLBuilderFactory().unionBuilder(queryStatement, querySQLBuilderFactory);
+			return dialect.getUnionSQLBuilderFactory().pseudoTableBuilder(queryStatement, querySQLBuilderFactory);
 		} else {
 			throw new UnsupportedOperationException(Reflections.toString(queryStatement.getClass()) + " has no supported SQL generator");
 		}

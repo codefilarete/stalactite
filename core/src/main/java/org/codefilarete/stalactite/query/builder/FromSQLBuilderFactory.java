@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.query.builder;
 import java.util.Iterator;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
-import org.codefilarete.stalactite.query.builder.UnionSQLBuilderFactory.UnionSQLBuilder;
+import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
@@ -15,7 +15,7 @@ import org.codefilarete.stalactite.query.model.From.RawTableJoin;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
-import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -27,7 +27,7 @@ import org.codefilarete.tool.collection.PairIterator;
 /**
  * Factory for {@link FromSQLBuilder}. It's overridable by giving your own implementation to
  * {@link QuerySQLBuilderFactory#QuerySQLBuilderFactory(ColumnBinderRegistry, SelectSQLBuilderFactory,
- * FromSQLBuilderFactory, UnionSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory, FunctionSQLBuilderFactory)}
+ * FromSQLBuilderFactory, PseudoTableSQLBuilderFactory, WhereSQLBuilderFactory, WhereSQLBuilderFactory, FunctionSQLBuilderFactory)}
  * 
  * @author Guillaume Mary
  */
@@ -36,8 +36,8 @@ public class FromSQLBuilderFactory {
 	public FromSQLBuilderFactory() {
 	}
 	
-	public FromSQLBuilder fromBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, UnionSQLBuilderFactory unionSQLBuilderFactory) {
-		return new FromSQLBuilder(from, dmlNameProvider, querySQLBuilderFactory, unionSQLBuilderFactory);
+	public FromSQLBuilder fromBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory) {
+		return new FromSQLBuilder(from, dmlNameProvider, querySQLBuilderFactory, pseudoTableSQLBuilderFactory);
 	}
 	
 	/**
@@ -56,13 +56,13 @@ public class FromSQLBuilderFactory {
 		
 		private final QuerySQLBuilderFactory querySQLBuilderFactory;
 		
-		private final UnionSQLBuilderFactory unionSQLBuilderFactory;
+		private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
 		
-		public FromSQLBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, UnionSQLBuilderFactory unionSQLBuilderFactory) {
+		public FromSQLBuilder(From from, DMLNameProvider dmlNameProvider, QuerySQLBuilderFactory querySQLBuilderFactory, PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory) {
 			this.from = from;
 			this.dmlNameProvider = dmlNameProvider;
 			this.querySQLBuilderFactory = querySQLBuilderFactory;
-			this.unionSQLBuilderFactory = unionSQLBuilderFactory;
+			this.pseudoTableSQLBuilderFactory = pseudoTableSQLBuilderFactory;
 		}
 		
 		@Override
@@ -96,21 +96,21 @@ public class FromSQLBuilderFactory {
 			}
 			FromGenerator fromGenerator = new FromGenerator(preparedSQLWrapper, dmlNameProvider) {
 				
-				/** Overridden to make it call unionBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
+				/** Overridden to make it call pseudoTableBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
 				@Override
 				void cat(Query query) {
 					QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
 					unionBuilder.toPreparedSQL(preparedSQLWrapper);
 				}
 				
-				/** Overridden to make it call unionBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
+				/** Overridden to make it call pseudoTableBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
 				@Override
-				void cat(QueryInFrom union) {
-					UnionSQLBuilder unionSqlBuilder = new UnionSQLBuilder(union.getQueryStatement(), querySQLBuilderFactory);
+				void cat(PseudoTable pseudoTable) {
+					PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
 					// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 					sql.cat("(");
-					unionSqlBuilder.toPreparedSQL(preparedSQLWrapper);
-					sql.cat(") as ").cat(getAliasOrDefault(union));
+					pseudoTableSqlBuilder.toPreparedSQL(preparedSQLWrapper);
+					sql.cat(") as ").cat(getAliasOrDefault(pseudoTable));
 				}
 			};
 			fromGenerator.cat(from.getRoot());
@@ -152,8 +152,8 @@ public class FromSQLBuilderFactory {
 					cat((Table) o);
 				} else if (o instanceof Query) {
 					cat((Query) o);
-				} else if (o instanceof QueryInFrom) {
-					cat((QueryInFrom) o);
+				} else if (o instanceof PseudoTable) {
+					cat((PseudoTable) o);
 				} else if (o instanceof CrossJoin) {
 					cat((CrossJoin) o);
 				} else if (o instanceof AbstractJoin) {
@@ -174,12 +174,12 @@ public class FromSQLBuilderFactory {
 				unionBuilder.toSQL(sql);
 			}
 			
-			void cat(QueryInFrom union) {
-				UnionSQLBuilder unionSqlBuilder = unionSQLBuilderFactory.unionBuilder(union.getQueryStatement(), querySQLBuilderFactory);
+			void cat(PseudoTable pseudoTable) {
+				PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
 				// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 				sql.cat("(");
-				unionSqlBuilder.toSQL(sql);
-				String alias = getAliasOrDefault(union);
+				pseudoTableSqlBuilder.toSQL(sql);
+				String alias = getAliasOrDefault(pseudoTable);
 				sql.cat(")").catIf(alias != null, " as " + alias);
 			}
 			

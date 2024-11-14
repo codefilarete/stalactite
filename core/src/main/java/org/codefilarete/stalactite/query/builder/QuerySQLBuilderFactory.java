@@ -41,7 +41,7 @@ public class QuerySQLBuilderFactory {
 	private final ColumnBinderRegistry parameterBinderRegistry;
 	private final SelectSQLBuilderFactory selectBuilderFactory;
 	private final FromSQLBuilderFactory fromBuilderFactory;
-	private final UnionSQLBuilderFactory unionSQLBuilderFactory;
+	private final PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory;
 	private final WhereSQLBuilderFactory whereBuilderFactory;
 	private final WhereSQLBuilderFactory havingBuilderFactory;
 	private final FunctionSQLBuilderFactory functionSQLBuilderFactory;
@@ -58,14 +58,14 @@ public class QuerySQLBuilderFactory {
 	public QuerySQLBuilderFactory(ColumnBinderRegistry parameterBinderRegistry,
 								  SelectSQLBuilderFactory selectBuilderFactory,
 								  FromSQLBuilderFactory fromBuilderFactory,
-								  UnionSQLBuilderFactory unionSQLBuilderFactory,
+								  PseudoTableSQLBuilderFactory pseudoTableSQLBuilderFactory,
 								  WhereSQLBuilderFactory whereBuilderFactory,
 								  WhereSQLBuilderFactory havingBuilderFactory,
 								  FunctionSQLBuilderFactory functionSQLBuilderFactory) {
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.selectBuilderFactory = selectBuilderFactory;
 		this.fromBuilderFactory = fromBuilderFactory;
-		this.unionSQLBuilderFactory = unionSQLBuilderFactory;
+		this.pseudoTableSQLBuilderFactory = pseudoTableSQLBuilderFactory;
 		this.whereBuilderFactory = whereBuilderFactory;
 		this.havingBuilderFactory = havingBuilderFactory;
 		this.functionSQLBuilderFactory = functionSQLBuilderFactory;
@@ -80,7 +80,7 @@ public class QuerySQLBuilderFactory {
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.selectBuilderFactory = new SelectSQLBuilderFactory(javaTypeToSqlTypeMapping);
 		this.fromBuilderFactory = new FromSQLBuilderFactory();
-		this.unionSQLBuilderFactory = new UnionSQLBuilderFactory();
+		this.pseudoTableSQLBuilderFactory = new PseudoTableSQLBuilderFactory();
 		this.whereBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
 		this.havingBuilderFactory = new WhereSQLBuilderFactory(javaTypeToSqlTypeMapping, parameterBinderRegistry);
 		this.functionSQLBuilderFactory = new FunctionSQLBuilderFactory(javaTypeToSqlTypeMapping);
@@ -129,7 +129,7 @@ public class QuerySQLBuilderFactory {
 		return new QuerySQLBuilder(query,
 				dmlNameProvider,
 				selectBuilderFactory.queryBuilder(query.getSelectSurrogate(), dmlNameProvider),
-				fromBuilderFactory.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this, unionSQLBuilderFactory),
+				fromBuilderFactory.fromBuilder(query.getFromSurrogate(), dmlNameProvider, this, pseudoTableSQLBuilderFactory),
 				whereBuilderFactory.whereBuilder(query.getWhereSurrogate(), dmlNameProvider),
 				havingBuilderFactory.whereBuilder(query.getHavingSurrogate(), dmlNameProvider),
 				functionSQLBuilderFactory.functionSQLBuilder(dmlNameProvider),

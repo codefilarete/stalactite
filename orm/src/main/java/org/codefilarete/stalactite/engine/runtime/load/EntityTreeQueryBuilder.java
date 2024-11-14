@@ -14,7 +14,7 @@ import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.Fromable;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
-import org.codefilarete.stalactite.query.model.QueryStatement.QueryInFrom;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
@@ -117,15 +117,15 @@ public class EntityTreeQueryBuilder<C> {
 				columnClones.put(column, clone);
 			});
 			return new Duo<>(table, columnClones);
-		} else if (joinFromable instanceof QueryInFrom) {
-			QueryInFrom queryInFrom = new QueryInFrom(((QueryInFrom) joinFromable).getQueryStatement(), joinFromable.getName());
-			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(queryInFrom.getColumns().size());
-			(((QueryInFrom) joinFromable).getColumns()).forEach(column -> {
+		} else if (joinFromable instanceof PseudoTable) {
+			PseudoTable pseudoTable = new PseudoTable(((PseudoTable) joinFromable).getQueryStatement(), joinFromable.getName());
+			IdentityHashMap<Selectable<?>, Selectable<?>> columnClones = new IdentityHashMap<>(pseudoTable.getColumns().size());
+			(((PseudoTable) joinFromable).getColumns()).forEach(column -> {
 				// we can only have Union in From clause, no sub-query, because of table-per-class polymorphism, so we can cast to Union
-				PseudoColumn<?> clone = ((Union) queryInFrom.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
+				PseudoColumn<?> clone = ((Union) pseudoTable.getQueryStatement()).registerColumn(column.getExpression(), column.getJavaType());
 				columnClones.put(column, clone);
 			});
-			return new Duo<>(queryInFrom, columnClones);
+			return new Duo<>(pseudoTable, columnClones);
 		} else {
 			throw new UnsupportedOperationException("Cloning " + Reflections.toString(joinNode.getTable().getClass()) + " is not implemented");
 		}
