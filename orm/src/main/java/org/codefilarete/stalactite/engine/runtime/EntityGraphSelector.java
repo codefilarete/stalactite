@@ -11,9 +11,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
@@ -50,23 +52,23 @@ import static org.codefilarete.stalactite.query.model.Operators.in;
  * @author Guillaume Mary
  * @see EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer)
  */
-public class EntityGraphSelector<C, I, T extends Table> implements EntitySelector<C, I> {
+public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
 	
 	private static final String PRIMARY_KEY_ALIAS = "rootId";
+	
+	private final EntityJoinTree<C, I> entityJoinTree;
+	
+	private final IdentifierAssembler<I, T> identifierAssembler;
 	
 	private final ConnectionProvider connectionProvider;
 	
 	private final Dialect dialect;
 	
-	private final ConfiguredPersister<C, I> entityPersister;
-	
-	private final EntityJoinTree<C, I> entityJoinTree;
-	
-	public EntityGraphSelector(ConfiguredPersister<C, I> entityPersister,
-							   EntityJoinTree<C, I> entityJoinTree,
+	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
+							   IdentifierAssembler<I, T> identifierAssembler,
 							   ConnectionProvider connectionProvider,
 							   Dialect dialect) {
-		this.entityPersister = entityPersister;
+		this.identifierAssembler = identifierAssembler;
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
@@ -126,7 +128,7 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
-			return Iterables.collect(() -> rowIterator, row -> entityPersister.getMapping().getIdMapping().getIdentifierAssembler().assemble(row, columnedRow), HashSet::new);
+			return Iterables.collect(() -> rowIterator, row -> identifierAssembler.assemble(row, columnedRow), HashSet::new);
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
@@ -172,10 +174,16 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 	 */
 	private class InternalExecutor {
 		
-		private final EntityTreeQuery<C> entityTreeQuery;
+		private final EntityTreeInflater<C> inflater;
+		private final Map<String, ResultSetReader<?>> selectParameterBinders;
 		
 		private InternalExecutor(EntityTreeQuery<C> entityTreeQuery) {
-			this.entityTreeQuery = entityTreeQuery;
+			this(entityTreeQuery.getInflater(), entityTreeQuery.getSelectParameterBinders());
+		}
+		
+		private InternalExecutor(EntityTreeInflater<C> inflater, Map<String, ? extends ResultSetReader<?>> selectParameterBinders) {
+			this.inflater = inflater;
+			this.selectParameterBinders = (Map<String, ResultSetReader<?>>) selectParameterBinders;
 		}
 		
 		protected Set<C> execute(PreparedSQL query) {
@@ -189,12 +197,12 @@ public class EntityGraphSelector<C, I, T extends Table> implements EntitySelecto
 		protected Set<C> transform(ReadOperation<Integer> closeableOperation) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
-			RowIterator rowIterator = new RowIterator(resultSet, entityTreeQuery.getSelectParameterBinders());
+			RowIterator rowIterator = new RowIterator(resultSet, selectParameterBinders);
 			return transform(rowIterator);
 		}
 		
 		protected Set<C> transform(Iterator<Row> rowIterator) {
-			return this.entityTreeQuery.getInflater().transform(() -> rowIterator, 50);
+			return inflater.transform(() -> rowIterator, 50);
 		}
 	}
 	

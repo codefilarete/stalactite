@@ -13,11 +13,11 @@ import org.codefilarete.stalactite.engine.model.Country;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
 import org.codefilarete.stalactite.id.StatefulIdentifierAlreadyAssignedIdentifierPolicy;
+import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
 import org.codefilarete.stalactite.sql.HSQLDBDialect;
 import org.codefilarete.stalactite.sql.ddl.DDLDeployer;
-import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
 import org.codefilarete.stalactite.sql.test.HSQLDBInMemoryDataSource;
@@ -64,7 +64,11 @@ class EntityGraphSelectExecutorTest {
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(43, 'Lyon', 12)").execute();
 		currentConnection.prepareStatement("insert into City(id, name, countryId) values(44, 'Grenoble', 12)").execute();
 		
-		EntityGraphSelector<Country, Identifier<Long>, Table> testInstance = new EntityGraphSelector<>(persister, persister.getEntityJoinTree(), connectionProvider, dialect);
+		IdentifierAssembler<Identifier<Long>, ?> identifierAssembler = persister.getMapping().getIdMapping().getIdentifierAssembler();
+		EntityGraphSelector<Country, Identifier<Long>, ?> testInstance = new EntityGraphSelector<>(
+				persister.getEntityJoinTree(),
+				identifierAssembler,
+				connectionProvider, dialect);
 		
 		// Criteria tied to data formerly persisted
 		ConfiguredEntityCriteria countryEntityCriteriaSupport =
