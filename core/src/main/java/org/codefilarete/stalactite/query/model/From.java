@@ -125,6 +125,11 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	}
 	
 	@Override
+	public From innerJoin(QueryProvider<?> rightTable, String rightTableAlias, String joinClause) {
+		return innerJoin(rightTable.getQuery().asPseudoTable(), rightTableAlias, joinClause);
+	}
+	
+	@Override
 	public From leftOuterJoin(Fromable rightTable, String joinClause) {
 		return addNewJoin(rightTable, joinClause, LEFT_OUTER_JOIN);
 	}
@@ -132,6 +137,11 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	@Override
 	public From leftOuterJoin(Fromable rightTable, String rightTableAlias, String joinClause) {
 		return addNewJoin(rightTable, rightTableAlias, joinClause, LEFT_OUTER_JOIN);
+	}
+	
+	@Override
+	public From leftOuterJoin(QueryProvider<?> rightTable, String rightTableAlias, String joinClause) {
+		return leftOuterJoin(rightTable.getQuery().asPseudoTable(), rightTableAlias, joinClause);
 	}
 	
 	@Override
@@ -145,6 +155,11 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	}
 	
 	@Override
+	public From rightOuterJoin(QueryProvider<?> rightTable, String rightTableAlias, String joinClause) {
+		return rightOuterJoin(rightTable.getQuery().asPseudoTable(), rightTableAlias, joinClause);
+	}
+	
+	@Override
 	public From crossJoin(Fromable table) {
 		CrossJoin crossJoin = new CrossJoin(table);
 		add(crossJoin);
@@ -154,6 +169,13 @@ public class From implements Iterable<Join>, JoinChain<From> {
 	@Override
 	public From crossJoin(Fromable table, String tableAlias) {
 		CrossJoin crossJoin = new CrossJoin(table, tableAlias);
+		add(crossJoin);
+		return this;
+	}
+	
+	@Override
+	public From crossJoin(QueryProvider<?> query, String tableAlias) {
+		CrossJoin crossJoin = new CrossJoin(query.getQuery().asPseudoTable(), tableAlias);
 		add(crossJoin);
 		return this;
 	}

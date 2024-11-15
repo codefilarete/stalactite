@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderSet;
 
 /**
@@ -91,8 +93,8 @@ public interface QueryStatement extends SelectablesPod {
 		 * @return union columns per name
 		 */
 		@Override
-		public Map<String, ? extends Selectable<?>> mapColumnsOnName() {
-			return queryStatement.mapColumnsOnName();
+		public Map<String, PseudoColumn<?>> mapColumnsOnName() {
+			return Iterables.map(getColumns(), objectPseudoColumn -> Objects.preventNull(aliases.get(objectPseudoColumn), objectPseudoColumn.getExpression()));
 		}
 	}
 	

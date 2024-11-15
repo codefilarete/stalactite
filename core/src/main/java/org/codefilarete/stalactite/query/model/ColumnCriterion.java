@@ -1,20 +1,18 @@
 package org.codefilarete.stalactite.query.model;
 
-import org.codefilarete.stalactite.sql.ddl.structure.Column;
-
 /**
  * @author Guillaume Mary
  */
 public class ColumnCriterion extends AbstractCriterion {
 	
-	private final Selectable column;
+	private final Selectable<?> column;
 	private final Object /* String or Operator */ condition;
 	
-	public <O> ColumnCriterion(Column<?, O> column, CharSequence condition) {
+	public <O> ColumnCriterion(Selectable<O> column, CharSequence condition) {
 		this(null, column, condition);
 	}
 	
-	public <O> ColumnCriterion(Column<?, O> column, ConditionalOperator<? super O, ?> operator) {
+	public <O> ColumnCriterion(Selectable<O> column, ConditionalOperator<? super O, ?> operator) {
 		this(null, column, operator);
 	}
 	
@@ -32,7 +30,7 @@ public class ColumnCriterion extends AbstractCriterion {
 		return condition;
 	}
 	
-	public ColumnCriterion copyFor(Selectable column) {
+	public ColumnCriterion copyFor(Selectable<?> column) {
 		return new ColumnCriterion(getOperator(), column, getCondition());
 	}
 }

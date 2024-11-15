@@ -1,11 +1,13 @@
 package org.codefilarete.stalactite.query.builder;
 
 import org.codefilarete.stalactite.query.builder.FromSQLBuilderFactory.FromSQLBuilder;
+import org.codefilarete.stalactite.query.model.From;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoColumn;
+import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.query.model.Union;
 import org.codefilarete.stalactite.sql.ddl.DefaultTypeMapping;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,6 +38,15 @@ public class FromSQLBuilderTest {
 		
 		Union union = select(colTotoA, colTotoB).from(tableToto, "T1").where(colTotoB, "= 1").unionAll(
 				select(colTotoA, colTotoB).from(tableToto, "T2").where(colTotoB, "= 2"));
+		
+		union.registerColumn("a", String.class);
+		union.registerColumn("b", String.class);
+		PseudoTable unionAsPseudoTable = union.asPseudoTable("Tutu");
+		PseudoColumn<String> colUnionAsPseudoTableA = (PseudoColumn<String>) unionAsPseudoTable.mapColumnsOnName().get("a");
+		
+		PseudoTable pseudoTable = select(tableTata.getColumns())
+				.from(tableTata).getQuery().asPseudoTable("myPseudoTable");
+		PseudoColumn<String> colPseudoTableA = (PseudoColumn<String>) pseudoTable.mapColumnsOnName().get("a");
 		
 		return new Object[][] {
 				// testing syntax with Table API
@@ -114,8 +125,14 @@ public class FromSQLBuilderTest {
 						"Toto right outer join Tata on id = id" },
 				{ new From(tableToto).crossJoin(tableTata).rightOuterJoin(tableTutu, "id = id"),
 						"Toto cross join Tata right outer join Tutu on id = id" },
+				
+				// with pseudo table
 				{ new From(tableToto).leftOuterJoin(union.asPseudoTable("Tutu"), "z = y"),
 						"Toto left outer join (select T1.a, T1.b from Toto as T1 where T1.b = 1 union all select T2.a, T2.b from Toto as T2 where T2.b = 2) as Tutu on z = y" },
+				{ new From(tableToto).leftOuterJoin(colTotoA, colUnionAsPseudoTableA),
+						"Toto left outer join (select T1.a, T1.b from Toto as T1 where T1.b = 1 union all select T2.a, T2.b from Toto as T2 where T2.b = 2) as Tutu on Toto.a = Tutu.a" },
+				{ new From(tableToto).leftOuterJoin(colTotoA, colPseudoTableA),
+						"Toto left outer join (select Tata.a, Tata.b from Tata) as myPseudoTable on Toto.a = myPseudoTable.a" },
 		};
 	}
 	

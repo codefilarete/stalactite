@@ -235,6 +235,12 @@ public class Query implements FromAware, WhereAware, HavingAware, OrderByAware, 
 	}
 	
 	@Override
+	public FluentFromClause from(QueryProvider<?> query, String alias) {
+		this.fromSurrogate.setRoot(query.getQuery().asPseudoTable(), alias);
+		return from;
+	}
+	
+	@Override
 	public FluentFromClause from(Fromable leftTable, String tableAlias) {
 		this.fromSurrogate.setRoot(leftTable, tableAlias);
 		return from;

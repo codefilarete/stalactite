@@ -11,6 +11,8 @@ public interface FromAware {
 	
 	FluentFromClause from(Fromable leftTable);
 	
+	FluentFromClause from(QueryProvider<?> query, String alias);
+	
 	FluentFromClause from(Fromable leftTable, String alias);
 	
 	FluentFromClause from(Fromable leftTable, Fromable rightTable, String joinCondition);

@@ -133,6 +133,22 @@ class QuerySQLBuilderTest {
 						"select T.a, Tata.b from Toto as T where T.b = 1"
 								+ " union all"
 								+ " select T.a, Tata.b from Toto as T where T.b = 1" },
+				// sub-select in joins
+				{ select(colTotoA, colTotoB)
+						.from(tableToto, "T")
+						.innerJoin(select(tableTata.getColumns())
+									.from(tableTata, "TATA"), "subTATA", "Toto.a = subTATA.a"),
+						"select T.a, T.b from Toto as T inner join (select TATA.a, TATA.b from Tata as TATA) as subTATA on Toto.a = subTATA.a" },
+				{ select(colTotoA, colTotoB)
+						.from(tableToto, "T")
+						.leftOuterJoin(select(tableTata.getColumns())
+									.from(tableTata, "TATA"), "subTATA", "Toto.a = subTATA.a"),
+						"select T.a, T.b from Toto as T left outer join (select TATA.a, TATA.b from Tata as TATA) as subTATA on Toto.a = subTATA.a" },
+				{ select(colTotoA, colTotoB)
+						.from(tableToto, "T")
+						.rightOuterJoin(select(tableTata.getColumns())
+									.from(tableTata, "TATA"), "subTATA", "Toto.a = subTATA.a"),
+						"select T.a, T.b from Toto as T right outer join (select TATA.a, TATA.b from Tata as TATA) as subTATA on Toto.a = subTATA.a" }
 		};
 	}
 	

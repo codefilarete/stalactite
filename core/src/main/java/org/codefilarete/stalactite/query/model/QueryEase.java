@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.Query.FluentSelectClause;
+import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 
 /**
@@ -25,15 +26,15 @@ public class QueryEase {
 		return new Query().select(expression, expressions);
 	}
 	
-	public static FluentSelectClause select(Column column, String alias) {
+	public static FluentSelectClause select(Selectable<?> column, String alias) {
 		return new Query().select(column, alias);
 	}
 	
-	public static FluentSelectClause select(Column col1, String alias1, Column col2, String alias2) {
+	public static FluentSelectClause select(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2) {
 		return new Query().select(col1, alias1, col2, alias2);
 	}
 	
-	public static FluentSelectClause select(Column col1, String alias1, Column col2, String alias2, Column col3, String alias3) {
+	public static FluentSelectClause select(Selectable<?> col1, String alias1, Selectable<?> col2, String alias2, Selectable<?> col3, String alias3) {
 		return new Query().select(col1, alias1, col2, alias2, col3, alias3);
 	}
 	
@@ -45,11 +46,11 @@ public class QueryEase {
 		return new Query().from(rootTable).getQuery().getSelect();
 	}
 	
-	public static Where where(Column column, String condition) {
+	public static Where where(Selectable<?> column, String condition) {
 		return new Where<>(column, condition);
 	}
 	
-	public static Where where(Column column, ConditionalOperator condition) {
+	public static <O> Where where(Selectable<O> column, ConditionalOperator<? super O, ?> condition) {
 		return new Where<>(column, condition);
 	}
 	
@@ -65,7 +66,7 @@ public class QueryEase {
 	 * @param condition the criteria on the {@link Column}
 	 * @return a new {@link Criteria}
 	 */
-	public static Criteria filter(Column column, String condition) {
+	public static Criteria filter(Selectable<?> column, String condition) {
 		return new Criteria<>(column, condition);
 	}
 	
@@ -77,7 +78,7 @@ public class QueryEase {
 	 * @param condition the criteria on the {@link Column}
 	 * @return a new {@link Criteria}
 	 */
-	public static Criteria filter(Column column, ConditionalOperator condition) {
+	public static Criteria filter(Selectable<?> column, ConditionalOperator condition) {
 		return new Criteria<>(column, condition);
 	}
 	
@@ -90,5 +91,9 @@ public class QueryEase {
 	 */
 	public static Criteria filter(Object ... columns) {
 		return new Criteria<>(columns);
+	}
+	
+	public static <C> Selectable<Object> column(String name) {
+		return new SelectableString<>(name, Object.class);
 	}
 }

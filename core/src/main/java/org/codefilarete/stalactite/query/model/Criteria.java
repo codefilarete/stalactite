@@ -45,11 +45,11 @@ public class Criteria<SELF extends Criteria<SELF>> extends AbstractCriterion imp
 	public Criteria() {
 	}
 
-	public Criteria(Column column, String condition) {
+	public Criteria(Selectable<?> column, String condition) {
 		add(new ColumnCriterion(column, condition));
 	}
 	
-	public Criteria(Column column, ConditionalOperator condition) {
+	public <O> Criteria(Selectable<O> column, ConditionalOperator<? super O, ?> condition) {
 		add(new ColumnCriterion(column, condition));
 	}
 	

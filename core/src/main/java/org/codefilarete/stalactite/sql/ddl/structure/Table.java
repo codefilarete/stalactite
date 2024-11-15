@@ -149,6 +149,7 @@ public class Table<SELF extends Table<SELF>> implements Fromable {
 		}
 	}
 	
+	@Override
 	public Map<String, Column<SELF, Object>> mapColumnsOnName() {
 		return new HashMap<>((Map) columnsPerName);
 	}

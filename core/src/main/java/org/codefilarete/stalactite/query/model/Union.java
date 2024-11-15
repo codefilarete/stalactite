@@ -140,7 +140,7 @@ public class Union implements QueryStatement, UnionAware, QueryProvider<Union> {
 	 * @return columns of this instance per their name and alias
 	 */
 	@Override
-	public Map<String, ? extends Selectable<?>> mapColumnsOnName() {
+	public Map<String, Selectable<?>> mapColumnsOnName() {
 		Map<String, Selectable<?>> result = new HashMap<>();
 		for (PseudoColumn<?> column : getColumns()) {
 			result.put(column.getExpression(), column);

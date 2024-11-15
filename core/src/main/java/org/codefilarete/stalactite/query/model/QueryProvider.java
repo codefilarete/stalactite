@@ -6,7 +6,7 @@ package org.codefilarete.stalactite.query.model;
  * 
  * @author Guillaume Mary
  */
-public interface QueryProvider<T extends QueryStatement> {
+public interface QueryProvider<Q extends QueryStatement> {
 	
-	T getQuery();
+	Q getQuery();
 }
