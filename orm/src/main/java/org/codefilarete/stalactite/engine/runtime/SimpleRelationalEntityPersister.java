@@ -89,7 +89,6 @@ public class SimpleRelationalEntityPersister<C, I, T extends Table<T>>
 	protected EntitySelector<C, I> newEntitySelectExecutor(Dialect dialect) {
 		return new EntityGraphSelector<>(
 				getEntityJoinTree(),
-				persister.getMapping().getIdMapping().<T>getIdentifierAssembler(),
 				persister.getConnectionProvider(),
 				dialect);
 	}

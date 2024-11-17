@@ -10,12 +10,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.runtime.load.EntityInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeInflater;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder;
 import org.codefilarete.stalactite.engine.runtime.load.EntityTreeQueryBuilder.EntityTreeQuery;
 import org.codefilarete.stalactite.mapping.ColumnedRow;
-import org.codefilarete.stalactite.mapping.id.assembly.IdentifierAssembler;
 import org.codefilarete.stalactite.query.ConfiguredEntityCriteria;
 import org.codefilarete.stalactite.query.EntitySelector;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
@@ -35,6 +35,7 @@ import org.codefilarete.stalactite.sql.result.RowIterator;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
+import org.codefilarete.stalactite.sql.statement.SQLStatement;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
@@ -58,17 +59,13 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	
 	private final EntityJoinTree<C, I> entityJoinTree;
 	
-	private final IdentifierAssembler<I, T> identifierAssembler;
-	
 	private final ConnectionProvider connectionProvider;
 	
 	private final Dialect dialect;
 	
 	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
-							   IdentifierAssembler<I, T> identifierAssembler,
 							   ConnectionProvider connectionProvider,
 							   Dialect dialect) {
-		this.identifierAssembler = identifierAssembler;
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
@@ -125,10 +122,11 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	}
 	
 	private Set<I> readIds(PreparedSQL preparedSQL, Map<String, ResultSetReader> columnReaders, ColumnedRow columnedRow) {
+		EntityInflater<C, I> entityInflater = entityJoinTree.getRoot().getEntityInflater();
 		try (ReadOperation<Integer> closeableOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = closeableOperation.execute();
 			RowIterator rowIterator = new RowIterator(resultSet, columnReaders);
-			return Iterables.collect(() -> rowIterator, row -> identifierAssembler.assemble(row, columnedRow), HashSet::new);
+			return Iterables.collect(() -> rowIterator, row -> entityInflater.giveIdentifier(row, columnedRow), HashSet::new);
 		} catch (RuntimeException e) {
 			throw new SQLExecutionException(preparedSQL.getSQL(), e);
 		}
@@ -186,15 +184,15 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 			this.selectParameterBinders = (Map<String, ResultSetReader<?>>) selectParameterBinders;
 		}
 		
-		protected Set<C> execute(PreparedSQL query) {
-			try (ReadOperation<Integer> readOperation = new ReadOperation<>(query, connectionProvider)) {
+		protected Set<C> execute(SQLStatement<?> query) {
+			try (ReadOperation<?> readOperation = new ReadOperation<>(query, connectionProvider)) {
 				return transform(readOperation);
 			} catch (RuntimeException e) {
 				throw new SQLExecutionException(query.getSQL(), e);
 			}
 		}
 		
-		protected Set<C> transform(ReadOperation<Integer> closeableOperation) {
+		protected Set<C> transform(ReadOperation<?> closeableOperation) {
 			ResultSet resultSet = closeableOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
 			RowIterator rowIterator = new RowIterator(resultSet, selectParameterBinders);
