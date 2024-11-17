@@ -52,7 +52,7 @@ class StalactiteRepositoryConfigExtensionTest {
 		Table person = new Table<>("Person");
 		Column<Table<?>, Long> idColumn = person.addColumn("id", Long.class);
 		Column<Table<?>, String> nameColumn = person.addColumn("name", String.class);
-		persistenceContext.<Table<?>>insert(person)
+		persistenceContext.insert(person)
 				.set(idColumn, 1L)
 				.set(nameColumn, "John Do")
 				.execute();

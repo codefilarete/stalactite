@@ -14,18 +14,18 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
  * @author Guillaume Mary
  * @see DeleteCommandBuilder
  */
-public class Delete {
+public class Delete<T extends Table<T>> {
 	
 	/** Main table of values to delete */
-	private final Table targetTable;
+	private final T targetTable;
 	
 	private final Criteria<?> criteriaSurrogate = new Criteria<>();
 	
-	public Delete(Table targetTable) {
+	public Delete(T targetTable) {
 		this.targetTable = targetTable;
 	}
 	
-	public Table getTargetTable() {
+	public T getTargetTable() {
 		return targetTable;
 	}
 	
@@ -33,11 +33,25 @@ public class Delete {
 		return criteriaSurrogate;
 	}
 	
-	public CriteriaChain where(Column column, String condition) {
+	/**
+	 * Adds a criteria to this delete.
+	 *
+	 * @param column a column target of the condition
+	 * @param condition the condition
+	 * @return this
+	 */
+	public CriteriaChain where(Column<T, ?> column, String condition) {
 		return criteriaSurrogate.and(column, condition);
 	}
 	
-	public CriteriaChain where(Column column, ConditionalOperator condition) {
+	/**
+	 * Adds a criteria to this delete.
+	 *
+	 * @param column a column target of the condition
+	 * @param condition the condition
+	 * @return this
+	 */
+	public CriteriaChain where(Column<T, ?> column, ConditionalOperator condition) {
 		return criteriaSurrogate.and(column, condition);
 	}
 	

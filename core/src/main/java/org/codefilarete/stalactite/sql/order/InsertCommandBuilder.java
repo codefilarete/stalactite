@@ -28,7 +28,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
  * 
  * @author Guillaume Mary
  */
-public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
+public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	private final Insert<T> insert;
 	
@@ -63,7 +63,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 		result.cat("insert into ").cat(insert.getTargetTable().getAbsoluteName())
 		.cat("(");
 		
-		Iterator<UpdateColumn> columnIterator = insert.getColumns().iterator();
+		Iterator<UpdateColumn<T>> columnIterator = insert.getColumns().iterator();
 		while (columnIterator.hasNext()) {
 			UpdateColumn c = columnIterator.next();
 			result.cat(c.getColumn().getName());
@@ -74,7 +74,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 		
 		result.cat(") values (");
 		
-		Iterator<UpdateColumn> columnIterator2 = insert.getColumns().iterator();
+		Iterator<UpdateColumn<T>> columnIterator2 = insert.getColumns().iterator();
 		while (columnIterator2.hasNext()) {
 			UpdateColumn c = columnIterator2.next();
 			catUpdateObject(c, result);
@@ -147,7 +147,7 @@ public class InsertCommandBuilder<T extends Table> implements SQLBuilder {
 	 * insertStatement.setValue(..);
 	 * }</pre>
 	 */
-	public static class InsertStatement<T extends Table> extends PreparedSQL {
+	public static class InsertStatement<T extends Table<T>> extends PreparedSQL {
 		
 		private final Map<? extends Column<T, Object>, Integer> columnIndexes;
 		

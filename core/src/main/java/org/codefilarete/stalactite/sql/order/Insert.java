@@ -15,12 +15,12 @@ import org.codefilarete.stalactite.sql.ddl.structure.Table;
  * @author Guillaume Mary
  * @see InsertCommandBuilder
  */
-public class Insert<T extends Table> {
+public class Insert<T extends Table<T>> {
 	
 	/** Target of the values to insert */
 	private final T targetTable;
 	/** Target columns of the insert */
-	private final Set<UpdateColumn> columns = new LinkedHashSet<>();
+	private final Set<UpdateColumn<T>> columns = new LinkedHashSet<>();
 	
 	public Insert(T targetTable) {
 		this.targetTable = targetTable;
@@ -40,7 +40,7 @@ public class Insert<T extends Table> {
 	 * @return this
 	 */
 	public Insert<T> set(Column<T, ?> column) {
-		this.columns.add(new UpdateColumn((Column<Table, Object>) column));
+		this.columns.add(new UpdateColumn<>(column));
 		return this;
 	}
 	
@@ -53,7 +53,7 @@ public class Insert<T extends Table> {
 	 * @return this
 	 */
 	public <C> Insert<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn((Column<Table, Object>) column, value));
+		this.columns.add(new UpdateColumn<>(column, value));
 		return this;
 	}
 	
@@ -62,7 +62,7 @@ public class Insert<T extends Table> {
 	 * 
 	 * @return a non null {@link Set}
 	 */
-	public Set<UpdateColumn> getColumns() {
+	public Set<UpdateColumn<T>> getColumns() {
 		return columns;
 	}
 }

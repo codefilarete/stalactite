@@ -25,13 +25,13 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public class DeleteCommandBuilder implements SQLBuilder, PreparedSQLBuilder {
+public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, PreparedSQLBuilder {
 	
-	private final Delete delete;
+	private final Delete<T> delete;
 	private final Dialect dialect;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public DeleteCommandBuilder(Delete delete, Dialect dialect) {
+	public DeleteCommandBuilder(Delete<T> delete, Dialect dialect) {
 		this.delete = delete;
 		this.dialect = dialect;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();

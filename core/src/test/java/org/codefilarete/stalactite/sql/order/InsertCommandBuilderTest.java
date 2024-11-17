@@ -3,14 +3,12 @@ package org.codefilarete.stalactite.sql.order;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-import org.codefilarete.stalactite.sql.order.Insert;
-import org.codefilarete.stalactite.sql.order.InsertCommandBuilder;
-import org.codefilarete.tool.collection.Maps;
-import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
-import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
-import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
+import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
+import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
+import org.codefilarete.stalactite.sql.statement.binder.DefaultParameterBinders;
+import org.codefilarete.tool.collection.Maps;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,41 +18,38 @@ import static org.mockito.Mockito.verify;
 /**
  * @author Guillaume Mary
  */
-public class InsertCommandBuilderTest {
+class InsertCommandBuilderTest {
 	
 	@Test
-	public void testToSQL() {
-		Table totoTable = new Table<>("Toto");
-		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
-		Insert<Table> insert = new Insert<Table>(totoTable)
+	<T extends Table<T>> void testToSQL() {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, String> columnB = totoTable.addColumn("b", String.class);
+		Insert<T> insert = new Insert<>(totoTable)
 				.set(columnA)
 				.set(columnB, "tata");
 		
-		InsertCommandBuilder<Table> testInstance = new InsertCommandBuilder<>(insert);
+		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert);
 		
 		assertThat(testInstance.toSQL()).isEqualTo("insert into Toto(a, b) values (?, 'tata')");
 	}
 	
 	@Test
-	public void testToStatement() throws SQLException {
-		Table totoTable = new Table<>("Toto");
-		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
-		Column<Table, String> columnC = totoTable.addColumn("c", String.class);
-		Insert<Table> insert = new Insert<Table>(totoTable)
+	<T extends Table<T>> void testToStatement() throws SQLException {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, String> columnB = totoTable.addColumn("b", String.class);
+		Column<T, String> columnC = totoTable.addColumn("c", String.class);
+		Insert<T> insert = new Insert<>(totoTable)
 				.set(columnA)
 				.set(columnB, "tata")
 				.set(columnC);
 		
-		InsertCommandBuilder<Table> testInstance = new InsertCommandBuilder<>(insert);
+		InsertCommandBuilder<T> testInstance = new InsertCommandBuilder<>(insert);
 		
 		ColumnBinderRegistry binderRegistry = new ColumnBinderRegistry();
-//		binderRegistry.register(columnA, DefaultParameterBinders.INTEGER_BINDER);
-//		binderRegistry.register(columnB, DefaultParameterBinders.STRING_BINDER);
-//		binderRegistry.register(columnC, DefaultParameterBinders.STRING_BINDER);
 		
-		InsertStatement<Table> result = testInstance.toStatement(binderRegistry);
+		InsertStatement<T> result = testInstance.toStatement(binderRegistry);
 		assertThat(result.getSQL()).isEqualTo("insert into Toto(a, b, c) values (?, ?, ?)");
 		
 		assertThat(result.getValues()).isEqualTo(Maps.asMap(2, (Object) "tata"));
@@ -81,5 +76,4 @@ public class InsertCommandBuilderTest {
 		verify(mock).setLong(1, -42l);
 
 	}
-	
 }

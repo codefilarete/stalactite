@@ -21,61 +21,60 @@ import static org.mockito.Mockito.*;
 class DeleteCommandBuilderTest {
 	
 	@Test
-	void toSQL_singleTable() {
-		Table totoTable = new Table("Toto");
-		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
+	<T extends Table<T>> void toSQL_singleTable() {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, String> columnB = totoTable.addColumn("b", String.class);
 		
-		Delete delete = new Delete(totoTable);
+		Delete<T> delete = new Delete<>(totoTable);
 		delete.where(columnA, Operators.eq(44)).or(columnA, Operators.eq(columnB));
 		
-		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete, new Dialect());
+		DeleteCommandBuilder<T> testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto where a = 44 or a = b");
 		
-		delete = new Delete(totoTable);
+		delete = new Delete<>(totoTable);
 		
-		testInstance = new DeleteCommandBuilder(delete, new Dialect());
+		testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto");
-		
 	}
 	
 	@Test
-	void toSQL_multiTable() {
-		Table totoTable = new Table("Toto");
-		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
-		Table tataTable = new Table("Tata");
-		Column<Table, Long> columnX = tataTable.addColumn("x", Long.class);
-		Column<Table, String> columnY = tataTable.addColumn("y", String.class);
+	<T1 extends Table<T1>, T2 extends Table<T2>> void toSQL_multiTable() {
+		T1 totoTable = (T1) new Table("Toto");
+		Column<T1, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T1, String> columnB = totoTable.addColumn("b", String.class);
+		T2 tataTable = (T2) new Table("Tata");
+		Column<T2, Long> columnX = tataTable.addColumn("x", Long.class);
+		Column<T2, String> columnY = tataTable.addColumn("y", String.class);
 		
-		Delete delete = new Delete(totoTable);
+		Delete<T1> delete = new Delete<>(totoTable);
 		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
-		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete, new Dialect());
+		DeleteCommandBuilder<T1> testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 		
-		delete = new Delete(totoTable);
+		delete = new Delete<>(totoTable);
 		delete.where(columnA, Operators.eq(columnX)).or(columnA, Operators.eq(columnY));
 		
-		testInstance = new DeleteCommandBuilder(delete, new Dialect());
+		testInstance = new DeleteCommandBuilder<>(delete, new Dialect());
 		
 		assertThat(testInstance.toSQL()).isEqualTo("delete from Toto, Tata where Toto.a = Tata.x or Toto.a = Tata.y");
 	}
 	
 	@Test
-	void toPreparedSQL() throws SQLException {
-		Table totoTable = new Table("Toto");
-		Column<Table, Long> columnA = totoTable.addColumn("a", Long.class);
-		Column<Table, String> columnB = totoTable.addColumn("b", String.class);
+	<T extends Table<T>> void toPreparedSQL() throws SQLException {
+		T totoTable = (T) new Table("Toto");
+		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
+		Column<T, String> columnB = totoTable.addColumn("b", String.class);
 		
-		Delete delete = new Delete(totoTable);
+		Delete<T> delete = new Delete<>(totoTable);
 		delete.where(columnA,  Operators.in(42L, 43L)).or(columnA, Operators.eq(columnB));
 		
 		Dialect dialect = new Dialect();
-		DeleteCommandBuilder testInstance = new DeleteCommandBuilder(delete, dialect);
+		DeleteCommandBuilder<T> testInstance = new DeleteCommandBuilder<>(delete, dialect);
 		
 		PreparedSQL result = testInstance.toPreparedSQL();
 		assertThat(result.getSQL()).isEqualTo("delete from Toto where a in (?, ?) or a = b");

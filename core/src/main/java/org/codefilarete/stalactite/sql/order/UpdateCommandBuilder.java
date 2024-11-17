@@ -35,13 +35,13 @@ import org.codefilarete.tool.trace.ModifiableInt;
  * 
  * @author Guillaume Mary
  */
-public class UpdateCommandBuilder implements SQLBuilder {
+public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
-	private final Update update;
+	private final Update<T> update;
 	private final Dialect dialect;
 	private final MultiTableAwareDMLNameProvider dmlNameProvider;
 	
-	public UpdateCommandBuilder(Update update, Dialect dialect) {
+	public UpdateCommandBuilder(Update<T> update, Dialect dialect) {
 		this.update = update;
 		this.dialect = dialect;
 		this.dmlNameProvider = new MultiTableAwareDMLNameProvider();
@@ -102,7 +102,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		
 		// append updated columns part
 		result.cat(" set ");
-		Iterator<UpdateColumn> columnIterator = update.getColumns().iterator();
+		Iterator<UpdateColumn<T>> columnIterator = update.getColumns().iterator();
 		while (columnIterator.hasNext()) {
 			UpdateColumn c = columnIterator.next();
 			result.cat(dmlNameProvider.getName(c.getColumn()), " = ");
@@ -127,7 +127,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 	 * @param result the final SQL appender
 	 * @param dmlNameProvider provider of tables and columns names
 	 */
-	protected void catUpdateObject(UpdateColumn updateColumn, SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
+	protected void catUpdateObject(UpdateColumn<T> updateColumn, SQLAppender result, MultiTableAwareDMLNameProvider dmlNameProvider) {
 		Object value = updateColumn.getValue();
 		if (value instanceof Column) {
 			// case Update.set(colA, colB)
@@ -138,14 +138,14 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		}
 	}
 	
-	public UpdateStatement toStatement() {
+	public UpdateStatement<T> toStatement() {
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
 		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
 		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
 		
 		Map<Integer, Object> values = new HashMap<>(preparedSQLWrapper.getValues());
 		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLWrapper.getParameterBinders());
-		Map<Column<Table, Object>, Integer> columnIndexes = new HashMap<>();
+		Map<Column<T, Object>, Integer> columnIndexes = new HashMap<>();
 		
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.
 		// (ParameterBinders are correctly filled by PreparedSQLWrapper)
@@ -154,7 +154,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		ModifiableInt placeholderColumnCount = new ModifiableInt();
 		update.getColumns().forEach(c -> {
 			// only non column value must be adapted (see catUpdateObject(..))
-			if (!Column.class.isInstance(c.getValue())) {
+			if (!(c.getValue() instanceof Column)) {
 				// NB: prepared statement indexes start at 1 which will be given at first increment
 				int index = placeholderColumnCount.increment();
 				if (values.get(index).equals(UpdateColumn.PLACEHOLDER)) {
@@ -165,7 +165,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		});
 		
 		// final assembly
-		UpdateStatement result = new UpdateStatement(sql, parameterBinders, columnIndexes);
+		UpdateStatement<T> result = new UpdateStatement<>(sql, parameterBinders, columnIndexes);
 		result.setValues(values);
 		return result;
 	}
@@ -184,9 +184,9 @@ public class UpdateCommandBuilder implements SQLBuilder {
 	 * updateStatement.setValue(..);
 	 * }</pre>
 	 */
-	public static class UpdateStatement extends PreparedSQL {
+	public static class UpdateStatement<T extends Table<T>> extends PreparedSQL {
 		
-		private final Map<Column<Table, Object>, Integer> columnIndexes;
+		private final Map<Column<T, Object>, Integer> columnIndexes;
 		
 		/**
 		 * Single constructor, not expected to be used elsewhere than {@link UpdateCommandBuilder}.
@@ -195,9 +195,9 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		 * @param parameterBinders binder for prepared statement values
 		 * @param columnIndexes indexes of the updated columns
 		 */
-		private UpdateStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<Table, Object>, Integer> columnIndexes) {
+		private UpdateStatement(String sql, Map<Integer, ParameterBinder> parameterBinders, Map<? extends Column<T, Object>, Integer> columnIndexes) {
 			super(sql, parameterBinders);
-			this.columnIndexes = (Map<Column<Table, Object>, Integer>) columnIndexes;
+			this.columnIndexes = (Map<Column<T, Object>, Integer>) columnIndexes;
 		}
 		
 		/**
@@ -206,7 +206,7 @@ public class UpdateCommandBuilder implements SQLBuilder {
 		 * @param column {@link Column} to be set
 		 * @param value value applied on Column
 		 */
-		public <C> void setValue(Column<Table, C> column, C value) {
+		public <C> void setValue(Column<T, C> column, C value) {
 			Integer index = columnIndexes.get(column);
 			if (index == null) {
 				throw new IllegalArgumentException("Column " + column.getAbsoluteName() + " is not declared updatable with fixed value in the update clause");
