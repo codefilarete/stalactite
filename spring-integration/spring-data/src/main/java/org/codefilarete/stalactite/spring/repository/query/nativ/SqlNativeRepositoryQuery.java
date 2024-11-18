@@ -39,6 +39,19 @@ public class SqlNativeRepositoryQuery<C> implements RepositoryQuery {
 		this.accumulator = accumulator;
 		this.dialect = dialect;
 		this.connectionProvider = connectionProvider;
+		
+		if (queryMethod.isSliceQuery()) {
+			throw new UnsupportedOperationException(
+					"Slice queries are not supported using string-based queries. Offending method: " + queryMethod);
+		}
+		
+		if (queryMethod.isPageQuery()) {
+			throw new UnsupportedOperationException(
+					"Page queries are not supported using string-based queries. Offending method: " + queryMethod);
+		}
+		
+		// TODO: when upgrading to Spring Data 3.x.y, add an assertion on Limit parameter presence as it's done in StringBasedJdbcQuery
+		// https://github.com/spring-projects/spring-data-relational/blob/main/spring-data-jdbc/src/main/java/org/springframework/data/jdbc/repository/query/StringBasedJdbcQuery.java#L176
 	}
 	
 	@Override

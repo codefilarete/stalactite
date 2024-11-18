@@ -8,7 +8,6 @@ import org.codefilarete.stalactite.engine.model.Republic;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.spring.repository.StalactiteRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -71,8 +70,6 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where Republic.id in (:ids)")
 	Set<Republic> loadByIdIn(@Param("ids") Iterable<Identifier<Long>> ids);
-	
-	Set<Republic> findByNameLike(String name, Sort sort);
 	
 	@Query(value = "select Republic.modificationDate as Republic_modificationDate, Republic.name as Republic_name,"
 			+ " Republic.creationDate as Republic_creationDate, Republic.description as Republic_description, Republic.euMember as Republic_euMember,"
@@ -145,10 +142,6 @@ public interface NativeQueriesRepository extends StalactiteRepository<Republic, 
 			+ " left outer join Language as Country_languages_Language on Country_languages.languages_id = Country_languages_Language.id"
 			+ " where president_vehicle.color = :color")
 	Republic loadByPresidentVehicleColor(@Param("color") Color color);
-	
-	Set<Republic> findByLanguagesCodeIs(String code, Sort sort);
-	
-	Set<Republic> findByLanguagesCodeLike(String code, Sort sort);
 	
 	long deleteByLanguagesCodeIs(String code);
 	

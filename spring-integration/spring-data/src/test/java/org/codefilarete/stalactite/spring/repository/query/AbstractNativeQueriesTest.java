@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -302,88 +301,5 @@ abstract class AbstractNativeQueriesTest {
 		Set<Republic> loadedCountries;
 		loadedCountries = derivedQueriesRepository.loadByNameIn("Titi");
 		assertThat(loadedCountries).containsExactlyInAnyOrder(country2);
-	}
-	
-	@Test
-	void ignoreCase_dynamic() {
-		Republic country1 = new Republic(42);
-		country1.setName("Toto_b");
-		Republic country2 = new Republic(43);
-		country2.setName("TOtO_c");
-		Republic country3 = new Republic(44);
-		country3.setName("toTO_a");
-		Republic country4 = new Republic(45);
-		country4.setName("TonTon");
-		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
-		
-		Set<Republic> loadedCountries;
-		
-		loadedCountries = derivedQueriesRepository.findByNameLike("t", Sort.by("name"));
-		assertThat(loadedCountries).containsExactly(country2, country1, country3);
-		
-		loadedCountries = derivedQueriesRepository.findByNameLike("t", Sort.by(Sort.Order.by("name").ignoreCase()));
-		assertThat(loadedCountries).containsExactly(country3, country1, country2);
-	}
-	
-	@Test
-	void ignoreCase_dynamic_inMemory() {
-		Republic country1 = new Republic(42);
-		country1.setName("Toto_b");
-		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
-		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
-		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
-		country1.setLanguages(asHashSet(frFr, enEn));
-		
-		Republic country2 = new Republic(43);
-		country2.setName("TOtO_c");
-		country2.setLanguages(asHashSet(frFr, esEs));
-		
-		Republic country3 = new Republic(44);
-		country3.setName("toTO_a");
-		country3.setLanguages(asHashSet(frFr, esEs));
-		
-		Republic country4 = new Republic(45);
-		country4.setName("TonTon");
-		
-		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2, country3, country4));
-		
-		Set<Republic> loadedCountries;
-		
-		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("_", Sort.by("name"));
-		assertThat(loadedCountries).containsExactly(country2, country1, country3);
-		
-		loadedCountries = derivedQueriesRepository.findByLanguagesCodeLike("_", Sort.by(Sort.Order.by("name").ignoreCase()));
-		assertThat(loadedCountries).containsExactly(country3, country1, country2);
-	}
-	
-	@Test
-	void orderBy_dynamic() {
-		Republic country1 = new Republic(42);
-		country1.setName("Toto");
-		Language frFr = new Language(new PersistableIdentifier<>(77L), "fr_fr");
-		Language enEn = new Language(new PersistableIdentifier<>(88L), "en_en");
-		Language esEs = new Language(new PersistableIdentifier<>(99L), "es_es");
-		country1.setLanguages(asHashSet(frFr, enEn));
-		Person president1 = new Person(666);
-		president1.setName("me");
-		country1.setPresident(president1);
-		
-		Republic country2 = new Republic(43);
-		country2.setName("Tata");
-		Person president2 = new Person(237);
-		president2.setName("you");
-		country2.setPresident(president2);
-		country2.setLanguages(asHashSet(frFr, esEs));
-		
-		Vehicle vehicle = new Vehicle(1438L);
-		vehicle.setColor(new Color(123));
-		president1.setVehicle(vehicle);
-		
-		derivedQueriesRepository.saveAll(Arrays.asList(country1, country2));
-		
-		Set<Republic> loadedCountries = derivedQueriesRepository.findByLanguagesCodeIs(frFr.getCode(), Sort.by("name"));
-		assertThat(loadedCountries).containsExactly(country2, country1);
-		loadedCountries = derivedQueriesRepository.findByLanguagesCodeIs(frFr.getCode(), Sort.by("name").descending());
-		assertThat(loadedCountries).containsExactly(country1, country2);
 	}
 }
