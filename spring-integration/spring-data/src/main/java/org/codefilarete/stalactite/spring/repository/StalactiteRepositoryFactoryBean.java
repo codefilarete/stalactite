@@ -9,6 +9,7 @@ import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
+import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepositoryFactory;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +28,9 @@ import org.springframework.util.Assert;
 public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 		extends TransactionalRepositoryFactoryBeanSupport<R, C, I> {
 	
-	private AdvancedEntityPersister<?, ?> entityPersister;
 	private Class<?> entityType;
+	private AdvancedEntityPersister<?, ?> entityPersister;
+	private PersistenceContext persistenceContext;
 	
 	/**
 	 * Creates a new {@link StalactiteRepositoryFactoryBean} for the given repository interface.
@@ -54,6 +56,7 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 	
 	@Autowired
 	public void setPersistenceContext(PersistenceContext persistenceContext) {
+		this.persistenceContext = persistenceContext;
 		EntityPersister<?, Object> foundPersister = persistenceContext.getPersister(this.entityType);
 		if (foundPersister == null) {
 			throw new IllegalArgumentException("No persister found for entityType " + Reflections.toString(entityType) + " in persistence context.");
@@ -74,14 +77,12 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 	
 	@Override
 	protected RepositoryFactorySupport doCreateRepositoryFactory() {
-		return new StalactiteRepositoryFactory(this.entityPersister);
+		return new StalactiteRepositoryFactory(this.entityPersister, persistenceContext.getDialect(), persistenceContext.getConnectionProvider());
 	}
 	
 	@Override
 	public void afterPropertiesSet() {
-		
 		Assert.state(entityPersister != null, "EntityPersister must not be null!");
-		
 		super.afterPropertiesSet();
 	}
 }

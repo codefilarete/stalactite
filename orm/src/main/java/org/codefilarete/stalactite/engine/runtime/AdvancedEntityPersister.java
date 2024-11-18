@@ -1,5 +1,7 @@
 package org.codefilarete.stalactite.engine.runtime;
 
+import org.codefilarete.stalactite.engine.runtime.load.EntityJoinTree;
+
 /**
  * In the following, "public" means "for the very end-user".
  * 
@@ -17,5 +19,7 @@ public interface AdvancedEntityPersister<C, I> extends ConfiguredPersister<C, I>
 	 * @return a new {@link EntityQueryCriteriaSupport}
 	 */
 	EntityQueryCriteriaSupport<C, I> newCriteriaSupport();
+	
+	EntityJoinTree<C, I> getEntityJoinTree();
 	
 }

@@ -31,8 +31,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-commons</artifactId>
-			<version>${spring-data.version}</version>
+			<artifactId>spring-data-relational</artifactId>
+			<version>${spring-data-relational.version}</version>
 			<!-- we don't force our version of Spring since this module needs little from it, so it's let to the "caller" to provided it -->
 			<scope>provided</scope>
 		</dependency>

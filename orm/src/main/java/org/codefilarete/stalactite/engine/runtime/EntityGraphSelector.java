@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.sql.ResultSet;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -36,6 +37,8 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.ReadOperation;
 import org.codefilarete.stalactite.sql.statement.SQLExecutionException;
 import org.codefilarete.stalactite.sql.statement.SQLStatement;
+import org.codefilarete.stalactite.sql.statement.StringParamedSQL;
+import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.ResultSetReader;
 import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.collection.KeepOrderMap;
@@ -43,6 +46,7 @@ import org.codefilarete.tool.collection.Maps;
 import org.codefilarete.tool.collection.Maps.ChainingMap;
 
 import static org.codefilarete.stalactite.query.model.Operators.in;
+import static org.codefilarete.tool.bean.Objects.preventNull;
 
 /**
  * Class aimed at loading an entity graph which is selected by properties criteria coming from {@link CriteriaChain}.
@@ -69,6 +73,66 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+	}
+	
+	public Set<C> selectFromQueryBean(String sql, Map<String, Object> values) {
+		// Computing parameter binders from values
+		Map<String, PreparedStatementWriter<?>> parameterBinders = new HashMap<>();
+		values.forEach((paramName, value) -> {
+			PreparedStatementWriter<?> writer = dialect.getColumnBinderRegistry().getWriter(value.getClass());
+			parameterBinders.put(paramName, writer);
+		});
+		
+		return selectFromQueryBean(sql, values, parameterBinders);
+	}
+	
+	public Set<C> selectFromQueryBean(String sql, Map<String, Object> values, Map<String, PreparedStatementWriter<?>> parameterBinders) {
+		// we use EntityTreeQueryBuilder to get the inflater, please note that it also build the default Query
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry())
+				.buildSelectQuery();
+		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
+		
+		// computing SQL readers from dialect binder registry
+		Query query = entityTreeQuery.getQuery();
+		Map<String, ResultSetReader<?>> selectParameterBinders = new HashMap<>();
+		query.getColumns().forEach(selectable -> {
+			ResultSetReader<?> reader;
+			String alias = preventNull(query.getAliases().get(selectable), selectable.getExpression());
+			if (selectable instanceof Column) {
+				reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
+				selectParameterBinders.put(alias, reader);
+			} else {
+				reader = dialect.getColumnBinderRegistry().getReader(selectable.getJavaType());
+			}
+			selectParameterBinders.put(alias, reader);
+		});
+		
+		StringParamedSQL statement = new StringParamedSQL(sql, parameterBinders);
+		statement.setValues(values);
+		return new InternalExecutor(inflater, selectParameterBinders).execute(statement);
+	}
+	
+	public Set<C> selectFromQueryBean(Query query) {
+		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry())
+				.buildSelectQuery();
+		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
+		
+		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		
+		Map<String, ResultSetReader<?>> selectParameterBinders = new HashMap<>();
+		query.getColumns().forEach(selectable -> {
+			ResultSetReader<?> reader;
+			String alias = preventNull(query.getAliases().get(selectable), selectable.getExpression());
+			if (selectable instanceof Column) {
+				reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
+				selectParameterBinders.put(alias, reader);
+			} else {
+				reader = dialect.getColumnBinderRegistry().getReader(selectable.getJavaType());
+			}
+			selectParameterBinders.put(alias, reader);
+		});
+		return new InternalExecutor(inflater, selectParameterBinders).execute(preparedSQL);
 	}
 	
 	/**
