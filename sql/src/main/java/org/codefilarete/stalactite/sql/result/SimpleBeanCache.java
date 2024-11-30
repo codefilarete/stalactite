@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.result;
 
-import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,7 +40,7 @@ public final class SimpleBeanCache {
 	 * @param factory the "method" that will be called to create the entity when the entity is not in the cache
 	 * @return the existing instance in the cache or a new object
 	 */
-	public <C, I> C computeIfAbsent(Class<C> clazz, @Nonnull I identifier, Function<I, C> factory) {
+	public <C, I> C computeIfAbsent(Class<C> clazz, I identifier, Function<I, C> factory) {
 		BeanKey key;
 		if (identifier.getClass().isArray()) {
 			// NB: we must cast into Object[] to avoid the JVM to wrap the identifier into an array of Object due to varargs constructor

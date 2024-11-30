@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.result;
 
-import javax.annotation.Nonnull;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
@@ -351,7 +350,7 @@ public class WholeResultSetTransformer<C, I> implements ResultSetTransformer<C, 
 		}
 		
 		@Override
-		public void assemble(@Nonnull K bean, ResultSet resultSet) {
+		public void assemble(K bean, ResultSet resultSet) {
 			// getting the bean
 			V value = transformer.transform(resultSet);
 			// applying it to the setter

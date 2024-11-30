@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import javax.annotation.Nonnull;
 import java.sql.Connection;
 
 /**
@@ -24,7 +23,6 @@ public class TransactionAwareConnectionProvider implements ConnectionProvider, T
 	}
 	
 	@Override
-	@Nonnull
 	public Connection giveConnection() {
 		Connection connection = delegate.giveConnection();
 		transactionAwareConnexionWrapper.setDelegate(connection);

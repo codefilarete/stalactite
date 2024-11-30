@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.mapping;
 
-import javax.annotation.Nonnull;
 import java.util.function.Function;
 
 import org.codefilarete.reflection.ReversibleAccessor;
@@ -65,7 +64,7 @@ public class SimpleIdMapping<C, I> implements IdMapping<C, I> {
 	}
 	
 	@Override
-	public boolean isNew(@Nonnull C entity) {
+	public boolean isNew(C entity) {
 		return isNewDeterminer.isNew(entity);
 	}
 	

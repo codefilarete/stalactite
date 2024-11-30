@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql;
 
-import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,7 @@ public class MySQLDMLNameProvider extends DMLNameProvider {
 	}
 	
 	@Override
-	public String getSimpleName(@Nonnull Selectable<?> column) {
+	public String getSimpleName(Selectable<?> column) {
 		if (KEYWORDS.contains(column.getExpression())) {
 			return "`" + column.getExpression() + "`";
 		}

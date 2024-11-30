@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.statement;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -202,7 +201,7 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	 * Set params that mustn't be logged when debug is activated for values
 	 * @param notLoggedParams set of not loggable values
 	 */
-	public void setNotLoggedParams(@Nonnull Set<ParamType> notLoggedParams) {
+	public void setNotLoggedParams(Set<ParamType> notLoggedParams) {
 		this.notLoggedParams = notLoggedParams;
 	}
 	

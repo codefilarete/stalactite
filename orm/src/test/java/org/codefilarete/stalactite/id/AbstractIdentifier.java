@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.id;
 
-import javax.annotation.Nonnull;
-
 import org.codefilarete.tool.Reflections;
 
 /**
@@ -13,14 +11,12 @@ import org.codefilarete.tool.Reflections;
 public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	
 	/** Real value, not null */
-	@Nonnull
 	private final T surrogate;
 	
-	public AbstractIdentifier(@Nonnull T surrogate) {
+	public AbstractIdentifier(T surrogate) {
 		this.surrogate = surrogate;
 	}
 	
-	@Nonnull
 	public T getSurrogate() {
 		return surrogate;
 	}
@@ -47,7 +43,7 @@ public abstract class AbstractIdentifier<T> implements Identifier<T> {
 	 * @param that another objet, not null
 	 * @return true if this surrogate equals the other surrogate
 	 */
-	protected boolean equalsDeeply(@Nonnull AbstractIdentifier<?> that) {
+	protected boolean equalsDeeply(AbstractIdentifier<?> that) {
 		return surrogate.equals(that.surrogate);
 	}
 	

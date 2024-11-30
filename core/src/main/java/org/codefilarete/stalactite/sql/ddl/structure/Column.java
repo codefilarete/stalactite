@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.sql.ddl.structure;
 
-import javax.annotation.Nonnull;
-
 import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Selectable;
 
@@ -26,14 +24,14 @@ public class Column<T extends Table, O> implements Selectable<O>, JoinLink<T, O>
 	/**
 	 * Build a column
 	 */
-	public Column(@Nonnull T owner, String name, Class<O> javaType) {
+	public Column(T owner, String name, Class<O> javaType) {
 		this(owner, name, javaType, null);
 	}
 	
 	/**
 	 * Build a column with a size
 	 */
-	public Column(@Nonnull T owner, String name, Class<O> javaType, Integer size) {
+	public Column(T owner, String name, Class<O> javaType, Integer size) {
 		this.table = owner;
 		this.name = name;
 		this.javaType = javaType;

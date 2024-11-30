@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.id;
 
-import javax.annotation.Nonnull;
-
 import org.codefilarete.stalactite.engine.runtime.BeanPersister;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 
@@ -21,7 +19,6 @@ public interface StatefulIdentifier<T> {
 	 * Returns the value to persist
 	 * @return the value to persist, obviously not null
 	 */
-	@Nonnull
 	T getSurrogate();
 	
 	/**

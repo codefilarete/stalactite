@@ -1,6 +1,5 @@
 package org.codefilarete.stalactite.sql.ddl;
 
-import javax.annotation.Nonnull;
 import java.sql.Connection;
 import java.util.Collections;
 
@@ -82,7 +81,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getName(@Nonnull Fromable table) {
+			public String getName(Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}
@@ -107,7 +106,7 @@ public class DDLTableGeneratorTest {
 		// test with a non default DMLNameProvider
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(Collections.emptyMap()) {
 			@Override
-			public String getName(@Nonnull Fromable table) {
+			public String getName(Fromable table) {
 				if (table == toto) {
 					return "'user'";
 				}

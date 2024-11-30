@@ -83,12 +83,12 @@ public class PreparedSQLAppender implements SQLAppender {
 			// Columns are simply appended (no binder needed nor index increment)
 			surrogate.cat(dmlNameProvider.getName((Selectable) value));
 		} else {
-			appendParameter(value, binderSupplier);
+			appendPlaceholder(value, binderSupplier);
 		}
 		return this;
 	}
 	
-	private void appendParameter(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
+	private void appendPlaceholder(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
 		surrogate.cat("?");
 		values.put(paramCounter.getValue(), value);
 		parameterBinders.put(paramCounter.getValue(), binderSupplier.get());

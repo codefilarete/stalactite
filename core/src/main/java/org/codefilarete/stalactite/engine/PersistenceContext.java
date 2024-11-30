@@ -66,16 +66,21 @@ import org.danekja.java.util.function.serializable.SerializableSupplier;
  */
 public class PersistenceContext implements DatabaseCrudOperations {
 	
+	private static final int DEFAULT_BATCH_SIZE = 100;
+	
 	private final Dialect dialect;
 	private final TransactionAwareConnectionConfiguration connectionConfiguration;
 	private final DefaultPersisterRegistry persisterRegistry = new DefaultPersisterRegistry();
 	
 	/**
 	 * Constructor with minimal but necessary information.
-	 * JDBC batch size is set to 100.
+	 * JDBC batch size is set to {@value DEFAULT_BATCH_SIZE}.
 	 * Dialect is deduced from JVM Service Provider and connection metadata.
+	 * Connection is provided per Thread and <strong>autocommit is set to false hence transaction are not managed</strong> : caller must use
+	 * {@link Connection#commit()} and {@link Connection#rollback()} to handle it. 
 	 * 
 	 * @param dataSource a JDBC {@link Connection} provider
+	 * @see CurrentThreadConnectionProvider
 	 */
 	public PersistenceContext(DataSource dataSource) {
 		this(new CurrentThreadConnectionProvider(dataSource));
@@ -84,6 +89,8 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	/**
 	 * Constructor with minimal but necessary information.
 	 * JDBC batch size is set to 100.
+	 * Connection is provided per Thread and <strong>autocommit is set to false hence transaction are not managed</strong> : caller must use
+	 * {@link Connection#commit()} and {@link Connection#rollback()} to handle it. 
 	 *
 	 * @param dataSource a JDBC {@link Connection} provider
 	 * @param dialect dialect to be used with {@link Connection} given by dataSource
@@ -94,13 +101,13 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	/**
 	 * Constructor with minimal but necessary information.
-	 * JDBC batch size is set to 100.
+	 * JDBC batch size is set to {@value DEFAULT_BATCH_SIZE}.
 	 * Dialect is deduced from JVM Service Provider and connection metadata.
 	 *
 	 * @param connectionProvider a JDBC {@link Connection} provider
 	 */
 	public PersistenceContext(ConnectionProvider connectionProvider) {
-		this(new ConnectionConfigurationSupport(connectionProvider, 100), new ServiceLoaderDialectResolver());
+		this(new ConnectionConfigurationSupport(connectionProvider, DEFAULT_BATCH_SIZE), new ServiceLoaderDialectResolver());
 	}
 	
 	/**
@@ -115,13 +122,13 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	
 	/**
 	 * Constructor with {@link Connection} provider and dialect provider.
-	 * JDBC batch size is set to 100.
+	 * JDBC batch size is set to {@value DEFAULT_BATCH_SIZE}.
 	 * 
 	 * @param connectionProvider a JDBC {@link Connection} provider
 	 * @param dialectResolver dialect provider
 	 */
 	public PersistenceContext(ConnectionProvider connectionProvider, DialectResolver dialectResolver) {
-		this(new ConnectionConfigurationSupport(connectionProvider, 100), dialectResolver);
+		this(new ConnectionConfigurationSupport(connectionProvider, DEFAULT_BATCH_SIZE), dialectResolver);
 	}
 	
 	/**
@@ -143,7 +150,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 	 * @param dialect dialect to be used with {@link Connection}
 	 */
 	public PersistenceContext(ConnectionProvider connectionProvider, Dialect dialect) {
-		this(new ConnectionConfigurationSupport(connectionProvider, 100), dialect);
+		this(new ConnectionConfigurationSupport(connectionProvider, DEFAULT_BATCH_SIZE), dialect);
 	}
 	
 	/**

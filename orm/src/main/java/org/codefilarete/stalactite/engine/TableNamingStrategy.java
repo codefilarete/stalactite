@@ -1,7 +1,5 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.annotation.Nonnull;
-
 /**
  * Contract for giving a name to an entity table
  * 
@@ -14,7 +12,7 @@ public interface TableNamingStrategy {
 	 * @param persistedClass the class to be persisted 
 	 * @return table name for persisted class
 	 */
-	String giveName(@Nonnull Class persistedClass);
+	String giveName(Class persistedClass);
 	
 	TableNamingStrategy DEFAULT = Class::getSimpleName;
 	

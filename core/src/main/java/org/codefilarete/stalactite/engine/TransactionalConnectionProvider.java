@@ -1,14 +1,13 @@
 package org.codefilarete.stalactite.engine;
 
-import javax.annotation.Nonnull;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 
-import org.codefilarete.tool.exception.Exceptions;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.CurrentThreadConnectionProvider;
+import org.codefilarete.tool.exception.Exceptions;
 
 /**
  * 
@@ -23,7 +22,6 @@ public class TransactionalConnectionProvider implements ConnectionProvider, Sepa
 		this.jdbcConnectionProvider = new CurrentThreadConnectionProvider(dataSource);
 	}
 	
-	@Nonnull
 	@Override
 	public Connection giveConnection() {
 		return this.jdbcConnectionProvider.giveConnection();
