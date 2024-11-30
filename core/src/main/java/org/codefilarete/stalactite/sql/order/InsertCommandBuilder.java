@@ -6,10 +6,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.DMLNameProvider;
-import org.codefilarete.stalactite.query.builder.PreparedSQLWrapper;
+import org.codefilarete.stalactite.query.builder.PreparedSQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
-import org.codefilarete.stalactite.query.builder.StringAppenderWrapper;
+import org.codefilarete.stalactite.query.builder.StringSQLAppender;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -38,9 +38,9 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	
 	@Override
 	public String toSQL() {
-		return toSQL(new StringAppenderWrapper(new StringAppender(), new DMLNameProvider(new HashMap<>())) {
+		return toSQL(new StringSQLAppender(new StringAppender(), new DMLNameProvider(new HashMap<>())) {
 			@Override
-			public <V> StringAppenderWrapper catValue(@Nullable Selectable<V> column, V value) {
+			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, V value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {
@@ -49,7 +49,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 			}
 			
 			@Override
-			public StringAppenderWrapper catValue(Object value) {
+			public StringSQLAppender catValue(Object value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {
@@ -103,11 +103,11 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(new HashMap<>());
 		
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
-		String sql = toSQL(preparedSQLWrapper);
+		PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(new StringAppender(), dmlNameProvider), columnBinderRegistry, dmlNameProvider);
+		String sql = toSQL(preparedSQLAppender);
 		
-		Map<Integer, Object> values = new HashMap<>(preparedSQLWrapper.getValues());
-		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLWrapper.getParameterBinders());
+		Map<Integer, Object> values = new HashMap<>(preparedSQLAppender.getValues());
+		Map<Integer, ParameterBinder> parameterBinders = new HashMap<>(preparedSQLAppender.getParameterBinders());
 		Map<Column<T, Object>, Integer> columnIndexes = new HashMap<>();
 		
 		// PreparedSQLWrapper has filled values (see catUpdateObject(..)) but PLACEHOLDERs must be removed from them.

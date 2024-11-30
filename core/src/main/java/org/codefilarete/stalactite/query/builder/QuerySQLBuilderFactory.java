@@ -183,7 +183,7 @@ public class QuerySQLBuilderFactory {
 		@Override
 		public String toSQL() {
 			StringAppender result = new StringAppender(500);
-			toSQL(new StringAppenderWrapper(result, dmlNameProvider));
+			toSQL(new StringSQLAppender(result, dmlNameProvider));
 			return result.toString();
 		}
 			
@@ -222,11 +222,11 @@ public class QuerySQLBuilderFactory {
 		@Override
 		public PreparedSQL toPreparedSQL() {
 			StringAppender sql = new StringAppender(500);
-			PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
-			return toPreparedSQL(preparedSQLWrapper);
+			PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
+			return toPreparedSQL(preparedSQLAppender);
 		}
 		
-		public PreparedSQL toPreparedSQL(PreparedSQLWrapper sqlWrapper) {
+		public PreparedSQL toPreparedSQL(PreparedSQLAppender sqlWrapper) {
 			sqlWrapper.cat("select ", selectSQLBuilder.toSQL());
 			sqlWrapper.cat(" from ");
 			fromSqlBuilder.toPreparedSQL(sqlWrapper);

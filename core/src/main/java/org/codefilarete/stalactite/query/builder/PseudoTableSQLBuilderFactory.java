@@ -47,7 +47,7 @@ public class PseudoTableSQLBuilderFactory {
 		@Override
 		public CharSequence toSQL() {
 			StringAppender result = new StringAppender(500);
-			toSQL(new StringAppenderWrapper(result, new DMLNameProvider(queryStatement.getAliases()::get)));
+			toSQL(new StringSQLAppender(result, new DMLNameProvider(queryStatement.getAliases()::get)));
 			return result.toString();
 		}
 		
@@ -87,15 +87,15 @@ public class PseudoTableSQLBuilderFactory {
 			return preparedSQL;
 		}
 		
-		public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
+		public PreparedSQL toPreparedSQL(PreparedSQLAppender preparedSQLAppender) {
 			Set<Query> queries = queryStatement.getQueries();
 			Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
 			Map<Integer, Object> values = new HashMap<>();
 			ModifiableInt parameterIndex = new ModifiableInt(1);
-			preparedSQLWrapper.cat("(");
+			preparedSQLAppender.cat("(");
 			queries.forEach(query -> {
-				PreparedSQL preparedSql = querySQLBuilderFactory.queryBuilder(query).toPreparedSQL(preparedSQLWrapper);
-				preparedSQLWrapper.cat(UNION_ALL_SEPARATOR);
+				PreparedSQL preparedSql = querySQLBuilderFactory.queryBuilder(query).toPreparedSQL(preparedSQLAppender);
+				preparedSQLAppender.cat(UNION_ALL_SEPARATOR);
 				preparedSql.getValues().values().forEach(value -> {
 					// since ids are all
 					values.put(parameterIndex.getValue(), value);
@@ -105,10 +105,10 @@ public class PseudoTableSQLBuilderFactory {
 					parameterIndex.increment();
 				});
 			});
-			preparedSQLWrapper.removeLastChars(UNION_ALL_SEPARATOR.length());
-			preparedSQLWrapper.cat(")");
+			preparedSQLAppender.removeLastChars(UNION_ALL_SEPARATOR.length());
+			preparedSQLAppender.cat(")");
 			
-			PreparedSQL preparedSQL = new PreparedSQL(preparedSQLWrapper.toString(), parameterBinders);
+			PreparedSQL preparedSQL = new PreparedSQL(preparedSQLAppender.toString(), parameterBinders);
 			preparedSQL.setValues(values);
 			return preparedSQL;
 		}

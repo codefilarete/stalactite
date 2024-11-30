@@ -95,7 +95,7 @@ public class WhereSQLBuilderFactory {
 		}
 		
 		public String appendSQL(StringAppender sql) {
-			return appendSQL(new StringAppenderWrapper(sql, dmlNameProvider));
+			return appendSQL(new StringSQLAppender(sql, dmlNameProvider));
 		}
 		
 		public String appendSQL(SQLAppender sql) {
@@ -110,15 +110,15 @@ public class WhereSQLBuilderFactory {
 		}
 		
 		public PreparedSQL toPreparedSQL(StringAppender sql, ColumnBinderRegistry parameterBinderRegistry) {
-			PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
-			return toPreparedSQL(preparedSQLWrapper);
+			PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
+			return toPreparedSQL(preparedSQLAppender);
 		}
 		
-		public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
-			WhereAppender whereAppender = new WhereAppender(preparedSQLWrapper, dmlNameProvider, operatorSqlBuilder, functionSQLBuilder);
+		public PreparedSQL toPreparedSQL(PreparedSQLAppender preparedSQLAppender) {
+			WhereAppender whereAppender = new WhereAppender(preparedSQLAppender, dmlNameProvider, operatorSqlBuilder, functionSQLBuilder);
 			whereAppender.cat(where);
-			PreparedSQL result = new PreparedSQL(preparedSQLWrapper.getSQL(), preparedSQLWrapper.getParameterBinders());
-			result.setValues(preparedSQLWrapper.getValues());
+			PreparedSQL result = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
+			result.setValues(preparedSQLAppender.getValues());
 			return result;
 		}
 		

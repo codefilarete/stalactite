@@ -39,18 +39,18 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 	
 	@Override
 	public String toSQL() {
-		return toSQL(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dmlNameProvider);
+		return toSQL(new StringSQLAppender(new StringAppender(), dmlNameProvider), dmlNameProvider);
 	}
 	
 	@Override
 	public PreparedSQL toPreparedSQL() {
 		// We ask for SQL generation through a PreparedSQLWrapper because we need SQL placeholders for where + update clause
-		PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
-		String sql = toSQL(preparedSQLWrapper, dmlNameProvider);
+		PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(new StringAppender(), dmlNameProvider), dialect.getColumnBinderRegistry(), dmlNameProvider);
+		String sql = toSQL(preparedSQLAppender, dmlNameProvider);
 		
 		// final assembly
-		PreparedSQL result = new PreparedSQL(sql, preparedSQLWrapper.getParameterBinders());
-		result.setValues(preparedSQLWrapper.getValues());
+		PreparedSQL result = new PreparedSQL(sql, preparedSQLAppender.getParameterBinders());
+		result.setValues(preparedSQLAppender.getValues());
 		return result;
 	}
 	

@@ -31,11 +31,11 @@ class FunctionSQLBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
 		
-		testInstance.cat(new Count(colA), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Count(colA), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("count(Toto.a)");
 		
 		result = new StringAppender();
-		testInstance.cat(new Count(colA).distinct(), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Count(colA).distinct(), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("count(distinct Toto.a)");
 	}
 	
@@ -47,7 +47,7 @@ class FunctionSQLBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
 		
-		testInstance.cat(new Min<>(colA), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Min<>(colA), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("min(Toto.a)");
 	}
 	
@@ -59,7 +59,7 @@ class FunctionSQLBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
 		
-		testInstance.cat(new Max<>(colA), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Max<>(colA), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("max(Toto.a)");
 	}
 	
@@ -71,7 +71,7 @@ class FunctionSQLBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
 		
-		testInstance.cat(new Sum<>(colA), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Sum<>(colA), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("sum(Toto.a)");
 	}
 	
@@ -80,7 +80,7 @@ class FunctionSQLBuilderTest {
 		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
-		testInstance.cat(new Cast<>("toto", Integer.class), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Cast<>("toto", Integer.class), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("cast('toto' as integer)");
 	}
 	
@@ -89,7 +89,7 @@ class FunctionSQLBuilderTest {
 		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result = new StringAppender();
 		
-		testInstance.cat(new Cast<>((String) null, Integer.class), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Cast<>((String) null, Integer.class), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("cast(null as integer)");
 	}
 	
@@ -101,7 +101,7 @@ class FunctionSQLBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class, 128);
 		
-		testInstance.cat(new Cast<>(new Max<>(colA), Integer.class), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Cast<>(new Max<>(colA), Integer.class), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("cast(max(Toto.a) as integer)");
 	}
 	
@@ -113,7 +113,7 @@ class FunctionSQLBuilderTest {
 		Table tableToto = new Table("Toto");
 		Column colA = tableToto.addColumn("a", String.class, 128);
 		
-		testInstance.cat(new Cast<>(colA, String.class, 128), new StringAppenderWrapper(result, dmlNameProvider));
+		testInstance.cat(new Cast<>(colA, String.class, 128), new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("cast(Toto.a as varchar(128))");
 	}
 	
@@ -126,7 +126,7 @@ class FunctionSQLBuilderTest {
 		Column colA = tableToto.addColumn("a", String.class);
 		Column colB = tableToto.addColumn("b", String.class);
 		
-		StringAppenderWrapper sql = new StringAppenderWrapper(result, dmlNameProvider);
+		StringSQLAppender sql = new StringSQLAppender(result, dmlNameProvider);
 		testInstance.cat(new Coalesce<>(colA, colB), sql);
 		assertThat(result.toString()).isEqualTo("coalesce(Toto.a, Toto.b)");
 	}
@@ -135,7 +135,7 @@ class FunctionSQLBuilderTest {
 	public void combining_functions() {
 		FunctionSQLBuilder testInstance = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		StringAppender result;
-		StringAppenderWrapper sql;
+		StringSQLAppender sql;
 		
 		Table tableToto = new Table("Toto");
 		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
@@ -143,22 +143,22 @@ class FunctionSQLBuilderTest {
 		
 		
 		result = new StringAppender();
-		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		sql = new StringSQLAppender(result, dmlNameProvider);
 		testInstance.cat(new Coalesce<>(colA, new Cast<>(colB, String.class)), sql);
 		assertThat(result.toString()).isEqualTo("coalesce(Toto.a, cast(Toto.b as varchar))");
 		
 		result = new StringAppender();
-		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		sql = new StringSQLAppender(result, dmlNameProvider);
 		testInstance.cat(new Max<>(new Coalesce<>(colA, new Cast<>(colB, String.class))), sql);
 		assertThat(result.toString()).isEqualTo("max(coalesce(Toto.a, cast(Toto.b as varchar)))");
 		
 		result = new StringAppender();
-		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		sql = new StringSQLAppender(result, dmlNameProvider);
 		testInstance.cat(substring(colB, 2, 30), sql);
 		assertThat(result.toString()).isEqualTo("substring(Toto.b, 2, 30)");
 		
 		result = new StringAppender();
-		sql = new StringAppenderWrapper(result, dmlNameProvider);
+		sql = new StringSQLAppender(result, dmlNameProvider);
 		testInstance.cat(substring(cast(colA, String.class), 2, 30), sql);
 		assertThat(result.toString()).isEqualTo("substring(cast(Toto.a as varchar), 2, 30)");
 	}

@@ -72,7 +72,7 @@ public class FromSQLBuilderFactory {
 				throw new IllegalArgumentException("Empty from");
 			}
 			StringAppender result = new StringAppender();
-			FromGenerator fromGenerator = new FromGenerator(new StringAppenderWrapper(result, dmlNameProvider), dmlNameProvider);
+			FromGenerator fromGenerator = new FromGenerator(new StringSQLAppender(result, dmlNameProvider), dmlNameProvider);
 			fromGenerator.cat(from.getRoot());
 			Iterator<Join> joinIterator = from.getJoins().iterator();
 			joinIterator.forEachRemaining(fromGenerator::cat);
@@ -85,22 +85,22 @@ public class FromSQLBuilderFactory {
 		}
 		
 		public PreparedSQL toPreparedSQL(StringAppender sql, ColumnBinderRegistry parameterBinderRegistry) {
-			PreparedSQLWrapper preparedSQLWrapper = new PreparedSQLWrapper(new StringAppenderWrapper(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
-			return toPreparedSQL(preparedSQLWrapper);
+			PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
+			return toPreparedSQL(preparedSQLAppender);
 		}
 		
-		public PreparedSQL toPreparedSQL(PreparedSQLWrapper preparedSQLWrapper) {
+		public PreparedSQL toPreparedSQL(PreparedSQLAppender preparedSQLAppender) {
 			if (from.getRoot() == null) {
 				// invalid SQL
 				throw new IllegalArgumentException("Empty from");
 			}
-			FromGenerator fromGenerator = new FromGenerator(preparedSQLWrapper, dmlNameProvider) {
+			FromGenerator fromGenerator = new FromGenerator(preparedSQLAppender, dmlNameProvider) {
 				
 				/** Overridden to make it call pseudoTableBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
 				@Override
 				void cat(Query query) {
 					QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
-					unionBuilder.toPreparedSQL(preparedSQLWrapper);
+					unionBuilder.toPreparedSQL(preparedSQLAppender);
 				}
 				
 				/** Overridden to make it call pseudoTableBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
@@ -109,15 +109,15 @@ public class FromSQLBuilderFactory {
 					PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
 					// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 					sql.cat("(");
-					pseudoTableSqlBuilder.toPreparedSQL(preparedSQLWrapper);
+					pseudoTableSqlBuilder.toPreparedSQL(preparedSQLAppender);
 					sql.cat(") as ").cat(getAliasOrDefault(pseudoTable));
 				}
 			};
 			fromGenerator.cat(from.getRoot());
 			Iterator<Join> joinIterator = from.getJoins().iterator();
 			joinIterator.forEachRemaining(fromGenerator::cat);
-			PreparedSQL result = new PreparedSQL(preparedSQLWrapper.getSQL(), preparedSQLWrapper.getParameterBinders());
-			result.setValues(preparedSQLWrapper.getValues());
+			PreparedSQL result = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
+			result.setValues(preparedSQLAppender.getValues());
 			return result;
 		}
 		

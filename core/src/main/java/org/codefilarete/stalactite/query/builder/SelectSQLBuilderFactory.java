@@ -72,7 +72,7 @@ public class SelectSQLBuilderFactory {
 		}
 		
 		private void cat(Iterable<? extends Selectable<?> /* String, Column or AliasedColumn */> select, StringAppender sql) {
-			StringAppenderWrapper appenderWrapper = new StringAppenderWrapper(sql, dmlNameProvider);
+			StringSQLAppender appenderWrapper = new StringSQLAppender(sql, dmlNameProvider);
 			for (Object o : select) {
 				if (o instanceof SQLFunction) {
 					cat((SQLFunction) o, appenderWrapper);

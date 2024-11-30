@@ -16,7 +16,7 @@ import org.codefilarete.tool.trace.ModifiableInt;
 /**
  * An appender to a {@link PreparedSQL}
  */
-public class PreparedSQLWrapper implements SQLAppender {
+public class PreparedSQLAppender implements SQLAppender {
 	
 	private final SQLAppender surrogate;
 	private final ColumnBinderRegistry parameterBinderRegistry;
@@ -25,7 +25,7 @@ public class PreparedSQLWrapper implements SQLAppender {
 	private final ModifiableInt paramCounter = new ModifiableInt(1);
 	private final DMLNameProvider dmlNameProvider;
 	
-	public PreparedSQLWrapper(SQLAppender sqlAppender, ColumnBinderRegistry parameterBinderRegistry, DMLNameProvider dmlNameProvider) {
+	public PreparedSQLAppender(SQLAppender sqlAppender, ColumnBinderRegistry parameterBinderRegistry, DMLNameProvider dmlNameProvider) {
 		this.surrogate = sqlAppender;
 		this.parameterBinderRegistry = parameterBinderRegistry;
 		this.dmlNameProvider = dmlNameProvider;
@@ -42,7 +42,7 @@ public class PreparedSQLWrapper implements SQLAppender {
 	}
 	
 	@Override
-	public PreparedSQLWrapper cat(String s, String... ss) {
+	public PreparedSQLAppender cat(String s, String... ss) {
 		surrogate.cat(s, ss);
 		return this;
 	}
@@ -56,7 +56,7 @@ public class PreparedSQLWrapper implements SQLAppender {
 	 * @param <V> value type
 	 */
 	@Override
-	public <V> PreparedSQLWrapper catValue(@Nullable Selectable<V> column, V value) {
+	public <V> PreparedSQLAppender catValue(@Nullable Selectable<V> column, V value) {
 		return catValue(value, () -> {
 			if (column == null) {
 				return getParameterBinderFromRegistry(value);
@@ -69,7 +69,7 @@ public class PreparedSQLWrapper implements SQLAppender {
 	}
 	
 	@Override
-	public PreparedSQLWrapper catValue(Object value) {
+	public PreparedSQLAppender catValue(Object value) {
 		return catValue(value, () -> getParameterBinderFromRegistry(value));
 	}
 	
@@ -78,7 +78,7 @@ public class PreparedSQLWrapper implements SQLAppender {
 		return parameterBinderRegistry.getBinder(binderType);
 	}
 	
-	private PreparedSQLWrapper catValue(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
+	private PreparedSQLAppender catValue(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
 		if (value instanceof Selectable) {
 			// Columns are simply appended (no binder needed nor index increment)
 			surrogate.cat(dmlNameProvider.getName((Selectable) value));
@@ -96,7 +96,7 @@ public class PreparedSQLWrapper implements SQLAppender {
 	}
 	
 	@Override
-	public PreparedSQLWrapper catColumn(Column column) {
+	public PreparedSQLAppender catColumn(Column column) {
 		// Columns are simply appended (no binder needed nor index increment)
 		surrogate.cat(dmlNameProvider.getName(column));
 		return this;
