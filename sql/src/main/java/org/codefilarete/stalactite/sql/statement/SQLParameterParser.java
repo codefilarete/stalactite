@@ -99,7 +99,7 @@ public class SQLParameterParser {
 					sqlSnippet.setLength(0);
 				}
 			});
-			// onConsumptionEnd() is not called on String end: we consumer remaining chars
+			// onConsumptionEnd() is not called on String end: we consume remaining chars
 			if (currentPos == sqlLength && sqlSnippet.length() != 0) {
 				parsedSQL.addSqlSnippet(sqlSnippet.toString());
 			}
@@ -303,7 +303,7 @@ public class SQLParameterParser {
 				@Override
 				public StringAppender cat(Object s) {
 					if (s instanceof Parameter) {
-						// NB: don't merge nexts statements to super.cat(...) because it will call us back
+						// NB: don't merge next statements to super.cat(...) because it will call us back
 						super.cat(":");
 						super.cat(((Parameter) s).getName());
 					} else {

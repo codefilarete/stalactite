@@ -60,11 +60,7 @@ public class ExpandableSQL {
 	}
 	
 	private void buildParameter(String parameterName, int valueSize, int firstIndex, StringBuilder preparedSQLBuilder) {
-		ExpandableParameter expandableParameter = this.expandableParameters.get(parameterName);
-		if (expandableParameter == null) {
-			expandableParameter = new ExpandableParameter(parameterName, valueSize);
-			this.expandableParameters.put(parameterName, expandableParameter);
-		}
+		ExpandableParameter expandableParameter = this.expandableParameters.computeIfAbsent(parameterName, name -> new ExpandableParameter(name, valueSize));
 		expandableParameter.buildMarkIndexes(firstIndex);
 		expandableParameter.catParameterMarks(preparedSQLBuilder);
 	}

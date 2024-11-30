@@ -89,7 +89,7 @@ public class EntityJoinTree<C, I> {
 	/**
 	 * Returns mapping between {@link JoinNode} and their internal name.
 	 *
-	 * @return an unmodifiable version of the internal mapping (because its maintenance responsability falls to current class)
+	 * @return an unmodifiable version of the internal mapping (because its maintenance responsibility falls to current class)
 	 */
 	Map<String, JoinNode> getJoinIndex() {
 		return java.util.Collections.unmodifiableMap(joinIndex);

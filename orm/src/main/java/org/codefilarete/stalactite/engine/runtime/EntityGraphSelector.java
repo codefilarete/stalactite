@@ -112,29 +112,6 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		return new InternalExecutor(inflater, selectParameterBinders).execute(statement);
 	}
 	
-	public Set<C> selectFromQueryBean(Query query) {
-		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry())
-				.buildSelectQuery();
-		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
-		
-		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
-		
-		Map<String, ResultSetReader<?>> selectParameterBinders = new HashMap<>();
-		query.getColumns().forEach(selectable -> {
-			ResultSetReader<?> reader;
-			String alias = preventNull(query.getAliases().get(selectable), selectable.getExpression());
-			if (selectable instanceof Column) {
-				reader = dialect.getColumnBinderRegistry().getReader((Column) selectable);
-				selectParameterBinders.put(alias, reader);
-			} else {
-				reader = dialect.getColumnBinderRegistry().getReader(selectable.getJavaType());
-			}
-			selectParameterBinders.put(alias, reader);
-		});
-		return new InternalExecutor(inflater, selectParameterBinders).execute(preparedSQL);
-	}
-	
 	/**
 	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
 	 */

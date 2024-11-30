@@ -3,7 +3,7 @@ package org.codefilarete.stalactite.query.model.operator;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
 
 /**
- * Represents a greater (> or >=) comparison
+ * Represents a lesser (< or <=) comparison
  * 
  * @author Guillaume Mary
  */
