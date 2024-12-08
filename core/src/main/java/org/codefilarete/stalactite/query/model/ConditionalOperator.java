@@ -51,7 +51,11 @@ public abstract class ConditionalOperator<T, V> {
 		this.not = !this.not;
 	}
 	
-	public abstract void setValue(V value);
+	public abstract void setValue(Variable<V> value);
+	
+	public final void setValue(V value) {
+		setValue(new ValuedVariable<>(value));
+	}
 	
 	public abstract boolean isNull();
 }

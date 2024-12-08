@@ -1,6 +1,8 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.query.model.Variable;
 
 /**
  * Parent class that describes a function in some SQL statement
@@ -14,7 +16,7 @@ public abstract class SQLFunction<V, O> implements Selectable<O> {
 	private final String functionName;
 	private final Class<O> javaType;
 	/** Value of argument */
-	private V value;
+	private Variable<V> value;
 	
 	protected SQLFunction(String functionName, Class<O> javaType) {
 		this(functionName, javaType, null);
@@ -23,7 +25,7 @@ public abstract class SQLFunction<V, O> implements Selectable<O> {
 	protected SQLFunction(String functionName, Class<O> javaType, V value) {
 		this.functionName = functionName;
 		this.javaType = javaType;
-		this.value = value;
+		this.value = new ValuedVariable<>(value);
 	}
 	
 	public String getFunctionName() {
@@ -33,7 +35,7 @@ public abstract class SQLFunction<V, O> implements Selectable<O> {
 	/**
 	 * @return the value of this operator
 	 */
-	public V getValue() {
+	public Variable<V> getValue() {
 		return value;
 	}
 	
@@ -41,7 +43,7 @@ public abstract class SQLFunction<V, O> implements Selectable<O> {
 	 * Sets the value of this operator
 	 * @param value the new value
 	 */
-	public void setValue(V value) {
+	public void setValue(Variable<V> value) {
 		this.value = value;
 	}
 	

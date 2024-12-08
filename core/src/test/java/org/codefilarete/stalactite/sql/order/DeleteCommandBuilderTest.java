@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.order;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.HashMap;
 
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.sql.Dialect;
@@ -21,7 +22,7 @@ import static org.mockito.Mockito.*;
 class DeleteCommandBuilderTest {
 	
 	@Test
-	<T extends Table<T>> void toSQL_singleTable() {
+	<T extends Table<T>> void appendTo_singleTable() {
 		T totoTable = (T) new Table("Toto");
 		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
@@ -41,7 +42,7 @@ class DeleteCommandBuilderTest {
 	}
 	
 	@Test
-	<T1 extends Table<T1>, T2 extends Table<T2>> void toSQL_multiTable() {
+	<T1 extends Table<T1>, T2 extends Table<T2>> void appendTo_multiTable() {
 		T1 totoTable = (T1) new Table("Toto");
 		Column<T1, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<T1, String> columnB = totoTable.addColumn("b", String.class);
@@ -76,7 +77,7 @@ class DeleteCommandBuilderTest {
 		Dialect dialect = new Dialect();
 		DeleteCommandBuilder<T> testInstance = new DeleteCommandBuilder<>(delete, dialect);
 		
-		PreparedSQL result = testInstance.toPreparedSQL();
+		PreparedSQL result = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		assertThat(result.getSQL()).isEqualTo("delete from Toto where a in (?, ?) or a = b");
 		
 		assertThat(result.getValues()).isEqualTo(Maps.asMap(1, 42L).add(2, 43L));
@@ -90,7 +91,7 @@ class DeleteCommandBuilderTest {
 		
 		// ensuring that column type override in registry is taken into account
 		dialect.getColumnBinderRegistry().register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
-		result = testInstance.toPreparedSQL();
+		result = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result.applyValues(mock);

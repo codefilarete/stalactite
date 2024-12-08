@@ -101,7 +101,7 @@ public class SingleTablePolymorphismEntitySelector<C, I, T extends Table<T>, DTY
 		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
 		limitAwareConsumer.accept(query.orderBy());
 		
-		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
+		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
 		
 		// Second phase : selecting entities by delegating it to each subclass loader
 		// It will generate 1 query per found subclass, made as this :

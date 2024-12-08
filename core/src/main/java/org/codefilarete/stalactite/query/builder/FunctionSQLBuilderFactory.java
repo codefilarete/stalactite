@@ -1,6 +1,10 @@
 package org.codefilarete.stalactite.query.builder;
 
+import java.util.function.Consumer;
+
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Count;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
@@ -57,33 +61,41 @@ public class FunctionSQLBuilderFactory {
 				if (operator instanceof Count && ((Count) operator).isDistinct()) {
 					sql.cat("distinct ");
 				}
-				N functionArguments = operator.getValue();
-				if (functionArguments instanceof Iterable) {
-					for (Object argument : (Iterable) functionArguments) {
-						catArgument(sql, argument);
-						sql.cat(", ");
+				Variable<N> functionValue = operator.getValue();
+				if (functionValue instanceof ValuedVariable) {
+					N functionArguments = ((ValuedVariable<N>) functionValue).getValue();
+					if (functionArguments instanceof Iterable) {
+						for (Object argument : (Iterable) functionArguments) {
+							catArgument(sql, argument, sql::catValue);
+							sql.cat(", ");
+						}
+						sql.removeLastChars(2);
+					} else {
+						catArgument(sql, functionArguments, sql::catValue);
 					}
-					sql.removeLastChars(2);
-				} else {
-					catArgument(sql, functionArguments);
+					sql.cat(")");
 				}
-				sql.cat(")");
 			}
 		}
 		
-		private void catArgument(SQLAppender sql, Object argument) {
+		private void catArgument(SQLAppender sql, Object argument, Consumer<Object> fallbackHandler) {
+			if (argument instanceof ValuedVariable) {
+				argument = ((ValuedVariable) argument).getValue();
+			}
 			if (argument instanceof SQLFunction) {
 				cat((SQLFunction) argument, sql);
 			} else if (argument instanceof Selectable) {
 				sql.cat(dmlNameProvider.getName((Selectable) argument));
 			} else {
-				sql.catValue(argument);
+				fallbackHandler.accept(argument);
 			}
 		}
 		
 		public void catCast(Cast<?, ?> cast, SQLAppender sqlAppender) {
 			sqlAppender.cat(cast.getExpression(), "(");
-			catArgument(sqlAppender, cast.getValue());
+			// we think that Cast arguments can hardly be a value, but more an expression, therefore when a String is given to it, we don't want it
+			// to be surrounded by "'", which does catValue(..), hence, as a fallback, we simply append it
+			catArgument(sqlAppender, cast.getValue(), value -> sqlAppender.cat(String.valueOf(value)));
 			sqlAppender.cat(" as ", javaTypeToSqlTypeMapping.getTypeName(cast.getJavaType(), cast.getTypeSize()), ")");
 		}
 	}

@@ -27,7 +27,7 @@ public class SQLParameterParserTest {
 		Parameter paramC = new Parameter("C");
 		return new Object[][] {
 				// should not break anything since no parameter
-				{ "select a from Toto where b = 1", new ParsedSQL(asList((Object) "select a from Toto where b = 1"),
+				{ "select a from Toto where b = 1", new ParsedSQL(asList("select a from Toto where b = 1"),
 						new HashMap<>()) },
 				// only one parameter, at the end
 				{ "select a from Toto where b = :B", new ParsedSQL(asList("select a from Toto where b = ", paramB),
@@ -40,9 +40,9 @@ public class SQLParameterParserTest {
 						paramC),
 						Maps.asMap("B", paramB).add("C", paramC)) },
 				// parameters and quotes
-				{ "select a from Toto where b = 'hello :D !' and c = ':C' and d = :B", new ParsedSQL(asList("select a from Toto where b = 'hello :D !' and c = ':C' and d = ", paramB),
+				{ "select a from Toto where b = 'hello :D !' and c = ':C' and d = :B", new ParsedSQL(asList("select a from Toto where b = ", "'hello :D !'", " and c = ", "':C'", " and d = ", paramB),
 						Maps.asMap("B", paramB)) },
-				{ "select a from Toto where b = \"hello :D !\" and c = \":C\" and d = ':B'", new ParsedSQL(asList("select a from Toto where b = \"hello :D !\" and c = \":C\" and d = ':B'"),
+				{ "select a from Toto where b = \"hello :D !\" and c = \":C\" and d = ':B'", new ParsedSQL(asList("select a from Toto where b = ", "\"hello :D !\"", " and c = ", "\":C\"", " and d = ", "':B'"),
 						Collections.emptyMap()) },
 		};
 	}

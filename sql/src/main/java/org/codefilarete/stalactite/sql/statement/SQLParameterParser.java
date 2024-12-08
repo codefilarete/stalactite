@@ -283,14 +283,8 @@ public class SQLParameterParser {
 			this.sqlSnippets.add(parameter);
 		}
 		
-		public void addSqlSnippet(String sqlSnippet) {
-			int size = sqlSnippets.size();
-			// String is concatenated to last String, else it is simply added to the end
-			if (size > 0 && sqlSnippets.get(size - 1) instanceof String) {
-				this.sqlSnippets.set(size - 1, sqlSnippets.get(size - 1) + sqlSnippet);
-			} else {
-				this.sqlSnippets.add(sqlSnippet);
-			}
+		public void addSqlSnippet(CharSequence sqlSnippet) {
+			this.sqlSnippets.add(sqlSnippet);
 		}
 		
 		/**

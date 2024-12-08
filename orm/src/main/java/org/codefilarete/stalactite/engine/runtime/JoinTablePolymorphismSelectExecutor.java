@@ -101,7 +101,7 @@ public class JoinTablePolymorphismSelectExecutor<C, I, T extends Table<T>> imple
 		});
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
 		Map<Selectable<?>, String> aliases = query.getSelectSurrogate().getAliases();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		// Below we keep order of given entities mainly to get steady unit tests. Meanwhile, this may have performance
 		// impacts but very difficult to measure
 		Map<Class, Set<I>> idsPerSubclass = new KeepOrderMap<>();

@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.model.operator;
 
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.query.model.Variable;
 
 /**
  * Represents a "is null" comparison
@@ -18,7 +19,7 @@ public class IsNull extends UnitaryOperator<Object> {
 	 * @param value any object
 	 */
 	@Override
-	public void setValue(Object value) {
+	public void setValue(Variable<Object> value) {
 		// setting a value on this as no effect because it has no sense
 	}
 	

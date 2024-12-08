@@ -1,11 +1,11 @@
 package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -39,9 +39,9 @@ class JoinTablePolymorphismSelectExecutorTest {
 		JoinTablePolymorphismSelectExecutor testInstance = new JoinTablePolymorphismSelectExecutor<>(null, null, null, null, null);
 		TupleIn tupleIn = testInstance.transformCompositeIdentifierColumnValuesToTupleInValues(3, columnValues);
 		assertThat(tupleIn.getColumns()).containsExactly(firstNameColumn, lastNameColumn, ageColumn);
-		assertThat(tupleIn.getValue().get(0)).containsExactly("John", "Doe", 40);
-		assertThat(tupleIn.getValue().get(1)).containsExactly("Jane", "Doe", 41);
-		assertThat(tupleIn.getValue().get(2)).containsExactly("Paul", "Smith", 35);
+		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(0)).containsExactly("John", "Doe", 40);
+		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(1)).containsExactly("Jane", "Doe", 41);
+		assertThat(((ValuedVariable<List<Object[]>>) tupleIn.getValue()).getValue().get(2)).containsExactly("Paul", "Smith", 35);
 		
 	}
 	

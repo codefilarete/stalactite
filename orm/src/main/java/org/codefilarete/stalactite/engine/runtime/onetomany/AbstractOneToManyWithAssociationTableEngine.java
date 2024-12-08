@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.engine.runtime.onetomany;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -263,7 +264,7 @@ public abstract class AbstractOneToManyWithAssociationTableEngine<SRC, TRGT, SRC
 					associationTableDelete.where(first(columns), Operators.in(identifiers));
 				}
 				
-				PreparedSQL deleteStatement = new DeleteCommandBuilder(associationTableDelete, dialect).toPreparedSQL();
+				PreparedSQL deleteStatement = new DeleteCommandBuilder(associationTableDelete, dialect).toPreparedSQL().toPreparedSQL(new HashMap<>());
 				// We don't know how many relations is contained in the table, so we don't check for deletion row count
 				try (WriteOperation<Integer> writeOperation = writeOperationFactory.createInstance(deleteStatement, associationPersister.getConnectionProvider())) {
 					writeOperation.setValues(deleteStatement.getValues());

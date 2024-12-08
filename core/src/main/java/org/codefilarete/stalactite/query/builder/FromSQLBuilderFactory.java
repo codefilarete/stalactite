@@ -2,8 +2,8 @@ package org.codefilarete.stalactite.query.builder;
 
 import java.util.Iterator;
 
-import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.builder.PseudoTableSQLBuilderFactory.PseudoTableSQLBuilder;
+import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.From;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin;
 import org.codefilarete.stalactite.query.model.From.AbstractJoin.JoinDirection;
@@ -17,7 +17,6 @@ import org.codefilarete.stalactite.query.model.JoinLink;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement.PseudoTable;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.StringAppender;
@@ -80,16 +79,17 @@ public class FromSQLBuilderFactory {
 		}
 		
 		@Override
-		public PreparedSQL toPreparedSQL() {
-			return toPreparedSQL(new StringAppender(), querySQLBuilderFactory.getParameterBinderRegistry());
+		public ExpandableSQLAppender toPreparedSQL() {
+//			PreparedSQL preparedSQL = toPreparedSQL(new StringAppender(), querySQLBuilderFactory.getParameterBinderRegistry());
+			ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(querySQLBuilderFactory.getParameterBinderRegistry(), dmlNameProvider);
+			appendTo(preparedSQLAppender);
+//			PreparedSQL result = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
+//			result.setValues(preparedSQLAppender.getValues());
+			
+			return preparedSQLAppender;
 		}
 		
-		public PreparedSQL toPreparedSQL(StringAppender sql, ColumnBinderRegistry parameterBinderRegistry) {
-			PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
-			return toPreparedSQL(preparedSQLAppender);
-		}
-		
-		public PreparedSQL toPreparedSQL(PreparedSQLAppender preparedSQLAppender) {
+		public void appendTo(ExpandableSQLAppender preparedSQLAppender) {
 			if (from.getRoot() == null) {
 				// invalid SQL
 				throw new IllegalArgumentException("Empty from");
@@ -100,7 +100,7 @@ public class FromSQLBuilderFactory {
 				@Override
 				void cat(Query query) {
 					QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
-					unionBuilder.toPreparedSQL(preparedSQLAppender);
+					unionBuilder.appendTo(preparedSQLAppender);
 				}
 				
 				/** Overridden to make it call pseudoTableBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
@@ -109,16 +109,13 @@ public class FromSQLBuilderFactory {
 					PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);
 					// tableAlias may be null which produces invalid SQL in a majority of cases, but not when it is the only element in the From clause ...
 					sql.cat("(");
-					pseudoTableSqlBuilder.toPreparedSQL(preparedSQLAppender);
+					pseudoTableSqlBuilder.appendTo(preparedSQLAppender);
 					sql.cat(") as ").cat(getAliasOrDefault(pseudoTable));
 				}
 			};
 			fromGenerator.cat(from.getRoot());
 			Iterator<Join> joinIterator = from.getJoins().iterator();
 			joinIterator.forEachRemaining(fromGenerator::cat);
-			PreparedSQL result = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
-			result.setValues(preparedSQLAppender.getValues());
-			return result;
 		}
 		
 		/**

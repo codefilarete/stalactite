@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.sql.statement;
 
 import java.sql.PreparedStatement;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriterIndex;
@@ -39,14 +40,17 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 					+ " (value = " + value + ")"
 					+ " on sql : " + getSQL());
 		}
-		int[] markIndexes = getIndexes(paramType);
+		adaptIterablePlaceholders(value, getIndexes(paramType), (v, markIndex) -> doApplyValue(v, markIndex, parameterBinder, statement));
+	}
+	
+	public static void adaptIterablePlaceholders(Object value, int[] markIndexes, BiConsumer<Integer, Object> placeholderIndexValueConsumer) {
 		if (markIndexes.length > 1 && value instanceof Iterable) {
 			// we have several mark indexes : one per value, and one per parameter in query ("id = :id or id = :id)
 			// so we loop twice
 			for (int i = 0; i < markIndexes.length;) {
 				for (Object v : (Iterable) value) {
 					int markIndex = markIndexes[i];
-					doApplyValue(markIndex, v, parameterBinder, statement);
+					placeholderIndexValueConsumer.accept(markIndex, v);
 					i++;
 				}
 			}
@@ -56,7 +60,7 @@ public abstract class ExpandableStatement<ParamType> extends SQLStatement<ParamT
 			// - multiple mark indexes and a single value => all indexes will have the same value
 			// - one mark index and multiple values (List or any Iterable in fact) => binder should handle this case (ComplexTypeBinder for instance)
 			for (int markIndex : markIndexes) {
-				doApplyValue(markIndex, value, parameterBinder, statement);
+				placeholderIndexValueConsumer.accept(markIndex, value);
 			}
 		}
 	}

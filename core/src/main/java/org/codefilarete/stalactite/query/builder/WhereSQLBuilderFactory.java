@@ -9,11 +9,11 @@ import org.codefilarete.stalactite.query.model.CriteriaChain;
 import org.codefilarete.stalactite.query.model.LogicalOperator;
 import org.codefilarete.stalactite.query.model.RawCriterion;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.BiOperandOperator;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.query.model.operator.TupleIn;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.SQLStatement.BindingException;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
 import org.codefilarete.tool.Reflections;
@@ -91,35 +91,24 @@ public class WhereSQLBuilderFactory {
 		
 		@Override
 		public String toSQL() {
-			return appendSQL(new StringAppender());
+			return appendTo(new StringAppender());
 		}
 		
-		public String appendSQL(StringAppender sql) {
-			return appendSQL(new StringSQLAppender(sql, dmlNameProvider));
+		public String appendTo(StringAppender sql) {
+			appendTo(new StringSQLAppender(sql, dmlNameProvider));
+			return sql.toString();
 		}
 		
-		public String appendSQL(SQLAppender sql) {
+		public void appendTo(SQLAppender sql) {
 			WhereAppender whereAppender = new WhereAppender(sql, dmlNameProvider, operatorSqlBuilder, functionSQLBuilder);
 			whereAppender.cat(where);
-			return sql.getSQL();
 		}
 		
 		@Override
-		public PreparedSQL toPreparedSQL() {
-			return toPreparedSQL(new StringAppender(), parameterBinderRegistry);
-		}
-		
-		public PreparedSQL toPreparedSQL(StringAppender sql, ColumnBinderRegistry parameterBinderRegistry) {
-			PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
-			return toPreparedSQL(preparedSQLAppender);
-		}
-		
-		public PreparedSQL toPreparedSQL(PreparedSQLAppender preparedSQLAppender) {
-			WhereAppender whereAppender = new WhereAppender(preparedSQLAppender, dmlNameProvider, operatorSqlBuilder, functionSQLBuilder);
-			whereAppender.cat(where);
-			PreparedSQL result = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
-			result.setValues(preparedSQLAppender.getValues());
-			return result;
+		public ExpandableSQLAppender toPreparedSQL() {
+			ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(parameterBinderRegistry, dmlNameProvider);
+			appendTo(preparedSQLAppender);
+			return preparedSQLAppender;
 		}
 		
 		public class WhereAppender {
@@ -213,7 +202,7 @@ public class WhereSQLBuilderFactory {
 						} catch (BindingException e) {
 							throw new IllegalArgumentException("Unknown criterion type " + Reflections.toString(condition.getClass()));
 						}
-						sql.catValue(condition);
+						sql.catValue((Variable<?>) condition);
 					}
 				}
 			}

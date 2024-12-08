@@ -7,7 +7,6 @@ import java.util.Set;
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.QueryStatement;
-import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.PreparedStatementWriter;
 import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.trace.ModifiableInt;
@@ -61,56 +60,35 @@ public class PseudoTableSQLBuilderFactory {
 		}
 		
 		@Override
-		public PreparedSQL toPreparedSQL() {
-			Set<Query> queries = queryStatement.getQueries();
-			StringAppender unionSql = new StringAppender();
-			Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
-			Map<Integer, Object> values = new HashMap<>();
-			ModifiableInt parameterIndex = new ModifiableInt(1);
-			queries.forEach(query -> {
-				PreparedSQL preparedSql = querySQLBuilderFactory.queryBuilder(query).toPreparedSQL();
-				unionSql.cat(preparedSql.getSQL(), UNION_ALL_SEPARATOR);
-				preparedSql.getValues().values().forEach(value -> {
-					// since ids are all
-					values.put(parameterIndex.getValue(), value);
-					// NB: parameter binder is expected to be always the same since we always put ids
-					parameterBinders.put(parameterIndex.getValue(),
-							preparedSql.getParameterBinder(1 + parameterIndex.getValue() % preparedSql.getValues().size()));
-					parameterIndex.increment();
-				});
-			});
-			unionSql.cutTail(UNION_ALL_SEPARATOR.length())
-					.wrap("(", ")");
+		public ExpandableSQLAppender toPreparedSQL() {
+			ExpandableSQLAppender expandableSQLAppender = new ExpandableSQLAppender(querySQLBuilderFactory.getParameterBinderRegistry(), new DMLNameProvider(queryStatement.getAliases()::get));
+			appendTo(expandableSQLAppender);
 			
-			PreparedSQL preparedSQL = new PreparedSQL(unionSql.toString(), parameterBinders);
-			preparedSQL.setValues(values);
-			return preparedSQL;
+//			PreparedSQL preparedSQL = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
+//			preparedSQL.setValues(preparedSQLAppender.getValues());
+			return expandableSQLAppender;
 		}
 		
-		public PreparedSQL toPreparedSQL(PreparedSQLAppender preparedSQLAppender) {
+		public void appendTo(ExpandableSQLAppender preparedSQLAppender) {
 			Set<Query> queries = queryStatement.getQueries();
 			Map<Integer, PreparedStatementWriter> parameterBinders = new HashMap<>();
 			Map<Integer, Object> values = new HashMap<>();
 			ModifiableInt parameterIndex = new ModifiableInt(1);
 			preparedSQLAppender.cat("(");
 			queries.forEach(query -> {
-				PreparedSQL preparedSql = querySQLBuilderFactory.queryBuilder(query).toPreparedSQL(preparedSQLAppender);
+				querySQLBuilderFactory.queryBuilder(query).appendTo(preparedSQLAppender);
 				preparedSQLAppender.cat(UNION_ALL_SEPARATOR);
-				preparedSql.getValues().values().forEach(value -> {
-					// since ids are all
-					values.put(parameterIndex.getValue(), value);
-					// NB: parameter binder is expected to be always the same since we always put ids
-					parameterBinders.put(parameterIndex.getValue(),
-							preparedSql.getParameterBinder(1 + parameterIndex.getValue() % preparedSql.getValues().size()));
-					parameterIndex.increment();
-				});
+//				preparedSQLAppender.getValues().values().forEach(value -> {
+//					// since ids are all
+//					values.put(parameterIndex.getValue(), value);
+//					// NB: parameter binder is expected to be always the same since we always put ids
+//					parameterBinders.put(parameterIndex.getValue(),
+//							preparedSQLAppender.getParameterBinder(1 + parameterIndex.getValue() % preparedSql.getValues().size()));
+//					parameterIndex.increment();
+//				});
 			});
 			preparedSQLAppender.removeLastChars(UNION_ALL_SEPARATOR.length());
 			preparedSQLAppender.cat(")");
-			
-			PreparedSQL preparedSQL = new PreparedSQL(preparedSQLAppender.toString(), parameterBinders);
-			preparedSQL.setValues(values);
-			return preparedSQL;
 		}
 		
 		private class UnionGenerator {

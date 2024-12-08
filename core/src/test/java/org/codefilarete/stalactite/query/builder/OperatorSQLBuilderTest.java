@@ -8,6 +8,7 @@ import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.Funct
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
+import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Coalesce;
 import org.codefilarete.stalactite.query.model.operator.DateFormat;
@@ -35,6 +36,7 @@ import static org.codefilarete.stalactite.query.model.Operators.in;
 import static org.codefilarete.stalactite.query.model.Operators.lowerCase;
 import static org.codefilarete.stalactite.query.model.Operators.lt;
 import static org.codefilarete.stalactite.query.model.Operators.lteq;
+import static org.codefilarete.stalactite.query.model.Operators.max;
 import static org.codefilarete.stalactite.query.model.Operators.not;
 import static org.codefilarete.stalactite.query.model.Operators.startsWith;
 import static org.codefilarete.stalactite.query.model.Operators.trim;
@@ -54,7 +56,7 @@ class OperatorSQLBuilderTest {
 		
 		testInstance.cat(new ConditionalOperator<Object, Object>() {
 			@Override
-			public void setValue(Object value) {
+			public void setValue(Variable<Object> value) {
 				
 			}
 			
@@ -170,6 +172,13 @@ class OperatorSQLBuilderTest {
 		testInstance.catIn(in("a", "b"), new StringSQLAppender(result, dmlNameProvider), null);
 		assertThat(result.toString()).isEqualTo("in ('a', 'b')");
 		
+		result = new StringAppender();
+		Table tableToto = new Table("Toto");
+		Column<?, Integer> colA = tableToto.addColumn("a", Integer.class);
+		Column<?, Integer> colB = tableToto.addColumn("b", Integer.class);
+		testInstance.catIn(in(max(colA), max(colB)), new StringSQLAppender(result, dmlNameProvider), null);
+		assertThat(result.toString()).isEqualTo("in (max(Toto.a), max(Toto.b))");
+		
 		// next test is meant to record the behavior, not to approve it
 		result = new StringAppender();
 		testInstance.catIn(in(), new StringSQLAppender(result, dmlNameProvider), null);
@@ -205,7 +214,7 @@ class OperatorSQLBuilderTest {
 		
 		// next test is meant to record the behavior, not to approve it
 		result = new StringAppender();
-		tupleIn = new TupleIn(new Column[] { firstName, lastName }, null);
+		tupleIn = new TupleIn(new Column[] { firstName, lastName }, (List) null);
 		testInstance.cat(tupleIn, new StringSQLAppender(result, dmlNameProvider));
 		assertThat(result.toString()).isEqualTo("(dummyTable.firstName, dummyTable.lastName) in (null, null)");
 		

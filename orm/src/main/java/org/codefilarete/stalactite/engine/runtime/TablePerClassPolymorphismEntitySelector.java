@@ -194,7 +194,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		// since criteria is passed to union subqueries, we don't need it into the entire query
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), originalColumnsToClones);
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
@@ -249,7 +249,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), originalColumnsToClones));
 		limitAwareConsumer.accept(query.orderBy());
 		
-		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
+		Map<Class, Set<I>> idsPerSubclass = readIds(sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
 		
 		// Second phase : selecting entities by delegating it to each subclass loader
 		// It will generate 1 query per found subclass, made as this :
@@ -303,7 +303,7 @@ public class TablePerClassPolymorphismEntitySelector<C, I, T extends Table<T>> e
 		
 		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
 	}
 	

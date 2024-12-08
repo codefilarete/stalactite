@@ -3,10 +3,13 @@ package org.codefilarete.stalactite.query.builder;
 import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.Between;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Equals;
@@ -87,19 +90,24 @@ public class OperatorSQLBuilderFactory {
 			catNullValue(isNull.isNot(), sql);
 		}
 		
-		void catLike(Like like, SQLAppender sql, Selectable<CharSequence> column) {
+		void catLike(Like like, SQLAppender sql, Selectable<?> column) {
 			sql.catIf(like.isNot(), "not ").cat("like ");
 			LikePatternAppender likePatternAppender = new LikePatternAppender(like, sql);
-			if (like.getValue() instanceof SQLFunction) {
-				functionSQLBuilder.cat((SQLFunction) like.getValue(), likePatternAppender);
+			if (like.getValue() instanceof ValuedVariable) {
+				Object value = ((ValuedVariable<?>) like.getValue()).getValue();
+				if (value instanceof SQLFunction) {
+					functionSQLBuilder.cat((SQLFunction) value, likePatternAppender);
+				} else {
+					likePatternAppender.catValue(column, like.getValue());
+				}
 			} else {
-				likePatternAppender.catValue(column, (CharSequence) like.getValue());
+				likePatternAppender.catValue(column, like.getValue());
 			}
 		}
 		
 		<V> void catIn(In<V> in, SQLAppender sql, Selectable<V> column) {
 			// we take collection into account : iterating over it to cat all values
-			Iterable<V> value = in.getValue();
+			Variable<Iterable<V>> value = in.getValue();
 			sql.catIf(in.isNot(), "not ").cat("in (");
 			catInValue(value, sql, column);
 			sql.cat(")");
@@ -108,7 +116,6 @@ public class OperatorSQLBuilderFactory {
 		void catTupledIn(TupleIn in, SQLAppender sql) {
 			// we take collection into account : iterating over it to cat all values
 			Column[] columns = in.getColumns();
-			Iterable<Object[]> values = in.getValue();
 			sql.catIf(in.isNot(), "not ");
 			sql.cat("(");
 			Iterator<Column> columnIterator = Arrays.stream(columns).iterator();
@@ -118,19 +125,23 @@ public class OperatorSQLBuilderFactory {
 			sql.cat(")");
 			
 			sql.cat(" in (");
-			if (values == null) {
-				for (int i = 0, columnCount = columns.length; i < columnCount; i++) {
-					sql.catValue(columns[i], null).catIf(i < columnCount - 1, ", ");
-				}
-			} else {
-				Iterator<Object[]> valuesIterator = values.iterator();
-				while (valuesIterator.hasNext()) {
-					Object[] vals = valuesIterator.next();
-					sql.cat("(");
+			Variable<List<Object[]>> value = in.getValue();
+			if (value instanceof ValuedVariable<?>) {
+				List<Object[]> values = ((ValuedVariable<List<Object[]>>) value).getValue();
+				if (values == null) {
 					for (int i = 0, columnCount = columns.length; i < columnCount; i++) {
-						sql.catValue(columns[i], vals[i]).catIf(i < columnCount - 1, ", ");
+						sql.catValue(columns[i], null).catIf(i < columnCount - 1, ", ");
 					}
-					sql.cat(")").catIf(valuesIterator.hasNext(), ", ");
+				} else {
+					Iterator<Object[]> valuesIterator = values.iterator();
+					while (valuesIterator.hasNext()) {
+						Object[] vals = valuesIterator.next();
+						sql.cat("(");
+						for (int i = 0, columnCount = columns.length; i < columnCount; i++) {
+							sql.catValue(columns[i], vals[i]).catIf(i < columnCount - 1, ", ");
+						}
+						sql.cat(")").catIf(valuesIterator.hasNext(), ", ");
+					}
 				}
 			}
 			sql.cat(")");
@@ -143,32 +154,42 @@ public class OperatorSQLBuilderFactory {
 		 * @param column
 		 * @param value the iterable to be appended, not null (but may be empty, this method doesn't care)
 		 */
-		private <V> void catInValue(Iterable<V> value, SQLAppender sql, Selectable<V> column) {
+		private <V> void catInValue(Variable<Iterable<V>> value, SQLAppender sql, Selectable<V> column) {
 			// appending values (separated by a comma, boilerplate code)
 			boolean isFirst = true;
-			for (Object v : value) {
-				if (!isFirst) {
-					sql.cat(", ");
-				} else {
-					isFirst = false;
+			if (value instanceof ValuedVariable) {
+				for (Object v : ((ValuedVariable<Iterable<V>>) value).getValue()) {
+					if (!isFirst) {
+						sql.cat(", ");
+					} else {
+						isFirst = false;
+					}
+					if (v instanceof SQLFunction) {
+						functionSQLBuilder.cat((SQLFunction) v, sql);
+					} else {
+						sql.catValue(column, v);
+					}
 				}
-				if (v instanceof SQLFunction) {
-					functionSQLBuilder.cat((SQLFunction) v, sql);
-				} else {
-					sql.catValue(column, (V) v);
-				}
+			} else {
+				// we know this cast is wrong : value is Variable<Iterable<V>>. But adding a signature for it is too much work for few usage
+				sql.catValue(column, value);
 			}
 		}
 		
 		<V> void catBetween(Between<V> between, SQLAppender sql, Selectable<V> column) {
-			Interval<V> interval = between.getValue();
-			if (interval.getValue1() == null) {
-				sql.cat(between.isNot() ? ">= " : "< ").catValue(column, interval.getValue2());
-			} else if (interval.getValue2() == null) {
-				sql.cat(between.isNot() ? "<= " : "> ").catValue(column, interval.getValue1());
-			} else {
-				sql.catIf(between.isNot(), "not ").cat("between ")
-						.catValue(column, interval.getValue1()).cat(" and ").catValue(column, interval.getValue2());
+			Variable<Interval<V>> value = between.getValue();
+			if (value instanceof ValuedVariable) {
+				Interval<V> interval = ((ValuedVariable<Interval<V>>) value).getValue();
+				if (interval.getValue1() == null) {
+					sql.cat(between.isNot() ? ">= " : "< ").catValue(column, interval.getValue2());
+				} else if (interval.getValue2() == null) {
+					sql.cat(between.isNot() ? "<= " : "> ").catValue(column, interval.getValue1());
+				} else {
+					sql.catIf(between.isNot(), "not ").cat("between ")
+							.catValue(column, interval.getValue1())
+							.cat(" and ")
+							.catValue(column, interval.getValue2());
+				}
 			}
 		}
 		
@@ -193,11 +214,16 @@ public class OperatorSQLBuilderFactory {
 			catValue(column, equals.getValue(), sql);
 		}
 		
-		<V> void catValue(@Nullable Selectable<V> column, V value, SQLAppender sql) {
-			if (value instanceof SQLFunction) {
-				functionSQLBuilder.cat((SQLFunction<?, ?>) value, sql);
+		<V> void catValue(@Nullable Selectable<V> column, Variable<V> variable, SQLAppender sql) {
+			if (variable instanceof ValuedVariable) {
+				V value = ((ValuedVariable<V>) variable).getValue();
+				if (value instanceof SQLFunction) {
+					functionSQLBuilder.cat((SQLFunction<?, ?>) value, sql);
+				} else {
+					sql.catValue(column, variable);
+				}
 			} else {
-				sql.catValue(column, value);
+				sql.catValue(column, variable);
 			}
 		}
 		
@@ -208,17 +234,26 @@ public class OperatorSQLBuilderFactory {
 		 * @author Guillaume Mary
 		 */
 		private static class LikePatternAppender implements SQLAppender {
-			private final Like<CharSequence> like;
+			private final Like<?> like;
 			private final SQLAppender sql;
 			
 			public LikePatternAppender(Like<?> like, SQLAppender sql) {
-				this.like = (Like<CharSequence>) like;
+				this.like = like;
 				this.sql = sql;
 			}
 			
 			@Override
-			public <V> SQLAppender catValue(@Nullable Selectable<V> column, V value) {
-				return sql.catValue((Selectable<CharSequence>) column, addWildcards(like.getValue()));
+			public <V> SQLAppender catValue(@Nullable Selectable<V> column, Object variable) {
+				if (variable instanceof ValuedVariable) {
+					V value = ((ValuedVariable<V>) variable).getValue();
+					if (value instanceof CharSequence) {
+						return sql.catValue((Selectable<CharSequence>) column, addWildcards((CharSequence) value));
+					} else {
+						return sql.catValue(column, variable);
+					}
+				} else {
+					return sql.catValue(column, variable);
+				}
 			}
 			
 			private CharSequence addWildcards(CharSequence effectiveValue) {
@@ -233,6 +268,9 @@ public class OperatorSQLBuilderFactory {
 			
 			@Override
 			public SQLAppender catValue(Object value) {
+				if (value instanceof ValuedVariable) {
+					value = ((ValuedVariable<?>) value).getValue();
+				}
 				if (value instanceof Selectable) {
 					// unwrapping raw Selectable
 					return sql.catValue(addWildcards(((Selectable<CharSequence>) value).getExpression()));
@@ -240,7 +278,7 @@ public class OperatorSQLBuilderFactory {
 					return sql.catValue(addWildcards((CharSequence) value));
 				} else {
 					throw new UnsupportedOperationException("Appending '" + value + "'"
-							+ (value == null ? "" : " (type " + Reflections.toString(value.getClass()) + ")") + " is not supported"); 
+							+ (value == null ? "" : " (type " + Reflections.toString(value.getClass()) + ")") + " is not supported");
 				}
 			}
 			

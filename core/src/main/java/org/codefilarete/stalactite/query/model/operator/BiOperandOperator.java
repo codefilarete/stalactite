@@ -3,6 +3,8 @@ package org.codefilarete.stalactite.query.model.operator;
 import java.util.List;
 
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.query.model.Variable;
 
 /**
  * Contract for SQL operators that require an operation on the column / value that they compare to their value 
@@ -13,27 +15,31 @@ import org.codefilarete.stalactite.query.model.ConditionalOperator;
 public abstract class BiOperandOperator<V> extends ConditionalOperator<V, V> {
 	
 	/** Value of the operator */
-	private V value;
+	private Variable<V> value;
 	
 	public BiOperandOperator() {
 	}
 	
-	public BiOperandOperator(V value) {
+	public BiOperandOperator(Variable<V> value) {
 		this.value = value;
 	}
 	
-	public V getValue() {
+	public BiOperandOperator(V value) {
+		this(new ValuedVariable<>(value));
+	}
+	
+	public Variable<V> getValue() {
 		return value;
 	}
 	
 	@Override
-	public void setValue(V value) {
+	public void setValue(Variable<V> value) {
 		this.value = value;
 	}
 	
 	@Override
 	public boolean isNull() {
-		return this.value == null;
+		return this.value instanceof ValuedVariable && ((ValuedVariable) this.value).getValue() == null;
 	}
 	
 	/**

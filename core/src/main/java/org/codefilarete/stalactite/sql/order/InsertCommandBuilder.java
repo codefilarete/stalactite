@@ -40,7 +40,7 @@ public class InsertCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	public String toSQL() {
 		return toSQL(new StringSQLAppender(new StringAppender(), new DMLNameProvider(new HashMap<>())) {
 			@Override
-			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, V value) {
+			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {

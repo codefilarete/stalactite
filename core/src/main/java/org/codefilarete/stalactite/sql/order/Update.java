@@ -6,6 +6,8 @@ import java.util.Set;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Criteria;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
+import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
 import org.codefilarete.stalactite.sql.order.UpdateCommandBuilder.UpdateStatement;
@@ -63,7 +65,7 @@ public class Update<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Update<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn<>(column, value));
+		this.columns.add(new UpdateColumn<>(column, new ValuedVariable<>(value)));
 		return this;
 	}
 	
@@ -114,7 +116,7 @@ public class Update<T extends Table<T>> {
 	 */
 	public static class UpdateColumn<T extends Table<T>> {
 		
-		public static final Object PLACEHOLDER = new Object();
+		public static final UnvaluedVariable<Object, Object> PLACEHOLDER = new UnvaluedVariable<>("?", Object.class);
 		
 		private final Column<T, Object> column;
 		private final Object value;
@@ -123,7 +125,7 @@ public class Update<T extends Table<T>> {
 			this((Column<T, Object>) column, PLACEHOLDER);
 		}
 		
-		public <C> UpdateColumn(Column<T, C> column, C value) {
+		public <C> UpdateColumn(Column<T, C> column, Object value) {
 			this.column = (Column<T, Object>) column;
 			this.value = value;
 		}

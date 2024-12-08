@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQL
 import org.codefilarete.stalactite.query.model.ColumnCriterion;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.UnitaryOperator;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.ddl.structure.Table;
@@ -51,7 +52,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 	public String toSQL() {
 		return toSQL(new StringSQLAppender(new StringAppender(), dmlNameProvider) {
 			@Override
-			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, V value) {
+			public <V> StringSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
 				if (value == UpdateColumn.PLACEHOLDER) {
 					return cat("?");
 				} else {
@@ -79,8 +80,10 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 			if (c instanceof ColumnCriterion && ((ColumnCriterion) c).getColumn() instanceof Column) {
 				whereColumns.add((Column<Table, Object>) ((ColumnCriterion) c).getColumn());
 				Object condition = ((ColumnCriterion) c).getCondition();
-				if (condition instanceof UnitaryOperator && ((UnitaryOperator) condition).getValue() instanceof Column) {
-					whereColumns.add((Column) ((UnitaryOperator) condition).getValue());
+				if (condition instanceof UnitaryOperator
+						&& ((UnitaryOperator) condition).getValue() instanceof ValuedVariable
+						&& ((ValuedVariable) ((UnitaryOperator) condition).getValue()).getValue() instanceof Column) {
+					whereColumns.add((Column) ((ValuedVariable) ((UnitaryOperator) condition).getValue()).getValue());
 				}
 			}
 		});
@@ -114,7 +117,7 @@ public class UpdateCommandBuilder<T extends Table<T>> implements SQLBuilder {
 		if (!update.getCriteria().getConditions().isEmpty()) {
 			result.cat(" where ");
 			WhereSQLBuilder whereSqlBuilder = dialect.getQuerySQLBuilderFactory().getWhereBuilderFactory().whereBuilder(this.update.getCriteria(), dmlNameProvider);
-			whereSqlBuilder.appendSQL(result);
+			whereSqlBuilder.appendTo(result);
 		}
 		return result.getSQL();
 	}

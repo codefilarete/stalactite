@@ -81,7 +81,7 @@ class FunctionSQLBuilderTest {
 		StringAppender result = new StringAppender();
 		
 		testInstance.cat(new Cast<>("toto", Integer.class), new StringSQLAppender(result, dmlNameProvider));
-		assertThat(result.toString()).isEqualTo("cast('toto' as integer)");
+		assertThat(result.toString()).isEqualTo("cast(toto as integer)");
 	}
 	
 	@Test

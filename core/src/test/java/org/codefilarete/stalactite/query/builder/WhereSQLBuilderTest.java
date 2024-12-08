@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query.builder;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.FunctionSQLBuilderFactory.FunctionSQLBuilder;
@@ -180,14 +181,14 @@ public class WhereSQLBuilderTest {
 		};
 	}
 	
-	@ParameterizedTest
+	@ParameterizedTest(name = "{2} - [{index}]")
 	@MethodSource("toPreparedSQL_data")
 	public void toPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases,
 							  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(tableAliases);
 		FunctionSQLBuilder functionSQLBuilder = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(functionSQLBuilder), functionSQLBuilder);
-		PreparedSQL preparedSQL = testInstance.toPreparedSQL();
+		PreparedSQL preparedSQL = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}

@@ -1,6 +1,9 @@
 package org.codefilarete.stalactite.query.model.operator;
 
+import org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder;
 import org.codefilarete.stalactite.query.model.ConditionalOperator;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 
 /**
@@ -11,13 +14,17 @@ import org.codefilarete.stalactite.query.model.operator.Between.Interval;
  */
 public class Between<O> extends ConditionalOperator<O, Interval<O>> {
 	
-	private Interval<O> value;
+	private Variable<Interval<O>> value;
 	
 	public Between() {
 	}
 	
-	public Between(Interval<O> value) {
+	public Between(Variable<Interval<O>> value) {
 		this.value = value;
+	}
+	
+	public Between(Interval<O> value) {
+		this(new ValuedVariable<>(value));
 	}
 	
 	public Between(O value1, O value2) {
@@ -26,22 +33,23 @@ public class Between<O> extends ConditionalOperator<O, Interval<O>> {
 	
 	/**
 	 * Returns boundaries of this instance, null when both {@link Interval} boundaries are null (done as such to simplify a bit "is null"
-	 * code in {@link org.codefilarete.stalactite.query.builder.WhereSQLBuilderFactory.WhereSQLBuilder})
+	 * code in {@link WhereSQLBuilder})
 	 * 
 	 * @return null if value boundaries are both null.
 	 */
-	public Interval<O> getValue() {
-		return (value == null || value.isEmpty()) ? null : value;
+	public Variable<Interval<O>> getValue() {
+		return value;
 	}
 	
 	@Override
-	public void setValue(Interval<O> value) {
+	public void setValue(Variable<Interval<O>> value) {
 		this.value = value;
 	}
 	
 	@Override
 	public boolean isNull() {
-		return getValue() == null;
+		return this.value instanceof ValuedVariable
+				&& (((ValuedVariable<Interval<O>>) this.value).getValue() == null || ((ValuedVariable<Interval<O>>) this.value).getValue().isEmpty());
 	}
 	
 	/**

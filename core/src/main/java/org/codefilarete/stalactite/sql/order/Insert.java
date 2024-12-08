@@ -3,6 +3,7 @@ package org.codefilarete.stalactite.sql.order;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.sql.order.InsertCommandBuilder.InsertStatement;
 import org.codefilarete.stalactite.sql.order.Update.UpdateColumn;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -53,7 +54,7 @@ public class Insert<T extends Table<T>> {
 	 * @return this
 	 */
 	public <C> Insert<T> set(Column<T, C> column, C value) {
-		this.columns.add(new UpdateColumn<>(column, value));
+		this.columns.add(new UpdateColumn<>(column, new ValuedVariable<>(value)));
 		return this;
 	}
 	

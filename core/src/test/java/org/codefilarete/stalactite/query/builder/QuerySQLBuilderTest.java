@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.query.builder;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.codefilarete.stalactite.query.builder.QuerySQLBuilderFactory.QuerySQLBuilder;
@@ -234,7 +235,7 @@ class QuerySQLBuilderTest {
 	@MethodSource("toPreparedSQL")
 	public void toPreparedSQL(QueryProvider<Query> queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		PreparedSQLBuilder testInstance = preparedSQLBuilder(queryProvider.getQuery());
-		PreparedSQL preparedSQL = testInstance.toPreparedSQL();
+		PreparedSQL preparedSQL = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}

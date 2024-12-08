@@ -4,9 +4,11 @@ import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.stalactite.sql.ddl.structure.Column;
 import org.codefilarete.stalactite.sql.statement.PreparedSQL;
 import org.codefilarete.stalactite.sql.statement.binder.ColumnBinderRegistry;
@@ -56,42 +58,62 @@ public class PreparedSQLAppender implements SQLAppender {
 	 * @param <V> value type
 	 */
 	@Override
-	public <V> PreparedSQLAppender catValue(@Nullable Selectable<V> column, V value) {
-		return catValue(value, () -> {
-			if (column == null) {
-				return getParameterBinderFromRegistry(value);
-			} else if (column instanceof Column) {
-				return parameterBinderRegistry.getBinder((Column) column);
-			} else {
-				return parameterBinderRegistry.getBinder(column.getJavaType());
-			}
-		});
+	public <V> PreparedSQLAppender catValue(@Nullable Selectable<V> column, Object value) {
+		ParameterBinder<?> parameterBinder;
+		if (column == null) {
+			parameterBinder = getParameterBinderFromRegistry(value);
+		} else if (column instanceof Column) {
+			parameterBinder = parameterBinderRegistry.getBinder((Column) column);
+		} else {
+			parameterBinder = parameterBinderRegistry.getBinder(column.getJavaType());
+		}
+		return catValue(value, parameterBinder);
 	}
 	
 	@Override
 	public PreparedSQLAppender catValue(Object value) {
-		return catValue(value, () -> getParameterBinderFromRegistry(value));
+		return catValue(value, getParameterBinderFromRegistry(value));
 	}
 	
+	private ParameterBinder<?> getParameterBinderFromRegistry(Variable value) {
+		ParameterBinder<?> parameterBinder = null;
+		if (value instanceof ValuedVariable) {
+			parameterBinder = getParameterBinderFromRegistry(((ValuedVariable) value).getValue());
+		} else if (value instanceof UnvaluedVariable) {
+			parameterBinder = parameterBinderRegistry.getBinder(((UnvaluedVariable) value).getValueType());
+		}
+		return parameterBinder;
+	}	
 	private ParameterBinder<?> getParameterBinderFromRegistry(Object value) {
-		Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
-		return parameterBinderRegistry.getBinder(binderType);
+		ParameterBinder<?> parameterBinder;
+		if (value instanceof Variable) {
+			parameterBinder = getParameterBinderFromRegistry(((Variable) value));
+		} else {
+			Class<?> binderType = value.getClass().isArray() ? value.getClass().getComponentType() : value.getClass();
+			parameterBinder = parameterBinderRegistry.getBinder(binderType);
+		}
+		return parameterBinder;
 	}
 	
-	private PreparedSQLAppender catValue(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
-		if (value instanceof Selectable) {
-			// Columns are simply appended (no binder needed nor index increment)
-			surrogate.cat(dmlNameProvider.getName((Selectable) value));
+	private PreparedSQLAppender catValue(Object value, ParameterBinder<?> binderSupplier) {
+		if (value instanceof ValuedVariable) {
+			Object innerValue = ((ValuedVariable) value).getValue();
+			if (innerValue instanceof Selectable) {
+				// Columns are simply appended (no binder needed nor index increment)
+				surrogate.cat(dmlNameProvider.getName((Selectable) innerValue));
+			} else {
+				appendPlaceholder(innerValue, binderSupplier);
+			}
 		} else {
 			appendPlaceholder(value, binderSupplier);
 		}
 		return this;
 	}
 	
-	private void appendPlaceholder(Object value, Supplier<ParameterBinder<?>> binderSupplier) {
+	private void appendPlaceholder(Object value, ParameterBinder<?> binderSupplier) {
 		surrogate.cat("?");
 		values.put(paramCounter.getValue(), value);
-		parameterBinders.put(paramCounter.getValue(), binderSupplier.get());
+		parameterBinders.put(paramCounter.getValue(), binderSupplier);
 		paramCounter.increment();
 	}
 	

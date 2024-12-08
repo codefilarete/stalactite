@@ -3,6 +3,9 @@ package org.codefilarete.stalactite.query.model.operator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.query.model.UnvaluedVariable;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
+import org.codefilarete.stalactite.query.model.Variable;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.Iterables;
 
@@ -31,10 +34,22 @@ public class InIgnoreCase extends BiOperandOperator<Iterable<CharSequence>> {
 	
 	@Override
 	public List<Object> asRawCriterion(Object leftOperand) {
-		return Arrays.asList(
-				new LowerCase<>(leftOperand),
-				new In<>(Iterables.stream(getValue()).map(LowerCase::new).collect(Collectors.toList()))
-						.not(isNot())
-		);
+		Variable<Iterable<CharSequence>> value = getValue();
+		if (value instanceof ValuedVariable) {
+			Iterable<CharSequence> rawValue = ((ValuedVariable<Iterable<CharSequence>>) value).getValue();
+			return Arrays.asList(
+					new LowerCase<>(leftOperand),
+					new In<>(Iterables.stream(rawValue).map(LowerCase::new).collect(Collectors.toList()))
+							.not(isNot())
+			);
+		} else if (value instanceof UnvaluedVariable) {
+			return Arrays.asList(
+					new LowerCase<>(leftOperand),
+					new In<>(value)
+							.not(isNot())
+			);
+		} else {
+			throw new UnsupportedOperationException("Unsupported value type: " + (value == null ? null : value.getClass()));
+		}
 	}
 }

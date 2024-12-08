@@ -16,6 +16,7 @@ import org.codefilarete.stalactite.query.model.OrderBy.OrderedColumn;
 import org.codefilarete.stalactite.query.model.OrderByChain.Order;
 import org.codefilarete.stalactite.query.model.Query;
 import org.codefilarete.stalactite.query.model.Selectable;
+import org.codefilarete.stalactite.query.model.ValuedVariable;
 import org.codefilarete.stalactite.query.model.operator.SQLFunction;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.stalactite.sql.ddl.JavaTypeToSqlTypeMapping;
@@ -201,7 +202,7 @@ public class QuerySQLBuilderFactory {
 			
 			Having having = query.getHavingSurrogate();
 			if (!having.getConditions().isEmpty()) {
-				havingBuilder.appendSQL(sql.cat(" having "));
+				havingBuilder.appendTo(sql.cat(" having "));
 			}
 			
 			OrderBy orderBy = query.getOrderBySurrogate();
@@ -220,19 +221,19 @@ public class QuerySQLBuilderFactory {
 		 * @return a {@link PreparedSQL} from Query given at construction time
 		 */
 		@Override
-		public PreparedSQL toPreparedSQL() {
-			StringAppender sql = new StringAppender(500);
-			PreparedSQLAppender preparedSQLAppender = new PreparedSQLAppender(new StringSQLAppender(sql, dmlNameProvider), parameterBinderRegistry, dmlNameProvider);
-			return toPreparedSQL(preparedSQLAppender);
+		public ExpandableSQLAppender toPreparedSQL() {
+			ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(parameterBinderRegistry, dmlNameProvider);
+			appendTo(preparedSQLAppender);
+			return preparedSQLAppender;
 		}
 		
-		public PreparedSQL toPreparedSQL(PreparedSQLAppender sqlWrapper) {
+		public void appendTo(ExpandableSQLAppender sqlWrapper) {
 			sqlWrapper.cat("select ", selectSQLBuilder.toSQL());
 			sqlWrapper.cat(" from ");
-			fromSqlBuilder.toPreparedSQL(sqlWrapper);
+			fromSqlBuilder.appendTo(sqlWrapper);
 			if (!query.getWhereSurrogate().getConditions().isEmpty()) {
 				sqlWrapper.cat(" where ");
-				whereSqlBuilder.toPreparedSQL(sqlWrapper);
+				whereSqlBuilder.appendTo(sqlWrapper);
 			}
 			
 			GroupBy groupBy = query.getGroupBySurrogate();
@@ -243,7 +244,7 @@ public class QuerySQLBuilderFactory {
 			Having having = query.getHavingSurrogate();
 			if (!having.getConditions().isEmpty()) {
 				sqlWrapper.cat(" having ");
-				havingBuilder.toPreparedSQL(sqlWrapper);
+				havingBuilder.appendTo(sqlWrapper);
 			}
 			
 			OrderBy orderBy = query.getOrderBySurrogate();
@@ -255,17 +256,12 @@ public class QuerySQLBuilderFactory {
 			Limit limit = query.getLimitSurrogate();
 			if (limit.getCount() != null) {
 				sqlWrapper.cat(" limit ");
-				sqlWrapper.catValue(limit.getCount());
+				sqlWrapper.catValue(new ValuedVariable<>(limit.getCount()));
 				if (limit.getOffset() != null) {
 					sqlWrapper.cat(" offset ");
-					sqlWrapper.catValue(limit.getOffset());
+					sqlWrapper.catValue(new ValuedVariable<>(limit.getOffset()));
 				}
 			}
-			
-			PreparedSQL result = new PreparedSQL(sqlWrapper.getSQL(), sqlWrapper.getParameterBinders());
-			result.setValues(sqlWrapper.getValues());
-			
-			return result;
 		}
 		
 		private void cat(OrderBy orderBy, SQLAppender sql) {

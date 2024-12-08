@@ -104,7 +104,7 @@ public class JoinTablePolymorphismEntitySelector<C, I, T extends Table<T>> exten
 		orderByClauseConsumer.accept(new ColumnCloneAwareOrderBy(query.orderBy(), entityTreeQuery.getColumnClones()));
 		limitAwareConsumer.accept(query.orderBy());
 		
-		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
+		Map<Class, Set<I>> idsPerSubtype = readIds(sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
 		
 		Set<C> result = new HashSet<>();
 		idsPerSubtype.forEach((k, v) -> result.addAll(persisterPerSubclass.get(k).select(v)));

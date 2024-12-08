@@ -7,5 +7,5 @@ import org.codefilarete.stalactite.sql.statement.PreparedSQL;
  */
 public interface PreparedSQLBuilder {
 	
-	PreparedSQL toPreparedSQL();
+	ExpandableSQLAppender toPreparedSQL();
 }

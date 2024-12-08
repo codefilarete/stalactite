@@ -45,7 +45,7 @@ class DialectTest {
 							@Override
 							public <V> void cat(Selectable<V> column, ConditionalOperator<?, V> operator, SQLAppender sql) {
 								if (operator instanceof Like) {
-									sql.cat("LIKE ").catValue(((Like) operator).getValue().toString());
+									sql.cat("LIKE ").catValue(((Like) operator).getValue());
 								} else {
 									super.cat(column, operator, sql);
 								}

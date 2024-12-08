@@ -28,7 +28,7 @@ public interface SQLAppender {
 	 * @return this
 	 * @param <V> value type
 	 */
-	<V> SQLAppender catValue(@Nullable Selectable<V> column, V value);
+	<V> SQLAppender catValue(@Nullable Selectable<V> column, Object value);
 	
 	/**
 	 * Appends value to underlying statement. To be used when {@link #catValue(Selectable, Object)} can't be applied.
