@@ -70,6 +70,14 @@ public class Like<V> extends UnitaryOperator<V> {
 	/**
 	 * Constructor for "startsWith" and "endsWith" operator without value for now : must be set later with
 	 * {@link super#setValue(Object)}
+	 */
+	public Like() {
+		this(false, false);
+	}
+	
+	/**
+	 * Constructor for "startsWith" and "endsWith" operator without value for now : must be set later with
+	 * {@link super#setValue(Object)}
 	 * 
 	 * @param leadingStar true to add a leading generic '%' character
 	 * @param endingStar true to add a ending generic '%' character
