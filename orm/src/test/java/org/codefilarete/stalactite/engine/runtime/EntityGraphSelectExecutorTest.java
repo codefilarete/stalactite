@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Set;
 
 import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
@@ -85,7 +86,7 @@ class EntityGraphSelectExecutorTest {
 		
 		// we must wrap the select call into the select listener because it is the way expected by ManyCascadeConfigurer to initialize some variables (ThreadLocal ones)
 		Set<Country> select = persister.getPersisterListener().doWithSelectListener(Collections.emptyList(), () ->
-				testInstance.select(countryEntityCriteriaSupport, fluentOrderByClause -> {}, limitAware -> {})
+				testInstance.select(countryEntityCriteriaSupport, fluentOrderByClause -> {}, limitAware -> {}, new HashMap<>())
 		);
 		
 		assertThat(Iterables.first(select))

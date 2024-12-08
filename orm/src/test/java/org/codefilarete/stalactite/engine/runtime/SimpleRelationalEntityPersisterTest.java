@@ -46,6 +46,7 @@ import org.codefilarete.stalactite.mapping.AccessorWrapperIdAccessor;
 import org.codefilarete.stalactite.mapping.ClassMapping;
 import org.codefilarete.stalactite.mapping.id.manager.AlreadyAssignedIdentifierManager;
 import org.codefilarete.stalactite.mapping.id.manager.BeforeInsertIdentifierManager;
+import org.codefilarete.stalactite.query.model.ConditionalOperator;
 import org.codefilarete.stalactite.query.model.Operators;
 import org.codefilarete.stalactite.query.model.Selectable;
 import org.codefilarete.stalactite.query.model.Selectable.SelectableString;
@@ -88,6 +89,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy.alreadyAssigned;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
+import static org.codefilarete.stalactite.query.model.operator.DefaultNamedOperator.equalsArgNamed;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -496,6 +498,43 @@ class SimpleRelationalEntityPersisterTest {
 			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 42);
 			assertCapturedPairsEqual(expectedPairs);
 			
+			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
+			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
+					new Toto(7, 1, 2)
+			).toString());
+		}
+		
+		@Test
+		void selectWhere_namedParameter() throws SQLException {
+			// mocking executeQuery not to return null because select method will use the in-memory ResultSet
+			String totoIdAlias = "Toto_id";
+			String totoAAlias = "Toto_a";
+			String totoBAlias = "Toto_b";
+			String totoQAlias = "Toto_q";
+			ResultSet resultSetForCriteria = new InMemoryResultSet(Arrays.asList(
+					Maps.asMap(totoIdAlias, (Object) 7).add(totoAAlias, 1).add(totoBAlias, 2)
+			));
+			when(preparedStatement.executeQuery()).thenReturn(resultSetForCriteria);
+			
+			ConditionalOperator<Integer, Integer> myArg = equalsArgNamed("myArg", Integer.class);
+			ExecutableEntityQueryCriteria<Toto, ?> totoExecutableEntityQueryCriteria = testInstance.selectWhere(Toto::getA, myArg)
+					// addition of and usual and criteria to demonstrate the capability of combining parameterized values with placeholder ones  
+					.and(Toto::getId, Operators.in(new PersistedIdentifier<>(42)));
+			totoExecutableEntityQueryCriteria.set("myArg", 12);
+			Set<Toto> select = totoExecutableEntityQueryCriteria.execute(Accumulators.toSet());
+			
+			verify(preparedStatement, times(1)).executeQuery();
+			verify(preparedStatement, times(2)).setInt(indexCaptor.capture(), valueCaptor.capture());
+			assertThat(statementArgCaptor.getAllValues()).isEqualTo(Arrays.asList(
+					"select Toto.id as " + totoIdAlias
+							+ ", Toto.a as " + totoAAlias
+							+ ", Toto.b as " + totoBAlias
+							+ ", Toto.q as " + totoQAlias
+							+ " from Toto where Toto.a = ?"
+							+ " and Toto.id in (?)"));
+			PairSetList<Integer, Integer> expectedPairs = new PairSetList<Integer, Integer>().newRow(1, 12).add(2, 42);
+			assertCapturedPairsEqual(expectedPairs);
+
 			Comparator<Toto> totoComparator = Comparator.<Toto, Comparable>comparing(toto -> toto.getId().getSurrogate());
 			assertThat(Arrays.asTreeSet(totoComparator, select).toString()).isEqualTo(Arrays.asTreeSet(totoComparator,
 					new Toto(7, 1, 2)

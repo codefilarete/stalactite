@@ -1,16 +1,20 @@
-package org.codefilarete.stalactite.sql.spring.repository;
+package org.codefilarete.stalactite.spring.repository;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Method;
 import java.util.Optional;
 
 import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
-import org.codefilarete.stalactite.spring.repository.SimpleStalactiteRepository;
 import org.codefilarete.stalactite.spring.repository.query.CreateQueryLookupStrategy;
 import org.codefilarete.stalactite.spring.repository.query.DeclaredQueryLookupStrategy;
+import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueryLookupStrategy;
 import org.codefilarete.stalactite.sql.ConnectionProvider;
 import org.codefilarete.stalactite.sql.Dialect;
 import org.codefilarete.tool.bean.Objects;
+import org.codefilarete.tool.collection.Arrays;
+import org.codefilarete.tool.collection.Iterables;
 import org.codefilarete.tool.exception.NotImplementedException;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.EntityInformation;
 import org.springframework.data.repository.core.NamedQueries;
@@ -21,9 +25,6 @@ import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.QueryLookupStrategy.Key;
 import org.springframework.data.repository.query.QueryMethodEvaluationContextProvider;
 import org.springframework.data.repository.query.RepositoryQuery;
-import org.springframework.lang.Nullable;
-
-import static org.codefilarete.tool.Nullable.nullable;
 
 /**
  * Mimics JpaRepositoryFactory for Stalactite
@@ -35,6 +36,8 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 	private final AdvancedEntityPersister<?, ?> entityPersister;
 	private final Dialect dialect;
 	private final ConnectionProvider connectionProvider;
+	
+	private BeanFactory beanFactory;
 	
 	public StalactiteRepositoryFactory(AdvancedEntityPersister<?, ?> entityPersister,
 									   Dialect dialect,
@@ -60,11 +63,19 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 		return SimpleStalactiteRepository.class;
 	}
 	
+	/**
+	 * Overridden to be capable of accessing the instance, because parent field is private :'( 
+	 * @param beanFactory owning BeanFactory (never {@code null}).
+	 */
 	@Override
-	protected Optional<QueryLookupStrategy> getQueryLookupStrategy(@Nullable Key key,
+	public void setBeanFactory(BeanFactory beanFactory) {
+		this.beanFactory = beanFactory;
+	}
+	
+	@Override
+	protected Optional<QueryLookupStrategy> getQueryLookupStrategy(@Nullable QueryLookupStrategy.Key key,
 																   QueryMethodEvaluationContextProvider evaluationContextProvider) {
 
-//		return Optional.of(new CreateQueryLookupStrategy<>(entityPersister));
 		switch (Objects.preventNull(key, Key.CREATE_IF_NOT_FOUND)) {
 			case CREATE:
 				return Optional.of(new CreateQueryLookupStrategy<>(entityPersister));
@@ -72,8 +83,9 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 				return Optional.of(new DeclaredQueryLookupStrategy<>(entityPersister, dialect, connectionProvider));
 			case CREATE_IF_NOT_FOUND:
 				return Optional.of(new CreateIfNotFoundQueryLookupStrategy(
+						new BeanQueryLookupStrategy<>(entityPersister, dialect, connectionProvider, beanFactory),
 						new DeclaredQueryLookupStrategy<>(entityPersister, dialect, connectionProvider),
-						new CreateQueryLookupStrategy(entityPersister)));
+						new CreateQueryLookupStrategy<>(entityPersister)));
 			default:
 				throw new IllegalArgumentException(String.format("Unsupported query lookup strategy %s!", key));
 		}
@@ -89,24 +101,20 @@ public class StalactiteRepositoryFactory extends RepositoryFactorySupport {
 	 */
 	private static class CreateIfNotFoundQueryLookupStrategy implements QueryLookupStrategy {
 		
-		private final DeclaredQueryLookupStrategy lookupStrategy;
-		private final CreateQueryLookupStrategy createStrategy;
+		private final Iterable<QueryLookupStrategy> lookupStrategies;
 		
 		/**
 		 * Creates a new {@link CreateIfNotFoundQueryLookupStrategy}.
 		 *
-		 * @param createStrategy must not be {@literal null}.
-		 * @param lookupStrategy must not be {@literal null}.
+		 * @param lookupStrategies must not be {@literal null}.
 		 */
-		public CreateIfNotFoundQueryLookupStrategy(DeclaredQueryLookupStrategy lookupStrategy, CreateQueryLookupStrategy createStrategy) {
-			this.lookupStrategy = lookupStrategy;
-			this.createStrategy = createStrategy;
+		public CreateIfNotFoundQueryLookupStrategy(QueryLookupStrategy... lookupStrategies) {
+			this.lookupStrategies = Arrays.asSet(lookupStrategies);
 		}
 		
 		@Override
 		public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory, NamedQueries namedQueries) {
-			return nullable(lookupStrategy.resolveQuery(method, metadata, factory, namedQueries))
-					.getOr(() -> createStrategy.resolveQuery(method, metadata, factory, namedQueries));
+			return Iterables.find(lookupStrategies, lookupStrategy -> lookupStrategy.resolveQuery(method, metadata, factory, namedQueries), java.util.Objects::nonNull).getRight();
 		}
 	}
 }

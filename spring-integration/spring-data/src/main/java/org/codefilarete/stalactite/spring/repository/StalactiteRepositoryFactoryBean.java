@@ -9,7 +9,6 @@ import org.codefilarete.stalactite.engine.runtime.AdvancedEntityPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredPersister;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
-import org.codefilarete.stalactite.sql.spring.repository.StalactiteRepositoryFactory;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;

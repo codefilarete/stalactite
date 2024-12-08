@@ -15,14 +15,16 @@ import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.PersistableIdentifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
-import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
 import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesRepository.NamesOnly;
 import org.codefilarete.stalactite.spring.repository.query.DerivedQueriesRepository.NamesOnly.SimplePerson;
+import org.codefilarete.stalactite.sql.result.Accumulators;
 import org.codefilarete.tool.Dates;
 import org.codefilarete.tool.collection.Arrays;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan.Filter;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.data.domain.Sort;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +37,12 @@ import static org.codefilarete.tool.function.Functions.chain;
  * @author Guillaume Mary
  */
 @Transactional
-@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.spring.repository.query")
+@EnableStalactiteRepositories(basePackages = "org.codefilarete.stalactite.spring.repository.query",
+		// because we have another repository in the same package, we filter them to keep only the appropriate one (it also checks that filtering works !)
+		includeFilters = @Filter(
+				type = FilterType.ASSIGNABLE_TYPE,
+				classes = DerivedQueriesRepository.class)
+)
 abstract class AbstractDerivedQueriesWithPolymorphismTest {
 	
 	@Autowired

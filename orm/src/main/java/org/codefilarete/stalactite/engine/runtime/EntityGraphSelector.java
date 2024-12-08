@@ -55,7 +55,7 @@ import static org.codefilarete.tool.bean.Objects.preventNull;
  * hence it is based on {@link EntityJoinTree} to build the bean graph.
  * 
  * @author Guillaume Mary
- * @see EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer)
+ * @see EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)
  */
 public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySelector<C, I> {
 	
@@ -67,12 +67,20 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	
 	private final Dialect dialect;
 	
+//	private final EntityTreeQuery<C> entityTreeQuery;
+//	private final Query defaultQuery;
+//	private final EntityTreeInflater<C> inflater;
+	
 	public EntityGraphSelector(EntityJoinTree<C, I> entityJoinTree,
 							   ConnectionProvider connectionProvider,
 							   Dialect dialect) {
 		this.entityJoinTree = entityJoinTree;
 		this.connectionProvider = connectionProvider;
 		this.dialect = dialect;
+//		// we use EntityTreeQueryBuilder to get the inflater, please note that it also build the default Query
+//		this.entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
+//		this.inflater = entityTreeQuery.getInflater();
+//		this.defaultQuery = entityTreeQuery.getQuery();
 	}
 	
 	public Set<C> selectFromQueryBean(String sql, Map<String, Object> values) {
@@ -116,7 +124,10 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 	 * Implementation note : the load is done in 2 phases : one for root ids selection from criteria, a second from full graph load from found root ids.
 	 */
 	@Override
-	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+	public Set<C> select(ConfiguredEntityCriteria where,
+						 Consumer<OrderByChain<?>> orderByClauseConsumer,
+						 Consumer<LimitAware<?>> limitAwareConsumer,
+						 Map<String, Object> valuesPerParam) {
 		EntityTreeQuery<C> entityTreeQuery = new EntityTreeQueryBuilder<>(this.entityJoinTree, dialect.getColumnBinderRegistry()).buildSelectQuery();
 		Query query = entityTreeQuery.getQuery();
 		
@@ -137,7 +148,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());
-			Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL(), columnReaders, columnedRow);
+			Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
 			
 			if (ids.isEmpty()) {
 				// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
@@ -149,7 +160,10 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 				query.getWhereSurrogate().clear();
 				query.where(pk, in(ids));
 				
-				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(valuesPerParam);
+//				// TODO: where to get parameter binders ?
+//				StringParamedSQL stringParamedSQL = new StringParamedSQL(preparedSQL.getSQL(), new HashMap<>());
+//				stringParamedSQL.setValues(valuesPerParam);
 				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 			}
 		} else {
@@ -157,7 +171,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 			// doesn't make a subset of the entity graph
 			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(valuesPerParam);
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
 	}
@@ -194,7 +208,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		
 		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL();
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
 		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
 	}
 	

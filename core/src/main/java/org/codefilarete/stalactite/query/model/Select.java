@@ -20,6 +20,10 @@ public class Select implements FluentSelect<Select> {
 	
 	private boolean distinct = false;
 	
+	public Map<Selectable<?>, String> getColumnPerAlias() {
+		return columns;
+	}
+	
 	@Override
 	public KeepOrderSet<Selectable<?>> getColumns() {
 		return new KeepOrderSet<>(columns.keySet());

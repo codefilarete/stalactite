@@ -1,5 +1,6 @@
 package org.codefilarete.stalactite.query;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -31,9 +32,13 @@ public interface EntitySelector<C, I> {
 	 * @param where some criteria for aggregate selection
 	 * @param orderByClauseConsumer
 	 * @param limitAwareConsumer
+	 * @param valuesPerParam values presents in criteria per their name, may be empty
 	 * @return entities that match criteria
 	 */
-	Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer);
+	Set<C> select(ConfiguredEntityCriteria where,
+				  Consumer<OrderByChain<?>> orderByClauseConsumer,
+				  Consumer<LimitAware<?>> limitAwareConsumer,
+				  Map<String, Object> valuesPerParam);
 	
 	/**
 	 * Loads a projection that matches given criteria.

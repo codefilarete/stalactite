@@ -338,6 +338,8 @@ public interface EntityPersister<C, I> extends PersistExecutor<C>, InsertExecuto
 	 */
 	interface ExecutableEntityQuery<C, SELF extends ExecutableEntityQuery<C, SELF>> extends EntityCriteria<C, SELF>, ExecutableQuery<C>, FluentOrderByClause<C, SELF> {
 		
+		SELF set(String paramName, Object paramValue);
+		
 	}
 	
 	/**

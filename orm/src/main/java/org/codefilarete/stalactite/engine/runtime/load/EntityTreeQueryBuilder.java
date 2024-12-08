@@ -55,7 +55,10 @@ public class EntityTreeQueryBuilder<C> {
 	
 	public EntityTreeQuery<C> buildSelectQuery() {
 		Query query = new Query();
+		return buildSelectQuery(query);
+	}
 		
+	public EntityTreeQuery<C> buildSelectQuery(Query query) {
 		Map<String, ParameterBinder<?>> selectParameterBinders = new HashMap<>();
 		
 		// Mapping between original Column of table in joins and Column of cloned tables. Not perfect but made to solve

@@ -17,8 +17,7 @@ import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.data.repository.query.RepositoryQuery;
 
 /**
- * {@link QueryLookupStrategy} that tries to detect a declared query declared via {@link Query} annotation followed by
- * a JPA named query lookup.
+ * {@link QueryLookupStrategy} that tries to detect a declared query declared via {@link Query} annotation.
  *
  * @author Guillaume Mary
  */
@@ -40,6 +39,9 @@ public class DeclaredQueryLookupStrategy<C> implements QueryLookupStrategy {
 		this.connectionProvider = connectionProvider;
 	}
 	
+	/**
+	 * @return null if no declared query is found on the method through the {@link Query} annotation
+	 */
 	@Override
 	public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory, NamedQueries namedQueries) {
 		Nullable<String> sql = Nullable.nullable(method.getAnnotation(Query.class)).map(Query::value);
@@ -53,30 +55,4 @@ public class DeclaredQueryLookupStrategy<C> implements QueryLookupStrategy {
 			return null;
 		}
 	}
-	
-//	@Nullable
-//	private String getCountQuery(JpaQueryMethod method, NamedQueries namedQueries, EntityManager em) {
-//		
-//		if (StringUtils.hasText(method.getCountQuery())) {
-//			return method.getCountQuery();
-//		}
-//		
-//		String queryName = method.getNamedCountQueryName();
-//		
-//		if (!StringUtils.hasText(queryName)) {
-//			return method.getCountQuery();
-//		}
-//		
-//		if (namedQueries.hasQuery(queryName)) {
-//			return namedQueries.getQuery(queryName);
-//		}
-//		
-//		boolean namedQuery = NamedQuery.hasNamedQuery(em, queryName);
-//		
-//		if (namedQuery) {
-//			return method.getQueryExtractor().extractQueryString(em.createNamedQuery(queryName));
-//		}
-//		
-//		return null;
-//	}
 }

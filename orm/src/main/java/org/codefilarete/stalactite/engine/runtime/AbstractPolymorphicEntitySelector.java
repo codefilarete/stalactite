@@ -61,7 +61,7 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 	}
 	
 	@Override
-	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer) {
+	public Set<C> select(ConfiguredEntityCriteria where, Consumer<OrderByChain<?>> orderByClauseConsumer, Consumer<LimitAware<?>> limitAwareConsumer, Map<String, Object> valuesPerParam) {
 		if (where.hasCollectionCriteria()) {
 			return selectIn2Phases(where, orderByClauseConsumer, limitAwareConsumer);
 		} else {

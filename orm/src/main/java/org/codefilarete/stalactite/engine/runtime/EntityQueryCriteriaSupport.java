@@ -2,7 +2,9 @@ package org.codefilarete.stalactite.engine.runtime;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -22,6 +24,7 @@ import org.codefilarete.reflection.MutatorByMethodReference;
 import org.codefilarete.reflection.ReversibleMutator;
 import org.codefilarete.reflection.ValueAccessPoint;
 import org.codefilarete.stalactite.engine.EntityPersister.EntityCriteria;
+import org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery;
 import org.codefilarete.stalactite.engine.EntityPersister.LimitAware;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain;
 import org.codefilarete.stalactite.engine.EntityPersister.OrderByChain.Order;
@@ -42,6 +45,7 @@ import org.codefilarete.tool.VisibleForTesting;
 import org.codefilarete.tool.collection.Arrays;
 import org.codefilarete.tool.collection.KeepOrderSet;
 import org.codefilarete.tool.function.Hanger.Holder;
+import org.codefilarete.tool.function.SerializableTriFunction;
 import org.codefilarete.tool.function.ThrowingExecutable;
 import org.danekja.java.util.function.serializable.SerializableBiConsumer;
 import org.danekja.java.util.function.serializable.SerializableBiFunction;
@@ -56,7 +60,7 @@ import static org.codefilarete.tool.Nullable.nullable;
  * <ul>
  * Class aimed at handling entity query configuration and execution triggering :
  * <li>query configuration will be done by redirecting {@link CriteriaChain} methods to an {@link EntityQueryCriteriaSupport}.</li>
- * <li>execution triggering calls {@link EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer)}
+ * <li>execution triggering calls {@link EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer, Map)}
  * and wraps it into {@link PersisterListenerCollection#doWithSelectListener(Iterable, ThrowingExecutable)}</li>
  * </ul>
  * 
@@ -114,10 +118,12 @@ public class EntityQueryCriteriaSupport<C, I> {
 	}
 	
 	public ExecutableEntityQueryCriteria<C, ?> wrapIntoExecutable() {
+		Map<String, Object> values = new HashMap<>();
 		MethodReferenceDispatcher methodDispatcher = new MethodReferenceDispatcher();
 		return methodDispatcher
 				.redirect((SerializableBiFunction<ExecutableQuery<C>, Accumulator<C, Collection<C>, Object>, Object>) ExecutableQuery::execute,
-						wrapGraphLoad())
+						wrapGraphLoad(values))
+				.redirect((SerializableTriFunction<ExecutableEntityQuery<?, ?>, String, Object, Object>) ExecutableEntityQuery::set, values::put)
 				.redirect(OrderByChain.class, queryPageSupport, true)
 				.redirect(LimitAware.class, queryPageSupport, true)
 				.redirect(RelationalEntityCriteria.class, entityCriteriaSupport, true)
@@ -140,7 +146,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 		
 	}
 	
-	public <R> Function<Accumulator<C, Collection<C>, R>, R> wrapGraphLoad() {
+	public <R> Function<Accumulator<C, Collection<C>, R>, R> wrapGraphLoad(Map<String, Object> values) {
 		Holder<Consumer<org.codefilarete.stalactite.query.model.OrderByChain<?>>> orderByAdapter = new Holder<>();
 		Supplier<Set<C>> entityLoader = () -> {
 			if (queryPageSupport.getLimit() != null) {
@@ -153,7 +159,7 @@ public class EntityQueryCriteriaSupport<C, I> {
 					entitySelector.select(
 							entityCriteriaSupport,
 							orderByAdapter.get(),
-							limitAware -> nullable(queryPageSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())))
+							limitAware -> nullable(queryPageSupport.getLimit()).invoke(limit -> limitAware.limit(limit.getCount(), limit.getOffset())), values)
 			);
 		};
 		return (Accumulator<C, Collection<C>, R> accumulatorParam) -> {

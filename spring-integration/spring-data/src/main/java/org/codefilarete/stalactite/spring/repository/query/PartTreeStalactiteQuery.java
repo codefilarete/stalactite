@@ -1,6 +1,7 @@
 package org.codefilarete.stalactite.spring.repository.query;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 
 import org.codefilarete.reflection.AccessorByMember;
@@ -75,7 +76,7 @@ public class PartTreeStalactiteQuery<C, R> implements RepositoryQuery {
 		query.criteriaChain.consume(parameters);
 		
 		EntityQueryCriteriaSupport<C, ?> derivedQueryToUse = handleDynamicSort(parameters);
-		R result = derivedQueryToUse.<R>wrapGraphLoad().apply(accumulator);
+		R result = derivedQueryToUse.<R>wrapGraphLoad(new HashMap<>()).apply(accumulator);
 		
 		// - isProjecting() is for case of return type is not domain one (nor a compound one by Collection or other)
 		// - hasDynamicProjection() is for case of method that gives the expected returned type as a last argument (or a compound one by Collection or other)

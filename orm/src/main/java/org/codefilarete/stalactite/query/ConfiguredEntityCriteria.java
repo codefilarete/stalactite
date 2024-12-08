@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import org.codefilarete.stalactite.query.model.CriteriaChain;
 
 /**
- * Interface to describe necessary inputs of {@link EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer)}.
+ * Interface to describe necessary inputs of {@link EntitySelector#select(ConfiguredEntityCriteria, Consumer, Consumer, java.util.Map)}.
  * 
  * @author Guillaume Mary
  */
