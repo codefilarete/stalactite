@@ -2,6 +2,7 @@ package org.codefilarete.stalactite.query.model;
 
 import org.codefilarete.stalactite.query.builder.OperatorSQLBuilderFactory.OperatorSQLBuilder;
 import org.codefilarete.stalactite.query.model.operator.Between;
+import org.codefilarete.stalactite.query.model.operator.Between.Interval;
 import org.codefilarete.stalactite.query.model.operator.Cast;
 import org.codefilarete.stalactite.query.model.operator.Coalesce;
 import org.codefilarete.stalactite.query.model.operator.Count;
@@ -370,5 +371,174 @@ public interface Operators {
 	 */
 	static <C> Coalesce<C> coalesce(Selectable<C> column, Selectable<C>... columns) {
 		return new Coalesce<>(column, columns);
+	}
+	
+	/**
+	 * Creates a condition for a named placeholder with given {@link ConditionalOperator}
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} with a named placeholder
+	 * @param <T> value type
+	 */
+	static <T, V> ConditionalOperator<T, V> arg(String name, ConditionalOperator<T, V> delegate, Class<T> type) {
+		delegate.setValue(new UnvaluedVariable<>(name, type));
+		return delegate;
+	}
+	
+	/**
+	 * Creates a {@link Equals} condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 * 
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Equals} operator
+	 * @param <T> value type
+	 */
+	static <T> ConditionalOperator<T, T> equalsArgNamed(String name, Class<T> type) {
+		return arg(name, new Equals<>(), type);
+	}
+	
+	/**
+	 * Creates a {@link In} condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link In} operator
+	 * @param <T> value type
+	 */
+	static <T> ConditionalOperator<T, Iterable<T>> inArgNamed(String name, Class<T> type) {
+		return arg(name, new In<>(), type);
+	}
+	
+	/**
+	 * Creates a {@link Like} condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Like} operator
+	 * @param <T> value type
+	 */
+	static <T extends CharSequence> ConditionalOperator<T, T> likeArgNamed(String name, Class<T> type) {
+		return arg(name, new Like<>(), type);
+	}
+	
+	/**
+	 * Creates a "contains" condition (made of {@link Like}) for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Like} operator
+	 * @param <T> value type
+	 */
+	static <T extends CharSequence> ConditionalOperator<T, T> containsArgNamed(String name, Class<T> type) {
+		return arg(name, Like.contains(), type);
+	}
+	
+	/**
+	 * Creates a "starts with" condition (made of {@link Like}) for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Equals} operator
+	 * @param <T> value type
+	 */
+	static <T extends CharSequence> ConditionalOperator<T, T> startsWithArgNamed(String name, Class<T> type) {
+		return arg(name, Like.startsWith(), type);
+	}
+	
+	/**
+	 * Creates a "ends with" condition (made of {@link Like}) for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Equals} operator
+	 * @param <T> value type
+	 */
+	static <T extends CharSequence> ConditionalOperator<T, T> endsWithArgNamed(String name, Class<T> type) {
+		return arg(name, Like.endsWith(), type);
+	}
+	
+	/**
+	 * Creates a {@link Lesser} condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Lesser} operator
+	 * @param <T> value type
+	 */
+	static <T> ConditionalOperator<T, T> isLesserThanArgNamed(String name, Class<T> type) {
+		return arg(name, new Lesser<>(), type);
+	}
+	
+	/**
+	 * Creates a {@link Lesser} or equal condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Lesser} operator
+	 * @param <T> value type
+	 */
+	static <T> ConditionalOperator<T, T> isLesserOrEqualsThanArgNamed(String name, Class<T> type) {
+		return arg(name, new Lesser<T>().equals(), type);
+	}
+	
+	/**
+	 * Creates a {@link Greater} condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Greater} operator
+	 * @param <T> value type
+	 */
+	static <T> ConditionalOperator<T, T> isGreaterThanArgNamed(String name, Class<T> type) {
+		return arg(name, new Greater<T>().equals(), type);
+	}
+	
+	/**
+	 * Creates a {@link Greater} or equal condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Greater} operator
+	 * @param <T> value type
+	 */
+	static <T> ConditionalOperator<T, T> isGreaterOrEqualsThanArgNamed(String name, Class<T> type) {
+		return arg(name, new Greater<T>().equals(), type);
+	}
+	
+	/**
+	 * Creates a {@link Between} condition for a named placeholder.
+	 * The value will be set at a later time with {@link org.codefilarete.stalactite.engine.EntityPersister.ExecutableEntityQuery#set(String, Object)}
+	 * for example.
+	 *
+	 * @param name the placeholder name
+	 * @param type the placeholder value type
+	 * @return a {@link ConditionalOperator} made of a {@link Between} operator
+	 * @param <T> value type
+	 */
+	static <T> ConditionalOperator<T, Interval<T>> isBetweenArgNamed(String name, Class<T> type) {
+		return arg(name, new Between<>(), type);
 	}
 }

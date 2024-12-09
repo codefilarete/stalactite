@@ -16,7 +16,6 @@ import org.codefilarete.stalactite.engine.model.State;
 import org.codefilarete.stalactite.engine.model.Timestamp;
 import org.codefilarete.stalactite.engine.model.Vehicle;
 import org.codefilarete.stalactite.id.Identifier;
-import org.codefilarete.stalactite.query.model.operator.DefaultNamedOperator;
 import org.codefilarete.stalactite.spring.repository.config.EnableStalactiteRepositories;
 import org.codefilarete.stalactite.spring.repository.query.StalactiteRepositoryContextConfigurationBase;
 import org.codefilarete.stalactite.spring.repository.query.bean.BeanQueriesTest.StalactiteRepositoryContextConfiguration;
@@ -33,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
 import static org.codefilarete.stalactite.id.Identifier.LONG_TYPE;
 import static org.codefilarete.stalactite.query.model.Operators.eq;
+import static org.codefilarete.stalactite.query.model.Operators.equalsArgNamed;
 
 /**
  * Dedicated test class for orderBy and limit cases : both work only with a mapping that doesn't imply Collection property
@@ -76,7 +76,7 @@ public class BeanQueriesTest {
 		@Bean
 		public ExecutableEntityQuery<Republic, ?> findEuropeanMemberWithPresidentName(EntityPersister<Republic, Identifier<Long>> countryPersister) {
 			return countryPersister.selectWhere(Republic::isEuMember, eq(true))
-					.and(AccessorChain.chain(Republic::getPresident, Person::getName), DefaultNamedOperator.equalsArgNamed("presidentName", String.class));
+					.and(AccessorChain.chain(Republic::getPresident, Person::getName), equalsArgNamed("presidentName", String.class));
 		}
 		
 		@Bean
