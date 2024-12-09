@@ -20,11 +20,20 @@ import org.codefilarete.tool.StringAppender;
 import org.codefilarete.tool.trace.ModifiableInt;
 
 /**
+ * {@link SQLAppender} that can handle not-yet-set values from {@link org.codefilarete.stalactite.query.model.ConditionalOperator}s as well as
+ * already-set ones.
+ * - Set values are those made of {@link ValuedVariable} and a numeric (incremental) placeholder is affected to them
+ * - Not-yet-set values are placeholder ones made of {@link UnvaluedVariable} and the variable name is affected to them
+ * Final result can be converted to a {@link PreparedSQL} with given values, see {@link #toPreparedSQL(Map)} 
  * 
+ * @see #toPreparedSQL(Map)
  * @author Guillaume Mary
  */
 public class ExpandableSQLAppender implements SQLAppender {
 	
+	/**
+	 * Used to store SQL snippets
+	 */
 	private final ParsedSQL parsedSQL;
 	
 	/**
@@ -178,25 +187,34 @@ public class ExpandableSQLAppender implements SQLAppender {
 		return parsedSQL.toString();
 	}
 	
+	/**
+	 * Creates a {@link PreparedSQL} from given values.
+	 * Given values are merged with those of current instance, hence only named placeholders values are required.
+	 * However, values present in original SQL can be overwritten by giving a value to their numeric placeholder. 
+	 * 
+	 * @param values values per named placeholder
+	 * @return a new {@link PreparedSQL} for given values set
+	 */
 	public PreparedSQL toPreparedSQL(Map<String, Object> values) {
 		Map<String, Object> mergedValues = new HashMap<>(getValues());
 		mergedValues.putAll(values);
+		// we unwrap Variables from values because PreparedSQL doesn't support it  
 		unwrapVariables(mergedValues);
 		
+		// we ask ExpandableSQL to build the SQL made of "?" for each of our values
 		Map<String, Integer> valuesSizes = ExpandableSQL.sizes(mergedValues);
 		ExpandableSQL expandableSQL = new ExpandableSQL(this.parsedSQL, valuesSizes);
 		String placeholderSql = expandableSQL.getPreparedSQL();
 		
+		// Computing parameter binders for each "?" index
 		Map<Integer, PreparedStatementWriter> placeholderBinders = new HashMap<>();
 		Map<Integer, Object> placeholderValues = new HashMap<>();
 		mergedValues.forEach((paramName, value) -> {
-			
 			ExpandableParameter expandableParameter = expandableSQL.getExpandableParameters().get(paramName);
 			int[] markIndexes = expandableParameter.getMarkIndexes();
 			for (int markIndex : markIndexes) {
 				placeholderBinders.put(markIndex, parameterBinders.get(paramName));
 			}
-			
 			ExpandableStatement.adaptIterablePlaceholders(value, markIndexes, placeholderValues::put);
 		});
 		
@@ -218,6 +236,4 @@ public class ExpandableSQLAppender implements SQLAppender {
 			}
 		});
 	}
-	
-	
 }

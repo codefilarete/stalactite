@@ -65,7 +65,7 @@ public class WhereSQLBuilderFactory {
 	 * @author Guillaume Mary
 	 * @see #toSQL()
 	 */
-	public static class WhereSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
+	public static class WhereSQLBuilder implements SQLBuilder, PreparableSQLBuilder {
 		
 		private final CriteriaChain where;
 		
@@ -105,7 +105,7 @@ public class WhereSQLBuilderFactory {
 		}
 		
 		@Override
-		public ExpandableSQLAppender toPreparedSQL() {
+		public ExpandableSQLAppender toPreparableSQL() {
 			ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(parameterBinderRegistry, dmlNameProvider);
 			appendTo(preparedSQLAppender);
 			return preparedSQLAppender;

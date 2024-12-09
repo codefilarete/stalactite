@@ -50,7 +50,7 @@ public class QuerySQLBuilderFactory {
 	/**
 	 * Main constructor
 	 *
-	 * @param parameterBinderRegistry necessary while using {@link PreparedSQLBuilder#toPreparedSQL()} after calling {@link #queryBuilder(Query)}
+	 * @param parameterBinderRegistry necessary while using {@link PreparableSQLBuilder#toPreparableSQL()} after calling {@link #queryBuilder(Query)}
 	 * @param selectBuilderFactory factory for select clause
 	 * @param fromBuilderFactory factory for from clause
 	 * @param whereBuilderFactory factory for where clause
@@ -142,9 +142,9 @@ public class QuerySQLBuilderFactory {
 	 * Requires some {@link SelectSQLBuilder}, {@link FromSQLBuilder}, {@link WhereSQLBuilder}.
 	 *
 	 * @see #toSQL()
-	 * @see #toPreparedSQL()
+	 * @see #toPreparableSQL()
 	 */
-	public static class QuerySQLBuilder implements SQLBuilder, PreparedSQLBuilder {
+	public static class QuerySQLBuilder implements SQLBuilder, PreparableSQLBuilder {
 		
 		private final Query query;
 		private final DMLNameProvider dmlNameProvider;
@@ -177,7 +177,7 @@ public class QuerySQLBuilderFactory {
 		 * Creates a String from Query given at construction time.
 		 * <strong>SQL contains criteria values which may not be a good idea to be executed because it is exposed to SQL injection. Please don't run
 		 * the returned SQL, else you know what you're doing, use it for debugging purpose for instance.</strong>
-		 * One may prefer {@link #toPreparedSQL()}
+		 * One may prefer {@link #toPreparableSQL()}
 		 *
 		 * @return the SQL represented by Query given at construction time
 		 */
@@ -221,7 +221,7 @@ public class QuerySQLBuilderFactory {
 		 * @return a {@link PreparedSQL} from Query given at construction time
 		 */
 		@Override
-		public ExpandableSQLAppender toPreparedSQL() {
+		public ExpandableSQLAppender toPreparableSQL() {
 			ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(parameterBinderRegistry, dmlNameProvider);
 			appendTo(preparedSQLAppender);
 			return preparedSQLAppender;

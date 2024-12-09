@@ -501,7 +501,7 @@ public class PersistenceContext implements DatabaseCrudOperations {
 		
 		@Override
 		public void execute() {
-			PreparedSQL deleteStatement = new DeleteCommandBuilder(this, dialect).toPreparedSQL().toPreparedSQL(new HashMap<>());
+			PreparedSQL deleteStatement = new DeleteCommandBuilder(this, dialect).toPreparableSQL().toPreparedSQL(new HashMap<>());
 			try (WriteOperation<Integer> writeOperation = dialect.getWriteOperationFactory().createInstance(deleteStatement, getConnectionProvider())) {
 				writeOperation.setValues(deleteStatement.getValues());
 				writeOperation.execute();

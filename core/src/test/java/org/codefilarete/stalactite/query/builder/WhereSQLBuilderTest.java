@@ -84,7 +84,7 @@ public class WhereSQLBuilderTest {
 		assertThat(testInstance.toSQL()).isEqualTo(expected);
 	}
 	
-	public static Object[][] toPreparedSQL_data() {
+	public static Object[][] toPreparableSQL_data() {
 		Table tableToto = new Table(null, "Toto");
 		Column colA = tableToto.addColumn("a", String.class);
 		Column colB = tableToto.addColumn("b", String.class);
@@ -182,13 +182,13 @@ public class WhereSQLBuilderTest {
 	}
 	
 	@ParameterizedTest(name = "{2} - [{index}]")
-	@MethodSource("toPreparedSQL_data")
-	public void toPreparedSQL(CriteriaChain where, Map<Table, String> tableAliases,
-							  String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
+	@MethodSource("toPreparableSQL_data")
+	public void toPreparableSQL(CriteriaChain where, Map<Table, String> tableAliases,
+								String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
 		DMLNameProvider dmlNameProvider = new DMLNameProvider(tableAliases);
 		FunctionSQLBuilder functionSQLBuilder = new FunctionSQLBuilder(dmlNameProvider, new DefaultTypeMapping());
 		WhereSQLBuilder testInstance = new WhereSQLBuilder(where, dmlNameProvider, new ColumnBinderRegistry(), new OperatorSQLBuilder(functionSQLBuilder), functionSQLBuilder);
-		PreparedSQL preparedSQL = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL preparedSQL = testInstance.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}

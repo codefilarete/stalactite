@@ -148,7 +148,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 			ColumnedRow columnedRow = new ColumnedRow(aliases::get);
 			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());
-			Set<I> ids = readIds(sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
+			Set<I> ids = readIds(sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>()), columnReaders, columnedRow);
 			
 			if (ids.isEmpty()) {
 				// No result found, we must stop here because request below doesn't support in(..) without values (SQL error from database)
@@ -160,10 +160,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 				query.getWhereSurrogate().clear();
 				query.where(pk, in(ids));
 				
-				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(valuesPerParam);
-//				// TODO: where to get parameter binders ?
-//				StringParamedSQL stringParamedSQL = new StringParamedSQL(preparedSQL.getSQL(), new HashMap<>());
-//				stringParamedSQL.setValues(valuesPerParam);
+				PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
 				return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 			}
 		} else {
@@ -171,7 +168,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 			// doesn't make a subset of the entity graph
 			orderByClauseConsumer.accept(cloneAwareOrderBy);
 			limitAwareConsumer.accept(query.orderBy());
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(valuesPerParam);
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(valuesPerParam);
 			return new InternalExecutor(entityTreeQuery).execute(preparedSQL);
 		}
 	}
@@ -208,7 +205,7 @@ public class EntityGraphSelector<C, I, T extends Table<T>> implements EntitySele
 		
 		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
 	}
 	

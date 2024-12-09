@@ -178,7 +178,7 @@ class QuerySQLBuilderTest {
 		}
 	}
 	
-	private PreparedSQLBuilder preparedSQLBuilder(QueryStatement queryStatement) {
+	private PreparableSQLBuilder preparedSQLBuilder(QueryStatement queryStatement) {
 		QuerySQLBuilderFactory querySQLBuilderFactory = dialect.getQuerySQLBuilderFactory();
 		if (queryStatement instanceof Query) {
 			return querySQLBuilderFactory.queryBuilder((Query) queryStatement);
@@ -189,7 +189,7 @@ class QuerySQLBuilderTest {
 		}
 	}
 	
-	public static Object[][] toPreparedSQL() {
+	public static Object[][] toPreparableSQL() {
 		Table tableToto = new Table(null, "Toto");
 		Column colTotoA = tableToto.addColumn("a", String.class);
 		Column colTotoB = tableToto.addColumn("b", String.class);
@@ -232,10 +232,10 @@ class QuerySQLBuilderTest {
 	}
 	
 	@ParameterizedTest
-	@MethodSource("toPreparedSQL")
-	public void toPreparedSQL(QueryProvider<Query> queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
-		PreparedSQLBuilder testInstance = preparedSQLBuilder(queryProvider.getQuery());
-		PreparedSQL preparedSQL = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
+	@MethodSource("toPreparableSQL")
+	public void toPreparableSQL(QueryProvider<Query> queryProvider, String expectedPreparedStatement, Map<Integer, Object> expectedValues) {
+		PreparableSQLBuilder testInstance = preparedSQLBuilder(queryProvider.getQuery());
+		PreparedSQL preparedSQL = testInstance.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		assertThat(preparedSQL.getSQL()).isEqualTo(expectedPreparedStatement);
 		assertThat(preparedSQL.getValues()).isEqualTo(expectedValues);
 	}

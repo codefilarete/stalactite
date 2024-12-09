@@ -121,7 +121,7 @@ public class TablePerClassPolymorphicSelectExecutor<C, I, T extends Table<T>> im
 			
 			Query query = from.getQuery();
 			QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query);
-			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
+			PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 			queries.add(preparedSQL);
 		});
 		

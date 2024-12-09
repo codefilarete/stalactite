@@ -66,7 +66,7 @@ class DeleteCommandBuilderTest {
 	}
 	
 	@Test
-	<T extends Table<T>> void toPreparedSQL() throws SQLException {
+	<T extends Table<T>> void toPreparableSQL() throws SQLException {
 		T totoTable = (T) new Table("Toto");
 		Column<T, Long> columnA = totoTable.addColumn("a", Long.class);
 		Column<T, String> columnB = totoTable.addColumn("b", String.class);
@@ -77,7 +77,7 @@ class DeleteCommandBuilderTest {
 		Dialect dialect = new Dialect();
 		DeleteCommandBuilder<T> testInstance = new DeleteCommandBuilder<>(delete, dialect);
 		
-		PreparedSQL result = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL result = testInstance.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		assertThat(result.getSQL()).isEqualTo("delete from Toto where a in (?, ?) or a = b");
 		
 		assertThat(result.getValues()).isEqualTo(Maps.asMap(1, 42L).add(2, 43L));
@@ -91,7 +91,7 @@ class DeleteCommandBuilderTest {
 		
 		// ensuring that column type override in registry is taken into account
 		dialect.getColumnBinderRegistry().register(columnA, DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
-		result = testInstance.toPreparedSQL().toPreparedSQL(new HashMap<>());
+		result = testInstance.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		assertThat(result.getParameterBinder(1)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		assertThat(result.getParameterBinder(2)).isEqualTo(DefaultParameterBinders.LONG_PRIMITIVE_BINDER);
 		result.applyValues(mock);

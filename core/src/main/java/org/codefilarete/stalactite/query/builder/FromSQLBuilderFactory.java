@@ -47,7 +47,7 @@ public class FromSQLBuilderFactory {
 	 * @author Guillaume Mary
 	 * @see #toSQL()
 	 */
-	public static class FromSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
+	public static class FromSQLBuilder implements SQLBuilder, PreparableSQLBuilder {
 		
 		private final From from;
 		
@@ -79,13 +79,9 @@ public class FromSQLBuilderFactory {
 		}
 		
 		@Override
-		public ExpandableSQLAppender toPreparedSQL() {
-//			PreparedSQL preparedSQL = toPreparedSQL(new StringAppender(), querySQLBuilderFactory.getParameterBinderRegistry());
+		public ExpandableSQLAppender toPreparableSQL() {
 			ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(querySQLBuilderFactory.getParameterBinderRegistry(), dmlNameProvider);
 			appendTo(preparedSQLAppender);
-//			PreparedSQL result = new PreparedSQL(preparedSQLAppender.getSQL(), preparedSQLAppender.getParameterBinders());
-//			result.setValues(preparedSQLAppender.getValues());
-			
 			return preparedSQLAppender;
 		}
 		
@@ -96,14 +92,14 @@ public class FromSQLBuilderFactory {
 			}
 			FromGenerator fromGenerator = new FromGenerator(preparedSQLAppender, dmlNameProvider) {
 				
-				/** Overridden to make it call pseudoTableBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
+				/** Overridden to make it call pseudoTableBuilder.toPreparableSQL(..) instead of toSQL(..). Not a really good design */
 				@Override
 				void cat(Query query) {
 					QuerySQLBuilder unionBuilder = querySQLBuilderFactory.queryBuilder(query);
 					unionBuilder.appendTo(preparedSQLAppender);
 				}
 				
-				/** Overridden to make it call pseudoTableBuilder.toPreparedSQL(..) instead of toSQL(..). Not a really good design */
+				/** Overridden to make it call pseudoTableBuilder.toPreparableSQL(..) instead of toSQL(..). Not a really good design */
 				@Override
 				void cat(PseudoTable pseudoTable) {
 					PseudoTableSQLBuilder pseudoTableSqlBuilder = pseudoTableSQLBuilderFactory.pseudoTableBuilder(pseudoTable.getQueryStatement(), querySQLBuilderFactory);

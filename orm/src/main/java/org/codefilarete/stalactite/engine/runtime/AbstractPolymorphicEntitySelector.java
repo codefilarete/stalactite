@@ -99,7 +99,7 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 		QuerySQLBuilder sqlQueryBuilder = dialect.getQuerySQLBuilderFactory().queryBuilder(query, where.getCriteria(), entityTreeQuery.getColumnClones());
 		
 		EntityTreeInflater<C> inflater = entityTreeQuery.getInflater();
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		try (ReadOperation<Integer> readOperation = new ReadOperation<>(preparedSQL, connectionProvider)) {
 			ResultSet resultSet = readOperation.execute();
 			// NB: we give the same ParametersBinders of those given at ColumnParameterizedSelect since the row iterator is expected to read column from it
@@ -126,7 +126,7 @@ public abstract class AbstractPolymorphicEntitySelector<C, I, T extends Table<T>
 		
 		Map<String, ResultSetReader<?>> columnReaders = Iterables.map(query.getColumns(), new AliasAsserter<>(aliases::get), selectable -> dialect.getColumnBinderRegistry().getBinder(selectable.getJavaType()));
 		
-		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparedSQL().toPreparedSQL(new HashMap<>());
+		PreparedSQL preparedSQL = sqlQueryBuilder.toPreparableSQL().toPreparedSQL(new HashMap<>());
 		return readProjection(preparedSQL, columnReaders, columnedRow, accumulator);
 	}
 	

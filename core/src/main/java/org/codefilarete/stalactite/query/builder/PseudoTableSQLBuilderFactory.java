@@ -33,7 +33,7 @@ public class PseudoTableSQLBuilderFactory {
 	 * 
 	 * @author Guillaume Mary
 	 */
-	public static class PseudoTableSQLBuilder implements SQLBuilder, PreparedSQLBuilder {
+	public static class PseudoTableSQLBuilder implements SQLBuilder, PreparableSQLBuilder {
 		
 		private final QueryStatement queryStatement;
 		private final QuerySQLBuilderFactory querySQLBuilderFactory;
@@ -60,7 +60,7 @@ public class PseudoTableSQLBuilderFactory {
 		}
 		
 		@Override
-		public ExpandableSQLAppender toPreparedSQL() {
+		public ExpandableSQLAppender toPreparableSQL() {
 			ExpandableSQLAppender expandableSQLAppender = new ExpandableSQLAppender(querySQLBuilderFactory.getParameterBinderRegistry(), new DMLNameProvider(queryStatement.getAliases()::get));
 			appendTo(expandableSQLAppender);
 			

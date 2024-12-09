@@ -6,7 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.codefilarete.stalactite.query.builder.ExpandableSQLAppender;
-import org.codefilarete.stalactite.query.builder.PreparedSQLBuilder;
+import org.codefilarete.stalactite.query.builder.PreparableSQLBuilder;
 import org.codefilarete.stalactite.query.builder.SQLAppender;
 import org.codefilarete.stalactite.query.builder.SQLBuilder;
 import org.codefilarete.stalactite.query.builder.StringSQLAppender;
@@ -29,7 +29,7 @@ import org.codefilarete.tool.collection.Iterables;
  * 
  * @author Guillaume Mary
  */
-public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, PreparedSQLBuilder {
+public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, PreparableSQLBuilder {
 	
 	private final Delete<T> delete;
 	private final Dialect dialect;
@@ -49,7 +49,7 @@ public class DeleteCommandBuilder<T extends Table<T>> implements SQLBuilder, Pre
 	}
 	
 	@Override
-	public ExpandableSQLAppender toPreparedSQL() {
+	public ExpandableSQLAppender toPreparableSQL() {
 		// We ask for SQL generation through a ExpandableSQLAppender because we need SQL placeholders for where + update clause
 		ExpandableSQLAppender preparedSQLAppender = new ExpandableSQLAppender(dialect.getColumnBinderRegistry(), dmlNameProvider);
 		appendTo(preparedSQLAppender, dmlNameProvider);
