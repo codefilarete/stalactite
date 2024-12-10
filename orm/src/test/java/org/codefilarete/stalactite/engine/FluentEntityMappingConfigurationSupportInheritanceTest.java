@@ -5,10 +5,14 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.codefilarete.stalactite.engine.ColumnOptions.IdentifierPolicy;
 import org.codefilarete.stalactite.engine.model.AbstractVehicle;
 import org.codefilarete.stalactite.engine.model.Car;
 import org.codefilarete.stalactite.engine.model.Color;
 import org.codefilarete.stalactite.engine.model.Vehicle;
+import org.codefilarete.stalactite.engine.model.book.AbstractEntity;
+import org.codefilarete.stalactite.engine.model.book.Author;
+import org.codefilarete.stalactite.engine.model.book.Book;
 import org.codefilarete.stalactite.engine.runtime.ConfiguredRelationalPersister;
 import org.codefilarete.stalactite.id.Identifier;
 import org.codefilarete.stalactite.id.PersistedIdentifier;
@@ -32,6 +36,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.codefilarete.stalactite.engine.MappingEase.embeddableBuilder;
 import static org.codefilarete.stalactite.engine.MappingEase.entityBuilder;
@@ -347,6 +352,25 @@ public class FluentEntityMappingConfigurationSupportInheritanceTest {
 			// select test
 			Car loadedCar = carPersister.select(new PersistedIdentifier<>(1L));
 			assertThat(loadedCar).isEqualTo(dummyCar);
+		}
+		
+		/**
+		 * Checking that, while having several times a shared inheritance configuration, persister build doesn't fail
+		 */
+		@Test
+		void withIdDefinedInSuperClass_severalTimes() {
+			FluentEntityMappingBuilder<AbstractEntity, Long> inheritanceConfiguration = entityBuilder(AbstractEntity.class, long.class)
+					// mapped super class defines id
+					.mapKey(AbstractEntity::getId, IdentifierPolicy.afterInsert());
+			
+			FluentEntityMappingBuilder<Author, Long> authorConfiguration = entityBuilder(Author.class, long.class)
+					.map(Author::getName)
+					.mapOneToMany(Author::getWrittenBooks, entityBuilder(Book.class, long.class)
+							.map(Book::getTitle)
+							.mapSuperClass(inheritanceConfiguration))
+					.mapSuperClass(inheritanceConfiguration);
+			
+			assertThatCode(() -> authorConfiguration.build(persistenceContext)).doesNotThrowAnyException();
 		}
 		
 		@Test

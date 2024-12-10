@@ -3,9 +3,7 @@ package org.codefilarete.stalactite.engine.model.book;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Author {
-
-    private Long id;
+public class Author extends AbstractEntity {
 
     private String name;
 
@@ -17,10 +15,6 @@ public class Author {
 	public Author(String name) {
 		this.name = name;
 	}
-	
-	public Long getId() {
-        return id;
-    }
     
     public String getName() {
         return name;

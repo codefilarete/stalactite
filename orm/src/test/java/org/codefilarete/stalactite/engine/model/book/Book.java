@@ -4,9 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-public class Book {
-
-    private Long id;
+public class Book extends AbstractEntity {
 
     private String title;
 
@@ -25,10 +23,6 @@ public class Book {
 		this.isbn = isbn;
 	}
 	
-	public Long getId() {
-        return id;
-    }
-    
     public String getTitle() {
         return title;
     }
