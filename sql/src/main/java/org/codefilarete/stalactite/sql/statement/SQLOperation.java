@@ -191,7 +191,9 @@ public abstract class SQLOperation<ParamType> implements AutoCloseable {
 	@Override
 	public void close() {
 		try {
-			this.preparedStatement.close();
+			if (preparedStatement != null) {
+				this.preparedStatement.close();
+			}
 		} catch (SQLException e) {
 			LOGGER.warn("Can't close statement properly", e);
 		}
