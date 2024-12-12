@@ -154,6 +154,11 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 		this.propertiesMappingConfigurationSurrogate = new EntityDecoratedEmbeddableConfigurationSupport<>(this, classToPersist);
 	}
 	
+	@javax.annotation.Nullable
+	public Table<?> getTable() {
+		return targetTable;
+	}
+	
 	@Override
 	public Class<C> getEntityType() {
 		return classToPersist;
@@ -690,13 +695,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	}
 	
 	@Override
-	public <O, J, S extends Collection<O>> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
-			SerializableFunction<C, S> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return this.mapOneToMany(getter, mappingConfiguration, null);
-	}
-		
-	@Override
 	public <O, J, S extends Collection<O>, T extends Table> FluentMappingBuilderOneToManyOptions<C, I, O, S> mapOneToMany(
 			SerializableFunction<C, S> getter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
@@ -937,7 +935,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	@Override
 	public ConfiguredRelationalPersister<C, I> build(PersistenceContext persistenceContext) {
 		PersisterBuilderImpl<C, I> persisterBuilder = new PersisterBuilderImpl<>(this.getConfiguration());
-		persisterBuilder.setTable(targetTable);
 		return persisterBuilder.build(persistenceContext);
 	}
 	
@@ -948,9 +945,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	static class EntityDecoratedEmbeddableConfigurationSupport<C, I> extends FluentEmbeddableMappingConfigurationSupport<C> {
 		
 		private final FluentEntityMappingConfigurationSupport<C, I> entityConfigurationSupport;
-		
-		@javax.annotation.Nullable
-		private TableNamingStrategy tableNamingStrategy;
 		
 		/**
 		 * Creates a builder to map the given class for persistence

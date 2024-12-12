@@ -527,7 +527,9 @@ public class PersisterBuilderImpl<C, I> implements PersisterBuilder<C, I> {
 	<T extends Table> void init(ColumnBinderRegistry columnBinderRegistry, @Nullable T table) {
 		this.columnBinderRegistry = columnBinderRegistry;
 		
-		this.table = nullable(table).getOr(() -> (T) new Table(namingConfiguration.getTableNamingStrategy().giveName(this.entityMappingConfiguration.getEntityType())));
+		this.table = nullable(table)
+				.elseSet((T) this.entityMappingConfiguration.getTable())
+				.getOr(() -> (T) new Table(namingConfiguration.getTableNamingStrategy().giveName(this.entityMappingConfiguration.getEntityType())));
 	}
 	
 	public static <C, I> void addIdentificationToMapping(AbstractIdentification<C, I> identification, Iterable<Mapping<C, ?>> mappings) {

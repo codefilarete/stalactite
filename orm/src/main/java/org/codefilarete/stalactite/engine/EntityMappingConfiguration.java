@@ -23,6 +23,13 @@ public interface EntityMappingConfiguration<C, I> extends RelationalMappingConfi
 	@Nullable
 	EntityFactoryProvider<C, Table> getEntityFactoryProvider();
 	
+	/**
+	 * Gives the table owning entity data.
+	 * @return may return null, then a table name will be deduced from entity name and {@link TableNamingStrategy}
+	 */
+	@Nullable
+	Table getTable();
+	
 	TableNamingStrategy getTableNamingStrategy();
 	
 	ColumnNamingStrategy getColumnNamingStrategy();

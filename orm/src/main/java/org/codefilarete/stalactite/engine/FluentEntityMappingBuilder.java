@@ -402,14 +402,68 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
 	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
 	 */
-	<O, J, S extends Collection<O>>
+	default <O, J, S extends Collection<O>>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
-	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+		return mapOneToMany(getter, mappingConfiguration, null);
+	}
 	
+	/**
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
+	 * methods.
+	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
+	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
+	 *
+	 * @param getter the way to get the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param table an optional table to use for target entity on this particular relation
+	 * @param <O> type of {@link Collection} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S> refined {@link Collection} type
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
+	 */
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
 	mapOneToMany(SerializableFunction<C, S> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
 	
+	
+	/**
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
+	 * methods.
+	 *
+	 * @param setter the way to set the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param <O> type of {@link Collection} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S> refined {@link Collection} type
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
+	 */
+	default <O, J, S extends Collection<O>, T extends Table>
+	FluentMappingBuilderOneToManyOptions<C, I, O, S>
+	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+		return mapOneToMany(setter, mappingConfiguration, null);
+	}
+	
+	/**
+	 * Declares a relation between current entity and some of type {@code O} through a {@link Collection}.
+	 * Depending on collection type, order persistence can be asked by one of the {@link OneToManyOptions#indexed()}
+	 * methods.
+	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
+	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
+	 *
+	 * @param setter the way to set the {@link Set} from source entities
+	 * @param mappingConfiguration the mapping configuration of the {@link Set} entities
+	 * @param table an optional table to use for target entity on this particular relation
+	 * @param <O> type of {@link Collection} element
+	 * @param <J> type of identifier of {@code O}
+	 * @param <S> refined {@link Collection} type
+	 * @return an enhanced version of {@code this} so one can add set options to the relation or add mapping to {@code this}
+	 * @see #mapOneToMany(SerializableFunction, EntityMappingConfigurationProvider)
+	 */
 	<O, J, S extends Collection<O>, T extends Table>
 	FluentMappingBuilderOneToManyOptions<C, I, O, S>
 	mapOneToMany(SerializableBiConsumer<C, S> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration, @javax.annotation.Nullable T table);
