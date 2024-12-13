@@ -606,20 +606,6 @@ public class FluentEntityMappingConfigurationSupport<C, I> implements FluentEnti
 	
 	@Override
 	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
-			SerializableFunction<C, O> getter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return mapOneToOne(getter, mappingConfiguration, null);
-	}
-	
-	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
-			SerializableBiConsumer<C, O> setter,
-			EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
-		return mapOneToOne(setter, mappingConfiguration, null);
-	}
-	
-	@Override
-	public <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(
 			SerializableBiConsumer<C, O> setter,
 			EntityMappingConfigurationProvider<O, J> mappingConfiguration,
 			T table) {

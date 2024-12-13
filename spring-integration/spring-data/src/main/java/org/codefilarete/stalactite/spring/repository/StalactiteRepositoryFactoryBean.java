@@ -12,10 +12,10 @@ import org.codefilarete.stalactite.engine.runtime.OptimizedUpdatePersister;
 import org.codefilarete.tool.Reflections;
 import org.codefilarete.tool.reflect.MethodDispatcher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.data.repository.core.support.TransactionalRepositoryFactoryBeanSupport;
-import org.springframework.util.Assert;
 
 /**
  * Mimics {@link org.springframework.data.jpa.repository.support.JpaRepositoryFactoryBean}
@@ -56,6 +56,15 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 	@Autowired
 	public void setPersistenceContext(PersistenceContext persistenceContext) {
 		this.persistenceContext = persistenceContext;
+	}
+	
+	@Autowired
+	public void setApplicationContext(ApplicationContext applicationContext) {
+		applicationContext.getBeansOfType(EntityPersister.class);
+	}
+	
+	@Override
+	protected RepositoryFactorySupport doCreateRepositoryFactory() {
 		EntityPersister<?, Object> foundPersister = persistenceContext.getPersister(this.entityType);
 		if (foundPersister == null) {
 			throw new IllegalArgumentException("No persister found for entityType " + Reflections.toString(entityType) + " in persistence context.");
@@ -72,16 +81,15 @@ public class StalactiteRepositoryFactoryBean<R extends Repository<C, I>, C, I>
 				.redirect(AdvancedEntityPersister.class, (AdvancedEntityPersister) deepestSurrogate)
 				.redirect(ConfiguredPersister.class, (ConfiguredPersister) foundPersister);
 		this.entityPersister = methodDispatcher.build(AdvancedEntityPersister.class);
-	}
-	
-	@Override
-	protected RepositoryFactorySupport doCreateRepositoryFactory() {
+		
+		
 		return new StalactiteRepositoryFactory(this.entityPersister, persistenceContext.getDialect(), persistenceContext.getConnectionProvider());
 	}
 	
 	@Override
 	public void afterPropertiesSet() {
-		Assert.state(entityPersister != null, "EntityPersister must not be null!");
+		
+		
 		super.afterPropertiesSet();
 	}
 }

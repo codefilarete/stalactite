@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -539,6 +540,151 @@ public class FluentEntityMappingConfigurationSupportOneToOneTest {
 			};
 			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
 			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_CITY_STATE_COUNTRY_ID", "CITY", "STATE", "COUNTRY", "ID");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+		}
+		
+		
+		@Test
+		void withTargetTable_targetTableIsUsed() throws SQLException {
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
+					(ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE)
+									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.map(City::getName), new Table<>("Township"))
+							.mappedBy(City::getCountry)
+							.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
+					null, null)) {
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					return new Table(
+							rs.getString("TABLE_NAME")
+					);
+				}
+			};
+			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
+			assertThat(foundTables).containsExactlyInAnyOrder("COUNTRY", "TOWNSHIP");
+			
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_TOWNSHIP_COUNTRYID_COUNTRY_ID", "TOWNSHIP", "COUNTRYID", "COUNTRY", "ID");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+		}
+		
+		@Test
+		void withTargetTableSetByTargetEntity_tableSetByTargetEntityIsUSed() throws SQLException {
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
+					(ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
+									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.map(City::getName))
+							.mappedBy(City::getCountry)
+							.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
+					null, null)) {
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					return new Table(
+							rs.getString("TABLE_NAME")
+					);
+				}
+			};
+			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
+			assertThat(foundTables).containsExactlyInAnyOrder("COUNTRY", "TOWN");
+			
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_TOWN_COUNTRYID_COUNTRY_ID", "TOWN", "COUNTRYID", "COUNTRY", "ID");
+			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
+		}
+		
+		@Test
+		void withTargetTableAndTableSetByTargetEntity_targetTableIsUsed() throws SQLException {
+			ConfiguredPersister<Country, Identifier<Long>> countryPersister =
+					(ConfiguredPersister<Country, Identifier<Long>>) MappingEase.entityBuilder(Country.class, Identifier.LONG_TYPE)
+							// setting a foreign key naming strategy to be tested
+							.withForeignKeyNaming(ForeignKeyNamingStrategy.DEFAULT)
+							.mapKey(Country::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+							.map(Country::getName)
+							.map(Country::getDescription)
+							.mapOneToOne(Country::getCapital, MappingEase.entityBuilder(City.class, Identifier.LONG_TYPE, new Table<>("Town"))
+									.mapKey(City::getId, StatefulIdentifierAlreadyAssignedIdentifierPolicy.ALREADY_ASSIGNED)
+									.map(City::getName), new Table<>("Township"))
+							.mappedBy(City::getCountry)
+							.build(persistenceContext);
+			
+			DDLDeployer ddlDeployer = new DDLDeployer(persistenceContext);
+			ddlDeployer.deployDDL();
+			
+			Connection currentConnection = persistenceContext.getConnectionProvider().giveConnection();
+			
+			ResultSetIterator<Table> tableIterator = new ResultSetIterator<Table>(currentConnection.getMetaData().getTables(null, currentConnection.getSchema(),
+					null, null)) {
+				@Override
+				public Table convert(ResultSet rs) throws SQLException {
+					return new Table(
+							rs.getString("TABLE_NAME")
+					);
+				}
+			};
+			Set<String> foundTables = Iterables.collect(() -> tableIterator, Table::getName, HashSet::new);
+			assertThat(foundTables).containsExactlyInAnyOrder("COUNTRY", "TOWNSHIP");
+			
+			ResultSetIterator<JdbcForeignKey> fkPersonIterator = new ResultSetIterator<JdbcForeignKey>(currentConnection.getMetaData().getExportedKeys(null, null,
+					countryPersister.getMapping().getTargetTable().getName().toUpperCase())) {
+				@Override
+				public JdbcForeignKey convert(ResultSet rs) throws SQLException {
+					return new JdbcForeignKey(
+							rs.getString("FK_NAME"),
+							rs.getString("FKTABLE_NAME"), rs.getString("FKCOLUMN_NAME"),
+							rs.getString("PKTABLE_NAME"), rs.getString("PKCOLUMN_NAME")
+					);
+				}
+			};
+			JdbcForeignKey foundForeignKey = Iterables.first(fkPersonIterator);
+			JdbcForeignKey expectedForeignKey = new JdbcForeignKey("FK_TOWNSHIP_COUNTRYID_COUNTRY_ID", "TOWNSHIP", "COUNTRYID", "COUNTRY", "ID");
 			assertThat(foundForeignKey.getSignature()).isEqualTo(expectedForeignKey.getSignature());
 		}
 	}

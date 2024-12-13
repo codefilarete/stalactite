@@ -352,7 +352,9 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	default <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableFunction<C, O> getter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+		return mapOneToOne(getter, mappingConfiguration, null);
+	}
 	
 	/**
 	 * Declares a direct relationship between current entity and some of type {@code O}.
@@ -363,14 +365,18 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relationship or add mapping to {@code this}
 	 */
-	<O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration);
+	default <O, J, T extends Table> FluentMappingBuilderOneToOneOptions<C, I, T, O> mapOneToOne(SerializableBiConsumer<C, O> setter, EntityMappingConfigurationProvider<O, J> mappingConfiguration) {
+		return mapOneToOne(setter, mappingConfiguration, null);
+	}
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
+	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
+	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
 	 *
 	 * @param getter the way to get the target entity
 	 * @param mappingConfiguration the mapping configuration of the target entity
-	 * @param table target table of the mapped configuration
+	 * @param table an optional table to use for target entity on this particular relation
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
@@ -379,10 +385,12 @@ public interface FluentEntityMappingBuilder<C, I> extends PersisterBuilder<C, I>
 	
 	/**
 	 * Declares a direct relation between current entity and some of type {@code O}.
+	 * Allows to overwrite the target entity table on this relation : it will overwrite the eventually one of the mapping configuration or the one
+	 * deduced from naming strategy. Made for eventual reuse of target entity from persistence context to another.
 	 *
 	 * @param setter the way to get the target entity
 	 * @param mappingConfiguration the mapping configuration of the target entity
-	 * @param table target table of the mapped configuration
+	 * @param table an optional table to use for target entity on this particular relation
 	 * @param <O> type of target entity
 	 * @param <J> type of identifier of {@code O}
 	 * @return an enhanced version of {@code this} so one can add options to the relation or add mapping to {@code this}
